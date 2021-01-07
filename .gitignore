@@ -2,3 +2,4 @@
 miniconda3
 settings.json
 *.pyc
+flameTimewarpML.package
