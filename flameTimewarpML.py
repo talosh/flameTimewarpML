@@ -299,12 +299,18 @@ def project_changed_dict(info):
 def app_initialized(project_name):
     global app_framework
     global apps
-    app_framework = flameAppFramework()
-    print ('PYTHON\t: %s initializing' % app_framework.bundle_name)
-    load_apps(apps, app_framework)
+    if not app_framework:
+        app_framework = flameAppFramework()
+        print ('PYTHON\t: %s initializing' % app_framework.bundle_name)
+        load_apps(apps, app_framework)
 
 try:
     import flame
     app_initialized(flame.project.current_project.name)
 except:
     pass
+
+# bundle payload start
+'''
+REPLACEME
+'''
