@@ -1,2 +1,3 @@
 # flameMLTimewarp
-ML-based frame interpolation implementation of arXiv2020-RIFE for Autodesk Flame
+ML-based frame interpolation for Autodesk Flame.
+Bsed on arXiv2020-RIFE
