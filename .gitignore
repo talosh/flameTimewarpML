@@ -1,2 +1,4 @@
 .DS_Store
 miniconda3
+settings.json
+*.pyc
