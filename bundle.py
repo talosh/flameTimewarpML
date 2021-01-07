@@ -17,15 +17,15 @@ if not os.path.isdir(bundle_folder):
     print('no folder named %s' % bundle_folder)
     sys.exit()
 
-'''
-print ('creating %s' % bundle_folder + '.tar.bz2\n---')
-cmd = 'tar cvf ' + bundle_folder + '.tar ' + bundle_folder
-os.system(cmd)
-cmd = 'pbzip2 -v ' + bundle_folder + '.tar'
-os.system(cmd)
-cmd = 'mv ' + bundle_folder + '.tar.bz2 flameTimewarpML.package/'
-os.system(cmd)
-'''
+if '--full' in sys.argv:
+    
+    print ('creating %s' % bundle_folder + '.tar.bz2\n---')
+    cmd = 'tar cvf ' + bundle_folder + '.tar ' + bundle_folder
+    os.system(cmd)
+    cmd = 'pbzip2 -v ' + bundle_folder + '.tar'
+    os.system(cmd)
+    cmd = 'mv ' + bundle_folder + '.tar.bz2 flameTimewarpML.package/flameTimewarpMLenv.bundle'
+    os.system(cmd)
 
 '''
 f = open(bundle_folder + '.tar.bz2', 'rb')
@@ -49,8 +49,6 @@ with open('flameTimewarpML.package/flameTimewarpML.py', 'w') as tempfile:
     with open(python_source, 'r') as src:
         tempfile.write(src.read())
         tempfile.write(bundled_code)
-
-
 
 
 # cmd = 'mv tmp.py /opt/Autodesk/shared/python/' + plugin_file_name
