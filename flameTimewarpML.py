@@ -14,9 +14,10 @@ from pprint import pprint
 from pprint import pformat
 
 menu_group_name = 'flameTimewarpML'
+bundle_folder = '/var/tmp'
 DEBUG = True
 
-__version__ = 'v0.0.1'
+__version__ = 'v0.0.0.002'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -83,6 +84,7 @@ class flameAppFramework(object):
     def __init__(self):
         self.name = self.__class__.__name__
         self.bundle_name = 'flameTimewarpML'
+        self.bundle_path = os.path.join(bundle_folder, self.bundle_name)
         # self.prefs scope is limited to flame project and user
         self.prefs = {}
         self.prefs_user = {}
@@ -225,13 +227,93 @@ class flameAppFramework(object):
         return True
 
     def unpack_bundle(self):
-        self.log('unpacking bundle')
+        from PySide2 import QtWidgets
+        import traceback
+
+        self.log('checking env bundle')
         self.log('script file: %s' % __file__)
         start = time.time()
         with open(__file__, 'r') as scriptfile:
             script = scriptfile.read()
             delta = time.time() - start
             self.log('script readed in %s sec' % str(delta))
+            bundle_id = hash(script)
+            if os.path.isdir(self.bundle_path) and os.path.isfile(os.path.join(self.bundle_path, 'bundle_id')):
+                with open(os.path.join(self.bundle_path, 'bundle_id'), 'r') as bundle_id_file:
+                    if bundle_id_file.read() == bundle_id:
+                        self.log('bundle exists with id matching current version, no need to unpack')
+                        return True
+            elif os.path.isdir(self.bundle_path):
+                try:
+                    cmd = 'rm -rf ' + os.path.abspath(self.bundle_path)
+                    self.log('cleaning up old bundle folder')
+                    self.log('executing: %s' % cmd)
+                    os.system(cmd)
+                except Exception as e:
+                    import flame
+                    msg = 'flameTimewrarpML: Python exception: %s' % e
+                    dmsg = pformat(traceback.format_exc())
+                    
+                    def show_error_mbox():
+                        mbox = QtWidgets.QMessageBox()
+                        mbox.setWindowTitle('flameTimewrarpML')
+                        mbox.setText(msg)
+                        mbox.setDetailedText(dmsg)
+                        mbox.setStyleSheet('QLabel{min-width: 800px;}')
+                        mbox.exec_()
+                
+                    flame.schedule_idle_event(show_error_mbox)
+                    return False
+
+            try:
+                self.log('creating new bundle folder: %s' % self.bundle_path)
+                os.makedirs(os.path.join(self.bundle_path, 'bin'))
+            except Exception as e:
+                import flame
+                msg = 'flameTimewrarpML: Python exception: %s' % e
+                dmsg = pformat(traceback.format_exc())
+                
+                def show_error_mbox():
+                    mbox = QtWidgets.QMessageBox()
+                    mbox.setWindowTitle('flameTimewrarpML')
+                    mbox.setText(msg)
+                    mbox.setDetailedText(dmsg)
+                    mbox.setStyleSheet('QLabel{min-width: 800px;}')
+                    mbox.exec_()
+            
+                flame.schedule_idle_event(show_error_mbox)
+                return False
+
+            # flame system does not have pbzip2 by default
+            # we need to unpack it from our payload
+
+            start_position = script.rfind('# bundle payload starts here') + 33
+            payload = script[start_position:-4]
+            payload_dest = os.path.join(self.bundle_path, 'bin', 'pbzip2')
+            self.log('unpacking payload: %s' % payload_dest)
+            try:
+                import base64
+                with open(os.path.join(self.bundle_path, 'bin', 'pbzip2'), 'wb') as payload_file:
+                    payload_file.write(base64.b64decode(payload))
+                    payload_file.close()
+                cmd = 'chmod +x ' + payload_dest
+                os.system(cmd)
+            except Exception as e:
+                import flame
+                msg = 'flameTimewrarpML: Python exception: %s' % e
+                dmsg = pformat(traceback.format_exc())
+                
+                def show_error_mbox():
+                    mbox = QtWidgets.QMessageBox()
+                    mbox.setWindowTitle('flameTimewrarpML')
+                    mbox.setText(msg)
+                    mbox.setDetailedText(dmsg)
+                    mbox.setStyleSheet('QLabel{min-width: 800px;}')
+                    mbox.exec_()
+            
+                flame.schedule_idle_event(show_error_mbox)
+                return False
+
 
 # --- FLAME STARTUP SEQUENCE ---
 # Flame startup sequence is a bit complicated
@@ -256,14 +338,14 @@ apps = []
 def exeption_handler(exctype, value, tb):
     from PySide2 import QtWidgets
     import traceback
-    msg = 'flameMenuSG: Python exception %s in %s' % (value, exctype)
+    msg = 'flameTimewrarpML: Python exception %s in %s' % (value, exctype)
     mbox = QtWidgets.QMessageBox()
+    mbox.setWindowTitle('flameTimewrarpML')
     mbox.setText(msg)
     mbox.setDetailedText(pformat(traceback.format_exception(exctype, value, tb)))
     mbox.setStyleSheet('QLabel{min-width: 800px;}')
     mbox.exec_()
     sys.__excepthook__(exctype, value, tb)
-
 sys.excepthook = exeption_handler
 
 # register clean up logic to be called at Flame exit
@@ -310,7 +392,7 @@ try:
 except:
     pass
 
-# bundle payload start
+# bundle payload starts here
 '''
 REPLACEME
 '''
