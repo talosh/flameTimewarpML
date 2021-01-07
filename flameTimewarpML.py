@@ -17,7 +17,7 @@ menu_group_name = 'flameTimewarpML'
 bundle_folder = '/var/tmp'
 DEBUG = True
 
-__version__ = 'v0.0.0.002'
+__version__ = 'v0.0.0.003'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -230,7 +230,6 @@ class flameAppFramework(object):
         from PySide2 import QtWidgets
         import traceback
 
-        self.log('checking env bundle')
         self.log('script file: %s' % __file__)
         start = time.time()
         with open(__file__, 'r') as scriptfile:
@@ -239,6 +238,7 @@ class flameAppFramework(object):
             self.log('script readed in %s sec' % str(delta))
             bundle_id = hash(script)
             if os.path.isdir(self.bundle_path) and os.path.isfile(os.path.join(self.bundle_path, 'bundle_id')):
+                self.log('checking existing env bundle')
                 with open(os.path.join(self.bundle_path, 'bundle_id'), 'r') as bundle_id_file:
                     if bundle_id_file.read() == bundle_id:
                         self.log('bundle exists with id matching current version, no need to unpack')
@@ -311,6 +311,25 @@ class flameAppFramework(object):
                     mbox.setStyleSheet('QLabel{min-width: 800px;}')
                     mbox.exec_()
             
+                flame.schedule_idle_event(show_error_mbox)
+                return False
+
+            env_bundle_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.bundle_name + 'env.bundle')
+
+            if not os.path.isfile(env_bundle_file):
+                import flame
+                msg = 'flameTimewrarpML: Can not find env bundle %s' % env_bundle_file
+                dmsg = 'Please put flameTimewrarpMLenv.bundle next to the actual python script\n'
+                dmsg += 'It contains prebuild python and cuda environment needed to run ML Timewarp'
+                
+                def show_error_mbox():
+                    mbox = QtWidgets.QMessageBox()
+                    mbox.setWindowTitle('flameTimewrarpML')
+                    mbox.setText(msg)
+                    mbox.setDetailedText(dmsg)
+                    mbox.setStyleSheet('QLabel{min-width: 800px;}')
+                    mbox.exec_()
+                
                 flame.schedule_idle_event(show_error_mbox)
                 return False
 
