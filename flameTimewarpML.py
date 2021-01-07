@@ -234,16 +234,18 @@ class flameAppFramework(object):
         start = time.time()
         with open(__file__, 'r') as scriptfile:
             script = scriptfile.read()
-            delta = time.time() - start
-            self.log('script readed in %s sec' % str(delta))
-            bundle_id = hash(script)
-            if os.path.isdir(self.bundle_path) and os.path.isfile(os.path.join(self.bundle_path, 'bundle_id')):
-                self.log('checking existing env bundle')
+            bundle_id = str(hash(script))
+            if (os.path.isdir(self.bundle_path) and os.path.isfile(os.path.join(self.bundle_path, 'bundle_id'))):
+                self.log('checking existing env bundle...')
                 with open(os.path.join(self.bundle_path, 'bundle_id'), 'r') as bundle_id_file:
                     if bundle_id_file.read() == bundle_id:
-                        self.log('bundle exists with id matching current version, no need to unpack')
+                        self.log('env bundle already exists with id matching current version, no need to unpack again')
+                        bundle_id_file.close()
                         return True
-            elif os.path.isdir(self.bundle_path):
+                    else:
+                        self.log('existing env bundle id does not match current one, replacing...')
+
+            if os.path.isdir(self.bundle_path):
                 try:
                     cmd = 'rm -rf ' + os.path.abspath(self.bundle_path)
                     self.log('cleaning up old bundle folder')
@@ -251,7 +253,7 @@ class flameAppFramework(object):
                     os.system(cmd)
                 except Exception as e:
                     import flame
-                    msg = 'flameTimewrarpML: Python exception: %s' % e
+                    msg = 'flameTimewrarpML: %s' % e
                     dmsg = pformat(traceback.format_exc())
                     
                     def show_error_mbox():
@@ -270,7 +272,7 @@ class flameAppFramework(object):
                 os.makedirs(os.path.join(self.bundle_path, 'bin'))
             except Exception as e:
                 import flame
-                msg = 'flameTimewrarpML: Python exception: %s' % e
+                msg = 'flameTimewrarpML: %s' % e
                 dmsg = pformat(traceback.format_exc())
                 
                 def show_error_mbox():
@@ -300,7 +302,7 @@ class flameAppFramework(object):
                 os.system(cmd)
             except Exception as e:
                 import flame
-                msg = 'flameTimewrarpML: Python exception: %s' % e
+                msg = 'flameTimewrarpML: %s' % e
                 dmsg = pformat(traceback.format_exc())
                 
                 def show_error_mbox():
@@ -332,6 +334,48 @@ class flameAppFramework(object):
                 
                 flame.schedule_idle_event(show_error_mbox)
                 return False
+
+            try:
+                self.log('extracting new env bundle...') 
+                cmd = payload_dest + ' -dvc ' + env_bundle_file + ' | tar xf - -C ' + self.bundle_path + ' --strip-components=1'
+                os.system(cmd)
+                delta = time.time() - start
+                self.log('env bundle extracted to %s' % self.bundle_path)
+                self.log('finished extracting env bundle, it took %s sec' % str(delta))
+            except Exception as e:
+                import flame
+                msg = 'flameTimewrarpML: %s' % e
+                dmsg = pformat(traceback.format_exc())
+                
+                def show_error_mbox():
+                    mbox = QtWidgets.QMessageBox()
+                    mbox.setWindowTitle('flameTimewrarpML')
+                    mbox.setText(msg)
+                    mbox.setDetailedText(dmsg)
+                    mbox.setStyleSheet('QLabel{min-width: 800px;}')
+                    mbox.exec_()
+            
+                flame.schedule_idle_event(show_error_mbox)
+                return False
+            
+            try:
+                with open(os.path.join(self.bundle_path, 'bundle_id'), 'w+') as bundle_id_file:
+                    bundle_id_file.write(bundle_id)
+            except Exception as e:
+                import flame
+                msg = 'flameTimewrarpML: %s' % e
+                dmsg = pformat(traceback.format_exc())
+                
+                def show_error_mbox():
+                    mbox = QtWidgets.QMessageBox()
+                    mbox.setWindowTitle('flameTimewrarpML')
+                    mbox.setText(msg)
+                    mbox.setDetailedText(dmsg)
+                    mbox.setStyleSheet('QLabel{min-width: 800px;}')
+                    mbox.exec_()
+            
+                flame.schedule_idle_event(show_error_mbox)
+                return False            
 
 
 # --- FLAME STARTUP SEQUENCE ---
