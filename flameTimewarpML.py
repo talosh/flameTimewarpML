@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.0.1'
+__version__ = 'v0.0.2'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -128,7 +128,7 @@ class flameAppFramework(object):
         if not self.prefs_global.get('bundle_location'):
             self.bundle_location = os.path.join(
                 os.path.expanduser('~'),
-                 self.bundle_name)
+                self.bundle_name)
         else:
             self.bundle_location = self.prefs_global.get('bundle_location')
 
@@ -404,11 +404,13 @@ class flameAppFramework(object):
 
         try:
             self.log('extracting new env bundle...')
-            cmd = self.bundle_location + '/bundle/bin/pbzip2 -dc ' + env_bundle_file + ' | tar xf - -C ' + self.bundle_location
+            if not os.path.isdir(os.path.join('/var/tmp', self.bundle_name)):
+                os.makedirs(os.path.join('/var/tmp', self.bundle_name))
+            cmd = self.bundle_location + '/bundle/bin/pbzip2 -dc ' + env_bundle_file + ' | tar xf - -C /var/tmp/' + self.bundle_name
             self.log('executing: %s' % cmd)
             os.system(cmd)
             delta = time.time() - start
-            self.log('env bundle extracted to %s' % self.bundle_location + 'miniconda3')
+            self.log('env bundle extracted to /var/tmp/' + self.bundle_name + '/miniconda3')
             self.log('extracting env bundle took %s sec' % str(delta))
         except Exception as e:
             import flame
@@ -618,28 +620,49 @@ class flameTimewrapML(flameMenuApp):
         
         menu = {'actions': []}
         menu['name'] = self.menu_group_name
+
         menu_item = {}
-        menu_item['name'] = 'Create slowmotion with ML'
+        menu_item['name'] = 'Create Slowmotion with ML'
         menu_item['execute'] = self.slowmo
         menu_item['isEnabled'] = scope_clip
+        menu['actions'].append(menu_item)
+
+        menu_item = {}
+        menu_item['name'] = 'Version: ' + __version__
+        menu_item['execute'] = self.slowmo
+        menu_item['isEnabled'] = False
         menu['actions'].append(menu_item)
 
         return menu
 
     def slowmo(self, selection):
-        pprint (selection)
-        # slowmo_dialog()
+        result = self.slowmo_dialog()
+        if result:
+            import flame
+            for item in selection:
+                if isinstance(item, (flame.PyClip)):
+                    self.export_clip(item, result.get('folder'))
+                    cmd = """konsole -e bash -c 'eval "$(/opt/Autodesk/flame_2020.2/miniconda3/bin/conda shell.bash hook)"; conda activate; sleep 3'"""
+                    os.system(cmd)
 
     def slowmo_dialog(self, *args, **kwargs):
         from PySide2 import QtWidgets, QtCore
 
-        self.asset_name = ''
-        flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
-        self.asset_task_template =  flameMenuNewBatch_prefs.get('asset_task_template', {})
+        self.new_speed = 1
+        self.new_speed_list = {
+            1: '1/2',
+            2: '1/4',
+            3: '1/8',
+            4: '1/16' 
+        }
+
+        self.working_folder = '/var/tmp'
+        # flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
+        # self.asset_task_template =  flameMenuNewBatch_prefs.get('asset_task_template', {})
 
         window = QtWidgets.QDialog()
         window.setMinimumSize(280, 180)
-        window.setWindowTitle('Create Asset in Shotgun')
+        window.setWindowTitle('Create Slowmotion with ML')
         window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
         window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         window.setStyleSheet('background-color: #313131')
@@ -650,64 +673,66 @@ class flameTimewrapML(flameMenuApp):
         vbox = QtWidgets.QVBoxLayout()
         vbox.setAlignment(QtCore.Qt.AlignTop)
 
-        # Asset Task Template label
+        # New Speed hbox
+        new_speed_hbox = QtWidgets.QHBoxLayout()
+        new_speed_hbox.setAlignment(QtCore.Qt.AlignCenter)
 
-        lbl_TaskTemplate = QtWidgets.QLabel('Task Template', window)
-        lbl_TaskTemplate.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_TaskTemplate.setMinimumHeight(28)
-        lbl_TaskTemplate.setMaximumHeight(28)
-        lbl_TaskTemplate.setAlignment(QtCore.Qt.AlignCenter)
-        vbox.addWidget(lbl_TaskTemplate)
+        # New Speed label
 
-        # Shot Task Template Menu
+        lbl_NewSpeed = QtWidgets.QLabel('Slow Motion Speed', window)
+        lbl_NewSpeed.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_NewSpeed.setMinimumHeight(28)
+        lbl_NewSpeed.setMaximumHeight(28)
+        lbl_NewSpeed.setAlignment(QtCore.Qt.AlignCenter)
+        new_speed_hbox.addWidget(lbl_NewSpeed)
 
-        btn_AssetTaskTemplate = QtWidgets.QPushButton(window)
-        flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
-        asset_task_template = flameMenuNewBatch_prefs.get('asset_task_template', {})
-        code = asset_task_template.get('code', 'No code')
-        btn_AssetTaskTemplate.setText(code)
-        asset_task_templates = self.connector.sg.find('TaskTemplate', [['entity_type', 'is', 'Asset']], ['code'])
-        asset_task_templates_by_id = {x.get('id'):x for x in asset_task_templates}
-        asset_task_templates_by_code_id = {x.get('code') + '_' + str(x.get('id')):x for x in asset_task_templates}
-        def selectAssetTaskTemplate(template_id):
-            template = shot_task_templates_by_id.get(template_id, {})
-            code = template.get('code', 'no_code')
-            btn_AssetTaskTemplate.setText(code)
-            self.asset_task_template = template
-        btn_AssetTaskTemplate.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_AssetTaskTemplate.setMinimumSize(258, 28)
-        btn_AssetTaskTemplate.move(40, 102)
-        btn_AssetTaskTemplate.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+        lbl_NewSpeedSpacer = QtWidgets.QLabel('', window)
+        lbl_NewSpeedSpacer.setAlignment(QtCore.Qt.AlignCenter)
+        lbl_NewSpeedSpacer.setMinimumSize(28, 28)
+        new_speed_hbox.addWidget(lbl_NewSpeedSpacer)
+
+        # New Speed Selector
+        btn_NewSpeedSelector = QtWidgets.QPushButton(window)
+        btn_NewSpeedSelector.setText(self.new_speed_list.get(self.new_speed))
+        def selectNewSpeed(new_speed_id):
+            self.new_speed = new_speed_id
+            btn_NewSpeedSelector.setText(self.new_speed_list.get(self.new_speed))
+        btn_NewSpeedSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_NewSpeedSelector.setMinimumSize(80, 28)
+        # btn_NewSpeedSelector.move(40, 102)
+        btn_NewSpeedSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
                                     'QPushButton:pressed {font:italic; color: #d9d9d9}'
                                     'QPushButton::menu-indicator {image: none;}')
-        btn_AssetTaskTemplate_menu = QtWidgets.QMenu()
-        for code_id in sorted(asset_task_templates_by_code_id.keys()):
-            template = asset_task_templates_by_code_id.get(code_id, {})
-            code = template.get('code', 'no_code')
-            template_id = template.get('id')
-            action = btn_AssetTaskTemplate_menu.addAction(code)
-            action.triggered[()].connect(lambda template_id=template_id: selectAssetTaskTemplate(template_id))
-        btn_AssetTaskTemplate.setMenu(btn_AssetTaskTemplate_menu)
-        vbox.addWidget(btn_AssetTaskTemplate)
+        btn_NewSpeedSelector_menu = QtWidgets.QMenu()
 
-        # Shot Name Label
+        for new_speed_id in sorted(self.new_speed_list.keys()):
+            code = self.new_speed_list.get(new_speed_id, '1/2')
+            action = btn_NewSpeedSelector_menu.addAction(code)
+            action.triggered[()].connect(lambda new_speed_id=new_speed_id: selectNewSpeed(new_speed_id))
+        btn_NewSpeedSelector.setMenu(btn_NewSpeedSelector_menu)
+        new_speed_hbox.addWidget(btn_NewSpeedSelector)
 
-        lbl_AssettName = QtWidgets.QLabel('New Asset Name', window)
-        lbl_AssettName.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_AssettName.setMinimumHeight(28)
-        lbl_AssettName.setMaximumHeight(28)
-        lbl_AssettName.setAlignment(QtCore.Qt.AlignCenter)
-        vbox.addWidget(lbl_AssettName)
+        vbox.addLayout(new_speed_hbox)
 
-        # Shot Name Text Field
-        def txt_AssetName_textChanged():
-            self.asset_name = txt_AssetName.text()
-        txt_AssetName = QtWidgets.QLineEdit('', window)
-        txt_AssetName.setFocusPolicy(QtCore.Qt.ClickFocus)
-        txt_AssetName.setMinimumSize(280, 28)
-        txt_AssetName.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
-        txt_AssetName.textChanged.connect(txt_AssetName_textChanged)
-        vbox.addWidget(txt_AssetName)
+        # Work Folder Label
+
+        lbl_WorkFolder = QtWidgets.QLabel('Working folder', window)
+        lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_WorkFolder.setMinimumHeight(28)
+        lbl_WorkFolder.setMaximumHeight(28)
+        lbl_WorkFolder.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_WorkFolder)
+
+        # Work Folder Text Field
+        def txt_WorkFolder_textChanged():
+            self.working_folder = txt_WorkFolder.text()
+        txt_WorkFolder = QtWidgets.QLineEdit('', window)
+        txt_WorkFolder.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_WorkFolder.setMinimumSize(280, 28)
+        txt_WorkFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+        txt_WorkFolder.setText(self.working_folder)
+        txt_WorkFolder.textChanged.connect(txt_WorkFolder_textChanged)
+        vbox.addWidget(txt_WorkFolder)
 
         # Spacer Label
 
@@ -742,27 +767,63 @@ class flameTimewrapML(flameMenuApp):
 
         window.setLayout(vbox)
         if window.exec_():
-            if self.asset_name == '':
-                return {}
-            else:
-                data = {'project': {'type': 'Project','id': self.connector.sg_linked_project_id},
-                'code': self.asset_name,
-                'task_template': self.asset_task_template}
-                self.log('creating new asset...')
-                new_asset = self.connector.sg.create('Asset', data)
-                self.log('new asset:\n%s' % pformat(new_asset))
-                self.log('updating async cache for cuttent_tasks')
-                self.connector.cache_retrive_result('current_tasks', True)
-                self.log('creating new batch')
-                self.create_new_batch(new_asset)
-
-                for app in self.framework.apps:
-                    app.rescan()
-
-                return new_asset
+            return {
+                'speed': self.new_speed,
+                'folder': self.working_folder
+            }
         else:
             return {}
 
+    def export_clip(self, clip, folder):
+        import flame
+        import traceback
+
+        clip_name = clip.name.get_value()
+        export_dir = os.path.join(folder, clip_name)
+        if not os.path.isdir(export_dir):
+            self.log('creating folders: %s' % export_dir)
+            try:
+                os.makedirs(export_dir)
+            except Exception as e:
+                msg = 'flameTimewrarpML: %s' % e
+                dmsg = pformat(traceback.format_exc())
+                
+                def show_error_mbox():
+                    mbox = QtWidgets.QMessageBox()
+                    mbox.setWindowTitle('flameTimewrarpML')
+                    mbox.setText(msg)
+                    mbox.setDetailedText(dmsg)
+                    mbox.setStyleSheet('QLabel{min-width: 800px;}')
+                    mbox.exec_()
+            
+                flame.schedule_idle_event(show_error_mbox)
+                return False
+
+        class ExportHooks(object):
+            def preExport(self, info, userData, *args, **kwargs):
+                pass
+            def postExport(self, info, userData, *args, **kwargs):
+                pass
+            def preExportSequence(self, info, userData, *args, **kwargs):
+                pass
+            def postExportSequence(self, info, userData, *args, **kwargs):
+                pass
+            def preExportAsset(self, info, userData, *args, **kwargs):
+                pass
+            def postExportAsset(self, info, userData, *args, **kwargs):
+                del args, kwargs
+                pass
+            def exportOverwriteFile(self, path, *args, **kwargs):
+                del path, args, kwargs
+                return "overwrite"
+
+        exporter = self.flame.PyExporter()
+        exporter.foreground = True
+
+        export_preset_folder = self.flame.PyExporter.get_presets_dir(self.flame.PyExporter.PresetVisibility.values.get(2),
+                        self.flame.PyExporter.PresetType.values.get(0))
+        export_preset = os.path.join(export_preset_folder, 'OpenEXR', 'OpenEXR (16-bit fp PIZ).xml')
+        exporter.export(clip, export_preset, export_dir, hooks=ExportHooks())
 
 
 # --- FLAME STARTUP SEQUENCE ---
