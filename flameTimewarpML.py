@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.0.3'
+__version__ = 'v0.0.3.001'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -104,11 +104,15 @@ class flameAppFramework(object):
         self.hostname = socket.gethostname()
         
         if sys.platform == 'darwin':
-            self.prefs_folder = os.path.join(
-                os.path.expanduser('~'),
-                 'Library',
-                 'Caches',
-                 self.bundle_name)
+            from PySide2 import QtWidgets
+            msg = 'Sorry folks, this stuff is linux-only at the moment'
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText(msg)
+            mbox.setStyleSheet('QLabel{min-width: 800px;}')
+            mbox.exec_()
+            sys.exit()
+
         elif sys.platform.startswith('linux'):
             self.prefs_folder = os.path.join(
                 os.path.expanduser('~'),
@@ -140,10 +144,25 @@ class flameAppFramework(object):
         
         self.apps = []
 
-        # unpack bundle sequence
-        self.unpacking_thread = threading.Thread(target=self.unpack_bundle, args=())
-        self.unpacking_thread.daemon = True
-        self.unpacking_thread.start()
+        self.bundle_id = str(abs(hash(__version__)))
+        bundle_path = os.path.join(self.bundle_location, 'bundle')
+        if (os.path.isdir(bundle_path) and os.path.isfile(os.path.join(bundle_path, 'bundle_id'))):
+            self.log('checking existing bundle id %s' % os.path.join(bundle_path, 'bundle_id'))
+            with open(os.path.join(bundle_path, 'bundle_id'), 'r') as bundle_id_file:
+                if bundle_id_file.read() == self.bundle_id:
+                    self.log('env bundle already exists with id matching current version')
+                    bundle_id_file.close()
+                    return True
+                else:
+                    self.log('existing env bundle id does not match current one')
+
+        if self.show_unpack_message(bundle_path):
+            # unpack bundle sequence
+            self.unpacking_thread = threading.Thread(target=self.unpack_bundle, args=(bundle_path, ))
+            self.unpacking_thread.daemon = True
+            self.unpacking_thread.start()
+        else:
+            self.log('user cancelled bundle unpack')
 
     def log(self, message):
         if self.debug:
@@ -231,12 +250,11 @@ class flameAppFramework(object):
             
         return True
 
-    def unpack_bundle(self):
+    def unpack_bundle(self, bundle_path):
         start = time.time()
         script_file_name, ext = os.path.splitext(os.path.abspath(__file__))
         script_file_name += '.py'
         self.log('script file: %s' % script_file_name)
-        bundle_path = os.path.join(self.bundle_location, 'bundle')            
         script = None
 
         try:
@@ -250,20 +268,8 @@ class flameAppFramework(object):
         if not script:
             return False
             
-        bundle_id = str(hash(script))
-        self.log('bindle_id: %s lenght %s' % (bundle_id, len(script)))
-
-        if (os.path.isdir(bundle_path) and os.path.isfile(os.path.join(bundle_path, 'bundle_id'))):
-            self.log('checking existing bundle id %s' % os.path.join(bundle_path, 'bundle_id'))
-            with open(os.path.join(bundle_path, 'bundle_id'), 'r') as bundle_id_file:
-                if bundle_id_file.read() == bundle_id:
-                    self.log('env bundle already exists with id matching current version, no need to unpack again')
-                    bundle_id_file.close()
-                    del script
-                    return True
-                else:
-                    self.log('existing env bundle id does not match current one, replacing...')
-
+        self.log('bindle_id: %s lenght %s' % (self.bundle_id, len(script)))
+        
         if os.path.isdir(bundle_path):
             try:
                 cmd = 'rm -rf ' + os.path.abspath(bundle_path)
@@ -300,13 +306,6 @@ class flameAppFramework(object):
             self.show_exception(e)
             return False
 
-        try:
-            with open(os.path.join(bundle_path, 'bundle_id'), 'w+') as bundle_id_file:
-                bundle_id_file.write(bundle_id)
-        except Exception as e:
-            self.show_exception(e)
-            return False
-
         delta = time.time() - start
         self.log('bundle extracted to %s' % bundle_path)
         self.log('extracting bundle took %s sec' % str(delta))
@@ -317,33 +316,25 @@ class flameAppFramework(object):
         env_folder = os.path.join(self.bundle_location, 'miniconda3') 
         self.install_env(env_folder)
 
+        try:
+            with open(os.path.join(bundle_path, 'bundle_id'), 'w+') as bundle_id_file:
+                bundle_id_file.write(self.bundle_id)
+        except Exception as e:
+            self.show_exception(e)
+            return False
+
         return True
                     
     def install_env(self, env_folder):
-        env_backup_folder = env_folder + '_backup'
+        env_backup_folder = env_folder + '_previous'
         if os.path.isdir(env_folder):
-            from PySide2 import QtWidgets
-            mbox = QtWidgets.QMessageBox()
-            mbox.setWindowTitle('flameTimewrarpML')
-            mbox.setText('Miniconda installation already exists. Replace?')
-            dmsg = 'There is an existing Miniconda installation at %s that might contain your custom virtual environments.' % env_folder
-            dmsg += 'Previous installation folder will be copied into %s' % env_backup_folder
-            mbox.setDetailedText(dmsg)
-            mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
-            mbox.setStyleSheet('QLabel{min-width: 400px;}')
-            btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
-            btn_Continue.setText('Continue')
-            mbox.exec_()
-            if mbox.clickedButton() == mbox.button(QtWidgets.QMessageBox.Cancel):
+            try:
+                cmd = 'mv ' + env_folder + ' ' + env_backup_folder
+                self.log('executing %s' % cmd)
+                os.system(cmd)
+            except Exception as e:
+                self.show_exception(e)
                 return False
-            else:
-                try:
-                    cmd = 'mv ' + env_folder + ' ' + env_backup_folder
-                    self.log('executing %s' % cmd)
-                    os.system(cmd)
-                except Exception as e:
-                    self.show_exception(e)
-                    return False
 
         start = time.time()
         self.log('installing Miniconda into %s' % env_folder)
@@ -353,7 +344,6 @@ class flameAppFramework(object):
         os.system(cmd)
         delta = time.time() - start
         self.log('installing Miniconda took %s sec' % str(delta))
-
 
     def show_exception(self, e):
         from PySide2 import QtWidgets
@@ -380,6 +370,29 @@ class flameAppFramework(object):
         flame.schedule_idle_event(show_error_mbox)
         return True
 
+    def show_unpack_message(self, bundle_path):
+        from PySide2 import QtWidgets
+
+        msg = 'flameTimeWarpML is going to unpack its bundle\nand run additional scrips in background'
+        dmsg = 'To be able to run flameTimeWarpML needs python environment that is newer then the one provided with Flame '
+        dmsg += 'as well as some additional ML and computer-vision dependancies like PyTorch and OpenCV should be avaliable. '
+        dmsg += 'flameTimeWarpML is going to unpack its bundle into "%s" ' % bundle_path
+        dmsg += 'and then from there create a separate Miniconda3 installation and within this separate '
+        dmsg += 'virtual python environment it is going to install dependencies needed'
+
+        mbox = QtWidgets.QMessageBox()
+        mbox.setWindowTitle('flameTimewrarpML')
+        mbox.setText(msg)
+        mbox.setDetailedText(dmsg)
+        mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+        mbox.setStyleSheet('QLabel{min-width: 400px;}')
+        btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+        btn_Continue.setText('Continue')
+        mbox.exec_()
+        if mbox.clickedButton() == mbox.button(QtWidgets.QMessageBox.Cancel):
+            return False
+        else:
+            return True
 
 class flameMenuApp(object):
     def __init__(self, framework):
