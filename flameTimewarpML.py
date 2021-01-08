@@ -13,11 +13,10 @@ import atexit
 from pprint import pprint
 from pprint import pformat
 
-menu_group_name = 'flameTimewarpML'
-bundle_folder = '/var/tmp'
+menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.0.0.003'
+__version__ = 'v0.0.1'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -84,7 +83,7 @@ class flameAppFramework(object):
     def __init__(self):
         self.name = self.__class__.__name__
         self.bundle_name = 'flameTimewarpML'
-        self.bundle_path = os.path.join(bundle_folder, self.bundle_name)
+
         # self.prefs scope is limited to flame project and user
         self.prefs = {}
         self.prefs_user = {}
@@ -126,13 +125,19 @@ class flameAppFramework(object):
 
         # preferences defaults
 
-        # if not self.prefs_global.get('menu_auto_refresh'):
+        if not self.prefs_global.get('bundle_location'):
+            self.bundle_location = os.path.join(
+                os.path.expanduser('~'),
+                 self.bundle_name)
+        else:
+            self.bundle_location = self.prefs_global.get('bundle_location')
+
         #    self.prefs_global['menu_auto_refresh'] = {
         #        'media_panel': True,
         #        'batch': True,
         #        'main_menu': True
         #    }
-
+        
         self.apps = []
 
         # unpack bundle sequence
@@ -230,46 +235,55 @@ class flameAppFramework(object):
         from PySide2 import QtWidgets
         import traceback
 
-        self.log('script file: %s' % __file__)
         start = time.time()
-        with open(__file__, 'r') as scriptfile:
-            script = scriptfile.read()
-            bundle_id = str(hash(script))
-            if (os.path.isdir(self.bundle_path) and os.path.isfile(os.path.join(self.bundle_path, 'bundle_id'))):
-                self.log('checking existing env bundle...')
-                with open(os.path.join(self.bundle_path, 'bundle_id'), 'r') as bundle_id_file:
-                    if bundle_id_file.read() == bundle_id:
-                        self.log('env bundle already exists with id matching current version, no need to unpack again')
-                        bundle_id_file.close()
-                        return True
-                    else:
-                        self.log('existing env bundle id does not match current one, replacing...')
+        script_file_name, ext = os.path.splitext(os.path.abspath(__file__))
+        script_file_name += '.py'
+        self.log('script file: %s' % script_file_name)
+        bundle_path = os.path.join(self.bundle_location, 'bundle')            
+        script = None
 
-            if os.path.isdir(self.bundle_path):
-                try:
-                    cmd = 'rm -rf ' + os.path.abspath(self.bundle_path)
-                    self.log('cleaning up old bundle folder')
-                    self.log('executing: %s' % cmd)
-                    os.system(cmd)
-                except Exception as e:
-                    import flame
-                    msg = 'flameTimewrarpML: %s' % e
-                    dmsg = pformat(traceback.format_exc())
-                    
-                    def show_error_mbox():
-                        mbox = QtWidgets.QMessageBox()
-                        mbox.setWindowTitle('flameTimewrarpML')
-                        mbox.setText(msg)
-                        mbox.setDetailedText(dmsg)
-                        mbox.setStyleSheet('QLabel{min-width: 800px;}')
-                        mbox.exec_()
-                
-                    flame.schedule_idle_event(show_error_mbox)
-                    return False
+        try:
+            with open(script_file_name, 'r') as scriptfile:
+                script = scriptfile.read()
+                scriptfile.close()
+        except Exception as e:
+            import flame
+            msg = 'flameTimewrarpML: %s' % e
+            dmsg = pformat(traceback.format_exc())
+            
+            def show_error_mbox():
+                mbox = QtWidgets.QMessageBox()
+                mbox.setWindowTitle('flameTimewrarpML')
+                mbox.setText(msg)
+                mbox.setDetailedText(dmsg)
+                mbox.setStyleSheet('QLabel{min-width: 800px;}')
+                mbox.exec_()
+        
+            flame.schedule_idle_event(show_error_mbox)
+            return False
+        
+        if not script:
+            return False
+            
+        bundle_id = str(hash(script))
+        self.log('bindle_id: %s lenght %s' % (bundle_id, len(script)))
 
+        if (os.path.isdir(bundle_path) and os.path.isfile(os.path.join(bundle_path, 'bundle_id'))):
+            self.log('checking existing bundle id %s' % os.path.join(bundle_path, 'bundle_id'))
+            with open(os.path.join(bundle_path, 'bundle_id'), 'r') as bundle_id_file:
+                if bundle_id_file.read() == bundle_id:
+                    self.log('env bundle already exists with id matching current version, no need to unpack again')
+                    bundle_id_file.close()
+                    return True
+                else:
+                    self.log('existing env bundle id does not match current one, replacing...')
+
+        if os.path.isdir(bundle_path):
             try:
-                self.log('creating new bundle folder: %s' % self.bundle_path)
-                os.makedirs(os.path.join(self.bundle_path, 'bin'))
+                cmd = 'rm -rf ' + os.path.abspath(bundle_path)
+                self.log('cleaning up old bundle folder')
+                self.log('executing: %s' % cmd)
+                os.system(cmd)
             except Exception as e:
                 import flame
                 msg = 'flameTimewrarpML: %s' % e
@@ -286,96 +300,469 @@ class flameAppFramework(object):
                 flame.schedule_idle_event(show_error_mbox)
                 return False
 
-            # flame system does not have pbzip2 by default
-            # we need to unpack it from our payload
+        try:
+            self.log('creating new bundle folder: %s' % bundle_path)
+            os.makedirs(bundle_path)
+        except Exception as e:
+            import flame
+            msg = 'flameTimewrarpML: %s' % e
+            dmsg = pformat(traceback.format_exc())
+            
+            def show_error_mbox():
+                mbox = QtWidgets.QMessageBox()
+                mbox.setWindowTitle('flameTimewrarpML')
+                mbox.setText(msg)
+                mbox.setDetailedText(dmsg)
+                mbox.setStyleSheet('QLabel{min-width: 800px;}')
+                mbox.exec_()
+        
+            flame.schedule_idle_event(show_error_mbox)
+            return False
 
-            start_position = script.rfind('# bundle payload starts here') + 33
-            payload = script[start_position:-4]
-            payload_dest = os.path.join(self.bundle_path, 'bin', 'pbzip2')
+        start_position = script.rfind('# bundle payload starts here') + 33
+        payload = script[start_position:-4]
+        payload_dest = os.path.join(self.bundle_location, 'bundle.tar.bz2')
+        
+        try:
+            import base64
             self.log('unpacking payload: %s' % payload_dest)
-            try:
-                import base64
-                with open(os.path.join(self.bundle_path, 'bin', 'pbzip2'), 'wb') as payload_file:
-                    payload_file.write(base64.b64decode(payload))
-                    payload_file.close()
-                cmd = 'chmod +x ' + payload_dest
-                os.system(cmd)
-            except Exception as e:
-                import flame
-                msg = 'flameTimewrarpML: %s' % e
-                dmsg = pformat(traceback.format_exc())
-                
-                def show_error_mbox():
-                    mbox = QtWidgets.QMessageBox()
-                    mbox.setWindowTitle('flameTimewrarpML')
-                    mbox.setText(msg)
-                    mbox.setDetailedText(dmsg)
-                    mbox.setStyleSheet('QLabel{min-width: 800px;}')
-                    mbox.exec_()
+            with open(payload_dest, 'wb') as payload_file:
+                payload_file.write(base64.b64decode(payload))
+                payload_file.close()
+            cmd = 'tar xjf ' + payload_dest + ' -C ' + self.bundle_location + '/'
+            self.log('executing: %s' % cmd)
+            os.system(cmd)
+            self.log('cleaning up %s' % payload_dest)
+            os.remove(payload_dest)
+        except Exception as e:
+            import flame
+            msg = 'flameTimewrarpML: %s' % e
+            dmsg = pformat(traceback.format_exc())
             
-                flame.schedule_idle_event(show_error_mbox)
-                return False
+            def show_error_mbox():
+                mbox = QtWidgets.QMessageBox()
+                mbox.setWindowTitle('flameTimewrarpML')
+                mbox.setText(msg)
+                mbox.setDetailedText(dmsg)
+                mbox.setStyleSheet('QLabel{min-width: 800px;}')
+                mbox.exec_()
+        
+            flame.schedule_idle_event(show_error_mbox)
+            return False
 
-            env_bundle_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.bundle_name + 'env.bundle')
+        try:
+            with open(os.path.join(bundle_path, 'bundle_id'), 'w+') as bundle_id_file:
+                bundle_id_file.write(bundle_id)
+        except Exception as e:
+            import flame
+            msg = 'flameTimewrarpML: %s' % e
+            dmsg = pformat(traceback.format_exc())
+            
+            def show_error_mbox():
+                mbox = QtWidgets.QMessageBox()
+                mbox.setWindowTitle('flameTimewrarpML')
+                mbox.setText(msg)
+                mbox.setDetailedText(dmsg)
+                mbox.setStyleSheet('QLabel{min-width: 800px;}')
+                mbox.exec_()
+    
+            flame.schedule_idle_event(show_error_mbox)
+            return False
 
-            if not os.path.isfile(env_bundle_file):
-                import flame
-                msg = 'flameTimewrarpML: Can not find env bundle %s' % env_bundle_file
-                dmsg = 'Please put flameTimewrarpMLenv.bundle next to the actual python script\n'
-                dmsg += 'It contains prebuild python and cuda environment needed to run ML Timewarp'
-                
-                def show_error_mbox():
-                    mbox = QtWidgets.QMessageBox()
-                    mbox.setWindowTitle('flameTimewrarpML')
-                    mbox.setText(msg)
-                    mbox.setDetailedText(dmsg)
-                    mbox.setStyleSheet('QLabel{min-width: 800px;}')
-                    mbox.exec_()
-                
-                flame.schedule_idle_event(show_error_mbox)
-                return False
+        delta = time.time() - start
+        self.log('bundle extracted to %s' % bundle_path)
+        self.log('extracting bundle took %s sec' % str(delta))
 
+        env_bundle_file = os.path.join(os.path.dirname(__file__), 'flameTimewarpMLenv.tar.bz2')
+        if os.path.isfile(env_bundle_file):
+            self.unpack_env(env_bundle_file)
+            os.remove(env_bundle_file)
+
+        return True
+            
+    def unpack_env(self, env_bundle_file):
+        from PySide2 import QtWidgets
+        import traceback
+
+        start = time.time()
+        if not os.path.isfile(env_bundle_file):
+            import flame
+            msg = 'flameTimewrarpML: Can not find env bundle %s' % env_bundle_file
+            dmsg = 'Please put flameTimewrarpMLenv.bundle next to the actual python script\n'
+            dmsg += 'It contains prebuild python and cuda environment needed to run ML Timewarp'
+            
+            def show_error_mbox():
+                mbox = QtWidgets.QMessageBox()
+                mbox.setWindowTitle('flameTimewrarpML')
+                mbox.setText(msg)
+                mbox.setDetailedText(dmsg)
+                mbox.setStyleSheet('QLabel{min-width: 800px;}')
+                mbox.exec_()
+            
+            flame.schedule_idle_event(show_error_mbox)
+            return False
+
+        try:
+            self.log('extracting new env bundle...')
+            cmd = self.bundle_location + '/bundle/bin/pbzip2 -dc ' + env_bundle_file + ' | tar xf - -C ' + self.bundle_location
+            self.log('executing: %s' % cmd)
+            os.system(cmd)
+            delta = time.time() - start
+            self.log('env bundle extracted to %s' % self.bundle_location + 'miniconda3')
+            self.log('extracting env bundle took %s sec' % str(delta))
+        except Exception as e:
+            import flame
+            msg = 'flameTimewrarpML: %s' % e
+            dmsg = pformat(traceback.format_exc())
+            
+            def show_error_mbox():
+                mbox = QtWidgets.QMessageBox()
+                mbox.setWindowTitle('flameTimewrarpML')
+                mbox.setText(msg)
+                mbox.setDetailedText(dmsg)
+                mbox.setStyleSheet('QLabel{min-width: 800px;}')
+                mbox.exec_()
+        
+            flame.schedule_idle_event(show_error_mbox)
+            return False
+        
+
+class flameMenuApp(object):
+    def __init__(self, framework):
+        self.name = self.__class__.__name__
+        self.framework = framework
+        self.menu_group_name = menu_group_name
+        self.debug = DEBUG
+        self.dynamic_menu_data = {}
+
+        # flame module is only avaliable when a 
+        # flame project is loaded and initialized
+        self.flame = None
+        try:
+            import flame
+            self.flame = flame
+        except:
+            self.flame = None
+        
+        self.prefs = self.framework.prefs_dict(self.framework.prefs, self.name)
+        self.prefs_user = self.framework.prefs_dict(self.framework.prefs_user, self.name)
+        self.prefs_global = self.framework.prefs_dict(self.framework.prefs_global, self.name)
+
+        from PySide2 import QtWidgets
+        self.mbox = QtWidgets.QMessageBox()
+
+    @property
+    def flame_extension_map(self):
+        return {
+            'Alias': 'als',
+            'Cineon': 'cin',
+            'Dpx': 'dpx',
+            'Jpeg': 'jpg',
+            'Maya': 'iff',
+            'OpenEXR': 'exr',
+            'Pict': 'pict',
+            'Pixar': 'picio',
+            'Sgi': 'sgi',
+            'SoftImage': 'pic',
+            'Targa': 'tga',
+            'Tiff': 'tif',
+            'Wavefront': 'rla',
+            'QuickTime': 'mov',
+            'MXF': 'mxf',
+            'SonyMXF': 'mxf'
+        }
+        
+    def __getattr__(self, name):
+        def method(*args, **kwargs):
+            print ('calling %s' % name)
+        return method
+
+    def log(self, message):
+        self.framework.log('[' + self.name + '] ' + message)
+
+    def rescan(self, *args, **kwargs):
+        if not self.flame:
             try:
-                self.log('extracting new env bundle...') 
-                cmd = payload_dest + ' -dvc ' + env_bundle_file + ' | tar xf - -C ' + self.bundle_path + ' --strip-components=1'
-                os.system(cmd)
-                delta = time.time() - start
-                self.log('env bundle extracted to %s' % self.bundle_path)
-                self.log('finished extracting env bundle, it took %s sec' % str(delta))
-            except Exception as e:
                 import flame
-                msg = 'flameTimewrarpML: %s' % e
-                dmsg = pformat(traceback.format_exc())
-                
-                def show_error_mbox():
-                    mbox = QtWidgets.QMessageBox()
-                    mbox.setWindowTitle('flameTimewrarpML')
-                    mbox.setText(msg)
-                    mbox.setDetailedText(dmsg)
-                    mbox.setStyleSheet('QLabel{min-width: 800px;}')
-                    mbox.exec_()
-            
-                flame.schedule_idle_event(show_error_mbox)
-                return False
-            
-            try:
-                with open(os.path.join(self.bundle_path, 'bundle_id'), 'w+') as bundle_id_file:
-                    bundle_id_file.write(bundle_id)
-            except Exception as e:
-                import flame
-                msg = 'flameTimewrarpML: %s' % e
-                dmsg = pformat(traceback.format_exc())
-                
-                def show_error_mbox():
-                    mbox = QtWidgets.QMessageBox()
-                    mbox.setWindowTitle('flameTimewrarpML')
-                    mbox.setText(msg)
-                    mbox.setDetailedText(dmsg)
-                    mbox.setStyleSheet('QLabel{min-width: 800px;}')
-                    mbox.exec_()
-            
-                flame.schedule_idle_event(show_error_mbox)
-                return False            
+                self.flame = flame
+            except:
+                self.flame = None
+
+        if self.flame:
+            self.flame.execute_shortcut('Rescan Python Hooks')
+            self.log('Rescan Python Hooks')
+
+    def get_export_preset_fields(self, preset):
+        
+        self.log('Flame export preset parser')
+
+        # parses Flame Export preset and returns a dict of a parsed values
+        # of False on error.
+        # Example:
+        # {'type': 'image',
+        #  'fileType': 'OpenEXR',
+        #  'fileExt': 'exr',
+        #  'framePadding': 8
+        #  'startFrame': 1001
+        #  'useTimecode': 0
+        # }
+        
+        from xml.dom import minidom
+
+        preset_fields = {}
+
+        # Flame type to file extension map
+
+        flame_extension_map = {
+            'Alias': 'als',
+            'Cineon': 'cin',
+            'Dpx': 'dpx',
+            'Jpeg': 'jpg',
+            'Maya': 'iff',
+            'OpenEXR': 'exr',
+            'Pict': 'pict',
+            'Pixar': 'picio',
+            'Sgi': 'sgi',
+            'SoftImage': 'pic',
+            'Targa': 'tga',
+            'Tiff': 'tif',
+            'Wavefront': 'rla',
+            'QuickTime': 'mov',
+            'MXF': 'mxf',
+            'SonyMXF': 'mxf'
+        }
+
+        preset_path = ''
+
+        if os.path.isfile(preset.get('PresetFile', '')):
+            preset_path = preset.get('PresetFile')
+        else:
+            path_prefix = self.flame.PyExporter.get_presets_dir(
+                self.flame.PyExporter.PresetVisibility.values.get(preset.get('PresetVisibility', 2)),
+                self.flame.PyExporter.PresetType.values.get(preset.get('PresetType', 0))
+            )
+            preset_file = preset.get('PresetFile')
+            if preset_file.startswith(os.path.sep):
+                preset_file = preset_file[1:]
+            preset_path = os.path.join(path_prefix, preset_file)
+
+        self.log('parsing Flame export preset: %s' % preset_path)
+        
+        preset_xml_doc = None
+        try:
+            preset_xml_doc = minidom.parse(preset_path)
+        except Exception as e:
+            message = 'flameMenuSG: Unable parse xml export preset file:\n%s' % e
+            self.mbox.setText(message)
+            self.mbox.exec_()
+            return False
+
+        preset_fields['path'] = preset_path
+
+        preset_type = preset_xml_doc.getElementsByTagName('type')
+        if len(preset_type) > 0:
+            preset_fields['type'] = preset_type[0].firstChild.data
+
+        video = preset_xml_doc.getElementsByTagName('video')
+        if len(video) < 1:
+            message = 'flameMenuSG: XML parser error:\nUnable to find xml video tag in:\n%s' % preset_path
+            self.mbox.setText(message)
+            self.mbox.exec_()
+            return False
+        
+        filetype = video[0].getElementsByTagName('fileType')
+        if len(filetype) < 1:
+            message = 'flameMenuSG: XML parser error:\nUnable to find video::fileType tag in:\n%s' % preset_path
+            self.mbox.setText(message)
+            self.mbox.exec_()
+            return False
+
+        preset_fields['fileType'] = filetype[0].firstChild.data
+        if preset_fields.get('fileType', '') not in flame_extension_map:
+            message = 'flameMenuSG:\nUnable to find extension corresponding to fileType:\n%s' % preset_fields.get('fileType', '')
+            self.mbox.setText(message)
+            self.mbox.exec_()
+            return False
+        
+        preset_fields['fileExt'] = flame_extension_map.get(preset_fields.get('fileType'))
+
+        name = preset_xml_doc.getElementsByTagName('name')
+        if len(name) > 0:
+            framePadding = name[0].getElementsByTagName('framePadding')
+            startFrame = name[0].getElementsByTagName('startFrame')
+            useTimecode = name[0].getElementsByTagName('useTimecode')
+            if len(framePadding) > 0:
+                preset_fields['framePadding'] = int(framePadding[0].firstChild.data)
+            if len(startFrame) > 0:
+                preset_fields['startFrame'] = int(startFrame[0].firstChild.data)
+            if len(useTimecode) > 0:
+                preset_fields['useTimecode'] = useTimecode[0].firstChild.data
+
+        return preset_fields
+
+
+class flameTimewrapML(flameMenuApp):
+    def __init__(self, framework):
+        flameMenuApp.__init__(self, framework)
+
+    def build_menu(self):
+        def scope_clip(selection):
+            import flame
+            for item in selection:
+                if isinstance(item, (flame.PyClip)):
+                    return True
+            return False
+
+        if not self.flame:
+            return []
+        
+        menu = {'actions': []}
+        menu['name'] = self.menu_group_name
+        menu_item = {}
+        menu_item['name'] = 'Create slowmotion with ML'
+        menu_item['execute'] = self.slowmo
+        menu_item['isEnabled'] = scope_clip
+        menu['actions'].append(menu_item)
+
+        return menu
+
+    def slowmo(self, selection):
+        pprint (selection)
+        # slowmo_dialog()
+
+    def slowmo_dialog(self, *args, **kwargs):
+        from PySide2 import QtWidgets, QtCore
+
+        self.asset_name = ''
+        flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
+        self.asset_task_template =  flameMenuNewBatch_prefs.get('asset_task_template', {})
+
+        window = QtWidgets.QDialog()
+        window.setMinimumSize(280, 180)
+        window.setWindowTitle('Create Asset in Shotgun')
+        window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
+        window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        window.setStyleSheet('background-color: #313131')
+
+        screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
+
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.setAlignment(QtCore.Qt.AlignTop)
+
+        # Asset Task Template label
+
+        lbl_TaskTemplate = QtWidgets.QLabel('Task Template', window)
+        lbl_TaskTemplate.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_TaskTemplate.setMinimumHeight(28)
+        lbl_TaskTemplate.setMaximumHeight(28)
+        lbl_TaskTemplate.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_TaskTemplate)
+
+        # Shot Task Template Menu
+
+        btn_AssetTaskTemplate = QtWidgets.QPushButton(window)
+        flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
+        asset_task_template = flameMenuNewBatch_prefs.get('asset_task_template', {})
+        code = asset_task_template.get('code', 'No code')
+        btn_AssetTaskTemplate.setText(code)
+        asset_task_templates = self.connector.sg.find('TaskTemplate', [['entity_type', 'is', 'Asset']], ['code'])
+        asset_task_templates_by_id = {x.get('id'):x for x in asset_task_templates}
+        asset_task_templates_by_code_id = {x.get('code') + '_' + str(x.get('id')):x for x in asset_task_templates}
+        def selectAssetTaskTemplate(template_id):
+            template = shot_task_templates_by_id.get(template_id, {})
+            code = template.get('code', 'no_code')
+            btn_AssetTaskTemplate.setText(code)
+            self.asset_task_template = template
+        btn_AssetTaskTemplate.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_AssetTaskTemplate.setMinimumSize(258, 28)
+        btn_AssetTaskTemplate.move(40, 102)
+        btn_AssetTaskTemplate.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_AssetTaskTemplate_menu = QtWidgets.QMenu()
+        for code_id in sorted(asset_task_templates_by_code_id.keys()):
+            template = asset_task_templates_by_code_id.get(code_id, {})
+            code = template.get('code', 'no_code')
+            template_id = template.get('id')
+            action = btn_AssetTaskTemplate_menu.addAction(code)
+            action.triggered[()].connect(lambda template_id=template_id: selectAssetTaskTemplate(template_id))
+        btn_AssetTaskTemplate.setMenu(btn_AssetTaskTemplate_menu)
+        vbox.addWidget(btn_AssetTaskTemplate)
+
+        # Shot Name Label
+
+        lbl_AssettName = QtWidgets.QLabel('New Asset Name', window)
+        lbl_AssettName.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_AssettName.setMinimumHeight(28)
+        lbl_AssettName.setMaximumHeight(28)
+        lbl_AssettName.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_AssettName)
+
+        # Shot Name Text Field
+        def txt_AssetName_textChanged():
+            self.asset_name = txt_AssetName.text()
+        txt_AssetName = QtWidgets.QLineEdit('', window)
+        txt_AssetName.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_AssetName.setMinimumSize(280, 28)
+        txt_AssetName.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+        txt_AssetName.textChanged.connect(txt_AssetName_textChanged)
+        vbox.addWidget(txt_AssetName)
+
+        # Spacer Label
+
+        lbl_Spacer = QtWidgets.QLabel('', window)
+        lbl_Spacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
+        lbl_Spacer.setMinimumHeight(4)
+        lbl_Spacer.setMaximumHeight(4)
+        lbl_Spacer.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_Spacer)
+
+        # Create and Cancel Buttons
+        hbox_Create = QtWidgets.QHBoxLayout()
+
+        select_btn = QtWidgets.QPushButton('Create', window)
+        select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        select_btn.setMinimumSize(128, 28)
+        select_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        select_btn.clicked.connect(window.accept)
+
+        cancel_btn = QtWidgets.QPushButton('Cancel', window)
+        cancel_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        cancel_btn.setMinimumSize(128, 28)
+        cancel_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        cancel_btn.clicked.connect(window.reject)
+
+        hbox_Create.addWidget(cancel_btn)
+        hbox_Create.addWidget(select_btn)
+
+        vbox.addLayout(hbox_Create)
+
+        window.setLayout(vbox)
+        if window.exec_():
+            if self.asset_name == '':
+                return {}
+            else:
+                data = {'project': {'type': 'Project','id': self.connector.sg_linked_project_id},
+                'code': self.asset_name,
+                'task_template': self.asset_task_template}
+                self.log('creating new asset...')
+                new_asset = self.connector.sg.create('Asset', data)
+                self.log('new asset:\n%s' % pformat(new_asset))
+                self.log('updating async cache for cuttent_tasks')
+                self.connector.cache_retrive_result('current_tasks', True)
+                self.log('creating new batch')
+                self.create_new_batch(new_asset)
+
+                for app in self.framework.apps:
+                    app.rescan()
+
+                return new_asset
+        else:
+            return {}
+
 
 
 # --- FLAME STARTUP SEQUENCE ---
@@ -431,7 +818,7 @@ def cleanup(apps, app_framework):
 atexit.register(cleanup, apps, app_framework)
 
 def load_apps(apps, app_framework):
-    # apps.append(flameMenuPublisher(app_framework))
+    apps.append(flameTimewrapML(app_framework))
     app_framework.apps = apps
     if DEBUG:
         print ('[DEBUG %s] loaded:\n%s' % (app_framework.bundle_name, pformat(apps)))
@@ -455,7 +842,26 @@ try:
 except:
     pass
 
+def get_media_panel_custom_ui_actions():
+
+    menu = []
+    selection = []
+
+    try:
+        import flame
+        selection = flame.media_panel.selected_entries
+    except:
+        pass
+
+    for app in apps:
+        if app.__class__.__name__ == 'flameTimewrapML':
+            app_menu = []
+            app_menu = app.build_menu()
+            if app_menu:
+                menu.append(app_menu)
+    return menu
+
 # bundle payload starts here
 '''
-REPLACEME
+BUNDLE_PAYLOAD
 '''

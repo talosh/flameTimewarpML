@@ -2,5 +2,7 @@
 miniconda3
 settings.json
 *.pyc
+*.exr
+*.png
 flameTimewarpML.package
-flameTimewarpML.bundle.tar.bz2
+flameTimewarpMLenv.tar.bz2
