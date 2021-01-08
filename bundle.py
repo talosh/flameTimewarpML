@@ -18,10 +18,13 @@ if not os.path.isdir(bundle_folder):
     sys.exit()
     
 print ('creating %s' % bundle_folder + '.tar\n---')
-cmd = 'tar cvf ' + bundle_folder + '.tar ' + bundle_folder
+cmd = 'tar cvf ' + bundle_folder + '.tar ' + bundle_folder + '/'
+print ('executing: %s\n---' % cmd)
 os.system(cmd)
 # cmd = bundle_folder + '/bin/pbzip2 -v ' + bundle_folder + '.tar'
 # os.system(cmd)
+
+print ('---\nadding data to python script %s' % python_source)
 
 f = open(bundle_folder + '.tar', 'rb')
 bunle_data = f.read()
