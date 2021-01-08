@@ -17,13 +17,13 @@ if not os.path.isdir(bundle_folder):
     print('no folder named %s' % bundle_folder)
     sys.exit()
     
-print ('creating %s' % bundle_folder + '.tar.bz2\n---')
+print ('creating %s' % bundle_folder + '.tar\n---')
 cmd = 'tar cvf ' + bundle_folder + '.tar ' + bundle_folder
 os.system(cmd)
-cmd = bundle_folder + '/bin/pbzip2 -v ' + bundle_folder + '.tar'
-os.system(cmd)
+# cmd = bundle_folder + '/bin/pbzip2 -v ' + bundle_folder + '.tar'
+# os.system(cmd)
 
-f = open(bundle_folder + '.tar.bz2', 'rb')
+f = open(bundle_folder + '.tar', 'rb')
 bunle_data = f.read()
 f.close()
 
@@ -43,5 +43,5 @@ with open('flameTimewarpML.package/flameTimewarpML.py', 'w') as tempfile:
 # cmd = 'mv tmp.py /opt/Autodesk/shared/python/' + plugin_file_name
 # os.system(cmd)
 
-print ('---\nremoving %s' % bundle_folder + '.tar.bz2')
-os.remove(bundle_folder + '.tar.bz2')
+print ('---\nremoving %s' % bundle_folder + '.tar')
+os.remove(bundle_folder + '.tar')
