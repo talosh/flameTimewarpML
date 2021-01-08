@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.0.3.001'
+__version__ = 'v0.0.4.002'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -152,7 +152,7 @@ class flameAppFramework(object):
                 if bundle_id_file.read() == self.bundle_id:
                     self.log('env bundle already exists with id matching current version')
                     bundle_id_file.close()
-                    return True
+                    return
                 else:
                     self.log('existing env bundle id does not match current one')
 
@@ -268,7 +268,7 @@ class flameAppFramework(object):
         if not script:
             return False
             
-        self.log('bindle_id: %s lenght %s' % (self.bundle_id, len(script)))
+        self.log('bundle_id: %s lenght %s' % (self.bundle_id, len(script)))
         
         if os.path.isdir(bundle_path):
             try:
@@ -315,6 +315,7 @@ class flameAppFramework(object):
 
         env_folder = os.path.join(self.bundle_location, 'miniconda3') 
         self.install_env(env_folder)
+        self.install_env_packages(env_folder)
 
         try:
             with open(os.path.join(bundle_path, 'bundle_id'), 'w+') as bundle_id_file:
@@ -322,6 +323,8 @@ class flameAppFramework(object):
         except Exception as e:
             self.show_exception(e)
             return False
+        
+        self.log('flameTimewarpML has finished installing its packages')
 
         return True
                     
@@ -339,11 +342,27 @@ class flameAppFramework(object):
         start = time.time()
         self.log('installing Miniconda into %s' % env_folder)
         installer_file = os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'Miniconda3-Linux-x86_64.sh')
-        cmd = '/bin/sh ' + installer_file + ' -b -p ' + env_folder + ' 2>&1 | tee miniconda_install.log'
+        cmd = '/bin/sh ' + installer_file + ' -b -p ' + env_folder
+        cmd += ' 2>&1 | tee ' + os.path.join(self.bundle_location, 'miniconda_install.log')
         self.log('executing: %s' % cmd)
         os.system(cmd)
         delta = time.time() - start
         self.log('installing Miniconda took %s sec' % str(delta))
+
+    def install_env_packages(self, env_folder):
+        start = time.time()
+        self.log('installing Miniconda packages')
+        cmd = """/usr/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+        cmd += 'pip3 install -r ' + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') + ' --no-index --find-links '
+        cmd += os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'packages')
+        cmd += ' 2>&1 | tee '
+        cmd += os.path.join(self.bundle_location, 'miniconda_packages_install.log')
+        cmd += "'"
+
+        self.log('Executing command: %s' % cmd)
+        os.system(cmd)
+        delta = time.time() - start
+        self.log('installing Miniconda packages took %s sec' % str(delta))
 
     def show_exception(self, e):
         from PySide2 import QtWidgets
@@ -373,7 +392,7 @@ class flameAppFramework(object):
     def show_unpack_message(self, bundle_path):
         from PySide2 import QtWidgets
 
-        msg = 'flameTimeWarpML is going to unpack its bundle\nand run additional scrips in background'
+        msg = 'flameTimeWarpML is going to unpack its bundle\nin background and run additional package scrips.\nThis may take a little while, check Flame console'
         dmsg = 'To be able to run flameTimeWarpML needs python environment that is newer then the one provided with Flame '
         dmsg += 'as well as some additional ML and computer-vision dependancies like PyTorch and OpenCV should be avaliable. '
         dmsg += 'flameTimeWarpML is going to unpack its bundle into "%s" ' % bundle_path
