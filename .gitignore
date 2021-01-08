@@ -1,6 +1,6 @@
 .DS_Store
 miniconda3
-miniconda.package/*
+bundle/miniconda.package/*
 settings.json
 *.pyc
 *.exr
