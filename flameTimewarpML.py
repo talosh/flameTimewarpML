@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.0.2'
+__version__ = 'v0.0.3'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -232,9 +232,6 @@ class flameAppFramework(object):
         return True
 
     def unpack_bundle(self):
-        from PySide2 import QtWidgets
-        import traceback
-
         start = time.time()
         script_file_name, ext = os.path.splitext(os.path.abspath(__file__))
         script_file_name += '.py'
@@ -247,19 +244,7 @@ class flameAppFramework(object):
                 script = scriptfile.read()
                 scriptfile.close()
         except Exception as e:
-            import flame
-            msg = 'flameTimewrarpML: %s' % e
-            dmsg = pformat(traceback.format_exc())
-            
-            def show_error_mbox():
-                mbox = QtWidgets.QMessageBox()
-                mbox.setWindowTitle('flameTimewrarpML')
-                mbox.setText(msg)
-                mbox.setDetailedText(dmsg)
-                mbox.setStyleSheet('QLabel{min-width: 800px;}')
-                mbox.exec_()
-        
-            flame.schedule_idle_event(show_error_mbox)
+            self.show_exception(e)
             return False
         
         if not script:
@@ -274,6 +259,7 @@ class flameAppFramework(object):
                 if bundle_id_file.read() == bundle_id:
                     self.log('env bundle already exists with id matching current version, no need to unpack again')
                     bundle_id_file.close()
+                    del script
                     return True
                 else:
                     self.log('existing env bundle id does not match current one, replacing...')
@@ -281,47 +267,23 @@ class flameAppFramework(object):
         if os.path.isdir(bundle_path):
             try:
                 cmd = 'rm -rf ' + os.path.abspath(bundle_path)
-                self.log('cleaning up old bundle folder')
+                self.log('removing existing bundle folder')
                 self.log('executing: %s' % cmd)
                 os.system(cmd)
             except Exception as e:
-                import flame
-                msg = 'flameTimewrarpML: %s' % e
-                dmsg = pformat(traceback.format_exc())
-                
-                def show_error_mbox():
-                    mbox = QtWidgets.QMessageBox()
-                    mbox.setWindowTitle('flameTimewrarpML')
-                    mbox.setText(msg)
-                    mbox.setDetailedText(dmsg)
-                    mbox.setStyleSheet('QLabel{min-width: 800px;}')
-                    mbox.exec_()
-            
-                flame.schedule_idle_event(show_error_mbox)
+                self.show_exception(e)
                 return False
 
         try:
             self.log('creating new bundle folder: %s' % bundle_path)
             os.makedirs(bundle_path)
         except Exception as e:
-            import flame
-            msg = 'flameTimewrarpML: %s' % e
-            dmsg = pformat(traceback.format_exc())
-            
-            def show_error_mbox():
-                mbox = QtWidgets.QMessageBox()
-                mbox.setWindowTitle('flameTimewrarpML')
-                mbox.setText(msg)
-                mbox.setDetailedText(dmsg)
-                mbox.setStyleSheet('QLabel{min-width: 800px;}')
-                mbox.exec_()
-        
-            flame.schedule_idle_event(show_error_mbox)
+            self.show_exception(e)
             return False
 
         start_position = script.rfind('# bundle payload starts here') + 33
         payload = script[start_position:-4]
-        payload_dest = os.path.join(self.bundle_location, 'bundle.tar.bz2')
+        payload_dest = os.path.join(self.bundle_location, 'bundle.tar')
         
         try:
             import base64
@@ -329,105 +291,95 @@ class flameAppFramework(object):
             with open(payload_dest, 'wb') as payload_file:
                 payload_file.write(base64.b64decode(payload))
                 payload_file.close()
-            cmd = 'tar xjf ' + payload_dest + ' -C ' + self.bundle_location + '/'
+            cmd = 'tar xf ' + payload_dest + ' -C ' + self.bundle_location + '/'
             self.log('executing: %s' % cmd)
             os.system(cmd)
             self.log('cleaning up %s' % payload_dest)
             os.remove(payload_dest)
         except Exception as e:
-            import flame
-            msg = 'flameTimewrarpML: %s' % e
-            dmsg = pformat(traceback.format_exc())
-            
-            def show_error_mbox():
-                mbox = QtWidgets.QMessageBox()
-                mbox.setWindowTitle('flameTimewrarpML')
-                mbox.setText(msg)
-                mbox.setDetailedText(dmsg)
-                mbox.setStyleSheet('QLabel{min-width: 800px;}')
-                mbox.exec_()
-        
-            flame.schedule_idle_event(show_error_mbox)
+            self.show_exception(e)
             return False
 
         try:
             with open(os.path.join(bundle_path, 'bundle_id'), 'w+') as bundle_id_file:
                 bundle_id_file.write(bundle_id)
         except Exception as e:
-            import flame
-            msg = 'flameTimewrarpML: %s' % e
-            dmsg = pformat(traceback.format_exc())
-            
-            def show_error_mbox():
-                mbox = QtWidgets.QMessageBox()
-                mbox.setWindowTitle('flameTimewrarpML')
-                mbox.setText(msg)
-                mbox.setDetailedText(dmsg)
-                mbox.setStyleSheet('QLabel{min-width: 800px;}')
-                mbox.exec_()
-    
-            flame.schedule_idle_event(show_error_mbox)
+            self.show_exception(e)
             return False
 
         delta = time.time() - start
         self.log('bundle extracted to %s' % bundle_path)
         self.log('extracting bundle took %s sec' % str(delta))
 
-        env_bundle_file = os.path.join(os.path.dirname(__file__), 'flameTimewarpMLenv.tar.bz2')
-        if os.path.isfile(env_bundle_file):
-            self.unpack_env(env_bundle_file)
-            os.remove(env_bundle_file)
+        del payload
+        del script
+
+        env_folder = os.path.join(self.bundle_location, 'miniconda3') 
+        self.install_env(env_folder)
 
         return True
-            
-    def unpack_env(self, env_bundle_file):
+                    
+    def install_env(self, env_folder):
+        env_backup_folder = env_folder + '_backup'
+        if os.path.isdir(env_folder):
+            from PySide2 import QtWidgets
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText('Miniconda installation already exists. Replace?')
+            dmsg = 'There is an existing Miniconda installation at %s that might contain your custom virtual environments.' % env_folder
+            dmsg += 'Previous installation folder will be copied into %s' % env_backup_folder
+            mbox.setDetailedText(dmsg)
+            mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+            mbox.setStyleSheet('QLabel{min-width: 400px;}')
+            btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+            btn_Continue.setText('Continue')
+            mbox.exec_()
+            if mbox.clickedButton() == mbox.button(QtWidgets.QMessageBox.Cancel):
+                return False
+            else:
+                try:
+                    cmd = 'mv ' + env_folder + ' ' + env_backup_folder
+                    self.log('executing %s' % cmd)
+                    os.system(cmd)
+                except Exception as e:
+                    self.show_exception(e)
+                    return False
+
+        start = time.time()
+        self.log('installing Miniconda into %s' % env_folder)
+        installer_file = os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'Miniconda3-Linux-x86_64.sh')
+        cmd = '/bin/sh ' + installer_file + ' -b -p ' + env_folder + ' 2>&1 | tee miniconda_install.log'
+        self.log('executing: %s' % cmd)
+        os.system(cmd)
+        delta = time.time() - start
+        self.log('installing Miniconda took %s sec' % str(delta))
+
+
+    def show_exception(self, e):
         from PySide2 import QtWidgets
         import traceback
 
-        start = time.time()
-        if not os.path.isfile(env_bundle_file):
-            import flame
-            msg = 'flameTimewrarpML: Can not find env bundle %s' % env_bundle_file
-            dmsg = 'Please put flameTimewrarpMLenv.bundle next to the actual python script\n'
-            dmsg += 'It contains prebuild python and cuda environment needed to run ML Timewarp'
-            
-            def show_error_mbox():
-                mbox = QtWidgets.QMessageBox()
-                mbox.setWindowTitle('flameTimewrarpML')
-                mbox.setText(msg)
-                mbox.setDetailedText(dmsg)
-                mbox.setStyleSheet('QLabel{min-width: 800px;}')
-                mbox.exec_()
-            
-            flame.schedule_idle_event(show_error_mbox)
-            return False
+        msg = 'flameTimewrarpML: %s' % e
+        dmsg = pformat(traceback.format_exc())
 
         try:
-            self.log('extracting new env bundle...')
-            if not os.path.isdir(os.path.join('/var/tmp', self.bundle_name)):
-                os.makedirs(os.path.join('/var/tmp', self.bundle_name))
-            cmd = self.bundle_location + '/bundle/bin/pbzip2 -dc ' + env_bundle_file + ' | tar xf - -C /var/tmp/' + self.bundle_name
-            self.log('executing: %s' % cmd)
-            os.system(cmd)
-            delta = time.time() - start
-            self.log('env bundle extracted to /var/tmp/' + self.bundle_name + '/miniconda3')
-            self.log('extracting env bundle took %s sec' % str(delta))
-        except Exception as e:
             import flame
-            msg = 'flameTimewrarpML: %s' % e
-            dmsg = pformat(traceback.format_exc())
-            
-            def show_error_mbox():
-                mbox = QtWidgets.QMessageBox()
-                mbox.setWindowTitle('flameTimewrarpML')
-                mbox.setText(msg)
-                mbox.setDetailedText(dmsg)
-                mbox.setStyleSheet('QLabel{min-width: 800px;}')
-                mbox.exec_()
-        
-            flame.schedule_idle_event(show_error_mbox)
+        except:
+            print (msg)
+            print (dmsg)
             return False
         
+        def show_error_mbox():
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText(msg)
+            mbox.setDetailedText(dmsg)
+            mbox.setStyleSheet('QLabel{min-width: 800px;}')
+            mbox.exec_()
+
+        flame.schedule_idle_event(show_error_mbox)
+        return True
+
 
 class flameMenuApp(object):
     def __init__(self, framework):
