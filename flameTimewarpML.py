@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.0.8.001'
+__version__ = 'v0.0.8.002'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -640,7 +640,7 @@ class flameTimewrapML(flameMenuApp):
                 if isinstance(item, (flame.PyClip)):
                     clip_name = item.name.get_value()
                     output_folder = os.path.abspath(os.path.join(folder, clip_name))
-                    if os.path.isfolder(output_folder):
+                    if os.path.isdir(output_folder):
                         cmd = 'rm -f ' + output_folder + '/*'
                         os.system(cmd)
 
