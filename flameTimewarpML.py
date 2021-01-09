@@ -634,14 +634,18 @@ class flameTimewrapML(flameMenuApp):
         result = self.slowmo_dialog()
         if result:
             folder = str(result.get('folder', '/var/tmp'))
-            pprint (folder)
             speed = result.get('speed', 1)
             import flame
             for item in selection:
                 if isinstance(item, (flame.PyClip)):
-                    self.export_clip(item, folder)
                     clip_name = item.name.get_value()
                     output_folder = os.path.abspath(os.path.join(folder, clip_name))
+                    if os.path.isfolder(output_folder):
+                        cmd = 'rm -f ' + output_folder + '/*'
+                        os.system(cmd)
+
+                    self.export_clip(item, folder)
+                    
                     cmd = """konsole -e /usr/bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
                     cmd += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
                     cmd += 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'create_slowmo.py')
