@@ -13,10 +13,10 @@ import atexit
 from pprint import pprint
 from pprint import pformat
 
-menu_group_name = 'Timewarp ML'
+menu_group_name = 'TimewarpML'
 DEBUG = True
 
-__version__ = 'v0.0.9.002'
+__version__ = 'v0.0.9.003'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -633,6 +633,11 @@ class flameTimewrapML(flameMenuApp):
 
         if not self.prefs.master.get(self.name):
             self.prefs['working_folder'] = '/var/tmp'
+        self.working_folder = self.prefs['working_folder']
+        if not os.path.isdir(self.working_folder):
+            self.working_folder = '/var/tmp'
+
+        self.new_speed = 1
 
 
     def build_menu(self):
@@ -650,7 +655,7 @@ class flameTimewrapML(flameMenuApp):
         menu['name'] = self.menu_group_name
 
         menu_item = {}
-        menu_item['name'] = 'Create Slow Motion with ML'
+        menu_item['name'] = 'Slow Down clip(s) with ML'
         menu_item['execute'] = self.slowmo
         menu_item['isEnabled'] = scope_clip
         menu_item['waitCursor'] = False
@@ -703,7 +708,7 @@ class flameTimewrapML(flameMenuApp):
                 self.loops.append(watcher)
 
         ml_cmd = cmd_prefix
-        ml_cmd += 'echo "Recieved ' + str(number_of_clips)
+        ml_cmd += 'echo "Received ' + str(number_of_clips)
         ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
         ml_cmd += 'to process, press Ctrl+C to cancel"; '
         ml_cmd += 'trap exit SIGINT SIGTERM; '
@@ -719,21 +724,19 @@ class flameTimewrapML(flameMenuApp):
     def slowmo_dialog(self, *args, **kwargs):
         from PySide2 import QtWidgets, QtCore
 
-        self.new_speed = 1
         self.new_speed_list = {
             1: '1/2',
             2: '1/4',
             3: '1/8',
             4: '1/16' 
         }
-
-        self.working_folder = self.prefs['working_folder']
+        
         # flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
         # self.asset_task_template =  flameMenuNewBatch_prefs.get('asset_task_template', {})
 
         window = QtWidgets.QDialog()
         window.setMinimumSize(280, 180)
-        window.setWindowTitle('Create Slow Motion with ML')
+        window.setWindowTitle('Slow down clip(s) with ML')
         window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
         window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         window.setStyleSheet('background-color: #313131')
@@ -750,7 +753,7 @@ class flameTimewrapML(flameMenuApp):
 
         # New Speed label
 
-        lbl_NewSpeed = QtWidgets.QLabel('Slow Motion Speed', window)
+        lbl_NewSpeed = QtWidgets.QLabel('New Clip(s) Speed', window)
         lbl_NewSpeed.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
         lbl_NewSpeed.setMinimumHeight(28)
         lbl_NewSpeed.setMaximumHeight(28)
@@ -801,8 +804,10 @@ class flameTimewrapML(flameMenuApp):
 
 
         def chooseFolder():
-            self.working_folder = QtWidgets.QFileDialog.getExistingDirectory(window, "Open Directory", self.working_folder, QtWidgets.QFileDialog.ShowDirsOnly)
-            self.working_folder = str(self.working_folder)
+            result_folder = str(QtWidgets.QFileDialog.getExistingDirectory(window, "Open Directory", self.working_folder, QtWidgets.QFileDialog.ShowDirsOnly))
+            if result_folder =='':
+                return
+            self.working_folder = result_folder
             txt_WorkFolder.setText(self.working_folder)
             self.prefs['working_folder'] = self.working_folder
 
