@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.0.9.001'
+__version__ = 'v0.0.9.002'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -706,6 +706,7 @@ class flameTimewrapML(flameMenuApp):
         ml_cmd += 'echo "Recieved ' + str(number_of_clips)
         ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
         ml_cmd += 'to process, press Ctrl+C to cancel"; '
+        ml_cmd += 'trap exit SIGINT SIGTERM; '
 
         for cmd_string in cmd_strings:
             ml_cmd += cmd_string
@@ -976,7 +977,10 @@ class flameTimewrapML(flameMenuApp):
             if not os.path.isfile(lockfile):
                 cmd = 'rm -f ' + os.path.join(path, 'source') + '/*'
                 os.system(cmd)
-                os.rmdir(os.path.join(path, 'source'))
+                try:
+                    os.rmdir(os.path.join(path, 'source'))
+                except:
+                    pass
 
                 file_names = os.listdir(path)
 
