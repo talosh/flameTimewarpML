@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.0.8.002'
+__version__ = 'v0.0.8.003'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -889,11 +889,37 @@ class flameTimewrapML(flameMenuApp):
         def import_flame_clip():
             import flame
             new_clips = flame.import_clips(flame_path, clip.parent)
+            
             if len(new_clips) > 0:
                 new_clip = new_clips[0]
                 if new_clip:
                     new_clip.name.set_value(clip.name.get_value() + '_ML_SLOWMO')
+            
             flame.execute_shortcut('Refresh Thumbnails')
+
+            # Colour Mgmt logic for future settin
+            '''
+            for version in new_clip.versions:
+                for track in version.tracks:
+                    for segment in track.segments:
+                        segment.create_effect('Source Colour Mgmt')
+            '''
+            # End of Colour Mgmt logic for future settin
+
+
+            # Hard Commit Logic for future setting
+            '''
+            for version in new_clip.versions:
+                for track in version.tracks:
+                    for segment in track.segments:
+                        segment.create_effect('Source Image')
+            
+            new_clip.open_as_sequence()
+            flame.execute_shortcut('Hard Commit Selection in Timeline')
+            flame.execute_shortcut('Refresh Thumbnails')
+            '''
+            # End of Hard Commit Logic for future setting
+
 
         while self.threads:
             if not os.path.isfile(lockfile):
