@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.0.8.000'
+__version__ = 'v0.0.8.001'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -597,6 +597,9 @@ class flameTimewrapML(flameMenuApp):
         self.loops = []
         self.threads = True
 
+        if not self.prefs.master.get(self.name):
+            self.prefs['working_folder'] = '/var/tmp'
+
 
     def build_menu(self):
         def scope_clip(selection):
@@ -667,7 +670,7 @@ class flameTimewrapML(flameMenuApp):
             4: '1/16' 
         }
 
-        self.working_folder = '/var/tmp'
+        self.working_folder = self.prefs['working_folder']
         # flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
         # self.asset_task_template =  flameMenuNewBatch_prefs.get('asset_task_template', {})
 
@@ -742,7 +745,10 @@ class flameTimewrapML(flameMenuApp):
 
         def chooseFolder():
             self.working_folder = QtWidgets.QFileDialog.getExistingDirectory(window, "Open Directory", self.working_folder, QtWidgets.QFileDialog.ShowDirsOnly)
+            self.working_folder = str(self.working_folder)
             txt_WorkFolder.setText(self.working_folder)
+            self.prefs['working_folder'] = self.working_folder
+
             #dialog = QtWidgets.QFileDialog()
             #dialog.setWindowTitle('Select export folder')
             #dialog.setOption(QtWidgets.QFileDialog.ShowDirsOnly, True)
@@ -808,6 +814,7 @@ class flameTimewrapML(flameMenuApp):
 
         window.setLayout(vbox)
         if window.exec_():
+            self.framework.save_prefs()
             return {
                 'speed': self.new_speed,
                 'folder': self.working_folder
