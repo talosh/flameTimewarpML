@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.0.8.010'
+__version__ = 'v0.0.9.001'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -669,32 +669,51 @@ class flameTimewrapML(flameMenuApp):
         if not result:
             return False
 
-        folder = str(result.get('folder', '/var/tmp'))
+        working_folder = str(result.get('working_folder', '/var/tmp'))
         speed = result.get('speed', 1)
+        cmd_strings = []
+        cmd_prefix = """konsole -e /usr/bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+        cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+        number_of_clips = 0
+
+
         import flame
         for item in selection:
             if isinstance(item, (flame.PyClip)):
+                number_of_clips += 1
                 clip_name = item.name.get_value()
-                output_folder = os.path.abspath(os.path.join(folder, clip_name))
+                output_folder = os.path.abspath(os.path.join(working_folder, clip_name + '_TWML' + str(2 ** speed)))
+
                 if os.path.isdir(output_folder):
                     cmd = 'rm -f ' + output_folder + '/*'
+                    self.log('Executing command: %s' % cmd)
                     os.system(cmd)
 
-                self.export_clip(item, folder)
+                self.export_clip(item, output_folder)
                 
-                cmd = """konsole -e /usr/bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
-                cmd += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+                cmd = 'echo "processing: ' + clip_name + '"; '
                 cmd += 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'create_slowmo.py')
-                cmd += ' --img ' + os.path.join(folder, clip_name, 'source') + ' --output ' + output_folder
-                cmd += ' --exp=' + str(speed) + "'"
-                self.log('Executing command: %s' % cmd)
-                os.system(cmd)
+                cmd += ' --img ' + os.path.join(output_folder, 'source') + ' --output ' + output_folder
+                cmd += ' --exp=' + str(speed) + "; "
+                cmd_strings.append(cmd)
+                
                 watcher = threading.Thread(target=self.import_watcher, args=(output_folder, item, ))
                 watcher.daemon = True
                 watcher.start()
                 self.loops.append(watcher)
-                flame.execute_shortcut('Refresh Thumbnails')
 
+        ml_cmd = cmd_prefix
+        ml_cmd += 'echo "Recieved ' + str(number_of_clips)
+        ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
+        ml_cmd += 'to process, press Ctrl+C to cancel"; '
+
+        for cmd_string in cmd_strings:
+            ml_cmd += cmd_string
+        ml_cmd +="'"
+
+        self.log('Executing command: %s' % ml_cmd)
+        os.system(ml_cmd)
+        flame.execute_shortcut('Refresh Thumbnails')
 
     def slowmo_dialog(self, *args, **kwargs):
         from PySide2 import QtWidgets, QtCore
@@ -854,17 +873,16 @@ class flameTimewrapML(flameMenuApp):
             self.framework.save_prefs()
             return {
                 'speed': self.new_speed,
-                'folder': self.working_folder
+                'working_folder': self.working_folder
             }
         else:
             return {}
 
-    def export_clip(self, clip, folder):
+    def export_clip(self, clip, output_folder):
         import flame
         import traceback
 
-        clip_name = clip.name.get_value()
-        export_dir = os.path.join(folder, clip_name, 'source')
+        export_dir = os.path.join(output_folder, 'source')
         if not os.path.isdir(export_dir):
             self.log('creating folders: %s' % export_dir)
             try:
@@ -915,7 +933,7 @@ class flameTimewrapML(flameMenuApp):
         import hashlib
         lockfile_name = hashlib.sha1(path.encode()).hexdigest().upper() + '.lock'
         lockfile = os.path.join(self.framework.bundle_location, 'bundle', 'locks', lockfile_name)
-        os.system('touch ' + lockfile)
+        os.system('echo "' + path + '">' + lockfile)
 
         flame_path = None
         
@@ -926,7 +944,7 @@ class flameTimewrapML(flameMenuApp):
             if len(new_clips) > 0:
                 new_clip = new_clips[0]
                 if new_clip:
-                    new_clip.name.set_value(clip.name.get_value() + '_ML_SLOWMO')
+                    new_clip.name.set_value(os.path.basename(path))
             
             flame.execute_shortcut('Refresh Thumbnails')
 
