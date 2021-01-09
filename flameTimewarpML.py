@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.0.4.002'
+__version__ = 'v0.0.6.000'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -268,7 +268,7 @@ class flameAppFramework(object):
         if not script:
             return False
             
-        self.log('bundle_id: %s lenght %s' % (self.bundle_id, len(script)))
+        self.log('bundle_id: %s size %s' % (self.bundle_id, len(script)))
         
         if os.path.isdir(bundle_path):
             try:
@@ -324,7 +324,7 @@ class flameAppFramework(object):
             self.show_exception(e)
             return False
         
-        self.log('flameTimewarpML has finished installing its packages')
+        self.log('flameTimewarpML has finished installing its bundle and required packages')
 
         return True
                     
@@ -340,7 +340,8 @@ class flameAppFramework(object):
                 return False
 
         start = time.time()
-        self.log('installing Miniconda into %s' % env_folder)
+        self.log('installing Miniconda3...')
+        self.log('installing into %s' % env_folder)
         installer_file = os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'Miniconda3-Linux-x86_64.sh')
         cmd = '/bin/sh ' + installer_file + ' -b -p ' + env_folder
         cmd += ' 2>&1 | tee ' + os.path.join(self.bundle_location, 'miniconda_install.log')
@@ -351,7 +352,7 @@ class flameAppFramework(object):
 
     def install_env_packages(self, env_folder):
         start = time.time()
-        self.log('installing Miniconda packages')
+        self.log('installing Miniconda packages...')
         cmd = """/usr/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
         cmd += 'pip3 install -r ' + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') + ' --no-index --find-links '
         cmd += os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'packages')
@@ -392,7 +393,7 @@ class flameAppFramework(object):
     def show_unpack_message(self, bundle_path):
         from PySide2 import QtWidgets
 
-        msg = 'flameTimeWarpML is going to unpack its bundle\nin background and run additional package scrips.\nThis may take a little while, check Flame console'
+        msg = 'flameTimeWarpML is going to unpack its bundle\nin background and run additional package scrips.\nCheck Flame console for details'
         dmsg = 'To be able to run flameTimeWarpML needs python environment that is newer then the one provided with Flame '
         dmsg += 'as well as some additional ML and computer-vision dependancies like PyTorch and OpenCV should be avaliable. '
         dmsg += 'flameTimeWarpML is going to unpack its bundle into "%s" ' % bundle_path
@@ -590,6 +591,11 @@ class flameMenuApp(object):
 class flameTimewrapML(flameMenuApp):
     def __init__(self, framework):
         flameMenuApp.__init__(self, framework)
+        self.env_folder = os.path.join(self.framework.bundle_location, 'miniconda3')
+        
+        self.loops = []
+        self.threads = True
+
 
     def build_menu(self):
         def scope_clip(selection):
@@ -606,9 +612,10 @@ class flameTimewrapML(flameMenuApp):
         menu['name'] = self.menu_group_name
 
         menu_item = {}
-        menu_item['name'] = 'Create Slowmotion with ML'
+        menu_item['name'] = 'Create Slow Motion with ML'
         menu_item['execute'] = self.slowmo
         menu_item['isEnabled'] = scope_clip
+        menu_item['waitCursor'] = False
         menu['actions'].append(menu_item)
 
         menu_item = {}
@@ -622,12 +629,27 @@ class flameTimewrapML(flameMenuApp):
     def slowmo(self, selection):
         result = self.slowmo_dialog()
         if result:
+            folder = result.get('folder', '/var/tmp')
+            speed = result.get('speed', 1)
             import flame
             for item in selection:
                 if isinstance(item, (flame.PyClip)):
-                    self.export_clip(item, result.get('folder'))
-                    cmd = """konsole -e bash -c 'eval "$(/opt/Autodesk/flame_2020.2/miniconda3/bin/conda shell.bash hook)"; conda activate; sleep 3'"""
+                    self.export_clip(item, folder)
+                    clip_name = item.name.get_value()
+                    cmd = """konsole -e /usr/bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+                    cmd += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+                    cmd += 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'create_slowmo.py')
+                    cmd += ' --img ' + os.path.join(folder, clip_name, 'source') + ' --output ' + os.path.join(folder, clip_name)
+                    cmd += ' --exp=' + str(speed) + "'"
+                    self.log('Executing command: %s' % cmd)
                     os.system(cmd)
+                    watcher = threading.Thread(target=self.import_watcher, args=(folder, ))
+                    watcher.daemon = True
+                    watcher.start()
+                    self.loops.append(watcher)
+                    # cmd = 'rm -f ' + os.path.join(folder, clip_name, 'source') + '/*'
+                    # os.system(cmd)
+                    # os.rmdir(os.path.join(folder, clip_name, 'source'))
 
     def slowmo_dialog(self, *args, **kwargs):
         from PySide2 import QtWidgets, QtCore
@@ -646,7 +668,7 @@ class flameTimewrapML(flameMenuApp):
 
         window = QtWidgets.QDialog()
         window.setMinimumSize(280, 180)
-        window.setWindowTitle('Create Slowmotion with ML')
+        window.setWindowTitle('Create Slow Motion with ML')
         window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
         window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         window.setStyleSheet('background-color: #313131')
@@ -763,7 +785,7 @@ class flameTimewrapML(flameMenuApp):
         import traceback
 
         clip_name = clip.name.get_value()
-        export_dir = os.path.join(folder, clip_name)
+        export_dir = os.path.join(folder, clip_name, 'source')
         if not os.path.isdir(export_dir):
             self.log('creating folders: %s' % export_dir)
             try:
@@ -809,6 +831,18 @@ class flameTimewrapML(flameMenuApp):
         export_preset = os.path.join(export_preset_folder, 'OpenEXR', 'OpenEXR (16-bit fp PIZ).xml')
         exporter.export(clip, export_preset, export_dir, hooks=ExportHooks())
 
+    def import_watcher(self, folder):
+
+        while self.threads:
+            lockfile = str(abs(hash(folder))) + '.lock"
+            os.system('touch ' + os.path.join(self.framework.bundle_location, 'bundle', 'locks', lockfile))
+            time.sleep(0.1)
+
+    def terminate_loops(self):
+        self.threads = False
+        
+        for loop in self.loops:
+            loop.join()
 
 # --- FLAME STARTUP SEQUENCE ---
 # Flame startup sequence is a bit complicated
@@ -852,6 +886,7 @@ def cleanup(apps, app_framework):
             app = apps.pop()
             if DEBUG:
                 print ('[DEBUG %s] unloading: %s' % ('flameMenuSG', app.name))
+            app.terminate_loops()
             del app        
         del apps
 
