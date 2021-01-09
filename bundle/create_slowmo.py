@@ -13,6 +13,9 @@ from queue import Queue, Empty
 warnings.filterwarnings("ignore")
 
 from pprint import pprint
+import time
+
+ThreadsFlag = True
 
 # Exception handler
 def exeption_handler(exctype, value, tb):
@@ -27,6 +30,16 @@ def exeption_handler(exctype, value, tb):
     sys.__excepthook__(exctype, value, tb)
     input("Press Enter to continue...")
 sys.excepthook = exeption_handler
+
+# ctrl+c handler
+import signal
+
+def signal_handler(sig, frame):
+    ThreadsFlag = False
+    time.sleep(0.1)
+    sys.exit(0)
+    
+signal.signal(signal.SIGINT, signal_handler)
 
 print('initializing Timewarp ML...')
 
@@ -103,17 +116,18 @@ if args.png:
         os.makedirs(output_folder)
     
 def clear_write_buffer(user_args, write_buffer):
-    print ('rendering %s frames to %s/' % (tot_frame*(2 ** args.exp)-1, args.output))
-    pbar = tqdm(total=(tot_frame*(2 ** args.exp) - 1))
+    new_frames_number = ((tot_frame - 1) * ((2 ** args.exp) -1)) + tot_frame
+    print ('rendering %s frames to %s/' % (new_frames_number, args.output))
+    pbar = tqdm(total=new_frames_number)
     cnt = 0
-    while True:
+    while ThreadsFlag:
         item = write_buffer.get()
 
         if item is None:
             pbar.close()
             break
         
-        if cnt < tot_frame*(2 ** args.exp) - 1:
+        if cnt < new_frames_number:
             cv2.imwrite(os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(cnt)), item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
         pbar.update(1)
         cnt += 1
@@ -209,7 +223,6 @@ if args.montage:
 else:
     write_buffer.put(lastframe)
 
-import time
 while(not write_buffer.empty()):
     time.sleep(0.1)
 
