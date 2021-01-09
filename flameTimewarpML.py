@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.0.8.003'
+__version__ = 'v0.0.8.010'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -144,7 +144,9 @@ class flameAppFramework(object):
         
         self.apps = []
 
-        self.bundle_id = str(abs(hash(__version__)))
+        import hashlib
+        self.bundle_id = hashlib.sha1(__version__.encode()).hexdigest()
+
         bundle_path = os.path.join(self.bundle_location, 'bundle')
         if (os.path.isdir(bundle_path) and os.path.isfile(os.path.join(bundle_path, 'bundle_id'))):
             self.log('checking existing bundle id %s' % os.path.join(bundle_path, 'bundle_id'))
@@ -325,15 +327,25 @@ class flameAppFramework(object):
             return False
         
         self.log('flameTimewarpML has finished installing its bundle and required packages')
+        self.show_complete_message(env_folder)
 
         return True
                     
     def install_env(self, env_folder):
-        env_backup_folder = env_folder + '.previous'
+        env_backup_folder = os.path.abspath(env_folder + '.previous')
+        if os.path.isdir(env_backup_folder):
+            try:
+                cmd = 'rm -rf ' + env_backup_folder
+                self.log('Executing command: %s' % cmd)
+                os.system(cmd)
+            except Exception as e:
+                self.show_exception(e)
+                return False
+            
         if os.path.isdir(env_folder):
             try:
                 cmd = 'mv ' + env_folder + ' ' + env_backup_folder
-                self.log('executing %s' % cmd)
+                self.log('Executing command: %s' % cmd)
                 os.system(cmd)
             except Exception as e:
                 self.show_exception(e)
@@ -393,7 +405,7 @@ class flameAppFramework(object):
     def show_unpack_message(self, bundle_path):
         from PySide2 import QtWidgets
 
-        msg = 'flameTimeWarpML is going to unpack its bundle\nin background and run additional package scrips.\nCheck Flame console for details'
+        msg = 'flameTimeWarpML is going to unpack its bundle\nin background and run additional package scrips.\nCheck Flame console for details.'
         dmsg = 'To be able to run flameTimeWarpML needs python environment that is newer then the one provided with Flame '
         dmsg += 'as well as some additional ML and computer-vision dependancies like PyTorch and OpenCV should be avaliable. '
         dmsg += 'flameTimeWarpML is going to unpack its bundle into "%s" ' % bundle_path
@@ -413,6 +425,28 @@ class flameAppFramework(object):
             return False
         else:
             return True
+
+    def show_complete_message(self, bundle_path):
+        from PySide2 import QtWidgets
+
+        msg = 'flameTimewarpML has finished unpacking its bundle and required packages. You can start using it now.'
+
+        try:
+            import flame
+        except:
+            print (msg)
+            print (dmsg)
+            return False
+        
+        def show_error_mbox():
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText(msg)
+            mbox.setStyleSheet('QLabel{min-width: 800px;}')
+            mbox.exec_()
+
+        flame.schedule_idle_event(show_error_mbox)
+        return True
 
 
 class flameMenuApp(object):
@@ -632,36 +666,35 @@ class flameTimewrapML(flameMenuApp):
 
     def slowmo(self, selection):
         result = self.slowmo_dialog()
-        if result:
-            folder = str(result.get('folder', '/var/tmp'))
-            speed = result.get('speed', 1)
-            import flame
-            for item in selection:
-                if isinstance(item, (flame.PyClip)):
-                    clip_name = item.name.get_value()
-                    output_folder = os.path.abspath(os.path.join(folder, clip_name))
-                    if os.path.isdir(output_folder):
-                        cmd = 'rm -f ' + output_folder + '/*'
-                        os.system(cmd)
+        if not result:
+            return False
 
-                    self.export_clip(item, folder)
-                    
-                    cmd = """konsole -e /usr/bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
-                    cmd += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
-                    cmd += 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'create_slowmo.py')
-                    cmd += ' --img ' + os.path.join(folder, clip_name, 'source') + ' --output ' + output_folder
-                    cmd += ' --exp=' + str(speed) + "'"
-                    self.log('Executing command: %s' % cmd)
+        folder = str(result.get('folder', '/var/tmp'))
+        speed = result.get('speed', 1)
+        import flame
+        for item in selection:
+            if isinstance(item, (flame.PyClip)):
+                clip_name = item.name.get_value()
+                output_folder = os.path.abspath(os.path.join(folder, clip_name))
+                if os.path.isdir(output_folder):
+                    cmd = 'rm -f ' + output_folder + '/*'
                     os.system(cmd)
-                    watcher = threading.Thread(target=self.import_watcher, args=(output_folder, item, ))
-                    watcher.daemon = True
-                    watcher.start()
-                    self.loops.append(watcher)
-                    flame.execute_shortcut('Refresh Thumbnails')
 
-                    # cmd = 'rm -f ' + os.path.join(folder, clip_name, 'source') + '/*'
-                    # os.system(cmd)
-                    # os.rmdir(os.path.join(folder, clip_name, 'source'))
+                self.export_clip(item, folder)
+                
+                cmd = """konsole -e /usr/bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+                cmd += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+                cmd += 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'create_slowmo.py')
+                cmd += ' --img ' + os.path.join(folder, clip_name, 'source') + ' --output ' + output_folder
+                cmd += ' --exp=' + str(speed) + "'"
+                self.log('Executing command: %s' % cmd)
+                os.system(cmd)
+                watcher = threading.Thread(target=self.import_watcher, args=(output_folder, item, ))
+                watcher.daemon = True
+                watcher.start()
+                self.loops.append(watcher)
+                flame.execute_shortcut('Refresh Thumbnails')
+
 
     def slowmo_dialog(self, *args, **kwargs):
         from PySide2 import QtWidgets, QtCore
@@ -930,7 +963,7 @@ class flameTimewrapML(flameMenuApp):
                 file_names = os.listdir(path)
 
                 if file_names:
-                    
+
                     file_names.sort()
                     first_frame, ext = os.path.splitext(file_names[0])
                     last_frame, ext = os.path.splitext(file_names[-1])
