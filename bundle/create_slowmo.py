@@ -17,6 +17,11 @@ from pprint import pprint
 # Exception handler
 def exeption_handler(exctype, value, tb):
     import traceback
+
+    locks = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'locks')
+    cmd = 'rm -f ' + locks + '/*'
+    os.system(cmd)
+
     pprint ('%s in %s' % (value, exctype))
     pprint(traceback.format_exception(exctype, value, tb))
     sys.__excepthook__(exctype, value, tb)
@@ -211,6 +216,11 @@ while(not write_buffer.empty()):
 # pbar.close()
 if not vid_out is None:
     vid_out.release()
+
+import hashlib
+lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
+if os.path.isfile(lockfile):
+    os.remove(lockfile)
 
 # input("Press Enter to continue...")
 

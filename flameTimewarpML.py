@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.0.6.000'
+__version__ = 'v0.0.8.000'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -329,7 +329,7 @@ class flameAppFramework(object):
         return True
                     
     def install_env(self, env_folder):
-        env_backup_folder = env_folder + '_previous'
+        env_backup_folder = env_folder + '.previous'
         if os.path.isdir(env_folder):
             try:
                 cmd = 'mv ' + env_folder + ' ' + env_backup_folder
@@ -413,6 +413,7 @@ class flameAppFramework(object):
             return False
         else:
             return True
+
 
 class flameMenuApp(object):
     def __init__(self, framework):
@@ -629,24 +630,28 @@ class flameTimewrapML(flameMenuApp):
     def slowmo(self, selection):
         result = self.slowmo_dialog()
         if result:
-            folder = result.get('folder', '/var/tmp')
+            folder = str(result.get('folder', '/var/tmp'))
+            pprint (folder)
             speed = result.get('speed', 1)
             import flame
             for item in selection:
                 if isinstance(item, (flame.PyClip)):
                     self.export_clip(item, folder)
                     clip_name = item.name.get_value()
+                    output_folder = os.path.abspath(os.path.join(folder, clip_name))
                     cmd = """konsole -e /usr/bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
                     cmd += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
                     cmd += 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'create_slowmo.py')
-                    cmd += ' --img ' + os.path.join(folder, clip_name, 'source') + ' --output ' + os.path.join(folder, clip_name)
+                    cmd += ' --img ' + os.path.join(folder, clip_name, 'source') + ' --output ' + output_folder
                     cmd += ' --exp=' + str(speed) + "'"
                     self.log('Executing command: %s' % cmd)
                     os.system(cmd)
-                    watcher = threading.Thread(target=self.import_watcher, args=(folder, ))
+                    watcher = threading.Thread(target=self.import_watcher, args=(output_folder, item, ))
                     watcher.daemon = True
                     watcher.start()
                     self.loops.append(watcher)
+                    flame.execute_shortcut('Refresh Thumbnails')
+
                     # cmd = 'rm -f ' + os.path.join(folder, clip_name, 'source') + '/*'
                     # os.system(cmd)
                     # os.rmdir(os.path.join(folder, clip_name, 'source'))
@@ -722,7 +727,7 @@ class flameTimewrapML(flameMenuApp):
 
         # Work Folder Label
 
-        lbl_WorkFolder = QtWidgets.QLabel('Working folder', window)
+        lbl_WorkFolder = QtWidgets.QLabel('Export folder', window)
         lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
         lbl_WorkFolder.setMinimumHeight(28)
         lbl_WorkFolder.setMaximumHeight(28)
@@ -730,6 +735,25 @@ class flameTimewrapML(flameMenuApp):
         vbox.addWidget(lbl_WorkFolder)
 
         # Work Folder Text Field
+
+        hbox_workfolder = QtWidgets.QHBoxLayout()
+        hbox_workfolder.setAlignment(QtCore.Qt.AlignLeft)
+
+
+        def chooseFolder():
+            self.working_folder = QtWidgets.QFileDialog.getExistingDirectory(window, "Open Directory", self.working_folder, QtWidgets.QFileDialog.ShowDirsOnly)
+            txt_WorkFolder.setText(self.working_folder)
+            #dialog = QtWidgets.QFileDialog()
+            #dialog.setWindowTitle('Select export folder')
+            #dialog.setOption(QtWidgets.QFileDialog.ShowDirsOnly, True)
+            #dialog.setDirectory(self.working_folder)
+            #dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+            #path = QtWidgets.QFileDialog.getExistingDirectory()
+            # dialog.setFileMode(QtWidgets.QFileDialog.FileMode.Directory)
+            #
+            # if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            #    file_full_path = str(dialog.selectedFiles()[0])
+
         def txt_WorkFolder_textChanged():
             self.working_folder = txt_WorkFolder.text()
         txt_WorkFolder = QtWidgets.QLineEdit('', window)
@@ -738,7 +762,18 @@ class flameTimewrapML(flameMenuApp):
         txt_WorkFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
         txt_WorkFolder.setText(self.working_folder)
         txt_WorkFolder.textChanged.connect(txt_WorkFolder_textChanged)
-        vbox.addWidget(txt_WorkFolder)
+        hbox_workfolder.addWidget(txt_WorkFolder)
+
+        btn_changePreset = QtWidgets.QPushButton('Choose', window)
+        btn_changePreset.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_changePreset.setMinimumSize(88, 28)
+        btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                   'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        btn_changePreset.clicked.connect(chooseFolder)
+        hbox_workfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
+
+        vbox.addLayout(hbox_workfolder)
+
 
         # Spacer Label
 
@@ -791,6 +826,7 @@ class flameTimewrapML(flameMenuApp):
             try:
                 os.makedirs(export_dir)
             except Exception as e:
+                from PySide2 import QtWidgets, QtCore
                 msg = 'flameTimewrarpML: %s' % e
                 dmsg = pformat(traceback.format_exc())
                 
@@ -831,11 +867,39 @@ class flameTimewrapML(flameMenuApp):
         export_preset = os.path.join(export_preset_folder, 'OpenEXR', 'OpenEXR (16-bit fp PIZ).xml')
         exporter.export(clip, export_preset, export_dir, hooks=ExportHooks())
 
-    def import_watcher(self, folder):
+    def import_watcher(self, path, clip):
+        import hashlib
+        lockfile_name = hashlib.sha1(path.encode()).hexdigest().upper() + '.lock'
+        lockfile = os.path.join(self.framework.bundle_location, 'bundle', 'locks', lockfile_name)
+        os.system('touch ' + lockfile)
+
+        flame_path = None
+        
+        def import_flame_clip():
+            import flame
+            new_clips = flame.import_clips(flame_path, clip.parent)
+            if len(new_clips) > 0:
+                new_clip = new_clips[0]
+                if new_clip:
+                    new_clip.name.set_value(clip.name.get_value() + '_ML_SLOWMO')
+            flame.execute_shortcut('Refresh Thumbnails')
 
         while self.threads:
-            lockfile = str(abs(hash(folder))) + '.lock"
-            os.system('touch ' + os.path.join(self.framework.bundle_location, 'bundle', 'locks', lockfile))
+            if not os.path.isfile(lockfile):
+                cmd = 'rm -f ' + os.path.join(path, 'source') + '/*'
+                os.system(cmd)
+                os.rmdir(os.path.join(path, 'source'))
+
+                file_names = os.listdir(path)
+                file_names.sort()
+                first_frame, ext = os.path.splitext(file_names[0])
+                last_frame, ext = os.path.splitext(file_names[-1])
+                flame_path = os.path.join(path, '[' + first_frame + '-' + last_frame + ']' + '.exr')
+                
+                import flame
+                flame.schedule_idle_event(import_flame_clip)
+
+                break
             time.sleep(0.1)
 
     def terminate_loops(self):
@@ -843,6 +907,7 @@ class flameTimewrapML(flameMenuApp):
         
         for loop in self.loops:
             loop.join()
+
 
 # --- FLAME STARTUP SEQUENCE ---
 # Flame startup sequence is a bit complicated
