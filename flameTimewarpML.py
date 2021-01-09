@@ -928,13 +928,16 @@ class flameTimewrapML(flameMenuApp):
                 os.rmdir(os.path.join(path, 'source'))
 
                 file_names = os.listdir(path)
-                file_names.sort()
-                first_frame, ext = os.path.splitext(file_names[0])
-                last_frame, ext = os.path.splitext(file_names[-1])
-                flame_path = os.path.join(path, '[' + first_frame + '-' + last_frame + ']' + '.exr')
+
+                if file_names:
+                    
+                    file_names.sort()
+                    first_frame, ext = os.path.splitext(file_names[0])
+                    last_frame, ext = os.path.splitext(file_names[-1])
+                    flame_path = os.path.join(path, '[' + first_frame + '-' + last_frame + ']' + '.exr')
                 
-                import flame
-                flame.schedule_idle_event(import_flame_clip)
+                    import flame
+                    flame.schedule_idle_event(import_flame_clip)
 
                 break
             time.sleep(0.1)
