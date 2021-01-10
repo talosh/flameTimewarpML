@@ -1,4 +1,3 @@
-cupy-cuda102
 numpy
 tqdm
 sk-video
