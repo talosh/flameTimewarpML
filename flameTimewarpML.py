@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.0.9.004'
+__version__ = 'v0.1.0'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -300,7 +300,7 @@ class flameAppFramework(object):
                 payload_file.write(base64.b64decode(payload))
                 payload_file.close()
             cmd = 'tar xf ' + payload_dest + ' -C ' + self.bundle_location + '/'
-            self.log('executing: %s' % cmd)
+            self.log('Executing command: %s' % cmd)
             os.system(cmd)
             self.log('cleaning up %s' % payload_dest)
             os.remove(payload_dest)
@@ -319,6 +319,10 @@ class flameAppFramework(object):
         self.install_env(env_folder)
         self.install_env_packages(env_folder)
 
+        cmd = 'rm -rf ' + os.path.join(self.bundle_location, 'bundle', 'miniconda.package')
+        self.log('Executing command: %s' % cmd)
+        os.system(cmd)
+
         try:
             with open(os.path.join(bundle_path, 'bundle_id'), 'w+') as bundle_id_file:
                 bundle_id_file.write(self.bundle_id)
@@ -326,6 +330,7 @@ class flameAppFramework(object):
             self.show_exception(e)
             return False
         
+
         self.log('flameTimewarpML has finished installing its bundle and required packages')
         self.show_complete_message(env_folder)
 
