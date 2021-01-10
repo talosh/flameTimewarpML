@@ -18,6 +18,7 @@ DEBUG = True
 
 __version__ = 'v0.1.0'
 
+
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
 
