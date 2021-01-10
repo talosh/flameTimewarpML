@@ -1053,7 +1053,10 @@ def exeption_handler(exctype, value, tb):
 sys.excepthook = exeption_handler
 
 # register clean up logic to be called at Flame exit
-def cleanup(apps, app_framework):    
+def cleanup(local_apps, Local_app_framework):
+    global app_framework
+    global apps
+    
     if apps:
         if DEBUG:
             print ('[DEBUG %s] unloading apps:\n%s' % ('flameMenuSG', pformat(apps)))
@@ -1063,12 +1066,12 @@ def cleanup(apps, app_framework):
                 print ('[DEBUG %s] unloading: %s' % ('flameMenuSG', app.name))
             app.terminate_loops()
             del app        
-        del apps
+        apps = []
 
     if app_framework:
         print ('PYTHON\t: %s cleaning up' % app_framework.bundle_name)
         app_framework.save_prefs()
-        del app_framework
+        app_framework = None
 
 atexit.register(cleanup, apps, app_framework)
 
@@ -1089,6 +1092,7 @@ def app_initialized(project_name):
     if not app_framework:
         app_framework = flameAppFramework()
         print ('PYTHON\t: %s initializing' % app_framework.bundle_name)
+    if not apps:
         load_apps(apps, app_framework)
 
 try:
