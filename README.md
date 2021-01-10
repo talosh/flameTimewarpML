@@ -7,5 +7,4 @@ pytorch-liteflownet optical flow implementation: https://github.com/sniklaus/pyt
 
 ## Installation
 
-Download latest release from [Releases](https://github.com/talosh/flameTimewarpML/releases) page
-You can download [Flowframes](https://nmkd.itch.io/flowframes) for free.**
+Download latest release from [Releases](https://github.com/talosh/flameTimewarpML/releases) page, unpack and copy flameTimewarpML.py to /opt/Autodesk/shared/python
