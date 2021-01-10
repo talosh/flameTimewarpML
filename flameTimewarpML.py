@@ -708,7 +708,7 @@ class flameTimewrapML(flameMenuApp):
                 
                 cmd = 'echo "processing: ' + clip_name + '"; '
                 cmd += 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'create_slowmo.py')
-                cmd += ' --img ' + os.path.join(output_folder, 'source') + ' --output ' + output_folder
+                cmd += ' --img "' + os.path.join(output_folder, 'source') + '" --output "' + output_folder +'"'
                 cmd += ' --exp=' + str(speed) + "; "
                 cmd_strings.append(cmd)
                 
@@ -990,12 +990,13 @@ class flameTimewrapML(flameMenuApp):
 
         while self.threads:
             if not os.path.isfile(lockfile):
-                cmd = 'rm -f ' + os.path.join(path, 'source') + '/*'
+                cmd = 'rm -f "' + os.path.join(path, 'source') + '/"*'
+                self.log('Executing command: %s' % cmd)
                 os.system(cmd)
                 try:
                     os.rmdir(os.path.join(path, 'source'))
-                except:
-                    pass
+                except Exception as e:
+                    self.log('Error removing %s: %s' % (os.path.join(path, 'source'), e))
 
                 file_names = os.listdir(path)
 
