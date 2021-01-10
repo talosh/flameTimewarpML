@@ -9,3 +9,5 @@ pytorch-liteflownet optical flow implementation: https://github.com/sniklaus/pyt
 
 * Download latest release from [Releases](https://github.com/talosh/flameTimewarpML/releases) page
 * Unpack and copy included flameTimewarpML.py to /opt/Autodesk/shared/python.
+* Start Flame or click FLAME->Python->Rescan Python Hooks (Ctrl+Shift+H+P).
+* Click 'Continue' on the dialog shown and give it about a minute to unpack its files.
