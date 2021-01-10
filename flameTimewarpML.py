@@ -13,10 +13,10 @@ import atexit
 from pprint import pprint
 from pprint import pformat
 
-menu_group_name = 'TimewarpML'
+menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.0.9.003'
+__version__ = 'v0.0.9.004'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -406,11 +406,10 @@ class flameAppFramework(object):
         from PySide2 import QtWidgets
 
         msg = 'flameTimeWarpML is going to unpack its bundle\nin background and run additional package scrips.\nCheck Flame console for details.'
-        dmsg = 'To be able to run flameTimeWarpML needs python environment that is newer then the one provided with Flame '
-        dmsg += 'as well as some additional ML and computer-vision dependancies like PyTorch and OpenCV should be avaliable. '
-        dmsg += 'flameTimeWarpML is going to unpack its bundle into "%s" ' % bundle_path
-        dmsg += 'and then from there create a separate Miniconda3 installation and within this separate '
-        dmsg += 'virtual python environment it is going to install dependencies needed'
+        dmsg = 'flameTimeWarpML needs Python3 environment that is newer then the one provided with Flame '
+        dmsg += 'as well as some additional ML and computer-vision dependancies like PyTorch and OpenCV. '
+        dmsg += 'flameTimeWarpML is going to unpack its bundle into "%s" ' % self.bundle_location
+        dmsg += 'and then it will create there Miniconda3 installation with additional packages needed'
 
         mbox = QtWidgets.QMessageBox()
         mbox.setWindowTitle('flameTimewrarpML')
@@ -430,6 +429,13 @@ class flameAppFramework(object):
         from PySide2 import QtWidgets
 
         msg = 'flameTimewarpML has finished unpacking its bundle and required packages. You can start using it now.'
+        dmsg = 'Bundle location: %s\n' % self.bundle_location
+        dmsg += '* Flame scipt written by Andrii Toloshnyy (c) 2021\n'
+        dmsg += '* RIFE: Real-Time Intermediate Flow Estimation for Video Frame Interpolation:\n'
+        dmsg += '  Huang, Zhewei and Zhang, Tianyuan and Heng, Wen and Shi, Boxin and Zhou, Shuchang, '
+        dmsg += 'arXiv preprint arXiv:2011.06294, 2020\n'
+        dmsg += '* Miniconda3: (c) 2017 Continuum Analytics, Inc. (dba Anaconda, Inc.). https://www.anaconda.com. All Rights Reserved\n'
+        dmsg += '* For info on additional packages see miniconda_packages_install.log'
 
         try:
             import flame
@@ -442,6 +448,7 @@ class flameAppFramework(object):
             mbox = QtWidgets.QMessageBox()
             mbox.setWindowTitle('flameTimewrarpML')
             mbox.setText(msg)
+            mbox.setDetailedText(dmsg)
             mbox.setStyleSheet('QLabel{min-width: 800px;}')
             mbox.exec_()
 
@@ -649,6 +656,9 @@ class flameTimewrapML(flameMenuApp):
             return False
 
         if not self.flame:
+            return []
+        
+        if not os.path.isfile(os.path.join(self.framework.bundle_location, 'bundle', 'bundle_id')):
             return []
         
         menu = {'actions': []}
