@@ -16,11 +16,11 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.1.1.003'
+__version__ = 'v0.1.1.010'
 
 
 class flameAppFramework(object):
-    # flameAppFramework class takes care of preferences
+    # flameAppFramework class takes care of preferences and bundle unpack/install routines
 
     class prefs_dict(dict):
         # subclass of a dict() in order to directly link it 
@@ -169,7 +169,17 @@ class flameAppFramework(object):
         else:
             self.log('user cancelled bundle unpack')
 
-    def log(self, message):
+    def log(self, message, logfile = None):
+        msg = '[%s] %s' % (self.bundle_name, message)
+        print (msg)
+        if logfile:
+            try:
+                logfile.write(msg + '\n')
+                logfile.flush()
+            except:
+                pass
+
+    def log_debug(self, message):
         if self.debug:
             print ('[DEBUG %s] %s' % (self.bundle_name, message))
 
@@ -186,7 +196,7 @@ class flameAppFramework(object):
             self.prefs = pickle.load(prefs_file)
             prefs_file.close()
             self.log('preferences loaded from %s' % prefs_file_path)
-            self.log('preferences contents:\n' + pformat(self.prefs))
+            self.log_debug('preferences contents:\n' + pformat(self.prefs))
         except:
             self.log('unable to load preferences from %s' % prefs_file_path)
 
@@ -195,7 +205,7 @@ class flameAppFramework(object):
             self.prefs_user = pickle.load(prefs_file)
             prefs_file.close()
             self.log('preferences loaded from %s' % prefs_user_file_path)
-            self.log('preferences contents:\n' + pformat(self.prefs_user))
+            self.log_debug('preferences contents:\n' + pformat(self.prefs_user))
         except:
             self.log('unable to load preferences from %s' % prefs_user_file_path)
 
@@ -204,7 +214,7 @@ class flameAppFramework(object):
             self.prefs_global = pickle.load(prefs_file)
             prefs_file.close()
             self.log('preferences loaded from %s' % prefs_global_file_path)
-            self.log('preferences contents:\n' + pformat(self.prefs_global))
+            self.log_debug('preferences contents:\n' + pformat(self.prefs_global))
 
         except:
             self.log('unable to load preferences from %s' % prefs_global_file_path)
@@ -272,21 +282,34 @@ class flameAppFramework(object):
         
         if not script:
             return False
+        
+        logfile = None
+        if sys.platform == 'darwin':
+            logfile_path = '/var/tmp/flameTimewarpML_install.log'
+            try:
+                open(logfile_path, "w").close()
+                logfile = open(logfile_path, 'w+')
+            except:
+                pass
+        
+        import subprocess
+        log_cmd = """tell application "Terminal" to activate do script "tail -f """ + os.path.abspath(logfile_path) + '; exit"'
+        subprocess.Popen(['osascript', '-e', log_cmd])
             
-        self.log('bundle_id: %s size %s' % (self.bundle_id, len(script)))
+        self.log('bundle_id: %s size %s' % (self.bundle_id, len(script)), logfile)
         
         if os.path.isdir(bundle_path):
             try:
                 cmd = 'rm -rf ' + os.path.abspath(bundle_path)
-                self.log('removing existing bundle folder')
-                self.log('Executing command: %s' % cmd)
+                self.log('removing existing bundle folder', logfile)
+                self.log('Executing command: %s' % cmd, logfile)
                 os.system(cmd)
             except Exception as e:
                 self.show_exception(e)
                 return False
 
         try:
-            self.log('creating new bundle folder: %s' % bundle_path)
+            self.log('creating new bundle folder: %s' % bundle_path, logfile)
             os.makedirs(bundle_path)
         except Exception as e:
             self.show_exception(e)
@@ -298,33 +321,33 @@ class flameAppFramework(object):
         
         try:
             import base64
-            self.log('unpacking payload: %s' % payload_dest)
+            self.log('unpacking payload: %s' % payload_dest, logfile)
             with open(payload_dest, 'wb') as payload_file:
                 payload_file.write(base64.b64decode(payload))
                 payload_file.close()
             cmd = 'tar xf ' + payload_dest + ' -C ' + self.bundle_location + '/'
-            self.log('Executing command: %s' % cmd)
+            self.log('Executing command: %s' % cmd, logfile)
             status = os.system(cmd)
-            self.log('exit status %s' % os.WEXITSTATUS(status))
-            self.log('cleaning up %s' % payload_dest)
+            self.log('exit status %s' % os.WEXITSTATUS(status), logfile)
+            self.log('cleaning up %s' % payload_dest, logfile)
             os.remove(payload_dest)
         except Exception as e:
             self.show_exception(e)
             return False
 
         delta = time.time() - start
-        self.log('bundle extracted to %s' % bundle_path)
-        self.log('extracting bundle took %s sec' % str(delta))
+        self.log('bundle extracted to %s' % bundle_path, logfile)
+        self.log('extracting bundle took %s sec' % str(delta), logfile)
 
         del payload
         del script
 
         env_folder = os.path.join(self.bundle_location, 'miniconda3') 
-        self.install_env(env_folder)
-        self.install_env_packages(env_folder)
+        self.install_env(env_folder, logfile)
+        self.install_env_packages(env_folder, logfile)
 
         cmd = 'rm -rf ' + os.path.join(self.bundle_location, 'bundle', 'miniconda.package')
-        self.log('Executing command: %s' % cmd)
+        self.log('Executing command: %s' % cmd, logfile)
         os.system(cmd)
 
         try:
@@ -335,17 +358,24 @@ class flameAppFramework(object):
             return False
         
 
-        self.log('flameTimewarpML has finished installing its bundle and required packages')
+        self.log('flameTimewarpML has finished installing its bundle and required packages', logfile)
+
+        try:
+            logfile.close()
+            os.system('killall tail')
+        except:
+            pass
+
         self.show_complete_message(env_folder)
 
         return True
                     
-    def install_env(self, env_folder):
+    def install_env(self, env_folder, logfile):
         env_backup_folder = os.path.abspath(env_folder + '.previous')
         if os.path.isdir(env_backup_folder):
             try:
                 cmd = 'rm -rf ' + env_backup_folder
-                self.log('Executing command: %s' % cmd)
+                self.log('Executing command: %s' % cmd, logfile)
                 os.system(cmd)
             except Exception as e:
                 self.show_exception(e)
@@ -354,15 +384,15 @@ class flameAppFramework(object):
         if os.path.isdir(env_folder):
             try:
                 cmd = 'mv ' + env_folder + ' ' + env_backup_folder
-                self.log('Executing command: %s' % cmd)
+                self.log('Executing command: %s' % cmd, logfile)
                 os.system(cmd)
             except Exception as e:
                 self.show_exception(e)
                 return False
 
         start = time.time()
-        self.log('installing Miniconda3...')
-        self.log('installing into %s' % env_folder)
+        self.log('installing Miniconda3...', logfile)
+        self.log('installing into %s' % env_folder, logfile)
         
         if sys.platform == 'darwin':
             installer_file = os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'Miniconda3-latest-MacOSX-x86_64.sh')
@@ -371,15 +401,15 @@ class flameAppFramework(object):
 
         cmd = '/bin/sh ' + installer_file + ' -b -p ' + env_folder
         cmd += ' 2>&1 | tee > ' + os.path.join(self.bundle_location, 'miniconda_install.log')
-        self.log('Executing command: %s' % cmd)
+        self.log('Executing command: %s' % cmd, logfile)
         status = os.system(cmd)
-        self.log('exit status %s' % os.WEXITSTATUS(status))
+        self.log('exit status %s' % os.WEXITSTATUS(status), logfile)
         delta = time.time() - start
-        self.log('installing Miniconda took %s sec' % str(delta))
+        self.log('installing Miniconda took %s sec' % str(delta), logfile)
 
-    def install_env_packages(self, env_folder):
+    def install_env_packages(self, env_folder, logfile):
         start = time.time()
-        self.log('installing Miniconda packages...')
+        self.log('installing Miniconda packages...', logfile)
         cmd = """/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
         cmd += 'pip3 install -r ' + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') + ' --no-index --find-links '
         cmd += os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'packages')
@@ -387,11 +417,11 @@ class flameAppFramework(object):
         cmd += os.path.join(self.bundle_location, 'miniconda_packages_install.log')
         cmd += "'"
 
-        self.log('Executing command: %s' % cmd)        
+        self.log('Executing command: %s' % cmd, logfile)        
         status = os.system(cmd)
-        self.log('exit status %s' % os.WEXITSTATUS(status))
+        self.log('exit status %s' % os.WEXITSTATUS(status), logfile)
         delta = time.time() - start
-        self.log('installing Miniconda packages took %s sec' % str(delta))
+        self.log('installing Miniconda packages took %s sec' % str(delta), logfile)
 
     def show_exception(self, e):
         from PySide2 import QtWidgets
@@ -421,7 +451,7 @@ class flameAppFramework(object):
     def show_unpack_message(self, bundle_path):
         from PySide2 import QtWidgets
 
-        msg = 'flameTimeWarpML is going to unpack its bundle\nin background and run additional package scrips.\nCheck Flame console for details.'
+        msg = 'flameTimeWarpML is going to unpack its bundle\nin background and run additional package scrips.\nCheck console for details.'
         dmsg = 'flameTimeWarpML needs Python3 environment that is newer then the one provided with Flame '
         dmsg += 'as well as some additional ML and computer-vision dependancies like PyTorch and OpenCV. '
         dmsg += 'flameTimeWarpML is going to unpack its bundle into "%s" ' % self.bundle_location
@@ -645,6 +675,23 @@ class flameMenuApp(object):
 
         return preset_fields
 
+    def sanitized(self, text):
+        import re
+
+        if text is None:
+            return None
+        
+        text = text.strip()
+        exp = re.compile(u'[^\w\.-]', re.UNICODE)
+
+        if isinstance(text, unicode):
+            result = exp.sub('_', value)
+        else:
+            decoded = text.decode('utf-8')
+            result = exp.sub('_', decoded).encode('utf-8')
+
+        return re.sub('_\_+', '_', result)
+
 
 class flameTimewrapML(flameMenuApp):
     def __init__(self, framework):
@@ -661,7 +708,6 @@ class flameTimewrapML(flameMenuApp):
             self.working_folder = '/var/tmp'
 
         self.new_speed = 1
-
 
     def build_menu(self):
         def scope_clip(selection):
@@ -703,17 +749,17 @@ class flameTimewrapML(flameMenuApp):
         working_folder = str(result.get('working_folder', '/var/tmp'))
         speed = result.get('speed', 1)
         cmd_strings = []
-        cmd_prefix = """konsole -e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
-        cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
         number_of_clips = 0
-
 
         import flame
         for item in selection:
             if isinstance(item, (flame.PyClip)):
                 number_of_clips += 1
-                clip_name = item.name.get_value()
-                output_folder = os.path.abspath(os.path.join(working_folder, clip_name + '_TWML' + str(2 ** speed)))
+
+                clip = item
+                clip_name = clip.name.get_value()
+                
+                output_folder = os.path.abspath(os.path.join(working_folder, self.sanitized(clip_name) + '_TWML' + str(2 ** speed)))
 
                 if os.path.isdir(output_folder):
                     cmd = 'rm -f ' + output_folder + '/*'
@@ -722,25 +768,18 @@ class flameTimewrapML(flameMenuApp):
 
                 self.export_clip(item, output_folder)
                 
-                if sys.platform == 'darwin':
-                    cmd = 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'create_slowmo.py')
-                    cmd += ' --img ' + os.path.join(output_folder, 'source') + ' --output ' + output_folder
-                    cmd += ' --exp=' + str(speed) + "; "
-                    cmd_strings.append(cmd)
-                else:
-                    cmd = 'echo "processing: ' + clip_name + '"; '
-                    cmd += 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'create_slowmo.py')
-                    cmd += ' --img "' + os.path.join(output_folder, 'source') + '" --output "' + output_folder +'"'
-                    cmd += ' --exp=' + str(speed) + "; "
-                    cmd_strings.append(cmd)
+                cmd = 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'create_slowmo.py')
+                cmd += ' --img ' + os.path.join(output_folder, 'source') + ' --output ' + output_folder
+                cmd += ' --exp=' + str(speed) + "; "
+                cmd_strings.append(cmd)
                 
-                watcher = threading.Thread(target=self.import_watcher, args=(output_folder, item, ))
+                new_clip_name = clip_name + '_TWML' + str(2 ** speed)
+                watcher = threading.Thread(target=self.import_watcher, args=(output_folder, clip, new_clip_name))
                 watcher.daemon = True
                 watcher.start()
                 self.loops.append(watcher)
         
         if sys.platform == 'darwin':
-            # ml_cmd += """'; exit" """
             cmd_prefix = """tell application "Terminal" to activate do script "clear; """
             # cmd_prefix += """ echo " & quote & "Received """
             # cmd_prefix += str(number_of_clips)
@@ -762,6 +801,9 @@ class flameTimewrapML(flameMenuApp):
             subprocess.Popen(['osascript', '-e', ml_cmd])
         
         else:
+            cmd_prefix = """konsole -e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+
             ml_cmd = cmd_prefix
             ml_cmd += 'echo "Received ' + str(number_of_clips)
             ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
@@ -991,7 +1033,7 @@ class flameTimewrapML(flameMenuApp):
         export_preset = os.path.join(export_preset_folder, 'OpenEXR', 'OpenEXR (16-bit fp PIZ).xml')
         exporter.export(clip, export_preset, export_dir, hooks=ExportHooks())
 
-    def import_watcher(self, path, clip):
+    def import_watcher(self, path, clip, new_clip_name):
         import hashlib
         lockfile_name = hashlib.sha1(path.encode()).hexdigest().upper() + '.lock'
         lockfile = os.path.join(self.framework.bundle_location, 'bundle', 'locks', lockfile_name)
@@ -1008,7 +1050,7 @@ class flameTimewrapML(flameMenuApp):
             if len(new_clips) > 0:
                 new_clip = new_clips[0]
                 if new_clip:
-                    new_clip.name.set_value(os.path.basename(path))
+                    new_clip.name.set_value(new_clip_name)
             
             flame.execute_shortcut('Refresh Thumbnails')
 
