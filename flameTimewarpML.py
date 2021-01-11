@@ -722,29 +722,59 @@ class flameTimewrapML(flameMenuApp):
 
                 self.export_clip(item, output_folder)
                 
-                cmd = 'echo "processing: ' + clip_name + '"; '
-                cmd += 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'create_slowmo.py')
-                cmd += ' --img "' + os.path.join(output_folder, 'source') + '" --output "' + output_folder +'"'
-                cmd += ' --exp=' + str(speed) + "; "
-                cmd_strings.append(cmd)
+                if sys.platform == 'darwin':
+                    cmd = 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'create_slowmo.py')
+                    cmd += ' --img ' + os.path.join(output_folder, 'source') + ' --output ' + output_folder
+                    cmd += ' --exp=' + str(speed) + "; "
+                    cmd_strings.append(cmd)
+                else:
+                    cmd = 'echo "processing: ' + clip_name + '"; '
+                    cmd += 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'create_slowmo.py')
+                    cmd += ' --img "' + os.path.join(output_folder, 'source') + '" --output "' + output_folder +'"'
+                    cmd += ' --exp=' + str(speed) + "; "
+                    cmd_strings.append(cmd)
                 
                 watcher = threading.Thread(target=self.import_watcher, args=(output_folder, item, ))
                 watcher.daemon = True
                 watcher.start()
                 self.loops.append(watcher)
+        
+        if sys.platform == 'darwin':
+            # ml_cmd += """'; exit" """
+            cmd_prefix = """tell application "Terminal" to activate do script "clear; """
+            # cmd_prefix += """ echo " & quote & "Received """
+            # cmd_prefix += str(number_of_clips)
+            #cmd_prefix += ' clip ' if number_of_clips < 2 else ' clips '
+            # cmd_prefix += 'to process, press Ctrl+C to cancel" & quote &; '
+            cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
+            cmd_prefix += os.path.join(self.env_folder, 'bin', 'conda')
+            cmd_prefix += """ shell.bash hook)" & quote & "; conda activate; """
+            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            
+            ml_cmd = cmd_prefix
+           
+            for cmd_string in cmd_strings:
+                ml_cmd += cmd_string
 
-        ml_cmd = cmd_prefix
-        ml_cmd += 'echo "Received ' + str(number_of_clips)
-        ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
-        ml_cmd += 'to process, press Ctrl+C to cancel"; '
-        ml_cmd += 'trap exit SIGINT SIGTERM; '
+            ml_cmd += """'; exit" """
 
-        for cmd_string in cmd_strings:
-            ml_cmd += cmd_string
-        ml_cmd +="'"
+            import subprocess
+            subprocess.Popen(['osascript', '-e', ml_cmd])
+        
+        else:
+            ml_cmd = cmd_prefix
+            ml_cmd += 'echo "Received ' + str(number_of_clips)
+            ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
+            ml_cmd += 'to process, press Ctrl+C to cancel"; '
+            ml_cmd += 'trap exit SIGINT SIGTERM; '
 
-        self.log('Executing command: %s' % ml_cmd)
-        os.system(ml_cmd)
+            for cmd_string in cmd_strings:
+                ml_cmd += cmd_string
+
+            ml_cmd +="'"
+            self.log('Executing command: %s' % ml_cmd)
+            os.system(ml_cmd)
+
         flame.execute_shortcut('Refresh Thumbnails')
 
     def slowmo_dialog(self, *args, **kwargs):
@@ -965,7 +995,9 @@ class flameTimewrapML(flameMenuApp):
         import hashlib
         lockfile_name = hashlib.sha1(path.encode()).hexdigest().upper() + '.lock'
         lockfile = os.path.join(self.framework.bundle_location, 'bundle', 'locks', lockfile_name)
-        os.system('echo "' + path + '">' + lockfile)
+        cmd = 'echo "' + path + '">' + lockfile
+        self.log('Executing command: %s' % cmd)
+        os.system(cmd)
 
         flame_path = None
         
