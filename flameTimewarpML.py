@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.1.1.001'
+__version__ = 'v0.1.1.003'
 
 
 class flameAppFramework(object):
@@ -110,15 +110,11 @@ class flameAppFramework(object):
                  'Library',
                  'Caches',
                  self.bundle_name)
-            import applescript
-            self.applescript = applescript 
-
         elif sys.platform.startswith('linux'):
             self.prefs_folder = os.path.join(
                 os.path.expanduser('~'),
                 '.config',
                 self.bundle_name)
-            self.applescript = None
 
         self.prefs_folder = os.path.join(
             self.prefs_folder,
@@ -130,17 +126,18 @@ class flameAppFramework(object):
 
         # preferences defaults
 
-        if not self.prefs_global.get('bundle_location'):
-            if sys.platform == 'darwin':
-                self.bundle_location = os.path.join(
-                    os.path.expanduser('~'),
-                    'Documents',
-                    self.bundle_name)
+        # if not self.prefs_global.get('bundle_location'):
+        if sys.platform == 'darwin':
+            self.bundle_location = os.path.join(
+                os.path.expanduser('~'),
+                'Documents',
+                self.bundle_name)
+        else:
             self.bundle_location = os.path.join(
                 os.path.expanduser('~'),
                 self.bundle_name)
-        else:
-            self.bundle_location = self.prefs_global.get('bundle_location')
+        # else:
+        #    self.bundle_location = self.prefs_global.get('bundle_location')
 
         #    self.prefs_global['menu_auto_refresh'] = {
         #        'media_panel': True,
@@ -307,7 +304,8 @@ class flameAppFramework(object):
                 payload_file.close()
             cmd = 'tar xf ' + payload_dest + ' -C ' + self.bundle_location + '/'
             self.log('Executing command: %s' % cmd)
-            os.system(cmd)
+            status = os.system(cmd)
+            self.log('exit status %s' % os.WEXITSTATUS(status))
             self.log('cleaning up %s' % payload_dest)
             os.remove(payload_dest)
         except Exception as e:
@@ -365,26 +363,33 @@ class flameAppFramework(object):
         start = time.time()
         self.log('installing Miniconda3...')
         self.log('installing into %s' % env_folder)
-        installer_file = os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'Miniconda3-Linux-x86_64.sh')
+        
+        if sys.platform == 'darwin':
+            installer_file = os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'Miniconda3-latest-MacOSX-x86_64.sh')
+        else:
+            installer_file = os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'Miniconda3-latest-Linux-x86_64.sh')
+
         cmd = '/bin/sh ' + installer_file + ' -b -p ' + env_folder
-        cmd += ' 2>&1 | tee ' + os.path.join(self.bundle_location, 'miniconda_install.log')
+        cmd += ' 2>&1 | tee > ' + os.path.join(self.bundle_location, 'miniconda_install.log')
         self.log('Executing command: %s' % cmd)
-        os.system(cmd)
+        status = os.system(cmd)
+        self.log('exit status %s' % os.WEXITSTATUS(status))
         delta = time.time() - start
         self.log('installing Miniconda took %s sec' % str(delta))
 
     def install_env_packages(self, env_folder):
         start = time.time()
         self.log('installing Miniconda packages...')
-        cmd = """/usr/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+        cmd = """/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
         cmd += 'pip3 install -r ' + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') + ' --no-index --find-links '
         cmd += os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'packages')
-        cmd += ' 2>&1 | tee '
+        cmd += ' 2>&1 | tee > '
         cmd += os.path.join(self.bundle_location, 'miniconda_packages_install.log')
         cmd += "'"
 
         self.log('Executing command: %s' % cmd)        
-        os.system(cmd)
+        status = os.system(cmd)
+        self.log('exit status %s' % os.WEXITSTATUS(status))
         delta = time.time() - start
         self.log('installing Miniconda packages took %s sec' % str(delta))
 
@@ -698,7 +703,7 @@ class flameTimewrapML(flameMenuApp):
         working_folder = str(result.get('working_folder', '/var/tmp'))
         speed = result.get('speed', 1)
         cmd_strings = []
-        cmd_prefix = """konsole -e /usr/bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+        cmd_prefix = """konsole -e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
         cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
         number_of_clips = 0
 
