@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.1.1.000'
+__version__ = 'v0.1.1.001'
 
 
 class flameAppFramework(object):
@@ -277,7 +277,7 @@ class flameAppFramework(object):
             try:
                 cmd = 'rm -rf ' + os.path.abspath(bundle_path)
                 self.log('removing existing bundle folder')
-                self.log('executing: %s' % cmd)
+                self.log('Executing command: %s' % cmd)
                 os.system(cmd)
             except Exception as e:
                 self.show_exception(e)
@@ -363,7 +363,7 @@ class flameAppFramework(object):
         installer_file = os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'Miniconda3-Linux-x86_64.sh')
         cmd = '/bin/sh ' + installer_file + ' -b -p ' + env_folder
         cmd += ' 2>&1 | tee ' + os.path.join(self.bundle_location, 'miniconda_install.log')
-        self.log('executing: %s' % cmd)
+        self.log('Executing command: %s' % cmd)
         os.system(cmd)
         delta = time.time() - start
         self.log('installing Miniconda took %s sec' % str(delta))
@@ -378,7 +378,7 @@ class flameAppFramework(object):
         cmd += os.path.join(self.bundle_location, 'miniconda_packages_install.log')
         cmd += "'"
 
-        self.log('Executing command: %s' % cmd)
+        self.log('Executing command: %s' % cmd)        
         os.system(cmd)
         delta = time.time() - start
         self.log('installing Miniconda packages took %s sec' % str(delta))
