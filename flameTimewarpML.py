@@ -105,20 +105,20 @@ class flameAppFramework(object):
         self.hostname = socket.gethostname()
         
         if sys.platform == 'darwin':
-            from PySide2 import QtWidgets
-            msg = 'Sorry folks, this stuff is linux-only at the moment'
-            mbox = QtWidgets.QMessageBox()
-            mbox.setWindowTitle('flameTimewrarpML')
-            mbox.setText(msg)
-            mbox.setStyleSheet('QLabel{min-width: 800px;}')
-            mbox.exec_()
-            sys.exit()
+            self.prefs_folder = os.path.join(
+                os.path.expanduser('~'),
+                 'Library',
+                 'Caches',
+                 self.bundle_name)
+            import applescript
+            self.applescript = applescript 
 
         elif sys.platform.startswith('linux'):
             self.prefs_folder = os.path.join(
                 os.path.expanduser('~'),
                 '.config',
                 self.bundle_name)
+            self.applescript = None
 
         self.prefs_folder = os.path.join(
             self.prefs_folder,
@@ -131,6 +131,11 @@ class flameAppFramework(object):
         # preferences defaults
 
         if not self.prefs_global.get('bundle_location'):
+            if sys.platform == 'darwin':
+                self.bundle_location = os.path.join(
+                    os.path.expanduser('~'),
+                    'Documents',
+                    self.bundle_name)
             self.bundle_location = os.path.join(
                 os.path.expanduser('~'),
                 self.bundle_name)
