@@ -207,12 +207,18 @@ for nn in range(1, tot_frame+1):
     if args.montage:
         write_buffer.put(np.concatenate((lastframe, lastframe), 1))
         for mid in output:
-            mid = (((mid[0] * 255.).byte().cpu().detach().numpy().transpose(1, 2, 0)))
+            if sys.platform == 'darwin':
+                mid = (((mid[0] * 255.).byte().cpu().detach().numpy().transpose(1, 2, 0)))
+            else:
+                mid = (((mid[0] * 255.).byte().cpu().numpy().transpose(1, 2, 0)))
             write_buffer.put(np.concatenate((lastframe, mid[:h, :w]), 1))
     else:
         write_buffer.put(lastframe)
         for mid in output:
-            mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+            if sys.platform == 'darwin':
+                mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+            else:
+                mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
             write_buffer.put(mid[:h, :w])
 
     # pbar.update(1)
