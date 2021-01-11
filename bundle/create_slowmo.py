@@ -118,7 +118,7 @@ if args.png:
 def clear_write_buffer(user_args, write_buffer):
     new_frames_number = ((tot_frame - 1) * ((2 ** args.exp) -1)) + tot_frame
     print ('rendering %s frames to %s/' % (new_frames_number, args.output))
-    pbar = tqdm(total=new_frames_number)
+    pbar = tqdm(total=new_frames_number, unit='frame')
     cnt = 0
     while ThreadsFlag:
         item = write_buffer.get()
