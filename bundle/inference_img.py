@@ -27,7 +27,6 @@ model.device()
 
 if args.img[0].endswith('.exr') and args.img[1].endswith('.exr'):
     img0 = cv2.imread(args.img[0], cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)
-    pprint (img0.dtype)
     img1 = cv2.imread(args.img[1], cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)
     img0 = (torch.tensor(img0.transpose(2, 0, 1)).to(device)).unsqueeze(0)
     img1 = (torch.tensor(img1.transpose(2, 0, 1)).to(device)).unsqueeze(0)
