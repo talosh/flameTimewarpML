@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.1.1.010'
+__version__ = 'v0.1.1.016'
 
 
 class flameAppFramework(object):
@@ -284,17 +284,20 @@ class flameAppFramework(object):
             return False
         
         logfile = None
-        if sys.platform == 'darwin':
-            logfile_path = '/var/tmp/flameTimewarpML_install.log'
-            try:
-                open(logfile_path, "w").close()
-                logfile = open(logfile_path, 'w+')
-            except:
-                pass
+        logfile_path = '/var/tmp/flameTimewarpML_install.log'
+        try:
+            open(logfile_path, "w").close()
+            logfile = open(logfile_path, 'w+')
+        except:
+            pass
         
-        import subprocess
-        log_cmd = """tell application "Terminal" to activate do script "tail -f """ + os.path.abspath(logfile_path) + '; exit"'
-        subprocess.Popen(['osascript', '-e', log_cmd])
+        if sys.platform == 'darwin':
+            import subprocess
+            log_cmd = """tell application "Terminal" to activate do script "tail -f """ + os.path.abspath(logfile_path) + '; exit"'
+            subprocess.Popen(['osascript', '-e', log_cmd])
+        else:
+            log_cmd = """konsole --caption flameTimewarpML -e /bin/bash -c 'trap exit SIGINT SIGTERM; tail -f """ + os.path.abspath(logfile_path) +"; sleep 2'"
+            os.system(log_cmd)
             
         self.log('bundle_id: %s size %s' % (self.bundle_id, len(script)), logfile)
         
