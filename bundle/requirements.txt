@@ -4,4 +4,3 @@ sk-video
 torch
 opencv-python
 moviepy
-tensorboard
