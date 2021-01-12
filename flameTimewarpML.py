@@ -14,9 +14,9 @@ from pprint import pprint
 from pprint import pformat
 
 menu_group_name = 'Timewarp ML'
-DEBUG = True
+DEBUG = False
 
-__version__ = 'v0.1.1.016'
+__version__ = 'v0.1.1'
 
 
 class flameAppFramework(object):
