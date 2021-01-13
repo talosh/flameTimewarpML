@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore")
 from pprint import pprint
 import time
 
-ThreadsFlag = True
+import multiprocessing as mp
 
 # Exception handler
 def exeption_handler(exctype, value, tb):
@@ -33,89 +33,18 @@ sys.excepthook = exeption_handler
 
 # ctrl+c handler
 import signal
-
 def signal_handler(sig, frame):
+    global ThreadsFlag
     ThreadsFlag = False
     time.sleep(0.1)
     sys.exit(0)
-    
 signal.signal(signal.SIGINT, signal_handler)
 
-print('initializing Timewarp ML...')
+def worker(num):
+    print ('Worker:', num)
+    return
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-if torch.cuda.is_available():
-    torch.set_grad_enabled(False)
-    torch.backends.cudnn.enabled = True
-    torch.backends.cudnn.benchmark = True
-
-parser = argparse.ArgumentParser(description='Interpolation for a pair of images')
-parser.add_argument('--video', dest='video', type=str, default=None)
-parser.add_argument('--img', dest='img', type=str, default=None)
-parser.add_argument('--output', dest='output', type=str, default=None)
-parser.add_argument('--montage', dest='montage', action='store_true', help='montage origin video')
-parser.add_argument('--UHD', dest='UHD', action='store_true', help='support 4k video')
-parser.add_argument('--skip', dest='skip', action='store_true', help='whether to remove static frames before processing')
-parser.add_argument('--fps', dest='fps', type=int, default=None)
-parser.add_argument('--png', dest='png', action='store_true', help='whether to vid_out png format vid_outs')
-parser.add_argument('--ext', dest='ext', type=str, default='mp4', help='vid_out video extension')
-parser.add_argument('--exp', dest='exp', type=int, default=1)
-
-args = parser.parse_args()
-assert (not args.video is None or not args.img is None)
-if not args.img is None:
-    args.png = True
-
-from model.RIFE_HD import Model
-model = Model()
-model.load_model('./train_log', -1)
-model.eval()
-model.device()
-
-if not args.video is None:
-    videoCapture = cv2.VideoCapture(args.video)
-    fps = videoCapture.get(cv2.CAP_PROP_FPS)
-    tot_frame = videoCapture.get(cv2.CAP_PROP_FRAME_COUNT)
-    videoCapture.release()
-    if args.fps is None:
-        fpsNotAssigned = True
-        args.fps = fps * (2 ** args.exp)
-    else:
-        fpsNotAssigned = False
-    videogen = skvideo.io.vreader(args.video)
-    lastframe = next(videogen)
-    fourcc = cv2.VideoWriter_fourcc('H', 'F', 'Y', 'U')
-    video_path_wo_ext, ext = os.path.splitext(args.video)
-    print('{}.{}, {} frames in total, {}FPS to {}FPS'.format(video_path_wo_ext, args.ext, tot_frame, fps, args.fps))
-    if args.png == False and fpsNotAssigned == True and not args.skip:
-        print("The audio will be merged after interpolation process")
-    else:
-        print("Will not merge audio because using png, fps or skip flag!")
-else:
-    videogen = []
-    exrs = []
-    for f in os.listdir(args.img):
-        if f.endswith('.png'):
-            videogen.append(f)
-        if f.endswith('.exr'):
-            exrs.append(f)
-    
-    # prefer exr sequences if detected
-    if exrs:
-        videogen = exrs
-    tot_frame = len(videogen)
-    videogen.sort()
-    lastframe = cv2.imread(os.path.join(args.img, videogen[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
-    videogen = videogen[1:]
-    videogen.append(videogen[-1])
-h, w, _ = lastframe.shape
-vid_out = None
-if args.png:
-    output_folder = os.path.abspath(args.output)
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-    
-def clear_write_buffer(user_args, write_buffer):
+def clear_write_buffer(user_args, write_buffer, tot_frame):
     new_frames_number = ((tot_frame - 1) * ((2 ** args.exp) -1)) + tot_frame
     print ('rendering %s frames to %s/' % (new_frames_number, args.output))
     pbar = tqdm(total=new_frames_number, unit='frame')
@@ -142,104 +71,212 @@ def build_read_buffer(user_args, read_buffer, videogen):
         read_buffer.put(frame_data)
     read_buffer.put(None)
 
-def make_inference(I0, I1, exp):
-    global model
-    middle = model.inference(I0, I1, args.UHD)
+def make_inference(model, I0, I1, exp, UHD):
+    middle = model.inference(I0, I1, UHD)
     if exp == 1:
         return [middle]
-    first_half = make_inference(I0, middle, exp=exp - 1)
-    second_half = make_inference(middle, I1, exp=exp - 1)
+    first_half = make_inference(model, I0, middle, exp=exp - 1, UHD=UHD)
+    second_half = make_inference(model, middle, I1, exp=exp - 1, UHD=UHD)
     return [*first_half, middle, *second_half]
-            
-if args.montage:
-    left = w // 4
-    w = w // 2
-if args.UHD:
-    ph = ((h - 1) // 64 + 1) * 64
-    pw = ((w - 1) // 64 + 1) * 64
-else:
-    ph = ((h - 1) // 32 + 1) * 32
-    pw = ((w - 1) // 32 + 1) * 32
-padding = (0, pw - w, 0, ph - h)
 
-skip_frame = 1
-if args.montage:
-    lastframe = lastframe[:, left: left + w]
+def three_of_a_perfect_pair(frame0, frame1, index, mp_output, device, padding, model, args, h, w):
+    local_output = []
 
-write_buffer = Queue(maxsize=500)
-read_buffer = Queue(maxsize=500)
-_thread.start_new_thread(build_read_buffer, (args, read_buffer, videogen))
-_thread.start_new_thread(clear_write_buffer, (args, write_buffer))
-
-I1 = torch.from_numpy(np.transpose(lastframe, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
-I1 = F.pad(I1, padding)
-
-# pbar = tqdm(total=tot_frame)
-
-# while True:
-for nn in range(1, tot_frame+1):
-
-    frame = read_buffer.get()
-    if frame is None:
-        break
-
-    I0 = I1
-    I1 = torch.from_numpy(np.transpose(frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+    I0 = torch.from_numpy(np.transpose(frame0, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+    I1 = torch.from_numpy(np.transpose(frame1, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+    I0 = F.pad(I0, padding)
     I1 = F.pad(I1, padding)
 
     diff = (F.interpolate(I0, (16, 16), mode='bilinear', align_corners=False)
-         - F.interpolate(I1, (16, 16), mode='bilinear', align_corners=False)).abs()
-    
-    # if diff.max() < 2e-3 and args.skip:
-    #    if skip_frame % 100 == 0:
-    #        print("Warning: Your video has {} static frames, skipping them may change the duration of the generated video.".format(skip_frame))
-    #    skip_frame += 1
-    #    pbar.update(1)
-    #    continue
+        - F.interpolate(I1, (16, 16), mode='bilinear', align_corners=False)).abs()
 
+    mp_output[index] = frame0
+    # cut detection - we probably don't need it here
+    # shall try to interpolate anyway
     if diff.mean() > 0.2:
-        output = []
         for i in range((2 ** args.exp) - 1):
-            output.append(I0)
+            mp_output[index + 1 + i] = I0
     else:
-        output = make_inference(I0, I1, args.exp)
-        
+        local_output = make_inference(model, I0, I1, args.exp, args.UHD)
+        i = 0
+        for mid in local_output:
+            mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+            mp_output[index + 1 + i] = mid[:h, :w]
+            i += 1
+    return
+
+if __name__ == '__main__':
+    cpus = None
+    ThreadsFlag = True
+    print('initializing Timewarp ML...')
+
+    from model.RIFE_HD import Model
+    model = Model()
+    model.load_model('./train_log', -1)
+    model.eval()
+    model.device()
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        torch.set_grad_enabled(False)
+        torch.backends.cudnn.enabled = True
+        torch.backends.cudnn.benchmark = True
+    else:
+        cpus = mp.cpu_count()
+        cpus = int(cpus/2)
+        print ('no cuda is available, using %s cpu workers instead' % cpus)
+
+    parser = argparse.ArgumentParser(description='Interpolation for a pair of images')
+    parser.add_argument('--video', dest='video', type=str, default=None)
+    parser.add_argument('--img', dest='img', type=str, default=None)
+    parser.add_argument('--output', dest='output', type=str, default=None)
+    parser.add_argument('--montage', dest='montage', action='store_true', help='montage origin video')
+    parser.add_argument('--UHD', dest='UHD', action='store_true', help='support 4k video')
+    parser.add_argument('--skip', dest='skip', action='store_true', help='whether to remove static frames before processing')
+    parser.add_argument('--fps', dest='fps', type=int, default=None)
+    parser.add_argument('--png', dest='png', action='store_true', help='whether to vid_out png format vid_outs')
+    parser.add_argument('--ext', dest='ext', type=str, default='mp4', help='vid_out video extension')
+    parser.add_argument('--exp', dest='exp', type=int, default=1)
+
+    args = parser.parse_args()
+    assert (not args.video is None or not args.img is None)
+    if not args.img is None:
+        args.png = True
+
+    videogen = []
+    exrs = []
+    for f in os.listdir(args.img):
+        if f.endswith('.png'):
+            videogen.append(f)
+        if f.endswith('.exr'):
+            exrs.append(f)
+    
+    # prefer exr sequences if detected
+    if exrs:
+        videogen = exrs
+    tot_frame = len(videogen)
+    videogen.sort()
+    lastframe = cv2.imread(os.path.join(args.img, videogen[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+    videogen.append(videogen[-1])
+    h, w, _ = lastframe.shape
+    vid_out = None
+    if args.png:
+        output_folder = os.path.abspath(args.output)
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
+
+    if args.montage:
+        left = w // 4
+        w = w // 2
+    if args.UHD:
+        ph = ((h - 1) // 64 + 1) * 64
+        pw = ((w - 1) // 64 + 1) * 64
+    else:
+        ph = ((h - 1) // 32 + 1) * 32
+        pw = ((w - 1) // 32 + 1) * 32
+    padding = (0, pw - w, 0, ph - h)
+
+    skip_frame = 1
+    if args.montage:
+        lastframe = lastframe[:, left: left + w]
+
+    write_buffer = Queue(maxsize=500)
+    read_buffer = Queue(maxsize=500)
+    _thread.start_new_thread(build_read_buffer, (args, read_buffer, videogen))
+    _thread.start_new_thread(clear_write_buffer, (args, write_buffer, tot_frame))
+
+    if cpus:
+        manager = mp.Manager()
+        mp_output = manager.dict()
+
+        lastframe = read_buffer.get()
+        for nn in range(1, tot_frame+1, cpus):
+            frames = []
+            frames.append(lastframe)
+            for frame_count in range(cpus):
+                frame = read_buffer.get()
+                if frame is None:
+                    break
+                frames.append(frame)
+            lastframe = frame
+
+            workers = []
+            index = 0
+            for frame_index in range(len(frames)-1):
+                p = mp.Process(target=three_of_a_perfect_pair, args=(frames[frame_index], frames[frame_index+1], index, mp_output, device, padding, model, args, h, w, ))
+                p.start()
+                workers.append(p)
+                index += (2 ** args.exp) + 1
+            
+            for worker in workers:
+                worker.join()
+
+            for local_frame_index in sorted(mp_output.keys()):
+                write_buffer.put(mp_output[local_frame_index])
+
+        write_buffer.put(frames[-1])
+
+    else:
+
+        I1 = torch.from_numpy(np.transpose(lastframe, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+        I1 = F.pad(I1, padding)
+        frame = read_buffer.get()
+
+        for nn in range(1, tot_frame+1):
+
+            frame = read_buffer.get()
+            if frame is None:
+                break
+
+            I0 = I1
+            I1 = torch.from_numpy(np.transpose(frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+            I1 = F.pad(I1, padding)
+
+            diff = (F.interpolate(I0, (16, 16), mode='bilinear', align_corners=False)
+                - F.interpolate(I1, (16, 16), mode='bilinear', align_corners=False)).abs()
+            
+            # if diff.max() < 2e-3 and args.skip:
+            #    if skip_frame % 100 == 0:
+            #        print("Warning: Your video has {} static frames, skipping them may change the duration of the generated video.".format(skip_frame))
+            #    skip_frame += 1
+            #    pbar.update(1)
+            #    continue
+
+            if diff.mean() > 0.2:
+                output = []
+                for i in range((2 ** args.exp) - 1):
+                    output.append(I0)
+            else:
+                output = make_inference(model, I0, I1, args.exp, args.UHD)
+                
+            write_buffer.put(lastframe)
+            for mid in output:
+                if sys.platform == 'darwin':
+                    mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+                else:
+                    mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
+                write_buffer.put(mid[:h, :w])
+
+            # pbar.update(1)
+            lastframe = frame
+
     if args.montage:
         write_buffer.put(np.concatenate((lastframe, lastframe), 1))
-        for mid in output:
-            if sys.platform == 'darwin':
-                mid = (((mid[0] * 255.).byte().cpu().detach().numpy().transpose(1, 2, 0)))
-            else:
-                mid = (((mid[0] * 255.).byte().cpu().numpy().transpose(1, 2, 0)))
-            write_buffer.put(np.concatenate((lastframe, mid[:h, :w]), 1))
     else:
         write_buffer.put(lastframe)
-        for mid in output:
-            if sys.platform == 'darwin':
-                mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
-            else:
-                mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
-            write_buffer.put(mid[:h, :w])
 
-    # pbar.update(1)
-    lastframe = frame
+    while(not write_buffer.empty()):
+        time.sleep(0.1)
 
-if args.montage:
-    write_buffer.put(np.concatenate((lastframe, lastframe), 1))
-else:
-    write_buffer.put(lastframe)
+    # pbar.close()
+    if not vid_out is None:
+        vid_out.release()
 
-while(not write_buffer.empty()):
-    time.sleep(0.1)
+    import hashlib
+    lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
+    if os.path.isfile(lockfile):
+        os.remove(lockfile)
 
-# pbar.close()
-if not vid_out is None:
-    vid_out.release()
+    # input("Press Enter to continue...")
 
-import hashlib
-lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
-if os.path.isfile(lockfile):
-    os.remove(lockfile)
-
-# input("Press Enter to continue...")
 
