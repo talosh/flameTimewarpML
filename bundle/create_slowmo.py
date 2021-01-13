@@ -66,8 +66,6 @@ def build_read_buffer(user_args, read_buffer, videogen):
         if not user_args.img is None:
             if frame.endswith('.exr'):
                 frame_data = cv2.imread(os.path.join(user_args.img, frame), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
-        if user_args.montage:
-            frame_data = frame_data[:, left: left + w]
         read_buffer.put(frame_data)
     read_buffer.put(None)
 
@@ -130,7 +128,6 @@ if __name__ == '__main__':
     parser.add_argument('--video', dest='video', type=str, default=None)
     parser.add_argument('--img', dest='img', type=str, default=None)
     parser.add_argument('--output', dest='output', type=str, default=None)
-    parser.add_argument('--montage', dest='montage', action='store_true', help='montage origin video')
     parser.add_argument('--UHD', dest='UHD', action='store_true', help='support 4k video')
     parser.add_argument('--skip', dest='skip', action='store_true', help='whether to remove static frames before processing')
     parser.add_argument('--fps', dest='fps', type=int, default=None)
@@ -165,20 +162,11 @@ if __name__ == '__main__':
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
-    if args.montage:
-        left = w // 4
-        w = w // 2
-    if args.UHD:
-        ph = ((h - 1) // 64 + 1) * 64
-        pw = ((w - 1) // 64 + 1) * 64
-    else:
-        ph = ((h - 1) // 32 + 1) * 32
-        pw = ((w - 1) // 32 + 1) * 32
+    ph = ((h - 1) // 64 + 1) * 64
+    pw = ((w - 1) // 64 + 1) * 64
     padding = (0, pw - w, 0, ph - h)
 
     skip_frame = 1
-    if args.montage:
-        lastframe = lastframe[:, left: left + w]
 
     write_buffer = Queue(maxsize=500)
     read_buffer = Queue(maxsize=500)
@@ -260,10 +248,7 @@ if __name__ == '__main__':
             # pbar.update(1)
             lastframe = frame
 
-    if args.montage:
-        write_buffer.put(np.concatenate((lastframe, lastframe), 1))
-    else:
-        write_buffer.put(lastframe)
+    write_buffer.put(lastframe)
 
     while(not write_buffer.empty()):
         time.sleep(0.1)
