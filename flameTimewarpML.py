@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.1.1'
+__version__ = 'v0.2.0.000'
 
 
 class flameAppFramework(object):
@@ -771,7 +771,7 @@ class flameTimewrapML(flameMenuApp):
 
                 self.export_clip(item, output_folder)
                 
-                cmd = 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'create_slowmo.py')
+                cmd = 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'inference_sequence.py')
                 cmd += ' --img ' + os.path.join(output_folder, 'source') + ' --output ' + output_folder
                 cmd += ' --exp=' + str(speed) + "; "
                 cmd_strings.append(cmd)
