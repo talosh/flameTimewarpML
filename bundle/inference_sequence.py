@@ -108,29 +108,11 @@ if __name__ == '__main__':
     ThreadsFlag = True
     print('initializing Timewarp ML...')
 
-    from model.RIFE_HD import Model
-    model = Model()
-    model.load_model('./train_log', -1)
-    model.eval()
-    model.device()
-    
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if torch.cuda.is_available():
-        torch.set_grad_enabled(False)
-        torch.backends.cudnn.enabled = True
-        torch.backends.cudnn.benchmark = True
-    else:
-        cpus = mp.cpu_count()
-        cpus = int(cpus/2)
-        print ('no cuda is available, using %s cpu workers instead' % cpus)
-
     parser = argparse.ArgumentParser(description='Interpolation for a pair of images')
     parser.add_argument('--video', dest='video', type=str, default=None)
     parser.add_argument('--img', dest='img', type=str, default=None)
     parser.add_argument('--output', dest='output', type=str, default=None)
     parser.add_argument('--UHD', dest='UHD', action='store_true', help='support 4k video')
-    parser.add_argument('--skip', dest='skip', action='store_true', help='whether to remove static frames before processing')
-    parser.add_argument('--fps', dest='fps', type=int, default=None)
     parser.add_argument('--png', dest='png', action='store_true', help='whether to vid_out png format vid_outs')
     parser.add_argument('--ext', dest='ext', type=str, default='mp4', help='vid_out video extension')
     parser.add_argument('--exp', dest='exp', type=int, default=1)
@@ -139,6 +121,36 @@ if __name__ == '__main__':
     assert (not args.output is None or not args.img is None)
     if not args.img is None:
         args.png = True
+
+    manager = mp.Manager()
+    frames = manager.dict()
+    img_formats = ['.exr',]
+    frame_number = 1
+    for f in os.listdir(args.img):
+        name, ext = os.path.splitext(f)
+        if ext in img_formats:
+            frames[frame_number] = os.path.abspath(f)
+            frame_number += (2 ** args.exp)
+
+    #for k in frames.keys():
+    #    pprint ('key: %s value: %s' % (k, frames.get(k)))    
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    from model.RIFE_HD import Model
+    model = Model()
+    model.load_model('./train_log', -1)
+    model.eval()
+    model.device()
+    
+    if torch.cuda.is_available():
+        torch.set_grad_enabled(False)
+        torch.backends.cudnn.enabled = True
+        torch.backends.cudnn.benchmark = True
+    else:
+        cpus = mp.cpu_count()
+        cpus = int(cpus/2) - 1
+        print ('no cuda is available, using %s cpu workers instead' % cpus)
 
     videogen = []
     exrs = []
@@ -166,15 +178,12 @@ if __name__ == '__main__':
     pw = ((w - 1) // 64 + 1) * 64
     padding = (0, pw - w, 0, ph - h)
 
-    skip_frame = 1
-
     write_buffer = Queue(maxsize=500)
     read_buffer = Queue(maxsize=500)
     _thread.start_new_thread(build_read_buffer, (args, read_buffer, videogen))
     _thread.start_new_thread(clear_write_buffer, (args, write_buffer, tot_frame))
 
     if cpus:
-        manager = mp.Manager()
         mp_output = manager.dict()
 
         lastframe = read_buffer.get()
@@ -223,13 +232,6 @@ if __name__ == '__main__':
             diff = (F.interpolate(I0, (16, 16), mode='bilinear', align_corners=False)
                 - F.interpolate(I1, (16, 16), mode='bilinear', align_corners=False)).abs()
             
-            # if diff.max() < 2e-3 and args.skip:
-            #    if skip_frame % 100 == 0:
-            #        print("Warning: Your video has {} static frames, skipping them may change the duration of the generated video.".format(skip_frame))
-            #    skip_frame += 1
-            #    pbar.update(1)
-            #    continue
-
             if diff.mean() > 0.2:
                 output = []
                 for i in range((2 ** args.exp) - 1):
