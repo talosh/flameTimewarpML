@@ -4,9 +4,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from model.warplayer import warp
 
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 def conv_wo_act(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
     return nn.Sequential(
         nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
@@ -84,8 +81,9 @@ class IFBlock(nn.Module):
 
 
 class IFNet(nn.Module):
-    def __init__(self):
+    def __init__(self, device = torch.device("cuda" if torch.cuda.is_available() else "cpu")):
         super(IFNet, self).__init__()
+        self._device = device
         self.block0 = IFBlock(6, scale=8, c=192)
         self.block1 = IFBlock(8, scale=4, c=128)
         self.block2 = IFBlock(8, scale=2, c=96)
@@ -99,21 +97,24 @@ class IFNet(nn.Module):
                               align_corners=False)
         flow0 = self.block0(x)
         F1 = flow0
-        warped_img0 = warp(x[:, :3], F1)
-        warped_img1 = warp(x[:, 3:], -F1)
+        warped_img0 = warp(x[:, :3], F1, self._device)
+        warped_img1 = warp(x[:, 3:], -F1, self._device)
         flow1 = self.block1(torch.cat((warped_img0, warped_img1, F1), 1))
         F2 = (flow0 + flow1)
-        warped_img0 = warp(x[:, :3], F2)
-        warped_img1 = warp(x[:, 3:], -F2)
+        warped_img0 = warp(x[:, :3], F2, self._device)
+        warped_img1 = warp(x[:, 3:], -F2, self._device)
         flow2 = self.block2(torch.cat((warped_img0, warped_img1, F2), 1))
         F3 = (flow0 + flow1 + flow2)
-        warped_img0 = warp(x[:, :3], F3)
-        warped_img1 = warp(x[:, 3:], -F3)
+        warped_img0 = warp(x[:, :3], F3, self._device)
+        warped_img1 = warp(x[:, 3:], -F3, self._device)
         flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3), 1))
         F4 = (flow0 + flow1 + flow2 + flow3)
         return F4, [F1, F2, F3, F4]
 
 if __name__ == '__main__':
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
     img0 = torch.zeros(3, 3, 256, 256).float().to(device)
     img1 = torch.tensor(np.random.normal(
         0, 1, (3, 3, 256, 256))).float().to(device)

@@ -10,8 +10,6 @@ from model.IFNet_HD import *
 import torch.nn.functional as F
 from model.loss import *
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
 def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
     return nn.Sequential(
@@ -62,8 +60,10 @@ class ResBlock(nn.Module):
 c = 32
 
 class ContextNet(nn.Module):
-    def __init__(self):
+    def __init__(self, device = torch.device("cuda" if torch.cuda.is_available() else "cpu")):
         super(ContextNet, self).__init__()
+        self._device = device
+
         self.conv0 = conv(3, c, 3, 2, 1)
         self.conv1 = ResBlock(c, c)
         self.conv2 = ResBlock(c, 2*c)
@@ -74,25 +74,27 @@ class ContextNet(nn.Module):
         x = self.conv0(x)
         x = self.conv1(x)
         flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear", align_corners=False) * 0.5
-        f1 = warp(x, flow)
+        f1 = warp(x, flow, self._device)
         x = self.conv2(x)
         flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
                              align_corners=False) * 0.5
-        f2 = warp(x, flow)
+        f2 = warp(x, flow, self._device)
         x = self.conv3(x)
         flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
                              align_corners=False) * 0.5
-        f3 = warp(x, flow)
+        f3 = warp(x, flow, self._device)
         x = self.conv4(x)
         flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
                              align_corners=False) * 0.5
-        f4 = warp(x, flow)
+        f4 = warp(x, flow, self._device)
         return [f1, f2, f3, f4]
 
 
 class FusionNet(nn.Module):
-    def __init__(self):
+    def __init__(self, device = torch.device("cuda" if torch.cuda.is_available() else "cpu")):
         super(FusionNet, self).__init__()
+        self._device = device
+
         self.conv0 = conv(8, c, 3, 2, 1)
         self.down0 = ResBlock(c, 2*c)
         self.down1 = ResBlock(4*c, 4*c)
@@ -106,13 +108,13 @@ class FusionNet(nn.Module):
         self.up4 = nn.PixelShuffle(2)
 
     def forward(self, img0, img1, flow, c0, c1, flow_gt):
-        warped_img0 = warp(img0, flow)
-        warped_img1 = warp(img1, -flow)
+        warped_img0 = warp(img0, flow, self._device)
+        warped_img1 = warp(img1, -flow, self._device)
         if flow_gt == None:
             warped_img0_gt, warped_img1_gt = None, None
         else:
-            warped_img0_gt = warp(img0, flow_gt[:, :2])
-            warped_img1_gt = warp(img1, flow_gt[:, 2:4])
+            warped_img0_gt = warp(img0, flow_gt[:, :2], self._device)
+            warped_img1_gt = warp(img1, flow_gt[:, 2:4], self._device)
         x = self.conv0(torch.cat((warped_img0, warped_img1, flow), 1))
         s0 = self.down0(x)
         s1 = self.down1(torch.cat((s0, c0[0], c1[0]), 1))
@@ -127,11 +129,12 @@ class FusionNet(nn.Module):
 
 
 class Model:
-    def __init__(self, local_rank=-1):
-        self.flownet = IFNet()
-        self.contextnet = ContextNet()
-        self.fusionnet = FusionNet()
-        self.device()
+    def __init__(self, local_rank=-1, device = torch.device("cuda" if torch.cuda.is_available() else "cpu")):
+        self.flownet = IFNet(device = device)
+        self.contextnet = ContextNet(device = device)
+        self.fusionnet = FusionNet(device = device)
+        self._device = device
+        self.device(self._device)
         self.optimG = AdamW(itertools.chain(
             self.flownet.parameters(),
             self.contextnet.parameters(),
@@ -139,8 +142,8 @@ class Model:
         self.schedulerG = optim.lr_scheduler.CyclicLR(
             self.optimG, base_lr=1e-6, max_lr=1e-3, step_size_up=8000, cycle_momentum=False)
         self.epe = EPE()
-        self.ter = Ternary()
-        self.sobel = SOBEL()
+        self.ter = Ternary(device = self._device)
+        self.sobel = SOBEL(device = self._device)
         if local_rank != -1:
             self.flownet = DDP(self.flownet, device_ids=[
                                local_rank], output_device=local_rank)
@@ -159,7 +162,7 @@ class Model:
         self.contextnet.eval()
         self.fusionnet.eval()
 
-    def device(self):
+    def device(self, device):
         self.flownet.to(device)
         self.contextnet.to(device)
         self.fusionnet.to(device)
@@ -176,11 +179,11 @@ class Model:
                 return param
         if rank <= 0:
             self.flownet.load_state_dict(
-                convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
+                convert(torch.load('{}/flownet.pkl'.format(path), map_location=self._device)))
             self.contextnet.load_state_dict(
-                convert(torch.load('{}/contextnet.pkl'.format(path), map_location=device)))
+                convert(torch.load('{}/contextnet.pkl'.format(path), map_location=self._device)))
             self.fusionnet.load_state_dict(
-                convert(torch.load('{}/unet.pkl'.format(path), map_location=device)))
+                convert(torch.load('{}/unet.pkl'.format(path), map_location=self._device)))
 
     def save_model(self, path, rank):
         if rank == 0:
@@ -253,6 +256,8 @@ class Model:
 
 
 if __name__ == '__main__':
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     img0 = torch.zeros(3, 3, 256, 256).float().to(device)
     img1 = torch.tensor(np.random.normal(
         0, 1, (3, 3, 256, 256))).float().to(device)
