@@ -8,3 +8,4 @@ settings.json
 *.png
 flameTimewarpML.package
 flameTimewarpMLenv.tar.bz2
+test_*
