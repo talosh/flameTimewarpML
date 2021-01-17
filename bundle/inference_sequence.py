@@ -41,10 +41,10 @@ def signal_handler(sig, frame):
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
-def find_middle_frame(frames):
+def find_middle_frame(frames, frames_taken):
     for start_frame in range(1, len(frames.keys()) + 1):
-        for frame_number in range (start_frame, len(frames.keys())):
-            if frames.get(frame_number) and (not frames.get(frame_number + 1)): 
+        for frame_number in range (start_frame, len(frames.keys()) + 1):
+            if frames.get(frame_number) and (not frames.get(frame_number + 1, True)):
                 start_frame = frame_number
                 break
 
@@ -56,27 +56,34 @@ def find_middle_frame(frames):
         
         middle_frame = start_frame + int((end_frame - start_frame) / 2)
 
-        if not frames.get(middle_frame):
-            if type(frames.get(middle_frame)) != type(''):
+        if frames.get(start_frame) and not frames.get(middle_frame):
+            if middle_frame in frames_taken.keys():
                 # this frame is taken by another worker
                 continue
-            # turn the frame value into int so it marks frame as taken for other workers
-            frames[ middle_frame ] = False
-            return (start_frame, middle_frame, end_frame)
+            else:
+                # mark frame as taken
+                frames_taken[middle_frame] = 'taken between %s and %s' % (start_frame, end_frame)
 
-def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_written):
-    perfect_pair = find_middle_frame(frames)
-    # print ('s: %s m: %s e: %s' % perfect_pair)
-    
+                #print ('s: %s m: %s e: %s' % (start_frame, middle_frame, end_frame))
+                #print ('%s: %s' % ( start_frame, frames.get(start_frame) ))
+                #print ('%s: %s' % ( middle_frame, frames.get(middle_frame) ))
+                #print ('%s: %s' % ( end_frame, frames.get(end_frame) ))
+
+                return (start_frame, middle_frame, end_frame)
+    return False
+
+def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_written, frames_taken):
+    perfect_pair = find_middle_frame(frames, frames_taken)
+
     if not perfect_pair:
-        print ('no more frames left')
+        # print ('no more frames left')
         return False
 
     start_frame = perfect_pair[0]
     middle_frame = perfect_pair[1]
     end_frame = perfect_pair[2]
 
-    frame0 = cv2.imread(frames[start_frame], cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()    
+    frame0 = cv2.imread(frames[start_frame], cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
     frame1 = cv2.imread(frames[end_frame], cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
 
     I0 = torch.from_numpy(np.transpose(frame0, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
@@ -89,9 +96,8 @@ def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_w
     
     mid = model.inference(I0, I1, args.UHD)
     mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
-    cv2.imwrite(os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(middle_frame)), frame0[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
-    frames_written[ middle_frame ] = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(middle_frame))
-    frames[ middle_frame ] = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(middle_frame))
+    midframe = mid[:h, :w]
+    cv2.imwrite(os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(middle_frame)), midframe[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
 
     start_frame_out_file_name = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(start_frame))
     if not os.path.isfile(start_frame_out_file_name):
@@ -100,12 +106,15 @@ def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_w
 
     end_frame_out_file_name = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(end_frame))
     if not os.path.isfile(end_frame_out_file_name):
-        cv2.imwrite(os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(end_frame)), frame0[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
+        cv2.imwrite(os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(end_frame)), frame1[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
         frames_written[ end_frame ] = end_frame_out_file_name
+
+    frames_written[ middle_frame ] = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(middle_frame))
+    frames[ middle_frame ] = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(middle_frame))
 
     return True
 
-def pbar_updater(frames_written, last_frame_number):
+def progress_updater(frames_written, last_frame_number):
     pbar = tqdm(total=last_frame_number, unit='frame')
     lastframe = 0
     while len(frames_written.keys()) < last_frame_number:
@@ -142,6 +151,8 @@ if __name__ == '__main__':
     manager = mp.Manager()
     frames = manager.dict()
     frames_written = manager.dict()
+    frames_taken = manager.dict()
+
     img_formats = ['.exr',]
     files_list = []
     for f in os.listdir(args.input):
@@ -170,7 +181,7 @@ if __name__ == '__main__':
     model = Model()
     model.load_model('./train_log', -1)
     model.eval()
-    model.device()
+    # model.device()
     
     if torch.cuda.is_available():
         torch.set_grad_enabled(False)
@@ -211,15 +222,15 @@ if __name__ == '__main__':
     if thread_ram > available_ram:
         print ('Warning: estimated peak memory usage is greater then RAM avaliable')
     
-    _thread.start_new_thread(pbar_updater, (frames_written, last_frame_number))
+    _thread.start_new_thread(progress_updater, (frames_written, last_frame_number))
 
-    #for k in range(0, len(frames.keys()) + 2):
+    #for k in range(0, len(frames.keys()) + 1):
     #    print ('%s: %s' % (k, frames.get(k)))
 
     active_workers = []
 
-    for i in range (0, total_workers_needed):
-        p = mp.Process(target=three_of_a_perfect_pair, args=(frames, device, padding, model, args, h, w, frames_written, ))
+    while len(frames_written.keys()) != last_frame_number:
+        p = mp.Process(target=three_of_a_perfect_pair, args=(frames, device, padding, model, args, h, w, frames_written, frames_taken, ))
         p.start()
         active_workers.append(p)
         
@@ -245,10 +256,6 @@ if __name__ == '__main__':
         active_workers = list(alive_workers)
         time.sleep(0.01)
 
-            #for local_frame_index in sorted(mp_output.keys()):
-            #    write_buffer.put(mp_output[local_frame_index])
-
-        # write_buffer.put(frames[-1])
     '''
     else:
 
