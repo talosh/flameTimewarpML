@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.2.0.beta.004'
+__version__ = 'v0.2.0.beta.009'
 
 
 class flameAppFramework(object):
@@ -711,6 +711,7 @@ class flameTimewrapML(flameMenuApp):
             self.working_folder = '/var/tmp'
 
         self.new_speed = 1
+        self.cpu_only = True
 
     def build_menu(self):
         def scope_clip(selection):
@@ -770,8 +771,11 @@ class flameTimewrapML(flameMenuApp):
                     os.system(cmd)
 
                 self.export_clip(item, output_folder)
-                
-                cmd = 'python3 ' + os.path.join(self.framework.bundle_location, 'bundle', 'inference_sequence.py')
+
+                cmd = 'python3 '
+                if self.cpu_only:
+                    cmd = 'export OMP_NUM_THREADS=1; python3 '
+                cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_sequence.py')
                 cmd += ' --input ' + os.path.join(output_folder, 'source') + ' --output ' + output_folder
                 cmd += ' --exp=' + str(speed) + "; "
                 cmd_strings.append(cmd)
