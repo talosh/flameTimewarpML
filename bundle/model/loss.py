@@ -3,9 +3,6 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
 class EPE(nn.Module):
     def __init__(self):
         super(EPE, self).__init__()
@@ -17,7 +14,7 @@ class EPE(nn.Module):
 
 
 class Ternary(nn.Module):
-    def __init__(self):
+    def __init__(self, device = torch.device("cuda" if torch.cuda.is_available() else "cpu")):
         super(Ternary, self).__init__()
         patch_size = 7
         out_channels = patch_size * patch_size
@@ -55,7 +52,7 @@ class Ternary(nn.Module):
 
 
 class SOBEL(nn.Module):
-    def __init__(self):
+    def __init__(self, device = torch.device("cuda" if torch.cuda.is_available() else "cpu")):
         super(SOBEL, self).__init__()
         self.kernelX = torch.tensor([
             [1, 0, -1],
@@ -81,6 +78,8 @@ class SOBEL(nn.Module):
 
 
 if __name__ == '__main__':
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     img0 = torch.zeros(3, 3, 256, 256).float().to(device)
     img1 = torch.tensor(np.random.normal(
         0, 1, (3, 3, 256, 256))).float().to(device)
