@@ -85,9 +85,10 @@ def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_w
 
     frame0 = cv2.imread(frames[start_frame], cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
     frame1 = cv2.imread(frames[end_frame], cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+    
+    I0 = torch.from_numpy(np.transpose(frame0, (2,0,1))).to(device, non_blocking=True).unsqueeze(0).detach()
+    I1 = torch.from_numpy(np.transpose(frame1, (2,0,1))).to(device, non_blocking=True).unsqueeze(0).detach()
 
-    I0 = torch.from_numpy(np.transpose(frame0, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
-    I1 = torch.from_numpy(np.transpose(frame1, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
     I0 = F.pad(I0, padding)
     I1 = F.pad(I1, padding)
 
@@ -130,7 +131,6 @@ def progress_updater(frames_written, last_frame_number):
     pbar.refresh()
     pbar.close()
 
-
 if __name__ == '__main__':
     cpus = None
     ThreadsFlag = True
@@ -141,7 +141,6 @@ if __name__ == '__main__':
     parser.add_argument('--input', dest='input', type=str, default=None)
     parser.add_argument('--output', dest='output', type=str, default=None)
     parser.add_argument('--UHD', dest='UHD', action='store_true', help='support 4k video')
-    parser.add_argument('--png', dest='png', action='store_true', help='whether to vid_out png format vid_outs')
     parser.add_argument('--ext', dest='ext', type=str, default='mp4', help='vid_out video extension')
     parser.add_argument('--exp', dest='exp', type=int, default=1)
 
@@ -175,19 +174,6 @@ if __name__ == '__main__':
     for frame_number in range(first_frame_number, last_frame_number):
         frames[frame_number] = frames.get(frame_number, '')
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    from model.RIFE_HD import Model
-    model = Model()
-    model.load_model('./train_log', -1)
-    model.eval()
-    # model.device()
-    
-    if torch.cuda.is_available():
-        torch.set_grad_enabled(False)
-        torch.backends.cudnn.enabled = True
-        torch.backends.cudnn.benchmark = True    
-
     first_frame = cv2.imread(frames.get(first_frame_number), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
     h, w, _ = first_frame.shape
 
@@ -195,14 +181,23 @@ if __name__ == '__main__':
     pw = ((w - 1) // 64 + 1) * 64
     padding = (0, pw - w, 0, ph - h)
 
-    #write_buffer = Queue(maxsize=500)
-    #read_buffer = Queue(maxsize=500)
-    #_thread.start_new_thread(build_read_buffer, (args, read_buffer, videogen))
-    #_thread.start_new_thread(clear_write_buffer, (args, write_buffer, tot_frame))
-
     output_folder = os.path.abspath(args.output)
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
+
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = 'cpu'
+
+    from model.RIFE_HD import Model
+    model = Model()
+    model.load_model('./train_log', -1)
+    model.eval()
+    # model.device()
+    
+    #if torch.cuda.is_available():
+    #    torch.set_grad_enabled(False)
+    #    torch.backends.cudnn.enabled = True
+    #    torch.backends.cudnn.benchmark = True    
 
     max_cpu_workers = mp.cpu_count() - 2
     total_workers_needed = last_frame_number - input_duration
@@ -215,7 +210,7 @@ if __name__ == '__main__':
     elif sim_workers > max_cpu_workers:
         sim_workers = max_cpu_workers
 
-    print ('---\nAvaliable RAM: %s Gb' % '{0:.1f}'.format(available_ram))
+    print ('---\nFree RAM: %s Gb avaliable' % '{0:.1f}'.format(available_ram))
     print ('Image size: %s x %s' % ( w, h,))
     print ('Peak memory usage estimation: %s Gb per CPU thread ' % '{0:.1f}'.format(thread_ram))
     print ('Using %s CPU worker thread%s (of %s avaliable)\n---' % (sim_workers, '' if sim_workers == 1 else 's', mp.cpu_count()))
@@ -309,6 +304,6 @@ if __name__ == '__main__':
     if os.path.isfile(lockfile):
         os.remove(lockfile)
 
-    # input("Press Enter to continue...")
+    input("Press Enter to continue...")
 
 
