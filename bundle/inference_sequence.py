@@ -41,35 +41,14 @@ def signal_handler(sig, frame):
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
-def worker(num):
-    print ('Worker:', num)
-    return
-
-def clear_write_buffer(user_args, write_buffer, tot_frame):
-    new_frames_number = ((tot_frame - 1) * ((2 ** args.exp) -1)) + tot_frame
-    print ('rendering %s frames to %s/' % (new_frames_number, args.output))
-    pbar = tqdm(total=new_frames_number, unit='frame')
-    cnt = 0
-    while ThreadsFlag:
-        item = write_buffer.get()
-
-        if item is None:
-            pbar.close()
-            break
-        
-        if cnt < new_frames_number:
-            cv2.imwrite(os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(cnt)), item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
-        pbar.update(1)
-        cnt += 1
-
 def find_middle_frame(frames):
-    for start_frame in range(1, len(frames.keys())):
+    for start_frame in range(1, len(frames.keys()) + 1):
         for frame_number in range (start_frame, len(frames.keys())):
             if frames.get(frame_number) and (not frames.get(frame_number + 1)): 
                 start_frame = frame_number
                 break
 
-        for frame_number in range(start_frame + 1, len(frames.keys())):
+        for frame_number in range(start_frame + 1, len(frames.keys()) + 1):
             if frames.get(frame_number):
                 end_frame = frame_number
                 break
@@ -87,6 +66,7 @@ def find_middle_frame(frames):
 
 def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_written):
     perfect_pair = find_middle_frame(frames)
+    # print ('s: %s m: %s e: %s' % perfect_pair)
     
     if not perfect_pair:
         print ('no more frames left')
@@ -96,18 +76,8 @@ def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_w
     middle_frame = perfect_pair[1]
     end_frame = perfect_pair[2]
 
-    frame0 = cv2.imread(frames[start_frame], cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
-    start_frame_out_file_name = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(start_frame))
-    if not os.path.isfile(start_frame_out_file_name):
-        cv2.imwrite(os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(start_frame)), frame0[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
-        frames_written[ start_frame ] = start_frame_out_file_name
-    
+    frame0 = cv2.imread(frames[start_frame], cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()    
     frame1 = cv2.imread(frames[end_frame], cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
-    end_frame_out_file_name = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(end_frame))
-    if not os.path.isfile(end_frame_out_file_name):
-        cv2.imwrite(os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(end_frame)), frame0[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
-        frames_written[ end_frame ] = end_frame_out_file_name
-
 
     I0 = torch.from_numpy(np.transpose(frame0, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
     I1 = torch.from_numpy(np.transpose(frame1, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
@@ -123,7 +93,34 @@ def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_w
     frames_written[ middle_frame ] = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(middle_frame))
     frames[ middle_frame ] = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(middle_frame))
 
+    start_frame_out_file_name = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(start_frame))
+    if not os.path.isfile(start_frame_out_file_name):
+        cv2.imwrite(os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(start_frame)), frame0[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
+        frames_written[ start_frame ] = start_frame_out_file_name
+
+    end_frame_out_file_name = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(end_frame))
+    if not os.path.isfile(end_frame_out_file_name):
+        cv2.imwrite(os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(end_frame)), frame0[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
+        frames_written[ end_frame ] = end_frame_out_file_name
+
     return True
+
+def pbar_updater(frames_written, last_frame_number):
+    pbar = tqdm(total=last_frame_number, unit='frame')
+    lastframe = 0
+    while len(frames_written.keys()) < last_frame_number:
+        pbar.n = len(frames_written.keys())
+        pbar.last_print_n = len(frames_written.keys())
+        if lastframe != len(frames_written.keys()):
+            pbar.refresh()
+            lastframe = len(frames_written.keys())
+        time.sleep(0.01)
+    
+    pbar.n = len(frames_written.keys())
+    pbar.last_print_n = len(frames_written.keys())
+    pbar.refresh()
+    pbar.close()
+
 
 if __name__ == '__main__':
     cpus = None
@@ -162,6 +159,8 @@ if __name__ == '__main__':
         frames[frame_number] = os.path.join(args.input, file_name)
         frame_number += step + 1
 
+
+
     for frame_number in range(first_frame_number, last_frame_number):
         frames[frame_number] = frames.get(frame_number, '')
 
@@ -198,18 +197,24 @@ if __name__ == '__main__':
     total_workers_needed = last_frame_number - input_duration
     available_ram = psutil.virtual_memory()[1]/( 1024 ** 3 )
     megapixels = ( h * w ) / ( 10 ** 6 )
-    thread_ram = megapixels * 1.92
-    sim_workers = int( available_ram / thread_ram )
+    thread_ram = megapixels * 1.98
+    sim_workers = round( available_ram / thread_ram )
     if sim_workers < 1:
         sim_workers = 1
     elif sim_workers > max_cpu_workers:
         sim_workers = max_cpu_workers
 
-    print ('---\nAvaliable RAM: %s Gb' % '{0:.2f}'.format(available_ram))
-    print ('Estimated memory usage: %s Gb per CPU thread for %sx%s image' % ('{0:.2f}'.format(thread_ram), w, h))
-    print ('Issuing %s CPU threads (%s avaliable\n---' % (sim_workers, mp.cpu_count()))
+    print ('---\nAvaliable RAM: %s Gb' % '{0:.1f}'.format(available_ram))
+    print ('Image size: %s x %s' % ( w, h,))
+    print ('Peak memory usage estimation: %s Gb per CPU thread ' % '{0:.1f}'.format(thread_ram))
+    print ('Using %s CPU worker thread%s (of %s avaliable)\n---' % (sim_workers, '' if sim_workers == 1 else 's', mp.cpu_count()))
+    if thread_ram > available_ram:
+        print ('Warning: estimated peak memory usage is greater then RAM avaliable')
     
-    pbar = tqdm(total=last_frame_number, unit='frame')
+    _thread.start_new_thread(pbar_updater, (frames_written, last_frame_number))
+
+    #for k in range(0, len(frames.keys()) + 2):
+    #    print ('%s: %s' % (k, frames.get(k)))
 
     active_workers = []
 
@@ -217,7 +222,7 @@ if __name__ == '__main__':
         p = mp.Process(target=three_of_a_perfect_pair, args=(frames, device, padding, model, args, h, w, frames_written, ))
         p.start()
         active_workers.append(p)
-
+        
         while len(active_workers) >= sim_workers:
             finished_workers = []
             alive_workers = []
@@ -227,17 +232,7 @@ if __name__ == '__main__':
                 else:
                     alive_workers.append(worker)
             active_workers = list(alive_workers)
-            # pbar.n = len(frames_written.keys())
-            # pbar.last_print_n = len(frames_written.keys())
-            # pbar.refresh()
             time.sleep(0.01)
-
-        # pbar.n = len(frames_written.keys())
-        # pbar.last_print_n = len(frames_written.keys())
-        # pbar.refresh()
-
-        #for k in range(1, 15):
-        #    print ('%s: %s' % (k, frames.get(k)))
 
     while len(active_workers):
         finished_workers = []
@@ -249,11 +244,6 @@ if __name__ == '__main__':
                 alive_workers.append(worker)
         active_workers = list(alive_workers)
         time.sleep(0.01)
-
-    pbar.close()
-    input("Press Enter to continue...")
-    sys.exit()
-
 
             #for local_frame_index in sorted(mp_output.keys()):
             #    write_buffer.put(mp_output[local_frame_index])
