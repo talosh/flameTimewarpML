@@ -143,15 +143,20 @@ if __name__ == '__main__':
     parser.add_argument('--output', dest='output', type=str, default=None)
     parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
     parser.add_argument('--exp', dest='exp', type=int, default=1)
-    parser.add_argument('--cpuonly', dest='cpuonly', action='store_true', help='process only on CPU(s)')
+    parser.add_argument('--cpu', dest='cpu', action='store_true', help='process only on CPU(s)')
 
     args = parser.parse_args()
     assert (not args.output is None or not args.input is None)
 
-    manager = mp.Manager()
-    frames = manager.dict()
-    frames_written = manager.dict()
-    frames_taken = manager.dict()
+    if torch.cuda.is_available() and not args.cpu:
+        frames = dict()
+        frames_written = dict()
+        frames_taken = dict()
+    else:
+        manager = mp.Manager()
+        frames = manager.dict()
+        frames_written = manager.dict()
+        frames_taken = manager.dict()
 
     img_formats = ['.exr',]
     files_list = []
@@ -186,7 +191,7 @@ if __name__ == '__main__':
     
     _thread.start_new_thread(progress_updater, (frames_written, last_frame_number, ThreadsFlag))
 
-    if torch.cuda.is_available() and not args.cpuonly:
+    if torch.cuda.is_available() and not args.cpu:
         device = torch.device('cuda')
 
         from model.RIFE_HD import Model
