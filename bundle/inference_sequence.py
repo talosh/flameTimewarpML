@@ -222,7 +222,7 @@ if __name__ == '__main__':
         sys.exit()
 
         # chto za huinja?
-        # test2
+        # test3
 
         _thread.start_new_thread(io_cache, (cache, frames, frames_written, last_frame_number, ThreadsFlag))
         _thread.start_new_thread(io_cache, (cache, frames, frames_written, last_frame_number, ThreadsFlag))
