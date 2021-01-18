@@ -132,6 +132,12 @@ def progress_updater(frames_written, last_frame_number, ThreadsFlag):
     pbar.refresh()
     pbar.close()
 
+def read_cache(cache, ThreadsFlag):
+    pass
+
+def write_cache(cache, frames_written, ThreadsFlag):
+    pass
+
 if __name__ == '__main__':
     cpus = None
     ThreadsFlag = True
@@ -198,11 +204,25 @@ if __name__ == '__main__':
         model = Model(device = device)
         model.load_model('./train_log', -1)
         model.eval()
-        # model.device()
 
         torch.set_grad_enabled(False)
         torch.backends.cudnn.enabled = True
         torch.backends.cudnn.benchmark = True
+
+        cache = dict()
+        for frame_number in sorted(frames.keys()):
+            cache[frame_number] = {
+                'path' : frames.get(frame_number),
+                'frame_data' : None,
+                'is_root_frame' : True if frames.get(frame_number) else False,
+                'is_written' : False
+            }
+        
+        pprint (cache)
+        sys.exit()
+
+        _thread.start_new_thread(io_cache, (cache, frames, frames_written, last_frame_number, ThreadsFlag))
+        _thread.start_new_thread(io_cache, (cache, frames, frames_written, last_frame_number, ThreadsFlag))
 
         while len(frames_written.keys()) != last_frame_number:
             three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_written, frames_taken)
@@ -214,7 +234,6 @@ if __name__ == '__main__':
         model = Model(device = device)
         model.load_model('./train_log', -1)
         model.eval()
-        # model.device()
 
         max_cpu_workers = mp.cpu_count() - 2
         available_ram = psutil.virtual_memory()[1]/( 1024 ** 3 )
