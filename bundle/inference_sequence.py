@@ -53,13 +53,13 @@ def clear_write_buffer(user_args, write_buffer, tot_frame):
     cnt = 0
     while ThreadsFlag:
         item = write_buffer.get()
-
         if item is None:
             pbar.close()
             break
-        
         if cnt < new_frames_number:
+
             cv2.imwrite(os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(cnt)), item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
+        
         pbar.update(1)
         cnt += 1
 
@@ -310,10 +310,16 @@ if __name__ == '__main__':
         cpu_progress_updater.daemon = True
         cpu_progress_updater.start()
 
+        last_thread_time = time.time()
         while len(frames_written.keys()) != last_frame_number:
             p = mp.Process(target=three_of_a_perfect_pair, args=(frames, device, padding, model, args, h, w, frames_written, frames_taken, ))
             p.start()
             active_workers.append(p)
+            
+            # try to shift threads in time to avoid memory congestion
+            if (time.time() - last_thread_time) < (thread_ram / 8):
+                if sim_workers > 1:
+                    time.sleep(thread_ram/8)
             
             while len(active_workers) >= sim_workers:
                 finished_workers = []
@@ -325,6 +331,7 @@ if __name__ == '__main__':
                         alive_workers.append(worker)
                 active_workers = list(alive_workers)
                 time.sleep(0.01)
+            last_thread_time = time.time()
 
         while len(active_workers):
             finished_workers = []
@@ -345,6 +352,6 @@ if __name__ == '__main__':
     if os.path.isfile(lockfile):
         os.remove(lockfile)
 
-    input("Press Enter to continue...")
+    # input("Press Enter to continue...")
 
 
