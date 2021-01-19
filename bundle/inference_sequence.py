@@ -20,6 +20,7 @@ import psutil
 import multiprocessing as mp
 
 ThreadsFlag = True
+IOProcesses = []
 
 # Exception handler
 def exeption_handler(exctype, value, tb):
@@ -46,6 +47,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 def clear_write_buffer(user_args, write_buffer, tot_frame):
     global ThreadsFlag
+    global IOProcesses
 
     new_frames_number = ((tot_frame - 1) * ((2 ** args.exp) -1)) + tot_frame
     print ('rendering %s frames to %s/' % (new_frames_number, args.output))
@@ -57,8 +59,10 @@ def clear_write_buffer(user_args, write_buffer, tot_frame):
             pbar.close()
             break
         if cnt < new_frames_number:
-
-            cv2.imwrite(os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(cnt)), item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
+            path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(cnt))
+            p = mp.Process(target=cv2.imwrite, args=(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
+            p.start()
+            IOProcesses.append(p)
         
         pbar.update(1)
         cnt += 1
@@ -226,6 +230,14 @@ if __name__ == '__main__':
     if torch.cuda.is_available() and not args.cpu:
         # process on GPU
 
+        files_list.sort()
+        files_list.append(files_list[-1])
+
+        write_buffer = Queue(maxsize=mp.cpu_count() - 3)
+        read_buffer = Queue(maxsize=500)
+        _thread.start_new_thread(build_read_buffer, (args, read_buffer, files_list))
+        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
+
         from model.RIFE_HD import Model
         model = Model()
         model.load_model('./train_log', -1)
@@ -237,14 +249,6 @@ if __name__ == '__main__':
             torch.set_grad_enabled(False)
             torch.backends.cudnn.enabled = True
             torch.backends.cudnn.benchmark = True
-
-        files_list.sort()
-        files_list.append(files_list[-1])
-
-        write_buffer = Queue(maxsize=500)
-        read_buffer = Queue(maxsize=500)
-        _thread.start_new_thread(build_read_buffer, (args, read_buffer, files_list))
-        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
 
         lastframe = first_image
         I1 = torch.from_numpy(np.transpose(lastframe, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
@@ -347,6 +351,9 @@ if __name__ == '__main__':
         ThreadsFlag = False
         cpu_progress_updater.join()
     
+    for p in IOProcesses:
+        p.join()
+
     import hashlib
     lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
     if os.path.isfile(lockfile):
