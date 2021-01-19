@@ -50,11 +50,14 @@ def clear_write_buffer(user_args, write_buffer, tot_frame):
     global IOProcesses
 
     new_frames_number = ((tot_frame - 1) * ((2 ** args.exp) -1)) + tot_frame
-    print ('rendering %s frames to %s/' % (new_frames_number, args.output))
-    pbar = tqdm(total=new_frames_number, unit='frame')
     cnt = 0
     while ThreadsFlag:
         item = write_buffer.get()
+        
+        if cnt == 0:
+            print ('rendering %s frames to %s' % (new_frames_number, args.output))
+            pbar = tqdm(total=new_frames_number, unit='frame')
+        
         if item is None:
             pbar.close()
             break
@@ -89,7 +92,8 @@ def find_middle_frame(frames, frames_taken):
             if frames.get(frame_number) and (not frames.get(frame_number + 1, True)):
                 start_frame = frame_number
                 break
-
+        
+        end_frame = start_frame + 1
         for frame_number in range(start_frame + 1, len(frames.keys()) + 1):
             if frames.get(frame_number):
                 end_frame = frame_number
@@ -175,13 +179,15 @@ if __name__ == '__main__':
     start = time.time()
     print('initializing Timewarp ML...')
 
-    parser = argparse.ArgumentParser(description='Interpolation for a pair of images')
+    parser = argparse.ArgumentParser(description='Interpolation for a sequence of exr images')
     parser.add_argument('--video', dest='video', type=str, default=None)
     parser.add_argument('--input', dest='input', type=str, default=None)
     parser.add_argument('--output', dest='output', type=str, default=None)
+    parser.add_argument('--model', dest='model', type=str, default='./pretrained_models/default/v1.8')
     parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
     parser.add_argument('--exp', dest='exp', type=int, default=1)
     parser.add_argument('--cpu', dest='cpu', action='store_true', help='process only on CPU(s)')
+
 
     args = parser.parse_args()
     assert (not args.output is None or not args.input is None)
@@ -238,9 +244,10 @@ if __name__ == '__main__':
         _thread.start_new_thread(build_read_buffer, (args, read_buffer, files_list))
         _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
 
-        from model.RIFE_HD import Model
+        print ('Loading AI model: %s' % args.model)
+        from model.RIFE_HD import Model     # type: ignore
         model = Model()
-        model.load_model('./train_log', -1)
+        model.load_model(args.model, -1)
         model.eval()
         model.device()
 
@@ -250,6 +257,7 @@ if __name__ == '__main__':
             torch.backends.cudnn.enabled = True
             torch.backends.cudnn.benchmark = True
 
+        print ('Loading initial frames...')
         lastframe = first_image
         I1 = torch.from_numpy(np.transpose(lastframe, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
         I1 = F.pad(I1, padding)
@@ -281,9 +289,11 @@ if __name__ == '__main__':
 
     else:
         # process on CPU(s)
-        from model_cpu.RIFE_HD import Model
+
+        print ('Loading AI model: %s' % args.model)
+        from model_cpu.RIFE_HD import Model     # type: ignore
         model = Model()
-        model.load_model('./train_log', -1)
+        model.load_model(args.model, -1)
         model.eval()
         model.device()
 
