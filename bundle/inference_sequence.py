@@ -59,7 +59,7 @@ def clear_write_buffer(user_args, write_buffer, tot_frame):
             pbar = tqdm(total=new_frames_number, unit='frame')
         
         if item is None:
-            pbar.close()
+            pbar.close() # type: ignore
             break
         if cnt < new_frames_number:
             path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(cnt))
@@ -67,7 +67,7 @@ def clear_write_buffer(user_args, write_buffer, tot_frame):
             p.start()
             IOProcesses.append(p)
         
-        pbar.update(1)
+        pbar.update(1) # type: ignore
         cnt += 1
 
 def build_read_buffer(user_args, read_buffer, videogen):
