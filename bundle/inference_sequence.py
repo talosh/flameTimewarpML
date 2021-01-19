@@ -312,7 +312,7 @@ if __name__ == '__main__':
         print ('---\nFree RAM: %s Gb available' % '{0:.1f}'.format(available_ram))
         print ('Image size: %s x %s' % ( w, h,))
         print ('Peak memory usage estimation: %s Gb per CPU thread ' % '{0:.1f}'.format(thread_ram))
-        print ('Using %s CPU worker thread%s (of %s avaliable)\n---' % (sim_workers, '' if sim_workers == 1 else 's', mp.cpu_count()))
+        print ('Using %s CPU worker thread%s (of %s available)\n---' % (sim_workers, '' if sim_workers == 1 else 's', mp.cpu_count()))
         if thread_ram > available_ram:
             print ('Warning: estimated peak memory usage is greater then RAM avaliable')
         
