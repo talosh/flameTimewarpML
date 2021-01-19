@@ -299,7 +299,7 @@ if __name__ == '__main__':
         elif sim_workers > max_cpu_workers:
             sim_workers = max_cpu_workers
 
-        print ('---\nFree RAM: %s Gb avaliable' % '{0:.1f}'.format(available_ram))
+        print ('---\nFree RAM: %s Gb available' % '{0:.1f}'.format(available_ram))
         print ('Image size: %s x %s' % ( w, h,))
         print ('Peak memory usage estimation: %s Gb per CPU thread ' % '{0:.1f}'.format(thread_ram))
         print ('Using %s CPU worker thread%s (of %s avaliable)\n---' % (sim_workers, '' if sim_workers == 1 else 's', mp.cpu_count()))
