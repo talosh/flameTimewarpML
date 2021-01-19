@@ -12,7 +12,7 @@ import skvideo.io
 from queue import Queue, Empty
 warnings.filterwarnings("ignore")
 
-from pprint import pprint
+from pprint import pprint, pformat
 import time
 import psutil
 
@@ -118,30 +118,117 @@ def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_w
 def progress_updater(frames_written, last_frame_number, ThreadsFlag):
     pbar = tqdm(total=last_frame_number, unit='frame')
     lastframe = 0
+
     while ThreadsFlag:
-        while len(frames_written.keys()) < last_frame_number:
-            pbar.n = len(frames_written.keys())
-            pbar.last_print_n = len(frames_written.keys())
-            if lastframe != len(frames_written.keys()):
-                pbar.refresh()
-                lastframe = len(frames_written.keys())
-            time.sleep(0.01)
-    
-    pbar.n = last_frame_number
-    pbar.last_print_n = last_frame_number
-    pbar.refresh()
+        pbar.n = len(frames_written.keys())
+        pbar.last_print_n = len(frames_written.keys())
+        if lastframe != len(frames_written.keys()):
+            pbar.refresh()
+            lastframe = len(frames_written.keys())
+        time.sleep(0.1)
     pbar.close()
+    
+def read_cache(cache, read_ahead, frames_written, ThreadsFlag):
+    root_frames = []
+    for frame_number in sorted(cache.keys()):
+        frame_data = cache.get(frame_number)
+        if frame_data.get('is_root_frame'):
+            root_frames.append(frame_number)
 
-def read_cache(cache, ThreadsFlag):
-    pass
+    current_rf_index = 0
+    while ThreadsFlag:
+        for index in range(current_rf_index, current_rf_index + read_ahead):
+            frame_data = cache.get(root_frames[ index ])
+            if frame_data:
+                if type(frame_data.get('image')) == type(None):
+                    frame_data['image'] = cv2.imread(frame_data.get('path'), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+                    frame_data['ready'] = True
+            cache[root_frames[ index ]] = frame_data
+        
+        written_frames = []
+        for frame_number in range(root_frames[current_rf_index], root_frames[current_rf_index + 1]):
+            frame_data = cache.get(frame_number)
+            if frame_data:
+                written_frames.append(frame_data.get('is_written'))
+                #if frame_data.get('is_written') and frame_number != root_frames[current_rf_index + 1]:
+                #    frames_written[frame_number] = True
 
-def write_cache(cache, frames_written, ThreadsFlag):
-    pass
+        if len(set(written_frames)) == 1 and list(set(written_frames))[0]:
+            current_rf_index += 1
+            if current_rf_index > len(root_frames) - read_ahead:
+                current_rf_index = len(root_frames) - read_ahead
+
+def write_cache(cache, frames_written, args, ThreadsFlag):
+    root_frames = []
+    for frame_number in sorted(cache.keys()):
+        frame_data = cache.get(frame_number)
+        if frame_data.get('is_root_frame'):
+            root_frames.append(frame_number)
+
+    while ThreadsFlag:
+        for frame_number in sorted(cache.keys()):
+            frame_data = cache.get(frame_number)
+            if frame_data:
+                if frame_data.get('ready') and not frame_data.get('is_written'):
+                    path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(frame_number))
+                    image = frame_data.get('image')
+                    cv2.imwrite(path, image[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
+                    frame_data['path'] = path
+                    frame_data['is_written'] = True
+                    cache[frame_number] = frame_data
+                    if not frame_data.get('is_root_frame'):
+                        frames_written[frame_number] = path
+                        for x in sorted(root_frames):
+                            lower_root_frame = x
+                            if frame_number > x:
+                                break
+                        for y in sorted(root_frames):
+                            if frame_number < y:
+                                upper_root_frame = y
+                                break
+                        if cache.get(lower_root_frame).get('is_written'):
+                            frames_written[lower_root_frame] = cache.get(lower_root_frame).get('path')
+                        if cache.get(lower_root_frame).get('is_written'):
+                            frames_written[upper_root_frame] = cache.get(upper_root_frame).get('path')
+                        
+        for index in range(0, len(root_frames) - 1):
+            written_frames = []
+            for frame_number in range (root_frames[ index ], root_frames[ index +1 ]):
+                frame_data = cache.get(frame_number)
+                if frame_data:
+                    written_frames.append(frame_data.get('is_written'))
+            
+            if len(set(written_frames)) == 1 and list(set(written_frames))[0]:
+                for frame_number in range (root_frames[ index ], root_frames[ index +1 ]):
+                    frame_data = cache.get(frame_number)
+                    frame_data['image'] = None
+                    cache[frame_number] = frame_data
+
+def print_cache_size(cache, ThreadsFlag):
+    while ThreadsFlag:
+        cache_size = 0
+        img_count = 0
+        for key in cache.keys():
+            if type(cache.get(key).get('image')) != type(None):
+                img_count += 1
+                img_size = sys.getsizeof(cache.get(key).get('image'))
+        print ('size: %s, count: %s' % ((img_size*img_count) / (1024 ** 2), img_count))
+        time.sleep(1)
 
 if __name__ == '__main__':
+    start = time.time()
     cpus = None
     ThreadsFlag = True
     print('initializing Timewarp ML...')
+
+    from model.RIFE_HD import Model
+    model = Model()
+    model.load_model('./train_log', -1)
+    model.eval()
+    model.device()
+
+    pprint (time.time() - start)
+
 
     parser = argparse.ArgumentParser(description='Interpolation for a pair of images')
     parser.add_argument('--video', dest='video', type=str, default=None)
@@ -172,6 +259,11 @@ if __name__ == '__main__':
             files_list.append(f)
 
     input_duration = len(files_list)
+    if input_duration < 2:
+        print('not enough frames to perform slow motion: %s given' % input_duration)
+        input("Press Enter to continue...")
+        sys.exit()
+
     first_frame_number = 1
     step = (2 ** args.exp) -1
     last_frame_number = (input_duration - 1) * step + input_duration
@@ -184,8 +276,8 @@ if __name__ == '__main__':
     for frame_number in range(first_frame_number, last_frame_number):
         frames[frame_number] = frames.get(frame_number, '')
 
-    first_frame = cv2.imread(frames.get(first_frame_number), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
-    h, w, _ = first_frame.shape
+    first_image = cv2.imread(frames.get(first_frame_number), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+    h, w, _ = first_image.shape
 
     ph = ((h - 1) // 64 + 1) * 64
     pw = ((w - 1) // 64 + 1) * 64
@@ -195,40 +287,74 @@ if __name__ == '__main__':
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     
-    _thread.start_new_thread(progress_updater, (frames_written, last_frame_number, ThreadsFlag))
-
     if torch.cuda.is_available() and not args.cpu:
-        device = torch.device('cuda')
-
-        from model.RIFE_HD import Model
-        model = Model(device = device)
-        model.load_model('./train_log', -1)
-        model.eval()
-
-        torch.set_grad_enabled(False)
-        torch.backends.cudnn.enabled = True
-        torch.backends.cudnn.benchmark = True
+        # Process on GPU
 
         cache = dict()
         for frame_number in sorted(frames.keys()):
             cache[frame_number] = {
                 'path' : frames.get(frame_number),
-                'frame_data' : None,
+                'image' : None,
                 'is_root_frame' : True if frames.get(frame_number) else False,
+                'in_progres' : False,
+                'ready' : False,
                 'is_written' : False
             }
+
+        cache[1]['image'] = first_image
+        cache[1]['ready'] = True
         
-        pprint (cache)
-        sys.exit()
+        read_ahead = 4 # number of root frames to read and keep in memory, inbetween frames to be added
+        if read_ahead > input_duration:
+            read_ahead = input_duration
+        
+        # _thread.start_new_thread(print_cache_size, (cache, ThreadsFlag))
+        _thread.start_new_thread(read_cache, (cache, read_ahead, frames_written, ThreadsFlag))
+        _thread.start_new_thread(write_cache, (cache, frames_written, args, ThreadsFlag))
 
-        # chto za huinja?
-        # test3
+        device = torch.device('cuda')
+        torch.set_grad_enabled(False)
+        torch.backends.cudnn.enabled = True
+        torch.backends.cudnn.benchmark = True
+        
+        # print (str(time.time() - start)) 
+        # pprint (len(frames_written.keys()))
+        print ('Rendering frames:')
+        #_thread.start_new_thread(progress_updater, (frames_written, last_frame_number, ThreadsFlag))
 
-        _thread.start_new_thread(io_cache, (cache, frames, frames_written, last_frame_number, ThreadsFlag))
-        _thread.start_new_thread(io_cache, (cache, frames, frames_written, last_frame_number, ThreadsFlag))
+        pprint (time.time()-start)
 
         while len(frames_written.keys()) != last_frame_number:
-            three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_written, frames_taken)
+            perfect_pair = find_middle_frame(frames, frames_taken)
+            if not perfect_pair:
+                continue
+
+            start_frame_data = cache.get(perfect_pair[0])
+            start_image = start_frame_data.get('image')
+            if type(start_image) == type(None):
+                print('reading frame %s in main thread as start frame' % perfect_pair[0])
+                start_image = cv2.imread(start_frame_data.get('path'), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+
+            end_frame_data = cache.get(perfect_pair[2])
+            end_image = end_frame_data.get('image')
+            if type(end_image) == type(None):
+                print('reading frame %s in main thread as end frame' % perfect_pair[2])
+                end_image = cv2.imread(end_frame_data.get('path'), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+
+            I0 = torch.from_numpy(np.transpose(start_image, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+            I1 = torch.from_numpy(np.transpose(end_image, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+            I0 = F.pad(I0, padding)
+            I1 = F.pad(I1, padding)
+
+            mid_frame_data = cache.get(perfect_pair[1])
+            start = time.time()
+            mid = model.inference(I0, I1, args.UHD)
+            pprint (time.time() - start)
+            mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+            mid_frame_data['image'] = mid[:h, :w]
+            mid_frame_data['ready'] = True
+            cache[perfect_pair[1]] = mid_frame_data
+            frames[perfect_pair[1]] = True
 
     else:
         device = torch.device('cpu')
@@ -340,6 +466,8 @@ if __name__ == '__main__':
     if os.path.isfile(lockfile):
         os.remove(lockfile)
 
-    input("Press Enter to continue...")
+    pprint (time.time()-start)
+
+    # input("Press Enter to continue...")
 
 
