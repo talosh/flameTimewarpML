@@ -6,6 +6,12 @@ Andriy's bunlde packer
 import os
 import sys
 import base64
+import argparse
+
+parser = argparse.ArgumentParser(description='Interpolation for a sequence of exr images')
+parser.add_argument('--copy', dest='copy', action='store_true', help='copy to /opt/Autodesk/shared/python')
+parser.add_argument('--run', dest='run', action='store_true', help='run flame')
+args = parser.parse_args()
 
 pligin_dirname = os.path.dirname(os.path.abspath(__file__))
 plugin_file_name = os.path.basename(pligin_dirname) + '.py'
@@ -48,3 +54,12 @@ with open('flameTimewarpML.package/flameTimewarpML.py', 'w') as tempfile:
 
 print ('---\nremoving %s' % bundle_folder + '.tar')
 os.remove(bundle_folder + '.tar')
+
+if args.copy:
+    cmd = 'cp flameTimewarpML.package/flameTimewarpML.py /opt/Autodesk/shared/python/'
+    print ('copying flameTimewarpML.package/flameTimewarpML.py to /opt/Autodesk/shared/python/')
+    os.system(cmd)
+
+if args.run:
+    cmd = '/opt/Autodesk/flame_2020.2/bin/startApplication'
+    os.system(cmd)
