@@ -697,6 +697,15 @@ class flameMenuApp(object):
 
         return re.sub('_\_+', '_', result)
 
+    def create_timestamp_uid(self):
+        # generates UUID for the batch setup
+        import uuid
+        from datetime import datetime
+        
+        uid = ((str(uuid.uuid1()).replace('-', '')).upper())
+        timestamp = (datetime.now()).strftime('%Y%b%d_%H%M').upper()
+        return timestamp + '_' + uid[:3]
+
 
 class flameTimewrapML(flameMenuApp):
     def __init__(self, framework):
@@ -765,7 +774,12 @@ class flameTimewrapML(flameMenuApp):
                 clip = item
                 clip_name = clip.name.get_value()
                 
-                output_folder = os.path.abspath(os.path.join(working_folder, self.sanitized(clip_name) + '_TWML' + str(2 ** speed)))
+                output_folder = os.path.abspath(
+                    os.path.join(
+                        working_folder, 
+                        self.sanitized(clip_name) + '_TWML' + str(2 ** speed) + '_' + self.create_timestamp_uid()
+                        )
+                    )
 
                 if os.path.isdir(output_folder):
                     cmd = 'rm -f ' + output_folder + '/*'
