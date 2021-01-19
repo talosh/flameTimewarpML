@@ -1,3 +1,4 @@
+# type: ignore
 '''
 flameTimewarpML
 Flame 2020 and higher
@@ -16,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.2.0.beta.018'
+__version__ = 'v0.2.0.beta.019'
 
 
 class flameAppFramework(object):
@@ -299,12 +300,13 @@ class flameAppFramework(object):
             log_cmd = """konsole --caption flameTimewarpML -e /bin/bash -c 'trap exit SIGINT SIGTERM; tail -f """ + os.path.abspath(logfile_path) +"; sleep 2'"
             os.system(log_cmd)
             
-        self.log('bundle_id: %s size %s' % (self.bundle_id, len(script)), logfile)
+        self.log('bundle_id: %s size %sMb' % (self.bundle_id, len(script)//(1024 ** 2)), logfile)
         
         if os.path.isdir(bundle_path):
+            bundle_backup_folder = os.path.abspath(bundle_path + '.previous')
             try:
-                cmd = 'rm -rf ' + os.path.abspath(bundle_path)
-                self.log('removing existing bundle folder', logfile)
+                cmd = 'mv ' + os.path.abspath(bundle_path) + ' ' + bundle_backup_folder
+                self.log('backing up existing bundle folder', logfile)
                 self.log('Executing command: %s' % cmd, logfile)
                 os.system(cmd)
             except Exception as e:
