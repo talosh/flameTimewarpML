@@ -104,6 +104,7 @@ def three_of_a_perfect_pair(frame0, frame1, index, mp_output, device, padding, m
     return
 
 if __name__ == '__main__':
+    start = time.time()
     cpus = None
     ThreadsFlag = True
     print('initializing Timewarp ML...')
@@ -113,7 +114,9 @@ if __name__ == '__main__':
     model.load_model('./train_log', -1)
     model.eval()
     model.device()
-    
+
+    pprint (time.time() - start)
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
         torch.set_grad_enabled(False)
@@ -173,6 +176,8 @@ if __name__ == '__main__':
     _thread.start_new_thread(build_read_buffer, (args, read_buffer, videogen))
     _thread.start_new_thread(clear_write_buffer, (args, write_buffer, tot_frame))
 
+    pprint (time.time()-start)
+
     if cpus:
         manager = mp.Manager()
         mp_output = manager.dict()
@@ -212,6 +217,7 @@ if __name__ == '__main__':
 
         for nn in range(1, tot_frame+1):
 
+            starti = time.time()
             frame = read_buffer.get()
             if frame is None:
                 break
@@ -220,8 +226,8 @@ if __name__ == '__main__':
             I1 = torch.from_numpy(np.transpose(frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
             I1 = F.pad(I1, padding)
 
-            diff = (F.interpolate(I0, (16, 16), mode='bilinear', align_corners=False)
-                - F.interpolate(I1, (16, 16), mode='bilinear', align_corners=False)).abs()
+            #diff = (F.interpolate(I0, (16, 16), mode='bilinear', align_corners=False)
+            #    - F.interpolate(I1, (16, 16), mode='bilinear', align_corners=False)).abs()
             
             # if diff.max() < 2e-3 and args.skip:
             #    if skip_frame % 100 == 0:
@@ -230,13 +236,13 @@ if __name__ == '__main__':
             #    pbar.update(1)
             #    continue
 
-            if diff.mean() > 0.2:
-                output = []
-                for i in range((2 ** args.exp) - 1):
-                    output.append(I0)
-            else:
-                output = make_inference(model, I0, I1, args.exp, args.UHD)
-                
+            #if diff.mean() > 0.2:
+            #    output = []
+            #    for i in range((2 ** args.exp) - 1):
+            #        output.append(I0)
+            #else:
+            output = make_inference(model, I0, I1, args.exp, args.UHD)
+
             write_buffer.put(lastframe)
             for mid in output:
                 if sys.platform == 'darwin':
@@ -244,6 +250,8 @@ if __name__ == '__main__':
                 else:
                     mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
                 write_buffer.put(mid[:h, :w])
+            
+            pprint (time.time() - starti)
 
             # pbar.update(1)
             lastframe = frame
@@ -262,6 +270,6 @@ if __name__ == '__main__':
     if os.path.isfile(lockfile):
         os.remove(lockfile)
 
+    pprint (time.time() - start)
+
     # input("Press Enter to continue...")
-
-
