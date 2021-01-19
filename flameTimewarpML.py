@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.2.0.beta.009'
+__version__ = 'v0.2.0.beta.012'
 
 
 class flameAppFramework(object):
@@ -711,7 +711,7 @@ class flameTimewrapML(flameMenuApp):
             self.working_folder = '/var/tmp'
 
         self.new_speed = 1
-        self.cpu_only = True
+        self.cpu = False
 
     def build_menu(self):
         def scope_clip(selection):
@@ -773,11 +773,14 @@ class flameTimewrapML(flameMenuApp):
                 self.export_clip(item, output_folder)
 
                 cmd = 'python3 '
-                if self.cpu_only:
+                if self.cpu:
                     cmd = 'export OMP_NUM_THREADS=1; python3 '
                 cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_sequence.py')
                 cmd += ' --input ' + os.path.join(output_folder, 'source') + ' --output ' + output_folder
-                cmd += ' --exp=' + str(speed) + "; "
+                cmd += ' --exp=' + str(speed)
+                if self.cpu:
+                    cmd += ' --cpu'
+                cmd += "; "
                 cmd_strings.append(cmd)
                 
                 new_clip_name = clip_name + '_TWML' + str(2 ** speed)
@@ -854,20 +857,20 @@ class flameTimewrapML(flameMenuApp):
 
         # New Speed hbox
         new_speed_hbox = QtWidgets.QHBoxLayout()
-        new_speed_hbox.setAlignment(QtCore.Qt.AlignCenter)
+        new_speed_hbox.setAlignment(QtCore.Qt.AlignLeft)
 
         # New Speed label
 
-        lbl_NewSpeed = QtWidgets.QLabel('New Clip(s) Speed', window)
+        lbl_NewSpeed = QtWidgets.QLabel('New Clip(s) Speed ', window)
         lbl_NewSpeed.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
         lbl_NewSpeed.setMinimumHeight(28)
-        lbl_NewSpeed.setMaximumHeight(28)
         lbl_NewSpeed.setAlignment(QtCore.Qt.AlignCenter)
         new_speed_hbox.addWidget(lbl_NewSpeed)
 
+        # Spacer
         lbl_NewSpeedSpacer = QtWidgets.QLabel('', window)
         lbl_NewSpeedSpacer.setAlignment(QtCore.Qt.AlignCenter)
-        lbl_NewSpeedSpacer.setMinimumSize(28, 28)
+        lbl_NewSpeedSpacer.setMinimumSize(8, 28)
         new_speed_hbox.addWidget(lbl_NewSpeedSpacer)
 
         # New Speed Selector
@@ -890,6 +893,35 @@ class flameTimewrapML(flameMenuApp):
             action.triggered[()].connect(lambda new_speed_id=new_speed_id: selectNewSpeed(new_speed_id))
         btn_NewSpeedSelector.setMenu(btn_NewSpeedSelector_menu)
         new_speed_hbox.addWidget(btn_NewSpeedSelector)
+
+        # Spacer
+        lbl_NewSpeedSpacer = QtWidgets.QLabel('', window)
+        lbl_NewSpeedSpacer.setAlignment(QtCore.Qt.AlignCenter)
+        lbl_NewSpeedSpacer.setMinimumSize(48, 28)
+        new_speed_hbox.addWidget(lbl_NewSpeedSpacer)
+
+
+        # Cpu Proc button
+        
+        def enableCpuProc():
+            if self.cpu:
+                btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
+                self.cpu = False
+            else:
+                btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}')
+                self.cpu = True
+
+        btn_CpuProc = QtWidgets.QPushButton('CPU Proc', window)
+        btn_CpuProc.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_CpuProc.setMinimumSize(88, 28)
+        # btn_CpuProc.move(0, 34)
+        if self.cpu:
+            btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}')
+        else:
+            btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
+        btn_CpuProc.pressed.connect(enableCpuProc)
+        new_speed_hbox.addWidget(btn_CpuProc, alignment = QtCore.Qt.AlignRight)
+
 
         vbox.addLayout(new_speed_hbox)
 

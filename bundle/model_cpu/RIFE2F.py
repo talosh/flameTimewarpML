@@ -4,13 +4,13 @@ import numpy as np
 from torch.optim import AdamW
 import torch.optim as optim
 import itertools
-from model.warplayer import warp
+from model_cpu.warplayer import warp
 from torch.nn.parallel import DistributedDataParallel as DDP
-from model.IFNet_HD import *
+from model_cpu.IFNet2F import *
 import torch.nn.functional as F
-from model.loss import *
+from model_cpu.loss import *
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 
 
 def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
@@ -59,21 +59,18 @@ class ResBlock(nn.Module):
         x = self.relu2(x * w + y)
         return x
 
-c = 32
+c = 16
 
 class ContextNet(nn.Module):
     def __init__(self):
         super(ContextNet, self).__init__()
-        self.conv0 = conv(3, c, 3, 2, 1)
-        self.conv1 = ResBlock(c, c)
+        self.conv1 = ResBlock(3, c, 1)
         self.conv2 = ResBlock(c, 2*c)
         self.conv3 = ResBlock(2*c, 4*c)
         self.conv4 = ResBlock(4*c, 8*c)
 
     def forward(self, x, flow):
-        x = self.conv0(x)
         x = self.conv1(x)
-        flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear", align_corners=False) * 0.5
         f1 = warp(x, flow)
         x = self.conv2(x)
         flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
@@ -93,8 +90,7 @@ class ContextNet(nn.Module):
 class FusionNet(nn.Module):
     def __init__(self):
         super(FusionNet, self).__init__()
-        self.conv0 = conv(8, c, 3, 2, 1)
-        self.down0 = ResBlock(c, 2*c)
+        self.down0 = ResBlock(8, 2*c, 1)
         self.down1 = ResBlock(4*c, 4*c)
         self.down2 = ResBlock(8*c, 8*c)
         self.down3 = ResBlock(16*c, 16*c)
@@ -102,8 +98,7 @@ class FusionNet(nn.Module):
         self.up1 = deconv(16*c, 4*c)
         self.up2 = deconv(8*c, 2*c)
         self.up3 = deconv(4*c, c)
-        self.conv = nn.Conv2d(c, 16, 3, 1, 1)
-        self.up4 = nn.PixelShuffle(2)
+        self.conv = nn.Conv2d(c, 4, 3, 2, 1)
 
     def forward(self, img0, img1, flow, c0, c1, flow_gt):
         warped_img0 = warp(img0, flow)
@@ -113,8 +108,7 @@ class FusionNet(nn.Module):
         else:
             warped_img0_gt = warp(img0, flow_gt[:, :2])
             warped_img1_gt = warp(img1, flow_gt[:, 2:4])
-        x = self.conv0(torch.cat((warped_img0, warped_img1, flow), 1))
-        s0 = self.down0(x)
+        s0 = self.down0(torch.cat((warped_img0, warped_img1, flow), 1))
         s1 = self.down1(torch.cat((s0, c0[0], c1[0]), 1))
         s2 = self.down2(torch.cat((s1, c0[1], c1[1]), 1))
         s3 = self.down3(torch.cat((s2, c0[2], c1[2]), 1))
@@ -122,7 +116,7 @@ class FusionNet(nn.Module):
         x = self.up1(torch.cat((x, s2), 1))
         x = self.up2(torch.cat((x, s1), 1))
         x = self.up3(torch.cat((x, s0), 1))
-        x = self.up4(self.conv(x))
+        x = self.conv(x)
         return x, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt
 
 
@@ -164,17 +158,14 @@ class Model:
         self.contextnet.to(device)
         self.fusionnet.to(device)
 
-    def load_model(self, path, rank):
+    def load_model(self, path, rank=0):
         def convert(param):
-            if rank == -1:
-                return {
-                    k.replace("module.", ""): v
-                    for k, v in param.items()
-                    if "module." in k
-                }
-            else:
-                return param
-        if rank <= 0:
+            return {
+                k.replace("module.", ""): v
+                for k, v in param.items()
+                if "module." in k
+            }
+        if rank == 0:
             self.flownet.load_state_dict(
                 convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
             self.contextnet.load_state_dict(
@@ -182,21 +173,21 @@ class Model:
             self.fusionnet.load_state_dict(
                 convert(torch.load('{}/unet.pkl'.format(path), map_location=device)))
 
-    def save_model(self, path, rank):
+    def save_model(self, path, rank=0):
         if rank == 0:
-            torch.save(self.flownet.state_dict(), '{}/flownet.pkl'.format(path))
-            torch.save(self.contextnet.state_dict(), '{}/contextnet.pkl'.format(path))
+            torch.save(self.flownet.state_dict(),
+                       '{}/flownet.pkl'.format(path))
+            torch.save(self.contextnet.state_dict(),
+                       '{}/contextnet.pkl'.format(path))
             torch.save(self.fusionnet.state_dict(), '{}/unet.pkl'.format(path))
 
-    def predict(self, imgs, flow, training=True, flow_gt=None, UHD=False):
+    def predict(self, imgs, flow, training=True, flow_gt=None):
         img0 = imgs[:, :3]
         img1 = imgs[:, 3:]
-        if UHD:
-            flow = F.interpolate(flow, scale_factor=2.0, mode="bilinear", align_corners=False) * 2.0
+        flow = F.interpolate(flow, scale_factor=2.0, mode="bilinear",
+	                     align_corners=False) * 2.0
         c0 = self.contextnet(img0, flow)
         c1 = self.contextnet(img1, -flow)
-        flow = F.interpolate(flow, scale_factor=2.0, mode="bilinear",
-                             align_corners=False) * 2.0
         refine_output, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt = self.fusionnet(
             img0, img1, flow, c0, c1, flow_gt)
         res = torch.sigmoid(refine_output[:, :3]) * 2 - 1
@@ -209,10 +200,11 @@ class Model:
         else:
             return pred
 
-    def inference(self, img0, img1, UHD=False):
-        imgs = torch.cat((img0, img1), 1)
-        flow, _ = self.flownet(imgs, UHD)
-        return self.predict(imgs, flow, training=False, UHD=UHD)
+    def inference(self, img0, img1):
+        with torch.no_grad():
+            imgs = torch.cat((img0, img1), 1)
+            flow, _ = self.flownet(imgs)
+        return self.predict(imgs, flow, training=False)
 
     def update(self, imgs, gt, learning_rate=0, mul=1, training=True, flow_gt=None):
         for param_group in self.optimG.param_groups:
@@ -230,10 +222,6 @@ class Model:
                 loss_flow = torch.abs(warped_img0_gt - gt).mean()
                 loss_mask = torch.abs(
                     merged_img - gt).sum(1, True).float().detach()
-                loss_mask = F.interpolate(loss_mask, scale_factor=0.5, mode="bilinear",
-                                          align_corners=False).detach()
-                flow_gt = (F.interpolate(flow_gt, scale_factor=0.5, mode="bilinear",
-                                         align_corners=False) * 0.5).detach()
             loss_cons = 0
             for i in range(3):
                 loss_cons += self.epe(flow_list[i], flow_gt[:, :2], 1)

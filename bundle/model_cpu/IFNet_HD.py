@@ -2,10 +2,10 @@ import torch
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-from model.warplayer import warp
+from model_cpu.warplayer import warp
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 
 def conv_wo_act(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
     return nn.Sequential(
