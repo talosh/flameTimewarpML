@@ -16,7 +16,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.2.0.beta.012'
+__version__ = 'v0.2.0.beta.017'
 
 
 class flameAppFramework(object):
@@ -900,28 +900,28 @@ class flameTimewrapML(flameMenuApp):
         lbl_NewSpeedSpacer.setMinimumSize(48, 28)
         new_speed_hbox.addWidget(lbl_NewSpeedSpacer)
 
+        if not sys.platform == 'darwin':
+            # Cpu Proc button
+            
+            def enableCpuProc():
+                if self.cpu:
+                    btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
+                    self.cpu = False
+                else:
+                    btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}')
+                    self.cpu = True
 
-        # Cpu Proc button
-        
-        def enableCpuProc():
+            btn_CpuProc = QtWidgets.QPushButton('CPU Proc', window)
+            btn_CpuProc.setFocusPolicy(QtCore.Qt.NoFocus)
+            btn_CpuProc.setMinimumSize(88, 28)
+            # btn_CpuProc.move(0, 34)
             if self.cpu:
-                btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
-                self.cpu = False
-            else:
                 btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}')
-                self.cpu = True
+            else:
+                btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
+            btn_CpuProc.pressed.connect(enableCpuProc)
 
-        btn_CpuProc = QtWidgets.QPushButton('CPU Proc', window)
-        btn_CpuProc.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_CpuProc.setMinimumSize(88, 28)
-        # btn_CpuProc.move(0, 34)
-        if self.cpu:
-            btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}')
-        else:
-            btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
-        btn_CpuProc.pressed.connect(enableCpuProc)
-        new_speed_hbox.addWidget(btn_CpuProc, alignment = QtCore.Qt.AlignRight)
-
+            new_speed_hbox.addWidget(btn_CpuProc, alignment = QtCore.Qt.AlignRight)
 
         vbox.addLayout(new_speed_hbox)
 
