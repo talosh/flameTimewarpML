@@ -782,6 +782,19 @@ class flameTimewrapML(flameMenuApp):
                     )
 
                 if os.path.isdir(output_folder):
+                    from PySide2 import QtWidgets
+
+                    msg = 'Folder %s exists' % output_folder
+                    mbox = QtWidgets.QMessageBox()
+                    mbox.setWindowTitle('flameTimewrarpML')
+                    mbox.setText(msg)
+                    mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+                    mbox.setStyleSheet('QLabel{min-width: 400px;}')
+                    btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+                    btn_Continue.setText('Owerwrite')
+                    mbox.exec_()
+                    if mbox.clickedButton() == mbox.button(QtWidgets.QMessageBox.Cancel):
+                        return False
                     cmd = 'rm -f ' + output_folder + '/*'
                     self.log('Executing command: %s' % cmd)
                     os.system(cmd)
