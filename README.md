@@ -2,6 +2,14 @@
 Machine Learning frame interpolation tool for Autodesk Flame.  
 
 Based on arXiv2020-RIFE, original implementation: https://github.com/hzwer/arXiv2020-RIFE
+```
+@article{huang2020rife,
+  title={RIFE: Real-Time Intermediate Flow Estimation for Video Frame Interpolation},
+  author={Huang, Zhewei and Zhang, Tianyuan and Heng, Wen and Shi, Boxin and Zhou, Shuchang},
+  journal={arXiv preprint arXiv:2011.06294},
+  year={2020}
+}
+```
 <br />
 
 ## Installation
