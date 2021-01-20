@@ -10,8 +10,6 @@ Based on arXiv2020-RIFE, original implementation: https://github.com/hzwer/arXiv
   year={2020}
 }
 ```
-<br />
-
 ## Installation
 
 * Download latest release from [Releases](https://github.com/talosh/flameTimewarpML/releases) page
