@@ -180,10 +180,9 @@ if __name__ == '__main__':
     print('initializing Timewarp ML...')
 
     parser = argparse.ArgumentParser(description='Interpolation for a sequence of exr images')
-    parser.add_argument('--video', dest='video', type=str, default=None)
     parser.add_argument('--input', dest='input', type=str, default=None)
     parser.add_argument('--output', dest='output', type=str, default=None)
-    parser.add_argument('--model', dest='model', type=str, default='./pretrained_models/default/v1.8')
+    parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v1.8.model')
     parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
     parser.add_argument('--exp', dest='exp', type=int, default=1)
     parser.add_argument('--cpu', dest='cpu', action='store_true', help='process only on CPU(s)')
@@ -215,6 +214,7 @@ if __name__ == '__main__':
     last_frame_number = (input_duration - 1) * step + input_duration
 
     frame_number = first_frame_number
+    
     for file_name in sorted(files_list):
         frames[frame_number] = os.path.join(args.input, file_name)
         frame_number += step + 1
@@ -244,12 +244,13 @@ if __name__ == '__main__':
         _thread.start_new_thread(build_read_buffer, (args, read_buffer, files_list))
         _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
 
-        print ('Loading AI model: %s' % args.model)
         from model.RIFE_HD import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()
         model.device()
+        print ('AI model loaded: %s' % args.model)
+
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if torch.cuda.is_available():
@@ -257,7 +258,7 @@ if __name__ == '__main__':
             torch.backends.cudnn.enabled = True
             torch.backends.cudnn.benchmark = True
 
-        print ('Loading initial frames...')
+        # print ('Loading initial frames...')
         lastframe = first_image
         I1 = torch.from_numpy(np.transpose(lastframe, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
         I1 = F.pad(I1, padding)
@@ -290,12 +291,13 @@ if __name__ == '__main__':
     else:
         # process on CPU(s)
 
-        print ('Loading AI model: %s' % args.model)
         from model_cpu.RIFE_HD import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()
         model.device()
+        print ('AI model loaded: %s' % args.model)
+
 
         device = torch.device('cpu')
         
