@@ -198,9 +198,10 @@ def cpu_progress_updater(frames_written, last_frame_number):
 
 if __name__ == '__main__':
     start = time.time()
-    print('initializing Timewarp ML...')
 
-    parser = argparse.ArgumentParser(description='Interpolation for fluid morphs')
+    msg = 'FluidMorph\n'
+    msg += 'Attempts to replicate Avid fluid morph transition\n'
+    parser = argparse.ArgumentParser(description=msg)
     parser.add_argument('--incoming', dest='incoming', type=str, default=None)
     parser.add_argument('--outgoing', dest='outgoing', type=str, default=None)
     parser.add_argument('--output', dest='output', type=str, default=None)
@@ -210,41 +211,55 @@ if __name__ == '__main__':
     parser.add_argument('--curve', dest='curve', type=int, default=1, help='1 - linear, 2 - smooth')
 
     args = parser.parse_args()
-    assert (not args.output is None or not args.input is None)
-
-    manager = mp.Manager()
-    frames = manager.dict()
-    frames_written = manager.dict()
-    frames_taken = manager.dict()
+    if (args.incoming is None or args.outgoing is None or args.output is None):
+         parser.print_help()
+         sys.exit()
 
     img_formats = ['.exr',]
-    files_list = []
-    for f in os.listdir(args.input):
+    incoming_files_list = []
+    for f in os.listdir(args.incoming):
         name, ext = os.path.splitext(f)
         if ext in img_formats:
-            files_list.append(f)
+            incoming_files_list.append(f)
 
-    input_duration = len(files_list)
-    if input_duration < 2:
-        print('not enough frames to perform slow motion: %s given' % input_duration)
+    outgoing_files_list = []
+    for f in os.listdir(args.outgoing):
+        name, ext = os.path.splitext(f)
+        if ext in img_formats:
+            outgoing_files_list.append(f)
+
+    incoming_input_duration = len(incoming_files_list)
+    outgoing_input_duration = len(outgoing_files_list)
+
+    if incoming_input_duration < 3:
+        print('not enough frames in incoming sequence: %s given' % incoming_input_duration)
         input("Press Enter to continue...")
         sys.exit()
 
-    first_frame_number = 1
-    step = (2 ** args.exp) -1
-    last_frame_number = (input_duration - 1) * step + input_duration
+    if outgoing_input_duration < 3:
+        print('not enough frames in outgoing sequence: %s given' % outgoing_input_duration)
+        input("Press Enter to continue...")
+        sys.exit()
+    if incoming_input_duration != outgoing_input_duration:
+        print('incoming sequence duration should be equal to outgoing')
+        print('incoming sequence %s frames long\noutgoing sequencce %s framse long' % (incoming_input_duration, outgoing_input_duration))
+        input("Press Enter to continue...")
+        sys.exit()
+    print('initializing FluidMorph ML...')
 
-    frame_number = first_frame_number
-    for file_name in sorted(files_list):
-        frames[frame_number] = os.path.join(args.input, file_name)
-        frame_number += step + 1
+    incoming_first_image = cv2.imread(os.path.join(args.incoming, incoming_files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+    h_inc, w_inc, _ = incoming_first_image.shape
+    outgoing_first_image = cv2.imread(os.path.join(args.outgoing, outgoing_files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+    h_outg, w_outg, _ = outgoing_first_image.shape
 
-    for frame_number in range(first_frame_number, last_frame_number):
-        frames[frame_number] = frames.get(frame_number, '')
-
-    first_image = cv2.imread(frames.get(first_frame_number), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
-    h, w, _ = first_image.shape
-
+    if ( h_inc != h_outg ) or ( w_inc != w_outg ):
+        print('incoming and outgoing images dimentions are not equal')
+        print('incoming sequence %s x %s\noutgoing sequencce %s x %s' % (w_inc, h_inc, w_outg, h_outg))
+        input("Press Enter to continue...")
+        sys.exit()
+    
+    h = h_inc
+    w = w_inc
     ph = ((h - 1) // 64 + 1) * 64
     pw = ((w - 1) // 64 + 1) * 64
     padding = (0, pw - w, 0, ph - h)
@@ -252,7 +267,15 @@ if __name__ == '__main__':
     output_folder = os.path.abspath(args.output)
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-    
+
+    sys.exit()
+
+
+    manager = mp.Manager()
+    frames = manager.dict()
+    frames_written = manager.dict()
+    frames_taken = manager.dict()
+
     if torch.cuda.is_available() and not args.cpu:
         # process on GPU
 
@@ -264,12 +287,13 @@ if __name__ == '__main__':
         _thread.start_new_thread(build_read_buffer, (args, read_buffer, files_list))
         _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
 
-        print ('Loading AI model: %s' % args.model)
         from model.RIFE_HD import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()
         model.device()
+        print ('AI model loaded: %s' % args.model)
+
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if torch.cuda.is_available():
@@ -310,12 +334,13 @@ if __name__ == '__main__':
     else:
         # process on CPU(s)
 
-        print ('Loading AI model: %s' % args.model)
         from model_cpu.RIFE_HD import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()
         model.device()
+        print ('AI model loaded: %s' % args.model)
+
 
         device = torch.device('cpu')
         
@@ -382,7 +407,11 @@ if __name__ == '__main__':
         cpu_progress_updater.join()
     
     for p in IOProcesses:
-        p.join()
+        p.join(timeout=8)
+
+    for p in IOProcesses:
+        p.terminate()
+        p.join(timeout=0)
 
     import hashlib
     lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
