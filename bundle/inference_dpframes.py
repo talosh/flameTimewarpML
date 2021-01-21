@@ -8,8 +8,6 @@ from tqdm import tqdm
 from torch.nn import functional as F
 import warnings
 import _thread
-import threading
-import skvideo.io
 from queue import Queue, Empty
 warnings.filterwarnings("ignore")
 
