@@ -56,13 +56,14 @@ def clear_write_buffer(args, write_buffer, input_duration):
         if item is None:
             break
 
-        if cnt < input_duration:
-            path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(cnt))
-            p = mp.Process(target=cv2.imwrite, args=(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
-            p.start()
-            IOProcesses.append(p)
+        path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(cnt))
+        p = mp.Process(target=cv2.imwrite, args=(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
+        # p.daemon = True
+        p.start()
+        IOProcesses.append(p)
         cnt += 1
 
+    
 def build_read_buffer(user_args, read_buffer, videogen):
     global ThreadsFlag
 
@@ -96,6 +97,10 @@ if __name__ == '__main__':
         print('not enough input frames: %s given' % input_duration)
         input("Press Enter to continue...")
         sys.exit()
+
+    output_folder = os.path.abspath(args.output)
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
 
     files_list.sort()
     write_buffer = Queue(maxsize=mp.cpu_count() - 3)
@@ -134,4 +139,10 @@ if __name__ == '__main__':
     pbar_dup.close()
 
     for p in IOProcesses:
+        # p.terminate()
         p.join()
+
+    import hashlib
+    lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
+    if os.path.isfile(lockfile):
+        os.remove(lockfile)
