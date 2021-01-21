@@ -364,7 +364,11 @@ if __name__ == '__main__':
         cpu_progress_updater.join()
     
     for p in IOProcesses:
-        p.join()
+        p.join(timeout=8)
+
+    for p in IOProcesses:
+        p.terminate()
+        p.join(timeout=0)
 
     import hashlib
     lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
