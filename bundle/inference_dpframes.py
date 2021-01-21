@@ -99,7 +99,6 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8
 
 if __name__ == '__main__':
     start = time.time()
-    print('scanning for duplicate frames...')
 
     msg = 'Fill / Remove duplicate frames\n'
     msg += 'detect duplicate frames and fill it with interpolated frames instead\n'
@@ -115,6 +114,11 @@ if __name__ == '__main__':
     if (args.output is None or args.input is None):
          parser.print_help()
          sys.exit()
+
+    if args.remove:
+        print('Initializing duplicate frames removal...')
+    else:
+        print('Initializing duplicate frames removal...')
 
     img_formats = ['.exr',]
     files_list = []
@@ -146,26 +150,31 @@ if __name__ == '__main__':
             model.load_model(args.model, -1)
             model.eval()
             model.device()
-            device = torch.device("cuda")
-            torch.set_grad_enabled(False)
-            torch.backends.cudnn.enabled = True
-            torch.backends.cudnn.benchmark = True
         else:
             from model_cpu.RIFE_HD import Model     # type: ignore
             model = Model()
             model.load_model(args.model, -1)
             model.eval()
             model.device()
-            device = torch.device("cpu")
 
         print ('AI model loaded: %s' % args.model)
+    
         first_image = cv2.imread(os.path.join(args.input, files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
         h, w, _ = first_image.shape
-
         ph = ((h - 1) // 64 + 1) * 64
         pw = ((w - 1) // 64 + 1) * 64
         padding = (0, pw - w, 0, ph - h)
     
+    if torch.cuda.is_available() and not args.cpu:
+        device = torch.device("cuda")
+        torch.set_grad_enabled(False)
+        torch.backends.cudnn.enabled = True
+        torch.backends.cudnn.benchmark = True
+    else:
+        device = torch.device("cpu")
+
+    print('scanning for duplicate frames...')
+
     pbar = tqdm(total=input_duration, desc='Total frames', unit='frame')
     pbar_dup = tqdm(total=input_duration, desc='Duplicates', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
 
@@ -176,7 +185,8 @@ if __name__ == '__main__':
         pbar.update(1) # type: ignore
 
         ICurrent = torch.from_numpy(np.transpose(current_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
-        ICurrent = F.pad(ICurrent, padding)
+        if not args.remove:
+            ICurrent = F.pad(ICurrent, padding)
 
         if type(IPrevious) is not type(None):
             
@@ -212,8 +222,11 @@ if __name__ == '__main__':
     pbar_dup.close()
 
     for p in IOProcesses:
-        # p.terminate()
-        p.join()
+        p.join(timeout=8)
+
+    for p in IOProcesses:
+        p.terminate()
+        p.join(timeout=0)
 
     import hashlib
     lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
