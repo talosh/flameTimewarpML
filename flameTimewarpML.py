@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.2.0'
+__version__ = 'v0.3.0.beta.002'
 
 
 class flameAppFramework(object):
@@ -731,7 +731,9 @@ class flameTimewrapML(flameMenuApp):
         if not os.path.isdir(self.working_folder):
             self.working_folder = '/var/tmp'
 
+        # Module defaults
         self.new_speed = 1
+        self.dedup_mode = 0
         self.cpu = False
 
     def build_menu(self):
@@ -758,14 +760,12 @@ class flameTimewrapML(flameMenuApp):
         menu_item['waitCursor'] = False
         menu['actions'].append(menu_item)
 
-        '''
         menu_item = {}
         menu_item['name'] = 'Fill / Remove Duplicate Frames'
         menu_item['execute'] = self.dedup
         menu_item['isVisible'] = scope_clip
         menu_item['waitCursor'] = False
         menu['actions'].append(menu_item)
-        '''
 
         menu_item = {}
         menu_item['name'] = 'Version: ' + __version__
@@ -1118,7 +1118,7 @@ class flameTimewrapML(flameMenuApp):
                 self.export_clip(item, output_folder)
 
                 cmd = 'python3 '
-                cmd += os.path.join(self.framework.bundle_location, 'bundle', 'remove_dupframes.py')
+                cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_dpframes.py')
                 cmd += ' --input ' + os.path.join(output_folder, 'source') + ' --output ' + output_folder
                 cmd += "; "
                 cmd_strings.append(cmd)
@@ -1171,6 +1171,11 @@ class flameTimewrapML(flameMenuApp):
 
     def dedup_dialog(self, *args, **kwargs):
         from PySide2 import QtWidgets, QtCore
+
+        self.modes_list = {
+            0: 'Interpolate',
+            1: 'Remove', 
+        }
         
         window = QtWidgets.QDialog()
         window.setMinimumSize(280, 180)
@@ -1185,12 +1190,11 @@ class flameTimewrapML(flameMenuApp):
         vbox = QtWidgets.QVBoxLayout()
         vbox.setAlignment(QtCore.Qt.AlignTop)
         
-        '''
         # Duplicate frames action hbox
         dframes_hbox = QtWidgets.QHBoxLayout()
         dframes_hbox.setAlignment(QtCore.Qt.AlignLeft)
 
-        # New Speed label
+        # Processing Mode Label
 
         lbl_Dfames = QtWidgets.QLabel('Duplicate frames: ', window)
         lbl_Dfames.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
@@ -1199,37 +1203,39 @@ class flameTimewrapML(flameMenuApp):
         dframes_hbox.addWidget(lbl_Dfames)
 
         # Spacer
+
         lbl_DframesSpacer = QtWidgets.QLabel('', window)
         lbl_DframesSpacer.setAlignment(QtCore.Qt.AlignCenter)
-        lbl_DframesSpacer.setMinimumSize(8, 28)
+        lbl_DframesSpacer.setMinimumSize(4, 28)
         dframes_hbox.addWidget(lbl_DframesSpacer)
 
-        # New Speed Selector
-        btn_NewSpeedSelector = QtWidgets.QPushButton(window)
-        btn_NewSpeedSelector.setText(self.new_speed_list.get(self.new_speed))
-        def selectNewSpeed(new_speed_id):
-            self.new_speed = new_speed_id
-            btn_NewSpeedSelector.setText(self.new_speed_list.get(self.new_speed))
-        btn_NewSpeedSelector.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_NewSpeedSelector.setMinimumSize(80, 28)
+        # Processing Mode Selector
+
+        btn_DfamesSelector = QtWidgets.QPushButton(window)
+        btn_DfamesSelector.setText(self.modes_list.get(self.dedup_mode))
+        def selectNewMode(new_mode_id):
+            self.dedup_mode = new_mode_id
+            btn_DfamesSelector.setText(self.modes_list.get(self.dedup_mode))
+        btn_DfamesSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_DfamesSelector.setMinimumSize(120, 28)
         # btn_NewSpeedSelector.move(40, 102)
-        btn_NewSpeedSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+        btn_DfamesSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
                                     'QPushButton:pressed {font:italic; color: #d9d9d9}'
                                     'QPushButton::menu-indicator {image: none;}')
-        btn_NewSpeedSelector_menu = QtWidgets.QMenu()
+        btn_DfamesSelector_menu = QtWidgets.QMenu()
 
-        for new_speed_id in sorted(self.new_speed_list.keys()):
-            code = self.new_speed_list.get(new_speed_id, '1/2')
-            action = btn_NewSpeedSelector_menu.addAction(code)
-            action.triggered[()].connect(lambda new_speed_id=new_speed_id: selectNewSpeed(new_speed_id))
-        btn_NewSpeedSelector.setMenu(btn_NewSpeedSelector_menu)
-        dframes_hbox.addWidget(btn_NewSpeedSelector)
+        for new_mode_id in sorted(self.modes_list.keys()):
+            code = self.modes_list.get(new_mode_id, 'Interpolate')
+            action = btn_DfamesSelector_menu.addAction(code)
+            action.triggered[()].connect(lambda new_mode_id=new_mode_id: selectNewMode(new_mode_id))
+        btn_DfamesSelector.setMenu(btn_DfamesSelector_menu)
+        dframes_hbox.addWidget(btn_DfamesSelector)
 
         # Spacer
         lbl_DframesSpacer = QtWidgets.QLabel('', window)
         lbl_DframesSpacer.setAlignment(QtCore.Qt.AlignCenter)
         lbl_DframesSpacer.setMinimumSize(48, 28)
-        new_speed_hbox.addWidget(lbl_DframesSpacer)
+        dframes_hbox.addWidget(lbl_DframesSpacer)
 
         if not sys.platform == 'darwin':
             # Cpu Proc button
@@ -1252,10 +1258,10 @@ class flameTimewrapML(flameMenuApp):
                 btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
             btn_CpuProc.pressed.connect(enableCpuProc)
 
-            new_speed_hbox.addWidget(btn_CpuProc, alignment = QtCore.Qt.AlignRight)
+            dframes_hbox.addWidget(btn_CpuProc, alignment = QtCore.Qt.AlignRight)
 
-        vbox.addLayout(new_speed_hbox)
-        '''
+        vbox.addLayout(dframes_hbox)
+        
 
         # Work Folder Label
 
