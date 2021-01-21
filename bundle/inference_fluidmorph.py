@@ -86,6 +86,27 @@ def make_inference(model, I0, I1, exp, UHD):
     second_half = make_inference(model, middle, I1, exp=exp - 1, UHD=UHD)
     return [*first_half, middle, *second_half]
 
+def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8, UHD=False):
+    I0R = 0.0
+    I1R = 1.0
+    
+    for inference_cycle in range(0, maxcycles):
+        middle = model.inference(I0, I1, UHD)
+        MR = ( I0R + I1R ) / 2
+
+        if MR <= ratio + (rthreshold / 2) and MR >= ratio - (rthreshold / 2):
+            return middle
+
+        if ratio > MR:
+            I0 = middle
+            I0R = MR
+        else:
+            I1 = middle
+            I1R = MR
+    
+    return middle
+
+
 def find_middle_frame(frames, frames_taken):
     for start_frame in range(1, len(frames.keys()) + 1):
         for frame_number in range (start_frame, len(frames.keys()) + 1):
