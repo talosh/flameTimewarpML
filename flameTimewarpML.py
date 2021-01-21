@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.3.0.beta.002'
+__version__ = 'v0.3.0.beta.005'
 
 
 class flameAppFramework(object):
@@ -1079,6 +1079,7 @@ class flameTimewrapML(flameMenuApp):
             return False
 
         working_folder = str(result.get('working_folder', '/var/tmp'))
+        mode = result.get('mode', 0)
         cmd_strings = []
         number_of_clips = 0
 
@@ -1120,6 +1121,10 @@ class flameTimewrapML(flameMenuApp):
                 cmd = 'python3 '
                 cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_dpframes.py')
                 cmd += ' --input ' + os.path.join(output_folder, 'source') + ' --output ' + output_folder
+                if mode:
+                    cmd += ' --remove'
+                if self.cpu:
+                    cmd += ' --cpu'
                 cmd += "; "
                 cmd_strings.append(cmd)
                 
@@ -1355,7 +1360,7 @@ class flameTimewrapML(flameMenuApp):
         if window.exec_():
             self.framework.save_prefs()
             return {
-                # 'speed': self.new_speed,
+                'mode': self.dedup_mode,
                 'working_folder': self.working_folder
             }
         else:
