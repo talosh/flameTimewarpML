@@ -465,7 +465,8 @@ class flameAppFramework(object):
     def show_unpack_message(self, bundle_path):
         from PySide2 import QtWidgets
 
-        msg = 'flameTimeWarpML is going to unpack its bundle\nin background and run additional package scrips.\nCheck console for details.'
+        msg = 'flameTimeWarpML %s is going to unpack its bundle\n' % __version__
+        msg += 'in background and run additional package scrips.\nCheck console for details.'
         dmsg = 'flameTimeWarpML needs Python3 environment that is newer then the one provided with Flame '
         dmsg += 'as well as some additional ML and computer-vision dependancies like PyTorch and OpenCV. '
         dmsg += 'flameTimeWarpML is going to unpack its bundle into "%s" ' % self.bundle_location
