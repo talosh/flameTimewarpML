@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.2.0.beta.019'
+__version__ = 'v0.2.0'
 
 
 class flameAppFramework(object):
@@ -304,6 +304,15 @@ class flameAppFramework(object):
         
         if os.path.isdir(bundle_path):
             bundle_backup_folder = os.path.abspath(bundle_path + '.previous')
+            if os.path.isdir(bundle_backup_folder):
+                try:
+                    cmd = 'rm -rf ' + os.path.abspath(bundle_backup_folder)
+                    self.log('removing previous backup folder', logfile)
+                    self.log('Executing command: %s' % cmd, logfile)
+                    os.system(cmd)
+                except Exception as e:
+                    self.show_exception(e)
+                    return False
             try:
                 cmd = 'mv ' + os.path.abspath(bundle_path) + ' ' + bundle_backup_folder
                 self.log('backing up existing bundle folder', logfile)
@@ -558,7 +567,7 @@ class flameMenuApp(object):
         return method
 
     def log(self, message):
-        self.framework.log('[' + self.name + '] ' + message)
+        self.framework.log(message)
 
     def rescan(self, *args, **kwargs):
         if not self.flame:
@@ -744,14 +753,25 @@ class flameTimewrapML(flameMenuApp):
         menu_item = {}
         menu_item['name'] = 'Slow Down clip(s) with ML'
         menu_item['execute'] = self.slowmo
-        menu_item['isEnabled'] = scope_clip
+        menu_item['isVisible'] = scope_clip
         menu_item['waitCursor'] = False
         menu['actions'].append(menu_item)
+
+        '''
+        menu_item = {}
+        menu_item['name'] = 'Fill / Remove Duplicate Frames'
+        menu_item['execute'] = self.dedup
+        menu_item['isVisible'] = scope_clip
+        menu_item['waitCursor'] = False
+        menu['actions'].append(menu_item)
+        '''
 
         menu_item = {}
         menu_item['name'] = 'Version: ' + __version__
         menu_item['execute'] = self.slowmo
         menu_item['isEnabled'] = False
+        menu_item['isVisible'] = scope_clip
+
         menu['actions'].append(menu_item)
 
         return menu
@@ -897,10 +917,10 @@ class flameTimewrapML(flameMenuApp):
         new_speed_hbox.addWidget(lbl_NewSpeed)
 
         # Spacer
-        lbl_NewSpeedSpacer = QtWidgets.QLabel('', window)
-        lbl_NewSpeedSpacer.setAlignment(QtCore.Qt.AlignCenter)
-        lbl_NewSpeedSpacer.setMinimumSize(8, 28)
-        new_speed_hbox.addWidget(lbl_NewSpeedSpacer)
+        lbl_DframesSpacer = QtWidgets.QLabel('', window)
+        lbl_DframesSpacer.setAlignment(QtCore.Qt.AlignCenter)
+        lbl_DframesSpacer.setMinimumSize(8, 28)
+        new_speed_hbox.addWidget(lbl_DframesSpacer)
 
         # New Speed Selector
         btn_NewSpeedSelector = QtWidgets.QPushButton(window)
@@ -924,10 +944,10 @@ class flameTimewrapML(flameMenuApp):
         new_speed_hbox.addWidget(btn_NewSpeedSelector)
 
         # Spacer
-        lbl_NewSpeedSpacer = QtWidgets.QLabel('', window)
-        lbl_NewSpeedSpacer.setAlignment(QtCore.Qt.AlignCenter)
-        lbl_NewSpeedSpacer.setMinimumSize(48, 28)
-        new_speed_hbox.addWidget(lbl_NewSpeedSpacer)
+        lbl_DframesSpacer = QtWidgets.QLabel('', window)
+        lbl_DframesSpacer.setAlignment(QtCore.Qt.AlignCenter)
+        lbl_DframesSpacer.setMinimumSize(48, 28)
+        new_speed_hbox.addWidget(lbl_DframesSpacer)
 
         if not sys.platform == 'darwin':
             # Cpu Proc button
@@ -1047,6 +1067,288 @@ class flameTimewrapML(flameMenuApp):
             self.framework.save_prefs()
             return {
                 'speed': self.new_speed,
+                'working_folder': self.working_folder
+            }
+        else:
+            return {}
+
+    def dedup(self, selection):
+        result = self.dedup_dialog()
+        if not result:
+            return False
+
+        working_folder = str(result.get('working_folder', '/var/tmp'))
+        cmd_strings = []
+        number_of_clips = 0
+
+        import flame
+        for item in selection:
+            if isinstance(item, (flame.PyClip)):
+                number_of_clips += 1
+
+                clip = item
+                clip_name = clip.name.get_value()
+                
+                output_folder = os.path.abspath(
+                    os.path.join(
+                        working_folder, 
+                        self.sanitized(clip_name) + '_DUPFR' + '_' + self.create_timestamp_uid()
+                        )
+                    )
+
+                if os.path.isdir(output_folder):
+                    from PySide2 import QtWidgets
+
+                    msg = 'Folder %s exists' % output_folder
+                    mbox = QtWidgets.QMessageBox()
+                    mbox.setWindowTitle('flameTimewrarpML')
+                    mbox.setText(msg)
+                    mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+                    mbox.setStyleSheet('QLabel{min-width: 400px;}')
+                    btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+                    btn_Continue.setText('Owerwrite')
+                    mbox.exec_()
+                    if mbox.clickedButton() == mbox.button(QtWidgets.QMessageBox.Cancel):
+                        return False
+                    cmd = 'rm -f ' + output_folder + '/*'
+                    self.log('Executing command: %s' % cmd)
+                    os.system(cmd)
+
+                self.export_clip(item, output_folder)
+
+                cmd = 'python3 '
+                cmd += os.path.join(self.framework.bundle_location, 'bundle', 'remove_dupframes.py')
+                cmd += ' --input ' + os.path.join(output_folder, 'source') + ' --output ' + output_folder
+                cmd += "; "
+                cmd_strings.append(cmd)
+                
+                new_clip_name = clip_name + '_DUPFR'
+                watcher = threading.Thread(target=self.import_watcher, args=(output_folder, clip, new_clip_name))
+                watcher.daemon = True
+                watcher.start()
+                self.loops.append(watcher)
+        
+        if sys.platform == 'darwin':
+            cmd_prefix = """tell application "Terminal" to activate do script "clear; """
+            # cmd_prefix += """ echo " & quote & "Received """
+            # cmd_prefix += str(number_of_clips)
+            #cmd_prefix += ' clip ' if number_of_clips < 2 else ' clips '
+            # cmd_prefix += 'to process, press Ctrl+C to cancel" & quote &; '
+            cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
+            cmd_prefix += os.path.join(self.env_folder, 'bin', 'conda')
+            cmd_prefix += """ shell.bash hook)" & quote & "; conda activate; """
+            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            
+            ml_cmd = cmd_prefix
+           
+            for cmd_string in cmd_strings:
+                ml_cmd += cmd_string
+
+            ml_cmd += """'; exit" """
+
+            import subprocess
+            subprocess.Popen(['osascript', '-e', ml_cmd])
+        
+        else:
+            cmd_prefix = """konsole -e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+
+            ml_cmd = cmd_prefix
+            ml_cmd += 'echo "Received ' + str(number_of_clips)
+            ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
+            ml_cmd += 'to process, press Ctrl+C to cancel"; '
+            ml_cmd += 'trap exit SIGINT SIGTERM; '
+
+            for cmd_string in cmd_strings:
+                ml_cmd += cmd_string
+
+            ml_cmd +="'"
+            self.log('Executing command: %s' % ml_cmd)
+            os.system(ml_cmd)
+
+        flame.execute_shortcut('Refresh Thumbnails')
+
+    def dedup_dialog(self, *args, **kwargs):
+        from PySide2 import QtWidgets, QtCore
+        
+        window = QtWidgets.QDialog()
+        window.setMinimumSize(280, 180)
+        window.setWindowTitle('Remove duplicate frames')
+        window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
+        window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        window.setStyleSheet('background-color: #313131')
+
+        screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
+
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.setAlignment(QtCore.Qt.AlignTop)
+        
+        '''
+        # Duplicate frames action hbox
+        dframes_hbox = QtWidgets.QHBoxLayout()
+        dframes_hbox.setAlignment(QtCore.Qt.AlignLeft)
+
+        # New Speed label
+
+        lbl_Dfames = QtWidgets.QLabel('Duplicate frames: ', window)
+        lbl_Dfames.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_Dfames.setMinimumHeight(28)
+        lbl_Dfames.setAlignment(QtCore.Qt.AlignCenter)
+        dframes_hbox.addWidget(lbl_Dfames)
+
+        # Spacer
+        lbl_DframesSpacer = QtWidgets.QLabel('', window)
+        lbl_DframesSpacer.setAlignment(QtCore.Qt.AlignCenter)
+        lbl_DframesSpacer.setMinimumSize(8, 28)
+        dframes_hbox.addWidget(lbl_DframesSpacer)
+
+        # New Speed Selector
+        btn_NewSpeedSelector = QtWidgets.QPushButton(window)
+        btn_NewSpeedSelector.setText(self.new_speed_list.get(self.new_speed))
+        def selectNewSpeed(new_speed_id):
+            self.new_speed = new_speed_id
+            btn_NewSpeedSelector.setText(self.new_speed_list.get(self.new_speed))
+        btn_NewSpeedSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_NewSpeedSelector.setMinimumSize(80, 28)
+        # btn_NewSpeedSelector.move(40, 102)
+        btn_NewSpeedSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_NewSpeedSelector_menu = QtWidgets.QMenu()
+
+        for new_speed_id in sorted(self.new_speed_list.keys()):
+            code = self.new_speed_list.get(new_speed_id, '1/2')
+            action = btn_NewSpeedSelector_menu.addAction(code)
+            action.triggered[()].connect(lambda new_speed_id=new_speed_id: selectNewSpeed(new_speed_id))
+        btn_NewSpeedSelector.setMenu(btn_NewSpeedSelector_menu)
+        dframes_hbox.addWidget(btn_NewSpeedSelector)
+
+        # Spacer
+        lbl_DframesSpacer = QtWidgets.QLabel('', window)
+        lbl_DframesSpacer.setAlignment(QtCore.Qt.AlignCenter)
+        lbl_DframesSpacer.setMinimumSize(48, 28)
+        new_speed_hbox.addWidget(lbl_DframesSpacer)
+
+        if not sys.platform == 'darwin':
+            # Cpu Proc button
+            
+            def enableCpuProc():
+                if self.cpu:
+                    btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
+                    self.cpu = False
+                else:
+                    btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}')
+                    self.cpu = True
+
+            btn_CpuProc = QtWidgets.QPushButton('CPU Proc', window)
+            btn_CpuProc.setFocusPolicy(QtCore.Qt.NoFocus)
+            btn_CpuProc.setMinimumSize(88, 28)
+            # btn_CpuProc.move(0, 34)
+            if self.cpu:
+                btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}')
+            else:
+                btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
+            btn_CpuProc.pressed.connect(enableCpuProc)
+
+            new_speed_hbox.addWidget(btn_CpuProc, alignment = QtCore.Qt.AlignRight)
+
+        vbox.addLayout(new_speed_hbox)
+        '''
+
+        # Work Folder Label
+
+        lbl_WorkFolder = QtWidgets.QLabel('Export folder', window)
+        lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_WorkFolder.setMinimumHeight(28)
+        lbl_WorkFolder.setMaximumHeight(28)
+        lbl_WorkFolder.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_WorkFolder)
+
+        # Work Folder Text Field
+
+        hbox_workfolder = QtWidgets.QHBoxLayout()
+        hbox_workfolder.setAlignment(QtCore.Qt.AlignLeft)
+
+
+        def chooseFolder():
+            result_folder = str(QtWidgets.QFileDialog.getExistingDirectory(window, "Open Directory", self.working_folder, QtWidgets.QFileDialog.ShowDirsOnly))
+            if result_folder =='':
+                return
+            self.working_folder = result_folder
+            txt_WorkFolder.setText(self.working_folder)
+            self.prefs['working_folder'] = self.working_folder
+
+            #dialog = QtWidgets.QFileDialog()
+            #dialog.setWindowTitle('Select export folder')
+            #dialog.setOption(QtWidgets.QFileDialog.ShowDirsOnly, True)
+            #dialog.setDirectory(self.working_folder)
+            #dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+            #path = QtWidgets.QFileDialog.getExistingDirectory()
+            # dialog.setFileMode(QtWidgets.QFileDialog.FileMode.Directory)
+            #
+            # if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            #    file_full_path = str(dialog.selectedFiles()[0])
+
+        def txt_WorkFolder_textChanged():
+            self.working_folder = txt_WorkFolder.text()
+        txt_WorkFolder = QtWidgets.QLineEdit('', window)
+        txt_WorkFolder.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_WorkFolder.setMinimumSize(280, 28)
+        txt_WorkFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+        txt_WorkFolder.setText(self.working_folder)
+        txt_WorkFolder.textChanged.connect(txt_WorkFolder_textChanged)
+        hbox_workfolder.addWidget(txt_WorkFolder)
+
+        btn_changePreset = QtWidgets.QPushButton('Choose', window)
+        btn_changePreset.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_changePreset.setMinimumSize(88, 28)
+        btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                   'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        btn_changePreset.clicked.connect(chooseFolder)
+        hbox_workfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
+
+        vbox.addLayout(hbox_workfolder)
+
+
+        # Spacer Label
+
+        lbl_Spacer = QtWidgets.QLabel('', window)
+        lbl_Spacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
+        lbl_Spacer.setMinimumHeight(4)
+        lbl_Spacer.setMaximumHeight(4)
+        lbl_Spacer.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_Spacer)
+
+        # Create and Cancel Buttons
+        hbox_Create = QtWidgets.QHBoxLayout()
+
+        select_btn = QtWidgets.QPushButton('Create', window)
+        select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        select_btn.setMinimumSize(128, 28)
+        select_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        select_btn.clicked.connect(window.accept)
+        select_btn.setAutoDefault(True)
+        select_btn.setDefault(True)
+
+        cancel_btn = QtWidgets.QPushButton('Cancel', window)
+        cancel_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        cancel_btn.setMinimumSize(128, 28)
+        cancel_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        cancel_btn.clicked.connect(window.reject)
+
+        hbox_Create.addWidget(cancel_btn)
+        hbox_Create.addWidget(select_btn)
+
+        vbox.addLayout(hbox_Create)
+
+        window.setLayout(vbox)
+        if window.exec_():
+            self.framework.save_prefs()
+            return {
+                # 'speed': self.new_speed,
                 'working_folder': self.working_folder
             }
         else:
