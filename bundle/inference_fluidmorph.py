@@ -45,99 +45,69 @@ def signal_handler(sig, frame):
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
-def clear_write_buffer(user_args, write_buffer, tot_frame):
+def clear_write_buffer(folder, write_buffer, tot_frame):
     global ThreadsFlag
     global IOProcesses
 
-    new_frames_number = ((tot_frame - 1) * ((2 ** args.exp) -1)) + tot_frame
     cnt = 0
     while ThreadsFlag:
         item = write_buffer.get()
         
         if cnt == 0:
-            print ('rendering %s frames to %s' % (new_frames_number, args.output))
-            pbar = tqdm(total=new_frames_number, unit='frame')
+            print ('rendering %s frames to %s' % (tot_frame, folder))
+            pbar = tqdm(total=tot_frame, unit='frame')
         
         if item is None:
             pbar.close() # type: ignore
             break
-        if cnt < new_frames_number:
-            path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(cnt))
-            p = mp.Process(target=cv2.imwrite, args=(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
+
+        frame_number, image_data = item
+
+        if cnt <= tot_frame:
+            path = os.path.join(os.path.abspath(folder), '{:0>7d}.exr'.format(frame_number))
+            p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
             p.start()
             IOProcesses.append(p)
         
         pbar.update(1) # type: ignore
         cnt += 1
 
-def build_read_buffer(user_args, read_buffer, videogen):
+def build_read_buffer(folder, read_buffer, file_list):
     global ThreadsFlag
-
-    for frame in videogen:
-        frame_data = cv2.imread(os.path.join(user_args.input, frame), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+    for frame in file_list:
+        path = os.path.join(folder, frame)
+        if not os.path.isfile(path):
+            pprint (path)
+        frame_data = cv2.imread(path, cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
         read_buffer.put(frame_data)
     read_buffer.put(None)
 
-def make_inference(model, I0, I1, exp, UHD):
-    middle = model.inference(I0, I1, UHD)
-    if exp == 1:
-        return [middle]
-    first_half = make_inference(model, I0, middle, exp=exp - 1, UHD=UHD)
-    second_half = make_inference(model, middle, I1, exp=exp - 1, UHD=UHD)
-    return [*first_half, middle, *second_half]
-
-def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8, UHD=False):
-    I0R = 0.0
-    I1R = 1.0
+def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles = 8, UHD=False):
+    I0_ratio = 0.0
+    I1_ratio = 1.0
     
+    if ratio <= I0_ratio:
+        return I0
+    if ratio >= I1_ratio:
+        return I1
+    # print ('target ratio: %s' % ratio)
     for inference_cycle in range(0, maxcycles):
+        # start = time.time()
         middle = model.inference(I0, I1, UHD)
-        MR = ( I0R + I1R ) / 2
-
-        if MR <= ratio + (rthreshold / 2) and MR >= ratio - (rthreshold / 2):
+        middle_ratio = ( I0_ratio + I1_ratio ) / 2
+        # pprint (time.time() - start)
+        # pprint ('current ratio: %s' % middle_ratio)
+        if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
             return middle
 
-        if ratio > MR:
+        if ratio > middle_ratio:
             I0 = middle
-            I0R = MR
+            I0_ratio = middle_ratio
         else:
             I1 = middle
-            I1R = MR
-    
+            I1_ratio = middle_ratio
+
     return middle
-
-
-def find_middle_frame(frames, frames_taken):
-    for start_frame in range(1, len(frames.keys()) + 1):
-        for frame_number in range (start_frame, len(frames.keys()) + 1):
-            if frames.get(frame_number) and (not frames.get(frame_number + 1, True)):
-                start_frame = frame_number
-                break
-        
-        end_frame = start_frame + 1
-        for frame_number in range(start_frame + 1, len(frames.keys()) + 1):
-            if frames.get(frame_number):
-                end_frame = frame_number
-                break
-            end_frame = frame_number
-        
-        middle_frame = start_frame + int((end_frame - start_frame) / 2)
-
-        if frames.get(start_frame) and not frames.get(middle_frame):
-            if middle_frame in frames_taken.keys():
-                # this frame is taken by another worker
-                continue
-            else:
-                # mark frame as taken
-                frames_taken[middle_frame] = 'taken between %s and %s' % (start_frame, end_frame)
-
-                #print ('s: %s m: %s e: %s' % (start_frame, middle_frame, end_frame))
-                #print ('%s: %s' % ( start_frame, frames.get(start_frame) ))
-                #print ('%s: %s' % ( middle_frame, frames.get(middle_frame) ))
-                #print ('%s: %s' % ( end_frame, frames.get(end_frame) ))
-
-                return (start_frame, middle_frame, end_frame)
-    return False
 
 def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_written, frames_taken):
     perfect_pair = find_middle_frame(frames, frames_taken)
@@ -205,7 +175,7 @@ if __name__ == '__main__':
     parser.add_argument('--incoming', dest='incoming', type=str, default=None)
     parser.add_argument('--outgoing', dest='outgoing', type=str, default=None)
     parser.add_argument('--output', dest='output', type=str, default=None)
-    parser.add_argument('--model', dest='model', type=str, default='./pretrained_models/default/v1.8')
+    parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v1.8.model')
     parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
     parser.add_argument('--cpu', dest='cpu', action='store_true', help='process only on CPU(s)')
     parser.add_argument('--curve', dest='curve', type=int, default=1, help='1 - linear, 2 - smooth')
@@ -245,6 +215,9 @@ if __name__ == '__main__':
         print('incoming sequence %s frames long\noutgoing sequencce %s framse long' % (incoming_input_duration, outgoing_input_duration))
         input("Press Enter to continue...")
         sys.exit()
+
+    input_duration = incoming_input_duration
+
     print('initializing FluidMorph ML...')
 
     incoming_first_image = cv2.imread(os.path.join(args.incoming, incoming_files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
@@ -268,24 +241,22 @@ if __name__ == '__main__':
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    sys.exit()
-
-
-    manager = mp.Manager()
-    frames = manager.dict()
-    frames_written = manager.dict()
-    frames_taken = manager.dict()
 
     if torch.cuda.is_available() and not args.cpu:
         # process on GPU
 
-        files_list.sort()
-        files_list.append(files_list[-1])
+        incoming_files_list.sort()
+        incoming_files_list.append(incoming_files_list[-1])
+        outgoing_files_list.sort()
+        outgoing_files_list.append(outgoing_files_list[-1])
 
         write_buffer = Queue(maxsize=mp.cpu_count() - 3)
-        read_buffer = Queue(maxsize=500)
-        _thread.start_new_thread(build_read_buffer, (args, read_buffer, files_list))
-        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
+        incoming_read_buffer = Queue(maxsize=500)
+        outgoing_read_buffer = Queue(maxsize=500)
+
+        _thread.start_new_thread(build_read_buffer, (args.incoming, incoming_read_buffer, incoming_files_list))
+        _thread.start_new_thread(build_read_buffer, (args.outgoing, outgoing_read_buffer, outgoing_files_list))
+        _thread.start_new_thread(clear_write_buffer, (args.output, write_buffer, input_duration))
 
         from model.RIFE_HD import Model     # type: ignore
         model = Model()
@@ -294,45 +265,51 @@ if __name__ == '__main__':
         model.device()
         print ('AI model loaded: %s' % args.model)
 
-
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if torch.cuda.is_available():
             torch.set_grad_enabled(False)
             torch.backends.cudnn.enabled = True
             torch.backends.cudnn.benchmark = True
 
-        print ('Loading initial frames...')
-        lastframe = first_image
-        I1 = torch.from_numpy(np.transpose(lastframe, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
-        I1 = F.pad(I1, padding)
-        frame = read_buffer.get()
+        rstep = 1 / ( input_duration + 1 )
+        ratio = rstep
 
-        for nn in range(1, input_duration+1):
+        for frame in range(1, input_duration + 1):
+            incoming_frame = incoming_read_buffer.get()
+            outgoing_frame = outgoing_read_buffer.get()
 
-            frame = read_buffer.get()
-            if frame is None:
-                break
-        
-            I0 = I1
-            I1 = torch.from_numpy(np.transpose(frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+            I0 = torch.from_numpy(np.transpose(incoming_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+            I0 = F.pad(I0, padding)
+            I1 = torch.from_numpy(np.transpose(outgoing_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
             I1 = F.pad(I1, padding)
 
-            output = make_inference(model, I0, I1, args.exp, args.UHD)
-            write_buffer.put(lastframe)
-            for mid in output:
-                if sys.platform == 'darwin':
-                    mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
-                else:
-                    mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
-                write_buffer.put(mid[:h, :w])
-            lastframe = frame
-        
-        write_buffer.put(lastframe)
+            mid = make_inference_rational(model, I0, I1, ratio, UHD = args.UHD)
+            mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
+            write_buffer.put((frame, mid[:h, :w]))
+            
+            ratio += rstep
+
         while(not write_buffer.empty()):
             time.sleep(0.1)
 
     else:
         # process on CPU(s)
+        
+        manager = mp.Manager()
+        frames_written = manager.dict()
+
+        incoming_files_list.sort()
+        incoming_files_list.append(incoming_files_list[-1])
+        outgoing_files_list.sort()
+        outgoing_files_list.append(outgoing_files_list[-1])
+
+        write_buffer = Queue(maxsize=mp.cpu_count() - 3)
+        incoming_read_buffer = Queue(maxsize=500)
+        outgoing_read_buffer = Queue(maxsize=500)
+
+        _thread.start_new_thread(build_read_buffer, (args.incoming, incoming_read_buffer, incoming_files_list))
+        _thread.start_new_thread(build_read_buffer, (args.outgoing, outgoing_read_buffer, outgoing_files_list))
+        _thread.start_new_thread(clear_write_buffer, (args.output, write_buffer, input_duration))
 
         from model_cpu.RIFE_HD import Model     # type: ignore
         model = Model()
@@ -340,7 +317,6 @@ if __name__ == '__main__':
         model.eval()
         model.device()
         print ('AI model loaded: %s' % args.model)
-
 
         device = torch.device('cpu')
         
@@ -406,6 +382,7 @@ if __name__ == '__main__':
         ThreadsFlag = False
         cpu_progress_updater.join()
     
+
     for p in IOProcesses:
         p.join(timeout=8)
 
