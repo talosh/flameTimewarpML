@@ -201,7 +201,7 @@ if __name__ == '__main__':
             rstep = 1 / ( dframes + 1 )
             ratio = rstep
             for dframe in range(0, dframes):
-                mid = make_inference_rational(model, IPrevious, ICurrent, ratio)
+                mid = make_inference_rational(model, IPrevious, ICurrent, ratio, UHD = args.UHD)
                 if sys.platform == 'darwin' or args.cpu:
                     mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
                 else:
