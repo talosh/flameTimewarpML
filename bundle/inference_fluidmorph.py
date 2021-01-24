@@ -94,8 +94,8 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles =
         start = time.time()
         middle = model.inference(I0, I1, UHD)
         middle_ratio = ( I0_ratio + I1_ratio ) / 2
-        pprint (time.time() - start)
-        pprint ('current ratio: %s' % middle_ratio)
+        # pprint (time.time() - start)
+        # pprint ('current ratio: %s' % middle_ratio)
         if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
             return middle
 
@@ -148,20 +148,6 @@ def three_of_a_perfect_pair(incoming_frame, outgoing_frame, frame_num, ratio, de
 
     write_buffer.put((frame_num, middle[:h, :w]))
     return
-
-def cpu_progress_updater(frames_written, last_frame_number):
-    global ThreadsFlag
-
-    pbar = tqdm(total=last_frame_number, unit='frame')
-    lastframe = 0
-    while ThreadsFlag:
-        pbar.n = len(frames_written.keys())
-        pbar.last_print_n = len(frames_written.keys())
-        if lastframe != len(frames_written.keys()):
-            pbar.refresh()
-            lastframe = len(frames_written.keys())
-        time.sleep(0.01)
-    pbar.close()
 
 if __name__ == '__main__':
     start = time.time()
