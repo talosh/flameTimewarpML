@@ -62,11 +62,16 @@ def clear_write_buffer(folder, write_buffer, tot_frame):
 
         frame_number, image_data = item
 
-        if cnt <= tot_frame:
-            path = os.path.join(os.path.abspath(folder), '{:0>7d}.exr'.format(frame_number))
+        path = os.path.join(os.path.abspath(folder), '{:0>7d}.exr'.format(frame_number))
+        try:
             p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
             p.start()
             IOProcesses.append(p)
+        except:
+            try:
+                cv2.imwrite(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
+            except Exception as e:
+                print ('Error wtiring %s: %s' % (path, e))
         
         pbar.update(1) # type: ignore
         cnt += 1
@@ -245,7 +250,7 @@ if __name__ == '__main__':
         model.load_model(args.model, -1)
         model.eval()
         model.device()
-        print ('AI model loaded: %s' % args.model)
+        print ('Trained model loaded: %s' % args.model)
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if torch.cuda.is_available():
@@ -299,7 +304,7 @@ if __name__ == '__main__':
         model.load_model(args.model, -1)
         model.eval()
         model.device()
-        print ('AI model loaded: %s' % args.model)
+        print ('Trained model loaded: %s' % args.model)
 
         device = torch.device('cpu')
         

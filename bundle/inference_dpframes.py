@@ -55,10 +55,16 @@ def clear_write_buffer(args, write_buffer, input_duration):
             break
 
         path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(cnt))
-        p = mp.Process(target=cv2.imwrite, args=(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
-        # p.daemon = True
-        p.start()
-        IOProcesses.append(p)
+        try:
+            p = mp.Process(target=cv2.imwrite, args=(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
+            p.start()
+            IOProcesses.append(p)
+        except:
+            try:
+                cv2.imwrite(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
+            except Exception as e:
+                print ('Error wtiring %s: %s' % (path, e))
+                
         cnt += 1
 
     
@@ -156,7 +162,7 @@ if __name__ == '__main__':
             model.eval()
             model.device()
 
-        print ('AI model loaded: %s' % args.model)
+        print ('Trained model loaded: %s' % args.model)
     
         first_image = cv2.imread(os.path.join(args.input, files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
         h, w, _ = first_image.shape
