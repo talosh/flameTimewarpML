@@ -8,8 +8,6 @@ from tqdm import tqdm
 from torch.nn import functional as F
 import warnings
 import _thread
-import threading
-import skvideo.io
 from queue import Queue, Empty
 warnings.filterwarnings("ignore")
 
@@ -108,6 +106,7 @@ if __name__ == '__main__':
     parser.add_argument('--output', dest='output', type=str, default=None, help='folder to output sequence to')
     parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v1.8.model')
     parser.add_argument('--remove', dest='remove', action='store_true', help='remove duplicate frames')
+    parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
     parser.add_argument('--cpu', dest='cpu', action='store_true', help='do not use GPU at all, process only on CPU')
 
     args = parser.parse_args()
@@ -203,7 +202,7 @@ if __name__ == '__main__':
             rstep = 1 / ( dframes + 1 )
             ratio = rstep
             for dframe in range(0, dframes):
-                mid = make_inference_rational(model, IPrevious, ICurrent, ratio)
+                mid = make_inference_rational(model, IPrevious, ICurrent, ratio, UHD = args.UHD)
                 if sys.platform == 'darwin' or args.cpu:
                     mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
                 else:

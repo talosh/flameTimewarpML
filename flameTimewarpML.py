@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.3.0.beta.005'
+__version__ = 'v0.3.0.beta.010'
 
 
 class flameAppFramework(object):
@@ -152,6 +152,8 @@ class flameAppFramework(object):
         self.bundle_id = hashlib.sha1(__version__.encode()).hexdigest()
 
         bundle_path = os.path.join(self.bundle_location, 'bundle')
+        self.bundle_path = bundle_path
+
         if (os.path.isdir(bundle_path) and os.path.isfile(os.path.join(bundle_path, 'bundle_id'))):
             self.log('checking existing bundle id %s' % os.path.join(bundle_path, 'bundle_id'))
             with open(os.path.join(bundle_path, 'bundle_id'), 'r') as bundle_id_file:
@@ -241,8 +243,9 @@ class flameAppFramework(object):
             prefs_file = open(prefs_file_path, 'w')
             pickle.dump(self.prefs, prefs_file)
             prefs_file.close()
-            self.log('preferences saved to %s' % prefs_file_path)
-            self.log('preferences contents:\n' + pformat(self.prefs))
+            if self.debug:
+                self.log('preferences saved to %s' % prefs_file_path)
+                self.log('preferences contents:\n' + pformat(self.prefs))
         except:
             self.log('unable to save preferences to %s' % prefs_file_path)
 
@@ -250,8 +253,9 @@ class flameAppFramework(object):
             prefs_file = open(prefs_user_file_path, 'w')
             pickle.dump(self.prefs_user, prefs_file)
             prefs_file.close()
-            self.log('preferences saved to %s' % prefs_user_file_path)
-            self.log('preferences contents:\n' + pformat(self.prefs_user))
+            if self.debug:
+                self.log('preferences saved to %s' % prefs_user_file_path)
+                self.log('preferences contents:\n' + pformat(self.prefs_user))
         except:
             self.log('unable to save preferences to %s' % prefs_user_file_path)
 
@@ -259,8 +263,9 @@ class flameAppFramework(object):
             prefs_file = open(prefs_global_file_path, 'w')
             pickle.dump(self.prefs_global, prefs_file)
             prefs_file.close()
-            self.log('preferences saved to %s' % prefs_global_file_path)
-            self.log('preferences contents:\n' + pformat(self.prefs_global))
+            if self.debug:
+                self.log('preferences saved to %s' % prefs_global_file_path)
+                self.log('preferences contents:\n' + pformat(self.prefs_global))
         except:
             self.log('unable to save preferences to %s' % prefs_global_file_path)
             
@@ -727,14 +732,28 @@ class flameTimewrapML(flameMenuApp):
 
         if not self.prefs.master.get(self.name):
             self.prefs['working_folder'] = '/var/tmp'
+            self.prefs['trained_models_group'] = 'default'
+            self.prefs['trained_model_name'] = 'v1.8'
+            self.prefs['slowmo_uhd'] = False
+            self.prefs['dedup_uhd'] = False
+            self.prefs['fluidmorph_uhd'] = True
+
+        # if not self.prefs_global.master.get(self.name):
+        #    self.prefs_global['linux_hold_konsole'] = True
+
         self.working_folder = self.prefs['working_folder']
         if not os.path.isdir(self.working_folder):
             self.working_folder = '/var/tmp'
+
+        self.trained_models_folder = 'trained_models'
+        self.trained_models_group = self.prefs.get('trained_models_group', 'default')
+        self.trained_model_name = self.prefs.get('trained_model_name', 'v1.8')
 
         # Module defaults
         self.new_speed = 1
         self.dedup_mode = 0
         self.cpu = False
+        self.UHD = True
 
     def build_menu(self):
         def scope_clip(selection):
@@ -768,6 +787,13 @@ class flameTimewrapML(flameMenuApp):
         menu['actions'].append(menu_item)
 
         menu_item = {}
+        menu_item['name'] = 'Create Fluidmorph Transition'
+        menu_item['execute'] = self.fluidmorph
+        menu_item['isVisible'] = scope_clip
+        menu_item['waitCursor'] = False
+        menu['actions'].append(menu_item)
+
+        menu_item = {}
         menu_item['name'] = 'Version: ' + __version__
         menu_item['execute'] = self.slowmo
         menu_item['isEnabled'] = False
@@ -784,6 +810,8 @@ class flameTimewrapML(flameMenuApp):
 
         working_folder = str(result.get('working_folder', '/var/tmp'))
         speed = result.get('speed', 1)
+        hold_konsole = result.get('hold_konsole', False)
+
         cmd_strings = []
         number_of_clips = 0
 
@@ -795,16 +823,15 @@ class flameTimewrapML(flameMenuApp):
                 clip = item
                 clip_name = clip.name.get_value()
                 
-                output_folder = os.path.abspath(
+                result_folder = os.path.abspath(
                     os.path.join(
                         working_folder, 
                         self.sanitized(clip_name) + '_TWML' + str(2 ** speed) + '_' + self.create_timestamp_uid()
                         )
                     )
 
-                if os.path.isdir(output_folder):
+                if os.path.isdir(result_folder):
                     from PySide2 import QtWidgets
-
                     msg = 'Folder %s exists' % output_folder
                     mbox = QtWidgets.QMessageBox()
                     mbox.setWindowTitle('flameTimewrarpML')
@@ -816,25 +843,28 @@ class flameTimewrapML(flameMenuApp):
                     mbox.exec_()
                     if mbox.clickedButton() == mbox.button(QtWidgets.QMessageBox.Cancel):
                         return False
-                    cmd = 'rm -f ' + output_folder + '/*'
+                    cmd = 'rm -f ' + result_folder + '/*'
                     self.log('Executing command: %s' % cmd)
                     os.system(cmd)
 
-                self.export_clip(item, output_folder)
+                source_clip_folder = os.path.join(result_folder, 'source')
+                self.export_clip(item, source_clip_folder)
 
                 cmd = 'python3 '
                 if self.cpu:
                     cmd = 'export OMP_NUM_THREADS=1; python3 '
                 cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_sequence.py')
-                cmd += ' --input ' + os.path.join(output_folder, 'source') + ' --output ' + output_folder
+                cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder
                 cmd += ' --exp=' + str(speed)
                 if self.cpu:
                     cmd += ' --cpu'
+                if self.prefs.get('slowmo_uhd', False):
+                    cmd += ' --UHD'
                 cmd += "; "
                 cmd_strings.append(cmd)
                 
                 new_clip_name = clip_name + '_TWML' + str(2 ** speed)
-                watcher = threading.Thread(target=self.import_watcher, args=(output_folder, clip, new_clip_name))
+                watcher = threading.Thread(target=self.import_watcher, args=(result_folder, new_clip_name, clip.parent, [source_clip_folder]))
                 watcher.daemon = True
                 watcher.start()
                 self.loops.append(watcher)
@@ -861,7 +891,10 @@ class flameTimewrapML(flameMenuApp):
             subprocess.Popen(['osascript', '-e', ml_cmd])
         
         else:
-            cmd_prefix = """konsole -e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+            cmd_prefix = 'konsole '
+            if hold_konsole:
+                cmd_prefix += '--hold '
+            cmd_prefix += """-e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
             cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
 
             ml_cmd = cmd_prefix
@@ -873,6 +906,8 @@ class flameTimewrapML(flameMenuApp):
             for cmd_string in cmd_strings:
                 ml_cmd += cmd_string
 
+            if hold_konsole:
+                ml_cmd += 'echo "Commands finished. You can close this window"'
             ml_cmd +="'"
             self.log('Executing command: %s' % ml_cmd)
             os.system(ml_cmd)
@@ -902,26 +937,28 @@ class flameTimewrapML(flameMenuApp):
         screen_res = QtWidgets.QDesktopWidget().screenGeometry()
         window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
 
+        # Spacer
+        lbl_Spacer = QtWidgets.QLabel('', window)
+        lbl_Spacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
+        lbl_Spacer.setMinimumHeight(4)
+        lbl_Spacer.setMaximumHeight(4)
+        lbl_Spacer.setAlignment(QtCore.Qt.AlignCenter)
+
+
         vbox = QtWidgets.QVBoxLayout()
         vbox.setAlignment(QtCore.Qt.AlignTop)
 
         # New Speed hbox
         new_speed_hbox = QtWidgets.QHBoxLayout()
-        new_speed_hbox.setAlignment(QtCore.Qt.AlignLeft)
+        # new_speed_hbox.setAlignment(QtCore.Qt.AlignCenter)
 
         # New Speed label
 
-        lbl_NewSpeed = QtWidgets.QLabel('New Clip(s) Speed ', window)
+        lbl_NewSpeed = QtWidgets.QLabel('New Speed ', window)
         lbl_NewSpeed.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
         lbl_NewSpeed.setMinimumHeight(28)
-        lbl_NewSpeed.setAlignment(QtCore.Qt.AlignCenter)
+        lbl_NewSpeed.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         new_speed_hbox.addWidget(lbl_NewSpeed)
-
-        # Spacer
-        lbl_DframesSpacer = QtWidgets.QLabel('', window)
-        lbl_DframesSpacer.setAlignment(QtCore.Qt.AlignCenter)
-        lbl_DframesSpacer.setMinimumSize(8, 28)
-        new_speed_hbox.addWidget(lbl_DframesSpacer)
 
         # New Speed Selector
         btn_NewSpeedSelector = QtWidgets.QPushButton(window)
@@ -931,7 +968,6 @@ class flameTimewrapML(flameMenuApp):
             btn_NewSpeedSelector.setText(self.new_speed_list.get(self.new_speed))
         btn_NewSpeedSelector.setFocusPolicy(QtCore.Qt.NoFocus)
         btn_NewSpeedSelector.setMinimumSize(80, 28)
-        # btn_NewSpeedSelector.move(40, 102)
         btn_NewSpeedSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
                                     'QPushButton:pressed {font:italic; color: #d9d9d9}'
                                     'QPushButton::menu-indicator {image: none;}')
@@ -944,11 +980,29 @@ class flameTimewrapML(flameMenuApp):
         btn_NewSpeedSelector.setMenu(btn_NewSpeedSelector_menu)
         new_speed_hbox.addWidget(btn_NewSpeedSelector)
 
-        # Spacer
-        lbl_DframesSpacer = QtWidgets.QLabel('', window)
-        lbl_DframesSpacer.setAlignment(QtCore.Qt.AlignCenter)
-        lbl_DframesSpacer.setMinimumSize(48, 28)
-        new_speed_hbox.addWidget(lbl_DframesSpacer)
+        # Reduce flow res button
+
+        def enableUHD():
+            if self.prefs.get('slowmo_uhd', False):
+                btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                        'QToolTip {color: black; background-color:  #ffffd9; border: 0px}')
+                self.prefs['slowmo_uhd'] = False
+            else:
+                btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
+                                        'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
+                self.prefs['slowmo_uhd'] = True
+        btn_UHD = QtWidgets.QPushButton('Reduce flow res', window)
+        btn_UHD.setToolTip('<b>Reduce flow res button</b><br>Use less details for analyzis, sometimes could be helpful with large motion.')
+        btn_UHD.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_UHD.setMinimumSize(148, 28)
+        if self.prefs.get('slowmo_uhd', False):
+            btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
+                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
+        else:
+            btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
+        btn_UHD.pressed.connect(enableUHD)
+        new_speed_hbox.addWidget(btn_UHD)
 
         if not sys.platform == 'darwin':
             # Cpu Proc button
@@ -964,16 +1018,16 @@ class flameTimewrapML(flameMenuApp):
             btn_CpuProc = QtWidgets.QPushButton('CPU Proc', window)
             btn_CpuProc.setFocusPolicy(QtCore.Qt.NoFocus)
             btn_CpuProc.setMinimumSize(88, 28)
-            # btn_CpuProc.move(0, 34)
             if self.cpu:
                 btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}')
             else:
                 btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
             btn_CpuProc.pressed.connect(enableCpuProc)
 
-            new_speed_hbox.addWidget(btn_CpuProc, alignment = QtCore.Qt.AlignRight)
+            new_speed_hbox.addWidget(btn_CpuProc)
 
         vbox.addLayout(new_speed_hbox)
+        vbox.addWidget(lbl_Spacer)
 
         # Work Folder Label
 
@@ -1030,14 +1084,67 @@ class flameTimewrapML(flameMenuApp):
         vbox.addLayout(hbox_workfolder)
 
 
-        # Spacer Label
-
-        lbl_Spacer = QtWidgets.QLabel('', window)
-        lbl_Spacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
-        lbl_Spacer.setMinimumHeight(4)
-        lbl_Spacer.setMaximumHeight(4)
-        lbl_Spacer.setAlignment(QtCore.Qt.AlignCenter)
         vbox.addWidget(lbl_Spacer)
+
+        '''
+        # MODEL label
+        lbl_Model = QtWidgets.QLabel('Model', window)
+        lbl_Model.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_Model.setMinimumHeight(28)
+        lbl_Model.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_Model)
+
+        # MODEL Hbox START
+        model_hbox = QtWidgets.QHBoxLayout()
+        # model_hbox.setAlignment(QtCore.Qt.AlignCenter)
+
+        model_groups_path = os.path.join(os.path.abspath(self.framework.bundle_path), self.trained_models_folder)
+        model_groups = [d for d in os.listdir(model_groups_path) if os.path.isdir(os.path.join(model_groups_path, d))]
+        model_names_path = os.path.join(os.path.abspath(self.framework.bundle_path), self.trained_models_folder, self.trained_models_group)
+        model_names = [d.rstrip('.model') for d in os.listdir(model_names_path) if os.path.isdir(os.path.join(model_names_path, d))]
+
+        # Model Groups Button
+        btn_ModelGroups = QtWidgets.QPushButton(window)
+        btn_ModelGroups.setText(self.trained_models_group)
+        def selectModelGroup(new_model_group):
+            self.trained_models_group = new_model_group
+            btn_ModelGroups.setText(self.trained_models_group)
+        btn_ModelGroups.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_ModelGroups.setMinimumHeight(28)
+        btn_ModelGroups.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_ModelGroups_menu = QtWidgets.QMenu()
+        for new_model_group in sorted(model_groups):
+            action = btn_ModelGroups_menu.addAction(new_model_group)
+            action.triggered[()].connect(lambda new_model_group=new_model_group: selectModelGroup(new_model_group))
+        btn_ModelGroups.setMenu(btn_ModelGroups_menu)
+        model_hbox.addWidget(btn_ModelGroups)
+
+
+        # Model Names Button
+        btn_ModelNames = QtWidgets.QPushButton(window)
+        btn_ModelNames.setText(self.trained_model_name)
+        def selectModelName(new_model_name):
+            self.trained_model_name = new_model_name
+            btn_ModelNames.setText(self.trained_model_name)
+        btn_ModelNames.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_ModelNames.setMinimumHeight(28)
+        btn_ModelNames.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_ModelNames_menu = QtWidgets.QMenu()
+        for new_model_name in sorted(model_names):
+            action = btn_ModelNames_menu.addAction(new_model_name)
+            action.triggered[()].connect(lambda new_model_name=new_model_name: selectModelGroup(new_model_name))
+        btn_ModelNames.setMenu(btn_ModelNames_menu)
+        model_hbox.addWidget(btn_ModelNames)
+
+        vbox.addLayout(model_hbox)
+        vbox.addWidget(lbl_Spacer)
+
+        # MODEL Hbox END
+        '''
 
         # Create and Cancel Buttons
         hbox_Create = QtWidgets.QHBoxLayout()
@@ -1065,10 +1172,12 @@ class flameTimewrapML(flameMenuApp):
 
         window.setLayout(vbox)
         if window.exec_():
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
             self.framework.save_prefs()
             return {
                 'speed': self.new_speed,
-                'working_folder': self.working_folder
+                'working_folder': self.working_folder,
+                'hold_konsole': True if modifiers == QtCore.Qt.ControlModifier else False
             }
         else:
             return {}
@@ -1080,6 +1189,8 @@ class flameTimewrapML(flameMenuApp):
 
         working_folder = str(result.get('working_folder', '/var/tmp'))
         mode = result.get('mode', 0)
+        hold_konsole = result.get('hold_konsole', False)
+
         cmd_strings = []
         number_of_clips = 0
 
@@ -1091,17 +1202,16 @@ class flameTimewrapML(flameMenuApp):
                 clip = item
                 clip_name = clip.name.get_value()
                 
-                output_folder = os.path.abspath(
+                result_folder = os.path.abspath(
                     os.path.join(
                         working_folder, 
                         self.sanitized(clip_name) + '_DUPFR' + '_' + self.create_timestamp_uid()
                         )
                     )
 
-                if os.path.isdir(output_folder):
+                if os.path.isdir(result_folder):
                     from PySide2 import QtWidgets
-
-                    msg = 'Folder %s exists' % output_folder
+                    msg = 'Folder %s exists' % result_folder
                     mbox = QtWidgets.QMessageBox()
                     mbox.setWindowTitle('flameTimewrarpML')
                     mbox.setText(msg)
@@ -1112,24 +1222,29 @@ class flameTimewrapML(flameMenuApp):
                     mbox.exec_()
                     if mbox.clickedButton() == mbox.button(QtWidgets.QMessageBox.Cancel):
                         return False
-                    cmd = 'rm -f ' + output_folder + '/*'
+                    cmd = 'rm -f ' + result_folder + '/*'
                     self.log('Executing command: %s' % cmd)
                     os.system(cmd)
 
-                self.export_clip(item, output_folder)
+                source_clip_folder = os.path.join(result_folder, 'source')
+                self.export_clip(item, source_clip_folder)
 
                 cmd = 'python3 '
+                if self.cpu:
+                    cmd = 'export OMP_NUM_THREADS=1; python3 '
                 cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_dpframes.py')
-                cmd += ' --input ' + os.path.join(output_folder, 'source') + ' --output ' + output_folder
+                cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder
                 if mode:
                     cmd += ' --remove'
                 if self.cpu:
                     cmd += ' --cpu'
+                if self.prefs.get('dedup_uhd', False):
+                    cmd += ' --UHD'
                 cmd += "; "
                 cmd_strings.append(cmd)
                 
                 new_clip_name = clip_name + '_DUPFR'
-                watcher = threading.Thread(target=self.import_watcher, args=(output_folder, clip, new_clip_name))
+                watcher = threading.Thread(target=self.import_watcher, args=(result_folder, new_clip_name, clip.parent, [source_clip_folder]))
                 watcher.daemon = True
                 watcher.start()
                 self.loops.append(watcher)
@@ -1156,7 +1271,10 @@ class flameTimewrapML(flameMenuApp):
             subprocess.Popen(['osascript', '-e', ml_cmd])
         
         else:
-            cmd_prefix = """konsole -e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+            cmd_prefix = 'konsole '
+            if hold_konsole:
+                cmd_prefix += '--hold '
+            cmd_prefix += """-e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
             cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
 
             ml_cmd = cmd_prefix
@@ -1168,6 +1286,7 @@ class flameTimewrapML(flameMenuApp):
             for cmd_string in cmd_strings:
                 ml_cmd += cmd_string
 
+            ml_cmd += 'echo "Commands finished. You can close this window"'
             ml_cmd +="'"
             self.log('Executing command: %s' % ml_cmd)
             os.system(ml_cmd)
@@ -1192,12 +1311,20 @@ class flameTimewrapML(flameMenuApp):
         screen_res = QtWidgets.QDesktopWidget().screenGeometry()
         window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
 
+        # Spacer
+        lbl_Spacer = QtWidgets.QLabel('', window)
+        lbl_Spacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
+        lbl_Spacer.setMinimumHeight(4)
+        lbl_Spacer.setMaximumHeight(4)
+        lbl_Spacer.setAlignment(QtCore.Qt.AlignCenter)
+
+
         vbox = QtWidgets.QVBoxLayout()
         vbox.setAlignment(QtCore.Qt.AlignTop)
         
         # Duplicate frames action hbox
         dframes_hbox = QtWidgets.QHBoxLayout()
-        dframes_hbox.setAlignment(QtCore.Qt.AlignLeft)
+        # dframes_hbox.setAlignment(QtCore.Qt.AlignLeft)
 
         # Processing Mode Label
 
@@ -1206,13 +1333,6 @@ class flameTimewrapML(flameMenuApp):
         lbl_Dfames.setMinimumHeight(28)
         lbl_Dfames.setAlignment(QtCore.Qt.AlignCenter)
         dframes_hbox.addWidget(lbl_Dfames)
-
-        # Spacer
-
-        lbl_DframesSpacer = QtWidgets.QLabel('', window)
-        lbl_DframesSpacer.setAlignment(QtCore.Qt.AlignCenter)
-        lbl_DframesSpacer.setMinimumSize(4, 28)
-        dframes_hbox.addWidget(lbl_DframesSpacer)
 
         # Processing Mode Selector
 
@@ -1223,7 +1343,6 @@ class flameTimewrapML(flameMenuApp):
             btn_DfamesSelector.setText(self.modes_list.get(self.dedup_mode))
         btn_DfamesSelector.setFocusPolicy(QtCore.Qt.NoFocus)
         btn_DfamesSelector.setMinimumSize(120, 28)
-        # btn_NewSpeedSelector.move(40, 102)
         btn_DfamesSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
                                     'QPushButton:pressed {font:italic; color: #d9d9d9}'
                                     'QPushButton::menu-indicator {image: none;}')
@@ -1236,15 +1355,33 @@ class flameTimewrapML(flameMenuApp):
         btn_DfamesSelector.setMenu(btn_DfamesSelector_menu)
         dframes_hbox.addWidget(btn_DfamesSelector)
 
-        # Spacer
-        lbl_DframesSpacer = QtWidgets.QLabel('', window)
-        lbl_DframesSpacer.setAlignment(QtCore.Qt.AlignCenter)
-        lbl_DframesSpacer.setMinimumSize(48, 28)
-        dframes_hbox.addWidget(lbl_DframesSpacer)
+        # Fine Flow button
+        
+        def enableUHD():
+            if self.prefs.get('dedup_uhd', False):
+                btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                        'QToolTip {color: black; background-color:  #ffffd9; border: 0px}')
+                self.prefs['dedup_uhd'] = False
+            else:
+                btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
+                                        'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
+                self.prefs['dedup_uhd'] = True
+        btn_UHD = QtWidgets.QPushButton('Reduce flow res', window)
+        btn_UHD.setToolTip('<b>Reduce flow res button</b><br>Use less details for analyzis, sometimes could be helpful with large motion.')
+        btn_UHD.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_UHD.setMinimumSize(148, 28)
+        if self.prefs.get('dedup_uhd', False):
+            btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
+                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
+        else:
+            btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
+        btn_UHD.pressed.connect(enableUHD)
+        dframes_hbox.addWidget(btn_UHD)
 
-        if not sys.platform == 'darwin':
-            # Cpu Proc button
-            
+        # Cpu Proc button
+
+        if not sys.platform == 'darwin':            
             def enableCpuProc():
                 if self.cpu:
                     btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
@@ -1263,10 +1400,10 @@ class flameTimewrapML(flameMenuApp):
                 btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
             btn_CpuProc.pressed.connect(enableCpuProc)
 
-            dframes_hbox.addWidget(btn_CpuProc, alignment = QtCore.Qt.AlignRight)
+            dframes_hbox.addWidget(btn_CpuProc)
 
         vbox.addLayout(dframes_hbox)
-        
+        vbox.addWidget(lbl_Spacer)
 
         # Work Folder Label
 
@@ -1322,14 +1459,6 @@ class flameTimewrapML(flameMenuApp):
 
         vbox.addLayout(hbox_workfolder)
 
-
-        # Spacer Label
-
-        lbl_Spacer = QtWidgets.QLabel('', window)
-        lbl_Spacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
-        lbl_Spacer.setMinimumHeight(4)
-        lbl_Spacer.setMaximumHeight(4)
-        lbl_Spacer.setAlignment(QtCore.Qt.AlignCenter)
         vbox.addWidget(lbl_Spacer)
 
         # Create and Cancel Buttons
@@ -1358,19 +1487,372 @@ class flameTimewrapML(flameMenuApp):
 
         window.setLayout(vbox)
         if window.exec_():
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
             self.framework.save_prefs()
             return {
                 'mode': self.dedup_mode,
-                'working_folder': self.working_folder
+                'working_folder': self.working_folder,
+                'hold_konsole': True if modifiers == QtCore.Qt.ControlModifier else False
             }
         else:
             return {}
 
-    def export_clip(self, clip, output_folder):
+    def fluidmorph(self, selection):
+        def usage_message():
+            from PySide2 import QtWidgets, QtCore
+            msg = 'Please select two clips of the same dimentions and length'
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText(msg)
+            mbox.exec_()
+
+        import flame
+        clips = []
+        for item in selection:
+            if isinstance(item, (flame.PyClip)):
+                clips.append(item)
+
+        if len(clips) != 2:
+            usage_message()
+            return
+                
+        result = self.fluidmorph_dialog(clips = clips)
+        if not result:
+            return False
+
+        working_folder = str(result.get('working_folder', '/var/tmp'))
+        incoming_clip = clips[result.get('incoming')]
+        outgoing_clip = clips[result.get('outgoing')]
+        hold_konsole = result.get('hold_konsole', False)
+        cmd_strings = []
+
+
+        incoming_clip_name = incoming_clip.name.get_value()
+        outgoing_clip_name = outgoing_clip.name.get_value()
+        result_folder = os.path.abspath(
+            os.path.join(
+                working_folder, 
+                self.sanitized(incoming_clip_name) + '_FLUID' + '_' + self.create_timestamp_uid()
+                )
+            )
+
+        if os.path.isdir(result_folder):
+            from PySide2 import QtWidgets
+            msg = 'Folder %s exists' % result_folder
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText(msg)
+            mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+            mbox.setStyleSheet('QLabel{min-width: 400px;}')
+            btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+            btn_Continue.setText('Owerwrite')
+            mbox.exec_()
+            if mbox.clickedButton() == mbox.button(QtWidgets.QMessageBox.Cancel):
+                return False
+            cmd = 'rm -f ' + result_folder + '/*'
+            self.log('Executing command: %s' % cmd)
+            os.system(cmd)
+
+        incoming_folder = os.path.join(result_folder, 'incoming')
+        outgoing_folder = os.path.join(result_folder, 'outgoing')
+        self.export_clip(incoming_clip, incoming_folder)
+        self.export_clip(outgoing_clip, outgoing_folder)
+
+
+        cmd = 'python3 '
+        if self.cpu:
+            cmd = 'export OMP_NUM_THREADS=1; python3 '
+        cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_fluidmorph.py')
+        cmd += ' --incoming ' + incoming_folder
+        cmd += ' --outgoing ' + outgoing_folder
+        cmd += ' --output ' + result_folder
+        if self.cpu:
+            cmd += ' --cpu'
+        if self.UHD:
+            cmd += ' --UHD'
+        cmd += "; "
+        cmd_strings.append(cmd)
+        
+        new_clip_name = incoming_clip_name + '_FLUID'
+        watcher = threading.Thread(target=self.import_watcher, args=(result_folder, new_clip_name, incoming_clip.parent, [incoming_folder, outgoing_folder]))
+        watcher.daemon = True
+        watcher.start()
+        self.loops.append(watcher)
+
+        if sys.platform == 'darwin':
+            cmd_prefix = """tell application "Terminal" to activate do script "clear; """
+            # cmd_prefix += """ echo " & quote & "Received """
+            # cmd_prefix += str(number_of_clips)
+            #cmd_prefix += ' clip ' if number_of_clips < 2 else ' clips '
+            # cmd_prefix += 'to process, press Ctrl+C to cancel" & quote &; '
+            cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
+            cmd_prefix += os.path.join(self.env_folder, 'bin', 'conda')
+            cmd_prefix += """ shell.bash hook)" & quote & "; conda activate; """
+            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            
+            ml_cmd = cmd_prefix
+           
+            for cmd_string in cmd_strings:
+                ml_cmd += cmd_string
+
+            ml_cmd += """'; exit" """
+
+            import subprocess
+            subprocess.Popen(['osascript', '-e', ml_cmd])
+        
+        else:
+            cmd_prefix = 'konsole '
+            if hold_konsole:
+                cmd_prefix += '--hold '
+            cmd_prefix += """-e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+
+            ml_cmd = cmd_prefix
+            # ml_cmd += 'echo "Received ' + str(number_of_clips)
+            # ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
+            # ml_cmd += 'to process, press Ctrl+C to cancel"; '
+            ml_cmd += 'trap exit SIGINT SIGTERM; '
+
+            for cmd_string in cmd_strings:
+                ml_cmd += cmd_string
+
+            if hold_konsole:
+                ml_cmd += 'echo "Commands finished. You can close this window"'
+            ml_cmd +="'"
+            self.log('Executing command: %s' % ml_cmd)
+            os.system(ml_cmd)
+
+        flame.execute_shortcut('Refresh Thumbnails')
+
+    def fluidmorph_dialog(self, *args, **kwargs):
+        from PySide2 import QtWidgets, QtCore
+
+        clips = kwargs.get('clips')
+        self.incoming_clip_id = 0
+        self.outgoing_clip_id = 1
+        
+        self.clip_names_list = {
+            0: clips[0].name.get_value(),
+            1: clips[1].name.get_value(), 
+        }
+
+        pprint (self.clip_names_list)
+
+        window = QtWidgets.QDialog()
+        window.setMinimumSize(280, 180)
+        window.setWindowTitle('Create Fluidmorph Transition')
+        window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
+        window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        window.setStyleSheet('background-color: #313131')
+
+        screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
+
+        # Spacer
+        lbl_Spacer = QtWidgets.QLabel('', window)
+        lbl_Spacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
+        lbl_Spacer.setMinimumHeight(4)
+        lbl_Spacer.setMaximumHeight(4)
+        lbl_Spacer.setAlignment(QtCore.Qt.AlignCenter)
+
+
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.setAlignment(QtCore.Qt.AlignTop)
+        
+        '''
+        # CLIP order indicator label
+        lbl_text = 'Transition: '
+        lbl_text += self.clip_names_list.get(self.incoming_clip_id) + ' -> ' + self.clip_names_list.get(self.outgoing_clip_id)
+        lbl_ClipOrder = QtWidgets.QLabel(lbl_text, window)
+        lbl_ClipOrder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_ClipOrder.setMinimumHeight(28)
+        lbl_ClipOrder.setMaximumHeight(28)
+        lbl_ClipOrder.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_ClipOrder)
+        '''
+
+        # Duplicate frames action hbox
+        dframes_hbox = QtWidgets.QHBoxLayout()
+        # dframes_hbox.setAlignment(QtCore.Qt.AlignLeft)
+
+        # Processing Mode Label
+
+        lbl_Dfames = QtWidgets.QLabel('Start from: ', window)
+        lbl_Dfames.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_Dfames.setMinimumHeight(28)
+        lbl_Dfames.setAlignment(QtCore.Qt.AlignCenter)
+        dframes_hbox.addWidget(lbl_Dfames)
+
+        # Processing Mode Selector
+
+        btn_DfamesSelector = QtWidgets.QPushButton(window)
+        btn_DfamesSelector.setText(self.clip_names_list.get(self.incoming_clip_id))
+        def selectNewMode(new_incoming_id):
+            self.outgoing_clip_id = self.incoming_clip_id
+            self.incoming_clip_id = new_incoming_id
+            btn_DfamesSelector.setText(self.clip_names_list.get(new_incoming_id))
+            lbl_text = self.clip_names_list.get(self.incoming_clip_id) + ' -> ' + self.clip_names_list.get(self.outgoing_clip_id)
+            # lbl_ClipOrder.setText(lbl_text)
+        btn_DfamesSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_DfamesSelector.setMinimumSize(120, 28)
+        btn_DfamesSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_DfamesSelector_menu = QtWidgets.QMenu()
+
+        for new_incoming_id in sorted(self.clip_names_list.keys()):
+            name = self.clip_names_list.get(new_incoming_id)
+            action = btn_DfamesSelector_menu.addAction(name)
+            action.triggered[()].connect(lambda new_incoming_id=new_incoming_id: selectNewMode(new_incoming_id))
+        btn_DfamesSelector.setMenu(btn_DfamesSelector_menu)
+        dframes_hbox.addWidget(btn_DfamesSelector)
+
+        # Fine Flow button
+        
+        def enableUHD():
+            if self.prefs.get('fluidmorph_uhd', False):
+                btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                        'QToolTip {color: black; background-color:  #ffffd9; border: 0px}')
+                self.prefs['fluidmorph_uhd'] = False
+            else:
+                btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
+                                        'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
+                self.prefs['fluidmorph_uhd'] = True
+        btn_UHD = QtWidgets.QPushButton('Reduce flow res', window)
+        btn_UHD.setToolTip('<b>Reduce flow res button</b><br>Use less details for analyzis, sometimes could be helpful with large motion.')
+        btn_UHD.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_UHD.setMinimumSize(148, 28)
+        if self.prefs.get('fluidmorph_uhd', False):
+            btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
+                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
+        else:
+            btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
+        btn_UHD.pressed.connect(enableUHD)
+        dframes_hbox.addWidget(btn_UHD)
+
+        # Cpu Proc button
+
+        if not sys.platform == 'darwin':            
+            def enableCpuProc():
+                if self.cpu:
+                    btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
+                    self.cpu = False
+                else:
+                    btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}')
+                    self.cpu = True
+
+            btn_CpuProc = QtWidgets.QPushButton('CPU Proc', window)
+            btn_CpuProc.setFocusPolicy(QtCore.Qt.NoFocus)
+            btn_CpuProc.setMinimumSize(88, 28)
+            # btn_CpuProc.move(0, 34)
+            if self.cpu:
+                btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}')
+            else:
+                btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
+            btn_CpuProc.pressed.connect(enableCpuProc)
+
+            dframes_hbox.addWidget(btn_CpuProc)
+
+        vbox.addLayout(dframes_hbox)
+        vbox.addWidget(lbl_Spacer)
+
+        # Work Folder Label
+
+        lbl_WorkFolder = QtWidgets.QLabel('Export folder', window)
+        lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_WorkFolder.setMinimumHeight(28)
+        lbl_WorkFolder.setMaximumHeight(28)
+        lbl_WorkFolder.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_WorkFolder)
+
+        # Work Folder Text Field
+
+        hbox_workfolder = QtWidgets.QHBoxLayout()
+        hbox_workfolder.setAlignment(QtCore.Qt.AlignLeft)
+
+
+        def chooseFolder():
+            result_folder = str(QtWidgets.QFileDialog.getExistingDirectory(window, "Open Directory", self.working_folder, QtWidgets.QFileDialog.ShowDirsOnly))
+            if result_folder =='':
+                return
+            self.working_folder = result_folder
+            txt_WorkFolder.setText(self.working_folder)
+            self.prefs['working_folder'] = self.working_folder
+
+            #dialog = QtWidgets.QFileDialog()
+            #dialog.setWindowTitle('Select export folder')
+            #dialog.setOption(QtWidgets.QFileDialog.ShowDirsOnly, True)
+            #dialog.setDirectory(self.working_folder)
+            #dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+            #path = QtWidgets.QFileDialog.getExistingDirectory()
+            # dialog.setFileMode(QtWidgets.QFileDialog.FileMode.Directory)
+            #
+            # if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            #    file_full_path = str(dialog.selectedFiles()[0])
+
+        def txt_WorkFolder_textChanged():
+            self.working_folder = txt_WorkFolder.text()
+        txt_WorkFolder = QtWidgets.QLineEdit('', window)
+        txt_WorkFolder.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_WorkFolder.setMinimumSize(280, 28)
+        txt_WorkFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+        txt_WorkFolder.setText(self.working_folder)
+        txt_WorkFolder.textChanged.connect(txt_WorkFolder_textChanged)
+        hbox_workfolder.addWidget(txt_WorkFolder)
+
+        btn_changePreset = QtWidgets.QPushButton('Choose', window)
+        btn_changePreset.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_changePreset.setMinimumSize(88, 28)
+        btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                   'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        btn_changePreset.clicked.connect(chooseFolder)
+        hbox_workfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
+
+        vbox.addLayout(hbox_workfolder)
+        vbox.addWidget(lbl_Spacer)
+
+        # Create and Cancel Buttons
+        hbox_Create = QtWidgets.QHBoxLayout()
+
+        select_btn = QtWidgets.QPushButton('Create', window)
+        select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        select_btn.setMinimumSize(128, 28)
+        select_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        select_btn.clicked.connect(window.accept)
+        select_btn.setAutoDefault(True)
+        select_btn.setDefault(True)
+
+        cancel_btn = QtWidgets.QPushButton('Cancel', window)
+        cancel_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        cancel_btn.setMinimumSize(128, 28)
+        cancel_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        cancel_btn.clicked.connect(window.reject)
+
+        hbox_Create.addWidget(cancel_btn)
+        hbox_Create.addWidget(select_btn)
+
+        vbox.addLayout(hbox_Create)
+
+        window.setLayout(vbox)
+        if window.exec_():
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
+            self.framework.save_prefs()
+            return {
+                'incoming': self.incoming_clip_id,
+                'outgoing': self.outgoing_clip_id,
+                'working_folder': self.working_folder,
+                'hold_konsole': True if modifiers == QtCore.Qt.ControlModifier else False
+            }
+        else:
+            return {}
+
+    def export_clip(self, clip, export_dir, export_preset = None):
         import flame
         import traceback
 
-        export_dir = os.path.join(output_folder, 'source')
         if not os.path.isdir(export_dir):
             self.log('creating folders: %s' % export_dir)
             try:
@@ -1412,24 +1894,28 @@ class flameTimewrapML(flameMenuApp):
         exporter = self.flame.PyExporter()
         exporter.foreground = True
 
-        export_preset_folder = self.flame.PyExporter.get_presets_dir(self.flame.PyExporter.PresetVisibility.values.get(2),
-                        self.flame.PyExporter.PresetType.values.get(0))
-        export_preset = os.path.join(export_preset_folder, 'OpenEXR', 'OpenEXR (16-bit fp PIZ).xml')
+        if not export_preset:
+            export_preset_folder = self.flame.PyExporter.get_presets_dir(self.flame.PyExporter.PresetVisibility.values.get(2),
+                            self.flame.PyExporter.PresetType.values.get(0))
+            export_preset = os.path.join(export_preset_folder, 'OpenEXR', 'OpenEXR (16-bit fp PIZ).xml')
+
         exporter.export(clip, export_preset, export_dir, hooks=ExportHooks())
 
-    def import_watcher(self, path, clip, new_clip_name):
+    def import_watcher(self, import_path, new_clip_name, destination, folders_to_cleanup):
+        # create lock file that is to be removed after the job finished 
+        # as a signal that triggers clip import
+         
         import hashlib
-        lockfile_name = hashlib.sha1(path.encode()).hexdigest().upper() + '.lock'
+        lockfile_name = hashlib.sha1(import_path.encode()).hexdigest().upper() + '.lock'
         lockfile = os.path.join(self.framework.bundle_location, 'bundle', 'locks', lockfile_name)
-        cmd = 'echo "' + path + '">' + lockfile
+        cmd = 'echo "' + import_path + '">' + lockfile
         self.log('Executing command: %s' % cmd)
         os.system(cmd)
 
-        flame_path = None
-        
+        flame_friendly_path = None
         def import_flame_clip():
             import flame
-            new_clips = flame.import_clips(flame_path, clip.parent)
+            new_clips = flame.import_clips(flame_friendly_path, destination)
             
             if len(new_clips) > 0:
                 new_clip = new_clips[0]
@@ -1438,7 +1924,7 @@ class flameTimewrapML(flameMenuApp):
             
             flame.execute_shortcut('Refresh Thumbnails')
 
-            # Colour Mgmt logic for future settin
+            # Colour Mgmt logic for future setting
             '''
             for version in new_clip.versions:
                 for track in version.tracks:
@@ -1464,25 +1950,27 @@ class flameTimewrapML(flameMenuApp):
 
         while self.threads:
             if not os.path.isfile(lockfile):
-                cmd = 'rm -f "' + os.path.join(path, 'source') + '/"*'
-                self.log('Executing command: %s' % cmd)
-                os.system(cmd)
-                try:
-                    os.rmdir(os.path.join(path, 'source'))
-                except Exception as e:
-                    self.log('Error removing %s: %s' % (os.path.join(path, 'source'), e))
-
-                file_names = os.listdir(path)
-
+                self.log('Importing result from: %s' % import_path)
+                file_names = [f for f in os.listdir(import_path) if f.endswith('.exr')]
                 if file_names:
-
                     file_names.sort()
                     first_frame, ext = os.path.splitext(file_names[0])
                     last_frame, ext = os.path.splitext(file_names[-1])
-                    flame_path = os.path.join(path, '[' + first_frame + '-' + last_frame + ']' + '.exr')
-                
+                    flame_friendly_path = os.path.join(import_path, '[' + first_frame + '-' + last_frame + ']' + '.exr')
+
                     import flame
                     flame.schedule_idle_event(import_flame_clip)
+
+                # clean-up source files used
+                self.log('Cleaning up temporary files used: %s' % pformat(folders_to_cleanup))
+                for folder in folders_to_cleanup:
+                    cmd = 'rm -f "' + os.path.abspath(folder) + '/"*'
+                    self.log('Executing command: %s' % cmd)
+                    os.system(cmd)
+                    try:
+                        os.rmdir(folder)
+                    except Exception as e:
+                        self.log('Error removing %s: %s' % (folder, e))
 
                 break
             time.sleep(0.1)

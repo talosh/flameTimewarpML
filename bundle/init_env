@@ -1,1 +1,1 @@
-/bin/bash --rcfile <(echo '. ~/.bashrc; eval "$(../miniconda3/bin/conda shell.bash hook)"; conda activate')
+konsole -e /bin/bash --rcfile <(echo '. ~/.bashrc; eval "$(../miniconda3/bin/conda shell.bash hook)"; conda activate')
