@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.3.0.beta.009'
+__version__ = 'v0.3.0.beta.010'
 
 
 class flameAppFramework(object):
@@ -1692,7 +1692,7 @@ class flameTimewrapML(flameMenuApp):
             self.incoming_clip_id = new_incoming_id
             btn_DfamesSelector.setText(self.clip_names_list.get(new_incoming_id))
             lbl_text = self.clip_names_list.get(self.incoming_clip_id) + ' -> ' + self.clip_names_list.get(self.outgoing_clip_id)
-            lbl_ClipOrder.setText(lbl_text)
+            # lbl_ClipOrder.setText(lbl_text)
         btn_DfamesSelector.setFocusPolicy(QtCore.Qt.NoFocus)
         btn_DfamesSelector.setMinimumSize(120, 28)
         btn_DfamesSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
