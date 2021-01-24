@@ -50,13 +50,12 @@ def clear_write_buffer(folder, write_buffer, tot_frame):
     global IOProcesses
 
     cnt = 0
+    print ('rendering %s frames to %s' % (tot_frame, folder))
+    pbar = tqdm(total=tot_frame, unit='frame')
+
     while ThreadsFlag:
         item = write_buffer.get()
-        
-        if cnt == 0:
-            print ('rendering %s frames to %s' % (tot_frame, folder))
-            pbar = tqdm(total=tot_frame, unit='frame')
-        
+                
         if item is None:
             pbar.close() # type: ignore
             break
@@ -92,11 +91,11 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles =
         return I1
     # print ('target ratio: %s' % ratio)
     for inference_cycle in range(0, maxcycles):
-        # start = time.time()
+        start = time.time()
         middle = model.inference(I0, I1, UHD)
         middle_ratio = ( I0_ratio + I1_ratio ) / 2
-        # pprint (time.time() - start)
-        # pprint ('current ratio: %s' % middle_ratio)
+        pprint (time.time() - start)
+        pprint ('current ratio: %s' % middle_ratio)
         if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
             return middle
 
@@ -109,48 +108,46 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles =
 
     return middle
 
-def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_written, frames_taken):
-    perfect_pair = find_middle_frame(frames, frames_taken)
-
-    if not perfect_pair:
-        # print ('no more frames left')
-        return False
-
-    start_frame = perfect_pair[0]
-    middle_frame = perfect_pair[1]
-    end_frame = perfect_pair[2]
-
-    frame0 = cv2.imread(frames[start_frame], cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
-    frame1 = cv2.imread(frames[end_frame], cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+def three_of_a_perfect_pair(incoming_frame, outgoing_frame, frame_num, ratio, device, padding, model, args, h, w, write_buffer):
+    # print ('target ratio %s' % ratio)
+    rthreshold = 0.02
+    maxcycles = 8
+    I0_ratio = 0.0
+    I1_ratio = 1.0
     
-    I0 = torch.from_numpy(np.transpose(frame0, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
-    I1 = torch.from_numpy(np.transpose(frame1, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+    if ratio <= I0_ratio:
+        write_buffer.put((frame_num, incoming_frame))
+        return
+    if ratio >= I1_ratio:
+        write_buffer.put((frame_num, outgoing_frame))
+        return
 
-    I0 = F.pad(I0, padding)
-    I1 = F.pad(I1, padding)
+    for inference_cycle in range(0, maxcycles):
+        start = time.time()
 
-    diff = (F.interpolate(I0, (16, 16), mode='bilinear', align_corners=False)
-        - F.interpolate(I1, (16, 16), mode='bilinear', align_corners=False)).abs()
-    
-    mid = model.inference(I0, I1, args.UHD)
-    mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
-    midframe = mid[:h, :w]
-    cv2.imwrite(os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(middle_frame)), midframe[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
+        I0 = torch.from_numpy(np.transpose(incoming_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+        I0 = F.pad(I0, padding)
+        I1 = torch.from_numpy(np.transpose(outgoing_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+        I1 = F.pad(I1, padding)
 
-    start_frame_out_file_name = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(start_frame))
-    if not os.path.isfile(start_frame_out_file_name):
-        cv2.imwrite(start_frame_out_file_name, frame0[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
-        frames_written[ start_frame ] = start_frame_out_file_name
+        middle = model.inference(I0, I1, args.UHD)
+        middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+        middle_ratio = ( I0_ratio + I1_ratio ) / 2
+        # pprint (time.time() - start)
+        # pprint ('current ratio: %s' % middle_ratio)
+        if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
+            write_buffer.put((frame_num, middle[:h, :w]))
+            return
 
-    end_frame_out_file_name = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(end_frame))
-    if not os.path.isfile(end_frame_out_file_name):
-        cv2.imwrite(end_frame_out_file_name, frame1[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
-        frames_written[ end_frame ] = end_frame_out_file_name
+        if ratio > middle_ratio:
+            incoming_frame = middle[:h, :w]
+            I0_ratio = middle_ratio
+        else:
+            outgoing_frame = middle[:h, :w]
+            I1_ratio = middle_ratio
 
-    frames[ middle_frame ] = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(middle_frame))
-    frames_written[ middle_frame ] = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(middle_frame))
-
-    return True
+    write_buffer.put((frame_num, middle[:h, :w]))
+    return
 
 def cpu_progress_updater(frames_written, last_frame_number):
     global ThreadsFlag
@@ -256,7 +253,6 @@ if __name__ == '__main__':
 
         _thread.start_new_thread(build_read_buffer, (args.incoming, incoming_read_buffer, incoming_files_list))
         _thread.start_new_thread(build_read_buffer, (args.outgoing, outgoing_read_buffer, outgoing_files_list))
-        _thread.start_new_thread(clear_write_buffer, (args.output, write_buffer, input_duration))
 
         from model.RIFE_HD import Model     # type: ignore
         model = Model()
@@ -270,6 +266,8 @@ if __name__ == '__main__':
             torch.set_grad_enabled(False)
             torch.backends.cudnn.enabled = True
             torch.backends.cudnn.benchmark = True
+
+        _thread.start_new_thread(clear_write_buffer, (args.output, write_buffer, input_duration))
 
         rstep = 1 / ( input_duration + 1 )
         ratio = rstep
@@ -303,13 +301,12 @@ if __name__ == '__main__':
         outgoing_files_list.sort()
         outgoing_files_list.append(outgoing_files_list[-1])
 
-        write_buffer = Queue(maxsize=mp.cpu_count() - 3)
+        write_buffer = mp.Queue(maxsize=mp.cpu_count() - 3)
         incoming_read_buffer = Queue(maxsize=500)
         outgoing_read_buffer = Queue(maxsize=500)
 
         _thread.start_new_thread(build_read_buffer, (args.incoming, incoming_read_buffer, incoming_files_list))
         _thread.start_new_thread(build_read_buffer, (args.outgoing, outgoing_read_buffer, outgoing_files_list))
-        _thread.start_new_thread(clear_write_buffer, (args.output, write_buffer, input_duration))
 
         from model_cpu.RIFE_HD import Model     # type: ignore
         model = Model()
@@ -329,7 +326,9 @@ if __name__ == '__main__':
             sim_workers = 1
         elif sim_workers > max_cpu_workers:
             sim_workers = max_cpu_workers
-
+        
+        # sim_workers = 1
+        
         print ('---\nFree RAM: %s Gb available' % '{0:.1f}'.format(available_ram))
         print ('Image size: %s x %s' % ( w, h,))
         print ('Peak memory usage estimation: %s Gb per CPU thread ' % '{0:.1f}'.format(thread_ram))
@@ -337,19 +336,29 @@ if __name__ == '__main__':
         if thread_ram > available_ram:
             print ('Warning: estimated peak memory usage is greater then RAM avaliable')
         
-        print ('rendering %s frames to %s/' % (last_frame_number, args.output))
+        # print ('rendering %s frames to %s/' % (last_frame_number, args.output))
+        _thread.start_new_thread(clear_write_buffer, (args.output, write_buffer, input_duration))
+
 
         active_workers = []
 
-        cpu_progress_updater = threading.Thread(target=cpu_progress_updater, args=(frames_written, last_frame_number, ))
-        cpu_progress_updater.daemon = True
-        cpu_progress_updater.start()
+        # cpu_progress_updater = threading.Thread(target=cpu_progress_updater, args=(frames_written, last_frame_number, ))
+        # cpu_progress_updater.daemon = True
+        # cpu_progress_updater.start()
+
+        rstep = 1 / ( input_duration + 1 )
+        ratio = rstep
 
         last_thread_time = time.time()
-        while len(frames_written.keys()) != last_frame_number:
-            p = mp.Process(target=three_of_a_perfect_pair, args=(frames, device, padding, model, args, h, w, frames_written, frames_taken, ))
+        for frame in range(1, input_duration + 1):
+            incoming_frame = incoming_read_buffer.get()
+            outgoing_frame = outgoing_read_buffer.get()
+
+            p = mp.Process(target=three_of_a_perfect_pair, args=(incoming_frame, outgoing_frame, frame, ratio, device, padding, model, args, h, w, write_buffer, ))
             p.start()
             active_workers.append(p)
+
+            ratio += rstep
             
             # try to shift threads in time to avoid memory congestion
             if (time.time() - last_thread_time) < (thread_ram / 8):
@@ -379,9 +388,9 @@ if __name__ == '__main__':
             active_workers = list(alive_workers)
             time.sleep(0.01)
         
-        ThreadsFlag = False
-        cpu_progress_updater.join()
+        # cpu_progress_updater.join()
     
+    ThreadsFlag = False
 
     for p in IOProcesses:
         p.join(timeout=8)
