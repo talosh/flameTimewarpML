@@ -1955,20 +1955,23 @@ class flameTimewrapML(flameMenuApp):
                             except Exception as e:
                                 parse_message(e)
                                 return
-
-                            self.log('start: %s, end: %s, TW_Timing_size: %s, TW_SpeedTiming_size: %s' % (start, end, TW_Timing_size, TW_SpeedTiming_size))
-                            
+                            # self.log('start: %s, end: %s, TW_Timing_size: %s, TW_SpeedTiming_size: %s' % (start, end, TW_Timing_size, TW_SpeedTiming_size))
                             if not (TW_Timing_size > end-start or TW_SpeedTiming_size > end-start):
                                 bake_message()
                                 return
 
+                            tw_setup_file.close()
+
                         verified = True
+                
                 if not verified:
                     effect_message()
                     return
 
                 verified_clips.append((clip, tw_setup_string))
         
+        os.remove(temp_setup_path)
+
         result = self.fltw_dialog()
         if not result:
             return False
@@ -1980,6 +1983,41 @@ class flameTimewrapML(flameMenuApp):
         cmd_strings = []
         number_of_clips = 0
 
+        for clip, tw_setup_string in verified_clips:
+            number_of_clips += 1
+            clip_name = clip.name.get_value()
+
+            result_folder = os.path.abspath(
+                os.path.join(
+                    working_folder, 
+                    self.sanitized(clip_name) + '_TWML' + '_' + self.create_timestamp_uid()
+                    )
+                )
+
+            if os.path.isdir(result_folder):
+                from PySide2 import QtWidgets
+                msg = 'Folder %s exists' % output_folder
+                mbox = QtWidgets.QMessageBox()
+                mbox.setWindowTitle('flameTimewrarpML')
+                mbox.setText(msg)
+                mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+                mbox.setStyleSheet('QLabel{min-width: 400px;}')
+                btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+                btn_Continue.setText('Owerwrite')
+                mbox.exec_()
+                if mbox.clickedButton() == mbox.button(QtWidgets.QMessageBox.Cancel):
+                    return False
+                cmd = 'rm -f ' + result_folder + '/*'
+                self.log('Executing command: %s' % cmd)
+                os.system(cmd)
+
+            source_clip_folder = os.path.join(result_folder, 'source')
+            export_preset = os.path.join(self.framework.bundle_path, 'source_export.xml')
+            tw_setup_path = os.path.join(source_clip_folder, 'tw_setup.timewarp_node')
+            self.export_clip(clip, source_clip_folder, export_preset)
+            with open(tw_setup_path, 'a') as tw_setup_file:
+                tw_setup_file.write(tw_setup_string)
+                tw_setup_file.close()
 
 
     def fltw_dialog(self, *args, **kwargs):
