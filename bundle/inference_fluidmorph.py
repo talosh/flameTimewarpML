@@ -19,8 +19,9 @@ import psutil
 
 import multiprocessing as mp
 
-ThreadsFlag = True
+IOThreadsFlag = True
 IOProcesses = []
+cv2.setNumThreads(1)
 
 # Exception handler
 def exeption_handler(exctype, value, tb):
@@ -39,49 +40,44 @@ sys.excepthook = exeption_handler
 # ctrl+c handler
 import signal
 def signal_handler(sig, frame):
-    global ThreadsFlag
-    ThreadsFlag = False
+    global IOThreadsFlag
+    IOThreadsFlag = False
     time.sleep(0.1)
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
 def clear_write_buffer(folder, write_buffer, tot_frame):
-    global ThreadsFlag
+    global IOThreadsFlag
     global IOProcesses
 
     cnt = 0
     print ('rendering %s frames to %s' % (tot_frame, folder))
     pbar = tqdm(total=tot_frame, unit='frame')
 
-    while ThreadsFlag:
+    while IOThreadsFlag:
         item = write_buffer.get()
                 
-        if item is None:
-            pbar.close() # type: ignore
-            break
-
         frame_number, image_data = item
-
-        path = os.path.join(os.path.abspath(folder), '{:0>7d}.exr'.format(frame_number))
-        try:
-            p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
-            p.start()
-            IOProcesses.append(p)
-        except:
-            try:
-                cv2.imwrite(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
-            except Exception as e:
-                print ('Error wtiring %s: %s' % (path, e))
+        if frame_number == -1:
+            pbar.close() # type: ignore
+            IOThreadsFlag = False
+            break
         
+        # print ('recieved %s' % frame_number)
+        path = os.path.join(os.path.abspath(folder), '{:0>7d}.exr'.format(frame_number))
+        p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
+        p.start()
+        IOProcesses.append(p)
+
         pbar.update(1) # type: ignore
         cnt += 1
 
 def build_read_buffer(folder, read_buffer, file_list):
-    global ThreadsFlag
+    global IOThreadsFlag
     for frame in file_list:
         path = os.path.join(folder, frame)
         if not os.path.isfile(path):
-            pprint (path)
+            print ('Unable to find file: %s' % path)
         frame_data = cv2.imread(path, cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
         read_buffer.put(frame_data)
     read_buffer.put(None)
@@ -278,8 +274,12 @@ if __name__ == '__main__':
             
             ratio += rstep
 
-        while(not write_buffer.empty()):
-            time.sleep(0.1)
+        # send write loop exit code
+        write_buffer.put((-1, -1))
+
+        # it should put IOThreadsFlag to False it return
+        while(IOThreadsFlag):
+            time.sleep(0.01)
 
     else:
         # process on CPU(s)
@@ -345,6 +345,7 @@ if __name__ == '__main__':
             incoming_frame = incoming_read_buffer.get()
             outgoing_frame = outgoing_read_buffer.get()
 
+            
             p = mp.Process(target=three_of_a_perfect_pair, args=(incoming_frame, outgoing_frame, frame, ratio, device, padding, model, args, h, w, write_buffer, ))
             p.start()
             active_workers.append(p)
@@ -368,20 +369,16 @@ if __name__ == '__main__':
                 time.sleep(0.01)
             last_thread_time = time.time()
 
-        while len(active_workers):
-            finished_workers = []
-            alive_workers = []
-            for worker in active_workers:
-                if not worker.is_alive():
-                    finished_workers.append(worker)
-                else:
-                    alive_workers.append(worker)
-            active_workers = list(alive_workers)
+        # wait for all active worker threads left to finish                
+        for p in active_workers:
+            p.join()
+
+        # send write loop exit code
+        write_buffer.put((-1, -1))
+
+        # it should put IOThreadsFlag to False it return
+        while(IOThreadsFlag):
             time.sleep(0.01)
-        
-        # cpu_progress_updater.join()
-    
-    ThreadsFlag = False
 
     for p in IOProcesses:
         p.join(timeout=8)
@@ -394,7 +391,8 @@ if __name__ == '__main__':
     lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
     if os.path.isfile(lockfile):
         os.remove(lockfile)
-
+    
     # input("Press Enter to continue...")
+    sys.exit(0)
 
 

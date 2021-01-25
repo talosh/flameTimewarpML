@@ -17,7 +17,7 @@ import psutil
 
 import multiprocessing as mp
 
-ThreadsFlag = True
+IOThreadsFlag = True
 IOProcesses = []
 cv2.setNumThreads(1)
 
@@ -38,23 +38,25 @@ sys.excepthook = exeption_handler
 # ctrl+c handler
 import signal
 def signal_handler(sig, frame):
-    global ThreadsFlag
-    ThreadsFlag = False
+    global IOThreadsFlag
+    IOThreadsFlag = False
     time.sleep(0.1)
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
 def clear_write_buffer(args, write_buffer, input_duration):
-    global ThreadsFlag
+    global IOThreadsFlag
     global IOProcesses
 
-    while ThreadsFlag:
+    while IOThreadsFlag:
         item = write_buffer.get()
-            
-        if item is None:
-            break
-        
+                    
         frame_number, image_data = item
+        if frame_number == -1:
+            pbar.close() # type: ignore
+            IOThreadsFlag = False
+            break
+
         path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(frame_number))
         try:
             p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
@@ -68,7 +70,7 @@ def clear_write_buffer(args, write_buffer, input_duration):
 
 
 def build_read_buffer(user_args, read_buffer, videogen):
-    global ThreadsFlag
+    global IOThreadsFlag
 
     for frame in videogen:
         frame_data = cv2.imread(os.path.join(user_args.input, frame), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
@@ -216,7 +218,78 @@ if __name__ == '__main__':
         pbar_dup.close()
 
     elif torch.cuda.is_available() and not args.cpu:
-        pass
+        # Process on GPU
+
+        from model.RIFE_HD import Model     # type: ignore
+        model = Model()
+        model.load_model(args.model, -1)
+        model.eval()
+        model.device()
+        print ('Trained model loaded: %s' % args.model)
+    
+        first_image = cv2.imread(os.path.join(args.input, files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+        h, w, _ = first_image.shape
+        ph = ((h - 1) // 64 + 1) * 64
+        pw = ((w - 1) // 64 + 1) * 64
+        padding = (0, pw - w, 0, ph - h)
+    
+        device = torch.device("cuda")
+        torch.set_grad_enabled(False)
+        torch.backends.cudnn.enabled = True
+        torch.backends.cudnn.benchmark = True
+
+        print('scanning for duplicate frames...')
+
+        pbar = tqdm(total=input_duration, desc='Total frames', unit='frame')
+        pbar_dup = tqdm(total=input_duration, desc='Duplicates', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
+
+        IPrevious = None
+        dframes = 0
+        output_frame_num = 1
+
+        for file in files_list:
+            current_frame = read_buffer.get()
+            pbar.update(1) # type: ignore
+
+            ICurrent = torch.from_numpy(np.transpose(current_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+            if not args.remove:
+                ICurrent = F.pad(ICurrent, padding)
+
+            if type(IPrevious) is not type(None):
+                
+                diff = (F.interpolate(ICurrent,scale_factor=0.5, mode='bicubic', align_corners=False)
+                        - F.interpolate(IPrevious, scale_factor=0.5, mode='bicubic', align_corners=False)).abs()
+
+                if diff.max() < 2e-3:
+                    dframes += 1
+                    continue
+            
+            if dframes and not args.remove:
+                rstep = 1 / ( dframes + 1 )
+                ratio = rstep
+                for dframe in range(0, dframes):
+                    mid = make_inference_rational(model, IPrevious, ICurrent, ratio, UHD = args.UHD)
+                    mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
+                    write_buffer.put((output_frame_num, mid[:h, :w]))
+                    
+                    pbar_dup.update(1)
+                    output_frame_num += 1
+                    ratio += rstep
+
+            write_buffer.put((output_frame_num, current_frame))
+            IPrevious = ICurrent
+            output_frame_num += 1
+            dframes = 0
+
+        pbar.close() # type: ignore
+        pbar_dup.close()
+
+        # send write loop exit code
+        write_buffer.put((-1, -1))
+
+        # it should put IOThreadsFlag to False it return
+        while(IOThreadsFlag):
+            time.sleep(0.01)
     
     else:
         # process on GPU
@@ -322,94 +395,17 @@ if __name__ == '__main__':
         pbar.close() # type: ignore
         pbar_dup.close()
 
+        # wait for all active worker threads left to finish                
         for p in active_workers:
             p.join()
 
-        write_buffer.put(None)
+        # send write loop exit code
+        write_buffer.put((-1, -1))
 
-        while(not write_buffer.empty()):
-            time.sleep(0.1)
+        # it should put IOThreadsFlag to False it return
+        while(IOThreadsFlag):
+            time.sleep(0.01)
         
-    '''
-    if not args.remove:
-        if torch.cuda.is_available() and not args.cpu:
-            from model.RIFE_HD import Model     # type: ignore
-            model = Model()
-            model.load_model(args.model, -1)
-            model.eval()
-            model.device()
-        else:
-            from model_cpu.RIFE_HD import Model     # type: ignore
-            model = Model()
-            model.load_model(args.model, -1)
-            model.eval()
-            model.device()
-
-        print ('Trained model loaded: %s' % args.model)
-    
-        first_image = cv2.imread(os.path.join(args.input, files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
-        h, w, _ = first_image.shape
-        ph = ((h - 1) // 64 + 1) * 64
-        pw = ((w - 1) // 64 + 1) * 64
-        padding = (0, pw - w, 0, ph - h)
-    
-    if torch.cuda.is_available() and not args.cpu:
-        device = torch.device("cuda")
-        torch.set_grad_enabled(False)
-        torch.backends.cudnn.enabled = True
-        torch.backends.cudnn.benchmark = True
-    else:
-        device = torch.device("cpu")
-
-    print('scanning for duplicate frames...')
-
-    pbar = tqdm(total=input_duration, desc='Total frames', unit='frame')
-    pbar_dup = tqdm(total=input_duration, desc='Duplicates', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
-
-    IPrevious = None
-    dframes = 0
-    for file in files_list:
-        current_frame = read_buffer.get()
-        pbar.update(1) # type: ignore
-
-        ICurrent = torch.from_numpy(np.transpose(current_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
-        if not args.remove:
-            ICurrent = F.pad(ICurrent, padding)
-
-        if type(IPrevious) is not type(None):
-            
-            diff = (F.interpolate(ICurrent,scale_factor=0.5, mode='bicubic', align_corners=False)
-                    - F.interpolate(IPrevious, scale_factor=0.5, mode='bicubic', align_corners=False)).abs()
-
-            if diff.max() < 2e-3:
-                pbar_dup.update(1)
-                dframes += 1
-                continue
-        
-        if dframes and not args.remove:
-            # start = time.time()
-            rstep = 1 / ( dframes + 1 )
-            ratio = rstep
-            for dframe in range(0, dframes):
-                mid = make_inference_rational(model, IPrevious, ICurrent, ratio, UHD = args.UHD)
-                if sys.platform == 'darwin' or args.cpu:
-                    mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
-                else:
-                    mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
-                write_buffer.put(mid[:h, :w])
-                # pprint ('ratio: %s, %s' % (ratio, time.time() - start))
-                ratio += rstep
-
-        write_buffer.put(current_frame)
-        IPrevious = ICurrent
-        dframes = 0
-    
-    write_buffer.put(None)
-    ThreadsFlag = False
-    pbar.close() # type: ignore
-    pbar_dup.close()
-    '''
-
     for p in IOProcesses:
         p.join(timeout=8)
 
@@ -421,6 +417,6 @@ if __name__ == '__main__':
     lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
     if os.path.isfile(lockfile):
         os.remove(lockfile)
-
-    ThreadsFlag = False
+    
+    # input("Press Enter to continue...")
     sys.exit(0)
