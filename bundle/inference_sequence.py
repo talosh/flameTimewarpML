@@ -21,6 +21,7 @@ import multiprocessing as mp
 
 ThreadsFlag = True
 IOProcesses = []
+cv2.setNumThreads(1)
 
 # Exception handler
 def exeption_handler(exctype, value, tb):
@@ -380,7 +381,8 @@ if __name__ == '__main__':
     lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
     if os.path.isfile(lockfile):
         os.remove(lockfile)
-
+    
     # input("Press Enter to continue...")
+    sys.exit()
 
 
