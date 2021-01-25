@@ -326,7 +326,6 @@ if __name__ == '__main__':
             p.join()
 
         write_buffer.put(None)
-        print ('wrote None')
 
         while(not write_buffer.empty()):
             time.sleep(0.1)
