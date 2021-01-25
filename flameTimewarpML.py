@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.3.0.beta.010'
+__version__ = 'v0.3.0.beta.011'
 
 
 class flameAppFramework(object):
@@ -1004,9 +1004,9 @@ class flameTimewrapML(flameMenuApp):
         btn_UHD.pressed.connect(enableUHD)
         new_speed_hbox.addWidget(btn_UHD)
 
-        if not sys.platform == 'darwin':
-            # Cpu Proc button
-            
+        # Cpu Proc button
+
+        if not sys.platform == 'darwin':            
             def enableCpuProc():
                 if self.cpu:
                     btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
@@ -1023,9 +1023,19 @@ class flameTimewrapML(flameMenuApp):
             else:
                 btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
             btn_CpuProc.pressed.connect(enableCpuProc)
-
             new_speed_hbox.addWidget(btn_CpuProc)
 
+        '''
+        else:
+            btn_CpuProc = QtWidgets.QPushButton('CPU Proc', window)
+            btn_CpuProc.setFocusPolicy(QtCore.Qt.NoFocus)
+            btn_CpuProc.setMinimumSize(88, 28)
+            btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
+                                        'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
+            btn_CpuProc.setToolTip('<b>CPU Proc button</b><br>Mac version is currently CPU-only due to lack of GPU support in PyTorch library on MacOS')
+            new_speed_hbox.addWidget(btn_CpuProc)
+        '''
+        
         vbox.addLayout(new_speed_hbox)
         vbox.addWidget(lbl_Spacer)
 
@@ -1921,8 +1931,10 @@ class flameTimewrapML(flameMenuApp):
                 new_clip = new_clips[0]
                 if new_clip:
                     new_clip.name.set_value(new_clip_name)
-            
-            flame.execute_shortcut('Refresh Thumbnails')
+            try:
+                flame.execute_shortcut('Refresh Thumbnails')
+            except:
+                pass
 
             # Colour Mgmt logic for future setting
             '''
