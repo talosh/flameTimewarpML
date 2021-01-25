@@ -226,6 +226,9 @@ if __name__ == '__main__':
         model.eval()
         model.device()
         print ('Trained model loaded: %s' % args.model)
+
+        write_buffer = Queue(maxsize=mp.cpu_count() - 3)
+        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
     
         first_image = cv2.imread(os.path.join(args.input, files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
         h, w, _ = first_image.shape
