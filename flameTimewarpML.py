@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.3.0.beta.011'
+__version__ = 'v0.3.0.beta.012'
 
 
 class flameAppFramework(object):
@@ -789,6 +789,13 @@ class flameTimewrapML(flameMenuApp):
         menu_item = {}
         menu_item['name'] = 'Create Fluidmorph Transition'
         menu_item['execute'] = self.fluidmorph
+        menu_item['isVisible'] = scope_clip
+        menu_item['waitCursor'] = False
+        menu['actions'].append(menu_item)
+
+        menu_item = {}
+        menu_item['name'] = "Timewarp from Flame's TW effect (beta)"
+        menu_item['execute'] = self.fltw
         menu_item['isVisible'] = scope_clip
         menu_item['waitCursor'] = False
         menu['actions'].append(menu_item)
@@ -1853,6 +1860,288 @@ class flameTimewrapML(flameMenuApp):
             return {
                 'incoming': self.incoming_clip_id,
                 'outgoing': self.outgoing_clip_id,
+                'working_folder': self.working_folder,
+                'hold_konsole': True if modifiers == QtCore.Qt.ControlModifier else False
+            }
+        else:
+            return {}
+
+    def fltw(self, selection):
+        def sequence_message():
+            from PySide2 import QtWidgets, QtCore
+            msg = 'Please select single-track clips with no versions or edits'
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText(msg)
+            mbox.exec_()
+        
+        def effect_message():
+            from PySide2 import QtWidgets, QtCore
+            msg = 'Please select clips that have Timewarp Timeline FX with its keyes baked'
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText(msg)
+            mbox.exec_()
+
+        def bake_message():
+            from PySide2 import QtWidgets, QtCore
+            msg = 'Please bake your keyframes so there is a keyframe at every frame'
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText(msg)
+            mbox.exec_()
+
+        def parse_message(e):
+            from PySide2 import QtWidgets, QtCore
+            import traceback
+            msg = 'Error parsing TW setup file: ' + pformat(e)
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText(msg)
+            mbox.setDetailedText(pformat(traceback.format_exc()))
+            mbox.setStyleSheet('QLabel{min-width: 800px;}')
+            mbox.exec_()
+
+        def dictify(r,root=True):
+            from copy import copy
+
+            if root:
+                return {r.tag : dictify(r, False)}
+
+            d = copy(r.attrib)
+            if r.text:
+                d["_text"]=r.text
+            for x in r.findall("./*"):
+                if x.tag not in d:
+                    d[x.tag]=[]
+                d[x.tag].append(dictify(x,False))
+            return d
+        
+        verified_clips = []
+        temp_setup_path = '/var/tmp/temporary_tw_setup.timewarp_node'
+
+        import flame
+        import xml.etree.ElementTree as ET
+
+        for clip in selection:
+            if isinstance(clip, (flame.PyClip)):
+                if len(clip.versions) != 1:
+                    sequence_message()
+                    return
+                if len (clip.versions[0].tracks) != 1:
+                    sequence_message()
+                    return
+                if len (clip.versions[0].tracks[0].segments) != 1:
+                    sequence_message()
+                
+                effects = clip.versions[0].tracks[0].segments[0].effects
+                if not effects:
+                    effect_message()
+                    return
+
+                verified = False
+                for effect in effects:
+                    if effect.type == 'Timewarp':
+                        effect.save_setup(temp_setup_path)
+                        with open(temp_setup_path, 'r') as tw_setup_file:
+                            tw_setup_string = tw_setup_file.read()
+                            tw_setup_xml = ET.fromstring(tw_setup_string)
+                            tw_setup = dictify(tw_setup_xml)
+                            try:
+                                start = int(tw_setup['Setup']['Base'][0]['Range'][0]['Start'])
+                                end = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
+                                TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
+                                TW_SpeedTiming_size = int(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
+                            except Exception as e:
+                                parse_message(e)
+                                return
+
+                            self.log('start: %s, end: %s, TW_Timing_size: %s, TW_SpeedTiming_size: %s' % (start, end, TW_Timing_size, TW_SpeedTiming_size))
+                            
+                            if not (TW_Timing_size > end-start or TW_SpeedTiming_size > end-start):
+                                bake_message()
+                                return
+
+                        verified = True
+                if not verified:
+                    effect_message()
+                    return
+
+                verified_clips.append((clip, tw_setup_string))
+        
+        result = self.fltw_dialog()
+        if not result:
+            return False
+
+        working_folder = str(result.get('working_folder', '/var/tmp'))
+        speed = result.get('speed', 1)
+        hold_konsole = result.get('hold_konsole', False)
+
+        cmd_strings = []
+        number_of_clips = 0
+
+
+
+    def fltw_dialog(self, *args, **kwargs):
+        from PySide2 import QtWidgets, QtCore
+        
+        # flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
+        # self.asset_task_template =  flameMenuNewBatch_prefs.get('asset_task_template', {})
+
+        window = QtWidgets.QDialog()
+        window.setMinimumSize(280, 180)
+        window.setWindowTitle('Slow down clip(s) with ML')
+        window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
+        window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        window.setStyleSheet('background-color: #313131')
+
+        screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
+
+        # Spacer
+        lbl_Spacer = QtWidgets.QLabel('', window)
+        lbl_Spacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
+        lbl_Spacer.setMinimumHeight(2)
+        lbl_Spacer.setMaximumHeight(2)
+        lbl_Spacer.setAlignment(QtCore.Qt.AlignCenter)
+
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.setAlignment(QtCore.Qt.AlignTop)
+
+        # New Speed hbox
+        new_speed_hbox = QtWidgets.QHBoxLayout()
+        # new_speed_hbox.setAlignment(QtCore.Qt.AlignCenter)
+
+        # New Speed label
+
+        lbl_NewSpeed = QtWidgets.QLabel('Processing Options: ', window)
+        lbl_NewSpeed.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_NewSpeed.setMinimumHeight(28)
+        lbl_NewSpeed.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        new_speed_hbox.addWidget(lbl_NewSpeed)
+
+        # Reduce flow res button
+
+        def enableUHD():
+            if self.prefs.get('slowmo_uhd', False):
+                btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                        'QToolTip {color: black; background-color:  #ffffd9; border: 0px}')
+                self.prefs['slowmo_uhd'] = False
+            else:
+                btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
+                                        'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
+                self.prefs['slowmo_uhd'] = True
+        btn_UHD = QtWidgets.QPushButton('Reduce flow res', window)
+        btn_UHD.setToolTip('<b>Reduce flow res button</b><br>Use less details for analyzis, sometimes could be helpful with large motion.')
+        btn_UHD.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_UHD.setMinimumSize(148, 28)
+        if self.prefs.get('slowmo_uhd', False):
+            btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
+                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
+        else:
+            btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
+        btn_UHD.pressed.connect(enableUHD)
+        new_speed_hbox.addWidget(btn_UHD)
+
+        # Cpu Proc button
+
+        if not sys.platform == 'darwin':            
+            def enableCpuProc():
+                if self.cpu:
+                    btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
+                    self.cpu = False
+                else:
+                    btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}')
+                    self.cpu = True
+
+            btn_CpuProc = QtWidgets.QPushButton('CPU Proc', window)
+            btn_CpuProc.setFocusPolicy(QtCore.Qt.NoFocus)
+            btn_CpuProc.setMinimumSize(88, 28)
+            if self.cpu:
+                btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}')
+            else:
+                btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
+            btn_CpuProc.pressed.connect(enableCpuProc)
+            new_speed_hbox.addWidget(btn_CpuProc)
+        
+        vbox.addLayout(new_speed_hbox)
+        vbox.addWidget(lbl_Spacer)
+
+        # Work Folder Label
+
+        lbl_WorkFolder = QtWidgets.QLabel('Export folder', window)
+        lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_WorkFolder.setMinimumHeight(28)
+        lbl_WorkFolder.setMaximumHeight(28)
+        lbl_WorkFolder.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_WorkFolder)
+
+        # Work Folder Text Field
+
+        hbox_workfolder = QtWidgets.QHBoxLayout()
+        hbox_workfolder.setAlignment(QtCore.Qt.AlignLeft)
+
+        def chooseFolder():
+            result_folder = str(QtWidgets.QFileDialog.getExistingDirectory(window, "Open Directory", self.working_folder, QtWidgets.QFileDialog.ShowDirsOnly))
+            if result_folder =='':
+                return
+            self.working_folder = result_folder
+            txt_WorkFolder.setText(self.working_folder)
+            self.prefs['working_folder'] = self.working_folder
+
+        def txt_WorkFolder_textChanged():
+            self.working_folder = txt_WorkFolder.text()
+        txt_WorkFolder = QtWidgets.QLineEdit('', window)
+        txt_WorkFolder.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_WorkFolder.setMinimumSize(280, 28)
+        txt_WorkFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+        txt_WorkFolder.setText(self.working_folder)
+        txt_WorkFolder.textChanged.connect(txt_WorkFolder_textChanged)
+        hbox_workfolder.addWidget(txt_WorkFolder)
+
+        btn_changePreset = QtWidgets.QPushButton('Choose', window)
+        btn_changePreset.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_changePreset.setMinimumSize(88, 28)
+        btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                   'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        btn_changePreset.clicked.connect(chooseFolder)
+        hbox_workfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
+
+        vbox.addLayout(hbox_workfolder)
+
+        vbox.addWidget(lbl_Spacer)
+        vbox.addWidget(lbl_Spacer)
+
+        # Create and Cancel Buttons
+        hbox_Create = QtWidgets.QHBoxLayout()
+
+        select_btn = QtWidgets.QPushButton('Create', window)
+        select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        select_btn.setMinimumSize(128, 28)
+        select_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        select_btn.clicked.connect(window.accept)
+        select_btn.setAutoDefault(True)
+        select_btn.setDefault(True)
+
+        cancel_btn = QtWidgets.QPushButton('Cancel', window)
+        cancel_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        cancel_btn.setMinimumSize(128, 28)
+        cancel_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        cancel_btn.clicked.connect(window.reject)
+
+        hbox_Create.addWidget(cancel_btn)
+        hbox_Create.addWidget(select_btn)
+
+        vbox.addLayout(hbox_Create)
+
+        window.setLayout(vbox)
+        if window.exec_():
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
+            self.framework.save_prefs()
+            return {
                 'working_folder': self.working_folder,
                 'hold_konsole': True if modifiers == QtCore.Qt.ControlModifier else False
             }
