@@ -1,0 +1,79 @@
+TimewarpFileVersion 1.0
+CreationDate Wed Dec 28 08:46:50 2011
+
+
+Fields 0
+Frames 28
+Origin 1
+RenderType yes
+SamplingStep 0
+Interpolation 0
+FlowQuality 2
+Animation
+	Channel Speed
+		Extrapolation linear
+		Value 100
+		End
+	Channel Timing/Timing
+		Extrapolation constant
+		Value 1
+		Size 3
+		KeyVersion 2
+		Key 0
+			Frame 1
+			Value 1
+			RHandleX 5.66666651
+			RHandleY 6.99977636
+			LHandleX 0.75
+			LHandleY 0.75
+			CurveMode bezier
+			CurveOrder cubic
+			LeftAutomaticSlope no
+			TangentMode manual
+			End
+		Key 1
+			Frame 15
+			Value 18.9993286
+			RHandleX 19.333334
+			RHandleY 23.3326626
+			LHandleX 10.333333
+			LHandleY 14.3326616
+			CurveMode bezier
+			CurveOrder cubic
+			TangentMode smooth
+			End
+		Key 2
+			Frame 28
+			Value 28
+			RHandleX 32.3333321
+			RHandleY 31.0002232
+			LHandleX 23.666666
+			LHandleY 24.9997768
+			CurveMode bezier
+			CurveOrder cubic
+			TangentMode smooth
+			End
+		Uncollapsed
+		End
+	Channel Mix/Mix
+		Extrapolation linear
+		Value 0
+		End
+	Channel Trail/Pre_Trail
+		Extrapolation linear
+		Value 1
+		End
+	Channel Trail/Pre_Weight
+		Extrapolation linear
+		Value 100
+		End
+	Channel Trail/Post_Trail
+		Extrapolation linear
+		Value 1
+		End
+	Channel Trail/Post_Weight
+		Extrapolation linear
+		Value 100
+		End
+	ChannelEnd
+End
