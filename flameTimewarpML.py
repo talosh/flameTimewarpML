@@ -1945,6 +1945,7 @@ class flameTimewrapML(flameMenuApp):
                         effect.save_setup(temp_setup_path)
                         with open(temp_setup_path, 'r') as tw_setup_file:
                             tw_setup_string = tw_setup_file.read()
+                            '''
                             tw_setup_xml = ET.fromstring(tw_setup_string)
                             tw_setup = dictify(tw_setup_xml)
                             try:
@@ -1961,7 +1962,7 @@ class flameTimewrapML(flameMenuApp):
                             if not (TW_Timing_size > end-start or TW_SpeedTiming_size > end-start):
                                 bake_message()
                                 return
-
+                            '''
                             tw_setup_file.close()
 
                         verified = True
