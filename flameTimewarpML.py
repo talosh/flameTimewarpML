@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.3.0.beta.016'
+__version__ = 'v0.3.0.beta.018'
 
 
 class flameAppFramework(object):
@@ -515,7 +515,7 @@ class flameAppFramework(object):
             mbox.setWindowTitle('flameTimewrarpML')
             mbox.setText(msg)
             mbox.setDetailedText(dmsg)
-            mbox.setStyleSheet('QLabel{min-width: 400px;}')
+            # mbox.setStyleSheet('QLabel{min-width: 400px;}')
             mbox.exec_()
 
         flame.schedule_idle_event(show_error_mbox)

@@ -175,13 +175,15 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
         tw_setup_xml = ET.fromstring(tw_setup_string)
         tw_setup = dictify(tw_setup_xml)
 
-    start = int(tw_setup['Setup']['Base'][0]['Range'][0]['Start'])
-    end = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
-    TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
+    # start = int(tw_setup['Setup']['Base'][0]['Range'][0]['Start'])
+    # end = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
+    # TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
     TW_SpeedTiming_size = int(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
 
     TW_RetimerMode = int(tw_setup['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
-    
+    parsed_and_baked_path = os.path.join(os.path.dirname(args.setup), 'parsed_and_baked.txt')
+    parser_and_baker = os.path.join(os.path.dirname(__file__), 'flame_channel_parser', 'bin', 'bake_flame_channel')
+
     if TW_SpeedTiming_size == 1 and TW_RetimerMode == 0:
         # just constant speed change with no keyframes set       
         x = float(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['KFrames'][0]['Key'][0]['Frame'][0]['_text'])
@@ -198,11 +200,51 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
     
     elif TW_RetimerMode == 0:
         # Speed with multiple keyframes
-        tw_channel_name = 'TW_SpeedTiming'
+        tw_channel_name = 'SpeedTiming'
 
     else:
         # Timing with multiple keyframes
-        tw_channel_name = 'TW_Timing'
+        tw_channel_name = 'Timing'
+
+    cmd = parser_and_baker + ' -c ' + tw_channel_name
+    cmd += ' -s ' + str(start) + ' -e ' + str(end)
+    cmd += ' --to-file ' + parsed_and_baked_path + ' ' + args.setup
+    print (cmd)
+    os.system(cmd)
+
+    if not os.path.isfile(parsed_and_baked_path):
+        print ('can not find parsed channel file %s' % parsed_and_baked_path)
+        input("Press Enter to continue...")
+        sys.exit(1)
+
+    with open(parsed_and_baked_path, 'r') as parsed_and_baked:
+        import re
+        # taken from Julik's parser
+
+        CORRELATION_RECORD = re.compile(
+        r"""
+        ^([-]?\d+)            # -42 or 42
+        \t                    # tab
+        (
+            [-]?(\d+(\.\d*)?) # "-1" or "1" or "1.0" or "1."
+            |                 # or:
+            \.\d+             # ".2"
+        )
+        ([eE][+-]?[0-9]+)?    # "1.2e3", "1.2e-3" or "1.2e+3"
+        $
+        """, re.VERBOSE)
+
+        lines = parsed_and_baked.readlines()
+        for i, line in enumerate(lines):
+            line = line.rstrip()
+            m = CORRELATION_RECORD.match(line)
+            if m is not None:
+                frame_number = int(m.group(1))
+                value = float(m.group(2))
+                frame_value_map[frame_number] = value
+
+    pprint (frame_value_map)
+    return frame_value_map
 
     '''
     tw_channel_name = 'TW_Timing' if TW_Timing_size > TW_SpeedTiming_size else 'TW_SpeedTiming'
@@ -252,8 +294,8 @@ if __name__ == '__main__':
     
     frame_value_map = bake_flame_tw_setup(args.setup, args.record_in, args.record_out)
     
-    #input("Press Enter to continue...")
-    #sys.exit(0)
+    input("Press Enter to continue...")
+    sys.exit(0)
     
     start_frame = 1
     src_files_list.sort()
