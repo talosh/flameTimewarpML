@@ -9,18 +9,20 @@ from torch.nn import functional as F
 import warnings
 import _thread
 from queue import Queue, Empty
-warnings.filterwarnings("ignore")
 
 from pprint import pprint, pformat
 import time
 import psutil
+import signal
 
 import multiprocessing as mp
-import xml.etree.ElementTree as ET
+
+warnings.filterwarnings("ignore")
 
 IOThreadsFlag = True
 IOProcesses = []
 cv2.setNumThreads(1)
+
 
 # Exception handler
 def exeption_handler(exctype, value, tb):
@@ -30,14 +32,14 @@ def exeption_handler(exctype, value, tb):
     cmd = 'rm -f ' + locks + '/*'
     os.system(cmd)
 
-    pprint ('%s in %s' % (value, exctype))
+    pprint('%s in %s' % (value, exctype))
     pprint(traceback.format_exception(exctype, value, tb))
     sys.__excepthook__(exctype, value, tb)
     input("Press Enter to continue...")
 sys.excepthook = exeption_handler
 
+
 # ctrl+c handler
-import signal
 def signal_handler(sig, frame):
     global IOThreadsFlag
     IOThreadsFlag = False
@@ -45,19 +47,20 @@ def signal_handler(sig, frame):
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
+
 def clear_write_buffer(args, write_buffer, output_duration):
     global IOThreadsFlag
     global IOProcesses
 
-    print ('rendering %s frames to %s' % (output_duration, args.output))
+    print('rendering %s frames to %s' % (output_duration, args.output))
     pbar = tqdm(total=output_duration, unit='frame')
 
     while IOThreadsFlag:
         item = write_buffer.get()
-                    
+
         frame_number, image_data = item
         if frame_number == -1:
-            pbar.close() # type: ignore
+            pbar.close()    # type: ignore
             IOThreadsFlag = False
             break
 
@@ -67,6 +70,7 @@ def clear_write_buffer(args, write_buffer, output_duration):
         IOProcesses.append(p)
         pbar.update(1)
 
+
 def build_read_buffer(user_args, read_buffer, videogen):
     global IOThreadsFlag
 
@@ -75,18 +79,19 @@ def build_read_buffer(user_args, read_buffer, videogen):
         read_buffer.put(frame_data)
     read_buffer.put(None)
 
-def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8, UHD=False):
+
+def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles=8, UHD=False):
     I0_ratio = 0.0
     I1_ratio = 1.0
-    
-    if ratio <= I0_ratio + rthreshold/2:
+
+    if ratio <= I0_ratio + rthreshold / 2:
         return I0
-    if ratio >= I1_ratio - rthreshold/2:
+    if ratio >= I1_ratio - rthreshold / 2:
         return I1
-    
+
     for inference_cycle in range(0, maxcycles):
         middle = model.inference(I0, I1, UHD)
-        middle_ratio = ( I0_ratio + I1_ratio ) / 2
+        middle_ratio = (I0_ratio + I1_ratio) / 2
 
         if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
             return middle
@@ -97,23 +102,24 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8
         else:
             I1 = middle
             I1_ratio = middle_ratio
-    
+
     return middle
 
-def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles = 8, UHD=False):
-    device = torch.device("cpu")    
-    
+
+def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles=8, UHD=False):
+    device = torch.device("cpu")
+
     I0_ratio = 0.0
     I1_ratio = 1.0
-    
+
     if ratio <= I0_ratio:
         return I0
     if ratio >= I1_ratio:
         return I1
-    
+
     for inference_cycle in range(0, maxcycles):
         middle = model.inference(I0, I1, UHD)
-        middle_ratio = ( I0_ratio + I1_ratio ) / 2
+        middle_ratio = (I0_ratio + I1_ratio) / 2
 
         if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
             middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
@@ -128,25 +134,76 @@ def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buf
             middle = middle.detach()
             I1 = middle.to(device, non_blocking=True)
             I1_ratio = middle_ratio
-    
+
     middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
     write_buffer.put((frame_num, middle[:h, :w]))
     return
 
-def dictify(r,root=True):
+
+def dictify(r, root=True):
     from copy import copy
 
     if root:
-        return {r.tag : dictify(r, False)}
+        return {r.tag: dictify(r, False)}
 
     d = copy(r.attrib)
     if r.text:
-        d["_text"]=r.text
+        d["_text"] = r.text
     for x in r.findall("./*"):
         if x.tag not in d:
-            d[x.tag]=[]
-        d[x.tag].append(dictify(x,False))
+            d[x.tag] = []
+        d[x.tag].append(dictify(x, False))
     return d
+
+
+def bake_flame_tw_setup(tw_setup_path, start, end):
+    # parses tw setup from flame and returns dictionary
+    # with baked frame - value pairs
+    
+    def extrapolate_linear(xa, ya, xb, yb, xc):
+        m = (ya - yb) / (xa - xb)
+        yc = (xc - xb) * m + yb
+        return yc
+
+    import xml.etree.ElementTree as ET
+
+    frame_value_map = {}
+
+    with open(args.setup, 'r') as tw_setup_file:
+        tw_setup_string = tw_setup_file.read()
+        tw_setup_file.close()
+        tw_setup_xml = ET.fromstring(tw_setup_string)
+        tw_setup = dictify(tw_setup_xml)
+
+    start = int(tw_setup['Setup']['Base'][0]['Range'][0]['Start'])
+    end = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
+    TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
+    TW_SpeedTiming_size = int(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
+
+    TW_RetimerMode = int(tw_setup['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
+    
+    if TW_SpeedTiming_size == 1 and not TW_RetimerMode:
+        # just constant speed change with no keyframes set       
+        x = float(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['KFrames'][0]['Key'][0]['Frame'][0]['_text'])
+        y = float(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['KFrames'][0]['Key'][0]['Value'][0]['_text'])
+        ldx = float(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['KFrames'][0]['Key'][0]['LHandle_dX'][0]['_text'])
+        ldy = float(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['KFrames'][0]['Key'][0]['LHandle_dY'][0]['_text'])
+        rdx = float(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['KFrames'][0]['Key'][0]['RHandle_dX'][0]['_text'])
+        rdy = float(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['KFrames'][0]['Key'][0]['RHandle_dY'][0]['_text'])
+
+        for frame_number in range(start, end+1):
+            frame_value_map[frame_number] = extrapolate_linear(x + ldx, y + ldy, x + rdx, y + rdy, frame_number)
+    
+        return frame_value_map
+
+    tw_channel_name = 'TW_Timing' if TW_Timing_size > TW_SpeedTiming_size else 'TW_SpeedTiming'
+    tw_keyframes = tw_setup['Setup']['State'][0][tw_channel_name][0]['Channel'][0]['KFrames'][0]['Key']
+
+    for tw_keyframe in tw_keyframes:
+        frame = int(tw_keyframe['Frame'][0]['_text'])
+        value = float(tw_keyframe['Value'][0]['_text'])
+        frame_value_map[frame] = value
+
 
 if __name__ == '__main__':
     start = time.time()
@@ -183,31 +240,12 @@ if __name__ == '__main__':
         sys.exit()
     if not args.record_out:
         args.record_out = input_duration
-
-    # TW Setup parsing block
-
-    with open(args.setup, 'r') as tw_setup_file:
-        tw_setup_string = tw_setup_file.read()
-        tw_setup_file.close()
-        tw_setup_xml = ET.fromstring(tw_setup_string)
-        tw_setup = dictify(tw_setup_xml)
-
-    start = int(tw_setup['Setup']['Base'][0]['Range'][0]['Start'])
-    end = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
-    TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
-    TW_SpeedTiming_size = int(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
-
-    tw_channel_name = 'TW_Timing' if  TW_Timing_size > TW_SpeedTiming_size else 'TW_SpeedTiming'
-    tw_keyframes = tw_setup['Setup']['State'][0][tw_channel_name][0]['Channel'][0]['KFrames'][0]['Key']
     
-    frame_value_map = {}
-    for tw_keyframe in tw_keyframes:
-        frame = int(tw_keyframe['Frame'][0]['_text'])
-        value = float(tw_keyframe['Value'][0]['_text'])
-        frame_value_map[frame] = value
+    frame_value_map = bake_flame_tw_setup(args.setup, args.record_in, args.record_out)
     
-    input_frame_offset = int(frame_value_map[args.record_in]) - 1
-
+    #input("Press Enter to continue...")
+    #sys.exit(0)
+    
     start_frame = 1
     src_files_list.sort()
     src_files = {x:os.path.join(args.input, file_path) for x, file_path in enumerate(src_files_list, start=start_frame)}
@@ -251,6 +289,7 @@ if __name__ == '__main__':
             if I0_frame_number < 1:
                 I0_image = cv2.imread(src_files.get(1), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
                 write_buffer.put((output_frame_number, I0_image))
+
                 output_frame_number += 1
                 continue
             if I0_frame_number >= input_duration:
