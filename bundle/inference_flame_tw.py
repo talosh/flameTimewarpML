@@ -79,9 +79,9 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8
     I0_ratio = 0.0
     I1_ratio = 1.0
     
-    if ratio <= I0_ratio:
+    if ratio <= I0_ratio + rthreshold/2:
         return I0
-    if ratio >= I1_ratio:
+    if ratio >= I1_ratio - rthreshold/2:
         return I1
     
     for inference_cycle in range(0, maxcycles):
@@ -247,7 +247,18 @@ if __name__ == '__main__':
         output_frame_number = 1
         for frame_number in range(args.record_in, args.record_out +1):
 
-            I0_frame_number = int(frame_value_map[frame_number]) - input_frame_offset
+            I0_frame_number = int(frame_value_map[frame_number])
+            if I0_frame_number < 1:
+                I0_image = cv2.imread(src_files.get(1), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+                write_buffer.put((output_frame_number, I0_image))
+                output_frame_number += 1
+                continue
+            if I0_frame_number >= input_duration:
+                I0_image = cv2.imread(src_files.get(input_duration), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+                write_buffer.put((output_frame_number, I0_image))
+                output_frame_number += 1
+                continue
+
             I1_frame_number = I0_frame_number + 1
             ratio = frame_value_map[frame_number] - int(frame_value_map[frame_number]) 
 
