@@ -1,0 +1,132 @@
+TimewarpFileVersion 1.0
+CreationDate Mon May 30 13:20:49 2011
+
+
+Fields 0
+Frames 476
+Origin 1
+RenderType yes
+SamplingStep 0
+Interpolation 0
+FlowQuality 0
+Animation
+	Channel Speed
+		Extrapolation constant
+		Value 57.2581
+		Size 5
+		KeyVersion 1
+		Key 0
+			Frame 1
+			Value 57.2581
+			Interpolation hermite
+			RightAutomaticSlope no
+			LeftAutomaticSlope no
+			BreakSlope yes
+			End
+		Key 1
+			Frame 383
+			Value 62.6375
+			Interpolation hermite
+			LeftSlope 0.0844935
+			RightAutomaticSlope no
+			LeftAutomaticSlope no
+			BreakSlope yes
+			End
+		Key 2
+			Frame 438
+			Value 100
+			Interpolation hermite
+			LeftSlope -4.07591
+			RightAutomaticSlope no
+			LeftAutomaticSlope no
+			BreakSlope yes
+			End
+		Key 3
+			Frame 476
+			Value 218.43
+			Interpolation hermite
+			LeftSlope -0.0700557
+			RightAutomaticSlope no
+			LeftAutomaticSlope no
+			BreakSlope yes
+			End
+		Key 4
+			Frame 531
+			Value 100
+			Interpolation hermite
+			LeftSlope 0.0611895
+			RightAutomaticSlope no
+			LeftAutomaticSlope no
+			BreakSlope yes
+			End
+		Uncollapsed
+		End
+	Channel Timing/Timing
+		Extrapolation linear
+		Value 174.274
+		Size 5
+		KeyVersion 1
+		Key 0
+			Frame 1
+			Value 174.274
+			Interpolation hermite
+			RightSlope 0.572581
+			LeftSlope 0.572581
+			End
+		Key 1
+			Frame 383
+			Value 393
+			Interpolation hermite
+			RightSlope 0.626375
+			LeftSlope 0.626375
+			End
+		Key 2
+			Frame 438
+			Value 448
+			Interpolation hermite
+			RightSlope 1
+			RightAutomaticSlope no
+			LeftAutomaticSlope no
+			End
+		Key 3
+			Frame 476
+			Value 508.586
+			Interpolation hermite
+			RightSlope 2.1843
+			LeftSlope 2.1843
+			RightAutomaticSlope no
+			LeftAutomaticSlope no
+			End
+		Key 4
+			Frame 531
+			Value 596
+			Interpolation hermite
+			RightSlope 1
+			LeftSlope 1
+			RightAutomaticSlope no
+			LeftAutomaticSlope no
+			End
+		Uncollapsed
+		End
+	Channel Mix/Mix
+		Extrapolation constant
+		Value 0
+		End
+	Channel Trail/Pre_Trail
+		Extrapolation constant
+		Value 1
+		End
+	Channel Trail/Pre_Weight
+		Extrapolation constant
+		Value 100
+		End
+	Channel Trail/Post_Trail
+		Extrapolation constant
+		Value 1
+		End
+	Channel Trail/Post_Weight
+		Extrapolation constant
+		Value 100
+		End
+	ChannelEnd
+End

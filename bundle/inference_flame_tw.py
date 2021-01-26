@@ -182,7 +182,7 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
 
     TW_RetimerMode = int(tw_setup['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
     
-    if TW_SpeedTiming_size == 1 and not TW_RetimerMode:
+    if TW_SpeedTiming_size == 1 and TW_RetimerMode == 0:
         # just constant speed change with no keyframes set       
         x = float(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['KFrames'][0]['Key'][0]['Frame'][0]['_text'])
         y = float(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['KFrames'][0]['Key'][0]['Value'][0]['_text'])
@@ -195,7 +195,16 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
             frame_value_map[frame_number] = extrapolate_linear(x + ldx, y + ldy, x + rdx, y + rdy, frame_number)
     
         return frame_value_map
+    
+    elif TW_RetimerMode == 0:
+        # Speed with multiple keyframes
+        tw_channel_name = 'TW_SpeedTiming'
 
+    else:
+        # Timing with multiple keyframes
+        tw_channel_name = 'TW_Timing'
+
+    '''
     tw_channel_name = 'TW_Timing' if TW_Timing_size > TW_SpeedTiming_size else 'TW_SpeedTiming'
     tw_keyframes = tw_setup['Setup']['State'][0][tw_channel_name][0]['Channel'][0]['KFrames'][0]['Key']
 
@@ -203,7 +212,7 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
         frame = int(tw_keyframe['Frame'][0]['_text'])
         value = float(tw_keyframe['Value'][0]['_text'])
         frame_value_map[frame] = value
-
+    '''
 
 if __name__ == '__main__':
     start = time.time()
