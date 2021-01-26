@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.3.0.beta.012'
+__version__ = 'v0.3.0.beta.015'
 
 
 class flameAppFramework(object):
@@ -494,7 +494,7 @@ class flameAppFramework(object):
     def show_complete_message(self, bundle_path):
         from PySide2 import QtWidgets
 
-        msg = 'flameTimewarpML has finished unpacking its bundle and required packages. You can start using it now.'
+        msg = 'flameTimewarpML has finished unpacking its bundle and required packages.'
         dmsg = 'Bundle location: %s\n' % self.bundle_location
         dmsg += '* Flame scipt written by Andrii Toloshnyy (c) 2021\n'
         dmsg += '* RIFE: Real-Time Intermediate Flow Estimation for Video Frame Interpolation:\n'
@@ -515,7 +515,7 @@ class flameAppFramework(object):
             mbox.setWindowTitle('flameTimewrarpML')
             mbox.setText(msg)
             mbox.setDetailedText(dmsg)
-            mbox.setStyleSheet('QLabel{min-width: 800px;}')
+            mbox.setStyleSheet('QLabel{min-width: 400px;}')
             mbox.exec_()
 
         flame.schedule_idle_event(show_error_mbox)
@@ -1955,7 +1955,9 @@ class flameTimewrapML(flameMenuApp):
                             except Exception as e:
                                 parse_message(e)
                                 return
-                            # self.log('start: %s, end: %s, TW_Timing_size: %s, TW_SpeedTiming_size: %s' % (start, end, TW_Timing_size, TW_SpeedTiming_size))
+                            
+                            self.log('start: %s, end: %s, TW_Timing_size: %s, TW_SpeedTiming_size: %s' % (start, end, TW_Timing_size, TW_SpeedTiming_size))
+                            
                             if not (TW_Timing_size > end-start or TW_SpeedTiming_size > end-start):
                                 bake_message()
                                 return
@@ -2019,6 +2021,83 @@ class flameTimewrapML(flameMenuApp):
                 tw_setup_file.write(tw_setup_string)
                 tw_setup_file.close()
 
+            '''
+            seg_data = {}
+            seg_data['record_duration'] = clip.versions[0].tracks[0].segments[0].record_duration.relative_frame
+            seg_data['record_in'] = clip.versions[0].tracks[0].segments[0].record_in.relative_frame
+            seg_data['record_out'] = clip.versions[0].tracks[0].segments[0].record_out.relative_frame
+            seg_data['source_duration'] = clip.versions[0].tracks[0].segments[0].source_duration.relative_frame
+            seg_data['source_in'] = clip.versions[0].tracks[0].segments[0].source_in.relative_frame
+            seg_data['source_out'] = clip.versions[0].tracks[0].segments[0].source_out.relative_frame
+            pprint (seg_data)
+            '''
+
+            record_in = clip.versions[0].tracks[0].segments[0].record_in.relative_frame
+            record_out = clip.versions[0].tracks[0].segments[0].record_out.relative_frame
+
+            cmd = 'python3 '
+            if self.cpu:
+                cmd = 'export OMP_NUM_THREADS=1; python3 '
+            cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_flame_tw.py')
+            cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder + ' --setup ' + tw_setup_path
+            cmd += ' --record_in ' + str(record_in) + ' --record_out ' + str(record_out)
+            if self.cpu:
+                cmd += ' --cpu'
+            if self.prefs.get('slowmo_uhd', False):
+                cmd += ' --UHD'
+            cmd += "; "
+            cmd_strings.append(cmd)
+            
+            new_clip_name = clip_name + '_TWML'
+            watcher = threading.Thread(target=self.import_watcher, args=(result_folder, new_clip_name, clip.parent, [source_clip_folder]))
+            watcher.daemon = True
+            watcher.start()
+            self.loops.append(watcher)
+
+        if sys.platform == 'darwin':
+            cmd_prefix = """tell application "Terminal" to activate do script "clear; """
+            # cmd_prefix += """ echo " & quote & "Received """
+            # cmd_prefix += str(number_of_clips)
+            #cmd_prefix += ' clip ' if number_of_clips < 2 else ' clips '
+            # cmd_prefix += 'to process, press Ctrl+C to cancel" & quote &; '
+            cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
+            cmd_prefix += os.path.join(self.env_folder, 'bin', 'conda')
+            cmd_prefix += """ shell.bash hook)" & quote & "; conda activate; """
+            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            
+            ml_cmd = cmd_prefix
+           
+            for cmd_string in cmd_strings:
+                ml_cmd += cmd_string
+
+            ml_cmd += """'; exit" """
+
+            import subprocess
+            subprocess.Popen(['osascript', '-e', ml_cmd])
+        
+        else:
+            cmd_prefix = 'konsole '
+            if hold_konsole:
+                cmd_prefix += '--hold '
+            cmd_prefix += """-e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+
+            ml_cmd = cmd_prefix
+            ml_cmd += 'echo "Received ' + str(number_of_clips)
+            ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
+            ml_cmd += 'to process, press Ctrl+C to cancel"; '
+            ml_cmd += 'trap exit SIGINT SIGTERM; '
+
+            for cmd_string in cmd_strings:
+                ml_cmd += cmd_string
+
+            if hold_konsole:
+                ml_cmd += 'echo "Commands finished. You can close this window"'
+            ml_cmd +="'"
+            self.log('Executing command: %s' % ml_cmd)
+            os.system(ml_cmd)
+
+        flame.execute_shortcut('Refresh Thumbnails')
 
     def fltw_dialog(self, *args, **kwargs):
         from PySide2 import QtWidgets, QtCore
