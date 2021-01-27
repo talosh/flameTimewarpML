@@ -81,9 +81,9 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8
     I0_ratio = 0.0
     I1_ratio = 1.0
     
-    if ratio <= I0_ratio:
+    if ratio <= I0_ratio + rthreshold / 2:
         return I0
-    if ratio >= I1_ratio:
+    if ratio >= I1_ratio - rthreshold / 2:
         return I1
     
     for inference_cycle in range(0, maxcycles):
