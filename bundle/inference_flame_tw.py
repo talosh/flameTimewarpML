@@ -1,3 +1,4 @@
+from ntpath import basename
 import os
 import sys
 import cv2
@@ -65,7 +66,6 @@ def clear_write_buffer(args, write_buffer, output_duration):
             break
 
         path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(frame_number))
-        pprint ('recieved %s and sending to write' % output_frame_number)
         p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
         p.start()
         IOProcesses.append(p)
@@ -174,7 +174,7 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
 
     frame_value_map = {}
 
-    with open(args.setup, 'r') as tw_setup_file:
+    with open(tw_setup_path, 'r') as tw_setup_file:
         tw_setup_string = tw_setup_file.read()
         tw_setup_file.close()
         tw_setup_xml = ET.fromstring(tw_setup_string)
@@ -203,23 +203,107 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
     
         return frame_value_map
     
-    elif TW_RetimerMode == 0:
-        # Speed with multiple keyframes
-        tw_channel_name = 'TW_SpeedTiming'
+    # add point tangents from vecrors to match older version of setup
+    # used by Julik's parser
 
+    from xml.dom import minidom
+    xml = minidom.parse(tw_setup_path)
+    keys = xml.getElementsByTagName('Key')
+    for key in keys:        
+        frame = key.getElementsByTagName('Frame')
+        if frame:
+            frame = (frame[0].firstChild.nodeValue)
+        value = key.getElementsByTagName('Value')
+        if value:
+            value = (value[0].firstChild.nodeValue)
+        rdx = key.getElementsByTagName('RHandle_dX')
+        if rdx:
+            rdx = (rdx[0].firstChild.nodeValue)
+        rdy = key.getElementsByTagName('RHandle_dY')
+        if rdy:
+            rdy = (rdy[0].firstChild.nodeValue)
+        ldx = key.getElementsByTagName('LHandle_dX')
+        if ldx:
+            ldx = (ldx[0].firstChild.nodeValue)
+        ldy = key.getElementsByTagName('LHandle_dY')
+        if ldy:
+            ldy = (ldy[0].firstChild.nodeValue)
+
+        lx = xml.createElement('LHandleX')
+        lx.appendChild(xml.createTextNode('{:.6f}'.format(float(frame) + float(ldx))))
+        key.appendChild(lx)
+        ly = xml.createElement('LHandleY')
+        ly.appendChild(xml.createTextNode('{:.6f}'.format(float(value) + float(ldy))))
+        key.appendChild(ly)
+        rx = xml.createElement('RHandleX')
+        rx.appendChild(xml.createTextNode('{:.6f}'.format(float(frame) + float(rdx))))
+        key.appendChild(rx)
+        ry = xml.createElement('RHandleY')
+        ry.appendChild(xml.createTextNode('{:.6f}'.format(float(value) + float(rdy))))
+        key.appendChild(ry)
+
+    xml_string = xml.toxml()
+    dirname, name = os.path.dirname(tw_setup_path), os.path.basename(tw_setup_path)
+    xml_path = os.path.join(dirname, 'fix_' + name)
+    with open(xml_path, 'a') as xml_file:
+        xml_file.write(xml_string)
+        xml_file.close()
+
+    tw_channel_name = 'Speed' if TW_RetimerMode == 0 else 'Timing'
+
+    cmd = parser_and_baker + ' -c ' + tw_channel_name
+    cmd += ' -s ' + str(start) + ' -e ' + str(end)
+    cmd += ' --to-file ' + parsed_and_baked_path + ' ' + xml_path
+    print (cmd)
+    os.system(cmd)
+
+    if not os.path.isfile(parsed_and_baked_path):
+        print ('can not find parsed channel file %s' % parsed_and_baked_path)
+        input("Press Enter to continue...")
+        sys.exit(1)
+
+    tw_channel = {}
+    with open(parsed_and_baked_path, 'r') as parsed_and_baked:
+        import re
+        
+        # taken from Julik's parser
+
+        CORRELATION_RECORD = re.compile(
+        r"""
+        ^([-]?\d+)            # -42 or 42
+        \t                    # tab
+        (
+            [-]?(\d+(\.\d*)?) # "-1" or "1" or "1.0" or "1."
+            |                 # or:
+            \.\d+             # ".2"
+        )
+        ([eE][+-]?[0-9]+)?    # "1.2e3", "1.2e-3" or "1.2e+3"
+        $
+        """, re.VERBOSE)
+    
+        lines = parsed_and_baked.readlines()
+        for i, line in enumerate(lines):
+            line = line.rstrip()
+            m = CORRELATION_RECORD.match(line)
+            if m is not None:
+                frame_number = int(m.group(1))
+                value = float(m.group(2))
+                tw_channel[frame_number] = value
+
+    if TW_RetimerMode == 1:
+        # job's done for 'Timing' channel
+        return tw_channel
+    
     else:
-        # Timing with multiple keyframes
-        tw_channel_name = 'TW_Timing'
+        pass
 
-    # tw_channel_name = 'TW_Timing' if TW_Timing_size > TW_SpeedTiming_size else 'TW_SpeedTiming'
-
+    '''
     tw_keyframes = tw_setup['Setup']['State'][0][tw_channel_name][0]['Channel'][0]['KFrames'][0]['Key']
     for tw_keyframe in tw_keyframes:
         frame = int(tw_keyframe['Frame'][0]['_text'])
         value = float(tw_keyframe['Value'][0]['_text'])
         frame_value_map[frame] = value
-
-    return frame_value_map
+    '''
 
 if __name__ == '__main__':
     start = time.time()
@@ -258,7 +342,10 @@ if __name__ == '__main__':
         args.record_out = input_duration
     
     frame_value_map = bake_flame_tw_setup(args.setup, args.record_in, args.record_out)
-        
+
+    # input("Press Enter to continue...")
+    # sys.exit(0)
+
     start_frame = 1
     src_files_list.sort()
     src_files = {x:os.path.join(args.input, file_path) for x, file_path in enumerate(src_files_list, start=start_frame)}
@@ -407,7 +494,6 @@ if __name__ == '__main__':
             I0 = F.pad(I0, padding)
             I1 = F.pad(I1, padding)
             
-            pprint ('sending output number %s' % output_frame_number)
             p = mp.Process(target=make_inference_rational_cpu, args=(model, I0, I1, ratio, output_frame_number, w, h, write_buffer), kwargs = {'UHD': args.UHD})
             p.start()
             active_workers.append(p)

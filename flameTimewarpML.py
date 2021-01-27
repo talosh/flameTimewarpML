@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.3.0.beta.019'
+__version__ = 'v0.3.0.beta.022'
 
 
 class flameAppFramework(object):
@@ -1946,6 +1946,7 @@ class flameTimewrapML(flameMenuApp):
                         with open(temp_setup_path, 'r') as tw_setup_file:
                             tw_setup_string = tw_setup_file.read()
                             tw_setup_file.close()
+                        '''
                             tw_setup_xml = ET.fromstring(tw_setup_string)
                             tw_setup = dictify(tw_setup_xml)
                             try:
@@ -1964,7 +1965,7 @@ class flameTimewrapML(flameMenuApp):
                             elif not (TW_Timing_size > end-start or TW_SpeedTiming_size > end-start):
                                 bake_message()
                                 return
-
+                        '''
                         verified = True
                 
                 if not verified:
