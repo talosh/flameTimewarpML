@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.3.0.beta.022'
+__version__ = 'v0.3.0.beta.023'
 
 
 class flameAppFramework(object):
@@ -2014,6 +2014,8 @@ class flameTimewrapML(flameMenuApp):
                 cmd = 'rm -f ' + result_folder + '/*'
                 self.log('Executing command: %s' % cmd)
                 os.system(cmd)
+
+            clip.render()
 
             source_clip_folder = os.path.join(result_folder, 'source')
             export_preset = os.path.join(self.framework.bundle_path, 'source_export.xml')
