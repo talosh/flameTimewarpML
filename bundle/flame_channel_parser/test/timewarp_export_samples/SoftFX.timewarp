@@ -1,0 +1,81 @@
+TimewarpFileVersion 1.0
+CreationDate Wed Dec 28 14:50:05 2011
+Linebreak 2
+Fields 0
+Origin 1
+RenderType no
+SamplingStep 0
+Interpolation 0
+FlowQuality 0
+
+
+Animation
+	Channel Speed
+		Value 114.286
+		Extrapolation constant
+		KeyVersion 1
+		Size 4
+		Key 0
+			Frame 1
+			Value 114.286
+			Interpolation constant
+			LeftSlope 2.400
+			RightSlope 2.400
+			End
+		Key 1
+			Frame 15
+			Value 116.667
+			Interpolation constant
+			LeftSlope 2.400
+			RightSlope 2.400
+			End
+		Key 2
+			Frame 21
+			Value 48.148
+			Interpolation constant
+			LeftSlope 2.400
+			RightSlope 2.400
+			End
+		Key 3
+			Frame 102
+			Value 0.000
+			Interpolation constant
+			LeftSlope 2.400
+			RightSlope 2.400
+			End
+		End
+	Channel Timing/Timing
+		Value 40.000
+		Extrapolation constant
+		KeyVersion 1
+		Size 4
+		Key 0
+			Frame 1
+			Value 40.000
+			Interpolation linear
+			LeftSlope 2.400
+			RightSlope 2.400
+			End
+		Key 1
+			Frame 15
+			Value 56.000
+			Interpolation linear
+			LeftSlope 2.400
+			RightSlope 2.400
+			End
+		Key 2
+			Frame 21
+			Value 63.000
+			Interpolation linear
+			LeftSlope 2.400
+			RightSlope 2.400
+			End
+		Key 3
+			Frame 102
+			Value 102.000
+			Interpolation linear
+			LeftSlope 2.400
+			RightSlope 2.400
+			End
+		End
+	End
