@@ -65,6 +65,7 @@ def clear_write_buffer(args, write_buffer, output_duration):
             break
 
         path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(frame_number))
+        pprint ('recieved %s and sending to write' % output_frame_number)
         p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
         p.start()
         IOProcesses.append(p)
@@ -113,9 +114,13 @@ def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buf
     I1_ratio = 1.0
 
     if ratio <= I0_ratio:
-        return I0
+        I0 = (((I0[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+        write_buffer.put((frame_num, I0[:h, :w]))
+        return
     if ratio >= I1_ratio:
-        return I1
+        I1 = (((I1[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+        write_buffer.put((frame_num, I1[:h, :w]))
+        return
 
     for inference_cycle in range(0, maxcycles):
         middle = model.inference(I0, I1, UHD)
@@ -200,61 +205,21 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
     
     elif TW_RetimerMode == 0:
         # Speed with multiple keyframes
-        tw_channel_name = 'SpeedTiming'
+        tw_channel_name = 'TW_SpeedTiming'
 
     else:
         # Timing with multiple keyframes
-        tw_channel_name = 'Timing'
+        tw_channel_name = 'TW_Timing'
 
-    cmd = parser_and_baker + ' -c ' + tw_channel_name
-    cmd += ' -s ' + str(start) + ' -e ' + str(end)
-    cmd += ' --to-file ' + parsed_and_baked_path + ' ' + args.setup
-    print (cmd)
-    os.system(cmd)
+    # tw_channel_name = 'TW_Timing' if TW_Timing_size > TW_SpeedTiming_size else 'TW_SpeedTiming'
 
-    if not os.path.isfile(parsed_and_baked_path):
-        print ('can not find parsed channel file %s' % parsed_and_baked_path)
-        input("Press Enter to continue...")
-        sys.exit(1)
-
-    with open(parsed_and_baked_path, 'r') as parsed_and_baked:
-        import re
-        # taken from Julik's parser
-
-        CORRELATION_RECORD = re.compile(
-        r"""
-        ^([-]?\d+)            # -42 or 42
-        \t                    # tab
-        (
-            [-]?(\d+(\.\d*)?) # "-1" or "1" or "1.0" or "1."
-            |                 # or:
-            \.\d+             # ".2"
-        )
-        ([eE][+-]?[0-9]+)?    # "1.2e3", "1.2e-3" or "1.2e+3"
-        $
-        """, re.VERBOSE)
-
-        lines = parsed_and_baked.readlines()
-        for i, line in enumerate(lines):
-            line = line.rstrip()
-            m = CORRELATION_RECORD.match(line)
-            if m is not None:
-                frame_number = int(m.group(1))
-                value = float(m.group(2))
-                frame_value_map[frame_number] = value
-
-    pprint (frame_value_map)
-    return frame_value_map
-
-    '''
-    tw_channel_name = 'TW_Timing' if TW_Timing_size > TW_SpeedTiming_size else 'TW_SpeedTiming'
     tw_keyframes = tw_setup['Setup']['State'][0][tw_channel_name][0]['Channel'][0]['KFrames'][0]['Key']
-
     for tw_keyframe in tw_keyframes:
         frame = int(tw_keyframe['Frame'][0]['_text'])
         value = float(tw_keyframe['Value'][0]['_text'])
         frame_value_map[frame] = value
-    '''
+
+    return frame_value_map
 
 if __name__ == '__main__':
     start = time.time()
@@ -293,10 +258,7 @@ if __name__ == '__main__':
         args.record_out = input_duration
     
     frame_value_map = bake_flame_tw_setup(args.setup, args.record_in, args.record_out)
-    
-    input("Press Enter to continue...")
-    sys.exit(0)
-    
+        
     start_frame = 1
     src_files_list.sort()
     src_files = {x:os.path.join(args.input, file_path) for x, file_path in enumerate(src_files_list, start=start_frame)}
@@ -331,8 +293,6 @@ if __name__ == '__main__':
         torch.backends.cudnn.enabled = True
         torch.backends.cudnn.benchmark = True
 
-        pprint (frame_value_map)
-
         output_frame_number = 1
         for frame_number in range(args.record_in, args.record_out +1):
 
@@ -352,8 +312,8 @@ if __name__ == '__main__':
             I1_frame_number = I0_frame_number + 1
             ratio = frame_value_map[frame_number] - int(frame_value_map[frame_number]) 
 
-            pprint ('frame_number: %s, value: %s' % (frame_number, frame_value_map[frame_number]))
-            pprint ('I0_frame_number: %s, I1_frame_number: %s, ratio: %s' % (I0_frame_number, I1_frame_number, ratio))
+            # pprint ('frame_number: %s, value: %s' % (frame_number, frame_value_map[frame_number]))
+            # pprint ('I0_frame_number: %s, I1_frame_number: %s, ratio: %s' % (I0_frame_number, I1_frame_number, ratio))
     
             I0_image = cv2.imread(src_files.get(I0_frame_number), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
             I1_image = cv2.imread(src_files.get(I1_frame_number), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
@@ -386,11 +346,8 @@ if __name__ == '__main__':
         model.device()
         print ('Trained model loaded: %s' % args.model)
 
-        write_buffer = mp.Queue(maxsize=mp.cpu_count() - 3)
-        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
-
-        first_image = cv2.imread(os.path.join(args.input, files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
-        h, w, _ = first_image.shape
+        src_start_frame = cv2.imread(src_files.get(start_frame), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+        h, w, _ = src_start_frame.shape
         ph = ((h - 1) // 64 + 1) * 64
         pw = ((w - 1) // 64 + 1) * 64
         padding = (0, pw - w, 0, ph - h)
@@ -413,72 +370,77 @@ if __name__ == '__main__':
         print ('Using %s CPU worker thread%s (of %s available)\n---' % (sim_workers, '' if sim_workers == 1 else 's', mp.cpu_count()))
         if thread_ram > available_ram:
             print ('Warning: estimated peak memory usage is greater then RAM avaliable')
-        
-        print('scanning for duplicate frames...')
 
-        pbar = tqdm(total=input_duration, desc='Total frames', unit='frame')
-        pbar_dup = tqdm(total=input_duration, desc='Interpolated', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
+        write_buffer = mp.Queue(maxsize=mp.cpu_count() - 3)
+        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
 
-        IPrevious = None
-        dframes = 0
-        output_frame_num = 1
         active_workers = []
+        output_frame_number = 1
+        last_thread_time = time.time()
 
-        for file in files_list:
-            current_frame = read_buffer.get()
-            pbar.update(1) # type: ignore
+        for frame_number in range(args.record_in, args.record_out +1):
 
-            ICurrent = torch.from_numpy(np.transpose(current_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
-            ICurrent = F.pad(ICurrent, padding)
+            I0_frame_number = int(frame_value_map[frame_number])
+            if I0_frame_number < 1:
+                I0_image = cv2.imread(src_files.get(1), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+                write_buffer.put((output_frame_number, I0_image))
 
-            if type(IPrevious) is not type(None):
-                
-                diff = (F.interpolate(ICurrent,scale_factor=0.5, mode='bicubic', align_corners=False)
-                        - F.interpolate(IPrevious, scale_factor=0.5, mode='bicubic', align_corners=False)).abs()
+                output_frame_number += 1
+                continue
+            if I0_frame_number >= input_duration:
+                I0_image = cv2.imread(src_files.get(input_duration), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+                write_buffer.put((output_frame_number, I0_image))
+                output_frame_number += 1
+                continue
 
-                if diff.max() < 2e-3:
-                    dframes += 1
-                    continue
-            
-            if dframes:
-                rstep = 1 / ( dframes + 1 )
-                ratio = rstep
-                last_thread_time = time.time()
-                for dframe in range(dframes):
-                    p = mp.Process(target=make_inference_rational_cpu, args=(model, IPrevious, ICurrent, ratio, output_frame_num, w, h, write_buffer), kwargs = {'UHD': args.UHD})
-                    p.start()
-                    active_workers.append(p)
+            I1_frame_number = I0_frame_number + 1
+            ratio = frame_value_map[frame_number] - int(frame_value_map[frame_number]) 
 
-                    if (time.time() - last_thread_time) < (thread_ram / 8):
-                        if sim_workers > 1:
-                            time.sleep(thread_ram/8)
-
-                    while len(active_workers) >= sim_workers:
-                        finished_workers = []
-                        alive_workers = []
-                        for worker in active_workers:
-                            if not worker.is_alive():
-                                finished_workers.append(worker)
-                            else:
-                                alive_workers.append(worker)
-                        active_workers = list(alive_workers)
-                        time.sleep(0.01)
-                    last_thread_time = time.time()
-
-                    # mid = (((ICurrent[0]).cpu().detach().numpy().transpose(1, 2, 0)))
-                    # write_buffer.put((output_frame_num, mid[:h, :w]))
-                    pbar_dup.update(1)
-                    output_frame_num += 1
-                    ratio += rstep
-
-            write_buffer.put((output_frame_num, current_frame))
-
-            IPrevious = ICurrent
-            output_frame_num += 1
-            dframes = 0
+            # pprint ('frame_number: %s, value: %s' % (frame_number, frame_value_map[frame_number]))
+            # pprint ('I0_frame_number: %s, I1_frame_number: %s, ratio: %s' % (I0_frame_number, I1_frame_number, ratio))
+    
+            I0_image = cv2.imread(src_files.get(I0_frame_number), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+            I1_image = cv2.imread(src_files.get(I1_frame_number), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
         
-        pbar.close() # type: ignore
-        pbar_dup.close()
+            I0 = torch.from_numpy(np.transpose(I0_image, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+            I1 = torch.from_numpy(np.transpose(I1_image, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+            I0 = F.pad(I0, padding)
+            I1 = F.pad(I1, padding)
+            
+            pprint ('sending output number %s' % output_frame_number)
+            p = mp.Process(target=make_inference_rational_cpu, args=(model, I0, I1, ratio, output_frame_number, w, h, write_buffer), kwargs = {'UHD': args.UHD})
+            p.start()
+            active_workers.append(p)
+
+            if (time.time() - last_thread_time) < (thread_ram / 8):
+                if sim_workers > 1:
+                    time.sleep(thread_ram/8)
+
+            while len(active_workers) >= sim_workers:
+                finished_workers = []
+                alive_workers = []
+                for worker in active_workers:
+                    if not worker.is_alive():
+                        finished_workers.append(worker)
+                    else:
+                        alive_workers.append(worker)
+                active_workers = list(alive_workers)
+                time.sleep(0.01)
+            last_thread_time = time.time()
+
+            output_frame_number += 1
+
+        while len(active_workers) >= sim_workers:
+            finished_workers = []
+            alive_workers = []
+            for worker in active_workers:
+                if not worker.is_alive():
+                    finished_workers.append(worker)
+                else:
+                    alive_workers.append(worker)
+            active_workers = list(alive_workers)
+            time.sleep(0.01)
+        last_thread_time = time.time()
 
         # wait for all active worker threads left to finish                
         for p in active_workers:
