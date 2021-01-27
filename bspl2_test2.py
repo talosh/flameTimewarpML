@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from pprint import pprint
 
-ctr =np.array( [(1 , 1), (1.397513, 2.066667), (8 -0.384456, 12 + 0.666667),  (8, 12)])
+ctr =np.array( [(0 , 0), (0.1, 0), (0.9, 1),  (1, 1)])
 x=ctr[:,0]
 y=ctr[:,1]
 
@@ -18,7 +18,6 @@ pprint (ynew)
 '''
 
 interp = interpolate.CubicSpline(x, y)
-pprint (interp(6))
 
 xnew=np.linspace(x.min(),x.max(), 100,endpoint=True)
 # out = interpolate.splev(xnew, tck, der=0)

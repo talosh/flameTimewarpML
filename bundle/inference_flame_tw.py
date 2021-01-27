@@ -1,6 +1,7 @@
 from ntpath import basename
 import os
 import sys
+from turtle import backward, forward
 import cv2
 import torch
 import argparse
@@ -254,7 +255,6 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
     cmd = parser_and_baker + ' -c ' + tw_channel_name
     cmd += ' -s ' + str(start) + ' -e ' + str(end)
     cmd += ' --to-file ' + parsed_and_baked_path + ' ' + xml_path
-    print (cmd)
     os.system(cmd)
 
     if not os.path.isfile(parsed_and_baked_path):
@@ -292,18 +292,106 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
 
     if TW_RetimerMode == 1:
         # job's done for 'Timing' channel
+        
         return tw_channel
-    
-    else:
-        pass
 
-    '''
-    tw_keyframes = tw_setup['Setup']['State'][0][tw_channel_name][0]['Channel'][0]['KFrames'][0]['Key']
-    for tw_keyframe in tw_keyframes:
-        frame = int(tw_keyframe['Frame'][0]['_text'])
-        value = float(tw_keyframe['Value'][0]['_text'])
-        frame_value_map[frame] = value
-    '''
+    else:
+        # speed - based timewaro needs a bit more love
+        # to solve frame values against speed channel
+        # with the help of anchor frames in SpeedTiming channel
+
+        tw_speed_timing = {}
+        TW_SpeedTiming = xml.getElementsByTagName('TW_SpeedTiming')
+        keys = TW_SpeedTiming[0].getElementsByTagName('Key')
+        for key in keys:
+            index = key.getAttribute('Index') 
+            frame = key.getElementsByTagName('Frame')
+            if frame:
+                frame = (frame[0].firstChild.nodeValue)
+            value = key.getElementsByTagName('Value')
+            if value:
+                value = (value[0].firstChild.nodeValue)
+            tw_speed_timing[int(index)] = {'frame': int(frame), 'value': float(value)}
+        
+        if tw_speed_timing[0]['frame'] > start:
+            # we need to extrapolate backwards from the first 
+            # keyframe in SpeedTiming channel
+
+            anchor_frame_value = tw_speed_timing[0]['value']
+            for frame_number in range(tw_speed_timing[0]['frame'] - 1, start - 1, -1):
+                step_back = (tw_channel[frame_number + 1] + tw_channel[frame_number]) / 200
+                frame_value_map[frame_number] = anchor_frame_value - step_back
+                anchor_frame_value = frame_value_map[frame_number]
+
+        # build up frame values between keyframes of SpeedTiming channel
+        for key_frame_index in range(0, len(tw_speed_timing.keys()) - 1):
+            # The value from my gess algo is close to the one in flame but not exact
+            # and error is accumulated. SO quick and dirty way is to do forward
+            # and backward pass and mix them rationally
+
+            range_start = tw_speed_timing[key_frame_index]['frame']
+            range_end = tw_speed_timing[key_frame_index + 1]['frame']
+            
+            if range_end == range_start + 1:
+            # keyframes on next frames, no need to interpolate
+                frame_value_map[range_start] = tw_speed_timing[key_frame_index]['value']
+                frame_value_map[range_end] = tw_speed_timing[key_frame_index + 1]['value']
+                continue
+
+            forward_pass = {}
+            anchor_frame_value = tw_speed_timing[key_frame_index]['value']
+            forward_pass[range_start] = anchor_frame_value
+
+            for frame_number in range(range_start + 1, range_end):
+                step = (tw_channel[frame_number] + tw_channel[frame_number + 1]) / 200
+                forward_pass[frame_number] = anchor_frame_value + step
+                anchor_frame_value = forward_pass[frame_number]
+            forward_pass[range_end] = tw_speed_timing[key_frame_index + 1]['value']
+            
+            backward_pass = {}
+            anchor_frame_value = tw_speed_timing[key_frame_index + 1]['value']
+            backward_pass[range_end] = anchor_frame_value
+            
+            for frame_number in range(range_end - 1, range_start -1, -1):
+                step_back = (tw_channel[frame_number + 1] + tw_channel[frame_number]) / 200
+                backward_pass[frame_number] = anchor_frame_value - step_back
+                anchor_frame_value = backward_pass[frame_number]
+            
+            backward_pass[range_start] = tw_speed_timing[key_frame_index]['value']
+
+            # create easy in and out soft mixing curve
+            import numpy as np
+            from scipy import interpolate
+            
+            ctr =np.array( [(0 , 0), (0.1, 0), (0.9, 1),  (1, 1)])
+            x=ctr[:,0]
+            y=ctr[:,1]
+            interp = interpolate.CubicSpline(x, y)
+
+            work_range = list(forward_pass.keys())
+            ratio = 0
+            rstep = 1 / len(work_range)
+            for frame_number in sorted(work_range):
+                frame_value_map[frame_number] = forward_pass[frame_number] * (1 - interp(ratio)) + backward_pass[frame_number] * interp(ratio)
+                ratio += rstep
+        
+        last_key_index = list(sorted(tw_speed_timing.keys()))[-1]
+        if tw_speed_timing[last_key_index]['frame'] < end:
+            # we need to extrapolate further on from the 
+            # last keyframe in SpeedTiming channel
+            anchor_frame_value = tw_speed_timing[last_key_index]['value']
+            frame_value_map[tw_speed_timing[last_key_index]['frame']] = anchor_frame_value
+
+            for frame_number in range(tw_speed_timing[last_key_index]['frame'] + 1, end + 1):
+                if frame_number + 1 not in tw_channel.keys():
+                    step = tw_channel[frame_number] / 100
+                else:
+                    step = (tw_channel[frame_number] + tw_channel[frame_number + 1]) / 200
+                frame_value_map[frame_number] = anchor_frame_value + step
+                anchor_frame_value = frame_value_map[frame_number]
+
+        return frame_value_map
+
 
 if __name__ == '__main__':
     start = time.time()
