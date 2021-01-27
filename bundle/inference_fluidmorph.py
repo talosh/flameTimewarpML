@@ -116,10 +116,10 @@ def three_of_a_perfect_pair(incoming_frame, outgoing_frame, frame_num, ratio, de
     I0_ratio = 0.0
     I1_ratio = 1.0
     
-    if ratio <= I0_ratio:
+    if ratio <= I0_ratio + rthreshold / 2:
         write_buffer.put((frame_num, incoming_frame))
         return
-    if ratio >= I1_ratio:
+    if ratio >= I1_ratio - rthreshold / 2:
         write_buffer.put((frame_num, outgoing_frame))
         return
 

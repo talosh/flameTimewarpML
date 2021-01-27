@@ -113,11 +113,11 @@ def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buf
     I0_ratio = 0.0
     I1_ratio = 1.0
 
-    if ratio <= I0_ratio:
+    if ratio <= I0_ratio + rthreshold / 2:
         I0 = (((I0[0]).cpu().detach().numpy().transpose(1, 2, 0)))
         write_buffer.put((frame_num, I0[:h, :w]))
         return
-    if ratio >= I1_ratio:
+    if ratio >= I1_ratio - rthreshold / 2:
         I1 = (((I1[0]).cpu().detach().numpy().transpose(1, 2, 0)))
         write_buffer.put((frame_num, I1[:h, :w]))
         return
