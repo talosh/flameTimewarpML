@@ -303,7 +303,6 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
     cmd = parser_and_baker + ' -c ' + tw_channel_name
     cmd += ' -s ' + str(intp_start) + ' -e ' + str(intp_end)
     cmd += ' --to-file ' + parsed_and_baked_path + ' ' + xml_path
-    print (cmd)
     os.system(cmd)
 
     if not os.path.isfile(parsed_and_baked_path):
@@ -341,7 +340,6 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
 
     if TW_RetimerMode == 1:
         # job's done for 'Timing' channel
-        pprint (tw_channel)
         return tw_channel
 
     else:
