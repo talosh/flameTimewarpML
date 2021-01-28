@@ -82,23 +82,23 @@ def build_read_buffer(folder, read_buffer, file_list):
         read_buffer.put(frame_data)
     read_buffer.put(None)
 
-def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles = 8, UHD=False):
+def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles = 8, UHD=False, always_interp=False):
     I0_ratio = 0.0
     I1_ratio = 1.0
-    
-    if ratio <= I0_ratio + rthreshold / 2:
-        return I0
-    if ratio >= I1_ratio - rthreshold / 2:
-        return I1
+    rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
+
+    if not always_interp:
+        if ratio <= I0_ratio + rthreshold / 2:
+            return I0
+        if ratio >= I1_ratio - rthreshold / 2:
+            return I1
     # print ('target ratio: %s' % ratio)
     for inference_cycle in range(0, maxcycles):
-        start = time.time()
         middle = model.inference(I0, I1, UHD)
         middle_ratio = ( I0_ratio + I1_ratio ) / 2
-        # pprint (time.time() - start)
-        # pprint ('current ratio: %s' % middle_ratio)
-        if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
-            return middle
+        if not always_interp:
+            if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
+                return middle + (rational_m - torch.mean(middle)).expand_as(middle)
 
         if ratio > middle_ratio:
             I0 = middle
@@ -107,7 +107,8 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles =
             I1 = middle
             I1_ratio = middle_ratio
 
-    return middle
+    return middle + (rational_m - torch.mean(middle)).expand_as(middle)
+
 
 def three_of_a_perfect_pair(incoming_frame, outgoing_frame, frame_num, ratio, device, padding, model, args, h, w, write_buffer):
     # print ('target ratio %s' % ratio)
@@ -130,12 +131,13 @@ def three_of_a_perfect_pair(incoming_frame, outgoing_frame, frame_num, ratio, de
         I0 = F.pad(I0, padding)
         I1 = torch.from_numpy(np.transpose(outgoing_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
         I1 = F.pad(I1, padding)
+        rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
 
         middle = model.inference(I0, I1, args.UHD)
+        middle = middle + (rational_m - torch.mean(middle)).expand_as(middle)
         middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
         middle_ratio = ( I0_ratio + I1_ratio ) / 2
-        # pprint (time.time() - start)
-        # pprint ('current ratio: %s' % middle_ratio)
+        
         if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
             write_buffer.put((frame_num, middle[:h, :w]))
             return
