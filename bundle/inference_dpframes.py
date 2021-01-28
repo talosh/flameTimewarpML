@@ -57,8 +57,6 @@ def clear_write_buffer(args, write_buffer, input_duration, pbar=None):
             break
 
         path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(frame_number))
-        cv2.imwrite(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
-        '''
         try:
             p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
             p.start()
@@ -68,7 +66,6 @@ def clear_write_buffer(args, write_buffer, input_duration, pbar=None):
                 cv2.imwrite(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
             except Exception as e:
                 print ('Error wtiring %s: %s' % (path, e))
-        '''
         if pbar:
             pbar.update(1)
 
@@ -109,29 +106,34 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8
     
     return middle #+ (rational_m - torch.mean(middle)).expand_as(middle)
 
-def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles = 8, UHD=False):
+def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles = 8, UHD=False, always_interp=False):
     device = torch.device("cpu")   
+    torch.set_grad_enabled(False) 
     
     I0_ratio = 0.0
     I1_ratio = 1.0
+    # rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
 
-    if ratio <= I0_ratio + rthreshold / 2:
-        I0 = (((I0[0]).cpu().detach().numpy().transpose(1, 2, 0)))
-        write_buffer.put((frame_num, I0[:h, :w]))
-        return
-    if ratio >= I1_ratio - rthreshold / 2:
-        I1 = (((I1[0]).cpu().detach().numpy().transpose(1, 2, 0)))
-        write_buffer.put((frame_num, I1[:h, :w]))
-        return
+    if not always_interp:
+        if ratio <= I0_ratio + rthreshold / 2:
+            I0 = (((I0[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+            write_buffer.put((frame_num, I0[:h, :w]))
+            return
+        if ratio >= I1_ratio - rthreshold / 2:
+            I1 = (((I1[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+            write_buffer.put((frame_num, I1[:h, :w]))
+            return
     
     for inference_cycle in range(0, maxcycles):
         middle = model.inference(I0, I1, UHD)
         middle_ratio = ( I0_ratio + I1_ratio ) / 2
 
-        if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
-            middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
-            write_buffer.put((frame_num, middle[:h, :w]))
-            return
+        if not always_interp:
+            if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
+                # middle = middle + (rational_m - torch.mean(middle)).expand_as(middle)
+                middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+                write_buffer.put((frame_num, middle[:h, :w]))
+                return
 
         if ratio > middle_ratio:
             middle = middle.detach()
@@ -142,6 +144,7 @@ def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buf
             I1 = middle.to(device, non_blocking=True)
             I1_ratio = middle_ratio
     
+    # middle = middle + (rational_m - torch.mean(middle)).expand_as(middle)
     middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
     write_buffer.put((frame_num, middle[:h, :w]))
     return
@@ -254,8 +257,6 @@ if __name__ == '__main__':
         torch.backends.cudnn.enabled = True
         torch.backends.cudnn.benchmark = True
 
-        # print('scanning for duplicate frames...')
-
         pbar = tqdm(total=input_duration, desc='Total frames', unit='frame')
         pbar_dup = tqdm(total=input_duration, desc='Interpolating', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
 
@@ -312,7 +313,7 @@ if __name__ == '__main__':
         pbar_dup.close()
     
     else:
-        # process on CPU
+        # process on GPU
 
         from model_cpu.RIFE_HD import Model     # type: ignore
         model = Model()
@@ -328,7 +329,7 @@ if __name__ == '__main__':
         padding = (0, pw - w, 0, ph - h)
 
         device = torch.device("cpu")
-        # torch.set_grad_enabled(False)
+        torch.set_grad_enabled(False)
 
         max_cpu_workers = mp.cpu_count() - 2
         available_ram = psutil.virtual_memory()[1]/( 1024 ** 3 )
@@ -347,12 +348,10 @@ if __name__ == '__main__':
         if thread_ram > available_ram:
             print ('Warning: estimated peak memory usage is greater then RAM avaliable')
         
-        # print('scanning for frames to interpolate...')
-
         pbar = tqdm(total=input_duration, desc='Total frames', unit='frame')
         pbar_dup = tqdm(total=input_duration, desc='Interpolating', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
 
-        write_buffer = Queue(maxsize=mp.cpu_count() - 3)
+        write_buffer = mp.Queue(maxsize=mp.cpu_count() - 3)
         _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration, pbar))
 
         IPrevious = None
@@ -426,7 +425,7 @@ if __name__ == '__main__':
 
         pbar.close() # type: ignore
         pbar_dup.close()
-
+        
     for p in IOProcesses:
         p.join(timeout=8)
 
