@@ -44,7 +44,7 @@ def signal_handler(sig, frame):
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
-def clear_write_buffer(args, write_buffer, input_duration):
+def clear_write_buffer(args, write_buffer, input_duration, pbar=None):
     global IOThreadsFlag
     global IOProcesses
 
@@ -53,7 +53,6 @@ def clear_write_buffer(args, write_buffer, input_duration):
                     
         frame_number, image_data = item
         if frame_number == -1:
-            pbar.close() # type: ignore
             IOThreadsFlag = False
             break
 
@@ -67,6 +66,8 @@ def clear_write_buffer(args, write_buffer, input_duration):
                 cv2.imwrite(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
             except Exception as e:
                 print ('Error wtiring %s: %s' % (path, e))
+        if pbar:
+            pbar.update(1)
 
 
 def build_read_buffer(user_args, read_buffer, videogen):
@@ -107,11 +108,11 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8
 
 def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles = 8, UHD=False, always_interp=False):
     device = torch.device("cpu")   
-    torch.set_grad_enabled(False) 
+    # torch.set_grad_enabled(False) 
     
     I0_ratio = 0.0
     I1_ratio = 1.0
-    rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
+    # rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
 
     if not always_interp:
         if ratio <= I0_ratio + rthreshold / 2:
@@ -170,7 +171,7 @@ if __name__ == '__main__':
     if args.remove:
         print('Initializing duplicate frames removal...')
     else:
-        print('Initializing duplicate frames removal...')
+        print('Initializing duplicate frames interpolation...')
 
     img_formats = ['.exr',]
     files_list = []
@@ -209,7 +210,7 @@ if __name__ == '__main__':
 
         print('scanning for duplicate frames...')
         pbar = tqdm(total=input_duration, desc='Total frames  ', unit='frame')
-        pbar_dup = tqdm(total=input_duration, desc='Duplicates    ', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
+        pbar_dup = tqdm(total=input_duration, desc='Removed    ', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
 
         IPrevious = None
         output_frame_num = 1
@@ -227,7 +228,11 @@ if __name__ == '__main__':
             IPrevious = ICurrent
             output_frame_num += 1
 
-        write_buffer.put(None)
+        write_buffer.put((-1, -1))
+
+        while(IOThreadsFlag):
+            time.sleep(0.01)
+
         pbar.close() # type: ignore
         pbar_dup.close()
 
@@ -240,9 +245,6 @@ if __name__ == '__main__':
         model.eval()
         model.device()
         print ('Trained model loaded: %s' % args.model)
-
-        write_buffer = Queue(maxsize=mp.cpu_count() - 3)
-        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
     
         first_image = cv2.imread(os.path.join(args.input, files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
         h, w, _ = first_image.shape
@@ -255,10 +257,13 @@ if __name__ == '__main__':
         torch.backends.cudnn.enabled = True
         torch.backends.cudnn.benchmark = True
 
-        print('scanning for duplicate frames...')
+        # print('scanning for duplicate frames...')
 
         pbar = tqdm(total=input_duration, desc='Total frames', unit='frame')
-        pbar_dup = tqdm(total=input_duration, desc='Duplicates', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
+        pbar_dup = tqdm(total=input_duration, desc='Interpolating', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
+
+        write_buffer = Queue(maxsize=mp.cpu_count() - 3)
+        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration, pbar))
 
         IPrevious = None
         dframes = 0
@@ -266,7 +271,6 @@ if __name__ == '__main__':
 
         for file in files_list:
             current_frame = read_buffer.get()
-            pbar.update(1) # type: ignore
 
             ICurrent = torch.from_numpy(np.transpose(current_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
             if not args.remove:
@@ -288,18 +292,16 @@ if __name__ == '__main__':
                     mid = make_inference_rational(model, IPrevious, ICurrent, ratio, UHD = args.UHD)
                     mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
                     write_buffer.put((output_frame_num, mid[:h, :w]))
-                    
+                    # pbar.update(1) # type: ignore
                     pbar_dup.update(1)
                     output_frame_num += 1
                     ratio += rstep
 
             write_buffer.put((output_frame_num, current_frame))
+            # pbar.update(1) # type: ignore
             IPrevious = ICurrent
             output_frame_num += 1
             dframes = 0
-
-        pbar.close() # type: ignore
-        pbar_dup.close()
 
         # send write loop exit code
         write_buffer.put((-1, -1))
@@ -307,9 +309,13 @@ if __name__ == '__main__':
         # it should put IOThreadsFlag to False it return
         while(IOThreadsFlag):
             time.sleep(0.01)
+
+        # pbar.update(1)
+        pbar.close() # type: ignore
+        pbar_dup.close()
     
     else:
-        # process on GPU
+        # process on CPU
 
         from model_cpu.RIFE_HD import Model     # type: ignore
         model = Model()
@@ -318,9 +324,6 @@ if __name__ == '__main__':
         model.device()
         print ('Trained model loaded: %s' % args.model)
 
-        write_buffer = mp.Queue(maxsize=mp.cpu_count() - 3)
-        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
-
         first_image = cv2.imread(os.path.join(args.input, files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
         h, w, _ = first_image.shape
         ph = ((h - 1) // 64 + 1) * 64
@@ -328,7 +331,7 @@ if __name__ == '__main__':
         padding = (0, pw - w, 0, ph - h)
 
         device = torch.device("cpu")
-        torch.set_grad_enabled(False)
+        # torch.set_grad_enabled(False)
 
         max_cpu_workers = mp.cpu_count() - 2
         available_ram = psutil.virtual_memory()[1]/( 1024 ** 3 )
@@ -347,10 +350,13 @@ if __name__ == '__main__':
         if thread_ram > available_ram:
             print ('Warning: estimated peak memory usage is greater then RAM avaliable')
         
-        print('scanning for duplicate frames...')
+        # print('scanning for frames to interpolate...')
 
         pbar = tqdm(total=input_duration, desc='Total frames', unit='frame')
-        pbar_dup = tqdm(total=input_duration, desc='Interpolated', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
+        pbar_dup = tqdm(total=input_duration, desc='Interpolating', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
+
+        write_buffer = Queue(maxsize=mp.cpu_count() - 3)
+        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration, pbar))
 
         IPrevious = None
         dframes = 0
@@ -359,7 +365,7 @@ if __name__ == '__main__':
 
         for file in files_list:
             current_frame = read_buffer.get()
-            pbar.update(1) # type: ignore
+            # pbar.update(1) # type: ignore
 
             ICurrent = torch.from_numpy(np.transpose(current_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
             ICurrent = F.pad(ICurrent, padding)
@@ -410,9 +416,6 @@ if __name__ == '__main__':
             output_frame_num += 1
             dframes = 0
         
-        pbar.close() # type: ignore
-        pbar_dup.close()
-
         # wait for all active worker threads left to finish                
         for p in active_workers:
             p.join()
@@ -423,7 +426,10 @@ if __name__ == '__main__':
         # it should put IOThreadsFlag to False it return
         while(IOThreadsFlag):
             time.sleep(0.01)
-        
+
+        pbar.close() # type: ignore
+        pbar_dup.close()
+
     for p in IOProcesses:
         p.join(timeout=8)
 
