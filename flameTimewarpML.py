@@ -109,7 +109,7 @@ class flameAppFramework(object):
             self.prefs_folder = os.path.join(
                 os.path.expanduser('~'),
                  'Library',
-                 'Caches',
+                 'Preferences',
                  self.bundle_name)
         elif sys.platform.startswith('linux'):
             self.prefs_folder = os.path.join(
