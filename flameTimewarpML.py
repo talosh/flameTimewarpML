@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.3.0.beta.023'
+__version__ = 'v0.3.0.beta.024'
 
 
 class flameAppFramework(object):
@@ -1877,7 +1877,7 @@ class flameTimewrapML(flameMenuApp):
         
         def effect_message():
             from PySide2 import QtWidgets, QtCore
-            msg = 'Please select clips that have Timewarp Timeline FX with its keyes baked'
+            msg = 'Please select clips with Timewarp Timeline FX'
             mbox = QtWidgets.QMessageBox()
             mbox.setWindowTitle('flameTimewrarpML')
             mbox.setText(msg)
