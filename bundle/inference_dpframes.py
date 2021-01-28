@@ -57,6 +57,8 @@ def clear_write_buffer(args, write_buffer, input_duration, pbar=None):
             break
 
         path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(frame_number))
+        cv2.imwrite(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
+        '''
         try:
             p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
             p.start()
@@ -66,6 +68,7 @@ def clear_write_buffer(args, write_buffer, input_duration, pbar=None):
                 cv2.imwrite(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
             except Exception as e:
                 print ('Error wtiring %s: %s' % (path, e))
+        '''
         if pbar:
             pbar.update(1)
 
@@ -106,34 +109,29 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8
     
     return middle #+ (rational_m - torch.mean(middle)).expand_as(middle)
 
-def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles = 8, UHD=False, always_interp=False):
+def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles = 8, UHD=False):
     device = torch.device("cpu")   
-    # torch.set_grad_enabled(False) 
     
     I0_ratio = 0.0
     I1_ratio = 1.0
-    # rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
 
-    if not always_interp:
-        if ratio <= I0_ratio + rthreshold / 2:
-            I0 = (((I0[0]).cpu().detach().numpy().transpose(1, 2, 0)))
-            write_buffer.put((frame_num, I0[:h, :w]))
-            return
-        if ratio >= I1_ratio - rthreshold / 2:
-            I1 = (((I1[0]).cpu().detach().numpy().transpose(1, 2, 0)))
-            write_buffer.put((frame_num, I1[:h, :w]))
-            return
+    if ratio <= I0_ratio + rthreshold / 2:
+        I0 = (((I0[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+        write_buffer.put((frame_num, I0[:h, :w]))
+        return
+    if ratio >= I1_ratio - rthreshold / 2:
+        I1 = (((I1[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+        write_buffer.put((frame_num, I1[:h, :w]))
+        return
     
     for inference_cycle in range(0, maxcycles):
         middle = model.inference(I0, I1, UHD)
         middle_ratio = ( I0_ratio + I1_ratio ) / 2
 
-        if not always_interp:
-            if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
-                # middle = middle + (rational_m - torch.mean(middle)).expand_as(middle)
-                middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
-                write_buffer.put((frame_num, middle[:h, :w]))
-                return
+        if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
+            middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+            write_buffer.put((frame_num, middle[:h, :w]))
+            return
 
         if ratio > middle_ratio:
             middle = middle.detach()
@@ -144,7 +142,6 @@ def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buf
             I1 = middle.to(device, non_blocking=True)
             I1_ratio = middle_ratio
     
-    # middle = middle + (rational_m - torch.mean(middle)).expand_as(middle)
     middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
     write_buffer.put((frame_num, middle[:h, :w]))
     return
