@@ -307,6 +307,7 @@ if __name__ == '__main__':
 
 
         device = torch.device('cpu')
+        torch.set_grad_enabled(False)
         
         max_cpu_workers = mp.cpu_count() - 2
         available_ram = psutil.virtual_memory()[1]/( 1024 ** 3 )
