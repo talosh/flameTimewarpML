@@ -7,7 +7,6 @@ import torch
 import argparse
 import numpy as np
 from tqdm import tqdm
-from torch import nn
 from torch.nn import functional as F
 import warnings
 import _thread
@@ -19,9 +18,6 @@ import psutil
 import signal
 
 import multiprocessing as mp
-
-import math
-import numbers
 
 
 warnings.filterwarnings("ignore")
@@ -265,7 +261,7 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
     tw_channel_name = 'Speed' if TW_RetimerMode == 0 else 'Timing'
 
     cmd = parser_and_baker + ' -c ' + tw_channel_name
-    cmd += ' -s ' + str(start) + ' -e ' + str(end)
+    # cmd += ' -s ' + str(start) + ' -e ' + str(end)
     cmd += ' --to-file ' + parsed_and_baked_path + ' ' + xml_path
     os.system(cmd)
 
@@ -355,7 +351,10 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
             forward_pass[range_start] = anchor_frame_value
 
             for frame_number in range(range_start + 1, range_end):
-                step = (tw_channel[frame_number] + tw_channel[frame_number + 1]) / 200
+                if frame_number + 1 not in tw_channel.keys():
+                    step = tw_channel[frame_number] / 100
+                else:
+                    step = (tw_channel[frame_number] + tw_channel[frame_number + 1]) / 200
                 forward_pass[frame_number] = anchor_frame_value + step
                 anchor_frame_value = forward_pass[frame_number]
             forward_pass[range_end] = tw_speed_timing[key_frame_index + 1]['value']
