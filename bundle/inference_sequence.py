@@ -64,6 +64,7 @@ def clear_write_buffer(user_args, write_buffer, tot_frame):
             break
         if cnt < new_frames_number:
             path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(cnt))
+            
             try:
                 p = mp.Process(target=cv2.imwrite, args=(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
                 p.start()
