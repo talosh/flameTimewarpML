@@ -94,7 +94,7 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8
 
         if not always_interp:
             if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
-                return middle + (rational_m - torch.mean(middle)).expand_as(middle)
+                return middle #+ (rational_m - torch.mean(middle)).expand_as(middle)
 
         if ratio > middle_ratio:
             I0 = middle
@@ -103,7 +103,7 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8
             I1 = middle
             I1_ratio = middle_ratio
     
-    return middle + (rational_m - torch.mean(middle)).expand_as(middle)
+    return middle #+ (rational_m - torch.mean(middle)).expand_as(middle)
 
 def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles = 8, UHD=False, always_interp=False):
     device = torch.device("cpu")   
@@ -129,7 +129,7 @@ def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buf
 
         if not always_interp:
             if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
-                middle = middle + (rational_m - torch.mean(middle)).expand_as(middle)
+                # middle = middle + (rational_m - torch.mean(middle)).expand_as(middle)
                 middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
                 write_buffer.put((frame_num, middle[:h, :w]))
                 return
@@ -143,7 +143,7 @@ def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buf
             I1 = middle.to(device, non_blocking=True)
             I1_ratio = middle_ratio
     
-    middle = middle + (rational_m - torch.mean(middle)).expand_as(middle)
+    # middle = middle + (rational_m - torch.mean(middle)).expand_as(middle)
     middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
     write_buffer.put((frame_num, middle[:h, :w]))
     return
