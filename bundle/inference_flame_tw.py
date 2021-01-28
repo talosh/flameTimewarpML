@@ -33,7 +33,7 @@ def exeption_handler(exctype, value, tb):
 
     locks = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'locks')
     cmd = 'rm -f ' + locks + '/*'
-    os.system(cmd)
+    # os.system(cmd)
 
     pprint('%s in %s' % (value, exctype))
     pprint(traceback.format_exception(exctype, value, tb))
@@ -258,11 +258,52 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
         xml_file.write(xml_string)
         xml_file.close()
 
+    intp_start = start
+    intp_end = end
+
+    if TW_RetimerMode == 0:
+        tw_speed = {}
+        tw_speed_frames = []
+        TW_Speed = xml.getElementsByTagName('TW_Speed')
+        keys = TW_Speed[0].getElementsByTagName('Key')
+        for key in keys:
+            index = key.getAttribute('Index') 
+            frame = key.getElementsByTagName('Frame')
+            if frame:
+                frame = (frame[0].firstChild.nodeValue)
+            value = key.getElementsByTagName('Value')
+            if value:
+                value = (value[0].firstChild.nodeValue)
+            tw_speed[int(index)] = {'frame': int(frame), 'value': float(value)}
+            tw_speed_frames.append(int(frame))
+
+            intp_start = min(start, min(tw_speed_frames))
+            intp_end = max(end, max(tw_speed_frames))
+    else:
+        tw_timing = {}
+        tw_timing_frames = []
+        TW_Timing = xml.getElementsByTagName('TW_Timing')
+        keys = TW_Timing[0].getElementsByTagName('Key')
+        for key in keys:
+            index = key.getAttribute('Index') 
+            frame = key.getElementsByTagName('Frame')
+            if frame:
+                frame = (frame[0].firstChild.nodeValue)
+            value = key.getElementsByTagName('Value')
+            if value:
+                value = (value[0].firstChild.nodeValue)
+            tw_timing[int(index)] = {'frame': int(frame), 'value': float(value)}
+            tw_timing_frames.append(int(frame))
+
+            intp_start = min(start, min(tw_timing_frames))
+            intp_end = max(end, max(tw_timing_frames))
+
     tw_channel_name = 'Speed' if TW_RetimerMode == 0 else 'Timing'
 
     cmd = parser_and_baker + ' -c ' + tw_channel_name
-    # cmd += ' -s ' + str(start) + ' -e ' + str(end)
+    cmd += ' -s ' + str(intp_start) + ' -e ' + str(intp_end)
     cmd += ' --to-file ' + parsed_and_baked_path + ' ' + xml_path
+    print (cmd)
     os.system(cmd)
 
     if not os.path.isfile(parsed_and_baked_path):
@@ -300,7 +341,7 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
 
     if TW_RetimerMode == 1:
         # job's done for 'Timing' channel
-        
+        pprint (tw_channel)
         return tw_channel
 
     else:
@@ -327,7 +368,10 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
 
             anchor_frame_value = tw_speed_timing[0]['value']
             for frame_number in range(tw_speed_timing[0]['frame'] - 1, start - 1, -1):
-                step_back = (tw_channel[frame_number + 1] + tw_channel[frame_number]) / 200
+                if frame_number + 1 not in tw_channel.keys() or frame_number not in tw_channel.keys():
+                    step_back = tw_channel[min(list(tw_channel.keys()))] / 100
+                else:
+                    step_back = (tw_channel[frame_number + 1] + tw_channel[frame_number]) / 200
                 frame_value_map[frame_number] = anchor_frame_value - step_back
                 anchor_frame_value = frame_value_map[frame_number]
 
@@ -351,8 +395,8 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
             forward_pass[range_start] = anchor_frame_value
 
             for frame_number in range(range_start + 1, range_end):
-                if frame_number + 1 not in tw_channel.keys():
-                    step = tw_channel[frame_number] / 100
+                if frame_number + 1 not in tw_channel.keys() or frame_number not in tw_channel.keys():
+                    step = tw_channel[max(list(tw_channel.keys()))] / 100
                 else:
                     step = (tw_channel[frame_number] + tw_channel[frame_number + 1]) / 200
                 forward_pass[frame_number] = anchor_frame_value + step
@@ -364,7 +408,10 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
             backward_pass[range_end] = anchor_frame_value
             
             for frame_number in range(range_end - 1, range_start -1, -1):
-                step_back = (tw_channel[frame_number + 1] + tw_channel[frame_number]) / 200
+                if frame_number + 1 not in tw_channel.keys() or frame_number not in tw_channel.keys():
+                    step_back = tw_channel[min(list(tw_channel.keys()))] / 100
+                else:
+                    step_back = (tw_channel[frame_number + 1] + tw_channel[frame_number]) / 200
                 backward_pass[frame_number] = anchor_frame_value - step_back
                 anchor_frame_value = backward_pass[frame_number]
             
@@ -394,8 +441,8 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
             frame_value_map[tw_speed_timing[last_key_index]['frame']] = anchor_frame_value
 
             for frame_number in range(tw_speed_timing[last_key_index]['frame'] + 1, end + 1):
-                if frame_number + 1 not in tw_channel.keys():
-                    step = tw_channel[frame_number] / 100
+                if frame_number + 1 not in tw_channel.keys() or frame_number not in tw_channel.keys():
+                    step = tw_channel[max(list(tw_channel.keys()))] / 100
                 else:
                     step = (tw_channel[frame_number] + tw_channel[frame_number + 1]) / 200
                 frame_value_map[frame_number] = anchor_frame_value + step
