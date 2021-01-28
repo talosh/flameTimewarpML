@@ -106,7 +106,8 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8
     return middle + (rational_m - torch.mean(middle)).expand_as(middle)
 
 def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles = 8, UHD=False, always_interp=False):
-    device = torch.device("cpu")    
+    device = torch.device("cpu")   
+    torch.set_grad_enabled(False) 
     
     I0_ratio = 0.0
     I1_ratio = 1.0
@@ -204,6 +205,7 @@ if __name__ == '__main__':
             torch.backends.cudnn.benchmark = True
         else:
             device = torch.device("cpu")
+            torch.set_grad_enabled(False)
 
         print('scanning for duplicate frames...')
         pbar = tqdm(total=input_duration, desc='Total frames  ', unit='frame')
@@ -326,6 +328,7 @@ if __name__ == '__main__':
         padding = (0, pw - w, 0, ph - h)
 
         device = torch.device("cpu")
+        torch.set_grad_enabled(False)
 
         max_cpu_workers = mp.cpu_count() - 2
         available_ram = psutil.virtual_memory()[1]/( 1024 ** 3 )
