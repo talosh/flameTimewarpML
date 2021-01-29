@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby
+#!/usr/bin/env ruby -W0
 # == Synopsis
 # 
 # Extract an animation channel from a Flame setup

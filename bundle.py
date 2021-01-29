@@ -33,24 +33,29 @@ os.system(cmd)
 print ('---\nadding data to python script %s' % python_source)
 
 f = open(bundle_folder + '.tar', 'rb')
-bunle_data = f.read()
+bundle_data = f.read()
 f.close()
 
-encoded_bundle_data = base64.b64encode(bunle_data)
+encoded_bundle_data = base64.b64encode(bundle_data)
+del bundle_data
 
 f = open(bundle_code, 'r')
 bundle_code = f.read()
 f.close()
 
 bundled_code = bundle_code.replace('BUNDLE_PAYLOAD', encoded_bundle_data)
+del encoded_bundle_data
 
 with open('flameTimewarpML.package/flameTimewarpML.py', 'w') as tempfile:
     with open(python_source, 'r') as src:
 #       tempfile.write(src.read())
         tempfile.write(bundled_code)
 
+del bundled_code
+
 # cmd = 'mv tmp.py /opt/Autodesk/shared/python/' + plugin_file_name
 # os.system(cmd)
+
 
 print ('---\nremoving %s' % bundle_folder + '.tar')
 os.remove(bundle_folder + '.tar')
