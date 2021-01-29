@@ -1,0 +1,2 @@
+Use command: pip download -r ../../requirements.txt -d .
+Make sure you run it from Miniconda3 environment
