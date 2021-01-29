@@ -19,8 +19,9 @@ import psutil
 
 import multiprocessing as mp
 
-ThreadsFlag = True
+IOThreadsFlag = True
 IOProcesses = []
+cv2.setNumThreads(1)
 
 # Exception handler
 def exeption_handler(exctype, value, tb):
@@ -39,65 +40,65 @@ sys.excepthook = exeption_handler
 # ctrl+c handler
 import signal
 def signal_handler(sig, frame):
-    global ThreadsFlag
-    ThreadsFlag = False
+    global IOThreadsFlag
+    IOThreadsFlag = False
     time.sleep(0.1)
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
 def clear_write_buffer(folder, write_buffer, tot_frame):
-    global ThreadsFlag
+    global IOThreadsFlag
     global IOProcesses
 
     cnt = 0
     print ('rendering %s frames to %s' % (tot_frame, folder))
     pbar = tqdm(total=tot_frame, unit='frame')
 
-    while ThreadsFlag:
+    while IOThreadsFlag:
         item = write_buffer.get()
                 
-        if item is None:
-            pbar.close() # type: ignore
-            break
-
         frame_number, image_data = item
-
-        if cnt <= tot_frame:
-            path = os.path.join(os.path.abspath(folder), '{:0>7d}.exr'.format(frame_number))
-            p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
-            p.start()
-            IOProcesses.append(p)
+        if frame_number == -1:
+            pbar.close() # type: ignore
+            IOThreadsFlag = False
+            break
         
+        # print ('recieved %s' % frame_number)
+        path = os.path.join(os.path.abspath(folder), '{:0>7d}.exr'.format(frame_number))
+        p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
+        p.start()
+        IOProcesses.append(p)
+
         pbar.update(1) # type: ignore
         cnt += 1
 
 def build_read_buffer(folder, read_buffer, file_list):
-    global ThreadsFlag
+    global IOThreadsFlag
     for frame in file_list:
         path = os.path.join(folder, frame)
         if not os.path.isfile(path):
-            pprint (path)
+            print ('Unable to find file: %s' % path)
         frame_data = cv2.imread(path, cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
         read_buffer.put(frame_data)
     read_buffer.put(None)
 
-def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles = 8, UHD=False):
+def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles = 8, UHD=False, always_interp=False):
     I0_ratio = 0.0
     I1_ratio = 1.0
-    
-    if ratio <= I0_ratio:
-        return I0
-    if ratio >= I1_ratio:
-        return I1
+    rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
+
+    if not always_interp:
+        if ratio <= I0_ratio + rthreshold / 2:
+            return I0
+        if ratio >= I1_ratio - rthreshold / 2:
+            return I1
     # print ('target ratio: %s' % ratio)
     for inference_cycle in range(0, maxcycles):
-        start = time.time()
         middle = model.inference(I0, I1, UHD)
         middle_ratio = ( I0_ratio + I1_ratio ) / 2
-        # pprint (time.time() - start)
-        # pprint ('current ratio: %s' % middle_ratio)
-        if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
-            return middle
+        if not always_interp:
+            if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
+                return middle # + (rational_m - torch.mean(middle)).expand_as(middle)
 
         if ratio > middle_ratio:
             I0 = middle
@@ -106,7 +107,8 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles =
             I1 = middle
             I1_ratio = middle_ratio
 
-    return middle
+    return middle # + (rational_m - torch.mean(middle)).expand_as(middle)
+
 
 def three_of_a_perfect_pair(incoming_frame, outgoing_frame, frame_num, ratio, device, padding, model, args, h, w, write_buffer):
     # print ('target ratio %s' % ratio)
@@ -115,10 +117,10 @@ def three_of_a_perfect_pair(incoming_frame, outgoing_frame, frame_num, ratio, de
     I0_ratio = 0.0
     I1_ratio = 1.0
     
-    if ratio <= I0_ratio:
+    if ratio <= I0_ratio + rthreshold / 2:
         write_buffer.put((frame_num, incoming_frame))
         return
-    if ratio >= I1_ratio:
+    if ratio >= I1_ratio - rthreshold / 2:
         write_buffer.put((frame_num, outgoing_frame))
         return
 
@@ -130,11 +132,13 @@ def three_of_a_perfect_pair(incoming_frame, outgoing_frame, frame_num, ratio, de
         I1 = torch.from_numpy(np.transpose(outgoing_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
         I1 = F.pad(I1, padding)
 
+        # rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
+
         middle = model.inference(I0, I1, args.UHD)
+        # middle = middle + (rational_m - torch.mean(middle)).expand_as(middle)
         middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
         middle_ratio = ( I0_ratio + I1_ratio ) / 2
-        # pprint (time.time() - start)
-        # pprint ('current ratio: %s' % middle_ratio)
+        
         if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
             write_buffer.put((frame_num, middle[:h, :w]))
             return
@@ -245,7 +249,7 @@ if __name__ == '__main__':
         model.load_model(args.model, -1)
         model.eval()
         model.device()
-        print ('AI model loaded: %s' % args.model)
+        print ('Trained model loaded: %s' % args.model)
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if torch.cuda.is_available():
@@ -273,8 +277,12 @@ if __name__ == '__main__':
             
             ratio += rstep
 
-        while(not write_buffer.empty()):
-            time.sleep(0.1)
+        # send write loop exit code
+        write_buffer.put((-1, -1))
+
+        # it should put IOThreadsFlag to False it return
+        while(IOThreadsFlag):
+            time.sleep(0.01)
 
     else:
         # process on CPU(s)
@@ -299,9 +307,10 @@ if __name__ == '__main__':
         model.load_model(args.model, -1)
         model.eval()
         model.device()
-        print ('AI model loaded: %s' % args.model)
+        print ('Trained model loaded: %s' % args.model)
 
         device = torch.device('cpu')
+        torch.set_grad_enabled(False)
         
         max_cpu_workers = mp.cpu_count() - 2
         available_ram = psutil.virtual_memory()[1]/( 1024 ** 3 )
@@ -340,6 +349,7 @@ if __name__ == '__main__':
             incoming_frame = incoming_read_buffer.get()
             outgoing_frame = outgoing_read_buffer.get()
 
+            
             p = mp.Process(target=three_of_a_perfect_pair, args=(incoming_frame, outgoing_frame, frame, ratio, device, padding, model, args, h, w, write_buffer, ))
             p.start()
             active_workers.append(p)
@@ -363,20 +373,16 @@ if __name__ == '__main__':
                 time.sleep(0.01)
             last_thread_time = time.time()
 
-        while len(active_workers):
-            finished_workers = []
-            alive_workers = []
-            for worker in active_workers:
-                if not worker.is_alive():
-                    finished_workers.append(worker)
-                else:
-                    alive_workers.append(worker)
-            active_workers = list(alive_workers)
+        # wait for all active worker threads left to finish                
+        for p in active_workers:
+            p.join()
+
+        # send write loop exit code
+        write_buffer.put((-1, -1))
+
+        # it should put IOThreadsFlag to False it return
+        while(IOThreadsFlag):
             time.sleep(0.01)
-        
-        # cpu_progress_updater.join()
-    
-    ThreadsFlag = False
 
     for p in IOProcesses:
         p.join(timeout=8)
@@ -389,7 +395,8 @@ if __name__ == '__main__':
     lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
     if os.path.isfile(lockfile):
         os.remove(lockfile)
-
+    
     # input("Press Enter to continue...")
+    sys.exit(0)
 
 

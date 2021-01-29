@@ -1,0 +1,145 @@
+<?xml version="1.0"?>
+<Setup>
+  <Base>
+    <Version>7.130000</Version>
+    <NAME>timewarp3</NAME>
+    <Note/>
+    <Expanded>False</Expanded>
+    <ScrollBar>0</ScrollBar>
+    <Frames>0</Frames>
+    <Current_Time>82</Current_Time>
+    <Input_DataType>3</Input_DataType>
+    <ClampMode>0</ClampMode>
+    <AdapDegrad>False</AdapDegrad>
+  </Base>
+  <State>
+    <TW_FlowQuality>4</TW_FlowQuality>
+    <TW_DoBlur>False</TW_DoBlur>
+    <TW_BlurPhase>0</TW_BlurPhase>
+    <TW_DoBlurReference>False</TW_DoBlurReference>
+    <TW_BlurRefColor>
+      <R>1.000000</R>
+      <G>0.000000</G>
+      <B>0.000000</B>
+      <A>1.000000</A>
+    </TW_BlurRefColor>
+    <TW_FrameMode>0</TW_FrameMode>
+    <TW_SamplingMode>0</TW_SamplingMode>
+    <TW_StartFrameIn>1</TW_StartFrameIn>
+    <TW_EndFrameIn>102.0</TW_EndFrameIn>
+    <TW_RenderMode>0</TW_RenderMode>
+    <TW_ReverseCurves>False</TW_ReverseCurves>
+    <TW_HeadMode>0</TW_HeadMode>
+    <TW_TailMode>0</TW_TailMode>
+    <TW_Regen>False</TW_Regen>
+    <TW_RetimerMode>1</TW_RetimerMode>
+    <TW_ReferencePointX>
+      <Channel Name="X"/>
+    </TW_ReferencePointX>
+    <TW_ReferencePointY>
+      <Channel Name="Y"/>
+    </TW_ReferencePointY>
+    <TW_Speed>
+      <Channel Name="Speed">
+        <Extrap>constant</Extrap>
+        <Value>100</Value>
+        <Size>1</Size>
+        <KeyVersion>2.000000</KeyVersion>
+        <KFrames>
+          <Key Index="0">
+            <Frame>1.000000</Frame>
+            <Value>100</Value>
+            <RHandleX>1.297667</RHandleX>
+            <RHandleY>100.000000</RHandleY>
+            <LHandleX>0.750000</LHandleX>
+            <LHandleY>100.000000</LHandleY>
+            <CurveMode>hermite</CurveMode>
+            <CurveOrder>linear</CurveOrder>
+          </Key>
+        </KFrames>
+      </Channel>
+    </TW_Speed>
+    <TW_SpeedTiming>
+      <Channel Name="SpeedTiming">
+        <Extrap>linear</Extrap>
+        <Value>1</Value>
+        <KeyVersion>2.000000</KeyVersion>
+        <Size>1</Size>
+        <KFrames>
+          <Key Index="0">
+            <Frame>1.000000</Frame>
+            <Value>1</Value>
+            <RHandleX>1.250000</RHandleX>
+            <RHandleY>1.250000</RHandleY>
+            <LHandleX>0.750000</LHandleX>
+            <LHandleY>0.750000</LHandleY>
+            <CurveMode>hermite</CurveMode>
+            <CurveOrder>quadratic</CurveOrder>
+            <RAutoSlope>False</RAutoSlope>
+            <LAutoSlope>False</LAutoSlope>
+            <TangentMode>manual</TangentMode>
+          </Key>
+        </KFrames>
+      </Channel>
+    </TW_SpeedTiming>
+    <TW_Timing>
+      <Channel Name="Timing">
+        <Extrap>linear</Extrap>
+        <Value>15.0</Value>
+        <Size>3</Size>
+        <KeyVersion>2.000000</KeyVersion>
+        <KFrames>
+          <Key Index="0">
+  <Frame>1</Frame>
+  <Value>15.0</Value>
+  <RHandleX>32.666668</RHandleX>
+  <RHandleY>36.319729</RHandleY>
+  <LHandleX>16.333334</LHandleX>
+  <LHandleY>14.986395</LHandleY>
+  <CurveMode>hermite</CurveMode>
+  <CurveOrder>linear</CurveOrder>
+</Key><Key Index="1">
+  <Frame>15</Frame>
+  <Value>50.0</Value>
+  <RHandleX>32.666668</RHandleX>
+  <RHandleY>36.319729</RHandleY>
+  <LHandleX>16.333334</LHandleX>
+  <LHandleY>14.986395</LHandleY>
+  <CurveMode>hermite</CurveMode>
+  <CurveOrder>linear</CurveOrder>
+</Key><Key Index="2">
+  <Frame>19</Frame>
+  <Value>102.0</Value>
+  <RHandleX>32.666668</RHandleX>
+  <RHandleY>36.319729</RHandleY>
+  <LHandleX>16.333334</LHandleX>
+  <LHandleY>14.986395</LHandleY>
+  <CurveMode>hermite</CurveMode>
+  <CurveOrder>linear</CurveOrder>
+</Key>
+        </KFrames>
+      </Channel>
+    </TW_Timing>
+    <TW_BlurSamplesChannel>
+      <Channel Name="Samples"/>
+    </TW_BlurSamplesChannel>
+    <TW_BlurShutterChannel>
+      <Channel Name="Shutter"/>
+    </TW_BlurShutterChannel>
+    <TW_Mix>
+      <Channel Name="MixAmount"/>
+    </TW_Mix>
+    <TW_PreTrail>
+      <Channel Name="Pre"/>
+    </TW_PreTrail>
+    <TW_PreWeight>
+      <Channel Name="Pre"/>
+    </TW_PreWeight>
+    <TW_PostTrail>
+      <Channel Name="Post"/>
+    </TW_PostTrail>
+    <TW_PostWeight>
+      <Channel Name="Post"/>
+    </TW_PostWeight>
+  </State>
+</Setup>
