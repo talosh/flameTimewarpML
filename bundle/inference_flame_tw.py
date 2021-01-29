@@ -113,6 +113,7 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles=5, 
 
 def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles=8, UHD=False, always_interp=False):
     device = torch.device("cpu")
+    torch.set_grad_enabled(False)
 
     I0_ratio = 0.0
     I1_ratio = 1.0
@@ -196,7 +197,12 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
 
     TW_RetimerMode = int(tw_setup['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
     parsed_and_baked_path = os.path.join(os.path.dirname(args.setup), 'parsed_and_baked.txt')
-    parser_and_baker = os.path.join(os.path.dirname(__file__), 'flame_channel_parser', 'bin', 'bake_flame_channel')
+
+    if sys.platform == 'darwin':
+        parser_and_baker = os.path.join(os.path.dirname(__file__), 'flame_channel_parser', 'bin', 'bake_flame_channel_mac')
+    else:
+        parser_and_baker = os.path.join(os.path.dirname(__file__), 'flame_channel_parser', 'bin', 'bake_flame_channel')
+
 
     if TW_SpeedTiming_size == 1 and TW_RetimerMode == 0:
         # just constant speed change with no keyframes set       
@@ -584,6 +590,8 @@ if __name__ == '__main__':
         padding = (0, pw - w, 0, ph - h)
 
         device = torch.device('cpu')
+        torch.set_grad_enabled(False)
+
 
         max_cpu_workers = mp.cpu_count() - 2
         available_ram = psutil.virtual_memory()[1]/( 1024 ** 3 )
