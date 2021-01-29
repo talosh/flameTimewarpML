@@ -21,6 +21,7 @@ import multiprocessing as mp
 
 ThreadsFlag = True
 IOProcesses = []
+cv2.setNumThreads(1)
 
 # Exception handler
 def exeption_handler(exctype, value, tb):
@@ -63,9 +64,16 @@ def clear_write_buffer(user_args, write_buffer, tot_frame):
             break
         if cnt < new_frames_number:
             path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(cnt))
-            p = mp.Process(target=cv2.imwrite, args=(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
-            p.start()
-            IOProcesses.append(p)
+            
+            try:
+                p = mp.Process(target=cv2.imwrite, args=(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
+                p.start()
+                IOProcesses.append(p)
+            except:
+                try:
+                    cv2.imwrite(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
+                except Exception as e:
+                    print ('Error wtiring %s: %s' % (path, e))
         
         pbar.update(1) # type: ignore
         cnt += 1
@@ -249,7 +257,7 @@ if __name__ == '__main__':
         model.load_model(args.model, -1)
         model.eval()
         model.device()
-        print ('AI model loaded: %s' % args.model)
+        print ('Trained model loaded: %s' % args.model)
 
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -296,10 +304,11 @@ if __name__ == '__main__':
         model.load_model(args.model, -1)
         model.eval()
         model.device()
-        print ('AI model loaded: %s' % args.model)
+        print ('Trained model loaded: %s' % args.model)
 
 
         device = torch.device('cpu')
+        torch.set_grad_enabled(False)
         
         max_cpu_workers = mp.cpu_count() - 2
         available_ram = psutil.virtual_memory()[1]/( 1024 ** 3 )
@@ -374,7 +383,8 @@ if __name__ == '__main__':
     lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
     if os.path.isfile(lockfile):
         os.remove(lockfile)
-
+    
     # input("Press Enter to continue...")
+    sys.exit()
 
 

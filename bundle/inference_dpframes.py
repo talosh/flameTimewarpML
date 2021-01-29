@@ -17,8 +17,9 @@ import psutil
 
 import multiprocessing as mp
 
-ThreadsFlag = True
+IOThreadsFlag = True
 IOProcesses = []
+cv2.setNumThreads(1)
 
 # Exception handler
 def exeption_handler(exctype, value, tb):
@@ -37,54 +38,64 @@ sys.excepthook = exeption_handler
 # ctrl+c handler
 import signal
 def signal_handler(sig, frame):
-    global ThreadsFlag
-    ThreadsFlag = False
+    global IOThreadsFlag
+    IOThreadsFlag = False
     time.sleep(0.1)
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
-def clear_write_buffer(args, write_buffer, input_duration):
-    global ThreadsFlag
+def clear_write_buffer(args, write_buffer, input_duration, pbar=None):
+    global IOThreadsFlag
     global IOProcesses
 
-    cnt = 0
-    while ThreadsFlag:
+    while IOThreadsFlag:
         item = write_buffer.get()
-            
-        if item is None:
+                    
+        frame_number, image_data = item
+        if frame_number == -1:
+            IOThreadsFlag = False
             break
 
-        path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(cnt))
-        p = mp.Process(target=cv2.imwrite, args=(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
-        # p.daemon = True
-        p.start()
-        IOProcesses.append(p)
-        cnt += 1
+        path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(frame_number))
+        try:
+            p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
+            p.start()
+            IOProcesses.append(p)
+        except:
+            try:
+                cv2.imwrite(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
+            except Exception as e:
+                print ('Error wtiring %s: %s' % (path, e))
+        if pbar:
+            pbar.update(1)
 
-    
+
 def build_read_buffer(user_args, read_buffer, videogen):
-    global ThreadsFlag
+    global IOThreadsFlag
 
     for frame in videogen:
         frame_data = cv2.imread(os.path.join(user_args.input, frame), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
         read_buffer.put(frame_data)
     read_buffer.put(None)
 
-def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8, UHD=False):
+def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8, UHD=False, always_interp=False):
     I0_ratio = 0.0
     I1_ratio = 1.0
+    rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
     
-    if ratio <= I0_ratio:
-        return I0
-    if ratio >= I1_ratio:
-        return I1
+    if not always_interp:
+        if ratio <= I0_ratio + rthreshold / 2:
+            return I0
+        if ratio >= I1_ratio - rthreshold / 2:
+            return I1
     
     for inference_cycle in range(0, maxcycles):
         middle = model.inference(I0, I1, UHD)
         middle_ratio = ( I0_ratio + I1_ratio ) / 2
 
-        if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
-            return middle
+        if not always_interp:
+            if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
+                return middle #+ (rational_m - torch.mean(middle)).expand_as(middle)
 
         if ratio > middle_ratio:
             I0 = middle
@@ -93,7 +104,50 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8
             I1 = middle
             I1_ratio = middle_ratio
     
-    return middle
+    return middle #+ (rational_m - torch.mean(middle)).expand_as(middle)
+
+def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles = 8, UHD=False, always_interp=False):
+    device = torch.device("cpu")   
+    torch.set_grad_enabled(False) 
+    
+    I0_ratio = 0.0
+    I1_ratio = 1.0
+    # rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
+
+    if not always_interp:
+        if ratio <= I0_ratio + rthreshold / 2:
+            I0 = (((I0[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+            write_buffer.put((frame_num, I0[:h, :w]))
+            return
+        if ratio >= I1_ratio - rthreshold / 2:
+            I1 = (((I1[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+            write_buffer.put((frame_num, I1[:h, :w]))
+            return
+    
+    for inference_cycle in range(0, maxcycles):
+        middle = model.inference(I0, I1, UHD)
+        middle_ratio = ( I0_ratio + I1_ratio ) / 2
+
+        if not always_interp:
+            if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
+                # middle = middle + (rational_m - torch.mean(middle)).expand_as(middle)
+                middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+                write_buffer.put((frame_num, middle[:h, :w]))
+                return
+
+        if ratio > middle_ratio:
+            middle = middle.detach()
+            I0 = middle.to(device, non_blocking=True)
+            I0_ratio = middle_ratio
+        else:
+            middle = middle.detach()
+            I1 = middle.to(device, non_blocking=True)
+            I1_ratio = middle_ratio
+    
+    # middle = middle + (rational_m - torch.mean(middle)).expand_as(middle)
+    middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+    write_buffer.put((frame_num, middle[:h, :w]))
+    return
 
 if __name__ == '__main__':
     start = time.time()
@@ -117,7 +171,7 @@ if __name__ == '__main__':
     if args.remove:
         print('Initializing duplicate frames removal...')
     else:
-        print('Initializing duplicate frames removal...')
+        print('Initializing duplicate frames interpolation...')
 
     img_formats = ['.exr',]
     files_list = []
@@ -137,26 +191,60 @@ if __name__ == '__main__':
         os.makedirs(output_folder)
 
     files_list.sort()
-    write_buffer = Queue(maxsize=mp.cpu_count() - 3)
-    read_buffer = Queue(maxsize=500)
+
+    read_buffer = Queue(maxsize=444)
     _thread.start_new_thread(build_read_buffer, (args, read_buffer, files_list))
-    _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
 
-    if not args.remove:
+    if args.remove:
+        write_buffer = Queue(maxsize=mp.cpu_count() - 3)
+        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
+
         if torch.cuda.is_available() and not args.cpu:
-            from model.RIFE_HD import Model     # type: ignore
-            model = Model()
-            model.load_model(args.model, -1)
-            model.eval()
-            model.device()
+            device = torch.device("cuda")
+            torch.set_grad_enabled(False)
+            torch.backends.cudnn.enabled = True
+            torch.backends.cudnn.benchmark = True
         else:
-            from model_cpu.RIFE_HD import Model     # type: ignore
-            model = Model()
-            model.load_model(args.model, -1)
-            model.eval()
-            model.device()
+            device = torch.device("cpu")
+            torch.set_grad_enabled(False)
 
-        print ('AI model loaded: %s' % args.model)
+        print('scanning for duplicate frames...')
+        pbar = tqdm(total=input_duration, desc='Total frames  ', unit='frame')
+        pbar_dup = tqdm(total=input_duration, desc='Removed    ', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
+
+        IPrevious = None
+        output_frame_num = 1
+        for file in files_list:
+            current_frame = read_buffer.get()
+            pbar.update(1) # type: ignore
+            ICurrent = torch.from_numpy(np.transpose(current_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+            if type(IPrevious) is not type(None):
+                diff = (F.interpolate(ICurrent,scale_factor=0.5, mode='bicubic', align_corners=False)
+                    - F.interpolate(IPrevious, scale_factor=0.5, mode='bicubic', align_corners=False)).abs()
+                if diff.max() < 2e-3:
+                    pbar_dup.update(1)
+                    continue
+            write_buffer.put((output_frame_num, current_frame))
+            IPrevious = ICurrent
+            output_frame_num += 1
+
+        write_buffer.put((-1, -1))
+
+        while(IOThreadsFlag):
+            time.sleep(0.01)
+
+        pbar.close() # type: ignore
+        pbar_dup.close()
+
+    elif torch.cuda.is_available() and not args.cpu:
+        # Process on GPU
+
+        from model.RIFE_HD import Model     # type: ignore
+        model = Model()
+        model.load_model(args.model, -1)
+        model.eval()
+        model.device()
+        print ('Trained model loaded: %s' % args.model)
     
         first_image = cv2.imread(os.path.join(args.input, files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
         h, w, _ = first_image.shape
@@ -164,62 +252,180 @@ if __name__ == '__main__':
         pw = ((w - 1) // 64 + 1) * 64
         padding = (0, pw - w, 0, ph - h)
     
-    if torch.cuda.is_available() and not args.cpu:
         device = torch.device("cuda")
         torch.set_grad_enabled(False)
         torch.backends.cudnn.enabled = True
         torch.backends.cudnn.benchmark = True
+
+        pbar = tqdm(total=input_duration, desc='Total frames', unit='frame')
+        pbar_dup = tqdm(total=input_duration, desc='Interpolating', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
+
+        write_buffer = Queue(maxsize=mp.cpu_count() - 3)
+        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration, pbar))
+
+        IPrevious = None
+        dframes = 0
+        output_frame_num = 1
+
+        for file in files_list:
+            current_frame = read_buffer.get()
+
+            ICurrent = torch.from_numpy(np.transpose(current_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+            if not args.remove:
+                ICurrent = F.pad(ICurrent, padding)
+
+            if type(IPrevious) is not type(None):
+                
+                diff = (F.interpolate(ICurrent,scale_factor=0.5, mode='bicubic', align_corners=False)
+                        - F.interpolate(IPrevious, scale_factor=0.5, mode='bicubic', align_corners=False)).abs()
+
+                if diff.max() < 2e-3:
+                    dframes += 1
+                    continue
+            
+            if dframes and not args.remove:
+                rstep = 1 / ( dframes + 1 )
+                ratio = rstep
+                for dframe in range(0, dframes):
+                    mid = make_inference_rational(model, IPrevious, ICurrent, ratio, UHD = args.UHD)
+                    mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
+                    write_buffer.put((output_frame_num, mid[:h, :w]))
+                    # pbar.update(1) # type: ignore
+                    pbar_dup.update(1)
+                    output_frame_num += 1
+                    ratio += rstep
+
+            write_buffer.put((output_frame_num, current_frame))
+            # pbar.update(1) # type: ignore
+            IPrevious = ICurrent
+            output_frame_num += 1
+            dframes = 0
+
+        # send write loop exit code
+        write_buffer.put((-1, -1))
+
+        # it should put IOThreadsFlag to False it return
+        while(IOThreadsFlag):
+            time.sleep(0.01)
+
+        # pbar.update(1)
+        pbar.close() # type: ignore
+        pbar_dup.close()
+    
     else:
+        # process on GPU
+
+        from model_cpu.RIFE_HD import Model     # type: ignore
+        model = Model()
+        model.load_model(args.model, -1)
+        model.eval()
+        model.device()
+        print ('Trained model loaded: %s' % args.model)
+
+        first_image = cv2.imread(os.path.join(args.input, files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+        h, w, _ = first_image.shape
+        ph = ((h - 1) // 64 + 1) * 64
+        pw = ((w - 1) // 64 + 1) * 64
+        padding = (0, pw - w, 0, ph - h)
+
         device = torch.device("cpu")
+        torch.set_grad_enabled(False)
 
-    print('scanning for duplicate frames...')
+        max_cpu_workers = mp.cpu_count() - 2
+        available_ram = psutil.virtual_memory()[1]/( 1024 ** 3 )
+        megapixels = ( h * w ) / ( 10 ** 6 )
+        thread_ram = megapixels * 2.4
+        sim_workers = round( available_ram / thread_ram )
+        if sim_workers < 1:
+            sim_workers = 1
+        elif sim_workers > max_cpu_workers:
+            sim_workers = max_cpu_workers
 
-    pbar = tqdm(total=input_duration, desc='Total frames', unit='frame')
-    pbar_dup = tqdm(total=input_duration, desc='Duplicates', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
+        print ('---\nFree RAM: %s Gb available' % '{0:.1f}'.format(available_ram))
+        print ('Image size: %s x %s' % ( w, h,))
+        print ('Peak memory usage estimation: %s Gb per CPU thread ' % '{0:.1f}'.format(thread_ram))
+        print ('Using %s CPU worker thread%s (of %s available)\n---' % (sim_workers, '' if sim_workers == 1 else 's', mp.cpu_count()))
+        if thread_ram > available_ram:
+            print ('Warning: estimated peak memory usage is greater then RAM avaliable')
+        
+        pbar = tqdm(total=input_duration, desc='Total frames', unit='frame')
+        pbar_dup = tqdm(total=input_duration, desc='Interpolating', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
 
-    IPrevious = None
-    dframes = 0
-    for file in files_list:
-        current_frame = read_buffer.get()
-        pbar.update(1) # type: ignore
+        write_buffer = mp.Queue(maxsize=mp.cpu_count() - 3)
+        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration, pbar))
 
-        ICurrent = torch.from_numpy(np.transpose(current_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
-        if not args.remove:
+        IPrevious = None
+        dframes = 0
+        output_frame_num = 1
+        active_workers = []
+
+        for file in files_list:
+            current_frame = read_buffer.get()
+            # pbar.update(1) # type: ignore
+
+            ICurrent = torch.from_numpy(np.transpose(current_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
             ICurrent = F.pad(ICurrent, padding)
 
-        if type(IPrevious) is not type(None):
+            if type(IPrevious) is not type(None):
+                
+                diff = (F.interpolate(ICurrent,scale_factor=0.5, mode='bicubic', align_corners=False)
+                        - F.interpolate(IPrevious, scale_factor=0.5, mode='bicubic', align_corners=False)).abs()
+
+                if diff.max() < 2e-3:
+                    dframes += 1
+                    continue
             
-            diff = (F.interpolate(ICurrent,scale_factor=0.5, mode='bicubic', align_corners=False)
-                    - F.interpolate(IPrevious, scale_factor=0.5, mode='bicubic', align_corners=False)).abs()
+            if dframes:
+                rstep = 1 / ( dframes + 1 )
+                ratio = rstep
+                last_thread_time = time.time()
+                for dframe in range(dframes):
+                    p = mp.Process(target=make_inference_rational_cpu, args=(model, IPrevious, ICurrent, ratio, output_frame_num, w, h, write_buffer), kwargs = {'UHD': args.UHD})
+                    p.start()
+                    active_workers.append(p)
 
-            if diff.max() < 2e-3:
-                pbar_dup.update(1)
-                dframes += 1
-                continue
+                    if (time.time() - last_thread_time) < (thread_ram / 8):
+                        if sim_workers > 1:
+                            time.sleep(thread_ram/8)
+
+                    while len(active_workers) >= sim_workers:
+                        finished_workers = []
+                        alive_workers = []
+                        for worker in active_workers:
+                            if not worker.is_alive():
+                                finished_workers.append(worker)
+                            else:
+                                alive_workers.append(worker)
+                        active_workers = list(alive_workers)
+                        time.sleep(0.01)
+                    last_thread_time = time.time()
+
+                    # mid = (((ICurrent[0]).cpu().detach().numpy().transpose(1, 2, 0)))
+                    # write_buffer.put((output_frame_num, mid[:h, :w]))
+                    pbar_dup.update(1)
+                    output_frame_num += 1
+                    ratio += rstep
+
+            write_buffer.put((output_frame_num, current_frame))
+
+            IPrevious = ICurrent
+            output_frame_num += 1
+            dframes = 0
         
-        if dframes and not args.remove:
-            # start = time.time()
-            rstep = 1 / ( dframes + 1 )
-            ratio = rstep
-            for dframe in range(0, dframes):
-                mid = make_inference_rational(model, IPrevious, ICurrent, ratio, UHD = args.UHD)
-                if sys.platform == 'darwin' or args.cpu:
-                    mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
-                else:
-                    mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
-                write_buffer.put(mid[:h, :w])
-                # pprint ('ratio: %s, %s' % (ratio, time.time() - start))
-                ratio += rstep
+        # wait for all active worker threads left to finish                
+        for p in active_workers:
+            p.join()
 
-        write_buffer.put(current_frame)
-        IPrevious = ICurrent
-        dframes = 0
-    
-    write_buffer.put(None)
-    ThreadsFlag = False
-    pbar.close() # type: ignore
-    pbar_dup.close()
+        # send write loop exit code
+        write_buffer.put((-1, -1))
 
+        # it should put IOThreadsFlag to False it return
+        while(IOThreadsFlag):
+            time.sleep(0.01)
+
+        pbar.close() # type: ignore
+        pbar_dup.close()
+        
     for p in IOProcesses:
         p.join(timeout=8)
 
@@ -231,3 +437,6 @@ if __name__ == '__main__':
     lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
     if os.path.isfile(lockfile):
         os.remove(lockfile)
+    
+    # input("Press Enter to continue...")
+    sys.exit(0)

@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+# == Synopsis
+# 
+# Shows a list of animation channels in the given Flame setup file
+#
+# == Usage
+# 
+#   flame_channel_inspect /usr/discreet/projects/Luxury/timewarp/shot2_tw.timewarp
+#
+# == Author
+#   Julik <me@julik.nl>
+
+require File.expand_path(File.dirname(__FILE__)) + '/../lib/flame_channel_parser'
+require File.expand_path(File.dirname(__FILE__)) + '/../lib/update_hints'
+require 'rubygems'
+
+setup_path = ARGV.shift
+fail "No input file path provided." unless setup_path
+fail "File does not exist." unless File.exist?(setup_path)
+
+parser = FlameChannelParser::Parser.new
+File.open(setup_path, "r") do | f |
+  channels = parser.parse(f)
+  tree = FlameChannelParser::Inspector.new(channels)
+  tree.pretty_print
+end
