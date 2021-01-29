@@ -10,6 +10,9 @@ Based on arXiv2020-RIFE, original implementation: https://github.com/hzwer/arXiv
   year={2020}
 }
 ```
+Flame's animation curve reader from:
+https://github.com/guerilla-di/flame_channel_parser
+
 ## Installation
 
 * Download latest release from [Releases](https://github.com/talosh/flameTimewarpML/releases) page
