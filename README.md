@@ -10,7 +10,7 @@ Based on arXiv2020-RIFE, original implementation: https://github.com/hzwer/arXiv
   year={2020}
 }
 ```
-Flame's animation curve reader from Julik Tarkhanov:
+Flame's animation curve interpolation code from Julik Tarkhanov:
 https://github.com/guerilla-di/flame_channel_parser
 
 ## Installation
