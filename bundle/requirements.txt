@@ -2,6 +2,7 @@ numpy
 tqdm
 sk-video
 torch
+tensorboard
 opencv-python
 moviepy
 psutil
