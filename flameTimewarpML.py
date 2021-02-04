@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.3.0'
+__version__ = 'v0.3.1.beta.002'
 
 
 class flameAppFramework(object):
@@ -127,18 +127,20 @@ class flameAppFramework(object):
 
         # preferences defaults
 
-        # if not self.prefs_global.get('bundle_location'):
-        if sys.platform == 'darwin':
-            self.bundle_location = os.path.join(
-                os.path.expanduser('~'),
-                'Documents',
-                self.bundle_name)
+        if not self.prefs_global.get('bundle_location'):
+            if sys.platform == 'darwin':
+                self.bundle_location = os.path.join(
+                    os.path.expanduser('~'),
+                    'Documents',
+                    self.bundle_name)
+            else:
+                self.bundle_location = os.path.join(
+                    os.path.expanduser('~'),
+                    self.bundle_name)
+            self.prefs_global['bundle_location'] = self.bundle_location
+        
         else:
-            self.bundle_location = os.path.join(
-                os.path.expanduser('~'),
-                self.bundle_name)
-        # else:
-        #    self.bundle_location = self.prefs_global.get('bundle_location')
+            self.bundle_location = self.prefs_global.get('bundle_location')
 
         #    self.prefs_global['menu_auto_refresh'] = {
         #        'media_panel': True,
@@ -164,7 +166,7 @@ class flameAppFramework(object):
                 else:
                     self.log('existing env bundle id does not match current one')
 
-        if self.show_unpack_message(bundle_path):
+        if self.show_unpack_dialog(bundle_path):
             # unpack bundle sequence
             self.unpacking_thread = threading.Thread(target=self.unpack_bundle, args=(bundle_path, ))
             self.unpacking_thread.daemon = True
@@ -467,11 +469,94 @@ class flameAppFramework(object):
         flame.schedule_idle_event(show_error_mbox)
         return True
 
-    def show_unpack_message(self, bundle_path):
-        from PySide2 import QtWidgets
+    def show_unpack_dialog(self, bundle_path):
+        from PySide2 import QtWidgets, QtCore
 
-        msg = 'flameTimeWarpML %s is going to unpack its bundle\n' % __version__
-        msg += 'in background and run additional package scrips. Check console for details.'
+        msg = 'flameTimeWarpML %s\nis going to unpack its bundle' % __version__
+        msg += ' and run additional package scrips.\nCheck console for details.'
+
+        window = QtWidgets.QDialog()
+        window.setMinimumSize(280, 120)
+        window.setWindowTitle('Slow down clip(s) with ML')
+        window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
+        window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        window.setStyleSheet('background-color: #313131')
+
+        screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
+
+        # Spacer
+        lbl_Spacer = QtWidgets.QLabel('', window)
+        lbl_Spacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
+        lbl_Spacer.setMinimumHeight(4)
+        lbl_Spacer.setMaximumHeight(4)
+        lbl_Spacer.setAlignment(QtCore.Qt.AlignCenter)
+
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.setAlignment(QtCore.Qt.AlignTop)
+
+        # Unpack Bundle Message
+
+        lbl_UnpackMessage = QtWidgets.QLabel(msg, window)
+        lbl_UnpackMessage.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_UnpackMessage.setMinimumHeight(48)
+        lbl_UnpackMessage.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_UnpackMessage)
+        vbox.addWidget(lbl_Spacer)
+
+        def chooseFolder():
+            result_folder = str(QtWidgets.QFileDialog.getExistingDirectory(
+                window, 
+                "Open Directory", 
+                self.prefs_global.get('bundle_location'), 
+                QtWidgets.QFileDialog.ShowDirsOnly))
+
+            if result_folder =='':
+                return
+            self.prefs_global['bundle_location'] = result_folder
+        #    txt_WorkFolder.setText(self.working_folder)
+        #    self.prefs['working_folder'] = self.working_folder
+
+        # Unpack, Location and Cancel Buttons
+        hbox_Create = QtWidgets.QHBoxLayout()
+
+        select_btn = QtWidgets.QPushButton('Unpack', window)
+        select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        select_btn.setMinimumSize(128, 28)
+        select_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        select_btn.clicked.connect(window.accept)
+        select_btn.setAutoDefault(True)
+        select_btn.setDefault(True)
+
+        cancel_btn = QtWidgets.QPushButton('Cancel', window)
+        cancel_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        cancel_btn.setMinimumSize(128, 28)
+        cancel_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        cancel_btn.clicked.connect(window.reject)
+
+        dest_btn = QtWidgets.QPushButton('Choose Dest', window)
+        dest_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        dest_btn.setMinimumSize(128, 28)
+        dest_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        dest_btn.clicked.connect(chooseFolder)
+
+        hbox_Create.addWidget(cancel_btn)
+        hbox_Create.addWidget(dest_btn)
+        hbox_Create.addWidget(select_btn)
+
+        vbox.addLayout(hbox_Create)
+
+        window.setLayout(vbox)
+
+        if window.exec_():
+            return True
+        else:
+            return False
+
+        '''
         dmsg = 'flameTimeWarpML needs Python3 environment that is newer then the one provided with Flame '
         dmsg += 'as well as some additional ML and computer-vision dependancies like PyTorch and OpenCV. '
         dmsg += 'flameTimeWarpML is going to unpack its bundle into "%s" ' % self.bundle_location
@@ -490,6 +575,7 @@ class flameAppFramework(object):
             return False
         else:
             return True
+        '''
 
     def show_complete_message(self, bundle_path):
         from PySide2 import QtWidgets
@@ -732,22 +818,19 @@ class flameTimewrapML(flameMenuApp):
 
         if not self.prefs.master.get(self.name):
             self.prefs['working_folder'] = '/var/tmp'
-            self.prefs['trained_models_group'] = 'default'
-            self.prefs['trained_model_name'] = 'v1.8'
             self.prefs['slowmo_uhd'] = False
             self.prefs['dedup_uhd'] = False
             self.prefs['fluidmorph_uhd'] = True
 
-        # if not self.prefs_global.master.get(self.name):
-        #    self.prefs_global['linux_hold_konsole'] = True
+        if not 'trained_models_folder' in self.prefs.keys():
+            self.prefs['trained_models_folder'] = os.path.join(
+                self.framework.bundle_location,
+                'bundle', 'trained_models', 'default', 'v1.8.model'
+                )
 
         self.working_folder = self.prefs['working_folder']
         if not os.path.isdir(self.working_folder):
             self.working_folder = '/var/tmp'
-
-        self.trained_models_folder = 'trained_models'
-        self.trained_models_group = self.prefs.get('trained_models_group', 'default')
-        self.trained_model_name = self.prefs.get('trained_model_name', 'v1.8')
 
         # Module defaults
         self.new_speed = 1
@@ -862,6 +945,7 @@ class flameTimewrapML(flameMenuApp):
                     cmd = 'export OMP_NUM_THREADS=1; python3 '
                 cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_sequence.py')
                 cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder
+                cmd += ' --model ' + self.prefs.get('trained_models_folder')
                 cmd += ' --exp=' + str(speed)
                 if self.cpu:
                     cmd += ' --cpu'
@@ -1100,8 +1184,12 @@ class flameTimewrapML(flameMenuApp):
 
         vbox.addLayout(hbox_workfolder)
 
-
         vbox.addWidget(lbl_Spacer)
+
+        self.dialog_model_path(window, vbox)
+        
+        vbox.addWidget(lbl_Spacer)
+
 
         '''
         # MODEL label
@@ -2268,6 +2356,79 @@ class flameTimewrapML(flameMenuApp):
             }
         else:
             return {}
+
+    def dialog_model_path(self,  window, vbox):
+        from PySide2 import QtWidgets, QtCore
+
+        # Trained Model Path label
+
+        lbl_WorkFolder = QtWidgets.QLabel('Trained Model', window)
+        lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_WorkFolder.setMinimumHeight(28)
+        lbl_WorkFolder.setMaximumHeight(28)
+        lbl_WorkFolder.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_WorkFolder)
+
+        # Trained Model Path Text Field
+
+        hbox_trainedmodelfolder = QtWidgets.QHBoxLayout()
+        hbox_trainedmodelfolder.setAlignment(QtCore.Qt.AlignLeft)
+
+        def show_missing_model_files(model_files):
+            msg = 'One of the modules files not found. Make sure %s are in folder' % pformat(model_files)
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText(msg)
+            mbox.exec_()
+
+        def chooseFolder():
+            dialog = QtWidgets.QFileDialog(window)
+            dialog.setWindowTitle('Select any of Trained Model pkl files')
+            dialog.setNameFilter('PKL files (*.pkl)')
+            dialog.setFileMode(QtWidgets.QFileDialog.ExistingFiles)
+            dialog.setDirectory(self.prefs.get('trained_models_folder'))
+            if dialog.exec_() == QtWidgets.QDialog.Accepted:
+                file_names = dialog.selectedFiles()
+                if file_names:
+                    result_folder = os.path.dirname(file_names[0])
+                else:
+                    return
+            
+            model_files = [
+                'contextnet.pkl',
+                'flownet.pkl',
+                'unet.pkl'
+            ]
+            
+            for model_file in model_files:
+                model_file_path = os.path.join(result_folder, model_file)
+                if not os.path.isfile(model_file_path):
+                    show_missing_model_files(model_files)
+                    return
+
+            txt_TrainedModelFolder.setText(result_folder)
+            self.prefs['trained_models_folder'] = result_folder
+    
+        def txt_TrainedModelFolder_textChanged():
+            self.prefs['trained_models_folder'] = txt_TrainedModelFolder.text()
+    
+        txt_TrainedModelFolder = QtWidgets.QLineEdit('', window)
+        txt_TrainedModelFolder.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_TrainedModelFolder.setMinimumSize(280, 28)
+        txt_TrainedModelFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+        txt_TrainedModelFolder.setText(self.prefs.get('trained_models_folder'))
+        txt_TrainedModelFolder.textChanged.connect(txt_TrainedModelFolder_textChanged)
+        hbox_trainedmodelfolder.addWidget(txt_TrainedModelFolder)
+
+        btn_changePreset = QtWidgets.QPushButton('Choose', window)
+        btn_changePreset.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_changePreset.setMinimumSize(88, 28)
+        btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                   'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        btn_changePreset.clicked.connect(chooseFolder)
+        hbox_trainedmodelfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
+
+        vbox.addLayout(hbox_trainedmodelfolder)
 
     def export_clip(self, clip, export_dir, export_preset = None):
         import flame
