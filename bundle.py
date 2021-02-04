@@ -18,6 +18,8 @@ plugin_file_name = os.path.basename(pligin_dirname) + '.py'
 python_source = os.path.join(pligin_dirname, plugin_file_name)
 bundle_folder = 'bundle'
 bundle_code = 'flameTimewarpML.py'
+dest_dir = os.path.join(pligin_dirname, 'flameTimewarpML.package')
+dest_file = os.path.join(dest_dir, bundle_code)
 
 if not os.path.isdir(bundle_folder):
     print('no folder named %s' % bundle_folder)
@@ -46,7 +48,10 @@ f.close()
 bundled_code = bundle_code.replace('BUNDLE_PAYLOAD', encoded_bundle_data)
 del encoded_bundle_data
 
-with open('flameTimewarpML.package/flameTimewarpML.py', 'w') as tempfile:
+if not os.path.isdir(dest_dir):
+    os.makedirs(dest_dir)
+
+with open(dest_file, 'w') as tempfile:
     with open(python_source, 'r') as src:
 #       tempfile.write(src.read())
         tempfile.write(bundled_code)

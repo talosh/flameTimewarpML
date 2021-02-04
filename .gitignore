@@ -2,6 +2,7 @@
 miniconda3
 bundle/miniconda.package/Miniconda*
 bundle/miniconda.package/packages/*
+!bundle/miniconda.package/packages/README
 settings.json
 *.pyc
 *.exr
