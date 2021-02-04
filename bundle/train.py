@@ -8,7 +8,7 @@ import random
 import argparse
 import torch.distributed as dist
 
-from model.RIFE import Model
+from model.RIFE_HD import Model
 from dataset import *
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
@@ -65,13 +65,13 @@ def train(model, local_rank):
             pred, merged_img, flow, loss_l1, loss_flow, loss_cons, loss_ter, flow_mask = model.update(imgs, gt, learning_rate, mul, True, flow_gt)
             train_time_interval = time.time() - time_stamp
             time_stamp = time.time()
-            if step % 100 == 1 and local_rank == 0:
+            if step % 10 == 1 and local_rank == 0:
                 writer.add_scalar('learning_rate', learning_rate, step)
                 writer.add_scalar('loss_l1', loss_l1, step)
                 writer.add_scalar('loss_flow', loss_flow, step)
                 writer.add_scalar('loss_cons', loss_cons, step)
                 writer.add_scalar('loss_ter', loss_ter, step)
-            if step % 1000 == 1 and local_rank == 0:
+            if step % 10 == 1 and local_rank == 0:
                 gt = (gt.permute(0, 2, 3, 1).detach().cpu().numpy() * 255).astype('uint8')
                 pred = (pred.permute(0, 2, 3, 1).detach().cpu().numpy() * 255).astype('uint8')
                 merged_img = (merged_img.permute(0, 2, 3, 1).detach().cpu().numpy() * 255).astype('uint8')
@@ -141,6 +141,7 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', default=16, type=int, help='minibatch size')
     parser.add_argument('--local_rank', default=0, type=int, help='local rank')
     parser.add_argument('--world_size', default=4, type=int, help='world size')
+    parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v1.8.model')
     args = parser.parse_args()
     torch.distributed.init_process_group(backend="nccl", world_size=args.world_size)
     torch.cuda.set_device(args.local_rank)
@@ -152,5 +153,6 @@ if __name__ == "__main__":
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.benchmark = True
     model = Model(args.local_rank)
+    model.load_model(args.model, args.local_rank)
     train(model, args.local_rank)
         
