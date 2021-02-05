@@ -472,12 +472,14 @@ class flameAppFramework(object):
     def show_unpack_dialog(self, bundle_path):
         from PySide2 import QtWidgets, QtCore
 
-        msg = 'flameTimeWarpML %s\nis going to unpack its bundle' % __version__
-        msg += ' and run additional package scrips.\nCheck console for details.'
+        title = 'flameTimeWarpML %s ' % __version__
+        msg = title + 'is going to unpack its bundle '
+        msg += 'and run additional package installation scrips. '
+        msg += 'Check console for details.'
 
         window = QtWidgets.QDialog()
         window.setMinimumSize(280, 120)
-        window.setWindowTitle('Slow down clip(s) with ML')
+        window.setWindowTitle(title)
         window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
         window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         window.setStyleSheet('background-color: #313131')
@@ -501,20 +503,33 @@ class flameAppFramework(object):
         lbl_UnpackMessage.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
         lbl_UnpackMessage.setMinimumHeight(48)
         lbl_UnpackMessage.setAlignment(QtCore.Qt.AlignCenter)
+        lbl_UnpackMessage.setWordWrap(True)
         vbox.addWidget(lbl_UnpackMessage)
+        vbox.addWidget(lbl_Spacer)
+
+        # Unpack Path Label
+
+        lbl_UnpackPath = QtWidgets.QLabel(
+            self.bundle_location, 
+            window
+            )
+        lbl_UnpackPath.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_UnpackPath.setMinimumHeight(28)
+        lbl_UnpackPath.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_UnpackPath)
         vbox.addWidget(lbl_Spacer)
 
         def chooseFolder():
             result_folder = str(QtWidgets.QFileDialog.getExistingDirectory(
                 window, 
                 "Open Directory", 
-                self.prefs_global.get('bundle_location'), 
+                self.bundle_location, 
                 QtWidgets.QFileDialog.ShowDirsOnly))
 
             if result_folder =='':
                 return
-            self.prefs_global['bundle_location'] = result_folder
-        #    txt_WorkFolder.setText(self.working_folder)
+            self.bundle_location = result_folder
+            lbl_UnpackPath.setText(self.bundle_location)
         #    self.prefs['working_folder'] = self.working_folder
 
         # Unpack, Location and Cancel Buttons
@@ -552,6 +567,7 @@ class flameAppFramework(object):
         window.setLayout(vbox)
 
         if window.exec_():
+            self.prefs_global['bundle_location'] = self.bundle_location
             return True
         else:
             return False
