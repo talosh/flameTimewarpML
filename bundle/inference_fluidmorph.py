@@ -9,7 +9,6 @@ from torch.nn import functional as F
 import warnings
 import _thread
 import threading
-import skvideo.io
 from queue import Queue, Empty
 warnings.filterwarnings("ignore")
 
@@ -162,7 +161,7 @@ if __name__ == '__main__':
     parser.add_argument('--incoming', dest='incoming', type=str, default=None)
     parser.add_argument('--outgoing', dest='outgoing', type=str, default=None)
     parser.add_argument('--output', dest='output', type=str, default=None)
-    parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v1.8.model')
+    parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v2.0.model')
     parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
     parser.add_argument('--cpu', dest='cpu', action='store_true', help='process only on CPU(s)')
     parser.add_argument('--curve', dest='curve', type=int, default=1, help='1 - linear, 2 - smooth')
@@ -244,7 +243,10 @@ if __name__ == '__main__':
         _thread.start_new_thread(build_read_buffer, (args.incoming, incoming_read_buffer, incoming_files_list))
         _thread.start_new_thread(build_read_buffer, (args.outgoing, outgoing_read_buffer, outgoing_files_list))
 
-        from model.RIFE_HD import Model     # type: ignore
+        if 'v1.8.model' in args.model:
+            from model.RIFE_HD import Model     # type: ignore
+        else:
+            from model.RIFE_HDv2 import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()
@@ -302,7 +304,10 @@ if __name__ == '__main__':
         _thread.start_new_thread(build_read_buffer, (args.incoming, incoming_read_buffer, incoming_files_list))
         _thread.start_new_thread(build_read_buffer, (args.outgoing, outgoing_read_buffer, outgoing_files_list))
 
-        from model_cpu.RIFE_HD import Model     # type: ignore
+        if 'v1.8.model' in args.model:
+            from model_cpu.RIFE_HD import Model     # type: ignore
+        else:
+            from model_cpu.RIFE_HDv2 import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()

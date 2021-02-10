@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.3.0'
+__version__ = 'v0.4.0.beta.009'
 
 
 class flameAppFramework(object):
@@ -127,18 +127,20 @@ class flameAppFramework(object):
 
         # preferences defaults
 
-        # if not self.prefs_global.get('bundle_location'):
-        if sys.platform == 'darwin':
-            self.bundle_location = os.path.join(
-                os.path.expanduser('~'),
-                'Documents',
-                self.bundle_name)
+        if not self.prefs_global.get('bundle_location'):
+            if sys.platform == 'darwin':
+                self.bundle_location = os.path.join(
+                    os.path.expanduser('~'),
+                    'Documents',
+                    self.bundle_name)
+            else:
+                self.bundle_location = os.path.join(
+                    os.path.expanduser('~'),
+                    self.bundle_name)
+            self.prefs_global['bundle_location'] = self.bundle_location
+        
         else:
-            self.bundle_location = os.path.join(
-                os.path.expanduser('~'),
-                self.bundle_name)
-        # else:
-        #    self.bundle_location = self.prefs_global.get('bundle_location')
+            self.bundle_location = self.prefs_global.get('bundle_location')
 
         #    self.prefs_global['menu_auto_refresh'] = {
         #        'media_panel': True,
@@ -164,7 +166,13 @@ class flameAppFramework(object):
                 else:
                     self.log('existing env bundle id does not match current one')
 
-        if self.show_unpack_message(bundle_path):
+        self.install_miniconda_libs = True
+        if self.show_unpack_dialog(bundle_path):
+            # bundle location is subject to change
+            self.bundle_location = self.prefs_global.get('bundle_location')
+            bundle_path = os.path.join(self.bundle_location, 'bundle')
+            self.bundle_path = bundle_path
+
             # unpack bundle sequence
             self.unpacking_thread = threading.Thread(target=self.unpack_bundle, args=(bundle_path, ))
             self.unpacking_thread.daemon = True
@@ -277,16 +285,28 @@ class flameAppFramework(object):
         script_file_name += '.py'
         self.log('script file: %s' % script_file_name)
         script = None
+        payload = None
 
         try:
-            with open(script_file_name, 'r') as scriptfile:
+            with open(script_file_name, 'r+') as scriptfile:
                 script = scriptfile.read()
+                start_position = script.rfind('# bundle payload starts here')
+                
+                if script[start_position -1: start_position] != '\n':
+                    self.show_turncated_message()
+                    scriptfile.close()
+                    return False
+
+                start_position += 33
+                payload = script[start_position:-4]
+                scriptfile.truncate(start_position - 34)
                 scriptfile.close()
         except Exception as e:
             self.show_exception(e)
             return False
         
-        if not script:
+        del script
+        if not payload:
             return False
         
         logfile = None
@@ -305,13 +325,13 @@ class flameAppFramework(object):
             log_cmd = """konsole --caption flameTimewarpML -e /bin/bash -c 'trap exit SIGINT SIGTERM; tail -f """ + os.path.abspath(logfile_path) +"; sleep 2'"
             os.system(log_cmd)
             
-        self.log('bundle_id: %s size %sMb' % (self.bundle_id, len(script)//(1024 ** 2)), logfile)
+        self.log('bundle_id: %s size %sMb' % (self.bundle_id, len(payload)//(1024 ** 2)), logfile)
         
         if os.path.isdir(bundle_path):
             bundle_backup_folder = os.path.abspath(bundle_path + '.previous')
             if os.path.isdir(bundle_backup_folder):
                 try:
-                    cmd = 'rm -rf ' + os.path.abspath(bundle_backup_folder)
+                    cmd = 'rm -rf "' + os.path.abspath(bundle_backup_folder) + '"'
                     self.log('removing previous backup folder', logfile)
                     self.log('Executing command: %s' % cmd, logfile)
                     os.system(cmd)
@@ -319,7 +339,7 @@ class flameAppFramework(object):
                     self.show_exception(e)
                     return False
             try:
-                cmd = 'mv ' + os.path.abspath(bundle_path) + ' ' + bundle_backup_folder
+                cmd = 'mv "' + os.path.abspath(bundle_path) + '" "' + bundle_backup_folder + '"'
                 self.log('backing up existing bundle folder', logfile)
                 self.log('Executing command: %s' % cmd, logfile)
                 os.system(cmd)
@@ -334,8 +354,6 @@ class flameAppFramework(object):
             self.show_exception(e)
             return False
 
-        start_position = script.rfind('# bundle payload starts here') + 33
-        payload = script[start_position:-4]
         payload_dest = os.path.join(self.bundle_location, 'bundle.tar')
         
         try:
@@ -344,7 +362,7 @@ class flameAppFramework(object):
             with open(payload_dest, 'wb') as payload_file:
                 payload_file.write(base64.b64decode(payload))
                 payload_file.close()
-            cmd = 'tar xf ' + payload_dest + ' -C ' + self.bundle_location + '/'
+            cmd = 'tar xf "' + payload_dest + '" -C "' + self.bundle_location + '/"'
             self.log('Executing command: %s' % cmd, logfile)
             status = os.system(cmd)
             self.log('exit status %s' % os.WEXITSTATUS(status), logfile)
@@ -359,15 +377,15 @@ class flameAppFramework(object):
         self.log('extracting bundle took %s sec' % str(delta), logfile)
 
         del payload
-        del script
 
-        env_folder = os.path.join(self.bundle_location, 'miniconda3') 
-        self.install_env(env_folder, logfile)
-        self.install_env_packages(env_folder, logfile)
+        env_folder = os.path.join(self.bundle_location, 'miniconda3')
+        if self.install_miniconda_libs:
+            self.install_env(env_folder, logfile)
+            self.install_env_packages(env_folder, logfile)
 
-        cmd = 'rm -rf ' + os.path.join(self.bundle_location, 'bundle', 'miniconda.package')
-        self.log('Executing command: %s' % cmd, logfile)
-        os.system(cmd)
+            cmd = 'rm -rf "' + os.path.join(self.bundle_location, 'bundle', 'miniconda.package') + '"'
+            self.log('Executing command: %s' % cmd, logfile)
+            os.system(cmd)
 
         try:
             with open(os.path.join(bundle_path, 'bundle_id'), 'w+') as bundle_id_file:
@@ -376,8 +394,10 @@ class flameAppFramework(object):
             self.show_exception(e)
             return False
         
-
-        self.log('flameTimewarpML has finished installing its bundle and required packages', logfile)
+        if self.install_miniconda_libs:
+            self.log('flameTimewarpML has finished unpacking its bundle and installing required packages', logfile)
+        else:
+            self.log('flameTimewarpML has finished unpacking its bundle', logfile)
 
         try:
             logfile.close()
@@ -393,7 +413,7 @@ class flameAppFramework(object):
         env_backup_folder = os.path.abspath(env_folder + '.previous')
         if os.path.isdir(env_backup_folder):
             try:
-                cmd = 'rm -rf ' + env_backup_folder
+                cmd = 'rm -rf "' + env_backup_folder + '"'
                 self.log('Executing command: %s' % cmd, logfile)
                 os.system(cmd)
             except Exception as e:
@@ -402,7 +422,7 @@ class flameAppFramework(object):
             
         if os.path.isdir(env_folder):
             try:
-                cmd = 'mv ' + env_folder + ' ' + env_backup_folder
+                cmd = 'mv "' + env_folder + '" "' + env_backup_folder + '"'
                 self.log('Executing command: %s' % cmd, logfile)
                 os.system(cmd)
             except Exception as e:
@@ -418,7 +438,7 @@ class flameAppFramework(object):
         else:
             installer_file = os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'Miniconda3-latest-Linux-x86_64.sh')
 
-        cmd = '/bin/sh ' + installer_file + ' -b -p ' + env_folder
+        cmd = '/bin/sh "' + installer_file + '" -b -p "' + env_folder + '"'
         cmd += ' 2>&1 | tee > ' + os.path.join(self.bundle_location, 'miniconda_install.log')
         self.log('Executing command: %s' % cmd, logfile)
         status = os.system(cmd)
@@ -467,29 +487,145 @@ class flameAppFramework(object):
         flame.schedule_idle_event(show_error_mbox)
         return True
 
-    def show_unpack_message(self, bundle_path):
-        from PySide2 import QtWidgets
+    def show_unpack_dialog(self, bundle_path):
+        from PySide2 import QtWidgets, QtCore
 
-        msg = 'flameTimeWarpML %s is going to unpack its bundle\n' % __version__
-        msg += 'in background and run additional package scrips. Check console for details.'
-        dmsg = 'flameTimeWarpML needs Python3 environment that is newer then the one provided with Flame '
-        dmsg += 'as well as some additional ML and computer-vision dependancies like PyTorch and OpenCV. '
-        dmsg += 'flameTimeWarpML is going to unpack its bundle into "%s" ' % self.bundle_location
-        dmsg += 'and then it will create there Miniconda3 installation with additional packages needed'
+        title = 'flameTimeWarpML %s ' % __version__
+        msg = title + 'is going to unpack its bundle '
+        msg += 'and run additional package installation scrips. '
+        msg += 'Check console for details.'
 
-        mbox = QtWidgets.QMessageBox()
-        mbox.setWindowTitle('flameTimewrarpML')
-        mbox.setText(msg)
-        mbox.setDetailedText(dmsg)
-        mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
-        mbox.setStyleSheet('QLabel{min-width: 444px;}')
-        btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
-        btn_Continue.setText('Continue')
-        mbox.exec_()
-        if mbox.clickedButton() == mbox.button(QtWidgets.QMessageBox.Cancel):
-            return False
-        else:
+        window = QtWidgets.QDialog()
+        window.setMinimumSize(280, 120)
+        window.setWindowTitle(title)
+        window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
+        window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        window.setStyleSheet('background-color: #313131')
+
+        screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
+
+        # Spacer
+        lbl_Spacer = QtWidgets.QLabel('', window)
+        lbl_Spacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
+        lbl_Spacer.setMinimumHeight(4)
+        lbl_Spacer.setMaximumHeight(4)
+        lbl_Spacer.setAlignment(QtCore.Qt.AlignCenter)
+
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.setAlignment(QtCore.Qt.AlignTop)
+
+        # Unpack Bundle Message
+
+        lbl_UnpackMessage = QtWidgets.QLabel(msg, window)
+        lbl_UnpackMessage.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_UnpackMessage.setMinimumHeight(48)
+        lbl_UnpackMessage.setAlignment(QtCore.Qt.AlignCenter)
+        lbl_UnpackMessage.setWordWrap(True)
+        vbox.addWidget(lbl_UnpackMessage)
+
+        # Install Miniconda and Libs checkbox
+        def toggle_install_miniconda():
+            self.install_miniconda_libs = chk_InstallMinicondaLibs.isChecked()
+
+        chk_InstallMinicondaLibs = QtWidgets.QCheckBox(
+            ' Install Miniconda3 and dependency libraries',
+            window
+        )
+        chk_InstallMinicondaLibs.setStyleSheet('QCheckBox {border: none; color: #989898; background-color: #313131}')
+        chk_InstallMinicondaLibs.setMinimumHeight(28)
+        chk_InstallMinicondaLibs.setFocusPolicy(QtCore.Qt.NoFocus)
+        chk_InstallMinicondaLibs.setCheckState(QtCore.Qt.Checked)
+        chk_InstallMinicondaLibs.stateChanged.connect(toggle_install_miniconda)
+        vbox.addWidget(chk_InstallMinicondaLibs, alignment = QtCore.Qt.AlignCenter)
+
+        # Spaces in Path label
+        lbl_SpacesInPath = QtWidgets.QLabel(
+            'Can not install if path contain spaces:', 
+            window
+            )
+        lbl_SpacesInPath.setStyleSheet('QFrame {color: #989898; background-color: #373941}')
+        lbl_SpacesInPath.setMinimumHeight(28)
+        lbl_SpacesInPath.setAlignment(QtCore.Qt.AlignCenter)
+        lbl_SpacesInPath.setVisible(False)
+        vbox.addWidget(lbl_SpacesInPath)
+
+        # Unpack Path Label
+
+        lbl_UnpackPath = QtWidgets.QLabel(
+            self.bundle_location, 
+            window
+            )
+        lbl_UnpackPath.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_UnpackPath.setMinimumHeight(28)
+        lbl_UnpackPath.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_UnpackPath)
+        vbox.addWidget(lbl_Spacer)
+
+        def chooseFolder():
+            result_folder = str(QtWidgets.QFileDialog.getExistingDirectory(
+                window, 
+                "Open Directory", 
+                self.bundle_location, 
+                QtWidgets.QFileDialog.ShowDirsOnly))
+
+            if result_folder =='':
+                return
+
+            if ' ' in result_folder:
+                lbl_SpacesInPath.setVisible(True)
+                window.adjustSize()
+            else:
+                lbl_SpacesInPath.setVisible(False)
+                window.adjustSize()
+            
+            self.bundle_location = result_folder
+            lbl_UnpackPath.setText(self.bundle_location)
+        #    self.prefs['working_folder'] = self.working_folder
+
+        # Unpack, Location and Cancel Buttons
+        hbox_Create = QtWidgets.QHBoxLayout()
+
+        select_btn = QtWidgets.QPushButton('Unpack', window)
+        select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        select_btn.setMinimumSize(128, 28)
+        select_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        select_btn.clicked.connect(window.accept)
+        select_btn.setAutoDefault(True)
+        select_btn.setDefault(True)
+
+        cancel_btn = QtWidgets.QPushButton('Cancel', window)
+        cancel_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        cancel_btn.setMinimumSize(128, 28)
+        cancel_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        cancel_btn.clicked.connect(window.reject)
+
+        dest_btn = QtWidgets.QPushButton('Choose Dest', window)
+        dest_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        dest_btn.setMinimumSize(128, 28)
+        dest_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        dest_btn.clicked.connect(chooseFolder)
+
+        hbox_Create.addWidget(cancel_btn)
+        hbox_Create.addWidget(dest_btn)
+        hbox_Create.addWidget(select_btn)
+
+        vbox.addLayout(hbox_Create)
+
+        window.setLayout(vbox)
+
+        if window.exec_():
+            if ' ' in self.bundle_location:
+                self.show_install_spaces_message()
+                return False
+            self.prefs_global['bundle_location'] = self.bundle_location
+            self.save_prefs()
             return True
+        else:
+            return False
 
     def show_complete_message(self, bundle_path):
         from PySide2 import QtWidgets
@@ -510,7 +646,7 @@ class flameAppFramework(object):
             print (dmsg)
             return False
         
-        def show_error_mbox():
+        def show_mbox():
             mbox = QtWidgets.QMessageBox()
             mbox.setWindowTitle('flameTimewrarpML')
             mbox.setText(msg)
@@ -518,7 +654,62 @@ class flameAppFramework(object):
             # mbox.setStyleSheet('QLabel{min-width: 400px;}')
             mbox.exec_()
 
-        flame.schedule_idle_event(show_error_mbox)
+        flame.schedule_idle_event(show_mbox)
+        return True
+
+    def show_turncated_message(self):
+        from PySide2 import QtWidgets
+
+        script_file_name, ext = os.path.splitext(os.path.abspath(__file__))
+        script_file_name += '.py'
+
+        msg = 'flameTimewarpML bundle payload has already been turncated during previous install.'
+        msg += ' Please copy the original file and start again.'
+        msg += ' Script file location:\n%s' % script_file_name
+
+        try:
+            import flame
+        except:
+            print (msg)
+            print (dmsg)
+            return False
+        
+        def show_mbox():
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText(msg)
+            # mbox.setDetailedText(dmsg)
+            # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+            mbox.exec_()
+
+        flame.schedule_idle_event(show_mbox)
+        return True
+
+    def show_install_spaces_message(self):
+        from PySide2 import QtWidgets, QtCore
+
+        script_file_name, ext = os.path.splitext(os.path.abspath(__file__))
+        script_file_name += '.py'
+
+        msg = 'Cannot install if path contain spaces. Install dialog will appear again once you restart Flame'
+
+        try:
+            import flame
+        except:
+            print (msg)
+            print (dmsg)
+            return False
+        
+        def show_mbox():
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText(msg)
+            mbox.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
+            # mbox.setDetailedText(dmsg)
+            # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+            mbox.exec_()
+
+        flame.schedule_idle_event(show_mbox)
         return True
 
 
@@ -732,22 +923,19 @@ class flameTimewrapML(flameMenuApp):
 
         if not self.prefs.master.get(self.name):
             self.prefs['working_folder'] = '/var/tmp'
-            self.prefs['trained_models_group'] = 'default'
-            self.prefs['trained_model_name'] = 'v1.8'
             self.prefs['slowmo_uhd'] = False
             self.prefs['dedup_uhd'] = False
             self.prefs['fluidmorph_uhd'] = True
 
-        # if not self.prefs_global.master.get(self.name):
-        #    self.prefs_global['linux_hold_konsole'] = True
+        if not 'trained_models_folder' in self.prefs.keys():
+            self.prefs['trained_models_folder'] = os.path.join(
+                self.framework.bundle_location,
+                'bundle', 'trained_models', 'default', 'v2.0.model'
+                )
 
         self.working_folder = self.prefs['working_folder']
         if not os.path.isdir(self.working_folder):
             self.working_folder = '/var/tmp'
-
-        self.trained_models_folder = 'trained_models'
-        self.trained_models_group = self.prefs.get('trained_models_group', 'default')
-        self.trained_model_name = self.prefs.get('trained_model_name', 'v1.8')
 
         # Module defaults
         self.new_speed = 1
@@ -862,6 +1050,7 @@ class flameTimewrapML(flameMenuApp):
                     cmd = 'export OMP_NUM_THREADS=1; python3 '
                 cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_sequence.py')
                 cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder
+                # cmd += ' --model ' + self.prefs.get('trained_models_folder')
                 cmd += ' --exp=' + str(speed)
                 if self.cpu:
                     cmd += ' --cpu'
@@ -1100,8 +1289,12 @@ class flameTimewrapML(flameMenuApp):
 
         vbox.addLayout(hbox_workfolder)
 
-
         vbox.addWidget(lbl_Spacer)
+
+        # self.dialog_model_path(window, vbox)
+        
+        # vbox.addWidget(lbl_Spacer)
+
 
         '''
         # MODEL label
@@ -2269,6 +2462,104 @@ class flameTimewrapML(flameMenuApp):
         else:
             return {}
 
+    def dialog_model_path(self,  window, vbox):
+        from PySide2 import QtWidgets, QtCore
+
+        # Trained Model Path label
+
+        lbl_WorkFolder = QtWidgets.QLabel('Trained Model', window)
+        lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_WorkFolder.setMinimumHeight(28)
+        lbl_WorkFolder.setMaximumHeight(28)
+        lbl_WorkFolder.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_WorkFolder)
+
+        # Trained Model Path Text Field
+
+        hbox_trainedmodelfolder = QtWidgets.QHBoxLayout()
+        hbox_trainedmodelfolder.setAlignment(QtCore.Qt.AlignLeft)
+
+        def show_missing_model_files(model_files):
+            msg = 'One of the modules files not found. Make sure %s are in folder' % pformat(model_files)
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText(msg)
+            mbox.exec_()
+
+        def chooseFolder():
+            dialog = QtWidgets.QFileDialog(window)
+            dialog.setWindowTitle('Select any of Trained Model pkl files')
+            dialog.setNameFilter('PKL files (*.pkl)')
+            dialog.setFileMode(QtWidgets.QFileDialog.ExistingFiles)
+            dialog.setDirectory(self.prefs.get('trained_models_folder'))
+            if dialog.exec_() == QtWidgets.QDialog.Accepted:
+                file_names = dialog.selectedFiles()
+                if file_names:
+                    result_folder = os.path.dirname(file_names[0])
+                else:
+                    return
+            
+            model_files = [
+                'contextnet.pkl',
+                'flownet.pkl',
+                'unet.pkl'
+            ]
+            
+            for model_file in model_files:
+                model_file_path = os.path.join(result_folder, model_file)
+                if not os.path.isfile(model_file_path):
+                    show_missing_model_files(model_files)
+                    return
+
+            txt_TrainedModelFolder.setText(result_folder)
+            self.prefs['trained_models_folder'] = result_folder
+    
+        def txt_TrainedModelFolder_textChanged():
+            self.prefs['trained_models_folder'] = txt_TrainedModelFolder.text()
+    
+        txt_TrainedModelFolder = QtWidgets.QLineEdit('', window)
+        txt_TrainedModelFolder.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_TrainedModelFolder.setMinimumSize(280, 28)
+        txt_TrainedModelFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+        txt_TrainedModelFolder.setText(self.prefs.get('trained_models_folder'))
+        txt_TrainedModelFolder.textChanged.connect(txt_TrainedModelFolder_textChanged)
+        hbox_trainedmodelfolder.addWidget(txt_TrainedModelFolder)
+
+        btn_changePreset = QtWidgets.QPushButton('Choose', window)
+        btn_changePreset.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_changePreset.setMinimumSize(88, 28)
+        btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                   'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        btn_changePreset.clicked.connect(chooseFolder)
+        hbox_trainedmodelfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
+
+        vbox.addLayout(hbox_trainedmodelfolder)
+
+    def dialog_model_selector(self, window, layout):
+        model_map [
+            '',
+            ''
+        ]
+        # Model Selector Button
+        btn_ModelSelector = QtWidgets.QPushButton(window)
+        btn_ModelSelector.setText(self.new_speed_list.get(self.new_speed))
+        def selectNewSpeed(new_speed_id):
+            self.new_speed = new_speed_id
+            btn_NewSpeedSelector.setText(self.new_speed_list.get(self.new_speed))
+        btn_NewSpeedSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_NewSpeedSelector.setMinimumSize(80, 28)
+        btn_NewSpeedSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_NewSpeedSelector_menu = QtWidgets.QMenu()
+
+        for new_speed_id in sorted(self.new_speed_list.keys()):
+            code = self.new_speed_list.get(new_speed_id, '1/2')
+            action = btn_NewSpeedSelector_menu.addAction(code)
+            action.triggered[()].connect(lambda new_speed_id=new_speed_id: selectNewSpeed(new_speed_id))
+        btn_NewSpeedSelector.setMenu(btn_NewSpeedSelector_menu)
+        new_speed_hbox.addWidget(btn_NewSpeedSelector)        
+
     def export_clip(self, clip, export_dir, export_preset = None):
         import flame
         import traceback
@@ -2504,6 +2795,7 @@ def get_media_panel_custom_ui_actions():
             if app_menu:
                 menu.append(app_menu)
     return menu
+
 
 # bundle payload starts here
 '''
