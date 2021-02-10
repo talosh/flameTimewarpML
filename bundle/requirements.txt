@@ -1,6 +1,6 @@
 numpy
+scipy
 tqdm
-sk-video
 torch
 tensorboard
 opencv-python

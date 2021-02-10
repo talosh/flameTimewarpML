@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.3.1.beta.002'
+__version__ = 'v0.4.0.beta.006'
 
 
 class flameAppFramework(object):
@@ -961,7 +961,7 @@ class flameTimewrapML(flameMenuApp):
                     cmd = 'export OMP_NUM_THREADS=1; python3 '
                 cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_sequence.py')
                 cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder
-                cmd += ' --model ' + self.prefs.get('trained_models_folder')
+                # cmd += ' --model ' + self.prefs.get('trained_models_folder')
                 cmd += ' --exp=' + str(speed)
                 if self.cpu:
                     cmd += ' --cpu'
@@ -1202,9 +1202,9 @@ class flameTimewrapML(flameMenuApp):
 
         vbox.addWidget(lbl_Spacer)
 
-        self.dialog_model_path(window, vbox)
+        # self.dialog_model_path(window, vbox)
         
-        vbox.addWidget(lbl_Spacer)
+        # vbox.addWidget(lbl_Spacer)
 
 
         '''
