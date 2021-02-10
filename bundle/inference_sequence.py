@@ -251,7 +251,10 @@ if __name__ == '__main__':
         _thread.start_new_thread(build_read_buffer, (args, read_buffer, files_list))
         _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
 
-        from model.RIFE_HDv2 import Model     # type: ignore
+        if 'v1.8.model' in args.model:
+            from model.RIFE_HD import Model     # type: ignore
+        else:
+            from model.RIFE_HDv2 import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()
@@ -297,8 +300,10 @@ if __name__ == '__main__':
 
     else:
         # process on CPU(s)
-
-        from model_cpu.RIFE_HDv2 import Model     # type: ignore
+        if 'v1.8.model' in args.model:
+            from model_cpu.RIFE_HD import Model     # type: ignore
+        else:
+            from model_cpu.RIFE_HDv2 import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()

@@ -239,7 +239,10 @@ if __name__ == '__main__':
     elif torch.cuda.is_available() and not args.cpu:
         # Process on GPU
 
-        from model.RIFE_HDv2 import Model     # type: ignore
+        if 'v1.8.model' in args.model:
+            from model.RIFE_HD import Model     # type: ignore
+        else:
+            from model.RIFE_HDv2 import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()
@@ -313,9 +316,12 @@ if __name__ == '__main__':
         pbar_dup.close()
     
     else:
-        # process on GPU
+        # process on CPU
 
-        from model_cpu.RIFE_HDv2 import Model     # type: ignore
+        if 'v1.8.model' in args.model:
+            from model_cpu.RIFE_HD import Model     # type: ignore
+        else:
+            from model_cpu.RIFE_HDv2 import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()
