@@ -922,18 +922,23 @@ class flameTimewrapML(flameMenuApp):
         self.threads = True
 
         if not self.prefs.master.get(self.name):
+            # set general defaults
             self.prefs['working_folder'] = '/var/tmp'
             self.prefs['slowmo_uhd'] = False
             self.prefs['dedup_uhd'] = False
             self.prefs['fluidmorph_uhd'] = True
 
-        if not 'trained_models_folder' in self.prefs.keys():
+        if self.prefs.get('version') != __version__:
+            # set version-specific defaults
             self.prefs['trained_models_folder'] = os.path.join(
                 self.framework.bundle_location,
                 'bundle', 'trained_models', 'default', 'v2.0.model'
                 )
+            
+        self.prefs['version'] = __version__
+        self.framework.save_prefs()
 
-        self.working_folder = self.prefs['working_folder']
+        self.working_folder = self.prefs.get('working_folder')
         if not os.path.isdir(self.working_folder):
             self.working_folder = '/var/tmp'
 
@@ -942,6 +947,17 @@ class flameTimewrapML(flameMenuApp):
         self.dedup_mode = 0
         self.cpu = False
         self.UHD = True
+
+        self.model_map = {
+            os.path.join(
+                self.framework.bundle_location,
+                'bundle', 'trained_models', 'default', 'v1.8.model'
+                ): ' Model v1.8 ',
+            os.path.join(
+                self.framework.bundle_location,
+                'bundle', 'trained_models', 'default', 'v2.0.model'
+                ): ' Model v2.0 ',
+        }
 
     def build_menu(self):
         def scope_clip(selection):
@@ -1050,7 +1066,7 @@ class flameTimewrapML(flameMenuApp):
                     cmd = 'export OMP_NUM_THREADS=1; python3 '
                 cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_sequence.py')
                 cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder
-                # cmd += ' --model ' + self.prefs.get('trained_models_folder')
+                cmd += ' --model ' + self.prefs.get('trained_models_folder')
                 cmd += ' --exp=' + str(speed)
                 if self.cpu:
                     cmd += ' --cpu'
@@ -1231,7 +1247,54 @@ class flameTimewrapML(flameMenuApp):
             btn_CpuProc.setToolTip('<b>CPU Proc button</b><br>Mac version is currently CPU-only due to lack of GPU support in PyTorch library on MacOS')
             new_speed_hbox.addWidget(btn_CpuProc)
         '''
+
+        '''
+        lbl_HorSpacer = QtWidgets.QLabel('', window)
+        lbl_HorSpacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
+        lbl_HorSpacer.setMinimumHeight(28)
+        lbl_HorSpacer.setMinimumWidth(4)
+        lbl_HorSpacer.setMaximumWidth(4)
+        lbl_HorSpacer.setAlignment(QtCore.Qt.AlignCenter)
+        new_speed_hbox.addWidget(lbl_HorSpacer)
+        '''
+        '''
+        lbl_Model = QtWidgets.QLabel('Model ', window)
+        lbl_Model.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_Model.setMinimumHeight(28)
+        lbl_Model.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        new_speed_hbox.addWidget(lbl_Model)
+        '''
+
+        ### Model Selector START
+
+        current_model_name = self.model_map.get(self.prefs.get('trained_models_folder'), 'Unknown')
         
+        # Model Selector Button
+        btn_ModelSelector = QtWidgets.QPushButton(window)
+        btn_ModelSelector.setText(current_model_name)
+        
+        def selectModel(trained_models_folder):
+            self.prefs['trained_models_folder'] = trained_models_folder
+            btn_ModelSelector.setText(self.model_map.get(trained_models_folder))
+
+        btn_ModelSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_ModelSelector.setMinimumSize(140, 28)
+        btn_ModelSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+
+        btn_ModelSelector_menu = QtWidgets.QMenu()
+        for trained_models_folder in sorted(self.model_map.keys()):
+            
+            code = self.model_map.get(trained_models_folder)
+            action = btn_ModelSelector_menu.addAction(code)
+            action.triggered[()].connect(lambda trained_models_folder=trained_models_folder: selectModel(trained_models_folder))
+    
+        btn_ModelSelector.setMenu(btn_ModelSelector_menu)
+        new_speed_hbox.addWidget(btn_ModelSelector)
+
+        ### Model Selector END
+
         vbox.addLayout(new_speed_hbox)
         vbox.addWidget(lbl_Spacer)
 
@@ -1248,7 +1311,6 @@ class flameTimewrapML(flameMenuApp):
 
         hbox_workfolder = QtWidgets.QHBoxLayout()
         hbox_workfolder.setAlignment(QtCore.Qt.AlignLeft)
-
 
         def chooseFolder():
             result_folder = str(QtWidgets.QFileDialog.getExistingDirectory(window, "Open Directory", self.working_folder, QtWidgets.QFileDialog.ShowDirsOnly))
@@ -1288,7 +1350,6 @@ class flameTimewrapML(flameMenuApp):
         hbox_workfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
 
         vbox.addLayout(hbox_workfolder)
-
         vbox.addWidget(lbl_Spacer)
 
         # self.dialog_model_path(window, vbox)
@@ -1443,6 +1504,7 @@ class flameTimewrapML(flameMenuApp):
                 if self.cpu:
                     cmd = 'export OMP_NUM_THREADS=1; python3 '
                 cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_dpframes.py')
+                cmd += ' --model ' + self.prefs.get('trained_models_folder')
                 cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder
                 if mode:
                     cmd += ' --remove'
@@ -1612,6 +1674,36 @@ class flameTimewrapML(flameMenuApp):
 
             dframes_hbox.addWidget(btn_CpuProc)
 
+        ### Model Selector START
+
+        current_model_name = self.model_map.get(self.prefs.get('trained_models_folder'), 'Unknown')
+        
+        # Model Selector Button
+        btn_ModelSelector = QtWidgets.QPushButton(window)
+        btn_ModelSelector.setText(current_model_name)
+        
+        def selectModel(trained_models_folder):
+            self.prefs['trained_models_folder'] = trained_models_folder
+            btn_ModelSelector.setText(self.model_map.get(trained_models_folder))
+
+        btn_ModelSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_ModelSelector.setMinimumSize(140, 28)
+        btn_ModelSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+
+        btn_ModelSelector_menu = QtWidgets.QMenu()
+        for trained_models_folder in sorted(self.model_map.keys()):
+            
+            code = self.model_map.get(trained_models_folder)
+            action = btn_ModelSelector_menu.addAction(code)
+            action.triggered[()].connect(lambda trained_models_folder=trained_models_folder: selectModel(trained_models_folder))
+    
+        btn_ModelSelector.setMenu(btn_ModelSelector_menu)
+        dframes_hbox.addWidget(btn_ModelSelector)
+
+        ### Model Selector END
+
         vbox.addLayout(dframes_hbox)
         vbox.addWidget(lbl_Spacer)
 
@@ -1773,6 +1865,7 @@ class flameTimewrapML(flameMenuApp):
         if self.cpu:
             cmd = 'export OMP_NUM_THREADS=1; python3 '
         cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_fluidmorph.py')
+        cmd += ' --model ' + self.prefs.get('trained_models_folder')
         cmd += ' --incoming ' + incoming_folder
         cmd += ' --outgoing ' + outgoing_folder
         cmd += ' --output ' + result_folder
@@ -1963,6 +2056,36 @@ class flameTimewrapML(flameMenuApp):
             btn_CpuProc.pressed.connect(enableCpuProc)
 
             dframes_hbox.addWidget(btn_CpuProc)
+
+        ### Model Selector START
+
+        current_model_name = self.model_map.get(self.prefs.get('trained_models_folder'), 'Unknown')
+        
+        # Model Selector Button
+        btn_ModelSelector = QtWidgets.QPushButton(window)
+        btn_ModelSelector.setText(current_model_name)
+        
+        def selectModel(trained_models_folder):
+            self.prefs['trained_models_folder'] = trained_models_folder
+            btn_ModelSelector.setText(self.model_map.get(trained_models_folder))
+
+        btn_ModelSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_ModelSelector.setMinimumSize(140, 28)
+        btn_ModelSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+
+        btn_ModelSelector_menu = QtWidgets.QMenu()
+        for trained_models_folder in sorted(self.model_map.keys()):
+            
+            code = self.model_map.get(trained_models_folder)
+            action = btn_ModelSelector_menu.addAction(code)
+            action.triggered[()].connect(lambda trained_models_folder=trained_models_folder: selectModel(trained_models_folder))
+    
+        btn_ModelSelector.setMenu(btn_ModelSelector_menu)
+        dframes_hbox.addWidget(btn_ModelSelector)
+
+        ### Model Selector END
 
         vbox.addLayout(dframes_hbox)
         vbox.addWidget(lbl_Spacer)
@@ -2236,6 +2359,7 @@ class flameTimewrapML(flameMenuApp):
             if self.cpu:
                 cmd = 'export OMP_NUM_THREADS=1; python3 '
             cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_flame_tw.py')
+            cmd += ' --model ' + self.prefs.get('trained_models_folder')
             cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder + ' --setup ' + tw_setup_path
             cmd += ' --record_in ' + str(record_in) + ' --record_out ' + str(record_out)
             if self.cpu:
@@ -2378,6 +2502,36 @@ class flameTimewrapML(flameMenuApp):
                 btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
             btn_CpuProc.pressed.connect(enableCpuProc)
             new_speed_hbox.addWidget(btn_CpuProc)
+
+        ### Model Selector START
+
+        current_model_name = self.model_map.get(self.prefs.get('trained_models_folder'), 'Unknown')
+        
+        # Model Selector Button
+        btn_ModelSelector = QtWidgets.QPushButton(window)
+        btn_ModelSelector.setText(current_model_name)
+        
+        def selectModel(trained_models_folder):
+            self.prefs['trained_models_folder'] = trained_models_folder
+            btn_ModelSelector.setText(self.model_map.get(trained_models_folder))
+
+        btn_ModelSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_ModelSelector.setMinimumSize(140, 28)
+        btn_ModelSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+
+        btn_ModelSelector_menu = QtWidgets.QMenu()
+        for trained_models_folder in sorted(self.model_map.keys()):
+            
+            code = self.model_map.get(trained_models_folder)
+            action = btn_ModelSelector_menu.addAction(code)
+            action.triggered[()].connect(lambda trained_models_folder=trained_models_folder: selectModel(trained_models_folder))
+    
+        btn_ModelSelector.setMenu(btn_ModelSelector_menu)
+        new_speed_hbox.addWidget(btn_ModelSelector)
+
+        ### Model Selector END
         
         vbox.addLayout(new_speed_hbox)
         vbox.addWidget(lbl_Spacer)
@@ -2536,13 +2690,52 @@ class flameTimewrapML(flameMenuApp):
         vbox.addLayout(hbox_trainedmodelfolder)
 
     def dialog_model_selector(self, window, layout):
-        model_map [
-            '',
-            ''
-        ]
+        from PySide2 import QtWidgets, QtCore
+
+        lbl_Model = QtWidgets.QLabel('Model ', window)
+        lbl_Model.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_Model.setMinimumHeight(28)
+        lbl_Model.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        layout.addWidget(lbl_Model)
+
+        model_map = {
+            os.path.join(
+                self.framework.bundle_location,
+                'bundle', 'trained_models', 'default', 'v1.8.model'
+                ): '1One',
+            os.path.join(
+                self.framework.bundle_location,
+                'bundle', 'trained_models', 'default', 'v2.0.model'
+                ): '2Two',
+        }
+
+        current_model_name = model_map.get(self.prefs.get('trained_models_folder'), 'Unknown')
+        '''
         # Model Selector Button
         btn_ModelSelector = QtWidgets.QPushButton(window)
-        btn_ModelSelector.setText(self.new_speed_list.get(self.new_speed))
+        btn_ModelSelector.setText(current_model_name)
+        
+        def selectModel(trained_models_folder):
+            self.prefs['trained_models_folder'] = trained_models_folder
+            btn_ModelSelector.setText(model_map.get(trained_models_folder), 'Unknown')
+
+        btn_ModelSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_ModelSelector.setMinimumSize(80, 28)
+        btn_ModelSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+
+        btn_ModelSelector_menu = QtWidgets.QMenu()
+        for trained_models_folder in sorted(model_map.keys()):
+            
+            code = model_map.get(trained_models_folder)
+            action = btn_ModelSelector_menu.addAction(code)
+            # action.triggered[()].connect(lambda trained_models_folder=trained_models_folder: selectModel(trained_models_folder))
+    
+        btn_ModelSelector.setMenu(btn_ModelSelector_menu)
+        '''
+        btn_NewSpeedSelector = QtWidgets.QPushButton(window)
+        btn_NewSpeedSelector.setText(self.new_speed_list.get(self.new_speed))
         def selectNewSpeed(new_speed_id):
             self.new_speed = new_speed_id
             btn_NewSpeedSelector.setText(self.new_speed_list.get(self.new_speed))
@@ -2558,7 +2751,9 @@ class flameTimewrapML(flameMenuApp):
             action = btn_NewSpeedSelector_menu.addAction(code)
             action.triggered[()].connect(lambda new_speed_id=new_speed_id: selectNewSpeed(new_speed_id))
         btn_NewSpeedSelector.setMenu(btn_NewSpeedSelector_menu)
-        new_speed_hbox.addWidget(btn_NewSpeedSelector)        
+        layout.addWidget(btn_NewSpeedSelector)
+
+        # layout.addWidget(btn_ModelSelector)
 
     def export_clip(self, clip, export_dir, export_preset = None):
         import flame
