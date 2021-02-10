@@ -465,7 +465,7 @@ if __name__ == '__main__':
     parser.add_argument('--setup', dest='setup', type=str, default=None, help='flame tw setup to use')
     parser.add_argument('--record_in', dest='record_in', type=int, default=1, help='record in point relative to tw setup')
     parser.add_argument('--record_out', dest='record_out', type=int, default=0, help='record out point relative to tw setup')
-    parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v1.8.model')
+    parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v2.0.model')
     parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
     parser.add_argument('--cpu', dest='cpu', action='store_true', help='do not use GPU at all, process only on CPU')
 
@@ -509,7 +509,10 @@ if __name__ == '__main__':
     if torch.cuda.is_available() and not args.cpu:
         # Process on GPU
 
-        from model.RIFE_HD import Model     # type: ignore
+        if 'v1.8.model' in args.model:
+            from model.RIFE_HD import Model     # type: ignore
+        else:
+            from model.RIFE_HDv2 import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()
@@ -576,7 +579,10 @@ if __name__ == '__main__':
     else:
         # process on GPU
 
-        from model_cpu.RIFE_HD import Model     # type: ignore
+        if 'v1.8.model' in args.model:
+            from model_cpu.RIFE_HD import Model     # type: ignore
+        else:
+            from model_cpu.RIFE_HDv2 import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()

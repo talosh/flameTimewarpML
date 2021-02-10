@@ -158,7 +158,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=msg)
     parser.add_argument('--input', dest='input', type=str, default=None, help='folder with input sequence')
     parser.add_argument('--output', dest='output', type=str, default=None, help='folder to output sequence to')
-    parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v1.8.model')
+    parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v2.0.model')
     parser.add_argument('--remove', dest='remove', action='store_true', help='remove duplicate frames')
     parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
     parser.add_argument('--cpu', dest='cpu', action='store_true', help='do not use GPU at all, process only on CPU')
@@ -239,7 +239,10 @@ if __name__ == '__main__':
     elif torch.cuda.is_available() and not args.cpu:
         # Process on GPU
 
-        from model.RIFE_HD import Model     # type: ignore
+        if 'v1.8.model' in args.model:
+            from model.RIFE_HD import Model     # type: ignore
+        else:
+            from model.RIFE_HDv2 import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()
@@ -313,9 +316,12 @@ if __name__ == '__main__':
         pbar_dup.close()
     
     else:
-        # process on GPU
+        # process on CPU
 
-        from model_cpu.RIFE_HD import Model     # type: ignore
+        if 'v1.8.model' in args.model:
+            from model_cpu.RIFE_HD import Model     # type: ignore
+        else:
+            from model_cpu.RIFE_HDv2 import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()
