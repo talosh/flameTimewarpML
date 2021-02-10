@@ -9,7 +9,6 @@ from torch.nn import functional as F
 import warnings
 import _thread
 import threading
-import skvideo.io
 from queue import Queue, Empty
 warnings.filterwarnings("ignore")
 
@@ -190,7 +189,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Interpolation for a sequence of exr images')
     parser.add_argument('--input', dest='input', type=str, default=None)
     parser.add_argument('--output', dest='output', type=str, default=None)
-    parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v1.8.model')
+    parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v2.0.model')
     parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
     parser.add_argument('--exp', dest='exp', type=int, default=1)
     parser.add_argument('--cpu', dest='cpu', action='store_true', help='process only on CPU(s)')
@@ -252,7 +251,7 @@ if __name__ == '__main__':
         _thread.start_new_thread(build_read_buffer, (args, read_buffer, files_list))
         _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
 
-        from model.RIFE_HD import Model     # type: ignore
+        from model.RIFE_HDv2 import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()
@@ -299,7 +298,7 @@ if __name__ == '__main__':
     else:
         # process on CPU(s)
 
-        from model_cpu.RIFE_HD import Model     # type: ignore
+        from model_cpu.RIFE_HDv2 import Model     # type: ignore
         model = Model()
         model.load_model(args.model, -1)
         model.eval()
