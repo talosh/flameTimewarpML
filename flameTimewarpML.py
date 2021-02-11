@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.0.beta.009'
+__version__ = 'v0.4.0.beta.010'
 
 
 class flameAppFramework(object):
@@ -957,6 +957,10 @@ class flameTimewrapML(flameMenuApp):
                 self.framework.bundle_location,
                 'bundle', 'trained_models', 'default', 'v2.0.model'
                 ): ' Model v2.0 ',
+            os.path.join(
+                self.framework.bundle_location,
+                'bundle', 'trained_models', 'default', 'v2.1.model'
+                ): ' Model v2.1 ',
         }
 
     def build_menu(self):
