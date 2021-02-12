@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.0.beta.023'
+__version__ = 'v0.4.0.beta.024'
 
 
 class flameAppFramework(object):
@@ -959,7 +959,7 @@ class flameMenuApp(object):
         return timestamp + '_' + uid[:3]
 
 
-class flameTimewrapML(flameMenuApp):
+class flameTimewarpML(flameMenuApp):
     def __init__(self, framework):
         flameMenuApp.__init__(self, framework)
         self.env_folder = os.path.join(self.framework.bundle_location, 'miniconda3')
@@ -1014,7 +1014,6 @@ class flameTimewrapML(flameMenuApp):
                     'bundle', 'trained_models', 'default', 'v2.2.model'
                     ): ' Model v2.2 ',
             }
-
 
     def build_menu(self):
         def scope_clip(selection):
@@ -3002,7 +3001,7 @@ def cleanup(local_apps, Local_app_framework):
 atexit.register(cleanup, apps, app_framework)
 
 def load_apps(apps, app_framework):
-    apps.append(flameTimewrapML(app_framework))
+    apps.append(flameTimewarpML(app_framework))
     app_framework.apps = apps
     if DEBUG:
         print ('[DEBUG %s] loaded:\n%s' % (app_framework.bundle_name, pformat(apps)))
@@ -3039,7 +3038,7 @@ def get_media_panel_custom_ui_actions():
         pass
 
     for app in apps:
-        if app.__class__.__name__ == 'flameTimewrapML':
+        if app.__class__.__name__ == 'flameTimewarpML':
             app_menu = []
             app_menu = app.build_menu()
             if app_menu:
