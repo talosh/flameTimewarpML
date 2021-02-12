@@ -17,7 +17,7 @@ import psutil
 
 import multiprocessing as mp
 
-import twml
+import inference_common
 
 IOThreadsFlag = True
 IOProcesses = []
@@ -339,7 +339,7 @@ if __name__ == '__main__':
         device = torch.device("cpu")
         torch.set_grad_enabled(False)
 
-        sim_workers, thread_ram = twml.safe_threads_number(h, w)
+        sim_workers, thread_ram = inference_common.safe_threads_number(h, w)
 
         pbar = tqdm(total=input_duration, desc='Total frames', unit='frame')
         pbar_dup = tqdm(total=input_duration, desc='Interpolating', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
