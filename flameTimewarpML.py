@@ -299,7 +299,7 @@ class flameAppFramework(object):
 
                 start_position += 33
                 payload = script[start_position:-4]
-                scriptfile.truncate(start_position - 34)
+                # scriptfile.truncate(start_position - 34)
                 scriptfile.close()
         except Exception as e:
             self.show_exception(e)
@@ -354,7 +354,10 @@ class flameAppFramework(object):
             self.show_exception(e)
             return False
 
-        payload_dest = os.path.join(self.bundle_location, 'bundle.tar')
+        payload_dest = os.path.join(
+            self.bundle_location, 
+            self.bundle_name + '.' + version + '.bundle.tar'
+            )
         
         try:
             import base64
@@ -366,8 +369,10 @@ class flameAppFramework(object):
             self.log('Executing command: %s' % cmd, logfile)
             status = os.system(cmd)
             self.log('exit status %s' % os.WEXITSTATUS(status), logfile)
-            self.log('cleaning up %s' % payload_dest, logfile)
-            os.remove(payload_dest)
+
+            # self.log('cleaning up %s' % payload_dest, logfile)
+            # os.remove(payload_dest)
+        
         except Exception as e:
             self.show_exception(e)
             return False
@@ -383,9 +388,9 @@ class flameAppFramework(object):
             self.install_env(env_folder, logfile)
             self.install_env_packages(env_folder, logfile)
 
-            cmd = 'rm -rf "' + os.path.join(self.bundle_location, 'bundle', 'miniconda.package') + '"'
-            self.log('Executing command: %s' % cmd, logfile)
-            os.system(cmd)
+            # cmd = 'rm -rf "' + os.path.join(self.bundle_location, 'bundle', 'miniconda.package') + '"'
+            # self.log('Executing command: %s' % cmd, logfile)
+            # os.system(cmd)
 
         try:
             with open(os.path.join(bundle_path, 'bundle_id'), 'w+') as bundle_id_file:
@@ -406,6 +411,32 @@ class flameAppFramework(object):
             pass
 
         self.show_complete_message(env_folder)
+
+        # CLEANUP LOGIC
+        # self.log('cleaning up %s' % payload_dest, logfile)
+        # os.remove(payload_dest)
+        # cmd = 'rm -rf "' + os.path.join(self.bundle_location, 'bundle', 'miniconda.package') + '"'
+        # self.log('Executing command: %s' % cmd, logfile)
+        # os.system(cmd)
+        '''
+        try:
+            with open(script_file_name, 'r+') as scriptfile:
+                script = scriptfile.read()
+                start_position = script.rfind('# bundle payload starts here')
+                
+                if script[start_position -1: start_position] != '\n':
+                    self.show_turncated_message()
+                    scriptfile.close()
+                    return False
+
+                start_position += 33
+                payload = script[start_position:-4]
+                # scriptfile.truncate(start_position - 34)
+                scriptfile.close()
+        except Exception as e:
+            self.show_exception(e)
+            return False
+        '''
 
         return True
                     
