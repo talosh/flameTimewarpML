@@ -17,7 +17,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.0.beta.012'
+__version__ = 'v0.4.0.beta.023'
 
 
 class flameAppFramework(object):
@@ -356,7 +356,7 @@ class flameAppFramework(object):
 
         payload_dest = os.path.join(
             self.bundle_location, 
-            self.bundle_name + '.' + version + '.bundle.tar'
+            self.bundle_name + '.' + __version__ + '.bundle.tar'
             )
         
         try:
@@ -410,33 +410,27 @@ class flameAppFramework(object):
         except:
             pass
 
-        self.show_complete_message(env_folder)
-
-        # CLEANUP LOGIC
-        # self.log('cleaning up %s' % payload_dest, logfile)
-        # os.remove(payload_dest)
-        # cmd = 'rm -rf "' + os.path.join(self.bundle_location, 'bundle', 'miniconda.package') + '"'
-        # self.log('Executing command: %s' % cmd, logfile)
-        # os.system(cmd)
-        '''
-        try:
-            with open(script_file_name, 'r+') as scriptfile:
-                script = scriptfile.read()
-                start_position = script.rfind('# bundle payload starts here')
-                
-                if script[start_position -1: start_position] != '\n':
-                    self.show_turncated_message()
+        if self.show_complete_message(env_folder):
+            # BUNDLE CLEANUP LOGIC
+            self.log('cleaning up %s' % payload_dest, logfile)
+            os.remove(payload_dest)
+            cmd = 'rm -rf "' + os.path.join(self.bundle_location, 'bundle', 'miniconda.package') + '"'
+            self.log('Executing command: %s' % cmd, logfile)
+            os.system(cmd)
+            try:
+                with open(script_file_name, 'r+') as scriptfile:
+                    script = scriptfile.read()
+                    start_position = script.rfind('# bundle payload starts here')
+                    
+                    if script[start_position -1: start_position] == '\n':
+                        start_position += 33
+                        self.log('removing bundle from script file')
+                        scriptfile.truncate(start_position - 34)
                     scriptfile.close()
-                    return False
-
-                start_position += 33
-                payload = script[start_position:-4]
-                # scriptfile.truncate(start_position - 34)
-                scriptfile.close()
-        except Exception as e:
-            self.show_exception(e)
-            return False
-        '''
+                    del script
+            except Exception as e:
+                self.show_exception(e)
+                return False
 
         return True
                     
@@ -661,7 +655,10 @@ class flameAppFramework(object):
     def show_complete_message(self, bundle_path):
         from PySide2 import QtWidgets
 
-        msg = 'flameTimewarpML has finished unpacking its bundle and required packages.'
+        self.clean_status = False
+        self.clean_wait_flag = True
+
+        msg = 'flameTimewarpML has finished unpacking its bundle and required packages. Would you like to clean the bundle and installer files?'
         dmsg = 'Bundle location: %s\n' % self.bundle_location
         dmsg += '* Flame scipt written by Andrii Toloshnyy (c) 2021\n'
         dmsg += '* RIFE: Real-Time Intermediate Flow Estimation for Video Frame Interpolation:\n'
@@ -675,7 +672,7 @@ class flameAppFramework(object):
         except:
             print (msg)
             print (dmsg)
-            return False
+            return status
         
         def show_mbox():
             mbox = QtWidgets.QMessageBox()
@@ -683,10 +680,28 @@ class flameAppFramework(object):
             mbox.setText(msg)
             mbox.setDetailedText(dmsg)
             # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+            mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+            
+            btn_Clean = mbox.button(QtWidgets.QMessageBox.Cancel)
+            btn_Clean.setText('Clean')
+            btn_Clean.setAutoDefault(True)
+            btn_Clean.setDefault(True)
+
+            btn_Keep = mbox.button(QtWidgets.QMessageBox.Ok)
+            btn_Keep.setText('Keep')
             mbox.exec_()
+            if mbox.clickedButton() == btn_Clean:
+                self.clean_status = True
+                self.clean_wait_flag = False
+            else:
+                self.clean_status = False
+                self.clean_wait_flag = False
 
         flame.schedule_idle_event(show_mbox)
-        return True
+        while self.clean_wait_flag:
+            time.sleep(0.1)
+
+        return self.clean_status
 
     def show_turncated_message(self):
         from PySide2 import QtWidgets
@@ -958,6 +973,8 @@ class flameTimewrapML(flameMenuApp):
             self.prefs['slowmo_uhd'] = False
             self.prefs['dedup_uhd'] = False
             self.prefs['fluidmorph_uhd'] = True
+            self.prefs['fltw_uhd'] = True
+
 
         if self.prefs.get('version') != __version__:
             # set version-specific defaults
@@ -980,19 +997,24 @@ class flameTimewrapML(flameMenuApp):
         self.UHD = True
 
         self.model_map = {
-            os.path.join(
-                self.framework.bundle_location,
-                'bundle', 'trained_models', 'default', 'v1.8.model'
-                ): ' Model v1.8 ',
-            os.path.join(
-                self.framework.bundle_location,
-                'bundle', 'trained_models', 'default', 'v2.0.model'
-                ): ' Model v2.0 ',
-            os.path.join(
-                self.framework.bundle_location,
-                'bundle', 'trained_models', 'default', 'v2.1.model'
-                ): ' Model v2.1 ',
-        }
+                os.path.join(
+                    self.framework.bundle_location,
+                    'bundle', 'trained_models', 'default', 'v1.8.model'
+                    ): ' Model v1.8 ',
+                os.path.join(
+                    self.framework.bundle_location,
+                    'bundle', 'trained_models', 'default', 'v2.0.model'
+                    ): ' Model v2.0 ',
+                os.path.join(
+                    self.framework.bundle_location,
+                    'bundle', 'trained_models', 'default', 'v2.1.model'
+                    ): ' Model v2.1 ',
+                os.path.join(
+                    self.framework.bundle_location,
+                    'bundle', 'trained_models', 'default', 'v2.2.model'
+                    ): ' Model v2.2 ',
+            }
+
 
     def build_menu(self):
         def scope_clip(selection):
@@ -1863,7 +1885,6 @@ class flameTimewrapML(flameMenuApp):
         hold_konsole = result.get('hold_konsole', False)
         cmd_strings = []
 
-
         incoming_clip_name = incoming_clip.name.get_value()
         outgoing_clip_name = outgoing_clip.name.get_value()
         result_folder = os.path.abspath(
@@ -1895,7 +1916,6 @@ class flameTimewrapML(flameMenuApp):
         self.export_clip(incoming_clip, incoming_folder)
         self.export_clip(outgoing_clip, outgoing_folder)
 
-
         cmd = 'python3 '
         if self.cpu:
             cmd = 'export OMP_NUM_THREADS=1; python3 '
@@ -1906,7 +1926,7 @@ class flameTimewrapML(flameMenuApp):
         cmd += ' --output ' + result_folder
         if self.cpu:
             cmd += ' --cpu'
-        if self.UHD:
+        if self.prefs.get('fluidmorph_uhd', False):
             cmd += ' --UHD'
         cmd += "; "
         cmd_strings.append(cmd)
@@ -2399,7 +2419,7 @@ class flameTimewrapML(flameMenuApp):
             cmd += ' --record_in ' + str(record_in) + ' --record_out ' + str(record_out)
             if self.cpu:
                 cmd += ' --cpu'
-            if self.prefs.get('slowmo_uhd', False):
+            if self.prefs.get('fltw_uhd', False):
                 cmd += ' --UHD'
             cmd += "; "
             cmd_strings.append(cmd)
@@ -2496,19 +2516,19 @@ class flameTimewrapML(flameMenuApp):
         # Reduce flow res button
 
         def enableUHD():
-            if self.prefs.get('slowmo_uhd', False):
+            if self.prefs.get('fltw_uhd', False):
                 btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
                                         'QToolTip {color: black; background-color:  #ffffd9; border: 0px}')
-                self.prefs['slowmo_uhd'] = False
+                self.prefs['fltw_uhd'] = False
             else:
                 btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
                                         'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-                self.prefs['slowmo_uhd'] = True
+                self.prefs['fltw_uhd'] = True
         btn_UHD = QtWidgets.QPushButton('Reduce flow res', window)
         btn_UHD.setToolTip('<b>Reduce flow res button</b><br>Use less details for analyzis, sometimes could be helpful with large motion.')
         btn_UHD.setFocusPolicy(QtCore.Qt.NoFocus)
         btn_UHD.setMinimumSize(148, 28)
-        if self.prefs.get('slowmo_uhd', False):
+        if self.prefs.get('fltw_uhd', False):
             btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
                                     'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
         else:
