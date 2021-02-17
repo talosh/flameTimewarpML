@@ -7,6 +7,7 @@ import os
 import sys
 
 env_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+env_folder = os.path.join(env_folder, 'miniconda3')
 
 if len (sys.argv) > 1:
     env_folder = sys.argv[1]
@@ -22,7 +23,7 @@ if os.path.isfile(bash_rc_file):
     with open(bash_rc_file, 'r') as rcfile:
         rc = rcfile.read()
         rcfile.close()
-rc += """\neval "$(""" + os.path.join(env_folder, 'miniconda3', 'bin', 'conda') + """ shell.bash hook)"; conda activate\n"""
+rc += """\neval "$(""" + os.path.join(env_folder, 'bin', 'conda') + """ shell.bash hook)"; conda activate\n"""
 
 with open(tmp_bash_rc_file, 'w') as tmp_rcfile:
     tmp_rcfile.write(rc)
@@ -30,8 +31,9 @@ with open(tmp_bash_rc_file, 'w') as tmp_rcfile:
 
 if sys.platform == 'darwin':
     cmd_prefix = """tell application "Terminal" to activate do script "clear; """
-    cmd_prefix += """/bin/bash --rcfile """ + tmp_bash_rc_file
+    cmd_prefix += """/bin/bash --rcfile """ + tmp_bash_rc_file + '"'
+    import subprocess
+    subprocess.Popen(['osascript', '-e', cmd_prefix])
 else:
     cmd_prefix = 'konsole -e /bin/bash --rcfile ' + tmp_bash_rc_file
-
-os.system(cmd_prefix)
+    os.system(cmd_prefix)
