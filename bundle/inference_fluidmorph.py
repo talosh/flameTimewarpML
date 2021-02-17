@@ -83,7 +83,7 @@ def build_read_buffer(folder, read_buffer, file_list):
         read_buffer.put(frame_data)
     read_buffer.put(None)
 
-def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles = 8, UHD=False, always_interp=False):
+def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles = 49, UHD=False, always_interp=False):
     I0_ratio = 0.0
     I1_ratio = 1.0
     rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
@@ -111,10 +111,9 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles =
     return middle # + (rational_m - torch.mean(middle)).expand_as(middle)
 
 
-def three_of_a_perfect_pair(incoming_frame, outgoing_frame, frame_num, ratio, device, padding, model, args, h, w, write_buffer):
+def three_of_a_perfect_pair(incoming_frame, outgoing_frame, frame_num, ratio, device, padding, model, args, h, w, write_buffer, rthreshold):
     # print ('target ratio %s' % ratio)
-    rthreshold = 0.02
-    maxcycles = 8
+    maxcycles = 49
     I0_ratio = 0.0
     I1_ratio = 1.0
     
@@ -275,7 +274,7 @@ if __name__ == '__main__':
             I1 = torch.from_numpy(np.transpose(outgoing_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
             I1 = F.pad(I1, padding)
 
-            mid = make_inference_rational(model, I0, I1, ratio, UHD = args.UHD)
+            mid = make_inference_rational(model, I0, I1, ratio, rthreshold = rstep / 2, UHD = args.UHD)
             mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
             write_buffer.put((frame, mid[:h, :w]))
             
@@ -361,7 +360,7 @@ if __name__ == '__main__':
             outgoing_frame = outgoing_read_buffer.get()
 
             
-            p = mp.Process(target=three_of_a_perfect_pair, args=(incoming_frame, outgoing_frame, frame, ratio, device, padding, model, args, h, w, write_buffer, ))
+            p = mp.Process(target=three_of_a_perfect_pair, args=(incoming_frame, outgoing_frame, frame, ratio, device, padding, model, args, h, w, write_buffer, rstep / 2, ))
             p.start()
             active_workers.append(p)
 
