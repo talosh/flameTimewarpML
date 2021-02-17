@@ -22,7 +22,7 @@ TWML_MINICONDA_LINUX = ''
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.0.beta.028'
+__version__ = 'v0.4.0.beta.029'
 
 if os.getenv('TWML_BUNDLE_MAC'):
     TWML_BUNDLE_MAC = os.getenv('TWML_BUNDLE_MAC')
