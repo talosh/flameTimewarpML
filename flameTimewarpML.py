@@ -983,7 +983,13 @@ class flameMenuApp(object):
 class flameTimewarpML(flameMenuApp):
     def __init__(self, framework):
         flameMenuApp.__init__(self, framework)
+        
         self.env_folder = os.path.join(self.framework.bundle_location, 'miniconda3')
+
+        if (sys.platform == 'darwin') and TWML_MINICONDA_MAC:
+            self.env_folder = TWML_MINICONDA_MAC
+        elif (sys.platform == "linux2") and TWML_MINICONDA_LINUX:
+            self.env_folder = TWML_MINICONDA_LINUX
         
         self.loops = []
         self.threads = True
