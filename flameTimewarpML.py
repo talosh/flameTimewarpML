@@ -14,10 +14,15 @@ import atexit
 from pprint import pprint
 from pprint import pformat
 
+# Configurable settings
+TWML_BUNDLE_MAC = ''
+TWML_BUNDLE_LINUX = ''
+TWML_MINICONDA_MAC = ''
+TWML_MINICONDA_LINUX = ''
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.0.beta.025'
+__version__ = 'v0.4.0.beta.028'
 
 
 class flameAppFramework(object):
@@ -155,6 +160,22 @@ class flameAppFramework(object):
 
         bundle_path = os.path.join(self.bundle_location, 'bundle')
         self.bundle_path = bundle_path
+
+        # If bundle location set on top of the file or in ENV variable
+        # we're in centralized deployment mode.
+        # Bundle and miniconda versions supposed to be set manually
+        # So there's no need to check for bundle ID
+ 
+        if (sys.platform == 'darwin') and TWML_BUNDLE_MAC:
+            bundle_path = TWML_BUNDLE_MAC
+            self.bundle_path = TWML_BUNDLE_MAC
+            self.bundle_location = os.path.dirname(TWML_BUNDLE_MAC)
+            return
+        elif (sys.platform == "linux2") and TWML_BUNDLE_LINUX:
+            bundle_path = TWML_BUNDLE_LINUX
+            self.bundle_path = TWML_BUNDLE_LINUX
+            self.bundle_location = os.path.dirname(TWML_BUNDLE_LINUX)
+            return
 
         if (os.path.isdir(bundle_path) and os.path.isfile(os.path.join(bundle_path, 'bundle_id'))):
             self.log('checking existing bundle id %s' % os.path.join(bundle_path, 'bundle_id'))
