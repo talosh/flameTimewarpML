@@ -994,11 +994,14 @@ class flameTimewarpML(flameMenuApp):
         flameMenuApp.__init__(self, framework)
         
         self.env_folder = os.path.join(self.framework.bundle_location, 'miniconda3')
+        self.check_bundle_id = True
 
         if (sys.platform == 'darwin') and TWML_MINICONDA_MAC:
             self.env_folder = TWML_MINICONDA_MAC
+            self.check_bundle_id = False
         elif (sys.platform == "linux2") and TWML_MINICONDA_LINUX:
             self.env_folder = TWML_MINICONDA_LINUX
+            self.check_bundle_id = False
         
         self.loops = []
         self.threads = True
@@ -1062,8 +1065,13 @@ class flameTimewarpML(flameMenuApp):
         if not self.flame:
             return []
         
-        if not os.path.isfile(os.path.join(self.framework.bundle_location, 'bundle', 'bundle_id')):
-            return []
+        if self.check_bundle_id:
+            if not os.path.isfile(
+                os.path.join(
+                    self.framework.bundle_location,
+                    'bundle',
+                    'bundle_id')):
+                return []
         
         menu = {'actions': []}
         menu['name'] = self.menu_group_name
@@ -3072,7 +3080,7 @@ def get_media_panel_custom_ui_actions():
         selection = flame.media_panel.selected_entries
     except:
         pass
-
+    
     for app in apps:
         if app.__class__.__name__ == 'flameTimewarpML':
             app_menu = []
