@@ -24,6 +24,15 @@ DEBUG = False
 
 __version__ = 'v0.4.0.beta.028'
 
+if os.getenv('TWML_BUNDLE_MAC'):
+    TWML_BUNDLE_MAC = os.getenv('TWML_BUNDLE_MAC')
+if os.getenv('TWML_BUNDLE_LINUX'):
+    TWML_BUNDLE_LINUX = os.getenv('TWML_BUNDLE_LINUX')
+if os.getenv('TWML_MINICONDA_MAC'):
+    TWML_MINICONDA_MAC = os.getenv('TWML_MINICONDA_MAC')
+if os.getenv('TWML_MINICONDA_LINUX'):
+    TWML_MINICONDA_LINUX = os.getenv('TWML_MINICONDA_LINUX')
+
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences and bundle unpack/install routines
