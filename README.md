@@ -32,27 +32,29 @@ sh Miniconda3-latest-MacOSX-x86_64.sh -bu -p /Volumes/software/miniconda3/
 /Volumes/software/flameTimewarpML/init_env  /Volumes/software/miniconda3/
 there should be (base) before shell prompt. python --version should give Python 3.8.5 or greater
 * From this shell prompt install dependency libraries with:
-
+'''
 pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt
-
+'''
 * If your network is not connected to internet install Miniconda3 on the machine that is connected to internet and download dependency packages:
-
+'''
 pip3 download -r bundle/requirements.txt -d packages_folder
-
+'''
 then it is possible to install packages from given folder:
 
+'''
 pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt --no-index --find-links /Volumes/software/flameTimewarpML/packages_folder
+'''
 
 * Edit flameTimewarpML.py file to add paths directly:
 
 # Configurable settings
-TWML_BUNDLE_MAC = '/Volumes/software/flameTimewarpML/'
-TWML_BUNDLE_LINUX = '/mnt/software/flameTimewarpML/'
-TWML_MINICONDA_MAC = '/Volumes/software/miniconda3/'
-TWML_MINICONDA_LINUX = '/mnt/software/miniconda3/'
+FLAMETWML_BUNDLE_MAC = '/Volumes/software/flameTimewarpML/'
+FLAMETWML_BUNDLE_LINUX = '/mnt/software/flameTimewarpML/'
+FLAMETWML_MINICONDA_MAC = '/Volumes/software/miniconda3/'
+FLAMETWML_MINICONDA_LINUX = '/mnt/software/miniconda3/'
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-It is also possible to set TWML_BUNDLE_MAC and TWML_MINICONDA_MAC environment variables
+It is also possible to set FLAMETWML_BUNDLE_MAC and FLAMETWML_MINICONDA_MAC environment variables 
 
 * Copy edited flameTimewarpML.py to your Flame python scripts folder

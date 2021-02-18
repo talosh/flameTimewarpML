@@ -15,23 +15,23 @@ from pprint import pprint
 from pprint import pformat
 
 # Configurable settings
-TWML_BUNDLE_MAC = ''
-TWML_BUNDLE_LINUX = ''
-TWML_MINICONDA_MAC = ''
-TWML_MINICONDA_LINUX = ''
+FLAMETWML_BUNDLE_MAC = ''
+FLAMETWML_BUNDLE_LINUX = ''
+FLAMETWML_MINICONDA_MAC = ''
+FLAMETWML_MINICONDA_LINUX = ''
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
 __version__ = 'v0.4.0.beta.030'
 
-if os.getenv('TWML_BUNDLE_MAC'):
-    TWML_BUNDLE_MAC = os.getenv('TWML_BUNDLE_MAC')
-if os.getenv('TWML_BUNDLE_LINUX'):
-    TWML_BUNDLE_LINUX = os.getenv('TWML_BUNDLE_LINUX')
-if os.getenv('TWML_MINICONDA_MAC'):
-    TWML_MINICONDA_MAC = os.getenv('TWML_MINICONDA_MAC')
-if os.getenv('TWML_MINICONDA_LINUX'):
-    TWML_MINICONDA_LINUX = os.getenv('TWML_MINICONDA_LINUX')
+if os.getenv('FLAMETWML_BUNDLE_MAC') and not FLAMETWML_BUNDLE_MAC:
+    FLAMETWML_BUNDLE_MAC = os.getenv('FLAMETWML_BUNDLE_MAC')
+if os.getenv('FLAMETWML_BUNDLE_LINUX') and not FLAMETWML_BUNDLE_LINUX:
+    FLAMETWML_BUNDLE_LINUX = os.getenv('FLAMETWML_BUNDLE_LINUX')
+if os.getenv('FLAMETWML_MINICONDA_MAC') and not FLAMETWML_MINICONDA_MAC:
+    FLAMETWML_MINICONDA_MAC = os.getenv('FLAMETWML_MINICONDA_MAC')
+if os.getenv('FLAMETWML_MINICONDA_LINUX') and not FLAMETWML_MINICONDA_LINUX:
+    FLAMETWML_MINICONDA_LINUX = os.getenv('FLAMETWML_MINICONDA_LINUX')
 
 
 class flameAppFramework(object):
@@ -175,15 +175,15 @@ class flameAppFramework(object):
         # Bundle and miniconda versions supposed to be set manually
         # So there's no need to check for bundle ID
  
-        if (sys.platform == 'darwin') and TWML_BUNDLE_MAC:
-            bundle_path = TWML_BUNDLE_MAC
-            self.bundle_path = TWML_BUNDLE_MAC
-            self.bundle_location = os.path.dirname(TWML_BUNDLE_MAC)
+        if (sys.platform == 'darwin') and FLAMETWML_BUNDLE_MAC:
+            bundle_path = FLAMETWML_BUNDLE_MAC
+            self.bundle_path = FLAMETWML_BUNDLE_MAC
+            self.bundle_location = os.path.dirname(FLAMETWML_BUNDLE_MAC)
             return
-        elif (sys.platform == "linux2") and TWML_BUNDLE_LINUX:
-            bundle_path = TWML_BUNDLE_LINUX
-            self.bundle_path = TWML_BUNDLE_LINUX
-            self.bundle_location = os.path.dirname(TWML_BUNDLE_LINUX)
+        elif (sys.platform == "linux2") and FLAMETWML_BUNDLE_LINUX:
+            bundle_path = FLAMETWML_BUNDLE_LINUX
+            self.bundle_path = FLAMETWML_BUNDLE_LINUX
+            self.bundle_location = os.path.dirname(FLAMETWML_BUNDLE_LINUX)
             return
 
         if (os.path.isdir(bundle_path) and os.path.isfile(os.path.join(bundle_path, 'bundle_id'))):
@@ -996,11 +996,11 @@ class flameTimewarpML(flameMenuApp):
         self.env_folder = os.path.join(self.framework.bundle_location, 'miniconda3')
         self.check_bundle_id = True
 
-        if (sys.platform == 'darwin') and TWML_MINICONDA_MAC:
-            self.env_folder = TWML_MINICONDA_MAC
+        if (sys.platform == 'darwin') and FLAMETWML_MINICONDA_MAC:
+            self.env_folder = FLAMETWML_MINICONDA_MAC
             self.check_bundle_id = False
-        elif (sys.platform == "linux2") and TWML_MINICONDA_LINUX:
-            self.env_folder = TWML_MINICONDA_LINUX
+        elif (sys.platform == "linux2") and FLAMETWML_MINICONDA_LINUX:
+            self.env_folder = FLAMETWML_MINICONDA_LINUX
             self.check_bundle_id = False
         
         self.loops = []
