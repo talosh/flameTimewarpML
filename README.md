@@ -79,8 +79,11 @@ pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt --no-index --
 * Copy flameTimewarpML.py to your Flame python scripts folder
 
 * set FLAMETWML_BUNDLE, FLAMETWML_MINICONDA environment variables to point code and miniconda locations.
-It can be set by platform as well using FLAMETWML_BUNDLE_MAC, FLAMETWML_BUNDLE_LINUX, FLAMETWML_MINICONDA_MAC, FLAMETWML_MINICONDA_LINUX ebv variables.
-
+```
+export FLAMETWML_BUNDLE=/mnt/software/flameTimewarpML/
+export FLAMETWML_BUNDLE=/mnt/software/flameTimewarpML/
+```
+<br> More granular settings per platform are avaliabel with FLAMETWML_BUNDLE_MAC, FLAMETWML_BUNDLE_LINUX, FLAMETWML_MINICONDA_MAC, FLAMETWML_MINICONDA_LINUX env variables.
 <br>It is also possible to edit flameTimewarpML.py file to add paths directly:
 
 ```
@@ -92,4 +95,3 @@ FLAMETWML_MINICONDA_LINUX = '/mnt/software/miniconda3/'
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 ```
-
