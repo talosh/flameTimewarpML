@@ -62,13 +62,9 @@ sh Miniconda3-latest-Linux-x86_64.sh -bu -p /mnt/software/miniconda3/
 
 there should be (base) before shell prompt. python --version should give Python 3.8.5 or greater
 
-* From this shell prompt install dependency libraries with:
-Mac:
+* From this shell prompt install dependency libraries:
 ```
 pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt
-```
-Linux:
-```
 pip3 install -r /mnt/software/flameTimewarpML/requirements.txt
 ```
 
