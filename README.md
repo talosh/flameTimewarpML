@@ -64,8 +64,8 @@ there should be (base) before shell prompt. python --version should give Python 
 
 * From this shell prompt install dependency libraries:
 ```
-pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt  # Mac
-pip3 install -r /mnt/software/flameTimewarpML/requirements.txt      # Linux
+pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt          # Mac
+pip3 install -r /mnt/software/flameTimewarpML/requirements.txt              # Linux
 ```
 
 * It is possible to download the packages and install it without internet connection. Install Miniconda3 on the machine that is connected to internet and download dependency packages:
@@ -80,8 +80,8 @@ pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt --no-index --
 
 * set FLAMETWML_BUNDLE, FLAMETWML_MINICONDA environment variables to point code and miniconda locations.
 ```
-export FLAMETWML_BUNDLE=/Volumes/software/flameTimewarpML/  # Mac
-export FLAMETWML_BUNDLE=/mnt/software/flameTimewarpML/      # Linux
+export FLAMETWML_BUNDLE=/Volumes/software/flameTimewarpML/          # Mac
+export FLAMETWML_BUNDLE=/mnt/software/flameTimewarpML/              # Linux
 ```
 <br> More granular settings per platform possible with
 ```
