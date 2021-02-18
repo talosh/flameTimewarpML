@@ -85,10 +85,10 @@ export FLAMETWML_BUNDLE=/mnt/software/flameTimewarpML/
 ```
 <br> More granular settings per platform possible with
 ```
-FLAMETWML_BUNDLE_MAC
-FLAMETWML_BUNDLE_LINUX
-FLAMETWML_MINICONDA_MAC
-FLAMETWML_MINICONDA_LINUX
+export FLAMETWML_BUNDLE_MAC=/Volumes/software/flameTimewarpML/
+export FLAMETWML_BUNDLE_LINUX=/mnt/software/flameTimewarpML/
+export FLAMETWML_MINICONDA_MAC=/Volumes/software/miniconda3/
+export FLAMETWML_MINICONDA_LINUX=mnt/software/miniconda3/
 ```
 <br>It is also possible to edit flameTimewarpML.py file to add paths directly:
 
