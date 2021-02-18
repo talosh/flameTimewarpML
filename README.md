@@ -83,7 +83,13 @@ pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt --no-index --
 export FLAMETWML_BUNDLE=/mnt/software/flameTimewarpML/
 export FLAMETWML_BUNDLE=/mnt/software/flameTimewarpML/
 ```
-<br> More granular settings per platform are avaliabel with FLAMETWML_BUNDLE_MAC, FLAMETWML_BUNDLE_LINUX, FLAMETWML_MINICONDA_MAC, FLAMETWML_MINICONDA_LINUX env variables.
+<br> More granular settings per platform possible with
+```
+FLAMETWML_BUNDLE_MAC
+FLAMETWML_BUNDLE_LINUX
+FLAMETWML_MINICONDA_MAC
+FLAMETWML_MINICONDA_LINUX
+```
 <br>It is also possible to edit flameTimewarpML.py file to add paths directly:
 
 ```
