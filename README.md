@@ -51,7 +51,7 @@ cp -a bundle/* /mnt/software/flameTimewarpML/
 * Install Miniconda3 to centralized location:
 ```
 sh Miniconda3-latest-MacOSX-x86_64.sh -bu -p /Volumes/software/miniconda3/
-sh Miniconda3-linux-MacOSX-x86_64.sh -bu -p /mnt/software/flameTimewarpML/
+sh Miniconda3-latest-Linux-x86_64.sh -bu -p /mnt/software/flameTimewarpML/
 ```
 
 * Init installed Miniconda3 environment:
