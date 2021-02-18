@@ -41,8 +41,8 @@ Linux: /mnt/software/miniconda3
 
 * Copy the contents of 'bundle' folder to the code location.
 ```
-cp -a bundle/* /Volumes/software/flameTimewarpML/
-cp -a bundle/* /mnt/software/flameTimewarpML/
+cp -a bundle/* /Volumes/software/flameTimewarpML/       # Mac
+cp -a bundle/* /mnt/software/flameTimewarpML/           # Linux
 ```
 
 * Download Miniconda3 for Python 3.8 from https://docs.conda.io/en/latest/miniconda.html
@@ -50,22 +50,22 @@ cp -a bundle/* /mnt/software/flameTimewarpML/
 
 * Install Miniconda3 to centralized location:
 ```
-sh Miniconda3-latest-MacOSX-x86_64.sh -bu -p /Volumes/software/miniconda3/
-sh Miniconda3-latest-Linux-x86_64.sh -bu -p /mnt/software/miniconda3/
+sh Miniconda3-latest-MacOSX-x86_64.sh -bu -p /Volumes/software/miniconda3/  # Mac
+sh Miniconda3-latest-Linux-x86_64.sh -bu -p /mnt/software/miniconda3/       # Linux
 ```
 
 * Init installed Miniconda3 environment:
 ```
-/Volumes/software/flameTimewarpML/init_env  /Volumes/software/miniconda3/
-/mnt/software/flameTimewarpML/init_env  /mnt/software/miniconda3/
+/Volumes/software/flameTimewarpML/init_env  /Volumes/software/miniconda3/   # Mac
+/mnt/software/flameTimewarpML/init_env  /mnt/software/miniconda3/           # Linux
 ```
 
 there should be (base) before shell prompt. python --version should give Python 3.8.5 or greater
 
 * From this shell prompt install dependency libraries:
 ```
-pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt
-pip3 install -r /mnt/software/flameTimewarpML/requirements.txt
+pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt  # Mac
+pip3 install -r /mnt/software/flameTimewarpML/requirements.txt      # Linux
 ```
 
 * It is possible to download the packages and install it without internet connection. Install Miniconda3 on the machine that is connected to internet and download dependency packages:
@@ -80,8 +80,8 @@ pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt --no-index --
 
 * set FLAMETWML_BUNDLE, FLAMETWML_MINICONDA environment variables to point code and miniconda locations.
 ```
-export FLAMETWML_BUNDLE=/mnt/software/flameTimewarpML/
-export FLAMETWML_BUNDLE=/mnt/software/flameTimewarpML/
+export FLAMETWML_BUNDLE=/Volumes/software/flameTimewarpML/  # Mac
+export FLAMETWML_BUNDLE=/mnt/software/flameTimewarpML/      # Linux
 ```
 <br> More granular settings per platform possible with
 ```
