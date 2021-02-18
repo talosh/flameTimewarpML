@@ -30,22 +30,18 @@ git clone https://github.com/talosh/flameTimewarpML.git
 This exmaple will use:
 
 ```
-code locations:
+code location:
 Mac:   /Volumes/software/flameTimewarpML 
 Linux: /mnt/software/flameTimewarpML
 
-miniconda3 locations:
+miniconda3 location:
 Mac:   /Volumes/software/miniconda3
 Linux: /mnt/software/miniconda3
 ```
 
 * Copy the contents of 'bundle' folder to the code location.
-Mac:
 ```
 cp -a bundle/* /Volumes/software/flameTimewarpML/
-```
-Linux:
-```
 cp -a bundle/* /mnt/software/flameTimewarpML/
 ```
 
