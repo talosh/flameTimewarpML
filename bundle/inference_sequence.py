@@ -17,6 +17,8 @@ import time
 import psutil
 
 import multiprocessing as mp
+import inference_common
+
 
 ThreadsFlag = True
 IOProcesses = []
@@ -314,6 +316,9 @@ if __name__ == '__main__':
         device = torch.device('cpu')
         torch.set_grad_enabled(False)
         
+        sim_workers, thread_ram = inference_common.safe_threads_number(h, w)
+
+        '''
         max_cpu_workers = mp.cpu_count() - 2
         available_ram = psutil.virtual_memory()[1]/( 1024 ** 3 )
         megapixels = ( h * w ) / ( 10 ** 6 )
@@ -330,6 +335,7 @@ if __name__ == '__main__':
         print ('Using %s CPU worker thread%s (of %s available)\n---' % (sim_workers, '' if sim_workers == 1 else 's', mp.cpu_count()))
         if thread_ram > available_ram:
             print ('Warning: estimated peak memory usage is greater then RAM avaliable')
+        '''
         
         print ('rendering %s frames to %s/' % (last_frame_number, args.output))
 

@@ -14,10 +14,24 @@ import atexit
 from pprint import pprint
 from pprint import pformat
 
+# Configurable settings
+FLAMETWML_BUNDLE_MAC = ''
+FLAMETWML_BUNDLE_LINUX = ''
+FLAMETWML_MINICONDA_MAC = ''
+FLAMETWML_MINICONDA_LINUX = ''
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.0.beta.009'
+__version__ = 'v0.4.0.beta.030'
+
+if os.getenv('FLAMETWML_BUNDLE_MAC') and not FLAMETWML_BUNDLE_MAC:
+    FLAMETWML_BUNDLE_MAC = os.getenv('FLAMETWML_BUNDLE_MAC')
+if os.getenv('FLAMETWML_BUNDLE_LINUX') and not FLAMETWML_BUNDLE_LINUX:
+    FLAMETWML_BUNDLE_LINUX = os.getenv('FLAMETWML_BUNDLE_LINUX')
+if os.getenv('FLAMETWML_MINICONDA_MAC') and not FLAMETWML_MINICONDA_MAC:
+    FLAMETWML_MINICONDA_MAC = os.getenv('FLAMETWML_MINICONDA_MAC')
+if os.getenv('FLAMETWML_MINICONDA_LINUX') and not FLAMETWML_MINICONDA_LINUX:
+    FLAMETWML_MINICONDA_LINUX = os.getenv('FLAMETWML_MINICONDA_LINUX')
 
 
 class flameAppFramework(object):
@@ -155,6 +169,22 @@ class flameAppFramework(object):
 
         bundle_path = os.path.join(self.bundle_location, 'bundle')
         self.bundle_path = bundle_path
+
+        # If bundle location set on top of the file or in ENV variable
+        # we're in centralized deployment mode.
+        # Bundle and miniconda versions supposed to be set manually
+        # So there's no need to check for bundle ID
+ 
+        if (sys.platform == 'darwin') and FLAMETWML_BUNDLE_MAC:
+            bundle_path = FLAMETWML_BUNDLE_MAC
+            self.bundle_path = FLAMETWML_BUNDLE_MAC
+            self.bundle_location = os.path.dirname(FLAMETWML_BUNDLE_MAC)
+            return
+        elif (sys.platform == "linux2") and FLAMETWML_BUNDLE_LINUX:
+            bundle_path = FLAMETWML_BUNDLE_LINUX
+            self.bundle_path = FLAMETWML_BUNDLE_LINUX
+            self.bundle_location = os.path.dirname(FLAMETWML_BUNDLE_LINUX)
+            return
 
         if (os.path.isdir(bundle_path) and os.path.isfile(os.path.join(bundle_path, 'bundle_id'))):
             self.log('checking existing bundle id %s' % os.path.join(bundle_path, 'bundle_id'))
@@ -299,7 +329,7 @@ class flameAppFramework(object):
 
                 start_position += 33
                 payload = script[start_position:-4]
-                scriptfile.truncate(start_position - 34)
+                # scriptfile.truncate(start_position - 34)
                 scriptfile.close()
         except Exception as e:
             self.show_exception(e)
@@ -354,7 +384,10 @@ class flameAppFramework(object):
             self.show_exception(e)
             return False
 
-        payload_dest = os.path.join(self.bundle_location, 'bundle.tar')
+        payload_dest = os.path.join(
+            self.bundle_location, 
+            self.bundle_name + '.' + __version__ + '.bundle.tar'
+            )
         
         try:
             import base64
@@ -366,8 +399,10 @@ class flameAppFramework(object):
             self.log('Executing command: %s' % cmd, logfile)
             status = os.system(cmd)
             self.log('exit status %s' % os.WEXITSTATUS(status), logfile)
-            self.log('cleaning up %s' % payload_dest, logfile)
-            os.remove(payload_dest)
+
+            # self.log('cleaning up %s' % payload_dest, logfile)
+            # os.remove(payload_dest)
+        
         except Exception as e:
             self.show_exception(e)
             return False
@@ -383,9 +418,9 @@ class flameAppFramework(object):
             self.install_env(env_folder, logfile)
             self.install_env_packages(env_folder, logfile)
 
-            cmd = 'rm -rf "' + os.path.join(self.bundle_location, 'bundle', 'miniconda.package') + '"'
-            self.log('Executing command: %s' % cmd, logfile)
-            os.system(cmd)
+            # cmd = 'rm -rf "' + os.path.join(self.bundle_location, 'bundle', 'miniconda.package') + '"'
+            # self.log('Executing command: %s' % cmd, logfile)
+            # os.system(cmd)
 
         try:
             with open(os.path.join(bundle_path, 'bundle_id'), 'w+') as bundle_id_file:
@@ -405,7 +440,27 @@ class flameAppFramework(object):
         except:
             pass
 
-        self.show_complete_message(env_folder)
+        if self.show_complete_message(env_folder):
+            # BUNDLE CLEANUP LOGIC
+            self.log('cleaning up %s' % payload_dest, logfile)
+            os.remove(payload_dest)
+            cmd = 'rm -rf "' + os.path.join(self.bundle_location, 'bundle', 'miniconda.package') + '"'
+            self.log('Executing command: %s' % cmd, logfile)
+            os.system(cmd)
+            try:
+                with open(script_file_name, 'r+') as scriptfile:
+                    script = scriptfile.read()
+                    start_position = script.rfind('# bundle payload starts here')
+                    
+                    if script[start_position -1: start_position] == '\n':
+                        start_position += 33
+                        self.log('removing bundle from script file')
+                        scriptfile.truncate(start_position - 34)
+                    scriptfile.close()
+                    del script
+            except Exception as e:
+                self.show_exception(e)
+                return False
 
         return True
                     
@@ -630,7 +685,10 @@ class flameAppFramework(object):
     def show_complete_message(self, bundle_path):
         from PySide2 import QtWidgets
 
-        msg = 'flameTimewarpML has finished unpacking its bundle and required packages.'
+        self.clean_status = False
+        self.clean_wait_flag = True
+
+        msg = 'flameTimewarpML has finished unpacking its bundle and required packages. Would you like to clean the bundle and installer files?'
         dmsg = 'Bundle location: %s\n' % self.bundle_location
         dmsg += '* Flame scipt written by Andrii Toloshnyy (c) 2021\n'
         dmsg += '* RIFE: Real-Time Intermediate Flow Estimation for Video Frame Interpolation:\n'
@@ -644,7 +702,7 @@ class flameAppFramework(object):
         except:
             print (msg)
             print (dmsg)
-            return False
+            return status
         
         def show_mbox():
             mbox = QtWidgets.QMessageBox()
@@ -652,10 +710,28 @@ class flameAppFramework(object):
             mbox.setText(msg)
             mbox.setDetailedText(dmsg)
             # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+            mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+            
+            btn_Clean = mbox.button(QtWidgets.QMessageBox.Cancel)
+            btn_Clean.setText('Clean')
+            btn_Clean.setAutoDefault(True)
+            btn_Clean.setDefault(True)
+
+            btn_Keep = mbox.button(QtWidgets.QMessageBox.Ok)
+            btn_Keep.setText('Keep')
             mbox.exec_()
+            if mbox.clickedButton() == btn_Clean:
+                self.clean_status = True
+                self.clean_wait_flag = False
+            else:
+                self.clean_status = False
+                self.clean_wait_flag = False
 
         flame.schedule_idle_event(show_mbox)
-        return True
+        while self.clean_wait_flag:
+            time.sleep(0.1)
+
+        return self.clean_status
 
     def show_turncated_message(self):
         from PySide2 import QtWidgets
@@ -913,10 +989,19 @@ class flameMenuApp(object):
         return timestamp + '_' + uid[:3]
 
 
-class flameTimewrapML(flameMenuApp):
+class flameTimewarpML(flameMenuApp):
     def __init__(self, framework):
         flameMenuApp.__init__(self, framework)
+        
         self.env_folder = os.path.join(self.framework.bundle_location, 'miniconda3')
+        self.check_bundle_id = True
+
+        if (sys.platform == 'darwin') and FLAMETWML_MINICONDA_MAC:
+            self.env_folder = FLAMETWML_MINICONDA_MAC
+            self.check_bundle_id = False
+        elif (sys.platform == "linux2") and FLAMETWML_MINICONDA_LINUX:
+            self.env_folder = FLAMETWML_MINICONDA_LINUX
+            self.check_bundle_id = False
         
         self.loops = []
         self.threads = True
@@ -927,12 +1012,14 @@ class flameTimewrapML(flameMenuApp):
             self.prefs['slowmo_uhd'] = False
             self.prefs['dedup_uhd'] = False
             self.prefs['fluidmorph_uhd'] = True
+            self.prefs['fltw_uhd'] = True
 
-        if self.prefs.get('version') != __version__:
+
+        if (self.prefs.get('version') != __version__) or not os.path.isdir(self.prefs.get('trained_models_folder')):
             # set version-specific defaults
             self.prefs['trained_models_folder'] = os.path.join(
-                self.framework.bundle_location,
-                'bundle', 'trained_models', 'default', 'v2.0.model'
+                self.framework.bundle_path,
+                'trained_models', 'default', 'v2.0.model'
                 )
             
         self.prefs['version'] = __version__
@@ -949,15 +1036,23 @@ class flameTimewrapML(flameMenuApp):
         self.UHD = True
 
         self.model_map = {
-            os.path.join(
-                self.framework.bundle_location,
-                'bundle', 'trained_models', 'default', 'v1.8.model'
-                ): ' Model v1.8 ',
-            os.path.join(
-                self.framework.bundle_location,
-                'bundle', 'trained_models', 'default', 'v2.0.model'
-                ): ' Model v2.0 ',
-        }
+                os.path.join(
+                    self.framework.bundle_path,
+                    'trained_models', 'default', 'v1.8.model'
+                    ): ' Model v1.8 ',
+                os.path.join(
+                    self.framework.bundle_path,
+                    'trained_models', 'default', 'v2.0.model'
+                    ): ' Model v2.0 ',
+                os.path.join(
+                    self.framework.bundle_path,
+                    'trained_models', 'default', 'v2.1.model'
+                    ): ' Model v2.1 ',
+                os.path.join(
+                    self.framework.bundle_path,
+                    'trained_models', 'default', 'v2.2.model'
+                    ): ' Model v2.2 ',
+            }
 
     def build_menu(self):
         def scope_clip(selection):
@@ -970,8 +1065,12 @@ class flameTimewrapML(flameMenuApp):
         if not self.flame:
             return []
         
-        if not os.path.isfile(os.path.join(self.framework.bundle_location, 'bundle', 'bundle_id')):
-            return []
+        if self.check_bundle_id:
+            if not os.path.isfile(
+                os.path.join(
+                    self.framework.bundle_path,
+                    'bundle_id')):
+                return []
         
         menu = {'actions': []}
         menu['name'] = self.menu_group_name
@@ -1064,7 +1163,7 @@ class flameTimewrapML(flameMenuApp):
                 cmd = 'python3 '
                 if self.cpu:
                     cmd = 'export OMP_NUM_THREADS=1; python3 '
-                cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_sequence.py')
+                cmd += os.path.join(self.framework.bundle_path, 'inference_sequence.py')
                 cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder
                 cmd += ' --model ' + self.prefs.get('trained_models_folder')
                 cmd += ' --exp=' + str(speed)
@@ -1090,7 +1189,7 @@ class flameTimewrapML(flameMenuApp):
             cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
             cmd_prefix += os.path.join(self.env_folder, 'bin', 'conda')
             cmd_prefix += """ shell.bash hook)" & quote & "; conda activate; """
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
             
             ml_cmd = cmd_prefix
            
@@ -1107,7 +1206,7 @@ class flameTimewrapML(flameMenuApp):
             if hold_konsole:
                 cmd_prefix += '--hold '
             cmd_prefix += """-e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
 
             ml_cmd = cmd_prefix
             ml_cmd += 'echo "Received ' + str(number_of_clips)
@@ -1503,7 +1602,7 @@ class flameTimewrapML(flameMenuApp):
                 cmd = 'python3 '
                 if self.cpu:
                     cmd = 'export OMP_NUM_THREADS=1; python3 '
-                cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_dpframes.py')
+                cmd += os.path.join(self.framework.bundle_path, 'inference_dpframes.py')
                 cmd += ' --model ' + self.prefs.get('trained_models_folder')
                 cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder
                 if mode:
@@ -1530,7 +1629,7 @@ class flameTimewrapML(flameMenuApp):
             cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
             cmd_prefix += os.path.join(self.env_folder, 'bin', 'conda')
             cmd_prefix += """ shell.bash hook)" & quote & "; conda activate; """
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
             
             ml_cmd = cmd_prefix
            
@@ -1547,7 +1646,7 @@ class flameTimewrapML(flameMenuApp):
             if hold_konsole:
                 cmd_prefix += '--hold '
             cmd_prefix += """-e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
 
             ml_cmd = cmd_prefix
             ml_cmd += 'echo "Received ' + str(number_of_clips)
@@ -1828,7 +1927,6 @@ class flameTimewrapML(flameMenuApp):
         hold_konsole = result.get('hold_konsole', False)
         cmd_strings = []
 
-
         incoming_clip_name = incoming_clip.name.get_value()
         outgoing_clip_name = outgoing_clip.name.get_value()
         result_folder = os.path.abspath(
@@ -1860,18 +1958,17 @@ class flameTimewrapML(flameMenuApp):
         self.export_clip(incoming_clip, incoming_folder)
         self.export_clip(outgoing_clip, outgoing_folder)
 
-
         cmd = 'python3 '
         if self.cpu:
             cmd = 'export OMP_NUM_THREADS=1; python3 '
-        cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_fluidmorph.py')
+        cmd += os.path.join(self.framework.bundle_path, 'inference_fluidmorph.py')
         cmd += ' --model ' + self.prefs.get('trained_models_folder')
         cmd += ' --incoming ' + incoming_folder
         cmd += ' --outgoing ' + outgoing_folder
         cmd += ' --output ' + result_folder
         if self.cpu:
             cmd += ' --cpu'
-        if self.UHD:
+        if self.prefs.get('fluidmorph_uhd', False):
             cmd += ' --UHD'
         cmd += "; "
         cmd_strings.append(cmd)
@@ -1891,7 +1988,7 @@ class flameTimewrapML(flameMenuApp):
             cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
             cmd_prefix += os.path.join(self.env_folder, 'bin', 'conda')
             cmd_prefix += """ shell.bash hook)" & quote & "; conda activate; """
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
             
             ml_cmd = cmd_prefix
            
@@ -1908,7 +2005,7 @@ class flameTimewrapML(flameMenuApp):
             if hold_konsole:
                 cmd_prefix += '--hold '
             cmd_prefix += """-e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
 
             ml_cmd = cmd_prefix
             # ml_cmd += 'echo "Received ' + str(number_of_clips)
@@ -2358,13 +2455,13 @@ class flameTimewrapML(flameMenuApp):
             cmd = 'python3 '
             if self.cpu:
                 cmd = 'export OMP_NUM_THREADS=1; python3 '
-            cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_flame_tw.py')
+            cmd += os.path.join(self.framework.bundle_path, 'inference_flame_tw.py')
             cmd += ' --model ' + self.prefs.get('trained_models_folder')
             cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder + ' --setup ' + tw_setup_path
             cmd += ' --record_in ' + str(record_in) + ' --record_out ' + str(record_out)
             if self.cpu:
                 cmd += ' --cpu'
-            if self.prefs.get('slowmo_uhd', False):
+            if self.prefs.get('fltw_uhd', False):
                 cmd += ' --UHD'
             cmd += "; "
             cmd_strings.append(cmd)
@@ -2384,7 +2481,7 @@ class flameTimewrapML(flameMenuApp):
             cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
             cmd_prefix += os.path.join(self.env_folder, 'bin', 'conda')
             cmd_prefix += """ shell.bash hook)" & quote & "; conda activate; """
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
             
             ml_cmd = cmd_prefix
            
@@ -2401,7 +2498,7 @@ class flameTimewrapML(flameMenuApp):
             if hold_konsole:
                 cmd_prefix += '--hold '
             cmd_prefix += """-e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
 
             ml_cmd = cmd_prefix
             ml_cmd += 'echo "Received ' + str(number_of_clips)
@@ -2461,19 +2558,19 @@ class flameTimewrapML(flameMenuApp):
         # Reduce flow res button
 
         def enableUHD():
-            if self.prefs.get('slowmo_uhd', False):
+            if self.prefs.get('fltw_uhd', False):
                 btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
                                         'QToolTip {color: black; background-color:  #ffffd9; border: 0px}')
-                self.prefs['slowmo_uhd'] = False
+                self.prefs['fltw_uhd'] = False
             else:
                 btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
                                         'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-                self.prefs['slowmo_uhd'] = True
+                self.prefs['fltw_uhd'] = True
         btn_UHD = QtWidgets.QPushButton('Reduce flow res', window)
         btn_UHD.setToolTip('<b>Reduce flow res button</b><br>Use less details for analyzis, sometimes could be helpful with large motion.')
         btn_UHD.setFocusPolicy(QtCore.Qt.NoFocus)
         btn_UHD.setMinimumSize(148, 28)
-        if self.prefs.get('slowmo_uhd', False):
+        if self.prefs.get('fltw_uhd', False):
             btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
                                     'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
         else:
@@ -2700,12 +2797,12 @@ class flameTimewrapML(flameMenuApp):
 
         model_map = {
             os.path.join(
-                self.framework.bundle_location,
-                'bundle', 'trained_models', 'default', 'v1.8.model'
+                self.framework.bundle_path,
+                'trained_models', 'default', 'v1.8.model'
                 ): '1One',
             os.path.join(
-                self.framework.bundle_location,
-                'bundle', 'trained_models', 'default', 'v2.0.model'
+                self.framework.bundle_path,
+                'trained_models', 'default', 'v2.0.model'
                 ): '2Two',
         }
 
@@ -2813,7 +2910,7 @@ class flameTimewrapML(flameMenuApp):
          
         import hashlib
         lockfile_name = hashlib.sha1(import_path.encode()).hexdigest().upper() + '.lock'
-        lockfile = os.path.join(self.framework.bundle_location, 'bundle', 'locks', lockfile_name)
+        lockfile = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
         cmd = 'echo "' + import_path + '">' + lockfile
         self.log('Executing command: %s' % cmd)
         os.system(cmd)
@@ -2947,7 +3044,7 @@ def cleanup(local_apps, Local_app_framework):
 atexit.register(cleanup, apps, app_framework)
 
 def load_apps(apps, app_framework):
-    apps.append(flameTimewrapML(app_framework))
+    apps.append(flameTimewarpML(app_framework))
     app_framework.apps = apps
     if DEBUG:
         print ('[DEBUG %s] loaded:\n%s' % (app_framework.bundle_name, pformat(apps)))
@@ -2982,9 +3079,9 @@ def get_media_panel_custom_ui_actions():
         selection = flame.media_panel.selected_entries
     except:
         pass
-
+    
     for app in apps:
-        if app.__class__.__name__ == 'flameTimewrapML':
+        if app.__class__.__name__ == 'flameTimewarpML':
             app_menu = []
             app_menu = app.build_menu()
             if app_menu:

@@ -2,7 +2,5 @@ numpy
 scipy
 tqdm
 torch
-tensorboard
 opencv-python
-moviepy
 psutil
