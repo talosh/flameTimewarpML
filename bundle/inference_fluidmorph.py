@@ -17,6 +17,8 @@ import time
 import psutil
 
 import multiprocessing as mp
+import inference_common
+
 
 IOThreadsFlag = True
 IOProcesses = []
@@ -81,7 +83,7 @@ def build_read_buffer(folder, read_buffer, file_list):
         read_buffer.put(frame_data)
     read_buffer.put(None)
 
-def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles = 8, UHD=False, always_interp=False):
+def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles = 49, UHD=False, always_interp=False):
     I0_ratio = 0.0
     I1_ratio = 1.0
     rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
@@ -109,10 +111,9 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles =
     return middle # + (rational_m - torch.mean(middle)).expand_as(middle)
 
 
-def three_of_a_perfect_pair(incoming_frame, outgoing_frame, frame_num, ratio, device, padding, model, args, h, w, write_buffer):
+def three_of_a_perfect_pair(incoming_frame, outgoing_frame, frame_num, ratio, device, padding, model, args, h, w, write_buffer, rthreshold):
     # print ('target ratio %s' % ratio)
-    rthreshold = 0.02
-    maxcycles = 8
+    maxcycles = 49
     I0_ratio = 0.0
     I1_ratio = 1.0
     
@@ -273,7 +274,7 @@ if __name__ == '__main__':
             I1 = torch.from_numpy(np.transpose(outgoing_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
             I1 = F.pad(I1, padding)
 
-            mid = make_inference_rational(model, I0, I1, ratio, UHD = args.UHD)
+            mid = make_inference_rational(model, I0, I1, ratio, rthreshold = rstep / 2, UHD = args.UHD)
             mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
             write_buffer.put((frame, mid[:h, :w]))
             
@@ -317,6 +318,9 @@ if __name__ == '__main__':
         device = torch.device('cpu')
         torch.set_grad_enabled(False)
         
+        sim_workers, thread_ram = inference_common.safe_threads_number(h, w)
+
+        '''
         max_cpu_workers = mp.cpu_count() - 2
         available_ram = psutil.virtual_memory()[1]/( 1024 ** 3 )
         megapixels = ( h * w ) / ( 10 ** 6 )
@@ -335,6 +339,7 @@ if __name__ == '__main__':
         print ('Using %s CPU worker thread%s (of %s available)\n---' % (sim_workers, '' if sim_workers == 1 else 's', mp.cpu_count()))
         if thread_ram > available_ram:
             print ('Warning: estimated peak memory usage is greater then RAM avaliable')
+        '''
         
         # print ('rendering %s frames to %s/' % (last_frame_number, args.output))
         _thread.start_new_thread(clear_write_buffer, (args.output, write_buffer, input_duration))
@@ -355,7 +360,7 @@ if __name__ == '__main__':
             outgoing_frame = outgoing_read_buffer.get()
 
             
-            p = mp.Process(target=three_of_a_perfect_pair, args=(incoming_frame, outgoing_frame, frame, ratio, device, padding, model, args, h, w, write_buffer, ))
+            p = mp.Process(target=three_of_a_perfect_pair, args=(incoming_frame, outgoing_frame, frame, ratio, device, padding, model, args, h, w, write_buffer, rstep / 2, ))
             p.start()
             active_workers.append(p)
 
