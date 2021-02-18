@@ -22,7 +22,7 @@ TWML_MINICONDA_LINUX = ''
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.0.beta.029'
+__version__ = 'v0.4.0.beta.030'
 
 if os.getenv('TWML_BUNDLE_MAC'):
     TWML_BUNDLE_MAC = os.getenv('TWML_BUNDLE_MAC')
@@ -1015,11 +1015,11 @@ class flameTimewarpML(flameMenuApp):
             self.prefs['fltw_uhd'] = True
 
 
-        if self.prefs.get('version') != __version__:
+        if (self.prefs.get('version') != __version__) or not os.path.isdir(self.prefs.get('trained_models_folder')):
             # set version-specific defaults
             self.prefs['trained_models_folder'] = os.path.join(
-                self.framework.bundle_location,
-                'bundle', 'trained_models', 'default', 'v2.0.model'
+                self.framework.bundle_path,
+                'trained_models', 'default', 'v2.0.model'
                 )
             
         self.prefs['version'] = __version__
@@ -1037,20 +1037,20 @@ class flameTimewarpML(flameMenuApp):
 
         self.model_map = {
                 os.path.join(
-                    self.framework.bundle_location,
-                    'bundle', 'trained_models', 'default', 'v1.8.model'
+                    self.framework.bundle_path,
+                    'trained_models', 'default', 'v1.8.model'
                     ): ' Model v1.8 ',
                 os.path.join(
-                    self.framework.bundle_location,
-                    'bundle', 'trained_models', 'default', 'v2.0.model'
+                    self.framework.bundle_path,
+                    'trained_models', 'default', 'v2.0.model'
                     ): ' Model v2.0 ',
                 os.path.join(
-                    self.framework.bundle_location,
-                    'bundle', 'trained_models', 'default', 'v2.1.model'
+                    self.framework.bundle_path,
+                    'trained_models', 'default', 'v2.1.model'
                     ): ' Model v2.1 ',
                 os.path.join(
-                    self.framework.bundle_location,
-                    'bundle', 'trained_models', 'default', 'v2.2.model'
+                    self.framework.bundle_path,
+                    'trained_models', 'default', 'v2.2.model'
                     ): ' Model v2.2 ',
             }
 
@@ -1068,8 +1068,7 @@ class flameTimewarpML(flameMenuApp):
         if self.check_bundle_id:
             if not os.path.isfile(
                 os.path.join(
-                    self.framework.bundle_location,
-                    'bundle',
+                    self.framework.bundle_path,
                     'bundle_id')):
                 return []
         
@@ -1164,7 +1163,7 @@ class flameTimewarpML(flameMenuApp):
                 cmd = 'python3 '
                 if self.cpu:
                     cmd = 'export OMP_NUM_THREADS=1; python3 '
-                cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_sequence.py')
+                cmd += os.path.join(self.framework.bundle_path, 'inference_sequence.py')
                 cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder
                 cmd += ' --model ' + self.prefs.get('trained_models_folder')
                 cmd += ' --exp=' + str(speed)
@@ -1190,7 +1189,7 @@ class flameTimewarpML(flameMenuApp):
             cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
             cmd_prefix += os.path.join(self.env_folder, 'bin', 'conda')
             cmd_prefix += """ shell.bash hook)" & quote & "; conda activate; """
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
             
             ml_cmd = cmd_prefix
            
@@ -1207,7 +1206,7 @@ class flameTimewarpML(flameMenuApp):
             if hold_konsole:
                 cmd_prefix += '--hold '
             cmd_prefix += """-e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
 
             ml_cmd = cmd_prefix
             ml_cmd += 'echo "Received ' + str(number_of_clips)
@@ -1603,7 +1602,7 @@ class flameTimewarpML(flameMenuApp):
                 cmd = 'python3 '
                 if self.cpu:
                     cmd = 'export OMP_NUM_THREADS=1; python3 '
-                cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_dpframes.py')
+                cmd += os.path.join(self.framework.bundle_path, 'inference_dpframes.py')
                 cmd += ' --model ' + self.prefs.get('trained_models_folder')
                 cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder
                 if mode:
@@ -1630,7 +1629,7 @@ class flameTimewarpML(flameMenuApp):
             cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
             cmd_prefix += os.path.join(self.env_folder, 'bin', 'conda')
             cmd_prefix += """ shell.bash hook)" & quote & "; conda activate; """
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
             
             ml_cmd = cmd_prefix
            
@@ -1647,7 +1646,7 @@ class flameTimewarpML(flameMenuApp):
             if hold_konsole:
                 cmd_prefix += '--hold '
             cmd_prefix += """-e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
 
             ml_cmd = cmd_prefix
             ml_cmd += 'echo "Received ' + str(number_of_clips)
@@ -1962,7 +1961,7 @@ class flameTimewarpML(flameMenuApp):
         cmd = 'python3 '
         if self.cpu:
             cmd = 'export OMP_NUM_THREADS=1; python3 '
-        cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_fluidmorph.py')
+        cmd += os.path.join(self.framework.bundle_path, 'inference_fluidmorph.py')
         cmd += ' --model ' + self.prefs.get('trained_models_folder')
         cmd += ' --incoming ' + incoming_folder
         cmd += ' --outgoing ' + outgoing_folder
@@ -1989,7 +1988,7 @@ class flameTimewarpML(flameMenuApp):
             cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
             cmd_prefix += os.path.join(self.env_folder, 'bin', 'conda')
             cmd_prefix += """ shell.bash hook)" & quote & "; conda activate; """
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
             
             ml_cmd = cmd_prefix
            
@@ -2006,7 +2005,7 @@ class flameTimewarpML(flameMenuApp):
             if hold_konsole:
                 cmd_prefix += '--hold '
             cmd_prefix += """-e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
 
             ml_cmd = cmd_prefix
             # ml_cmd += 'echo "Received ' + str(number_of_clips)
@@ -2456,7 +2455,7 @@ class flameTimewarpML(flameMenuApp):
             cmd = 'python3 '
             if self.cpu:
                 cmd = 'export OMP_NUM_THREADS=1; python3 '
-            cmd += os.path.join(self.framework.bundle_location, 'bundle', 'inference_flame_tw.py')
+            cmd += os.path.join(self.framework.bundle_path, 'inference_flame_tw.py')
             cmd += ' --model ' + self.prefs.get('trained_models_folder')
             cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder + ' --setup ' + tw_setup_path
             cmd += ' --record_in ' + str(record_in) + ' --record_out ' + str(record_out)
@@ -2482,7 +2481,7 @@ class flameTimewarpML(flameMenuApp):
             cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
             cmd_prefix += os.path.join(self.env_folder, 'bin', 'conda')
             cmd_prefix += """ shell.bash hook)" & quote & "; conda activate; """
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
             
             ml_cmd = cmd_prefix
            
@@ -2499,7 +2498,7 @@ class flameTimewarpML(flameMenuApp):
             if hold_konsole:
                 cmd_prefix += '--hold '
             cmd_prefix += """-e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
-            cmd_prefix += 'cd ' + os.path.join(self.framework.bundle_location, 'bundle') + '; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
 
             ml_cmd = cmd_prefix
             ml_cmd += 'echo "Received ' + str(number_of_clips)
@@ -2798,12 +2797,12 @@ class flameTimewarpML(flameMenuApp):
 
         model_map = {
             os.path.join(
-                self.framework.bundle_location,
-                'bundle', 'trained_models', 'default', 'v1.8.model'
+                self.framework.bundle_path,
+                'trained_models', 'default', 'v1.8.model'
                 ): '1One',
             os.path.join(
-                self.framework.bundle_location,
-                'bundle', 'trained_models', 'default', 'v2.0.model'
+                self.framework.bundle_path,
+                'trained_models', 'default', 'v2.0.model'
                 ): '2Two',
         }
 
@@ -2911,7 +2910,7 @@ class flameTimewarpML(flameMenuApp):
          
         import hashlib
         lockfile_name = hashlib.sha1(import_path.encode()).hexdigest().upper() + '.lock'
-        lockfile = os.path.join(self.framework.bundle_location, 'bundle', 'locks', lockfile_name)
+        lockfile = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
         cmd = 'echo "' + import_path + '">' + lockfile
         self.log('Executing command: %s' % cmd)
         os.system(cmd)
