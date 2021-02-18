@@ -45,25 +45,18 @@ cp -a bundle/* /Volumes/software/flameTimewarpML/
 cp -a bundle/* /mnt/software/flameTimewarpML/
 ```
 
-* Download Miniconda3 for Python 3.8 from https://docs.conda.io/en/latest/miniconda.html Shell installer is used for this example.
+* Download Miniconda3 for Python 3.8 from https://docs.conda.io/en/latest/miniconda.html
+<br>Shell installer is used for this example.
 
 * Install Miniconda3 to centralized location:
-Mac:
 ```
 sh Miniconda3-latest-MacOSX-x86_64.sh -bu -p /Volumes/software/miniconda3/
-```
-Linux:
-```
 sh Miniconda3-linux-MacOSX-x86_64.sh -bu -p /mnt/software/flameTimewarpML/
 ```
 
 * Init installed Miniconda3 environment:
-Mac:
 ```
 /Volumes/software/flameTimewarpML/init_env  /Volumes/software/miniconda3/
-```
-Linux:
-```
 /mnt/software/flameTimewarpML/init_env  /mnt/software/miniconda3/
 ```
 
