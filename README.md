@@ -81,7 +81,10 @@ pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt --no-index --
 * set FLAMETWML_BUNDLE, FLAMETWML_MINICONDA environment variables to point code and miniconda locations.
 ```
 export FLAMETWML_BUNDLE=/Volumes/software/flameTimewarpML/          # Mac
+export FLAMETWML_MINICONDA=//Volumes/software/miniconda3/           # Mac
+
 export FLAMETWML_BUNDLE=/mnt/software/flameTimewarpML/              # Linux
+export FLAMETWML_MINICONDA=/mnt/software/miniconda3/                # Linux
 ```
 <br> More granular settings per platform possible with
 ```
