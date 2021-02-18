@@ -26,9 +26,19 @@ https://github.com/guerilla-di/flame_channel_parser
 ```
 git clone https://github.com/talosh/flameTimewarpML.git
 ```
-* Althiugh it is possible to share the code location between platforms Miniconda3 should be placed separately for Mac and Linux.
-This exmaple will use /Volumes/software/flameTimewarpML for Mac and /mnt/software/flameTimewarpML for Linux as code location.
-Miniconda3 location are /Volumes/software/miniconda3 for Mac and /mnt/software/miniconda3 for Linux.
+* Although it is possible to share single code location between platforms Miniconda3 python environment should be placed separately for Mac and Linux.
+This exmaple will use:
+
+```
+code locations:
+Mac:   /Volumes/software/flameTimewarpML 
+Linux: /mnt/software/flameTimewarpML
+
+miniconda3 locations:
+Mac:   /Volumes/software/miniconda3
+Linux: /mnt/software/miniconda3
+```
+
 * Copy the contents of 'bundle' folder to the code location.
 Mac:
 ```
