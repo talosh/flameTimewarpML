@@ -68,18 +68,20 @@ pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt
 pip3 install -r /mnt/software/flameTimewarpML/requirements.txt
 ```
 
-* If your network is not connected to internet install Miniconda3 on the machine that is connected to internet and download dependency packages:
+* It is possible to download the packages and install it without internet connection. Install Miniconda3 on the machine that is connected to internet and download dependency packages:
 ```
 pip3 download -r bundle/requirements.txt -d packages_folder
 ```
-then it is possible to install packages from given folder:
+then it is possible to install packages from folder:
 ```
 pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt --no-index --find-links /Volumes/software/flameTimewarpML/packages_folder
 ```
+* Copy flameTimewarpML.py to your Flame python scripts folder
 
-* set FLAMETWML_BUNDLE_MAC, FLAMETWML_MINICONDA_MAC environment variables on Mac and 
-FLAMETWML_BUNDLE_LINUX, FLAMETWML_MINICONDA_LINUX on Linux to point code and miniconda locations. 
-It is also possible to edit flameTimewarpML.py file to add paths directly:
+* set FLAMETWML_BUNDLE, FLAMETWML_MINICONDA environment variables to point code and miniconda locations.
+It can be set by platform as well using FLAMETWML_BUNDLE_MAC, FLAMETWML_BUNDLE_LINUX, FLAMETWML_MINICONDA_MAC, FLAMETWML_MINICONDA_LINUX ebv variables.
+
+<br>It is also possible to edit flameTimewarpML.py file to add paths directly:
 
 ```
 # Configurable settings
@@ -91,6 +93,3 @@ menu_group_name = 'Timewarp ML'
 DEBUG = False
 ```
 
-It is also possible to set FLAMETWML_BUNDLE_MAC and FLAMETWML_MINICONDA_MAC environment variables 
-
-* Copy edited flameTimewarpML.py to your Flame python scripts folder
