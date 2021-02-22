@@ -74,6 +74,12 @@ sh Miniconda3-latest-Linux-x86_64.sh -bu -p /mnt/software/miniconda3/       # Li
 The script will open new konsole window.
 
 * In case you do it over ssh remotely on Linux edit the line at the very end of init_env
+```
+ cmd_prefix = 'konsole -e /bin/bash --rcfile ' + tmp_bash_rc_file
+```
+```
+cmd_prefix = '/bin/bash --rcfile ' + tmp_bash_rc_file
+```
 
 * To check if environment is properly initialized: there should be (base) before shell prompt. python --version should give Python 3.8.5 or greater
 
