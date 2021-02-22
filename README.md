@@ -39,6 +39,9 @@ miniconda3 location:
 /mnt/software/miniconda3                                # Linux
 ```
 
+* Do not place those folders inside Flame's python hooks folder.
+The only file that should be placed in Flame hooks folder is flameTimewarpML.py
+
 * Create folders
 ```
 mkdir -p /Volumes/software/flameTimewarpML                       # Mac
