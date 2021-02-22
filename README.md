@@ -71,8 +71,11 @@ sh Miniconda3-latest-Linux-x86_64.sh -bu -p /mnt/software/miniconda3/       # Li
 /Volumes/software/flameTimewarpML/init_env  /Volumes/software/miniconda3/   # Mac
 /mnt/software/flameTimewarpML/init_env  /mnt/software/miniconda3/           # Linux
 ```
+The script will open new konsole window.
 
-there should be (base) before shell prompt. python --version should give Python 3.8.5 or greater
+* In case you do it over ssh remotely on Linux edit the line at the very end of init_env
+
+* To check if environment is properly initialized: there should be (base) before shell prompt. python --version should give Python 3.8.5 or greater
 
 * From this shell prompt install dependency libraries:
 ```
