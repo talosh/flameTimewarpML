@@ -65,6 +65,8 @@ cp -a bundle/* /mnt/software/flameTimewarpML/           # Linux
 sh Miniconda3-latest-MacOSX-x86_64.sh -bu -p /Volumes/software/miniconda3/  # Mac
 sh Miniconda3-latest-Linux-x86_64.sh -bu -p /mnt/software/miniconda3/       # Linux
 ```
+* In case you'd like to move Miniconda3 installation later you'll have to re-install it again.
+Please refer to Anaconda docs: https://docs.anaconda.com/anaconda/user-guide/tasks/move-directory/
 
 * Init installed Miniconda3 environment:
 ```
