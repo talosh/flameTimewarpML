@@ -1025,7 +1025,7 @@ class flameTimewarpML(flameMenuApp):
             self.prefs['fltw_uhd'] = True
 
 
-        if (self.prefs.get('version') != __version__) or not os.path.isdir(self.prefs.get('trained_models_folder')):
+        if (self.prefs.get('version') != __version__) or not os.path.isdir(str(self.prefs.get('trained_models_folder', ''))):
             # set version-specific defaults
             self.prefs['trained_models_folder'] = os.path.join(
                 self.framework.bundle_path,
