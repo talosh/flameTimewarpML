@@ -184,7 +184,7 @@ def cpu_progress_updater(frames_written, last_frame_number):
         time.sleep(0.01)
     pbar.close()
 
-if __name__ == '__main__':
+if __name__ == '__main__':    
     start = time.time()
     print('initializing Timewarp ML...')
 
