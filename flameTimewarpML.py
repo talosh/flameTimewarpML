@@ -19,11 +19,10 @@ FLAMETWML_BUNDLE_MAC = ''
 FLAMETWML_BUNDLE_LINUX = ''
 FLAMETWML_MINICONDA_MAC = ''
 FLAMETWML_MINICONDA_LINUX = ''
-FLAMETWML_WORK_FOLDER = ''
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.1.beta.003'
+__version__ = 'v0.4.1.beta.005'
 
 
 if os.getenv('FLAMETWML_BUNDLE') and not FLAMETWML_BUNDLE_MAC:
@@ -1026,7 +1025,7 @@ class flameTimewarpML(flameMenuApp):
             self.prefs['fltw_uhd'] = True
 
 
-        if (self.prefs.get('version') != __version__) or not os.path.isdir(self.prefs.get('trained_models_folder')):
+        if (self.prefs.get('version') != __version__) or not os.path.isdir(str(self.prefs.get('trained_models_folder', ''))):
             # set version-specific defaults
             self.prefs['trained_models_folder'] = os.path.join(
                 self.framework.bundle_path,
