@@ -19,11 +19,10 @@ FLAMETWML_BUNDLE_MAC = ''
 FLAMETWML_BUNDLE_LINUX = ''
 FLAMETWML_MINICONDA_MAC = ''
 FLAMETWML_MINICONDA_LINUX = ''
-FLAMETWML_WORK_FOLDER = ''
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.1.beta.003'
+__version__ = 'v0.4.1.beta.005'
 
 
 if os.getenv('FLAMETWML_BUNDLE') and not FLAMETWML_BUNDLE_MAC:

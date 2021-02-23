@@ -50,7 +50,18 @@ def clear_write_buffer(args, write_buffer, input_duration, pbar=None):
     global IOThreadsFlag
     global IOProcesses
 
+    number_of_write_threads = 4
+
     while IOThreadsFlag:
+
+        alive_processes = []
+        for process in IOProcesses:
+            if process.is_alive():
+                alive_processes.append(process)
+            else:
+                process.join(timeout=0)
+        IOProcesses = list(alive_processes)
+
         item = write_buffer.get()
                     
         frame_number, image_data = item
@@ -59,15 +70,22 @@ def clear_write_buffer(args, write_buffer, input_duration, pbar=None):
             break
 
         path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(frame_number))
-        try:
-            p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
-            p.start()
-            IOProcesses.append(p)
-        except:
+        if len(IOProcesses) < number_of_write_threads:
+            try:
+                p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
+                p.start()
+                IOProcesses.append(p)
+            except:
+                try:
+                    cv2.imwrite(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
+                except Exception as e:
+                    print ('Error wtiring %s: %s' % (path, e))
+        else:
             try:
                 cv2.imwrite(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
             except Exception as e:
                 print ('Error wtiring %s: %s' % (path, e))
+
         if pbar:
             pbar.update(1)
 
