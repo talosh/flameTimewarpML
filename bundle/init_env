@@ -30,10 +30,16 @@ with open(tmp_bash_rc_file, 'w') as tmp_rcfile:
     tmp_rcfile.close()
 
 if sys.platform == 'darwin':
-    cmd_prefix = """tell application "Terminal" to activate do script "clear; """
-    cmd_prefix += """/bin/bash --rcfile """ + tmp_bash_rc_file + '"'
-    import subprocess
-    subprocess.Popen(['osascript', '-e', cmd_prefix])
+    if any ([os.getenv('SSH_TTY'), os.getenv('SSH_CONNECTION'), os.getenv('SSH_CLIENT')]):
+        cmd_prefix = '/bin/bash --rcfile ' + tmp_bash_rc_file
+        os.system(cmd_prefix)
+    else:
+        cmd_prefix = """tell application "Terminal" to activate do script "clear; """
+        cmd_prefix += """/bin/bash --rcfile """ + tmp_bash_rc_file + '"'
+        import subprocess
+        subprocess.Popen(['osascript', '-e', cmd_prefix])
 else:
     cmd_prefix = 'konsole -e /bin/bash --rcfile ' + tmp_bash_rc_file
+    if any ([os.getenv('SSH_TTY'), os.getenv('SSH_CONNECTION'), os.getenv('SSH_CLIENT')]):
+        cmd_prefix = '/bin/bash --rcfile ' + tmp_bash_rc_file
     os.system(cmd_prefix)
