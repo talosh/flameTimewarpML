@@ -19,10 +19,11 @@ FLAMETWML_BUNDLE_MAC = ''
 FLAMETWML_BUNDLE_LINUX = ''
 FLAMETWML_MINICONDA_MAC = ''
 FLAMETWML_MINICONDA_LINUX = ''
+FLAMETWML_WORK_FOLDER = ''
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.0'
+__version__ = 'v0.4.1.beta.003'
 
 
 if os.getenv('FLAMETWML_BUNDLE') and not FLAMETWML_BUNDLE_MAC:
@@ -1035,6 +1036,12 @@ class flameTimewarpML(flameMenuApp):
         self.prefs['version'] = __version__
         self.framework.save_prefs()
 
+        if os.getenv('FLAMETWML_DEFAULT_WORK_FOLDER'):
+            self.prefs['working_folder'] = os.getenv('FLAMETWML_DEFAULT_WORK_FOLDER')
+
+        if os.getenv('FLAMETWML_WORK_FOLDER'):
+            self.prefs['working_folder'] = os.getenv('FLAMETWML_WORK_FOLDER')
+
         self.working_folder = self.prefs.get('working_folder')
         if not os.path.isdir(self.working_folder):
             self.working_folder = '/var/tmp'
@@ -1223,6 +1230,7 @@ class flameTimewarpML(flameMenuApp):
             ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
             ml_cmd += 'to process, press Ctrl+C to cancel"; '
             ml_cmd += 'trap exit SIGINT SIGTERM; '
+            # ml_cmd += 'ulimit -n 128; ulimit -n; '
 
             for cmd_string in cmd_strings:
                 ml_cmd += cmd_string
@@ -1407,19 +1415,7 @@ class flameTimewarpML(flameMenuApp):
         vbox.addLayout(new_speed_hbox)
         vbox.addWidget(lbl_Spacer)
 
-        # Work Folder Label
-
-        lbl_WorkFolder = QtWidgets.QLabel('Export folder', window)
-        lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_WorkFolder.setMinimumHeight(28)
-        lbl_WorkFolder.setMaximumHeight(28)
-        lbl_WorkFolder.setAlignment(QtCore.Qt.AlignCenter)
-        vbox.addWidget(lbl_WorkFolder)
-
-        # Work Folder Text Field
-
-        hbox_workfolder = QtWidgets.QHBoxLayout()
-        hbox_workfolder.setAlignment(QtCore.Qt.AlignLeft)
+        # Work Folder
 
         def chooseFolder():
             result_folder = str(QtWidgets.QFileDialog.getExistingDirectory(window, "Open Directory", self.working_folder, QtWidgets.QFileDialog.ShowDirsOnly))
@@ -1429,36 +1425,51 @@ class flameTimewarpML(flameMenuApp):
             txt_WorkFolder.setText(self.working_folder)
             self.prefs['working_folder'] = self.working_folder
 
-            #dialog = QtWidgets.QFileDialog()
-            #dialog.setWindowTitle('Select export folder')
-            #dialog.setOption(QtWidgets.QFileDialog.ShowDirsOnly, True)
-            #dialog.setDirectory(self.working_folder)
-            #dialog.setFileMode(QtWidgets.QFileDialog.Directory)
-            #path = QtWidgets.QFileDialog.getExistingDirectory()
-            # dialog.setFileMode(QtWidgets.QFileDialog.FileMode.Directory)
-            #
-            # if dialog.exec_() == QtWidgets.QDialog.Accepted:
-            #    file_full_path = str(dialog.selectedFiles()[0])
-
         def txt_WorkFolder_textChanged():
             self.working_folder = txt_WorkFolder.text()
-        txt_WorkFolder = QtWidgets.QLineEdit('', window)
-        txt_WorkFolder.setFocusPolicy(QtCore.Qt.ClickFocus)
-        txt_WorkFolder.setMinimumSize(280, 28)
-        txt_WorkFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
-        txt_WorkFolder.setText(self.working_folder)
-        txt_WorkFolder.textChanged.connect(txt_WorkFolder_textChanged)
-        hbox_workfolder.addWidget(txt_WorkFolder)
 
-        btn_changePreset = QtWidgets.QPushButton('Choose', window)
-        btn_changePreset.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_changePreset.setMinimumSize(88, 28)
-        btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                   'QPushButton:pressed {font:italic; color: #d9d9d9}')
-        btn_changePreset.clicked.connect(chooseFolder)
-        hbox_workfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
+        # Work Folder Label
 
-        vbox.addLayout(hbox_workfolder)
+        lbl_WorkFolder = QtWidgets.QLabel('Export folder', window)
+        lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_WorkFolder.setMinimumHeight(28)
+        lbl_WorkFolder.setMaximumHeight(28)
+        lbl_WorkFolder.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_WorkFolder)
+
+        # Work Folder ENV Variable selector
+
+        if os.getenv('FLAMETWML_WORK_FOLDER'):
+            lbl_WorkFolderPath = QtWidgets.QLabel(self.working_folder, window)
+            lbl_WorkFolderPath.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+            lbl_WorkFolderPath.setMinimumHeight(28)
+            lbl_WorkFolderPath.setMaximumHeight(28)
+            lbl_WorkFolderPath.setAlignment(QtCore.Qt.AlignCenter)
+            vbox.addWidget(lbl_WorkFolderPath)
+
+        else:
+            # Work Folder Text Field
+            hbox_workfolder = QtWidgets.QHBoxLayout()
+            hbox_workfolder.setAlignment(QtCore.Qt.AlignLeft)
+
+            txt_WorkFolder = QtWidgets.QLineEdit('', window)
+            txt_WorkFolder.setFocusPolicy(QtCore.Qt.ClickFocus)
+            txt_WorkFolder.setMinimumSize(280, 28)
+            txt_WorkFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+            txt_WorkFolder.setText(self.working_folder)
+            txt_WorkFolder.textChanged.connect(txt_WorkFolder_textChanged)
+            hbox_workfolder.addWidget(txt_WorkFolder)
+
+            btn_changePreset = QtWidgets.QPushButton('Choose', window)
+            btn_changePreset.setFocusPolicy(QtCore.Qt.NoFocus)
+            btn_changePreset.setMinimumSize(88, 28)
+            btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}')
+            btn_changePreset.clicked.connect(chooseFolder)
+            hbox_workfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
+
+            vbox.addLayout(hbox_workfolder)
+
         vbox.addWidget(lbl_Spacer)
 
         # self.dialog_model_path(window, vbox)
@@ -1552,6 +1563,10 @@ class flameTimewarpML(flameMenuApp):
 
         window.setLayout(vbox)
         if window.exec_():
+            if os.getenv('FLAMETWML_WORK_FOLDER'):
+                self.working_folder = os.getenv('FLAMETWML_WORK_FOLDER')
+                self.prefs['working_folder'] = os.getenv('FLAMETWML_WORK_FOLDER')
+
             modifiers = QtWidgets.QApplication.keyboardModifiers()
             self.framework.save_prefs()
             return {
@@ -1816,20 +1831,7 @@ class flameTimewarpML(flameMenuApp):
         vbox.addLayout(dframes_hbox)
         vbox.addWidget(lbl_Spacer)
 
-        # Work Folder Label
-
-        lbl_WorkFolder = QtWidgets.QLabel('Export folder', window)
-        lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_WorkFolder.setMinimumHeight(28)
-        lbl_WorkFolder.setMaximumHeight(28)
-        lbl_WorkFolder.setAlignment(QtCore.Qt.AlignCenter)
-        vbox.addWidget(lbl_WorkFolder)
-
-        # Work Folder Text Field
-
-        hbox_workfolder = QtWidgets.QHBoxLayout()
-        hbox_workfolder.setAlignment(QtCore.Qt.AlignLeft)
-
+        # Work Folder
 
         def chooseFolder():
             result_folder = str(QtWidgets.QFileDialog.getExistingDirectory(window, "Open Directory", self.working_folder, QtWidgets.QFileDialog.ShowDirsOnly))
@@ -1839,36 +1841,50 @@ class flameTimewarpML(flameMenuApp):
             txt_WorkFolder.setText(self.working_folder)
             self.prefs['working_folder'] = self.working_folder
 
-            #dialog = QtWidgets.QFileDialog()
-            #dialog.setWindowTitle('Select export folder')
-            #dialog.setOption(QtWidgets.QFileDialog.ShowDirsOnly, True)
-            #dialog.setDirectory(self.working_folder)
-            #dialog.setFileMode(QtWidgets.QFileDialog.Directory)
-            #path = QtWidgets.QFileDialog.getExistingDirectory()
-            # dialog.setFileMode(QtWidgets.QFileDialog.FileMode.Directory)
-            #
-            # if dialog.exec_() == QtWidgets.QDialog.Accepted:
-            #    file_full_path = str(dialog.selectedFiles()[0])
-
         def txt_WorkFolder_textChanged():
             self.working_folder = txt_WorkFolder.text()
-        txt_WorkFolder = QtWidgets.QLineEdit('', window)
-        txt_WorkFolder.setFocusPolicy(QtCore.Qt.ClickFocus)
-        txt_WorkFolder.setMinimumSize(280, 28)
-        txt_WorkFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
-        txt_WorkFolder.setText(self.working_folder)
-        txt_WorkFolder.textChanged.connect(txt_WorkFolder_textChanged)
-        hbox_workfolder.addWidget(txt_WorkFolder)
 
-        btn_changePreset = QtWidgets.QPushButton('Choose', window)
-        btn_changePreset.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_changePreset.setMinimumSize(88, 28)
-        btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                   'QPushButton:pressed {font:italic; color: #d9d9d9}')
-        btn_changePreset.clicked.connect(chooseFolder)
-        hbox_workfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
+        # Work Folder Label
 
-        vbox.addLayout(hbox_workfolder)
+        lbl_WorkFolder = QtWidgets.QLabel('Export folder', window)
+        lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_WorkFolder.setMinimumHeight(28)
+        lbl_WorkFolder.setMaximumHeight(28)
+        lbl_WorkFolder.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_WorkFolder)
+
+        # Work Folder ENV Variable selector
+
+        if os.getenv('FLAMETWML_WORK_FOLDER'):
+            lbl_WorkFolderPath = QtWidgets.QLabel(self.working_folder, window)
+            lbl_WorkFolderPath.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+            lbl_WorkFolderPath.setMinimumHeight(28)
+            lbl_WorkFolderPath.setMaximumHeight(28)
+            lbl_WorkFolderPath.setAlignment(QtCore.Qt.AlignCenter)
+            vbox.addWidget(lbl_WorkFolderPath)
+
+        else:
+            # Work Folder Text Field
+            hbox_workfolder = QtWidgets.QHBoxLayout()
+            hbox_workfolder.setAlignment(QtCore.Qt.AlignLeft)
+
+            txt_WorkFolder = QtWidgets.QLineEdit('', window)
+            txt_WorkFolder.setFocusPolicy(QtCore.Qt.ClickFocus)
+            txt_WorkFolder.setMinimumSize(280, 28)
+            txt_WorkFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+            txt_WorkFolder.setText(self.working_folder)
+            txt_WorkFolder.textChanged.connect(txt_WorkFolder_textChanged)
+            hbox_workfolder.addWidget(txt_WorkFolder)
+
+            btn_changePreset = QtWidgets.QPushButton('Choose', window)
+            btn_changePreset.setFocusPolicy(QtCore.Qt.NoFocus)
+            btn_changePreset.setMinimumSize(88, 28)
+            btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}')
+            btn_changePreset.clicked.connect(chooseFolder)
+            hbox_workfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
+
+            vbox.addLayout(hbox_workfolder)
 
         vbox.addWidget(lbl_Spacer)
 
@@ -1898,6 +1914,10 @@ class flameTimewarpML(flameMenuApp):
 
         window.setLayout(vbox)
         if window.exec_():
+            if os.getenv('FLAMETWML_WORK_FOLDER'):
+                self.working_folder = os.getenv('FLAMETWML_WORK_FOLDER')
+                self.prefs['working_folder'] = os.getenv('FLAMETWML_WORK_FOLDER')
+
             modifiers = QtWidgets.QApplication.keyboardModifiers()
             self.framework.save_prefs()
             return {
@@ -2197,20 +2217,7 @@ class flameTimewarpML(flameMenuApp):
         vbox.addLayout(dframes_hbox)
         vbox.addWidget(lbl_Spacer)
 
-        # Work Folder Label
-
-        lbl_WorkFolder = QtWidgets.QLabel('Export folder', window)
-        lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_WorkFolder.setMinimumHeight(28)
-        lbl_WorkFolder.setMaximumHeight(28)
-        lbl_WorkFolder.setAlignment(QtCore.Qt.AlignCenter)
-        vbox.addWidget(lbl_WorkFolder)
-
-        # Work Folder Text Field
-
-        hbox_workfolder = QtWidgets.QHBoxLayout()
-        hbox_workfolder.setAlignment(QtCore.Qt.AlignLeft)
-
+        # Work Folder
 
         def chooseFolder():
             result_folder = str(QtWidgets.QFileDialog.getExistingDirectory(window, "Open Directory", self.working_folder, QtWidgets.QFileDialog.ShowDirsOnly))
@@ -2220,36 +2227,51 @@ class flameTimewarpML(flameMenuApp):
             txt_WorkFolder.setText(self.working_folder)
             self.prefs['working_folder'] = self.working_folder
 
-            #dialog = QtWidgets.QFileDialog()
-            #dialog.setWindowTitle('Select export folder')
-            #dialog.setOption(QtWidgets.QFileDialog.ShowDirsOnly, True)
-            #dialog.setDirectory(self.working_folder)
-            #dialog.setFileMode(QtWidgets.QFileDialog.Directory)
-            #path = QtWidgets.QFileDialog.getExistingDirectory()
-            # dialog.setFileMode(QtWidgets.QFileDialog.FileMode.Directory)
-            #
-            # if dialog.exec_() == QtWidgets.QDialog.Accepted:
-            #    file_full_path = str(dialog.selectedFiles()[0])
-
         def txt_WorkFolder_textChanged():
             self.working_folder = txt_WorkFolder.text()
-        txt_WorkFolder = QtWidgets.QLineEdit('', window)
-        txt_WorkFolder.setFocusPolicy(QtCore.Qt.ClickFocus)
-        txt_WorkFolder.setMinimumSize(280, 28)
-        txt_WorkFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
-        txt_WorkFolder.setText(self.working_folder)
-        txt_WorkFolder.textChanged.connect(txt_WorkFolder_textChanged)
-        hbox_workfolder.addWidget(txt_WorkFolder)
 
-        btn_changePreset = QtWidgets.QPushButton('Choose', window)
-        btn_changePreset.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_changePreset.setMinimumSize(88, 28)
-        btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                   'QPushButton:pressed {font:italic; color: #d9d9d9}')
-        btn_changePreset.clicked.connect(chooseFolder)
-        hbox_workfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
+        # Work Folder Label
 
-        vbox.addLayout(hbox_workfolder)
+        lbl_WorkFolder = QtWidgets.QLabel('Export folder', window)
+        lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_WorkFolder.setMinimumHeight(28)
+        lbl_WorkFolder.setMaximumHeight(28)
+        lbl_WorkFolder.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_WorkFolder)
+
+        # Work Folder ENV Variable selector
+
+        if os.getenv('FLAMETWML_WORK_FOLDER'):
+            lbl_WorkFolderPath = QtWidgets.QLabel(self.working_folder, window)
+            lbl_WorkFolderPath.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+            lbl_WorkFolderPath.setMinimumHeight(28)
+            lbl_WorkFolderPath.setMaximumHeight(28)
+            lbl_WorkFolderPath.setAlignment(QtCore.Qt.AlignCenter)
+            vbox.addWidget(lbl_WorkFolderPath)
+
+        else:
+            # Work Folder Text Field
+            hbox_workfolder = QtWidgets.QHBoxLayout()
+            hbox_workfolder.setAlignment(QtCore.Qt.AlignLeft)
+
+            txt_WorkFolder = QtWidgets.QLineEdit('', window)
+            txt_WorkFolder.setFocusPolicy(QtCore.Qt.ClickFocus)
+            txt_WorkFolder.setMinimumSize(280, 28)
+            txt_WorkFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+            txt_WorkFolder.setText(self.working_folder)
+            txt_WorkFolder.textChanged.connect(txt_WorkFolder_textChanged)
+            hbox_workfolder.addWidget(txt_WorkFolder)
+
+            btn_changePreset = QtWidgets.QPushButton('Choose', window)
+            btn_changePreset.setFocusPolicy(QtCore.Qt.NoFocus)
+            btn_changePreset.setMinimumSize(88, 28)
+            btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}')
+            btn_changePreset.clicked.connect(chooseFolder)
+            hbox_workfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
+
+            vbox.addLayout(hbox_workfolder)
+
         vbox.addWidget(lbl_Spacer)
 
         # Create and Cancel Buttons
@@ -2278,6 +2300,10 @@ class flameTimewarpML(flameMenuApp):
 
         window.setLayout(vbox)
         if window.exec_():
+            if os.getenv('FLAMETWML_WORK_FOLDER'):
+                self.working_folder = os.getenv('FLAMETWML_WORK_FOLDER')
+                self.prefs['working_folder'] = os.getenv('FLAMETWML_WORK_FOLDER')
+
             modifiers = QtWidgets.QApplication.keyboardModifiers()
             self.framework.save_prefs()
             return {
@@ -2643,19 +2669,7 @@ class flameTimewarpML(flameMenuApp):
         vbox.addLayout(new_speed_hbox)
         vbox.addWidget(lbl_Spacer)
 
-        # Work Folder Label
-
-        lbl_WorkFolder = QtWidgets.QLabel('Export folder', window)
-        lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_WorkFolder.setMinimumHeight(28)
-        lbl_WorkFolder.setMaximumHeight(28)
-        lbl_WorkFolder.setAlignment(QtCore.Qt.AlignCenter)
-        vbox.addWidget(lbl_WorkFolder)
-
-        # Work Folder Text Field
-
-        hbox_workfolder = QtWidgets.QHBoxLayout()
-        hbox_workfolder.setAlignment(QtCore.Qt.AlignLeft)
+        # Work Folder
 
         def chooseFolder():
             result_folder = str(QtWidgets.QFileDialog.getExistingDirectory(window, "Open Directory", self.working_folder, QtWidgets.QFileDialog.ShowDirsOnly))
@@ -2667,25 +2681,49 @@ class flameTimewarpML(flameMenuApp):
 
         def txt_WorkFolder_textChanged():
             self.working_folder = txt_WorkFolder.text()
-        txt_WorkFolder = QtWidgets.QLineEdit('', window)
-        txt_WorkFolder.setFocusPolicy(QtCore.Qt.ClickFocus)
-        txt_WorkFolder.setMinimumSize(280, 28)
-        txt_WorkFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
-        txt_WorkFolder.setText(self.working_folder)
-        txt_WorkFolder.textChanged.connect(txt_WorkFolder_textChanged)
-        hbox_workfolder.addWidget(txt_WorkFolder)
 
-        btn_changePreset = QtWidgets.QPushButton('Choose', window)
-        btn_changePreset.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_changePreset.setMinimumSize(88, 28)
-        btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                   'QPushButton:pressed {font:italic; color: #d9d9d9}')
-        btn_changePreset.clicked.connect(chooseFolder)
-        hbox_workfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
+        # Work Folder Label
 
-        vbox.addLayout(hbox_workfolder)
+        lbl_WorkFolder = QtWidgets.QLabel('Export folder', window)
+        lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_WorkFolder.setMinimumHeight(28)
+        lbl_WorkFolder.setMaximumHeight(28)
+        lbl_WorkFolder.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_WorkFolder)
 
-        vbox.addWidget(lbl_Spacer)
+        # Work Folder ENV Variable selector
+
+        if os.getenv('FLAMETWML_WORK_FOLDER'):
+            lbl_WorkFolderPath = QtWidgets.QLabel(self.working_folder, window)
+            lbl_WorkFolderPath.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+            lbl_WorkFolderPath.setMinimumHeight(28)
+            lbl_WorkFolderPath.setMaximumHeight(28)
+            lbl_WorkFolderPath.setAlignment(QtCore.Qt.AlignCenter)
+            vbox.addWidget(lbl_WorkFolderPath)
+
+        else:
+            # Work Folder Text Field
+            hbox_workfolder = QtWidgets.QHBoxLayout()
+            hbox_workfolder.setAlignment(QtCore.Qt.AlignLeft)
+
+            txt_WorkFolder = QtWidgets.QLineEdit('', window)
+            txt_WorkFolder.setFocusPolicy(QtCore.Qt.ClickFocus)
+            txt_WorkFolder.setMinimumSize(280, 28)
+            txt_WorkFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+            txt_WorkFolder.setText(self.working_folder)
+            txt_WorkFolder.textChanged.connect(txt_WorkFolder_textChanged)
+            hbox_workfolder.addWidget(txt_WorkFolder)
+
+            btn_changePreset = QtWidgets.QPushButton('Choose', window)
+            btn_changePreset.setFocusPolicy(QtCore.Qt.NoFocus)
+            btn_changePreset.setMinimumSize(88, 28)
+            btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}')
+            btn_changePreset.clicked.connect(chooseFolder)
+            hbox_workfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
+
+            vbox.addLayout(hbox_workfolder)
+
         vbox.addWidget(lbl_Spacer)
 
         # Create and Cancel Buttons
@@ -2714,6 +2752,10 @@ class flameTimewarpML(flameMenuApp):
 
         window.setLayout(vbox)
         if window.exec_():
+            if os.getenv('FLAMETWML_WORK_FOLDER'):
+                self.working_folder = os.getenv('FLAMETWML_WORK_FOLDER')
+                self.prefs['working_folder'] = os.getenv('FLAMETWML_WORK_FOLDER')
+
             modifiers = QtWidgets.QApplication.keyboardModifiers()
             self.framework.save_prefs()
             return {
