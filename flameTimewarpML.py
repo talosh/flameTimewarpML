@@ -1068,6 +1068,10 @@ class flameTimewarpML(flameMenuApp):
                     self.framework.bundle_path,
                     'trained_models', 'default', 'v2.2.model'
                     ): ' Model v2.2 ',
+                os.path.join(
+                    self.framework.bundle_path,
+                    'trained_models', 'default', 'v2.3.model'
+                    ): ' Model v2.3 ',
             }
 
     def build_menu(self):
