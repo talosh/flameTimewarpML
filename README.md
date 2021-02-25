@@ -39,6 +39,9 @@ miniconda3 location:
 /mnt/software/miniconda3                                # Linux
 ```
 
+* Do not place those folders inside Flame's python hooks folder.
+The only file that should be placed in Flame hooks folder is flameTimewarpML.py
+
 * Create folders
 ```
 mkdir -p /Volumes/software/flameTimewarpML                       # Mac
@@ -62,14 +65,25 @@ cp -a bundle/* /mnt/software/flameTimewarpML/           # Linux
 sh Miniconda3-latest-MacOSX-x86_64.sh -bu -p /Volumes/software/miniconda3/  # Mac
 sh Miniconda3-latest-Linux-x86_64.sh -bu -p /mnt/software/miniconda3/       # Linux
 ```
+* In case you'd like to move Miniconda3 installation later you'll have to re-install it again.
+Please refer to Anaconda docs: https://docs.anaconda.com/anaconda/user-guide/tasks/move-directory/
 
 * Init installed Miniconda3 environment:
 ```
 /Volumes/software/flameTimewarpML/init_env  /Volumes/software/miniconda3/   # Mac
 /mnt/software/flameTimewarpML/init_env  /mnt/software/miniconda3/           # Linux
 ```
+The script will open new konsole window.
 
-there should be (base) before shell prompt. python --version should give Python 3.8.5 or greater
+* In case you do it over ssh remotely on Linux edit the line at the very end of init_env
+```
+ cmd_prefix = 'konsole -e /bin/bash --rcfile ' + tmp_bash_rc_file
+```
+```
+cmd_prefix = '/bin/bash --rcfile ' + tmp_bash_rc_file
+```
+
+* To check if environment is properly initialized: there should be (base) before shell prompt. python --version should give Python 3.8.5 or greater
 
 * From this shell prompt install dependency libraries:
 ```
