@@ -17,8 +17,7 @@ https://github.com/guerilla-di/flame_channel_parser
 ### Single workstation
 
 * Download latest release from [Releases](https://github.com/talosh/flameTimewarpML/releases) page
-* Unpack and copy included flameTimewarpML.py to /opt/Autodesk/shared/python.
-* Start Flame or refresh your python hooks if already started with FLAME->Python->Rescan Python Hooks (Ctrl+Shift+H+P). flameTimewarpML installation dialog should appear. Click 'Continue' and give it about a minute to unpack its files in background. Check progress info in console. After the job is done you'll see another dialog confirming that you can start using app. If you right-click on a clip in Desktop reels or Libraries you should see new Timewarp ML menu.
+* All you need to do is put the .py file in /opt/Autodesk/shared/python and launch/relaunch flame. The first time it will upack/install what it needs. It will give you a prompt to let you know when it’s finished.
 
 ### Centralized / Manual Install
 
@@ -116,14 +115,15 @@ export FLAMETWML_BUNDLE_LINUX=/mnt/software/flameTimewarpML/
 export FLAMETWML_MINICONDA_MAC=/Volumes/software/miniconda3/
 export FLAMETWML_MINICONDA_LINUX=mnt/software/miniconda3/
 ```
-<br>It is also possible to edit flameTimewarpML.py file to add paths directly:
+
+* There are an option to set working folder over env variable
+<br> Setting FLAMETWML_DEFAULT_WORK_FOLDER will set default folder and user will still be allowed to change it
+```
+export FLAMETWML_DEFAULT_WORK_FOLDER=/Volumes/projects/my_timewarps/
+```
+
+* Setting FLAMETWML_WORK_FOLDER will block user from changing it. This read every time just before the tool is launched so one can use it with other pipeline tools to change it dynamically depending on context
 
 ```
-# Configurable settings
-FLAMETWML_BUNDLE_MAC = '/Volumes/software/flameTimewarpML/'
-FLAMETWML_BUNDLE_LINUX = '/mnt/software/flameTimewarpML/'
-FLAMETWML_MINICONDA_MAC = '/Volumes/software/miniconda3/'
-FLAMETWML_MINICONDA_LINUX = '/mnt/software/miniconda3/'
-menu_group_name = 'Timewarp ML'
-DEBUG = False
+export FLAMETWML_WORK_FOLDER=/Volumes/projects/my_timewarps/
 ```
