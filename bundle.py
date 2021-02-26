@@ -13,12 +13,12 @@ parser.add_argument('--copy', dest='copy', action='store_true', help='copy to /o
 parser.add_argument('--run', dest='run', action='store_true', help='run flame')
 args = parser.parse_args()
 
-pligin_dirname = os.path.dirname(os.path.abspath(__file__))
-plugin_file_name = os.path.basename(pligin_dirname) + '.py'
-python_source = os.path.join(pligin_dirname, plugin_file_name)
+plugin_dirname = os.path.dirname(os.path.abspath(__file__))
+plugin_file_name = os.path.basename(plugin_dirname) + '.py'
+python_source = os.path.join(plugin_dirname, plugin_file_name)
 bundle_folder = 'bundle'
 bundle_code = 'flameTimewarpML.py'
-dest_dir = os.path.join(pligin_dirname, 'flameTimewarpML.package')
+dest_dir = os.path.join(plugin_dirname, 'flameTimewarpML.package')
 dest_file = os.path.join(dest_dir, bundle_code)
 
 if not os.path.isdir(bundle_folder):
@@ -64,6 +64,10 @@ del bundled_code
 
 print ('---\nremoving %s' % bundle_folder + '.tar')
 os.remove(bundle_folder + '.tar')
+
+readme = os.path.join(plugin_dirname, 'README.md')
+cmd = 'cp ' + readme + ' ' + dest_dir
+os.system(cmd)
 
 if args.copy:
     cmd = 'cp flameTimewarpML.package/flameTimewarpML.py /opt/Autodesk/shared/python/'

@@ -20,6 +20,7 @@ FLAMETWML_BUNDLE_LINUX = ''
 FLAMETWML_MINICONDA_MAC = ''
 FLAMETWML_MINICONDA_LINUX = ''
 menu_group_name = 'Timewarp ML'
+gnome_terminal = False
 DEBUG = False
 
 __version__ = 'v0.4.1'
@@ -114,6 +115,8 @@ class flameAppFramework(object):
         self.prefs = {}
         self.prefs_user = {}
         self.prefs_global = {}
+
+        self.gnome_terminal = gnome_terminal
         self.debug = DEBUG
         
         try:
@@ -361,6 +364,9 @@ class flameAppFramework(object):
             import subprocess
             log_cmd = """tell application "Terminal" to activate do script "tail -f """ + os.path.abspath(logfile_path) + '; exit"'
             subprocess.Popen(['osascript', '-e', log_cmd])
+        elif self.gnome_terminal:
+            log_cmd =  """gnome-terminal --title=flameTimewarpML -- /bin/bash -c 'trap exit SIGINT SIGTERM; tail -f """ + os.path.abspath(logfile_path) +"; sleep 2'"
+            os.system(log_cmd)
         else:
             log_cmd = """konsole --caption flameTimewarpML -e /bin/bash -c 'trap exit SIGINT SIGTERM; tail -f """ + os.path.abspath(logfile_path) +"; sleep 2'"
             os.system(log_cmd)
@@ -1013,6 +1019,8 @@ class flameTimewarpML(flameMenuApp):
             self.env_folder = FLAMETWML_MINICONDA_LINUX
             self.check_bundle_id = False
         
+        self.gnome_terminal = self.framework.gnome_terminal
+
         self.loops = []
         self.threads = True
 
@@ -1029,9 +1037,9 @@ class flameTimewarpML(flameMenuApp):
             # set version-specific defaults
             self.prefs['trained_models_folder'] = os.path.join(
                 self.framework.bundle_path,
-                'trained_models', 'default', 'v2.0.model'
+                'trained_models', 'default', 'v2.3.model'
                 )
-            
+
         self.prefs['version'] = __version__
         self.framework.save_prefs()
 
@@ -1221,6 +1229,24 @@ class flameTimewarpML(flameMenuApp):
             import subprocess
             subprocess.Popen(['osascript', '-e', ml_cmd])
         
+        elif self.gnome_terminal:
+            cmd_prefix = 'gnome-terminal '
+            cmd_prefix += """-- /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
+            ml_cmd = cmd_prefix
+            ml_cmd += 'echo "Received ' + str(number_of_clips)
+            ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
+            ml_cmd += 'to process, press Ctrl+C to cancel"; '
+            ml_cmd += 'trap exit SIGINT SIGTERM; '
+
+            for cmd_string in cmd_strings:
+                ml_cmd += cmd_string
+            if hold_konsole:
+                ml_cmd += 'echo "Commands finished. You can close this window"; sleep infinity'
+            ml_cmd +="'"
+            self.log('Executing command: %s' % ml_cmd)
+            os.system(ml_cmd)
+
         else:
             cmd_prefix = 'konsole '
             if hold_konsole:
@@ -1233,7 +1259,6 @@ class flameTimewarpML(flameMenuApp):
             ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
             ml_cmd += 'to process, press Ctrl+C to cancel"; '
             ml_cmd += 'trap exit SIGINT SIGTERM; '
-            # ml_cmd += 'ulimit -n 128; ulimit -n; '
 
             for cmd_string in cmd_strings:
                 ml_cmd += cmd_string
@@ -1668,7 +1693,26 @@ class flameTimewarpML(flameMenuApp):
 
             import subprocess
             subprocess.Popen(['osascript', '-e', ml_cmd])
-        
+
+        elif self.gnome_terminal:
+            cmd_prefix = 'gnome-terminal '
+            cmd_prefix += """-- /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
+
+            ml_cmd = cmd_prefix
+            ml_cmd += 'echo "Received ' + str(number_of_clips)
+            ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
+            ml_cmd += 'to process, press Ctrl+C to cancel"; '
+            ml_cmd += 'trap exit SIGINT SIGTERM; '
+
+            for cmd_string in cmd_strings:
+                ml_cmd += cmd_string
+            if hold_konsole:
+                ml_cmd += 'echo "Commands finished. You can close this window"; sleep infinity'
+            ml_cmd +="'"
+            self.log('Executing command: %s' % ml_cmd)
+            os.system(ml_cmd)
+
         else:
             cmd_prefix = 'konsole '
             if hold_konsole:
@@ -2032,7 +2076,26 @@ class flameTimewarpML(flameMenuApp):
 
             import subprocess
             subprocess.Popen(['osascript', '-e', ml_cmd])
-        
+
+        elif self.gnome_terminal:
+            cmd_prefix = 'gnome-terminal '
+            cmd_prefix += """-- /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
+            ml_cmd = cmd_prefix
+            # ml_cmd += 'echo "Received ' + str(number_of_clips)
+            # ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
+            # ml_cmd += 'to process, press Ctrl+C to cancel"; '
+            ml_cmd += 'trap exit SIGINT SIGTERM; '
+
+            for cmd_string in cmd_strings:
+                ml_cmd += cmd_string
+
+            if hold_konsole:
+                ml_cmd += 'echo "Commands finished. You can close this window"; sleep infinity'
+            ml_cmd +="'"
+            self.log('Executing command: %s' % ml_cmd)
+            os.system(ml_cmd)
+
         else:
             cmd_prefix = 'konsole '
             if hold_konsole:
@@ -2531,7 +2594,26 @@ class flameTimewarpML(flameMenuApp):
 
             import subprocess
             subprocess.Popen(['osascript', '-e', ml_cmd])
-        
+
+        elif self.gnome_terminal:
+            cmd_prefix = 'gnome-terminal '
+            cmd_prefix += """-- /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
+            ml_cmd = cmd_prefix
+            ml_cmd += 'echo "Received ' + str(number_of_clips)
+            ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
+            ml_cmd += 'to process, press Ctrl+C to cancel"; '
+            ml_cmd += 'trap exit SIGINT SIGTERM; '
+
+            for cmd_string in cmd_strings:
+                ml_cmd += cmd_string
+
+            if hold_konsole:
+                ml_cmd += 'echo "Commands finished. You can close this window"; sleep infinity'
+            ml_cmd +="'"
+            self.log('Executing command: %s' % ml_cmd)
+            os.system(ml_cmd)
+
         else:
             cmd_prefix = 'konsole '
             if hold_konsole:
