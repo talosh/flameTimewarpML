@@ -121,7 +121,9 @@ export FLAMETWML_MINICONDA_LINUX=mnt/software/miniconda3/
 ```
 export FLAMETWML_DEFAULT_WORK_FOLDER=/Volumes/projects/my_timewarps/
 ```
-<br> Setting FLAMETWML_WORK_FOLDER will block user from changing it. This read every time just before the tool is launched so one can use it with other pipeline tools to change it dynamically depending on context
+
+* Setting FLAMETWML_WORK_FOLDER will block user from changing it. This read every time just before the tool is launched so one can use it with other pipeline tools to change it dynamically depending on context
+
 ```
 export FLAMETWML_WORK_FOLDER=/Volumes/projects/my_timewarps/
 ```
