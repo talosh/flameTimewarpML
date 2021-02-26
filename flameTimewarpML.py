@@ -1029,9 +1029,9 @@ class flameTimewarpML(flameMenuApp):
             # set version-specific defaults
             self.prefs['trained_models_folder'] = os.path.join(
                 self.framework.bundle_path,
-                'trained_models', 'default', 'v2.0.model'
+                'trained_models', 'default', 'v2.3.model'
                 )
-            
+
         self.prefs['version'] = __version__
         self.framework.save_prefs()
 
