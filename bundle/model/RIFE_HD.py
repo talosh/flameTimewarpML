@@ -203,7 +203,7 @@ class Model:
         mask = torch.sigmoid(refine_output[:, 3:4])
         merged_img = warped_img0 * mask + warped_img1 * (1 - mask)
         pred = merged_img + res
-        pred = torch.clamp(pred, 0, 1)
+        # pred = torch.clamp(pred, 0, 1)
         if training:
             return pred, mask, merged_img, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt
         else:
