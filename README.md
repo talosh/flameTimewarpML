@@ -14,7 +14,7 @@ Flame's animation curve interpolation code from Julik Tarkhanov:
 https://github.com/guerilla-di/flame_channel_parser
 
 ## Installation
-### Single workstation
+### Single workstation / Automatic install
 
 * Download latest release from [Releases](https://github.com/talosh/flameTimewarpML/releases) page
 * All you need to do is put the .py file in /opt/Autodesk/shared/python and launch/relaunch flame. The first time it will upack/install what it needs. It will give you a prompt to let you know when it’s finished.
