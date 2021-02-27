@@ -31,9 +31,9 @@ https://github.com/guerilla-di/flame_channel_parser
 ~/.config/flameTimewarpML                               # Linux
 ```
 
-### Centralized / Manual Install
-* It is possible to do easy install on one of the workstations to common location and then configure other via env variables.
-<br>For those about to go fully manual way: flameTimewarpML is made of three components.
+### Centralised / Manual Install
+* It is possible to do easy install on one of the workstations to common location and then configure other via env variables (see Centralised configuration section)
+* flameTimewarpML is made of three components.
 <br>1) Miniconda3 isolated Python 3.8 environment with some additional dependence libraries (see requiremens.txt)
 <br>2) A set of python scripts that are called from command line and should be running within Python 3.8 environment
 <br>3) Flame script to be run inside Flame. It has to know the location of two previous parts to be able to initialize Python 3.8 environment and then run command line tools to process image sequences.
@@ -117,7 +117,7 @@ pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt --no-index --
 ```
 * Copy flameTimewarpML.py to your Flame python scripts folder
 
-### Centralized configuration
+### Centralised configuration via env variables
 
 * set FLAMETWML_BUNDLE, FLAMETWML_MINICONDA environment variables to point code and miniconda locations.
 ```
