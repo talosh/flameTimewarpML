@@ -14,12 +14,29 @@ Flame's animation curve interpolation code from Julik Tarkhanov:
 https://github.com/guerilla-di/flame_channel_parser
 
 ## Installation
-### Single workstation
+### Single workstation / Easy install
 
 * Download latest release from [Releases](https://github.com/talosh/flameTimewarpML/releases) page
 * All you need to do is put the .py file in /opt/Autodesk/shared/python and launch/relaunch flame. The first time it will upack/install what it needs. It will give you a prompt to let you know when it’s finished.
+* It is possible to choose the installation folder. Default installation folders are:
+```
+~/Documents/flameTimewarpML                             # Mac
+~/flameTimewarpML                                       # Linux
+```
+
+### Preferences location
+* In case you'd need to reset preferences
+```
+~/Library/Preferences/flameTimewarpML                   # Mac
+~/.config/flameTimewarpML                               # Linux
+```
 
 ### Centralized / Manual Install
+* It is possible to do easy install on one of the workstations to common location and then configure other via env variables.
+<br>For those about to go fully manual way: flameTimewarpML is made of three components.
+<br>1) Miniconda3 isolated Python 3.8 environment with some additional dependence libraries (see requiremens.txt)
+<br>2) A set of python scripts that are called from command line and should be running within Python 3.8 environment
+<br>3) Flame script to be run inside Flame. It has to know the location of two previous parts to be able to initialize Python 3.8 environment and then run command line tools to process image sequences.
 
 * Get the source from [Releases](https://github.com/talosh/flameTimewarpML/releases) page or directly from repo:
 ```
@@ -99,6 +116,8 @@ then it is possible to install packages from folder:
 pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt --no-index --find-links /Volumes/software/flameTimewarpML/packages_folder
 ```
 * Copy flameTimewarpML.py to your Flame python scripts folder
+
+### Centralized configuration
 
 * set FLAMETWML_BUNDLE, FLAMETWML_MINICONDA environment variables to point code and miniconda locations.
 ```
