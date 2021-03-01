@@ -23,7 +23,7 @@ menu_group_name = 'Timewarp ML'
 gnome_terminal = False
 DEBUG = False
 
-__version__ = 'v0.4.1'
+__version__ = 'v0.4.2.beta.001'
 
 
 if os.getenv('FLAMETWML_BUNDLE') and not FLAMETWML_BUNDLE_MAC:
@@ -1059,6 +1059,27 @@ class flameTimewarpML(flameMenuApp):
         self.cpu = False
         self.UHD = True
 
+        self.model_map = {}
+        
+        trained_models_folder = os.path.join(
+            self.framework.bundle_path,
+            'trained_models', 
+            'default',
+        )
+
+        folder_items = os.listdir(trained_models_folder)
+
+        trained_models = []
+        for folder_item in sorted(folder_items):
+            folder_item = os.path.join(trained_models_folder, folder_item)
+            if os.path.isdir(folder_item):
+                if folder_item.endswith('.model'):
+                    trained_models.append(folder_item)
+        pprint (trained_models)
+        for trained_models_folder in sorted(trained_models):
+            self.model_map[trained_models_folder] = ' Model ' + os.path.basename(trained_models_folder).rstrip('.model') + ' '
+
+        '''
         self.model_map = {
                 os.path.join(
                     self.framework.bundle_path,
@@ -1080,7 +1101,12 @@ class flameTimewarpML(flameMenuApp):
                     self.framework.bundle_path,
                     'trained_models', 'default', 'v2.3.model'
                     ): ' Model v2.3 ',
+                os.path.join(
+                    self.framework.bundle_path,
+                    'trained_models', 'default', 'v2.4.model'
+                    ): ' Model v2.4 ',
             }
+        '''
 
     def build_menu(self):
         def scope_clip(selection):
