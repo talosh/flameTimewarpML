@@ -38,7 +38,7 @@ def exeption_handler(exctype, value, tb):
     input("Press Enter to continue...")
 sys.excepthook = exeption_handler
 
-# ctrl+c handler
+# Ctrl + C handler
 import signal
 def signal_handler(sig, frame):
     global ThreadsFlag
@@ -47,35 +47,57 @@ def signal_handler(sig, frame):
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
-def clear_write_buffer(user_args, write_buffer, tot_frame):
+def clear_write_buffer(write_buffer, tot_frame, frames_written):
     global ThreadsFlag
     global IOProcesses
+
+    def write_in_current_thread(path, item, cnt, frames_written):
+        try:
+            cv2.imwrite(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
+            frames_written[cnt] = path
+        except Exception as e:
+            print ('Error writing %s: %s' % (path, e))
+
+    def write_in_new_thread(path, item, cnt, frames_written):
+        cv2.imwrite(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
+        frames_written[cnt] = path
+
+    number_of_write_threads = 8
 
     new_frames_number = ((tot_frame - 1) * ((2 ** args.exp) -1)) + tot_frame
     cnt = 0
     while ThreadsFlag:
-        item = write_buffer.get()
+        alive_processes = []
+        for process in IOProcesses:
+            if process.is_alive():
+                alive_processes.append(process)
+            else:
+                process.join(timeout=0)
+        IOProcesses = list(alive_processes)
         
+        item = write_buffer.get()
+
         if cnt == 0:
-            print ('rendering %s frames to %s' % (new_frames_number, args.output))
+            # print ('rendering %s frames to %s' % (new_frames_number, args.output))
             pbar = tqdm(total=new_frames_number, unit='frame')
         
         if item is None:
             pbar.close() # type: ignore
             break
+
         if cnt < new_frames_number:
             path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(cnt))
             
-            try:
-                p = mp.Process(target=cv2.imwrite, args=(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
-                p.start()
-                IOProcesses.append(p)
-            except:
+            if len(IOProcesses) < number_of_write_threads:
                 try:
-                    cv2.imwrite(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
-                except Exception as e:
-                    print ('Error wtiring %s: %s' % (path, e))
-        
+                    p = mp.Process(target=write_in_new_thread, args=(path, item, cnt, frames_written, ))
+                    p.start()
+                    IOProcesses.append(p)
+                except:
+                    write_in_current_thread(path, item, cnt, frames_written)
+            else:
+                write_in_current_thread(path, item, cnt, frames_written)
+
         pbar.update(1) # type: ignore
         cnt += 1
 
@@ -146,9 +168,6 @@ def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_w
 
     I0 = F.pad(I0, padding)
     I1 = F.pad(I1, padding)
-
-    diff = (F.interpolate(I0, (16, 16), mode='bilinear', align_corners=False)
-        - F.interpolate(I1, (16, 16), mode='bilinear', align_corners=False)).abs()
     
     mid = model.inference(I0, I1, args.UHD)
     mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
@@ -170,7 +189,7 @@ def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_w
 
     return True
 
-def cpu_progress_updater(frames_written, last_frame_number):
+def progress_bar_updater(frames_written, last_frame_number):
     global ThreadsFlag
 
     pbar = tqdm(total=last_frame_number, unit='frame')
@@ -196,7 +215,6 @@ if __name__ == '__main__':
     parser.add_argument('--exp', dest='exp', type=int, default=1)
     parser.add_argument('--cpu', dest='cpu', action='store_true', help='process only on CPU(s)')
 
-
     args = parser.parse_args()
     assert (not args.output is None or not args.input is None)
 
@@ -217,6 +235,14 @@ if __name__ == '__main__':
         print('not enough frames to perform slow motion: %s given' % input_duration)
         input("Press Enter to continue...")
         sys.exit()
+
+    input_files = {}
+    input_frame_number = 1
+    for file in sorted(files_list):
+        input_file_path = os.path.join(args.input, file)
+        if os.path.isfile(input_file_path):
+            input_files[input_frame_number] = input_file_path
+            input_frame_number += 1
 
     first_frame_number = 1
     step = (2 ** args.exp) -1
@@ -249,9 +275,9 @@ if __name__ == '__main__':
         files_list.append(files_list[-1])
 
         write_buffer = Queue(maxsize=mp.cpu_count() - 3)
-        read_buffer = Queue(maxsize=500)
+        read_buffer = Queue(maxsize=inference_common.INPUT_QUEUE_SIZE)
         _thread.start_new_thread(build_read_buffer, (args, read_buffer, files_list))
-        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
+        _thread.start_new_thread(clear_write_buffer, (write_buffer, input_duration, frames_written))
 
         if 'v1.8.model' in args.model:
             from model.RIFE_HD import Model     # type: ignore
@@ -270,7 +296,6 @@ if __name__ == '__main__':
             torch.backends.cudnn.enabled = True
             torch.backends.cudnn.benchmark = True
 
-        # print ('Loading initial frames...')
         lastframe = first_image
         I1 = torch.from_numpy(np.transpose(lastframe, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
         I1 = F.pad(I1, padding)
@@ -317,33 +342,14 @@ if __name__ == '__main__':
         torch.set_grad_enabled(False)
         
         sim_workers, thread_ram = inference_common.safe_threads_number(h, w)
-
-        '''
-        max_cpu_workers = mp.cpu_count() - 2
-        available_ram = psutil.virtual_memory()[1]/( 1024 ** 3 )
-        megapixels = ( h * w ) / ( 10 ** 6 )
-        thread_ram = megapixels * 2.4
-        sim_workers = round( available_ram / thread_ram )
-        if sim_workers < 1:
-            sim_workers = 1
-        elif sim_workers > max_cpu_workers:
-            sim_workers = max_cpu_workers
-
-        print ('---\nFree RAM: %s Gb available' % '{0:.1f}'.format(available_ram))
-        print ('Image size: %s x %s' % ( w, h,))
-        print ('Peak memory usage estimation: %s Gb per CPU thread ' % '{0:.1f}'.format(thread_ram))
-        print ('Using %s CPU worker thread%s (of %s available)\n---' % (sim_workers, '' if sim_workers == 1 else 's', mp.cpu_count()))
-        if thread_ram > available_ram:
-            print ('Warning: estimated peak memory usage is greater then RAM avaliable')
-        '''
         
         print ('rendering %s frames to %s/' % (last_frame_number, args.output))
 
         active_workers = []
 
-        cpu_progress_updater = threading.Thread(target=cpu_progress_updater, args=(frames_written, last_frame_number, ))
-        cpu_progress_updater.daemon = True
-        cpu_progress_updater.start()
+        progress_bar_updater = threading.Thread(target=progress_bar_updater, args=(frames_written, last_frame_number, ))
+        progress_bar_updater.daemon = True
+        progress_bar_updater.start()
 
         last_thread_time = time.time()
         while len(frames_written.keys()) != last_frame_number:
@@ -380,7 +386,7 @@ if __name__ == '__main__':
             time.sleep(0.01)
         
         ThreadsFlag = False
-        cpu_progress_updater.join()
+        progress_bar_updater.join()
     
     for p in IOProcesses:
         p.join(timeout=8)
@@ -396,5 +402,3 @@ if __name__ == '__main__':
     
     # input("Press Enter to continue...")
     sys.exit()
-
-
