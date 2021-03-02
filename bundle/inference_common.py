@@ -4,6 +4,7 @@ import psutil
 
 # Constant values
 INPUT_QUEUE_SIZE = 96
+OUTPUT_QUEUE_SIZE = 4
 
 
 def safe_threads_number(h, w, print_info=True):
