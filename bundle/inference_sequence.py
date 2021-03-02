@@ -77,12 +77,12 @@ def clear_write_buffer(write_buffer, tot_frame, frames_written):
         
         item = write_buffer.get()
 
-        if cnt == 0:
+        # if cnt == 0:
             # print ('rendering %s frames to %s' % (new_frames_number, args.output))
-            pbar = tqdm(total=new_frames_number, unit='frame')
+            # pbar = tqdm(total=new_frames_number, unit='frame')
         
         if item is None:
-            pbar.close() # type: ignore
+            # pbar.close() # type: ignore
             break
 
         if cnt < new_frames_number:
@@ -98,13 +98,15 @@ def clear_write_buffer(write_buffer, tot_frame, frames_written):
             else:
                 write_in_current_thread(path, item, cnt, frames_written)
 
-        pbar.update(1) # type: ignore
+        # pbar.update(1) # type: ignore
         cnt += 1
 
 def build_read_buffer(user_args, read_buffer, videogen):
     global ThreadsFlag
 
     for frame in videogen:
+        if not ThreadsFlag:
+            break
         frame_data = cv2.imread(os.path.join(user_args.input, frame), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
         read_buffer.put(frame_data)
     read_buffer.put(None)
@@ -195,11 +197,14 @@ def progress_bar_updater(frames_written, last_frame_number):
     pbar = tqdm(total=last_frame_number, unit='frame')
     lastframe = 0
     while ThreadsFlag:
-        pbar.n = len(frames_written.keys())
-        pbar.last_print_n = len(frames_written.keys())
-        if lastframe != len(frames_written.keys()):
-            pbar.refresh()
-            lastframe = len(frames_written.keys())
+        try:
+            pbar.n = len(frames_written.keys())
+            pbar.last_print_n = len(frames_written.keys())
+            if lastframe != len(frames_written.keys()):
+                pbar.refresh()
+                lastframe = len(frames_written.keys())
+        except:
+            pass
         time.sleep(0.01)
     pbar.close()
 
@@ -274,7 +279,7 @@ if __name__ == '__main__':
         files_list.sort()
         files_list.append(files_list[-1])
 
-        write_buffer = Queue(maxsize=mp.cpu_count() - 3)
+        write_buffer = Queue(maxsize=inference_common.OUTPUT_QUEUE_SIZE)
         read_buffer = Queue(maxsize=inference_common.INPUT_QUEUE_SIZE)
         _thread.start_new_thread(build_read_buffer, (args, read_buffer, files_list))
         _thread.start_new_thread(clear_write_buffer, (write_buffer, input_duration, frames_written))
@@ -301,6 +306,12 @@ if __name__ == '__main__':
         I1 = F.pad(I1, padding)
         frame = read_buffer.get()
 
+        print ('rendering %s frames to %s/' % (last_frame_number, args.output))
+        progress_bar_updater = threading.Thread(target=progress_bar_updater, args=(frames_written, last_frame_number, ))
+        progress_bar_updater.daemon = True
+        progress_bar_updater.start()
+
+        cnt = 0
         for nn in range(1, input_duration+1):
 
             frame = read_buffer.get()
@@ -311,17 +322,40 @@ if __name__ == '__main__':
             I1 = torch.from_numpy(np.transpose(frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
             I1 = F.pad(I1, padding)
 
-            output = make_inference(model, I0, I1, args.exp, args.UHD)
+            try:
+                output = make_inference(model, I0, I1, args.exp, args.UHD)
+            except Exception as e:
+                ThreadsFlag = False
+                time.sleep(0.1)
+                progress_bar_updater.join()
+                print ('\n%s' % e)
+
+                for p in IOProcesses:
+                    p.join(timeout=8)
+
+                for p in IOProcesses:
+                    p.terminate()
+                    p.join(timeout=0)
+
+                sys.exit()
+
             write_buffer.put(lastframe)
+            cnt += 1
+
             for mid in output:
+        
                 if sys.platform == 'darwin':
                     mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
                 else:
                     mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
+        
                 write_buffer.put(mid[:h, :w])
+                cnt += 1
+
             lastframe = frame
         
         write_buffer.put(lastframe)
+        
         while(not write_buffer.empty()):
             time.sleep(0.1)
 
@@ -389,7 +423,7 @@ if __name__ == '__main__':
         progress_bar_updater.join()
     
     for p in IOProcesses:
-        p.join(timeout=8)
+        p.join(timeout=1)
 
     for p in IOProcesses:
         p.terminate()
