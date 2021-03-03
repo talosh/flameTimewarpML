@@ -1,10 +1,15 @@
 import os
 import sys
-import multiprocessing as mp
 import psutil
+
+# Constant values
+INPUT_QUEUE_SIZE = 96
+OUTPUT_QUEUE_SIZE = 9
 
 
 def safe_threads_number(h, w, print_info=True):
+    import multiprocessing as mp
+
     max_cpu_workers = mp.cpu_count() - 2
     available_ram = psutil.virtual_memory()[1] / (1024 ** 3)
     megapixels = (h * w) / (10 ** 6)
