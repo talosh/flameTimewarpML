@@ -11,3 +11,4 @@ settings.json
 flameTimewarpML.package
 flameTimewarpMLenv.tar.bz2
 test_*
+trained_models.all/*.model
