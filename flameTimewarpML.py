@@ -15,16 +15,19 @@ from pprint import pprint
 from pprint import pformat
 
 # Configurable settings
+menu_group_name = 'Timewarp ML'
+DEBUG = False
+
+__version__ = 'v0.4.2.beta.009'
+
+gnome_terminal = False
+if not os.path.isfile('/usr/bin/konsole'):
+    gnome_terminal = True
+
 FLAMETWML_BUNDLE_MAC = ''
 FLAMETWML_BUNDLE_LINUX = ''
 FLAMETWML_MINICONDA_MAC = ''
 FLAMETWML_MINICONDA_LINUX = ''
-menu_group_name = 'Timewarp ML'
-gnome_terminal = False
-DEBUG = False
-
-__version__ = 'v0.4.1'
-
 
 if os.getenv('FLAMETWML_BUNDLE') and not FLAMETWML_BUNDLE_MAC:
     FLAMETWML_BUNDLE_MAC = os.getenv('FLAMETWML_BUNDLE')
@@ -350,6 +353,10 @@ class flameAppFramework(object):
         
         del script
         if not payload:
+            return False
+
+        if len(payload) <= 16:
+            self.show_turncated_message()
             return False
         
         logfile = None
@@ -804,6 +811,27 @@ class flameAppFramework(object):
         flame.schedule_idle_event(show_mbox)
         return True
 
+    def show_error_msg(self, msg, dmsg = ''):
+        from PySide2 import QtWidgets
+
+        try:
+            import flame
+        except:
+            print (msg)
+            print (dmsg)
+            return False
+        
+        def show_error_mbox():
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle(self.bundle_name)
+            mbox.setText(msg)
+            if dmsg:
+                mbox.setDetailedText(dmsg)
+            mbox.exec_()
+
+        flame.schedule_idle_event(show_error_mbox)
+        return True
+
 
 class flameMenuApp(object):
     def __init__(self, framework):
@@ -1059,28 +1087,13 @@ class flameTimewarpML(flameMenuApp):
         self.cpu = False
         self.UHD = True
 
-        self.model_map = {
-                os.path.join(
-                    self.framework.bundle_path,
-                    'trained_models', 'default', 'v1.8.model'
-                    ): ' Model v1.8 ',
-                os.path.join(
-                    self.framework.bundle_path,
-                    'trained_models', 'default', 'v2.0.model'
-                    ): ' Model v2.0 ',
-                os.path.join(
-                    self.framework.bundle_path,
-                    'trained_models', 'default', 'v2.1.model'
-                    ): ' Model v2.1 ',
-                os.path.join(
-                    self.framework.bundle_path,
-                    'trained_models', 'default', 'v2.2.model'
-                    ): ' Model v2.2 ',
-                os.path.join(
-                    self.framework.bundle_path,
-                    'trained_models', 'default', 'v2.3.model'
-                    ): ' Model v2.3 ',
-            }
+        self.trained_models_path = os.path.join(
+            self.framework.bundle_path,
+            'trained_models', 
+            'default',
+        )
+
+        # self.scan_trained_models_folder()
 
     def build_menu(self):
         def scope_clip(selection):
@@ -1207,6 +1220,8 @@ class flameTimewarpML(flameMenuApp):
                 watcher.daemon = True
                 watcher.start()
                 self.loops.append(watcher)
+
+        self.refresh_x11_windows_list()
         
         if sys.platform == 'darwin':
             cmd_prefix = """tell application "Terminal" to activate do script "clear; """
@@ -1233,6 +1248,8 @@ class flameTimewarpML(flameMenuApp):
             cmd_prefix = 'gnome-terminal '
             cmd_prefix += """-- /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
             cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
+            # cmd_prefix += """PROMPT_COMMAND='echo -ne "\033]0;flameTimewarpML\007"'; """
+
             ml_cmd = cmd_prefix
             ml_cmd += 'echo "Received ' + str(number_of_clips)
             ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
@@ -1253,7 +1270,7 @@ class flameTimewarpML(flameMenuApp):
                 cmd_prefix += '--hold '
             cmd_prefix += """-e /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
             cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
-
+            
             ml_cmd = cmd_prefix
             ml_cmd += 'echo "Received ' + str(number_of_clips)
             ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
@@ -1270,9 +1287,15 @@ class flameTimewarpML(flameMenuApp):
             os.system(ml_cmd)
 
         flame.execute_shortcut('Refresh Thumbnails')
+        self.raise_window_thread = threading.Thread(target=self.raise_last_window, args=())
+        self.raise_window_thread.daemon = True
+        self.raise_window_thread.start()
 
     def slowmo_dialog(self, *args, **kwargs):
         from PySide2 import QtWidgets, QtCore
+
+        if not self.scan_trained_models_folder():
+            return {}
 
         self.new_speed_list = {
             1: '1/2',
@@ -1320,9 +1343,11 @@ class flameTimewarpML(flameMenuApp):
         # New Speed Selector
         btn_NewSpeedSelector = QtWidgets.QPushButton(window)
         btn_NewSpeedSelector.setText(self.new_speed_list.get(self.new_speed))
+        
         def selectNewSpeed(new_speed_id):
             self.new_speed = new_speed_id
             btn_NewSpeedSelector.setText(self.new_speed_list.get(self.new_speed))
+
         btn_NewSpeedSelector.setFocusPolicy(QtCore.Qt.NoFocus)
         btn_NewSpeedSelector.setMinimumSize(80, 28)
         btn_NewSpeedSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
@@ -1332,8 +1357,10 @@ class flameTimewarpML(flameMenuApp):
 
         for new_speed_id in sorted(self.new_speed_list.keys()):
             code = self.new_speed_list.get(new_speed_id, '1/2')
-            action = btn_NewSpeedSelector_menu.addAction(code)
-            action.triggered[()].connect(lambda new_speed_id=new_speed_id: selectNewSpeed(new_speed_id))
+            action = btn_NewSpeedSelector_menu.addAction(code)            
+            x = lambda chk=False, new_speed_id=new_speed_id: selectNewSpeed(new_speed_id)
+            action.triggered[()].connect(x)
+
         btn_NewSpeedSelector.setMenu(btn_NewSpeedSelector_menu)
         new_speed_hbox.addWidget(btn_NewSpeedSelector)
 
@@ -1382,37 +1409,9 @@ class flameTimewarpML(flameMenuApp):
             btn_CpuProc.pressed.connect(enableCpuProc)
             new_speed_hbox.addWidget(btn_CpuProc)
 
-        '''
-        else:
-            btn_CpuProc = QtWidgets.QPushButton('CPU Proc', window)
-            btn_CpuProc.setFocusPolicy(QtCore.Qt.NoFocus)
-            btn_CpuProc.setMinimumSize(88, 28)
-            btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
-                                        'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-            btn_CpuProc.setToolTip('<b>CPU Proc button</b><br>Mac version is currently CPU-only due to lack of GPU support in PyTorch library on MacOS')
-            new_speed_hbox.addWidget(btn_CpuProc)
-        '''
-
-        '''
-        lbl_HorSpacer = QtWidgets.QLabel('', window)
-        lbl_HorSpacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
-        lbl_HorSpacer.setMinimumHeight(28)
-        lbl_HorSpacer.setMinimumWidth(4)
-        lbl_HorSpacer.setMaximumWidth(4)
-        lbl_HorSpacer.setAlignment(QtCore.Qt.AlignCenter)
-        new_speed_hbox.addWidget(lbl_HorSpacer)
-        '''
-        '''
-        lbl_Model = QtWidgets.QLabel('Model ', window)
-        lbl_Model.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_Model.setMinimumHeight(28)
-        lbl_Model.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
-        new_speed_hbox.addWidget(lbl_Model)
-        '''
-
         ### Model Selector START
 
-        current_model_name = self.model_map.get(self.prefs.get('trained_models_folder'), 'Unknown')
+        current_model_name = self.model_map.get(self.prefs.get('trained_models_folder'))
         
         # Model Selector Button
         btn_ModelSelector = QtWidgets.QPushButton(window)
@@ -1433,7 +1432,8 @@ class flameTimewarpML(flameMenuApp):
             
             code = self.model_map.get(trained_models_folder)
             action = btn_ModelSelector_menu.addAction(code)
-            action.triggered[()].connect(lambda trained_models_folder=trained_models_folder: selectModel(trained_models_folder))
+            x = lambda chk=False, trained_models_folder=trained_models_folder: selectModel(trained_models_folder)
+            action.triggered[()].connect(x)
     
         btn_ModelSelector.setMenu(btn_ModelSelector_menu)
         new_speed_hbox.addWidget(btn_ModelSelector)
@@ -1499,71 +1499,6 @@ class flameTimewarpML(flameMenuApp):
             vbox.addLayout(hbox_workfolder)
 
         vbox.addWidget(lbl_Spacer)
-
-        # self.dialog_model_path(window, vbox)
-        
-        # vbox.addWidget(lbl_Spacer)
-
-
-        '''
-        # MODEL label
-        lbl_Model = QtWidgets.QLabel('Model', window)
-        lbl_Model.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_Model.setMinimumHeight(28)
-        lbl_Model.setAlignment(QtCore.Qt.AlignCenter)
-        vbox.addWidget(lbl_Model)
-
-        # MODEL Hbox START
-        model_hbox = QtWidgets.QHBoxLayout()
-        # model_hbox.setAlignment(QtCore.Qt.AlignCenter)
-
-        model_groups_path = os.path.join(os.path.abspath(self.framework.bundle_path), self.trained_models_folder)
-        model_groups = [d for d in os.listdir(model_groups_path) if os.path.isdir(os.path.join(model_groups_path, d))]
-        model_names_path = os.path.join(os.path.abspath(self.framework.bundle_path), self.trained_models_folder, self.trained_models_group)
-        model_names = [d.rstrip('.model') for d in os.listdir(model_names_path) if os.path.isdir(os.path.join(model_names_path, d))]
-
-        # Model Groups Button
-        btn_ModelGroups = QtWidgets.QPushButton(window)
-        btn_ModelGroups.setText(self.trained_models_group)
-        def selectModelGroup(new_model_group):
-            self.trained_models_group = new_model_group
-            btn_ModelGroups.setText(self.trained_models_group)
-        btn_ModelGroups.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_ModelGroups.setMinimumHeight(28)
-        btn_ModelGroups.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
-                                    'QPushButton::menu-indicator {image: none;}')
-        btn_ModelGroups_menu = QtWidgets.QMenu()
-        for new_model_group in sorted(model_groups):
-            action = btn_ModelGroups_menu.addAction(new_model_group)
-            action.triggered[()].connect(lambda new_model_group=new_model_group: selectModelGroup(new_model_group))
-        btn_ModelGroups.setMenu(btn_ModelGroups_menu)
-        model_hbox.addWidget(btn_ModelGroups)
-
-
-        # Model Names Button
-        btn_ModelNames = QtWidgets.QPushButton(window)
-        btn_ModelNames.setText(self.trained_model_name)
-        def selectModelName(new_model_name):
-            self.trained_model_name = new_model_name
-            btn_ModelNames.setText(self.trained_model_name)
-        btn_ModelNames.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_ModelNames.setMinimumHeight(28)
-        btn_ModelNames.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
-                                    'QPushButton::menu-indicator {image: none;}')
-        btn_ModelNames_menu = QtWidgets.QMenu()
-        for new_model_name in sorted(model_names):
-            action = btn_ModelNames_menu.addAction(new_model_name)
-            action.triggered[()].connect(lambda new_model_name=new_model_name: selectModelGroup(new_model_name))
-        btn_ModelNames.setMenu(btn_ModelNames_menu)
-        model_hbox.addWidget(btn_ModelNames)
-
-        vbox.addLayout(model_hbox)
-        vbox.addWidget(lbl_Spacer)
-
-        # MODEL Hbox END
-        '''
 
         # Create and Cancel Buttons
         hbox_Create = QtWidgets.QHBoxLayout()
@@ -1673,6 +1608,8 @@ class flameTimewarpML(flameMenuApp):
                 watcher.start()
                 self.loops.append(watcher)
         
+        self.refresh_x11_windows_list()
+
         if sys.platform == 'darwin':
             cmd_prefix = """tell application "Terminal" to activate do script "clear; """
             # cmd_prefix += """ echo " & quote & "Received """
@@ -1735,10 +1672,14 @@ class flameTimewarpML(flameMenuApp):
             os.system(ml_cmd)
 
         flame.execute_shortcut('Refresh Thumbnails')
+        self.raise_window_thread = threading.Thread(target=self.raise_last_window, args=())
+        self.raise_window_thread.daemon = True
+        self.raise_window_thread.start()
 
     def dedup_dialog(self, *args, **kwargs):
         from PySide2 import QtWidgets, QtCore
 
+        self.scan_trained_models_folder()
         self.modes_list = {
             0: 'Interpolate',
             1: 'Remove', 
@@ -1794,7 +1735,9 @@ class flameTimewarpML(flameMenuApp):
         for new_mode_id in sorted(self.modes_list.keys()):
             code = self.modes_list.get(new_mode_id, 'Interpolate')
             action = btn_DfamesSelector_menu.addAction(code)
-            action.triggered[()].connect(lambda new_mode_id=new_mode_id: selectNewMode(new_mode_id))
+            x = lambda chk=False, new_mode_id=new_mode_id: selectNewMode(new_mode_id)
+            action.triggered[()].connect(x)
+
         btn_DfamesSelector.setMenu(btn_DfamesSelector_menu)
         dframes_hbox.addWidget(btn_DfamesSelector)
 
@@ -1868,7 +1811,8 @@ class flameTimewarpML(flameMenuApp):
             
             code = self.model_map.get(trained_models_folder)
             action = btn_ModelSelector_menu.addAction(code)
-            action.triggered[()].connect(lambda trained_models_folder=trained_models_folder: selectModel(trained_models_folder))
+            x = lambda chk=False, trained_models_folder=trained_models_folder: selectModel(trained_models_folder)
+            action.triggered[()].connect(x)
     
         btn_ModelSelector.setMenu(btn_ModelSelector_menu)
         dframes_hbox.addWidget(btn_ModelSelector)
@@ -2056,6 +2000,8 @@ class flameTimewarpML(flameMenuApp):
         watcher.start()
         self.loops.append(watcher)
 
+        self.refresh_x11_windows_list()
+
         if sys.platform == 'darwin':
             cmd_prefix = """tell application "Terminal" to activate do script "clear; """
             # cmd_prefix += """ echo " & quote & "Received """
@@ -2119,9 +2065,14 @@ class flameTimewarpML(flameMenuApp):
             os.system(ml_cmd)
 
         flame.execute_shortcut('Refresh Thumbnails')
+        self.raise_window_thread = threading.Thread(target=self.raise_last_window, args=())
+        self.raise_window_thread.daemon = True
+        self.raise_window_thread.start()
 
     def fluidmorph_dialog(self, *args, **kwargs):
         from PySide2 import QtWidgets, QtCore
+        
+        self.scan_trained_models_folder()
 
         clips = kwargs.get('clips')
         self.incoming_clip_id = 0
@@ -2199,7 +2150,8 @@ class flameTimewarpML(flameMenuApp):
         for new_incoming_id in sorted(self.clip_names_list.keys()):
             name = self.clip_names_list.get(new_incoming_id)
             action = btn_DfamesSelector_menu.addAction(name)
-            action.triggered[()].connect(lambda new_incoming_id=new_incoming_id: selectNewMode(new_incoming_id))
+            x = lambda chk=False, new_incoming_id=new_incoming_id: selectNewMode(new_incoming_id)
+            action.triggered[()].connect(x)
         btn_DfamesSelector.setMenu(btn_DfamesSelector_menu)
         dframes_hbox.addWidget(btn_DfamesSelector)
 
@@ -2273,7 +2225,8 @@ class flameTimewarpML(flameMenuApp):
             
             code = self.model_map.get(trained_models_folder)
             action = btn_ModelSelector_menu.addAction(code)
-            action.triggered[()].connect(lambda trained_models_folder=trained_models_folder: selectModel(trained_models_folder))
+            x = lambda chk=False, trained_models_folder=trained_models_folder: selectModel(trained_models_folder)
+            action.triggered[()].connect(x)
     
         btn_ModelSelector.setMenu(btn_ModelSelector_menu)
         dframes_hbox.addWidget(btn_ModelSelector)
@@ -2574,6 +2527,8 @@ class flameTimewarpML(flameMenuApp):
             watcher.start()
             self.loops.append(watcher)
 
+        self.refresh_x11_windows_list()
+
         if sys.platform == 'darwin':
             cmd_prefix = """tell application "Terminal" to activate do script "clear; """
             # cmd_prefix += """ echo " & quote & "Received """
@@ -2637,10 +2592,15 @@ class flameTimewarpML(flameMenuApp):
             os.system(ml_cmd)
 
         flame.execute_shortcut('Refresh Thumbnails')
+        self.raise_window_thread = threading.Thread(target=self.raise_last_window, args=())
+        self.raise_window_thread.daemon = True
+        self.raise_window_thread.start()
 
     def fltw_dialog(self, *args, **kwargs):
         from PySide2 import QtWidgets, QtCore
         
+        self.scan_trained_models_folder()
+
         # flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
         # self.asset_task_template =  flameMenuNewBatch_prefs.get('asset_task_template', {})
 
@@ -2744,7 +2704,8 @@ class flameTimewarpML(flameMenuApp):
             
             code = self.model_map.get(trained_models_folder)
             action = btn_ModelSelector_menu.addAction(code)
-            action.triggered[()].connect(lambda trained_models_folder=trained_models_folder: selectModel(trained_models_folder))
+            x = lambda chk=False, trained_models_folder=trained_models_folder: selectModel(trained_models_folder)
+            action.triggered[()].connect(x)
     
         btn_ModelSelector.setMenu(btn_ModelSelector_menu)
         new_speed_hbox.addWidget(btn_ModelSelector)
@@ -2923,72 +2884,6 @@ class flameTimewarpML(flameMenuApp):
 
         vbox.addLayout(hbox_trainedmodelfolder)
 
-    def dialog_model_selector(self, window, layout):
-        from PySide2 import QtWidgets, QtCore
-
-        lbl_Model = QtWidgets.QLabel('Model ', window)
-        lbl_Model.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_Model.setMinimumHeight(28)
-        lbl_Model.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
-        layout.addWidget(lbl_Model)
-
-        model_map = {
-            os.path.join(
-                self.framework.bundle_path,
-                'trained_models', 'default', 'v1.8.model'
-                ): '1One',
-            os.path.join(
-                self.framework.bundle_path,
-                'trained_models', 'default', 'v2.0.model'
-                ): '2Two',
-        }
-
-        current_model_name = model_map.get(self.prefs.get('trained_models_folder'), 'Unknown')
-        '''
-        # Model Selector Button
-        btn_ModelSelector = QtWidgets.QPushButton(window)
-        btn_ModelSelector.setText(current_model_name)
-        
-        def selectModel(trained_models_folder):
-            self.prefs['trained_models_folder'] = trained_models_folder
-            btn_ModelSelector.setText(model_map.get(trained_models_folder), 'Unknown')
-
-        btn_ModelSelector.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_ModelSelector.setMinimumSize(80, 28)
-        btn_ModelSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
-                                    'QPushButton::menu-indicator {image: none;}')
-
-        btn_ModelSelector_menu = QtWidgets.QMenu()
-        for trained_models_folder in sorted(model_map.keys()):
-            
-            code = model_map.get(trained_models_folder)
-            action = btn_ModelSelector_menu.addAction(code)
-            # action.triggered[()].connect(lambda trained_models_folder=trained_models_folder: selectModel(trained_models_folder))
-    
-        btn_ModelSelector.setMenu(btn_ModelSelector_menu)
-        '''
-        btn_NewSpeedSelector = QtWidgets.QPushButton(window)
-        btn_NewSpeedSelector.setText(self.new_speed_list.get(self.new_speed))
-        def selectNewSpeed(new_speed_id):
-            self.new_speed = new_speed_id
-            btn_NewSpeedSelector.setText(self.new_speed_list.get(self.new_speed))
-        btn_NewSpeedSelector.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_NewSpeedSelector.setMinimumSize(80, 28)
-        btn_NewSpeedSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
-                                    'QPushButton::menu-indicator {image: none;}')
-        btn_NewSpeedSelector_menu = QtWidgets.QMenu()
-
-        for new_speed_id in sorted(self.new_speed_list.keys()):
-            code = self.new_speed_list.get(new_speed_id, '1/2')
-            action = btn_NewSpeedSelector_menu.addAction(code)
-            action.triggered[()].connect(lambda new_speed_id=new_speed_id: selectNewSpeed(new_speed_id))
-        btn_NewSpeedSelector.setMenu(btn_NewSpeedSelector_menu)
-        layout.addWidget(btn_NewSpeedSelector)
-
-        # layout.addWidget(btn_ModelSelector)
-
     def export_clip(self, clip, export_dir, export_preset = None):
         import flame
         import traceback
@@ -3075,19 +2970,21 @@ class flameTimewarpML(flameMenuApp):
             '''
             # End of Colour Mgmt logic for future settin
 
+            if os.getenv('FLAMETWML_HARDCOMMIT') == 'True':
 
-            # Hard Commit Logic for future setting
-            '''
-            for version in new_clip.versions:
-                for track in version.tracks:
-                    for segment in track.segments:
-                        segment.create_effect('Source Image')
-            
-            new_clip.open_as_sequence()
-            flame.execute_shortcut('Hard Commit Selection in Timeline')
-            flame.execute_shortcut('Refresh Thumbnails')
-            '''
-            # End of Hard Commit Logic for future setting
+                # Hard Commit Logic for future setting
+                for version in new_clip.versions:
+                    for track in version.tracks:
+                        for segment in track.segments:
+                            segment.create_effect('Source Image')
+                
+                new_clip.open_as_sequence()
+                try:
+                    flame.execute_shortcut('Hard Commit Selection in Timeline')
+                    flame.execute_shortcut('Refresh Thumbnails')
+                except:
+                    pass
+                # End of Hard Commit Logic for future setting
 
 
         while self.threads:
@@ -3114,6 +3011,15 @@ class flameTimewarpML(flameMenuApp):
                     except Exception as e:
                         self.log('Error removing %s: %s' % (folder, e))
 
+                if os.getenv('FLAMETWML_HARDCOMMIT') == 'True':
+                    cmd = 'rm -f "' + os.path.abspath(import_path) + '/"*'
+                    self.log('Executing command: %s' % cmd)
+                    os.system(cmd)
+                    try:
+                        os.rmdir(import_path)
+                    except Exception as e:
+                        self.log('Error removing %s: %s' % (import_path, e))
+
                 break
             time.sleep(0.1)
 
@@ -3122,6 +3028,91 @@ class flameTimewarpML(flameMenuApp):
         
         for loop in self.loops:
             loop.join()
+
+    def scan_trained_models_folder(self):
+        ''''
+        self.model_map = {(str) path: (str) name, ...}
+        '''
+
+        self.model_map = {}
+
+        if not os.path.isdir(self.trained_models_path):
+            msg = 'No trained models folder found: ' + self.trained_models_path + ' does not exist. Can not continue.'
+            self.framework.show_error_msg(msg)
+            return self.model_map
+
+        folder_items = os.listdir(self.trained_models_path)
+        if not folder_items:
+            msg = 'No trained models found in: ' + self.trained_models_path + '. Can not continue.'
+            self.framework.show_error_msg(msg)
+            return self.model_map
+
+        trained_models = []
+        for folder_item in sorted(folder_items):
+            folder_item = os.path.join(self.trained_models_path, folder_item)
+            if os.path.isdir(folder_item):
+                if folder_item.endswith('.model'):
+                    trained_models.append(folder_item)
+
+        for trained_models_folder in sorted(trained_models):
+            self.model_map[trained_models_folder] = ' Model ' + os.path.basename(trained_models_folder).rstrip('.model') + ' '
+
+        current_model_name = self.model_map.get(self.prefs.get('trained_models_folder'))
+        if not current_model_name:
+            trained_model_folders = sorted(self.model_map.keys())
+            if not trained_model_folders:
+                msg = 'No trained models found in: ' + self.trained_models_path + '. Can not continue.'
+                self.framework.show_error_msg(msg)
+                return self.model_map
+            else:
+                self.prefs['trained_models_folder'] = trained_model_folders[-1]
+
+        return self.model_map
+
+    def refresh_x11_windows_list(self):
+        import flame
+        if sys.platform == 'darwin' or flame.get_version_major() != '2022':
+            self.x11_windows_list = []
+            return 
+
+        from subprocess import check_output
+        wmctrl_path = '/usr/bin/wmctrl'
+        if not os.path.isfile(wmctrl_path):
+            wmctrl_path = os.path.join(self.framework.bundle_path, 'bin', 'wmctrl')
+        out = ''
+        try:
+            out = check_output([wmctrl_path, '-lp'])
+        except:
+            pass
+        if out:
+            self.x11_windows_list = out.splitlines()
+        else:
+            self.x11_windows_list = []
+
+    def raise_last_window(self):
+        import flame
+        if sys.platform == 'darwin' or flame.get_version_major() != '2022':
+            self.x11_windows_list = []
+            return 
+
+        from subprocess import check_output
+        wmctrl_path = '/usr/bin/wmctrl'
+        if not os.path.isfile(wmctrl_path):
+            wmctrl_path = os.path.join(self.framework.bundle_path, 'bin', 'wmctrl')
+        out = ''
+        try:
+            out = check_output([wmctrl_path, '-lp'])
+        except:
+            return
+        if out:
+            lines = out.splitlines()
+            for line in lines:
+                if line not in self.x11_windows_list:
+                    if 'Flame' not in line:
+                        cmd = wmctrl_path + ' -ia ' + line.split()[0]
+                        time.sleep(2)
+                        for i in range(5):
+                            os.system(cmd)
 
 
 # --- FLAME STARTUP SEQUENCE ---
