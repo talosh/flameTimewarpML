@@ -31,6 +31,25 @@ https://github.com/guerilla-di/flame_channel_parser
 ~/.config/flameTimewarpML                               # Linux
 ```
 
+### Configuration via env variables
+
+* There are an option to set working folder over env variable
+<br> Setting FLAMETWML_DEFAULT_WORK_FOLDER will set default folder and user will still be allowed to change it
+```
+export FLAMETWML_DEFAULT_WORK_FOLDER=/Volumes/projects/my_timewarps/
+```
+
+* Setting FLAMETWML_WORK_FOLDER will block user from changing it. This read every time just before the tool is launched so one can use it with other pipeline tools to change it dynamically depending on context
+
+```
+export FLAMETWML_WORK_FOLDER=/Volumes/projects/my_timewarps/
+```
+
+* Setting FLAMETWML_HARDCOMMIT will lead to imported clip hard commited after import and all temporary files deleted
+```
+export FLAMETWML_HARDCOMMIT=True
+```
+
 ### Centralised / Manual Install
 * It is possible to do easy install on one of the workstations to common location and then configure other via env variables (see Centralised configuration section)
 * flameTimewarpML is made of three components.
@@ -117,8 +136,6 @@ pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt --no-index --
 ```
 * Copy flameTimewarpML.py to your Flame python scripts folder
 
-### Centralised configuration via env variables
-
 * set FLAMETWML_BUNDLE, FLAMETWML_MINICONDA environment variables to point code and miniconda locations.
 ```
 export FLAMETWML_BUNDLE=/Volumes/software/flameTimewarpML/          # Mac
@@ -133,16 +150,4 @@ export FLAMETWML_BUNDLE_MAC=/Volumes/software/flameTimewarpML/
 export FLAMETWML_BUNDLE_LINUX=/mnt/software/flameTimewarpML/
 export FLAMETWML_MINICONDA_MAC=/Volumes/software/miniconda3/
 export FLAMETWML_MINICONDA_LINUX=mnt/software/miniconda3/
-```
-
-* There are an option to set working folder over env variable
-<br> Setting FLAMETWML_DEFAULT_WORK_FOLDER will set default folder and user will still be allowed to change it
-```
-export FLAMETWML_DEFAULT_WORK_FOLDER=/Volumes/projects/my_timewarps/
-```
-
-* Setting FLAMETWML_WORK_FOLDER will block user from changing it. This read every time just before the tool is launched so one can use it with other pipeline tools to change it dynamically depending on context
-
-```
-export FLAMETWML_WORK_FOLDER=/Volumes/projects/my_timewarps/
 ```
