@@ -15,16 +15,19 @@ from pprint import pprint
 from pprint import pformat
 
 # Configurable settings
+menu_group_name = 'Timewarp ML'
+DEBUG = False
+
+__version__ = 'v0.4.2.beta.009'
+
+gnome_terminal = False
+if not os.path.isfile('/usr/bin/konsole'):
+    gnome_terminal = True
+
 FLAMETWML_BUNDLE_MAC = ''
 FLAMETWML_BUNDLE_LINUX = ''
 FLAMETWML_MINICONDA_MAC = ''
 FLAMETWML_MINICONDA_LINUX = ''
-menu_group_name = 'Timewarp ML'
-gnome_terminal = False
-DEBUG = False
-
-__version__ = 'v0.4.2.beta.004'
-
 
 if os.getenv('FLAMETWML_BUNDLE') and not FLAMETWML_BUNDLE_MAC:
     FLAMETWML_BUNDLE_MAC = os.getenv('FLAMETWML_BUNDLE')
@@ -1245,6 +1248,7 @@ class flameTimewarpML(flameMenuApp):
             cmd_prefix = 'gnome-terminal '
             cmd_prefix += """-- /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
             cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
+            # cmd_prefix += """PROMPT_COMMAND='echo -ne "\033]0;flameTimewarpML\007"'; """
 
             ml_cmd = cmd_prefix
             ml_cmd += 'echo "Received ' + str(number_of_clips)
@@ -1604,6 +1608,8 @@ class flameTimewarpML(flameMenuApp):
                 watcher.start()
                 self.loops.append(watcher)
         
+        self.refresh_x11_windows_list()
+
         if sys.platform == 'darwin':
             cmd_prefix = """tell application "Terminal" to activate do script "clear; """
             # cmd_prefix += """ echo " & quote & "Received """
@@ -1666,6 +1672,9 @@ class flameTimewarpML(flameMenuApp):
             os.system(ml_cmd)
 
         flame.execute_shortcut('Refresh Thumbnails')
+        self.raise_window_thread = threading.Thread(target=self.raise_last_window, args=())
+        self.raise_window_thread.daemon = True
+        self.raise_window_thread.start()
 
     def dedup_dialog(self, *args, **kwargs):
         from PySide2 import QtWidgets, QtCore
@@ -1991,6 +2000,8 @@ class flameTimewarpML(flameMenuApp):
         watcher.start()
         self.loops.append(watcher)
 
+        self.refresh_x11_windows_list()
+
         if sys.platform == 'darwin':
             cmd_prefix = """tell application "Terminal" to activate do script "clear; """
             # cmd_prefix += """ echo " & quote & "Received """
@@ -2054,6 +2065,9 @@ class flameTimewarpML(flameMenuApp):
             os.system(ml_cmd)
 
         flame.execute_shortcut('Refresh Thumbnails')
+        self.raise_window_thread = threading.Thread(target=self.raise_last_window, args=())
+        self.raise_window_thread.daemon = True
+        self.raise_window_thread.start()
 
     def fluidmorph_dialog(self, *args, **kwargs):
         from PySide2 import QtWidgets, QtCore
@@ -2513,6 +2527,8 @@ class flameTimewarpML(flameMenuApp):
             watcher.start()
             self.loops.append(watcher)
 
+        self.refresh_x11_windows_list()
+
         if sys.platform == 'darwin':
             cmd_prefix = """tell application "Terminal" to activate do script "clear; """
             # cmd_prefix += """ echo " & quote & "Received """
@@ -2576,6 +2592,9 @@ class flameTimewarpML(flameMenuApp):
             os.system(ml_cmd)
 
         flame.execute_shortcut('Refresh Thumbnails')
+        self.raise_window_thread = threading.Thread(target=self.raise_last_window, args=())
+        self.raise_window_thread.daemon = True
+        self.raise_window_thread.start()
 
     def fltw_dialog(self, *args, **kwargs):
         from PySide2 import QtWidgets, QtCore
@@ -2951,19 +2970,21 @@ class flameTimewarpML(flameMenuApp):
             '''
             # End of Colour Mgmt logic for future settin
 
+            if os.getenv('FLAMETWML_HARDCOMMIT') == 'True':
 
-            # Hard Commit Logic for future setting
-            '''
-            for version in new_clip.versions:
-                for track in version.tracks:
-                    for segment in track.segments:
-                        segment.create_effect('Source Image')
-            
-            new_clip.open_as_sequence()
-            flame.execute_shortcut('Hard Commit Selection in Timeline')
-            flame.execute_shortcut('Refresh Thumbnails')
-            '''
-            # End of Hard Commit Logic for future setting
+                # Hard Commit Logic for future setting
+                for version in new_clip.versions:
+                    for track in version.tracks:
+                        for segment in track.segments:
+                            segment.create_effect('Source Image')
+                
+                new_clip.open_as_sequence()
+                try:
+                    flame.execute_shortcut('Hard Commit Selection in Timeline')
+                    flame.execute_shortcut('Refresh Thumbnails')
+                except:
+                    pass
+                # End of Hard Commit Logic for future setting
 
 
         while self.threads:
@@ -2989,6 +3010,15 @@ class flameTimewarpML(flameMenuApp):
                         os.rmdir(folder)
                     except Exception as e:
                         self.log('Error removing %s: %s' % (folder, e))
+
+                if os.getenv('FLAMETWML_HARDCOMMIT') == 'True':
+                    cmd = 'rm -f "' + os.path.abspath(import_path) + '/"*'
+                    self.log('Executing command: %s' % cmd)
+                    os.system(cmd)
+                    try:
+                        os.rmdir(import_path)
+                    except Exception as e:
+                        self.log('Error removing %s: %s' % (import_path, e))
 
                 break
             time.sleep(0.1)
@@ -3040,28 +3070,49 @@ class flameTimewarpML(flameMenuApp):
         return self.model_map
 
     def refresh_x11_windows_list(self):
+        import flame
+        if sys.platform == 'darwin' or flame.get_version_major() != '2022':
+            self.x11_windows_list = []
+            return 
+
         from subprocess import check_output
         wmctrl_path = '/usr/bin/wmctrl'
         if not os.path.isfile(wmctrl_path):
             wmctrl_path = os.path.join(self.framework.bundle_path, 'bin', 'wmctrl')
-        out = check_output([wmctrl_path, '-lp'])
+        out = ''
+        try:
+            out = check_output([wmctrl_path, '-lp'])
+        except:
+            pass
         if out:
             self.x11_windows_list = out.splitlines()
-        pprint (self.x11_windows_list)
+        else:
+            self.x11_windows_list = []
 
     def raise_last_window(self):
+        import flame
+        if sys.platform == 'darwin' or flame.get_version_major() != '2022':
+            self.x11_windows_list = []
+            return 
+
         from subprocess import check_output
         wmctrl_path = '/usr/bin/wmctrl'
         if not os.path.isfile(wmctrl_path):
             wmctrl_path = os.path.join(self.framework.bundle_path, 'bin', 'wmctrl')
-        out = check_output([wmctrl_path, '-lp'])
+        out = ''
+        try:
+            out = check_output([wmctrl_path, '-lp'])
+        except:
+            return
         if out:
             lines = out.splitlines()
             for line in lines:
                 if line not in self.x11_windows_list:
-                    cmd = wmctrl_path + ' -ia ' + line.split()[0]
-                    for i in range(5):
-                        os.system(cmd)
+                    if 'Flame' not in line:
+                        cmd = wmctrl_path + ' -ia ' + line.split()[0]
+                        time.sleep(2)
+                        for i in range(5):
+                            os.system(cmd)
 
 
 # --- FLAME STARTUP SEQUENCE ---
