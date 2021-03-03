@@ -18,7 +18,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.2.beta.009'
+__version__ = 'v0.4.2.beta.011'
 
 gnome_terminal = False
 if not os.path.isfile('/usr/bin/konsole'):
@@ -380,6 +380,7 @@ class flameAppFramework(object):
             
         self.log('bundle_id: %s size %sMb' % (self.bundle_id, len(payload)//(1024 ** 2)), logfile)
         
+        bundle_backup_folder = ''
         if os.path.isdir(bundle_path):
             bundle_backup_folder = os.path.abspath(bundle_path + '.previous')
             if os.path.isdir(bundle_backup_folder):
@@ -429,6 +430,23 @@ class flameAppFramework(object):
         except Exception as e:
             self.show_exception(e)
             return False
+
+        # rsync previous models back to current models folder
+        if bundle_backup_folder:
+            prev_models_folder = os.path.join(
+                bundle_backup_folder,
+                'trained_models'
+            )
+            current_models_folder = os.path.join(
+                bundle_path,
+                'trained_models'
+            )
+            try:
+                cmd = 'rsync -ur ' + prev_models_folder + os.path.sep
+                cmd += ' ' + current_models_folder + os.path.sep
+                os.system(cmd)
+            except Exception as e:
+                self.log(e)
 
         delta = time.time() - start
         self.log('bundle extracted to %s' % bundle_path, logfile)
