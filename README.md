@@ -58,6 +58,33 @@ export FLAMETWML_WORK_FOLDER=/Volumes/projects/my_timewarps/
 ```bash
 export FLAMETWML_HARDCOMMIT=True
 ```
+### Updating / Downgrading PyTorch to match CUDA version
+
+This example will change Pytorch to cuda11
+
+* Get pytorch build for python 3.8 and cuda11:
+```
+https://download.pytorch.org/whl/cu110/torch-1.7.1%2Bcu110-cp38-cp38-linux_x86_64.whl
+```
+* Init miniconda3 environment:
+```
+~/flameTimewarpML/bundle/init_env
+```
+* In new terminal window that opens check current pytorch cuda version:
+```
+python -c "import torch; print(torch.version.cuda)"
+```
+this should report 10.2
+* Update pytorch
+```
+pip3 install --upgrade ~/Downloads/torch-1.7.1+cu110-cp38-cp38-linux_x86_64.whl
+```
+* Check pytorch cuda version again:
+```
+python -c "import torch; print(torch.version.cuda)"
+```
+this now should report 11.0
+
 
 ### Centralised / Manual Install
 
