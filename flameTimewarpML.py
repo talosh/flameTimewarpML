@@ -18,7 +18,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.4.3 beta 001'
+__version__ = 'v0.4.3 beta 002'
 
 gnome_terminal = False
 if not os.path.isfile('/usr/bin/konsole'):
@@ -2997,7 +2997,6 @@ class flameTimewarpML(flameMenuApp):
             # End of Colour Mgmt logic for future settin
 
             if os.getenv('FLAMETWML_HARDCOMMIT') == 'True':
-
                 # Hard Commit Logic for future setting
                 for version in new_clip.versions:
                     for track in version.tracks:
@@ -3005,13 +3004,15 @@ class flameTimewarpML(flameMenuApp):
                             segment.create_effect('Source Image')
                 
                 new_clip.open_as_sequence()
+                new_clip.render()
+                
                 try:
                     flame.execute_shortcut('Hard Commit Selection in Timeline')
+                    flame.execute_shortcut('Close Current Sequence')
                     flame.execute_shortcut('Refresh Thumbnails')
                 except:
                     pass
                 # End of Hard Commit Logic for future setting
-
 
         while self.threads:
             if not os.path.isfile(lockfile):
@@ -3038,6 +3039,7 @@ class flameTimewarpML(flameMenuApp):
                         self.log('Error removing %s: %s' % (folder, e))
 
                 if os.getenv('FLAMETWML_HARDCOMMIT') == 'True':
+                    time.sleep(1)
                     cmd = 'rm -f "' + os.path.abspath(import_path) + '/"*'
                     self.log('Executing command: %s' % cmd)
                     os.system(cmd)
@@ -3045,7 +3047,6 @@ class flameTimewarpML(flameMenuApp):
                         os.rmdir(import_path)
                     except Exception as e:
                         self.log('Error removing %s: %s' % (import_path, e))
-
                 break
             time.sleep(0.1)
 
