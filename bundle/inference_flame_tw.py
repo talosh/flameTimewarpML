@@ -375,7 +375,7 @@ def bake_flame_tw_setup(tw_setup_path, start, end):
         return tw_channel
 
     else:
-        # speed - based timewaro needs a bit more love
+        # speed - based timewarp needs a bit more love
         # to solve frame values against speed channel
         # with the help of anchor frames in SpeedTiming channel
 
