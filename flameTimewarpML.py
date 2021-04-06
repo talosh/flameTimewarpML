@@ -285,7 +285,7 @@ class flameAppFramework(object):
             try:
                 os.makedirs(self.prefs_folder)
             except:
-                self.log('unable to create folder %s' % prefs_folder)
+                self.log('unable to create folder %s' % self.prefs_folder)
                 return False
 
         prefix = self.prefs_folder + os.path.sep + self.bundle_name
@@ -1488,7 +1488,7 @@ class flameTimewarpML(flameMenuApp):
         if os.getenv('FLAMETWML_WORK_FOLDER'):
             lbl_WorkFolderPath = QtWidgets.QLabel(self.working_folder, window)
             lbl_WorkFolderPath.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-            lbl_WorkFolderPath.setMinimumHeight(28)
+            lbl_WorkFolderPath.setMaximumHeight(28)
             lbl_WorkFolderPath.setMaximumHeight(28)
             lbl_WorkFolderPath.setAlignment(QtCore.Qt.AlignCenter)
             vbox.addWidget(lbl_WorkFolderPath)
