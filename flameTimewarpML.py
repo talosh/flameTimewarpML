@@ -16,9 +16,9 @@ from pprint import pformat
 
 # Configurable settings
 menu_group_name = 'Timewarp ML'
-DEBUG = False
+DEBUG = True
 
-__version__ = 'v0.4.2'
+__version__ = 'v0.4.3 beta 002'
 
 gnome_terminal = False
 if not os.path.isfile('/usr/bin/konsole'):
@@ -98,7 +98,7 @@ class flameAppFramework(object):
             return type(self)(self)
         
         def keys(self):
-            return self.master[self.name].keys()
+            return list(self.master[self.name].keys())
 
         @classmethod
         def fromkeys(cls, keys, v=None):
@@ -108,7 +108,7 @@ class flameAppFramework(object):
             return '{0}({1})'.format(type(self).__name__, self.master[self.name].__repr__())
 
         def master_keys(self):
-            return self.master.keys()
+            return list(self.master.keys())
 
     def __init__(self):
         self.name = self.__class__.__name__
@@ -171,12 +171,6 @@ class flameAppFramework(object):
         
         else:
             self.bundle_location = self.prefs_global.get('bundle_location')
-
-        #    self.prefs_global['menu_auto_refresh'] = {
-        #        'media_panel': True,
-        #        'batch': True,
-        #        'main_menu': True
-        #    }
         
         self.apps = []
 
@@ -196,7 +190,7 @@ class flameAppFramework(object):
             self.bundle_path = FLAMETWML_BUNDLE_MAC
             self.bundle_location = os.path.dirname(FLAMETWML_BUNDLE_MAC)
             return
-        elif (sys.platform == "linux2") and FLAMETWML_BUNDLE_LINUX:
+        elif sys.platform.startswith('linux') and FLAMETWML_BUNDLE_LINUX:
             bundle_path = FLAMETWML_BUNDLE_LINUX
             self.bundle_path = FLAMETWML_BUNDLE_LINUX
             self.bundle_location = os.path.dirname(FLAMETWML_BUNDLE_LINUX)
@@ -249,32 +243,35 @@ class flameAppFramework(object):
         prefs_global_file_path = prefix + '.prefs'
 
         try:
-            prefs_file = open(prefs_file_path, 'r')
+            prefs_file = open(prefs_file_path, 'rb')
             self.prefs = pickle.load(prefs_file)
             prefs_file.close()
             self.log('preferences loaded from %s' % prefs_file_path)
             self.log_debug('preferences contents:\n' + pformat(self.prefs))
-        except:
+        except Exception as e:
             self.log('unable to load preferences from %s' % prefs_file_path)
+            self.log(e)
 
         try:
-            prefs_file = open(prefs_user_file_path, 'r')
+            prefs_file = open(prefs_user_file_path, 'rb')
             self.prefs_user = pickle.load(prefs_file)
             prefs_file.close()
             self.log('preferences loaded from %s' % prefs_user_file_path)
             self.log_debug('preferences contents:\n' + pformat(self.prefs_user))
-        except:
+        except Exception as e:
             self.log('unable to load preferences from %s' % prefs_user_file_path)
+            self.log(e)
 
         try:
-            prefs_file = open(prefs_global_file_path, 'r')
+            prefs_file = open(prefs_global_file_path, 'rb')
             self.prefs_global = pickle.load(prefs_file)
             prefs_file.close()
             self.log('preferences loaded from %s' % prefs_global_file_path)
             self.log_debug('preferences contents:\n' + pformat(self.prefs_global))
 
-        except:
+        except Exception as e:
             self.log('unable to load preferences from %s' % prefs_global_file_path)
+            self.log(e)
 
         return True
 
@@ -284,8 +281,14 @@ class flameAppFramework(object):
         if not os.path.isdir(self.prefs_folder):
             try:
                 os.makedirs(self.prefs_folder)
+<<<<<<< HEAD
             except:
                 self.log('unable to create folder %s' % self.prefs_folder)
+=======
+            except Exception as e:
+                self.log('unable to create folder %s' % prefs_folder)
+                self.log(e)
+>>>>>>> 228e430fc4e3524b40473df4515eb8cfc5203f1d
                 return False
 
         prefix = self.prefs_folder + os.path.sep + self.bundle_name
@@ -294,35 +297,38 @@ class flameAppFramework(object):
         prefs_global_file_path = prefix + '.prefs'
 
         try:
-            prefs_file = open(prefs_file_path, 'w')
+            prefs_file = open(prefs_file_path, 'wb')
             pickle.dump(self.prefs, prefs_file)
             prefs_file.close()
             if self.debug:
                 self.log('preferences saved to %s' % prefs_file_path)
                 self.log('preferences contents:\n' + pformat(self.prefs))
-        except:
+        except Exception as e:
             self.log('unable to save preferences to %s' % prefs_file_path)
+            self.log(e)
 
         try:
-            prefs_file = open(prefs_user_file_path, 'w')
+            prefs_file = open(prefs_user_file_path, 'wb')
             pickle.dump(self.prefs_user, prefs_file)
             prefs_file.close()
             if self.debug:
                 self.log('preferences saved to %s' % prefs_user_file_path)
                 self.log('preferences contents:\n' + pformat(self.prefs_user))
-        except:
+        except Exception as e:
             self.log('unable to save preferences to %s' % prefs_user_file_path)
+            self.log(e)
 
         try:
-            prefs_file = open(prefs_global_file_path, 'w')
+            prefs_file = open(prefs_global_file_path, 'wb')
             pickle.dump(self.prefs_global, prefs_file)
             prefs_file.close()
             if self.debug:
                 self.log('preferences saved to %s' % prefs_global_file_path)
                 self.log('preferences contents:\n' + pformat(self.prefs_global))
-        except:
+        except Exception as e:
             self.log('unable to save preferences to %s' % prefs_global_file_path)
-            
+            self.log(e)
+
         return True
 
     def unpack_bundle(self, bundle_path):
@@ -1033,11 +1039,18 @@ class flameMenuApp(object):
         text = text.strip()
         exp = re.compile(u'[^\w\.-]', re.UNICODE)
 
-        if isinstance(text, unicode):
-            result = exp.sub('_', value)
+        if sys.version_info < (3,):
+            if isinstance(text, unicode):
+                result = exp.sub('_', text)
+            else:
+                decoded = text.decode('utf-8')
+                result = exp.sub('_', decoded).encode('utf-8')
         else:
-            decoded = text.decode('utf-8')
-            result = exp.sub('_', decoded).encode('utf-8')
+            if isinstance(text, str):
+                result = exp.sub('_', text)
+            else:
+                decoded = text.decode('utf-8')
+                result = exp.sub('_', decoded).encode('utf-8')
 
         return re.sub('_\_+', '_', result)
 
@@ -1061,7 +1074,7 @@ class flameTimewarpML(flameMenuApp):
         if (sys.platform == 'darwin') and FLAMETWML_MINICONDA_MAC:
             self.env_folder = FLAMETWML_MINICONDA_MAC
             self.check_bundle_id = False
-        elif (sys.platform == "linux2") and FLAMETWML_MINICONDA_LINUX:
+        elif sys.platform.startswith('linux') and FLAMETWML_MINICONDA_LINUX:
             self.env_folder = FLAMETWML_MINICONDA_LINUX
             self.check_bundle_id = False
         
@@ -2989,7 +3002,6 @@ class flameTimewarpML(flameMenuApp):
             # End of Colour Mgmt logic for future settin
 
             if os.getenv('FLAMETWML_HARDCOMMIT') == 'True':
-
                 # Hard Commit Logic for future setting
                 for version in new_clip.versions:
                     for track in version.tracks:
@@ -2997,13 +3009,15 @@ class flameTimewarpML(flameMenuApp):
                             segment.create_effect('Source Image')
                 
                 new_clip.open_as_sequence()
+                new_clip.render()
+                
                 try:
                     flame.execute_shortcut('Hard Commit Selection in Timeline')
+                    flame.execute_shortcut('Close Current Sequence')
                     flame.execute_shortcut('Refresh Thumbnails')
                 except:
                     pass
                 # End of Hard Commit Logic for future setting
-
 
         while self.threads:
             if not os.path.isfile(lockfile):
@@ -3030,6 +3044,7 @@ class flameTimewarpML(flameMenuApp):
                         self.log('Error removing %s: %s' % (folder, e))
 
                 if os.getenv('FLAMETWML_HARDCOMMIT') == 'True':
+                    time.sleep(1)
                     cmd = 'rm -f "' + os.path.abspath(import_path) + '/"*'
                     self.log('Executing command: %s' % cmd)
                     os.system(cmd)
@@ -3037,7 +3052,6 @@ class flameTimewarpML(flameMenuApp):
                         os.rmdir(import_path)
                     except Exception as e:
                         self.log('Error removing %s: %s' % (import_path, e))
-
                 break
             time.sleep(0.1)
 
