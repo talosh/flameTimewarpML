@@ -1496,7 +1496,7 @@ class flameTimewarpML(flameMenuApp):
         if os.getenv('FLAMETWML_WORK_FOLDER'):
             lbl_WorkFolderPath = QtWidgets.QLabel(self.working_folder, window)
             lbl_WorkFolderPath.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-            lbl_WorkFolderPath.setMaximumHeight(28)
+            lbl_WorkFolderPath.setMinimumHeight(28)
             lbl_WorkFolderPath.setMaximumHeight(28)
             lbl_WorkFolderPath.setAlignment(QtCore.Qt.AlignCenter)
             vbox.addWidget(lbl_WorkFolderPath)
