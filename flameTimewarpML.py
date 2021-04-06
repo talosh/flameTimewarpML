@@ -18,7 +18,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = True
 
-__version__ = 'v0.4.3 beta 002'
+__version__ = 'v0.4.3 beta 003'
 
 gnome_terminal = False
 if not os.path.isfile('/usr/bin/konsole'):
@@ -281,14 +281,9 @@ class flameAppFramework(object):
         if not os.path.isdir(self.prefs_folder):
             try:
                 os.makedirs(self.prefs_folder)
-<<<<<<< HEAD
-            except:
-                self.log('unable to create folder %s' % self.prefs_folder)
-=======
             except Exception as e:
-                self.log('unable to create folder %s' % prefs_folder)
+                self.log('unable to create folder %s' % self.prefs_folder)
                 self.log(e)
->>>>>>> 228e430fc4e3524b40473df4515eb8cfc5203f1d
                 return False
 
         prefix = self.prefs_folder + os.path.sep + self.bundle_name
