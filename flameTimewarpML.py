@@ -16,9 +16,9 @@ from pprint import pformat
 
 # Configurable settings
 menu_group_name = 'Timewarp ML'
-DEBUG = True
+DEBUG = False
 
-__version__ = 'v0.4.3 beta 003'
+__version__ = 'v0.4.3'
 
 gnome_terminal = False
 if not os.path.isfile('/usr/bin/konsole'):
@@ -451,7 +451,7 @@ class flameAppFramework(object):
 
         delta = time.time() - start
         self.log('bundle extracted to %s' % bundle_path, logfile)
-        self.log('extracting bundle took %s sec' % str(delta), logfile)
+        self.log('extracting bundle took %s sec' % '{:.1f}'.format(delta), logfile)
 
         del payload
 
@@ -541,7 +541,7 @@ class flameAppFramework(object):
         status = os.system(cmd)
         self.log('exit status %s' % os.WEXITSTATUS(status), logfile)
         delta = time.time() - start
-        self.log('installing Miniconda took %s sec' % str(delta), logfile)
+        self.log('installing Miniconda took %s sec' % '{:.1f}'.format(delta), logfile)
 
     def install_env_packages(self, env_folder, logfile):
         start = time.time()
@@ -557,7 +557,7 @@ class flameAppFramework(object):
         status = os.system(cmd)
         self.log('exit status %s' % os.WEXITSTATUS(status), logfile)
         delta = time.time() - start
-        self.log('installing Miniconda packages took %s sec' % str(delta), logfile)
+        self.log('installing Miniconda packages took %s sec' % '{:.1f}'.format(delta), logfile)
 
     def show_exception(self, e):
         from PySide2 import QtWidgets
