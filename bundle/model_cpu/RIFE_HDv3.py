@@ -10,7 +10,7 @@ from train_log.IFNet_HDv3 import *
 import torch.nn.functional as F
 from model.loss import *
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 
 
 def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
@@ -186,7 +186,7 @@ class Model:
         mask = torch.sigmoid(refine_output[:, 3:4])
         merged_img = warped_img0 * mask + warped_img1 * (1 - mask)
         pred = merged_img + res
-        pred = torch.clamp(pred, 0, 1)
+        # pred = torch.clamp(pred, 0, 1)
         if training:
             return pred, mask, merged_img, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt
         else:
