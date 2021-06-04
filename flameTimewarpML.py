@@ -18,7 +18,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.3'
+__version__ = 'v0.4.4.beta.001'
 
 gnome_terminal = False
 if not os.path.isfile('/usr/bin/konsole'):
@@ -2396,7 +2396,7 @@ class flameTimewarpML(flameMenuApp):
             mbox.setStyleSheet('QLabel{min-width: 800px;}')
             mbox.exec_()
 
-        def dictify(r,root=True):
+        def dictify(r, root=True):
             from copy import copy
 
             if root:
@@ -2440,26 +2440,21 @@ class flameTimewarpML(flameMenuApp):
                         with open(temp_setup_path, 'r') as tw_setup_file:
                             tw_setup_string = tw_setup_file.read()
                             tw_setup_file.close()
-                        '''
-                            tw_setup_xml = ET.fromstring(tw_setup_string)
-                            tw_setup = dictify(tw_setup_xml)
-                            try:
-                                start = int(tw_setup['Setup']['Base'][0]['Range'][0]['Start'])
-                                end = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
-                                TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
-                                TW_SpeedTiming_size = int(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
-                                TW_RetimerMode = int(tw_setup['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
-                            except Exception as e:
-                                parse_message(e)
-                                return
+                            
+                        tw_setup_xml = ET.fromstring(tw_setup_string)
+                        tw_setup = dictify(tw_setup_xml)
+                        try:
+                            start = int(tw_setup['Setup']['Base'][0]['Range'][0]['Start'])
+                            end = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
+                            TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
+                            TW_SpeedTiming_size = int(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
+                            TW_RetimerMode = int(tw_setup['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
+                        except Exception as e:
+                            parse_message(e)
+                            return
 
-                            if TW_SpeedTiming_size == 1 and TW_RetimerMode == 0:
-                                pass
-
-                            elif not (TW_Timing_size > end-start or TW_SpeedTiming_size > end-start):
-                                bake_message()
-                                return
-                        '''
+                        pprint (tw_setup)
+                                
                         verified = True
                 
                 if not verified:
