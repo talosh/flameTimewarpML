@@ -12,6 +12,7 @@ import time
 import threading
 import atexit
 import hashlib
+import pickle
 
 from pprint import pprint
 from pprint import pformat
@@ -1251,7 +1252,7 @@ class flameTimewarpML(flameMenuApp):
                 cmd_args['flow_scale'] = flow_scale
                 cmd_args['bit_depth'] = clip.bit_depth
 
-                lockfile_name = hashlib.sha1(import_path.encode()).hexdigest().upper() + '.lock'
+                lockfile_name = hashlib.sha1(result_folder.encode()).hexdigest().upper() + '.lock'
                 lockfile_path = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
 
                 try:
@@ -1268,18 +1269,6 @@ class flameTimewarpML(flameMenuApp):
                 cmd = 'python3 '
                 cmd += os.path.join(self.framework.bundle_path, 'command_wrapper.py') + ' '
                 cmd += lockfile_path
-                '''
-                if self.cpu:
-                    cmd = 'export OMP_NUM_THREADS=1; python3 '
-                cmd += os.path.join(self.framework.bundle_path, 'inference_sequence.py')
-                cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder
-                cmd += ' --model ' + self.prefs.get('trained_models_folder')
-                cmd += ' --exp=' + str(speed)
-                if self.cpu:
-                    cmd += ' --cpu'
-                if self.prefs.get('slowmo_uhd', False):
-                    cmd += ' --UHD'
-                '''
                 cmd += "; "
                 cmd_strings.append(cmd)
                 
