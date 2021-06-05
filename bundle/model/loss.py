@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.models as models
+# import torchvision.models as models
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -94,7 +94,7 @@ class MeanShift(nn.Conv2d):
             self.weight.data.mul_(std.view(c, 1, 1, 1))
             self.bias.data = data_range * torch.Tensor(data_mean)
         self.requires_grad = False
-            
+'''  
 class VGGPerceptualLoss(torch.nn.Module):
     def __init__(self, rank=0):
         super(VGGPerceptualLoss, self).__init__()
@@ -119,6 +119,7 @@ class VGGPerceptualLoss(torch.nn.Module):
                 loss += weights[k] * (X - Y.detach()).abs().mean() * 0.1
                 k += 1
         return loss
+'''
 
 if __name__ == '__main__':
     img0 = torch.zeros(3, 3, 256, 256).float().to(device)
