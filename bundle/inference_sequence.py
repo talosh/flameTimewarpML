@@ -23,7 +23,6 @@ import inference_common
 ThreadsFlag = True
 IOProcesses = []
 cv2.setNumThreads(1)
-cv2_flags = [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF]
 
 
 # Exception handler
@@ -49,10 +48,13 @@ def signal_handler(sig, frame):
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
-def clear_write_buffer(write_buffer, tot_frame, frames_written):
+def clear_write_buffer(args, write_buffer, tot_frame, frames_written):
     global ThreadsFlag
     global IOProcesses
-    global cv2_flags
+
+    cv2_flags = []
+    if args.bit_depth != 32:
+        cv2_flags = [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF]
 
     def write_in_current_thread(path, item, cnt, frames_written):
         try:
@@ -155,7 +157,9 @@ def find_middle_frame(frames, frames_taken):
     return False
 
 def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_written, frames_taken):
-    global cv2_flags
+    cv2_flags = []
+    if args.bit_depth != 32:
+        cv2_flags = [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF]
 
     perfect_pair = find_middle_frame(frames, frames_taken)
 
@@ -229,10 +233,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     assert (not args.output is None or not args.input is None)
 
-    pprint (args.bit_depth)
-    if args.bit_depth == 32:
-        cv2_flags = []
-
     manager = mp.Manager()
     frames = manager.dict()
     frames_written = manager.dict()
@@ -292,7 +292,7 @@ if __name__ == '__main__':
         write_buffer = Queue(maxsize=inference_common.OUTPUT_QUEUE_SIZE)
         read_buffer = Queue(maxsize=inference_common.INPUT_QUEUE_SIZE)
         _thread.start_new_thread(build_read_buffer, (args, read_buffer, files_list))
-        _thread.start_new_thread(clear_write_buffer, (write_buffer, input_duration, frames_written))
+        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration, frames_written))
 
         model = inference_common.load_model(args.model)
         model.eval()

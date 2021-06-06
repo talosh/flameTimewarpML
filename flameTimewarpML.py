@@ -21,7 +21,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.4.beta.004'
+__version__ = 'v0.4.4.beta.005'
 
 gnome_terminal = False
 if not os.path.isfile('/usr/bin/konsole'):
