@@ -11,6 +11,9 @@ import sys
 import time
 import threading
 import atexit
+import hashlib
+import pickle
+
 from pprint import pprint
 from pprint import pformat
 
@@ -18,7 +21,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.3'
+__version__ = 'v0.4.4.beta.011'
 
 gnome_terminal = False
 if not os.path.isfile('/usr/bin/konsole'):
@@ -1081,11 +1084,10 @@ class flameTimewarpML(flameMenuApp):
         if not self.prefs.master.get(self.name):
             # set general defaults
             self.prefs['working_folder'] = '/var/tmp'
-            self.prefs['slowmo_uhd'] = False
-            self.prefs['dedup_uhd'] = False
-            self.prefs['fluidmorph_uhd'] = True
-            self.prefs['fltw_uhd'] = True
-
+            self.prefs['slowmo_flow_scale'] = 1.0
+            self.prefs['dedup_flow_scale'] = 1.0
+            self.prefs['fluidmorph_flow_scale'] = 1.0
+            self.prefs['fltw_flow_scale'] = 1.0
 
         if (self.prefs.get('version') != __version__) or not os.path.isdir(str(self.prefs.get('trained_models_folder', ''))):
             # set version-specific defaults
@@ -1111,7 +1113,14 @@ class flameTimewarpML(flameMenuApp):
         self.new_speed = 1
         self.dedup_mode = 0
         self.cpu = False
-        self.UHD = True
+        self.flow_scale = 1.0
+
+        self.flow_scale_list = {
+            2.0:  'Analyze 2x Resolution',
+            1.0:  'Analyze Full Resolution',
+            0.5:  'Analyze 1/2 Resolution',
+            0.25: 'Analyze 1/4 Resolution',
+        }
 
         self.trained_models_path = os.path.join(
             self.framework.bundle_path,
@@ -1187,6 +1196,7 @@ class flameTimewarpML(flameMenuApp):
 
         working_folder = str(result.get('working_folder', '/var/tmp'))
         speed = result.get('speed', 1)
+        flow_scale = result.get('flow_scale', 1.0)
         hold_konsole = result.get('hold_konsole', False)
 
         cmd_strings = []
@@ -1199,10 +1209,10 @@ class flameTimewarpML(flameMenuApp):
 
                 clip = item
                 clip_name = clip.name.get_value()
-                
+
                 result_folder = os.path.abspath(
                     os.path.join(
-                        working_folder, 
+                        working_folder,
                         self.sanitized(clip_name) + '_TWML' + str(2 ** speed) + '_' + self.create_timestamp_uid()
                         )
                     )
@@ -1225,24 +1235,60 @@ class flameTimewarpML(flameMenuApp):
                     os.system(cmd)
 
                 source_clip_folder = os.path.join(result_folder, 'source')
-                self.export_clip(item, source_clip_folder)
+                if clip.bit_depth == 32:
+                    export_preset = os.path.join(self.framework.bundle_path, 'openexr32bit.xml')
+                    self.export_clip(clip, source_clip_folder, export_preset)
+                else:
+                    self.export_clip(clip, source_clip_folder)
+
+                cmd_package = {}
+                cmd_package['cmd_name'] = os.path.join(self.framework.bundle_path, 'inference_sequence.py')
+                cmd_package['cpu'] = self.cpu
+                
+                cmd_quoted_args = {}
+                cmd_quoted_args['input'] = source_clip_folder
+                cmd_quoted_args['output'] = result_folder
+                cmd_quoted_args['model'] = self.prefs.get('trained_models_folder')
+
+                cmd_args = {}
+                cmd_args['exp'] = str(speed)
+                cmd_args['flow_scale'] = flow_scale
+                cmd_args['bit_depth'] = clip.bit_depth
+
+                cmd_package['quoted_args'] = cmd_quoted_args
+                cmd_package['args'] = cmd_args
+
+                lockfile_name = hashlib.sha1(result_folder.encode()).hexdigest().upper() + '.lock'
+                lockfile_path = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
+
+                try:
+                    lockfile = open(lockfile_path, 'wb')
+                    pickle.dump(cmd_package, lockfile)
+                    lockfile.close()
+                    if self.debug:
+                        self.log('lockfile saved to %s' % lockfile_path)
+                        self.log('lockfile contents:\n' + pformat(cmd_package))
+                except Exception as e:
+                    self.log('unable to save lockfile to %s' % lockfile_path)
+                    self.log(e)
 
                 cmd = 'python3 '
-                if self.cpu:
-                    cmd = 'export OMP_NUM_THREADS=1; python3 '
-                cmd += os.path.join(self.framework.bundle_path, 'inference_sequence.py')
-                cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder
-                cmd += ' --model ' + self.prefs.get('trained_models_folder')
-                cmd += ' --exp=' + str(speed)
-                if self.cpu:
-                    cmd += ' --cpu'
-                if self.prefs.get('slowmo_uhd', False):
-                    cmd += ' --UHD'
+                cmd += os.path.join(self.framework.bundle_path, 'command_wrapper.py') + ' '
+                cmd += lockfile_path
                 cmd += "; "
                 cmd_strings.append(cmd)
                 
                 new_clip_name = clip_name + '_TWML' + str(2 ** speed)
-                watcher = threading.Thread(target=self.import_watcher, args=(result_folder, new_clip_name, clip.parent, [source_clip_folder]))
+                watcher = threading.Thread(
+                    target=self.import_watcher, 
+                    args=(
+                        result_folder, 
+                        new_clip_name, 
+                        clip.parent, 
+                        [source_clip_folder],
+                        lockfile_path
+                        )
+                    )
                 watcher.daemon = True
                 watcher.start()
                 self.loops.append(watcher)
@@ -1251,10 +1297,6 @@ class flameTimewarpML(flameMenuApp):
         
         if sys.platform == 'darwin':
             cmd_prefix = """tell application "Terminal" to activate do script "clear; """
-            # cmd_prefix += """ echo " & quote & "Received """
-            # cmd_prefix += str(number_of_clips)
-            #cmd_prefix += ' clip ' if number_of_clips < 2 else ' clips '
-            # cmd_prefix += 'to process, press Ctrl+C to cancel" & quote &; '
             cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
             cmd_prefix += os.path.join(self.env_folder, 'bin', 'conda')
             cmd_prefix += """ shell.bash hook)" & quote & "; conda activate; """
@@ -1274,7 +1316,6 @@ class flameTimewarpML(flameMenuApp):
             cmd_prefix = 'gnome-terminal '
             cmd_prefix += """-- /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
             cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
-            # cmd_prefix += """PROMPT_COMMAND='echo -ne "\033]0;flameTimewarpML\007"'; """
 
             ml_cmd = cmd_prefix
             ml_cmd += 'echo "Received ' + str(number_of_clips)
@@ -1390,29 +1431,31 @@ class flameTimewarpML(flameMenuApp):
         btn_NewSpeedSelector.setMenu(btn_NewSpeedSelector_menu)
         new_speed_hbox.addWidget(btn_NewSpeedSelector)
 
-        # Reduce flow res button
+        # Flow Scale Selector
 
-        def enableUHD():
-            if self.prefs.get('slowmo_uhd', False):
-                btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                        'QToolTip {color: black; background-color:  #ffffd9; border: 0px}')
-                self.prefs['slowmo_uhd'] = False
-            else:
-                btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
-                                        'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-                self.prefs['slowmo_uhd'] = True
-        btn_UHD = QtWidgets.QPushButton('Reduce flow res', window)
-        btn_UHD.setToolTip('<b>Reduce flow res button</b><br>Use less details for analyzis, sometimes could be helpful with large motion.')
-        btn_UHD.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_UHD.setMinimumSize(148, 28)
-        if self.prefs.get('slowmo_uhd', False):
-            btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
-                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-        else:
-            btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-        btn_UHD.pressed.connect(enableUHD)
-        new_speed_hbox.addWidget(btn_UHD)
+        btn_FlowScaleSelector = QtWidgets.QPushButton(window)
+        self.current_flow_scale = self.prefs.get('slowmo_flow_scale', 1.0)
+        btn_FlowScaleSelector.setText(self.flow_scale_list.get(self.current_flow_scale))
+
+        def selectFlowScale(flow_scale):
+            self.current_flow_scale = flow_scale
+            self.prefs['slowmo_flow_scale'] = flow_scale
+            btn_FlowScaleSelector.setText(self.flow_scale_list.get(self.current_flow_scale))
+
+        btn_FlowScaleSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_FlowScaleSelector.setMinimumSize(180, 28)
+        btn_FlowScaleSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_FlowScaleSelector_menu = QtWidgets.QMenu()
+        for flow_scale in sorted(self.flow_scale_list.keys(), reverse=True):
+            code = self.flow_scale_list.get(flow_scale, 1.0)
+            action = btn_FlowScaleSelector_menu.addAction(code)            
+            x = lambda chk=False, flow_scale=flow_scale: selectFlowScale(flow_scale)
+            action.triggered[()].connect(x)
+
+        btn_FlowScaleSelector.setMenu(btn_FlowScaleSelector_menu)
+        new_speed_hbox.addWidget(btn_FlowScaleSelector)
 
         # Cpu Proc button
 
@@ -1560,6 +1603,7 @@ class flameTimewarpML(flameMenuApp):
             self.framework.save_prefs()
             return {
                 'speed': self.new_speed,
+                'flow_scale': self.current_flow_scale,
                 'working_folder': self.working_folder,
                 'hold_konsole': True if modifiers == QtCore.Qt.ControlModifier else False
             }
@@ -1573,6 +1617,7 @@ class flameTimewarpML(flameMenuApp):
 
         working_folder = str(result.get('working_folder', '/var/tmp'))
         mode = result.get('mode', 0)
+        flow_scale = result.get('flow_scale', 1.0)
         hold_konsole = result.get('hold_konsole', False)
 
         cmd_strings = []
@@ -1611,25 +1656,61 @@ class flameTimewarpML(flameMenuApp):
                     os.system(cmd)
 
                 source_clip_folder = os.path.join(result_folder, 'source')
-                self.export_clip(item, source_clip_folder)
+                if clip.bit_depth == 32:
+                    export_preset = os.path.join(self.framework.bundle_path, 'openexr32bit.xml')
+                    self.export_clip(clip, source_clip_folder, export_preset)
+                else:
+                    self.export_clip(clip, source_clip_folder)
+
+                cmd_package = {}
+                cmd_package['cmd_name'] = os.path.join(self.framework.bundle_path, 'inference_sequence.py')
+                cmd_package['cpu'] = self.cpu
+                
+                cmd_quoted_args = {}
+                cmd_quoted_args['input'] = source_clip_folder
+                cmd_quoted_args['output'] = result_folder
+                cmd_quoted_args['model'] = self.prefs.get('trained_models_folder')
+
+                cmd_args = {}
+                cmd_args['flow_scale'] = flow_scale
+                cmd_args['bit_depth'] = clip.bit_depth
+                if mode:
+                    cmd_args['remove'] = ''
+
+                cmd_package['quoted_args'] = cmd_quoted_args
+                cmd_package['args'] = cmd_args
+
+                lockfile_name = hashlib.sha1(result_folder.encode()).hexdigest().upper() + '.lock'
+                lockfile_path = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
+
+                try:
+                    lockfile = open(lockfile_path, 'wb')
+                    pickle.dump(cmd_package, lockfile)
+                    lockfile.close()
+                    if self.debug:
+                        self.log('lockfile saved to %s' % lockfile_path)
+                        self.log('lockfile contents:\n' + pformat(cmd_package))
+                except Exception as e:
+                    self.log('unable to save lockfile to %s' % lockfile_path)
+                    self.log(e)
 
                 cmd = 'python3 '
-                if self.cpu:
-                    cmd = 'export OMP_NUM_THREADS=1; python3 '
-                cmd += os.path.join(self.framework.bundle_path, 'inference_dpframes.py')
-                cmd += ' --model ' + self.prefs.get('trained_models_folder')
-                cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder
-                if mode:
-                    cmd += ' --remove'
-                if self.cpu:
-                    cmd += ' --cpu'
-                if self.prefs.get('dedup_uhd', False):
-                    cmd += ' --UHD'
+                cmd += os.path.join(self.framework.bundle_path, 'command_wrapper.py') + ' '
+                cmd += lockfile_path
                 cmd += "; "
                 cmd_strings.append(cmd)
                 
                 new_clip_name = clip_name + '_DUPFR'
-                watcher = threading.Thread(target=self.import_watcher, args=(result_folder, new_clip_name, clip.parent, [source_clip_folder]))
+                watcher = threading.Thread(
+                    target=self.import_watcher, 
+                    args=(
+                        result_folder, 
+                        new_clip_name, 
+                        clip.parent, 
+                        [source_clip_folder],
+                        lockfile_path
+                        )
+                    )
                 watcher.daemon = True
                 watcher.start()
                 self.loops.append(watcher)
@@ -1767,29 +1848,31 @@ class flameTimewarpML(flameMenuApp):
         btn_DfamesSelector.setMenu(btn_DfamesSelector_menu)
         dframes_hbox.addWidget(btn_DfamesSelector)
 
-        # Fine Flow button
-        
-        def enableUHD():
-            if self.prefs.get('dedup_uhd', False):
-                btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                        'QToolTip {color: black; background-color:  #ffffd9; border: 0px}')
-                self.prefs['dedup_uhd'] = False
-            else:
-                btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
-                                        'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-                self.prefs['dedup_uhd'] = True
-        btn_UHD = QtWidgets.QPushButton('Reduce flow res', window)
-        btn_UHD.setToolTip('<b>Reduce flow res button</b><br>Use less details for analyzis, sometimes could be helpful with large motion.')
-        btn_UHD.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_UHD.setMinimumSize(148, 28)
-        if self.prefs.get('dedup_uhd', False):
-            btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
-                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-        else:
-            btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-        btn_UHD.pressed.connect(enableUHD)
-        dframes_hbox.addWidget(btn_UHD)
+        # Flow Scale Selector
+
+        btn_FlowScaleSelector = QtWidgets.QPushButton(window)
+        self.current_flow_scale = self.prefs.get('dedup_flow_scale', 1.0)
+        btn_FlowScaleSelector.setText(self.flow_scale_list.get(self.current_flow_scale))
+
+        def selectFlowScale(flow_scale):
+            self.current_flow_scale = flow_scale
+            self.prefs['dedup_flow_scale'] = flow_scale
+            btn_FlowScaleSelector.setText(self.flow_scale_list.get(self.current_flow_scale))
+
+        btn_FlowScaleSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_FlowScaleSelector.setMinimumSize(180, 28)
+        btn_FlowScaleSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_FlowScaleSelector_menu = QtWidgets.QMenu()
+        for flow_scale in sorted(self.flow_scale_list.keys(), reverse=True):
+            code = self.flow_scale_list.get(flow_scale, 1.0)
+            action = btn_FlowScaleSelector_menu.addAction(code)            
+            x = lambda chk=False, flow_scale=flow_scale: selectFlowScale(flow_scale)
+            action.triggered[()].connect(x)
+
+        btn_FlowScaleSelector.setMenu(btn_FlowScaleSelector_menu)
+        dframes_hbox.addWidget(btn_FlowScaleSelector)
 
         # Cpu Proc button
 
@@ -1940,6 +2023,7 @@ class flameTimewarpML(flameMenuApp):
             return {
                 'mode': self.dedup_mode,
                 'working_folder': self.working_folder,
+                'flow_scale': self.current_flow_scale,
                 'hold_konsole': True if modifiers == QtCore.Qt.ControlModifier else False
             }
         else:
@@ -1971,6 +2055,7 @@ class flameTimewarpML(flameMenuApp):
         working_folder = str(result.get('working_folder', '/var/tmp'))
         incoming_clip = clips[result.get('incoming')]
         outgoing_clip = clips[result.get('outgoing')]
+        flow_scale = result.get('flow_scale', 1.0)
         hold_konsole = result.get('hold_konsole', False)
         cmd_strings = []
 
@@ -2002,26 +2087,62 @@ class flameTimewarpML(flameMenuApp):
 
         incoming_folder = os.path.join(result_folder, 'incoming')
         outgoing_folder = os.path.join(result_folder, 'outgoing')
-        self.export_clip(incoming_clip, incoming_folder)
-        self.export_clip(outgoing_clip, outgoing_folder)
+        if incoming_clip.bit_depth == 32:
+            export_preset = os.path.join(self.framework.bundle_path, 'openexr32bit.xml')
+            self.export_clip(incoming_clip, incoming_folder, export_preset)
+            self.export_clip(outgoing_clip, outgoing_folder, export_preset)
+        else:
+            self.export_clip(incoming_clip, incoming_folder)
+            self.export_clip(outgoing_clip, outgoing_folder)
+
+        cmd_package = {}
+        cmd_package['cmd_name'] = os.path.join(self.framework.bundle_path, 'inference_fluidmorph.py')
+        cmd_package['cpu'] = self.cpu
+        
+        cmd_quoted_args = {}
+        cmd_quoted_args['incoming'] = incoming_folder
+        cmd_quoted_args['outgoing'] = outgoing_folder
+        cmd_quoted_args['output'] = result_folder
+        cmd_quoted_args['model'] = self.prefs.get('trained_models_folder')
+
+        cmd_args = {}
+        cmd_args['flow_scale'] = flow_scale
+        cmd_args['bit_depth'] = incoming_clip.bit_depth
+
+        cmd_package['quoted_args'] = cmd_quoted_args
+        cmd_package['args'] = cmd_args
+
+        lockfile_name = hashlib.sha1(result_folder.encode()).hexdigest().upper() + '.lock'
+        lockfile_path = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
+
+        try:
+            lockfile = open(lockfile_path, 'wb')
+            pickle.dump(cmd_package, lockfile)
+            lockfile.close()
+            if self.debug:
+                self.log('lockfile saved to %s' % lockfile_path)
+                self.log('lockfile contents:\n' + pformat(cmd_package))
+        except Exception as e:
+            self.log('unable to save lockfile to %s' % lockfile_path)
+            self.log(e)
 
         cmd = 'python3 '
-        if self.cpu:
-            cmd = 'export OMP_NUM_THREADS=1; python3 '
-        cmd += os.path.join(self.framework.bundle_path, 'inference_fluidmorph.py')
-        cmd += ' --model ' + self.prefs.get('trained_models_folder')
-        cmd += ' --incoming ' + incoming_folder
-        cmd += ' --outgoing ' + outgoing_folder
-        cmd += ' --output ' + result_folder
-        if self.cpu:
-            cmd += ' --cpu'
-        if self.prefs.get('fluidmorph_uhd', False):
-            cmd += ' --UHD'
+        cmd += os.path.join(self.framework.bundle_path, 'command_wrapper.py') + ' '
+        cmd += lockfile_path
         cmd += "; "
         cmd_strings.append(cmd)
         
         new_clip_name = incoming_clip_name + '_FLUID'
-        watcher = threading.Thread(target=self.import_watcher, args=(result_folder, new_clip_name, incoming_clip.parent, [incoming_folder, outgoing_folder]))
+        watcher = threading.Thread(
+            target=self.import_watcher, 
+            args=(
+                result_folder, 
+                new_clip_name, 
+                incoming_clip.parent, 
+                [incoming_folder, outgoing_folder],
+                lockfile_path
+                )
+            )
         watcher.daemon = True
         watcher.start()
         self.loops.append(watcher)
@@ -2181,29 +2302,31 @@ class flameTimewarpML(flameMenuApp):
         btn_DfamesSelector.setMenu(btn_DfamesSelector_menu)
         dframes_hbox.addWidget(btn_DfamesSelector)
 
-        # Fine Flow button
-        
-        def enableUHD():
-            if self.prefs.get('fluidmorph_uhd', False):
-                btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                        'QToolTip {color: black; background-color:  #ffffd9; border: 0px}')
-                self.prefs['fluidmorph_uhd'] = False
-            else:
-                btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
-                                        'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-                self.prefs['fluidmorph_uhd'] = True
-        btn_UHD = QtWidgets.QPushButton('Reduce flow res', window)
-        btn_UHD.setToolTip('<b>Reduce flow res button</b><br>Use less details for analyzis, sometimes could be helpful with large motion.')
-        btn_UHD.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_UHD.setMinimumSize(148, 28)
-        if self.prefs.get('fluidmorph_uhd', False):
-            btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
-                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-        else:
-            btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-        btn_UHD.pressed.connect(enableUHD)
-        dframes_hbox.addWidget(btn_UHD)
+        # Flow Scale Selector
+
+        btn_FlowScaleSelector = QtWidgets.QPushButton(window)
+        self.current_flow_scale = self.prefs.get('fluidmorph_flow_scale', 1.0)
+        btn_FlowScaleSelector.setText(self.flow_scale_list.get(self.current_flow_scale))
+
+        def selectFlowScale(flow_scale):
+            self.current_flow_scale = flow_scale
+            self.prefs['fluidmorph_flow_scale'] = flow_scale
+            btn_FlowScaleSelector.setText(self.flow_scale_list.get(self.current_flow_scale))
+
+        btn_FlowScaleSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_FlowScaleSelector.setMinimumSize(180, 28)
+        btn_FlowScaleSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_FlowScaleSelector_menu = QtWidgets.QMenu()
+        for flow_scale in sorted(self.flow_scale_list.keys(), reverse=True):
+            code = self.flow_scale_list.get(flow_scale, 1.0)
+            action = btn_FlowScaleSelector_menu.addAction(code)            
+            x = lambda chk=False, flow_scale=flow_scale: selectFlowScale(flow_scale)
+            action.triggered[()].connect(x)
+
+        btn_FlowScaleSelector.setMenu(btn_FlowScaleSelector_menu)
+        dframes_hbox.addWidget(btn_FlowScaleSelector)
 
         # Cpu Proc button
 
@@ -2355,6 +2478,7 @@ class flameTimewarpML(flameMenuApp):
                 'incoming': self.incoming_clip_id,
                 'outgoing': self.outgoing_clip_id,
                 'working_folder': self.working_folder,
+                'flow_scale': self.current_flow_scale,
                 'hold_konsole': True if modifiers == QtCore.Qt.ControlModifier else False
             }
         else:
@@ -2396,7 +2520,7 @@ class flameTimewarpML(flameMenuApp):
             mbox.setStyleSheet('QLabel{min-width: 800px;}')
             mbox.exec_()
 
-        def dictify(r,root=True):
+        def dictify(r, root=True):
             from copy import copy
 
             if root:
@@ -2440,26 +2564,21 @@ class flameTimewarpML(flameMenuApp):
                         with open(temp_setup_path, 'r') as tw_setup_file:
                             tw_setup_string = tw_setup_file.read()
                             tw_setup_file.close()
-                        '''
-                            tw_setup_xml = ET.fromstring(tw_setup_string)
-                            tw_setup = dictify(tw_setup_xml)
-                            try:
-                                start = int(tw_setup['Setup']['Base'][0]['Range'][0]['Start'])
-                                end = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
-                                TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
-                                TW_SpeedTiming_size = int(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
-                                TW_RetimerMode = int(tw_setup['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
-                            except Exception as e:
-                                parse_message(e)
-                                return
+                            
+                        tw_setup_xml = ET.fromstring(tw_setup_string)
+                        tw_setup = dictify(tw_setup_xml)
+                        try:
+                            start = int(tw_setup['Setup']['Base'][0]['Range'][0]['Start'])
+                            end = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
+                            TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
+                            TW_SpeedTiming_size = int(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
+                            TW_RetimerMode = int(tw_setup['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
+                        except Exception as e:
+                            parse_message(e)
+                            return
 
-                            if TW_SpeedTiming_size == 1 and TW_RetimerMode == 0:
-                                pass
-
-                            elif not (TW_Timing_size > end-start or TW_SpeedTiming_size > end-start):
-                                bake_message()
-                                return
-                        '''
+                        # pprint (tw_setup)
+                                
                         verified = True
                 
                 if not verified:
@@ -2475,7 +2594,8 @@ class flameTimewarpML(flameMenuApp):
             return False
 
         working_folder = str(result.get('working_folder', '/var/tmp'))
-        speed = result.get('speed', 1)
+        # speed = result.get('speed', 1)
+        flow_scale = result.get('flow_scale', 1.0)
         hold_konsole = result.get('hold_konsole', False)
 
         cmd_strings = []
@@ -2510,9 +2630,14 @@ class flameTimewarpML(flameMenuApp):
                 os.system(cmd)
 
             clip.render()
-
+            
             source_clip_folder = os.path.join(result_folder, 'source')
-            export_preset = os.path.join(self.framework.bundle_path, 'source_export.xml')
+            
+            if clip.bit_depth == 32:
+                export_preset = os.path.join(self.framework.bundle_path, 'source_export32.xml')
+            else:
+                export_preset = os.path.join(self.framework.bundle_path, 'source_export.xml')
+
             tw_setup_path = os.path.join(source_clip_folder, 'tw_setup.timewarp_node')
             self.export_clip(clip, source_clip_folder, export_preset)
             with open(tw_setup_path, 'a') as tw_setup_file:
@@ -2533,22 +2658,56 @@ class flameTimewarpML(flameMenuApp):
             record_in = clip.versions[0].tracks[0].segments[0].record_in.relative_frame
             record_out = clip.versions[0].tracks[0].segments[0].record_out.relative_frame
 
+            cmd_package = {}
+            cmd_package['cmd_name'] = os.path.join(self.framework.bundle_path, 'inference_flame_tw.py')
+            cmd_package['cpu'] = self.cpu
+            
+            cmd_quoted_args = {}
+            cmd_quoted_args['input'] = source_clip_folder
+            cmd_quoted_args['output'] = result_folder
+            cmd_quoted_args['model'] = self.prefs.get('trained_models_folder')
+            cmd_quoted_args['setup'] = tw_setup_path
+
+            cmd_args = {}
+            cmd_args['record_in'] = record_in
+            cmd_args['record_out'] = record_out
+            cmd_args['flow_scale'] = flow_scale
+            cmd_args['bit_depth'] = clip.bit_depth
+
+            cmd_package['quoted_args'] = cmd_quoted_args
+            cmd_package['args'] = cmd_args
+
+            lockfile_name = hashlib.sha1(result_folder.encode()).hexdigest().upper() + '.lock'
+            lockfile_path = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
+
+            try:
+                lockfile = open(lockfile_path, 'wb')
+                pickle.dump(cmd_package, lockfile)
+                lockfile.close()
+                if self.debug:
+                    self.log('lockfile saved to %s' % lockfile_path)
+                    self.log('lockfile contents:\n' + pformat(cmd_package))
+            except Exception as e:
+                self.log('unable to save lockfile to %s' % lockfile_path)
+                self.log(e)
+
             cmd = 'python3 '
-            if self.cpu:
-                cmd = 'export OMP_NUM_THREADS=1; python3 '
-            cmd += os.path.join(self.framework.bundle_path, 'inference_flame_tw.py')
-            cmd += ' --model ' + self.prefs.get('trained_models_folder')
-            cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder + ' --setup ' + tw_setup_path
-            cmd += ' --record_in ' + str(record_in) + ' --record_out ' + str(record_out)
-            if self.cpu:
-                cmd += ' --cpu'
-            if self.prefs.get('fltw_uhd', False):
-                cmd += ' --UHD'
+            cmd += os.path.join(self.framework.bundle_path, 'command_wrapper.py') + ' '
+            cmd += lockfile_path
             cmd += "; "
             cmd_strings.append(cmd)
             
             new_clip_name = clip_name + '_TWML'
-            watcher = threading.Thread(target=self.import_watcher, args=(result_folder, new_clip_name, clip.parent, [source_clip_folder]))
+            watcher = threading.Thread(
+                target=self.import_watcher, 
+                args=(
+                    result_folder, 
+                    new_clip_name, 
+                    clip.parent, 
+                    [source_clip_folder],
+                    lockfile_path
+                    )
+                )
             watcher.daemon = True
             watcher.start()
             self.loops.append(watcher)
@@ -2662,29 +2821,31 @@ class flameTimewarpML(flameMenuApp):
         lbl_NewSpeed.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         new_speed_hbox.addWidget(lbl_NewSpeed)
 
-        # Reduce flow res button
+        # Flow Scale Selector
 
-        def enableUHD():
-            if self.prefs.get('fltw_uhd', False):
-                btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                        'QToolTip {color: black; background-color:  #ffffd9; border: 0px}')
-                self.prefs['fltw_uhd'] = False
-            else:
-                btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
-                                        'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-                self.prefs['fltw_uhd'] = True
-        btn_UHD = QtWidgets.QPushButton('Reduce flow res', window)
-        btn_UHD.setToolTip('<b>Reduce flow res button</b><br>Use less details for analyzis, sometimes could be helpful with large motion.')
-        btn_UHD.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_UHD.setMinimumSize(148, 28)
-        if self.prefs.get('fltw_uhd', False):
-            btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
-                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-        else:
-            btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-        btn_UHD.pressed.connect(enableUHD)
-        new_speed_hbox.addWidget(btn_UHD)
+        btn_FlowScaleSelector = QtWidgets.QPushButton(window)
+        self.current_flow_scale = self.prefs.get('fltw_flow_scale', 1.0)
+        btn_FlowScaleSelector.setText(self.flow_scale_list.get(self.current_flow_scale))
+
+        def selectFlowScale(flow_scale):
+            self.current_flow_scale = flow_scale
+            self.prefs['fltw_flow_scale'] = flow_scale
+            btn_FlowScaleSelector.setText(self.flow_scale_list.get(self.current_flow_scale))
+
+        btn_FlowScaleSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_FlowScaleSelector.setMinimumSize(180, 28)
+        btn_FlowScaleSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_FlowScaleSelector_menu = QtWidgets.QMenu()
+        for flow_scale in sorted(self.flow_scale_list.keys(), reverse=True):
+            code = self.flow_scale_list.get(flow_scale, 1.0)
+            action = btn_FlowScaleSelector_menu.addAction(code)            
+            x = lambda chk=False, flow_scale=flow_scale: selectFlowScale(flow_scale)
+            action.triggered[()].connect(x)
+
+        btn_FlowScaleSelector.setMenu(btn_FlowScaleSelector_menu)
+        new_speed_hbox.addWidget(btn_FlowScaleSelector)
 
         # Cpu Proc button
 
@@ -2832,6 +2993,7 @@ class flameTimewarpML(flameMenuApp):
             self.framework.save_prefs()
             return {
                 'working_folder': self.working_folder,
+                'flow_scale': self.current_flow_scale,
                 'hold_konsole': True if modifiers == QtCore.Qt.ControlModifier else False
             }
         else:
@@ -2962,17 +3124,7 @@ class flameTimewarpML(flameMenuApp):
 
         exporter.export(clip, export_preset, export_dir, hooks=ExportHooks())
 
-    def import_watcher(self, import_path, new_clip_name, destination, folders_to_cleanup):
-        # create lock file that is to be removed after the job finished 
-        # as a signal that triggers clip import
-         
-        import hashlib
-        lockfile_name = hashlib.sha1(import_path.encode()).hexdigest().upper() + '.lock'
-        lockfile = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
-        cmd = 'echo "' + import_path + '">' + lockfile
-        self.log('Executing command: %s' % cmd)
-        os.system(cmd)
-
+    def import_watcher(self, import_path, new_clip_name, destination, folders_to_cleanup, lockfile):
         flame_friendly_path = None
         def import_flame_clip():
             import flame
