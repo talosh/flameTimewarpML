@@ -8,32 +8,25 @@ from pprint import pprint
 
 if __name__ == '__main__':
     try:
-        cmd_args_file = open(sys.argv[1], 'rb')
-        cmd_args = pickle.load(cmd_args_file)
-        cmd_args_file.close()
+        cmd_package_file = open(sys.argv[1], 'rb')
+        cmd_package = pickle.load(cmd_package_file)
+        cmd_package_file.close()
     except Exception as e:
         print('unable to load command arguments from %s' % sys.argv[1])
         print(e)
         sys.exit(1)
+    
+    cmd = 'python3 ' + cmd_package.get('cmd_name')
+    if cmd_package.get('cpu'):
+        cmd = 'export OMP_NUM_THREADS=1; python3 ' + cmd_package.get('cmd_name') + ' --cpu'
 
-    excluded_keys = [
-        'cmd_name',
-        'cpu',
-        'input',
-        'output',
-        'model'
-    ]
+    cmd_quoted_args = cmd_package.get('quoted_args')
+    cmd_args = cmd_package.get('args')
 
-    cmd = 'python3 ' + cmd_args.get('cmd_name')
-    if cmd_args.get('cpu'):
-        cmd = 'export OMP_NUM_THREADS=1; python3 ' + cmd_args.get('cmd_name') + ' --cpu'
-    cmd += ' --input "' + cmd_args.get('input') + '"'
-    cmd += ' --output "' + cmd_args.get('output') + '"'
-    cmd += ' --model "' + cmd_args.get('model') +'"'
- 
+    for quoted_arg_key in cmd_quoted_args.keys():
+        cmd += ' --' + quoted_arg_key + ' "' + str(cmd_quoted_args.get(quoted_arg_key)) + '"'
+
     for arg_key in cmd_args.keys():
-        if arg_key in excluded_keys:
-            continue        
         cmd += ' --' + arg_key + ' ' + str(cmd_args.get(arg_key))
 
     os.system(cmd)
