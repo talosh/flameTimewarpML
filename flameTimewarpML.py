@@ -21,7 +21,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.4.beta.010'
+__version__ = 'v0.4.4.beta.011'
 
 gnome_terminal = False
 if not os.path.isfile('/usr/bin/konsole'):
@@ -1685,11 +1685,11 @@ class flameTimewarpML(flameMenuApp):
 
                 try:
                     lockfile = open(lockfile_path, 'wb')
-                    pickle.dump(cmd_args, lockfile)
+                    pickle.dump(cmd_package, lockfile)
                     lockfile.close()
                     if self.debug:
                         self.log('lockfile saved to %s' % lockfile_path)
-                        self.log('lockfile contents:\n' + pformat(cmd_args))
+                        self.log('lockfile contents:\n' + pformat(cmd_package))
                 except Exception as e:
                     self.log('unable to save lockfile to %s' % lockfile_path)
                     self.log(e)
@@ -2577,7 +2577,7 @@ class flameTimewarpML(flameMenuApp):
                             parse_message(e)
                             return
 
-                        pprint (tw_setup)
+                        # pprint (tw_setup)
                                 
                         verified = True
                 
@@ -2594,7 +2594,8 @@ class flameTimewarpML(flameMenuApp):
             return False
 
         working_folder = str(result.get('working_folder', '/var/tmp'))
-        speed = result.get('speed', 1)
+        # speed = result.get('speed', 1)
+        flow_scale = result.get('flow_scale', 1.0)
         hold_konsole = result.get('hold_konsole', False)
 
         cmd_strings = []
@@ -2629,9 +2630,14 @@ class flameTimewarpML(flameMenuApp):
                 os.system(cmd)
 
             clip.render()
-
+            
             source_clip_folder = os.path.join(result_folder, 'source')
-            export_preset = os.path.join(self.framework.bundle_path, 'source_export.xml')
+            
+            if clip.bit_depth == 32:
+                export_preset = os.path.join(self.framework.bundle_path, 'source_export32.xml')
+            else:
+                export_preset = os.path.join(self.framework.bundle_path, 'source_export.xml')
+
             tw_setup_path = os.path.join(source_clip_folder, 'tw_setup.timewarp_node')
             self.export_clip(clip, source_clip_folder, export_preset)
             with open(tw_setup_path, 'a') as tw_setup_file:
@@ -2652,22 +2658,56 @@ class flameTimewarpML(flameMenuApp):
             record_in = clip.versions[0].tracks[0].segments[0].record_in.relative_frame
             record_out = clip.versions[0].tracks[0].segments[0].record_out.relative_frame
 
+            cmd_package = {}
+            cmd_package['cmd_name'] = os.path.join(self.framework.bundle_path, 'inference_flame_tw.py')
+            cmd_package['cpu'] = self.cpu
+            
+            cmd_quoted_args = {}
+            cmd_quoted_args['input'] = source_clip_folder
+            cmd_quoted_args['output'] = result_folder
+            cmd_quoted_args['model'] = self.prefs.get('trained_models_folder')
+            cmd_quoted_args['setup'] = tw_setup_path
+
+            cmd_args = {}
+            cmd_args['record_in'] = record_in
+            cmd_args['record_out'] = record_out
+            cmd_args['flow_scale'] = flow_scale
+            cmd_args['bit_depth'] = clip.bit_depth
+
+            cmd_package['quoted_args'] = cmd_quoted_args
+            cmd_package['args'] = cmd_args
+
+            lockfile_name = hashlib.sha1(result_folder.encode()).hexdigest().upper() + '.lock'
+            lockfile_path = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
+
+            try:
+                lockfile = open(lockfile_path, 'wb')
+                pickle.dump(cmd_package, lockfile)
+                lockfile.close()
+                if self.debug:
+                    self.log('lockfile saved to %s' % lockfile_path)
+                    self.log('lockfile contents:\n' + pformat(cmd_package))
+            except Exception as e:
+                self.log('unable to save lockfile to %s' % lockfile_path)
+                self.log(e)
+
             cmd = 'python3 '
-            if self.cpu:
-                cmd = 'export OMP_NUM_THREADS=1; python3 '
-            cmd += os.path.join(self.framework.bundle_path, 'inference_flame_tw.py')
-            cmd += ' --model ' + self.prefs.get('trained_models_folder')
-            cmd += ' --input ' + source_clip_folder + ' --output ' + result_folder + ' --setup ' + tw_setup_path
-            cmd += ' --record_in ' + str(record_in) + ' --record_out ' + str(record_out)
-            if self.cpu:
-                cmd += ' --cpu'
-            if self.prefs.get('fltw_uhd', False):
-                cmd += ' --UHD'
+            cmd += os.path.join(self.framework.bundle_path, 'command_wrapper.py') + ' '
+            cmd += lockfile_path
             cmd += "; "
             cmd_strings.append(cmd)
             
             new_clip_name = clip_name + '_TWML'
-            watcher = threading.Thread(target=self.import_watcher, args=(result_folder, new_clip_name, clip.parent, [source_clip_folder]))
+            watcher = threading.Thread(
+                target=self.import_watcher, 
+                args=(
+                    result_folder, 
+                    new_clip_name, 
+                    clip.parent, 
+                    [source_clip_folder],
+                    lockfile_path
+                    )
+                )
             watcher.daemon = True
             watcher.start()
             self.loops.append(watcher)
