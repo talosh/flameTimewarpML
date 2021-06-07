@@ -21,7 +21,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.4.beta.009'
+__version__ = 'v0.4.4.beta.010'
 
 gnome_terminal = False
 if not os.path.isfile('/usr/bin/konsole'):
@@ -2055,6 +2055,7 @@ class flameTimewarpML(flameMenuApp):
         working_folder = str(result.get('working_folder', '/var/tmp'))
         incoming_clip = clips[result.get('incoming')]
         outgoing_clip = clips[result.get('outgoing')]
+        flow_scale = result.get('flow_scale', 1.0)
         hold_konsole = result.get('hold_konsole', False)
         cmd_strings = []
 
@@ -2086,26 +2087,62 @@ class flameTimewarpML(flameMenuApp):
 
         incoming_folder = os.path.join(result_folder, 'incoming')
         outgoing_folder = os.path.join(result_folder, 'outgoing')
-        self.export_clip(incoming_clip, incoming_folder)
-        self.export_clip(outgoing_clip, outgoing_folder)
+        if incoming_clip.bit_depth == 32:
+            export_preset = os.path.join(self.framework.bundle_path, 'openexr32bit.xml')
+            self.export_clip(incoming_clip, incoming_folder, export_preset)
+            self.export_clip(outgoing_clip, outgoing_folder, export_preset)
+        else:
+            self.export_clip(incoming_clip, incoming_folder)
+            self.export_clip(outgoing_clip, outgoing_folder)
+
+        cmd_package = {}
+        cmd_package['cmd_name'] = os.path.join(self.framework.bundle_path, 'inference_fluidmorph.py')
+        cmd_package['cpu'] = self.cpu
+        
+        cmd_quoted_args = {}
+        cmd_quoted_args['incoming'] = incoming_folder
+        cmd_quoted_args['outgoing'] = outgoing_folder
+        cmd_quoted_args['output'] = result_folder
+        cmd_quoted_args['model'] = self.prefs.get('trained_models_folder')
+
+        cmd_args = {}
+        cmd_args['flow_scale'] = flow_scale
+        cmd_args['bit_depth'] = incoming_clip.bit_depth
+
+        cmd_package['quoted_args'] = cmd_quoted_args
+        cmd_package['args'] = cmd_args
+
+        lockfile_name = hashlib.sha1(result_folder.encode()).hexdigest().upper() + '.lock'
+        lockfile_path = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
+
+        try:
+            lockfile = open(lockfile_path, 'wb')
+            pickle.dump(cmd_package, lockfile)
+            lockfile.close()
+            if self.debug:
+                self.log('lockfile saved to %s' % lockfile_path)
+                self.log('lockfile contents:\n' + pformat(cmd_package))
+        except Exception as e:
+            self.log('unable to save lockfile to %s' % lockfile_path)
+            self.log(e)
 
         cmd = 'python3 '
-        if self.cpu:
-            cmd = 'export OMP_NUM_THREADS=1; python3 '
-        cmd += os.path.join(self.framework.bundle_path, 'inference_fluidmorph.py')
-        cmd += ' --model ' + self.prefs.get('trained_models_folder')
-        cmd += ' --incoming ' + incoming_folder
-        cmd += ' --outgoing ' + outgoing_folder
-        cmd += ' --output ' + result_folder
-        if self.cpu:
-            cmd += ' --cpu'
-        if self.prefs.get('fluidmorph_uhd', False):
-            cmd += ' --UHD'
+        cmd += os.path.join(self.framework.bundle_path, 'command_wrapper.py') + ' '
+        cmd += lockfile_path
         cmd += "; "
         cmd_strings.append(cmd)
         
         new_clip_name = incoming_clip_name + '_FLUID'
-        watcher = threading.Thread(target=self.import_watcher, args=(result_folder, new_clip_name, incoming_clip.parent, [incoming_folder, outgoing_folder]))
+        watcher = threading.Thread(
+            target=self.import_watcher, 
+            args=(
+                result_folder, 
+                new_clip_name, 
+                incoming_clip.parent, 
+                [incoming_folder, outgoing_folder],
+                lockfile_path
+                )
+            )
         watcher.daemon = True
         watcher.start()
         self.loops.append(watcher)
@@ -2265,29 +2302,31 @@ class flameTimewarpML(flameMenuApp):
         btn_DfamesSelector.setMenu(btn_DfamesSelector_menu)
         dframes_hbox.addWidget(btn_DfamesSelector)
 
-        # Fine Flow button
-        
-        def enableUHD():
-            if self.prefs.get('fluidmorph_uhd', False):
-                btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                        'QToolTip {color: black; background-color:  #ffffd9; border: 0px}')
-                self.prefs['fluidmorph_uhd'] = False
-            else:
-                btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
-                                        'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-                self.prefs['fluidmorph_uhd'] = True
-        btn_UHD = QtWidgets.QPushButton('Reduce flow res', window)
-        btn_UHD.setToolTip('<b>Reduce flow res button</b><br>Use less details for analyzis, sometimes could be helpful with large motion.')
-        btn_UHD.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_UHD.setMinimumSize(148, 28)
-        if self.prefs.get('fluidmorph_uhd', False):
-            btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
-                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-        else:
-            btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-        btn_UHD.pressed.connect(enableUHD)
-        dframes_hbox.addWidget(btn_UHD)
+        # Flow Scale Selector
+
+        btn_FlowScaleSelector = QtWidgets.QPushButton(window)
+        self.current_flow_scale = self.prefs.get('fluidmorph_flow_scale', 1.0)
+        btn_FlowScaleSelector.setText(self.flow_scale_list.get(self.current_flow_scale))
+
+        def selectFlowScale(flow_scale):
+            self.current_flow_scale = flow_scale
+            self.prefs['fluidmorph_flow_scale'] = flow_scale
+            btn_FlowScaleSelector.setText(self.flow_scale_list.get(self.current_flow_scale))
+
+        btn_FlowScaleSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_FlowScaleSelector.setMinimumSize(180, 28)
+        btn_FlowScaleSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_FlowScaleSelector_menu = QtWidgets.QMenu()
+        for flow_scale in sorted(self.flow_scale_list.keys(), reverse=True):
+            code = self.flow_scale_list.get(flow_scale, 1.0)
+            action = btn_FlowScaleSelector_menu.addAction(code)            
+            x = lambda chk=False, flow_scale=flow_scale: selectFlowScale(flow_scale)
+            action.triggered[()].connect(x)
+
+        btn_FlowScaleSelector.setMenu(btn_FlowScaleSelector_menu)
+        dframes_hbox.addWidget(btn_FlowScaleSelector)
 
         # Cpu Proc button
 
@@ -2439,6 +2478,7 @@ class flameTimewarpML(flameMenuApp):
                 'incoming': self.incoming_clip_id,
                 'outgoing': self.outgoing_clip_id,
                 'working_folder': self.working_folder,
+                'flow_scale': self.current_flow_scale,
                 'hold_konsole': True if modifiers == QtCore.Qt.ControlModifier else False
             }
         else:
@@ -2741,29 +2781,31 @@ class flameTimewarpML(flameMenuApp):
         lbl_NewSpeed.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         new_speed_hbox.addWidget(lbl_NewSpeed)
 
-        # Reduce flow res button
+        # Flow Scale Selector
 
-        def enableUHD():
-            if self.prefs.get('fltw_uhd', False):
-                btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                        'QToolTip {color: black; background-color:  #ffffd9; border: 0px}')
-                self.prefs['fltw_uhd'] = False
-            else:
-                btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
-                                        'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-                self.prefs['fltw_uhd'] = True
-        btn_UHD = QtWidgets.QPushButton('Reduce flow res', window)
-        btn_UHD.setToolTip('<b>Reduce flow res button</b><br>Use less details for analyzis, sometimes could be helpful with large motion.')
-        btn_UHD.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_UHD.setMinimumSize(148, 28)
-        if self.prefs.get('fltw_uhd', False):
-            btn_UHD.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}'
-                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-        else:
-            btn_UHD.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QToolTip {color: black; background-color: #ffffd9; border: 0px}')
-        btn_UHD.pressed.connect(enableUHD)
-        new_speed_hbox.addWidget(btn_UHD)
+        btn_FlowScaleSelector = QtWidgets.QPushButton(window)
+        self.current_flow_scale = self.prefs.get('fltw_flow_scale', 1.0)
+        btn_FlowScaleSelector.setText(self.flow_scale_list.get(self.current_flow_scale))
+
+        def selectFlowScale(flow_scale):
+            self.current_flow_scale = flow_scale
+            self.prefs['fltw_flow_scale'] = flow_scale
+            btn_FlowScaleSelector.setText(self.flow_scale_list.get(self.current_flow_scale))
+
+        btn_FlowScaleSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_FlowScaleSelector.setMinimumSize(180, 28)
+        btn_FlowScaleSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_FlowScaleSelector_menu = QtWidgets.QMenu()
+        for flow_scale in sorted(self.flow_scale_list.keys(), reverse=True):
+            code = self.flow_scale_list.get(flow_scale, 1.0)
+            action = btn_FlowScaleSelector_menu.addAction(code)            
+            x = lambda chk=False, flow_scale=flow_scale: selectFlowScale(flow_scale)
+            action.triggered[()].connect(x)
+
+        btn_FlowScaleSelector.setMenu(btn_FlowScaleSelector_menu)
+        new_speed_hbox.addWidget(btn_FlowScaleSelector)
 
         # Cpu Proc button
 
@@ -2911,6 +2953,7 @@ class flameTimewarpML(flameMenuApp):
             self.framework.save_prefs()
             return {
                 'working_folder': self.working_folder,
+                'flow_scale': self.current_flow_scale,
                 'hold_konsole': True if modifiers == QtCore.Qt.ControlModifier else False
             }
         else:
