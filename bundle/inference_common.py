@@ -21,6 +21,7 @@ def safe_threads_number(h, w, print_info=True):
         thread_ram = megapixels * 0.99
 
     sim_workers = round(available_ram / thread_ram)
+    sim_workers = 4
 
     if sim_workers < 1:
         sim_workers = 1
@@ -62,6 +63,7 @@ def load_model(model_path, cpu=False):
             model.load_model(model_path, -1)
             return model
         except:
-            print ('failed to load %s' % model_name)
+            continue
+            # print ('failed to load %s' % model_name)
 
     

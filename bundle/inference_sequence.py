@@ -275,8 +275,9 @@ if __name__ == '__main__':
     first_image = cv2.imread(frames.get(first_frame_number), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
     h, w, _ = first_image.shape
 
-    ph = ((h - 1) // 64 + 1) * 64
-    pw = ((w - 1) // 64 + 1) * 64
+    pv = max(32, int(32 / args.flow_scale))
+    ph = ((h - 1) // pv + 1) * pv
+    pw = ((w - 1) // pv + 1) * pv
     padding = (0, pw - w, 0, ph - h)
 
     output_folder = os.path.abspath(args.output)
