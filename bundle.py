@@ -13,6 +13,7 @@ parser.add_argument('--copy', dest='copy', action='store_true', help='copy to /o
 parser.add_argument('--run', dest='run', action='store_true', help='run flame')
 args = parser.parse_args()
 
+flame_cmd = '/opt/Autodesk/flame_2022.1/bin/startApplication'
 plugin_dirname = os.path.dirname(os.path.abspath(__file__))
 plugin_file_name = os.path.basename(plugin_dirname) + '.py'
 python_source = os.path.join(plugin_dirname, plugin_file_name)
@@ -75,5 +76,4 @@ if args.copy:
     os.system(cmd)
 
 if args.run:
-    cmd = '/opt/Autodesk/flame_2020.2/bin/startApplication'
-    os.system(cmd)
+    os.system(flame_cmd)
