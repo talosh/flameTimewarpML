@@ -21,7 +21,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.4.beta.011'
+__version__ = 'v0.4.4.beta.012'
 
 gnome_terminal = False
 if not os.path.isfile('/usr/bin/konsole'):
@@ -3264,7 +3264,7 @@ class flameTimewarpML(flameMenuApp):
         except:
             pass
         if out:
-            self.x11_windows_list = out.splitlines()
+            self.x11_windows_list = out.decode().splitlines()
         else:
             self.x11_windows_list = []
 
@@ -3278,13 +3278,18 @@ class flameTimewarpML(flameMenuApp):
         wmctrl_path = '/usr/bin/wmctrl'
         if not os.path.isfile(wmctrl_path):
             wmctrl_path = os.path.join(self.framework.bundle_path, 'bin', 'wmctrl')
+        
+        if not os.path.isfile(wmctrl_path):
+            return
+        
         out = ''
         try:
             out = check_output([wmctrl_path, '-lp'])
         except:
             return
         if out:
-            lines = out.splitlines()
+            pprint (out.decode)
+            lines = out.decode().splitlines()
             for line in lines:
                 if line not in self.x11_windows_list:
                     if 'Flame' not in line:
