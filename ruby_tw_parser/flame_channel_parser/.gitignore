@@ -1,0 +1,14 @@
+.DS_Store
+**/.DS_Store
+pkg
+doc
+coverage
+coverage.*
+*.autosave
+*.rbc
+.idea
+.yardoc
+*.numbers
+._*
+Gemfile.lock
+.ruby-version

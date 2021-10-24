@@ -1,0 +1,1322 @@
+Module Action
+Program flame
+Version 2011.1.SP3
+FileVersion 2
+CreationDate Fri May 13 14:10:21 2011
+
+FrameWidth 1920
+FrameHeight 1080
+FramePixelFormat 131
+FrameAspectRatio 1.777780175
+FrameDominance 2
+
+	MinFrame 1
+	CurrentFrame 1
+	MaxFrames 125
+	ShadingMode no
+	WireframeMode no
+	ZBufferMode yes
+	FilteringDefault Linear
+	FilteringQuality Interactive
+	LinetestMode no
+	MultiSample 0
+	CurrentCamera 17
+	GridMode 3
+	Grid3DColour 0.3 0.3 0.3
+	CameraPlaneType 0
+	PlayLockMode no
+	BackupMode yes
+	BackupTime 30
+	QuickResolution 12
+	AntiAliasingLevel 0
+	AntiAliasingSoftness 1
+	MotionBlurEditor
+		Channel 
+			Extrapolation constant
+			Value 1
+			Size 3
+			KeyVersion 1
+			Key 0
+				Frame 50
+				Value 1
+				FrameLock yes
+				DeleteLock yes
+				Interpolation hermite
+				End
+			Key 1
+				Frame 100
+				Value 1
+				Interpolation hermite
+				End
+			Key 2
+				Frame 150
+				Value 1
+				FrameLock yes
+				DeleteLock yes
+				Interpolation hermite
+				End
+			End
+		ChannelEnd
+	TopLevelChannel
+		Channel scene
+			Uncollapsed
+			End
+	ResultCamChannel
+		Channel ResultCamera
+			Extrapolation constant
+			Value 0
+			Uncollapsed
+			End
+		ChannelEnd
+MotionBlurTopChannel
+		Channel motion_blur
+			Uncollapsed
+			End
+		MotionBlurPhaseChannel
+		Channel phase
+			Extrapolation constant
+			Value 0
+			Uncollapsed
+			End
+		ChannelEnd
+	MotionBlurEnableChannel
+		Channel enable
+			Extrapolation constant
+			Value 0
+			Uncollapsed
+			End
+		ChannelEnd
+	MotionBlurShutterChannel
+		Channel shutter
+			Extrapolation constant
+			Value 1
+			Uncollapsed
+			End
+		ChannelEnd
+	MotionBlurSamplesChannel
+		Channel samples
+			Extrapolation constant
+			Value 5
+			Uncollapsed
+			End
+		ChannelEnd
+		DofMode no
+		DofSoftness 1
+		FogMode Off
+		FogColour 0 0 0
+		FogStart 0
+		FogEnd 1
+		FogRange 1
+		ProjectorMotionPathMode no
+		CamMotionPathMode no
+		AxisMotionPathMode no
+		LightMotionPathMode no
+		PropScalingMode yes
+		SPropScalingMode yes
+		YSnapMode no
+		YGridSize 1
+		AutoKeyMode yes
+		UpdateMode yes
+		AutoParentMode yes
+		ForceProxyUpdate yes
+		UndoLevels 10
+		DrawIconsMode IconsOn
+		IconTransparency 0
+		SchematicTransparency 0
+		ClipInfo 0
+		SubMenu AXIS_MENU
+		ColourClamping no
+		End
+
+#
+# node database
+#
+ConcreteFileVersion 1.5
+CreationDate Fri May 13 14:10:21 2011
+
+
+WorldScale 1
+
+Node Group
+	Name scene
+	Number 0
+	Child 1
+	Child 2
+	Child 3
+	MotionPath no
+	PosX 0
+	PosY 0
+	Flags SCHEMATIC_HIDDEN
+	OutputsSize 1
+	0
+	Specifics
+	{
+	}
+End
+Node Camera
+	Name DefaultCam
+	Number 1
+	MotionPath no
+	PosX -530
+	PosY 258
+	OutputsSize 0
+	Specifics
+	{
+		CamChannel
+		{
+		Channel position/x
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel position/y
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel position/z
+			Extrapolation constant
+			Value 1483.637695312
+			End
+		Channel speed
+			Extrapolation constant
+			Value 0
+			End
+		Channel interest/x
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel interest/y
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel interest/z
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel int_speed
+			Extrapolation constant
+			Value 0
+			End
+		Channel rotation/x
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel rotation/y
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel rotation/z
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel roll
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel fov
+			Extrapolation constant
+			Value 40.000000000
+			End
+		Channel near
+			Extrapolation constant
+			Value 1
+			End
+		Channel far
+			Extrapolation constant
+			Value 10000
+			End
+		Channel distance
+			Extrapolation constant
+			Value 1483.64
+			End
+		Channel lens_distortion/x
+			Extrapolation constant
+			Value 0
+			End
+		Channel lens_distortion/y
+			Extrapolation constant
+			Value 0
+			End
+		Channel lens_distortion/magnitude
+			Extrapolation constant
+			Value 0
+			End
+		Channel lens_distortion/adjustment
+			Extrapolation constant
+			Value 0
+			End
+		Channel lens_distortion/anamorph
+			Extrapolation constant
+			Value 1
+			End
+		ChannelEnd
+		}
+		CamLensFitRes 0
+		CamLensFilter 1
+		CamLensMode 0
+		CamMotionPathMode no
+		CamMotionPath
+		{
+		Path pos_path
+			Dimension 3
+			Closed no
+			Size 0
+			End
+
+		Path poi_path
+			Dimension 3
+			Closed no
+			Size 0
+			End
+
+		}
+		Origin 0
+		CamIndex 0
+		CamPhysicalParameters
+		PhysicalCameraEnabled no
+		FStop FStop_1
+		Film_Type 35mm_Full_Frame
+	}
+End
+Node Camera
+	Name WorkingCam
+	Number 2
+	MotionPath no
+	PosX -394
+	PosY 258
+	Flags HIDDEN&SCHEMATIC_HIDDEN
+	OutputsSize 0
+	Specifics
+	{
+		CamChannel
+		{
+		Channel position/x
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel position/y
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel position/z
+			Extrapolation constant
+			Value 1483.637695312
+			End
+		Channel speed
+			Extrapolation constant
+			Value 0
+			End
+		Channel interest/x
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel interest/y
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel interest/z
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel int_speed
+			Extrapolation constant
+			Value 0
+			End
+		Channel rotation/x
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel rotation/y
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel rotation/z
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel roll
+			Extrapolation constant
+			Value 0.000000000
+			End
+		Channel fov
+			Extrapolation constant
+			Value 40.000000000
+			End
+		Channel near
+			Extrapolation constant
+			Value 1
+			End
+		Channel far
+			Extrapolation constant
+			Value 10000
+			End
+		Channel distance
+			Extrapolation constant
+			Value 1483.64
+			End
+		Channel lens_distortion/x
+			Extrapolation constant
+			Value 0
+			End
+		Channel lens_distortion/y
+			Extrapolation constant
+			Value 0
+			End
+		Channel lens_distortion/magnitude
+			Extrapolation constant
+			Value 0
+			End
+		Channel lens_distortion/adjustment
+			Extrapolation constant
+			Value 0
+			End
+		Channel lens_distortion/anamorph
+			Extrapolation constant
+			Value 1
+			End
+		ChannelEnd
+		}
+		CamLensFitRes 0
+		CamLensFilter 1
+		CamLensMode 0
+		CamMotionPathMode no
+		CamMotionPath
+		{
+		Path pos_path
+			Dimension 3
+			Closed no
+			Size 0
+			End
+
+		Path poi_path
+			Dimension 3
+			Closed no
+			Size 0
+			End
+
+		}
+		Origin 0
+		CamIndex 1000004
+		CamPhysicalParameters
+		PhysicalCameraEnabled no
+		FStop FStop_1
+		Film_Type 35mm_Full_Frame
+	}
+End
+Node Axis
+	Name axis1
+	Number 3
+	MotionPath no
+	PosX -417
+	PosY 36
+	OutputsSize 1
+	0
+	Specifics
+	{
+		Channel position/x
+			Extrapolation constant
+			Value 0
+			Size 100
+			KeyVersion 1
+			Key 0
+				Frame 1
+				Value 0
+				Interpolation linear
+				End
+			Key 1
+				Frame 2
+				Value 1.4634
+				Interpolation linear
+				RightSlope 2.84317
+				LeftSlope 2.84317
+				End
+			Key 2
+				Frame 3
+				Value 5.68634
+				Interpolation linear
+				RightSlope 5.47729
+				LeftSlope 5.47729
+				End
+			Key 3
+				Frame 4
+				Value 12.418
+				Interpolation linear
+				RightSlope 7.86053
+				LeftSlope 7.86053
+				End
+			Key 4
+				Frame 5
+				Value 21.4074
+				Interpolation linear
+				RightSlope 9.99291
+				LeftSlope 9.99291
+				End
+			Key 5
+				Frame 6
+				Value 32.4038
+				Interpolation linear
+				RightSlope 11.8744
+				LeftSlope 11.8744
+				End
+			Key 6
+				Frame 7
+				Value 45.1562
+				Interpolation linear
+				RightSlope 13.5051
+				LeftSlope 13.5051
+				End
+			Key 7
+				Frame 8
+				Value 59.4139
+				Interpolation linear
+				RightSlope 14.8848
+				LeftSlope 14.8848
+				End
+			Key 8
+				Frame 9
+				Value 74.9259
+				Interpolation linear
+				RightSlope 16.0137
+				LeftSlope 16.0137
+				End
+			Key 9
+				Frame 10
+				Value 91.4414
+				Interpolation linear
+				RightSlope 16.8918
+				LeftSlope 16.8918
+				End
+			Key 10
+				Frame 11
+				Value 108.709
+				Interpolation linear
+				RightSlope 17.519
+				LeftSlope 17.519
+				End
+			Key 11
+				Frame 12
+				Value 126.479
+				Interpolation linear
+				RightSlope 17.8953
+				LeftSlope 17.8953
+				End
+			Key 12
+				Frame 13
+				Value 144.5
+				Interpolation linear
+				RightSlope 18.0207
+				LeftSlope 18.0207
+				End
+			Key 13
+				Frame 14
+				Value 162.521
+				Interpolation linear
+				RightSlope 17.8953
+				LeftSlope 17.8953
+				End
+			Key 14
+				Frame 15
+				Value 180.291
+				Interpolation linear
+				RightSlope 17.519
+				LeftSlope 17.519
+				End
+			Key 15
+				Frame 16
+				Value 197.559
+				Interpolation linear
+				RightSlope 16.8918
+				LeftSlope 16.8918
+				End
+			Key 16
+				Frame 17
+				Value 214.074
+				Interpolation linear
+				RightSlope 16.0137
+				LeftSlope 16.0137
+				End
+			Key 17
+				Frame 18
+				Value 229.586
+				Interpolation linear
+				RightSlope 14.8848
+				LeftSlope 14.8848
+				End
+			Key 18
+				Frame 19
+				Value 243.844
+				Interpolation linear
+				RightSlope 13.5051
+				LeftSlope 13.5051
+				End
+			Key 19
+				Frame 20
+				Value 256.596
+				Interpolation linear
+				RightSlope 11.8744
+				LeftSlope 11.8744
+				End
+			Key 20
+				Frame 21
+				Value 267.593
+				Interpolation linear
+				RightSlope 9.9929
+				LeftSlope 9.9929
+				End
+			Key 21
+				Frame 22
+				Value 276.582
+				Interpolation linear
+				RightSlope 7.86053
+				LeftSlope 7.86053
+				End
+			Key 22
+				Frame 23
+				Value 283.314
+				Interpolation linear
+				RightSlope 5.47729
+				LeftSlope 5.47729
+				End
+			Key 23
+				Frame 24
+				Value 287.537
+				Interpolation linear
+				RightSlope 2.84317
+				LeftSlope 2.84317
+				End
+			Key 24
+				Frame 25
+				Value 289
+				Interpolation linear
+				RightSlope 0.700577
+				LeftSlope 0.700577
+				End
+			Key 25
+				Frame 26
+				Value 288.938
+				Interpolation linear
+				RightSlope -0.147156
+				LeftSlope -0.147156
+				End
+			Key 26
+				Frame 27
+				Value 288.706
+				Interpolation linear
+				RightSlope -0.351059
+				LeftSlope -0.351059
+				End
+			Key 27
+				Frame 28
+				Value 288.236
+				Interpolation linear
+				RightSlope -0.623047
+				LeftSlope -0.623047
+				End
+			Key 28
+				Frame 29
+				Value 287.46
+				Interpolation linear
+				RightSlope -0.963135
+				LeftSlope -0.963135
+				End
+			Key 29
+				Frame 30
+				Value 286.309
+				Interpolation linear
+				RightSlope -1.37129
+				LeftSlope -1.37129
+				End
+			Key 30
+				Frame 31
+				Value 284.717
+				Interpolation linear
+				RightSlope -1.84752
+				LeftSlope -1.84752
+				End
+			Key 31
+				Frame 32
+				Value 282.614
+				Interpolation linear
+				RightSlope -2.39186
+				LeftSlope -2.39186
+				End
+			Key 32
+				Frame 33
+				Value 279.933
+				Interpolation linear
+				RightSlope -3.00429
+				LeftSlope -3.00429
+				End
+			Key 33
+				Frame 34
+				Value 276.606
+				Interpolation linear
+				RightSlope -3.68478
+				LeftSlope -3.68478
+				End
+			Key 34
+				Frame 35
+				Value 272.564
+				Interpolation linear
+				RightSlope -4.43338
+				LeftSlope -4.43338
+				End
+			Key 35
+				Frame 36
+				Value 267.739
+				Interpolation linear
+				RightSlope -5.25006
+				LeftSlope -5.25006
+				End
+			Key 36
+				Frame 37
+				Value 262.064
+				Interpolation linear
+				RightSlope -6.13482
+				LeftSlope -6.13482
+				End
+			Key 37
+				Frame 38
+				Value 255.469
+				Interpolation linear
+				RightSlope -7.08768
+				LeftSlope -7.08768
+				End
+			Key 38
+				Frame 39
+				Value 247.888
+				Interpolation linear
+				RightSlope -8.10862
+				LeftSlope -8.10862
+				End
+			Key 39
+				Frame 40
+				Value 239.252
+				Interpolation linear
+				RightSlope -9.19763
+				LeftSlope -9.19763
+				End
+			Key 40
+				Frame 41
+				Value 229.493
+				Interpolation linear
+				RightSlope -10.3548
+				LeftSlope -10.3548
+				End
+			Key 41
+				Frame 42
+				Value 218.543
+				Interpolation linear
+				RightSlope -11.58
+				LeftSlope -11.58
+				End
+			Key 42
+				Frame 43
+				Value 206.333
+				Interpolation linear
+				RightSlope -12.8732
+				LeftSlope -12.8732
+				End
+			Key 43
+				Frame 44
+				Value 192.796
+				Interpolation linear
+				RightSlope -14.2346
+				LeftSlope -14.2346
+				End
+			Key 44
+				Frame 45
+				Value 177.864
+				Interpolation linear
+				RightSlope -15.6641
+				LeftSlope -15.6641
+				End
+			Key 45
+				Frame 46
+				Value 161.468
+				Interpolation linear
+				RightSlope -17.1616
+				LeftSlope -17.1616
+				End
+			Key 46
+				Frame 47
+				Value 143.541
+				Interpolation linear
+				RightSlope -18.7272
+				LeftSlope -18.7272
+				End
+			Key 47
+				Frame 48
+				Value 124.014
+				Interpolation linear
+				RightSlope -20.361
+				LeftSlope -20.361
+				End
+			Key 48
+				Frame 49
+				Value 102.819
+				Interpolation linear
+				RightSlope -22.0628
+				LeftSlope -22.0628
+				End
+			Key 49
+				Frame 50
+				Value 79.888
+				Interpolation linear
+				RightSlope -23.8327
+				LeftSlope -23.8327
+				End
+			Key 50
+				Frame 51
+				Value 55.1534
+				Interpolation linear
+				RightSlope -25.6707
+				LeftSlope -25.6707
+				End
+			Key 51
+				Frame 52
+				Value 28.5467
+				Interpolation linear
+				RightSlope -27.5767
+				LeftSlope -27.5767
+				End
+			Key 52
+				Frame 53
+				Value 0
+				Interpolation linear
+				RightSlope 27.2611
+				LeftSlope 27.2611
+				End
+			Key 53
+				Frame 54
+				Value 83.0688
+				Interpolation linear
+				RightSlope 77.5988
+				LeftSlope 77.5988
+				End
+			Key 54
+				Frame 55
+				Value 155.198
+				Interpolation linear
+				RightSlope 67.0203
+				LeftSlope 67.0203
+				End
+			Key 55
+				Frame 56
+				Value 217.11
+				Interpolation linear
+				RightSlope 57.165
+				LeftSlope 57.165
+				End
+			Key 56
+				Frame 57
+				Value 269.528
+				Interpolation linear
+				RightSlope 48.0328
+				LeftSlope 48.0328
+				End
+			Key 57
+				Frame 58
+				Value 313.175
+				Interpolation linear
+				RightSlope 39.6238
+				LeftSlope 39.6238
+				End
+			Key 58
+				Frame 59
+				Value 348.775
+				Interpolation linear
+				RightSlope 31.938
+				LeftSlope 31.938
+				End
+			Key 59
+				Frame 60
+				Value 377.051
+				Interpolation linear
+				RightSlope 24.9752
+				LeftSlope 24.9752
+				End
+			Key 60
+				Frame 61
+				Value 398.726
+				Interpolation linear
+				RightSlope 18.7357
+				LeftSlope 18.7357
+				End
+			Key 61
+				Frame 62
+				Value 414.522
+				Interpolation linear
+				RightSlope 13.2192
+				LeftSlope 13.2192
+				End
+			Key 62
+				Frame 63
+				Value 425.164
+				Interpolation linear
+				RightSlope 8.42595
+				LeftSlope 8.42595
+				End
+			Key 63
+				Frame 64
+				Value 431.374
+				Interpolation linear
+				RightSlope 4.35588
+				LeftSlope 4.35588
+				End
+			Key 64
+				Frame 65
+				Value 433.876
+				Interpolation linear
+				RightSlope 1.00891
+				LeftSlope 1.00891
+				End
+			Key 65
+				Frame 66
+				Value 433.392
+				Interpolation linear
+				RightSlope -1.61494
+				LeftSlope -1.61494
+				End
+			Key 66
+				Frame 67
+				Value 430.646
+				Interpolation linear
+				RightSlope -3.51558
+				LeftSlope -3.51558
+				End
+			Key 67
+				Frame 68
+				Value 426.361
+				Interpolation linear
+				RightSlope -4.69312
+				LeftSlope -4.69312
+				End
+			Key 68
+				Frame 69
+				Value 421.26
+				Interpolation linear
+				RightSlope -5.14749
+				LeftSlope -5.14749
+				End
+			Key 69
+				Frame 70
+				Value 416.066
+				Interpolation linear
+				RightSlope -4.87875
+				LeftSlope -4.87875
+				End
+			Key 70
+				Frame 71
+				Value 411.502
+				Interpolation linear
+				RightSlope -3.88681
+				LeftSlope -3.88681
+				End
+			Key 71
+				Frame 72
+				Value 408.292
+				Interpolation linear
+				RightSlope -2.17163
+				LeftSlope -2.17163
+				End
+			Key 72
+				Frame 73
+				Value 407.159
+				Interpolation linear
+				RightSlope 0.266541
+				LeftSlope 0.266541
+				End
+			Key 73
+				Frame 74
+				Value 408.826
+				Interpolation linear
+				RightSlope 3.42784
+				LeftSlope 3.42784
+				End
+			Key 74
+				Frame 75
+				Value 414.015
+				Interpolation linear
+				RightSlope 4.64021
+				LeftSlope 4.64021
+				End
+			Key 75
+				Frame 76
+				Value 418.106
+				Interpolation linear
+				RightSlope 1.16954
+				LeftSlope 1.16954
+				End
+			Key 76
+				Frame 77
+				Value 416.354
+				Interpolation linear
+				RightSlope -4.40477
+				LeftSlope -4.40477
+				End
+			Key 77
+				Frame 78
+				Value 409.296
+				Interpolation linear
+				RightSlope -9.44141
+				LeftSlope -9.44141
+				End
+			Key 78
+				Frame 79
+				Value 397.471
+				Interpolation linear
+				RightSlope -13.9404
+				LeftSlope -13.9404
+				End
+			Key 79
+				Frame 80
+				Value 381.416
+				Interpolation linear
+				RightSlope -17.9016
+				LeftSlope -17.9016
+				End
+			Key 80
+				Frame 81
+				Value 361.668
+				Interpolation linear
+				RightSlope -21.3253
+				LeftSlope -21.3253
+				End
+			Key 81
+				Frame 82
+				Value 338.765
+				Interpolation linear
+				RightSlope -24.2112
+				LeftSlope -24.2112
+				End
+			Key 82
+				Frame 83
+				Value 313.245
+				Interpolation linear
+				RightSlope -26.5595
+				LeftSlope -26.5595
+				End
+			Key 83
+				Frame 84
+				Value 285.646
+				Interpolation linear
+				RightSlope -28.37
+				LeftSlope -28.37
+				End
+			Key 84
+				Frame 85
+				Value 256.505
+				Interpolation linear
+				RightSlope -29.643
+				LeftSlope -29.643
+				End
+			Key 85
+				Frame 86
+				Value 226.36
+				Interpolation linear
+				RightSlope -30.3782
+				LeftSlope -30.3782
+				End
+			Key 86
+				Frame 87
+				Value 195.749
+				Interpolation linear
+				RightSlope -30.5758
+				LeftSlope -30.5758
+				End
+			Key 87
+				Frame 88
+				Value 165.209
+				Interpolation linear
+				RightSlope -30.2356
+				LeftSlope -30.2356
+				End
+			Key 88
+				Frame 89
+				Value 135.278
+				Interpolation linear
+				RightSlope -29.3579
+				LeftSlope -29.3579
+				End
+			Key 89
+				Frame 90
+				Value 106.493
+				Interpolation linear
+				RightSlope -27.9424
+				LeftSlope -27.9424
+				End
+			Key 90
+				Frame 91
+				Value 79.3927
+				Interpolation linear
+				RightSlope -25.9893
+				LeftSlope -25.9893
+				End
+			Key 91
+				Frame 92
+				Value 54.5144
+				Interpolation linear
+				RightSlope -23.4985
+				LeftSlope -23.4985
+				End
+			Key 92
+				Frame 93
+				Value 32.3958
+				Interpolation linear
+				RightSlope -20.47
+				LeftSlope -20.47
+				End
+			Key 93
+				Frame 94
+				Value 13.5745
+				Interpolation linear
+				RightSlope -16.9038
+				LeftSlope -16.9038
+				End
+			Key 94
+				Frame 95
+				Value -1.41183
+				Interpolation linear
+				RightSlope -12.8
+				LeftSlope -12.8
+				End
+			Key 95
+				Frame 96
+				Value -12.0255
+				Interpolation linear
+				RightSlope -8.15849
+				LeftSlope -8.15849
+				End
+			Key 96
+				Frame 97
+				Value -17.7288
+				Interpolation linear
+				RightSlope -2.97931
+				LeftSlope -2.97931
+				End
+			Key 97
+				Frame 98
+				Value -17.9841
+				Interpolation linear
+				RightSlope 2.73755
+				LeftSlope 2.73755
+				End
+			Key 98
+				Frame 99
+				Value -12.2537
+				Interpolation linear
+				RightSlope 8.99207
+				LeftSlope 8.99207
+				End
+			Key 99
+				Frame 100
+				Value 0
+				Interpolation linear
+				RightSlope 15.6947
+				RightAutomaticSlope no
+				End
+			Uncollapsed
+			End
+		Channel position/y
+			Extrapolation constant
+			Value 0
+			Size 5
+			KeyVersion 1
+			Key 0
+				Frame 1
+				Value 0
+				Interpolation hermite
+				End
+			Key 1
+				Frame 25
+				Value 289
+				Interpolation hermite
+				End
+			Key 2
+				Frame 53
+				Value 0
+				Interpolation hermite
+				RightSlope 88.7799
+				LeftSlope -29.5395
+				RightAutomaticSlope no
+				LeftAutomaticSlope no
+				BreakSlope yes
+				End
+			Key 3
+				Frame 75
+				Value 414.015
+				Interpolation hermite
+				RightSlope 7.19192
+				RightAutomaticSlope no
+				End
+			Key 4
+				Frame 100
+				Value 0
+				Interpolation hermite
+				RightSlope 15.6947
+				RightAutomaticSlope no
+				End
+			Uncollapsed
+			End
+		Channel position/z
+			Extrapolation constant
+			Value 0
+			Uncollapsed
+			End
+		Channel speed
+			Extrapolation constant
+			Value 0
+			Uncollapsed
+			End
+		Channel rotation/x
+			Extrapolation constant
+			Value 0
+			Uncollapsed
+			End
+		Channel rotation/y
+			Extrapolation constant
+			Value 0
+			Uncollapsed
+			End
+		Channel rotation/z
+			Extrapolation constant
+			Value 0
+			Uncollapsed
+			End
+		Channel scaling/x
+			Extrapolation constant
+			Value 100
+			Uncollapsed
+			End
+		Channel scaling/y
+			Extrapolation constant
+			Value 100
+			Uncollapsed
+			End
+		Channel scaling/z
+			Extrapolation constant
+			Value 100
+			Uncollapsed
+			End
+		Channel shearing/x
+			Extrapolation constant
+			Value 0
+			Uncollapsed
+			End
+		Channel shearing/y
+			Extrapolation constant
+			Value 0
+			Uncollapsed
+			End
+		Channel shearing/z
+			Extrapolation constant
+			Value 0
+			Uncollapsed
+			End
+		Channel centre/x
+			Extrapolation constant
+			Value 0
+			Uncollapsed
+			End
+		Channel centre/y
+			Extrapolation constant
+			Value 0
+			Uncollapsed
+			End
+		Channel centre/z
+			Extrapolation constant
+			Value 0
+			Uncollapsed
+			End
+		ChannelEnd
+		Path position
+			Dimension 3
+			Closed no
+			Size 0
+			End
+
+		MBlur yes
+		Global no
+		LookatNode -1
+		Orientation 2
+		RigSelection 0
+		AutoScale 0
+	}
+End
+ConcreteEnd
+
+#
+# outputs
+#
+CurrentOutputIdx 0
+NumberOfOutputs 1
+	Index 0
+		Uuid 		"660d4b2a-60f6-4092-9ef2-fafd841b520d"
+		Name 		"complete_scene"
+		Active yes
+		CompleteScene yes
+		AntiAliasing yes
+		MotionBlur yes
+		DOF yes
+		Camera 1000000
+		OutputType 0
+		Transparency yes
+		UseEmissive yes
+		MatteBackColor 1
+		MediaMatteIdx 1
+		OutputMode 0
+		BackgroundMode 0
+		BackgroundColor 0 0 0 1
+	End
+End
+
+#
+# layers
+#
+ActionLayerFileVersion 1.5
+CreationDate Fri May 13 14:10:21 2011
+
+LayerCount 0
+ProxyMode PROXY_OFF
+
+LayerEnd
+
+#
+# multitracks
+#
+ActionMTFileVersion 1.5
+CreationDate Fri May 13 14:10:21 2011
+
+
+MultiTrackEnd
+
+#
+# drawing order
+#
+DrawingOrderFileVersion 1.0
+CreationDate Fri May 13 14:10:21 2011
+
+LookupTableFrame 1
+	LookupTableGroup 0
+		LookupTableNPath 1
+			OutputsSize 1
+				OutputIndex 0
+				ObjectColor 0
+				End
+			End
+	LookupTableGroup 1
+		LookupTableNPath 2
+			OutputsSize 0
+			End
+	LookupTableGroup 2
+		LookupTableNPath 0
+			OutputsSize 0
+			End
+	LookupTableGroup 3
+		LookupTableNPath 3
+			OutputsSize 1
+				OutputIndex 0
+				ObjectColor 0
+				End
+			End
+DrawingOrderEnd
