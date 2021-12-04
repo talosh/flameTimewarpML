@@ -39,8 +39,6 @@ def decode_tw_setup(temp_setup_path):
     TW_SpeedTiming_size = int(tw_setup_dict['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
     TW_RetimerMode = int(tw_setup_dict['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
 
-
-    pprint ((start_frame, end_frame))
     return frame_value_map
 
 
@@ -51,7 +49,8 @@ if not temp_setup_path:
 
 keys = decode_tw_setup(temp_setup_path)
 
-
+pprint (keys)
+sys.exit()
 
 HERMATRIX = np.array([[2, -2, 1, 1], [-3, 3, -2, -1], [0, 0, 1, 0], [1, 0, 0, 0]])
 print (HERMATRIX)
