@@ -21,7 +21,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.4.dev.012'
+__version__ = 'v0.4.4.dev.013'
 
 gnome_terminal = False
 if not os.path.isfile('/usr/bin/konsole'):
@@ -1663,7 +1663,7 @@ class flameTimewarpML(flameMenuApp):
                     self.export_clip(clip, source_clip_folder)
 
                 cmd_package = {}
-                cmd_package['cmd_name'] = os.path.join(self.framework.bundle_path, 'inference_sequence.py')
+                cmd_package['cmd_name'] = os.path.join(self.framework.bundle_path, 'inference_dpframes.py')
                 cmd_package['cpu'] = self.cpu
                 
                 cmd_quoted_args = {}
