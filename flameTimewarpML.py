@@ -21,7 +21,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.4.dev.013'
+__version__ = 'v0.4.4.dev.014'
 
 gnome_terminal = False
 if not os.path.isfile('/usr/bin/konsole'):
@@ -1791,6 +1791,7 @@ class flameTimewarpML(flameMenuApp):
             0: 'Interpolate',
             1: 'Remove', 
         }
+        self.dedup_mode = self.prefs.get('dedup_mode', 0)
         
         window = QtWidgets.QDialog()
         window.setMinimumSize(280, 180)
@@ -1831,6 +1832,7 @@ class flameTimewarpML(flameMenuApp):
         btn_DfamesSelector.setText(self.modes_list.get(self.dedup_mode))
         def selectNewMode(new_mode_id):
             self.dedup_mode = new_mode_id
+            self.prefs['dedup_mode'] = new_mode_id
             btn_DfamesSelector.setText(self.modes_list.get(self.dedup_mode))
         btn_DfamesSelector.setFocusPolicy(QtCore.Qt.NoFocus)
         btn_DfamesSelector.setMinimumSize(120, 28)
