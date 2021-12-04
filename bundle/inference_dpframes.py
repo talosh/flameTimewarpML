@@ -46,7 +46,8 @@ def signal_handler(sig, frame):
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
-def clear_write_buffer(args, write_buffer, input_duration, pbar=None):
+
+def clear_write_buffer(args, write_buffer):
     global IOThreadsFlag
     global IOProcesses
 
@@ -102,6 +103,7 @@ def build_read_buffer(user_args, read_buffer, videogen):
         read_buffer.put(frame_data)
     read_buffer.put(None)
 
+
 def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8, scale=1.0, always_interp=False):
     I0_ratio = 0.0
     I1_ratio = 1.0
@@ -129,6 +131,7 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8
             I1_ratio = middle_ratio
     
     return middle #+ (rational_m - torch.mean(middle)).expand_as(middle)
+
 
 def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles = 8, scale=1.0, always_interp=False):
     device = torch.device("cpu")   
@@ -172,6 +175,17 @@ def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buf
     middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
     write_buffer.put((frame_num, middle[:h, :w]))
     return
+
+
+def get_padding(args, files_list):
+    first_image = cv2.imread(os.path.join(args.input, files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+    h, w, _ = first_image.shape
+    pv = max(32, int(32 / args.flow_scale))
+    ph = ((h - 1) // pv + 1) * pv
+    pw = ((w - 1) // pv + 1) * pv
+    padding = (0, pw - w, 0, ph - h)
+    return h,w,padding
+
 
 if __name__ == '__main__':
     start = time.time()
@@ -222,7 +236,7 @@ if __name__ == '__main__':
 
     if args.remove:
         write_buffer = Queue(maxsize=mp.cpu_count() - 3)
-        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
+        _thread.start_new_thread(clear_write_buffer, (args, write_buffer))
 
         if torch.cuda.is_available() and not args.cpu:
             device = torch.device("cuda")
@@ -269,20 +283,15 @@ if __name__ == '__main__':
         model.device()
         print ('Trained model loaded: %s' % args.model)
     
-        first_image = cv2.imread(os.path.join(args.input, files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
-        h, w, _ = first_image.shape
-        pv = max(32, int(32 / args.flow_scale))
-        ph = ((h - 1) // pv + 1) * pv
-        pw = ((w - 1) // pv + 1) * pv
-        padding = (0, pw - w, 0, ph - h)
+        h, w, padding = get_padding(args, files_list)
     
         device = torch.device("cuda")
         torch.set_grad_enabled(False)
         torch.backends.cudnn.enabled = True
         torch.backends.cudnn.benchmark = True
 
-        pbar = tqdm(total=input_duration, desc='Total frames', unit='frame')
-        pbar_dup = tqdm(total=input_duration, desc='Interpolating', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
+        pbar = tqdm(total=input_duration, desc='Scanning for duplicate frames...', unit='frame')
+        # pbar_dup = tqdm(total=input_duration, desc='Interpolating', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
 
         write_buffer = Queue(maxsize=mp.cpu_count() - 3)
         _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration, pbar))
