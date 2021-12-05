@@ -91,9 +91,6 @@ def clear_write_buffer(args, write_buffer):
             except Exception as e:
                 print ('Error wtiring %s: %s' % (path, e))
 
-        if pbar:
-            pbar.update(1)
-
 
 def build_read_buffer(user_args, read_buffer, videogen):
     global IOThreadsFlag
@@ -253,6 +250,7 @@ if __name__ == '__main__':
 
         IPrevious = None
         output_frame_num = 1
+
         for file in files_list:
             current_frame = read_buffer.get()
             pbar.update(1) # type: ignore
@@ -290,18 +288,21 @@ if __name__ == '__main__':
         torch.backends.cudnn.enabled = True
         torch.backends.cudnn.benchmark = True
 
-        pbar = tqdm(total=input_duration, desc='Scanning for duplicate frames...', unit='frame')
+        pbar = tqdm(total=input_duration, desc='Analyzing for duplicated frames...', unit='frame')
         # pbar_dup = tqdm(total=input_duration, desc='Interpolating', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
 
         write_buffer = Queue(maxsize=mp.cpu_count() - 3)
-        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration, pbar))
+        _thread.start_new_thread(clear_write_buffer, (args, write_buffer))
 
         IPrevious = None
         dframes = 0
-        output_frame_num = 1
+        output_frame_num = 0
+        blocks_to_interpolate = []
 
         for file in files_list:
+            output_frame_num += 1
             current_frame = read_buffer.get()
+            pbar.update(1) # type: ignore
 
             ICurrent = torch.from_numpy(np.transpose(current_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
             if not args.remove:
@@ -315,24 +316,61 @@ if __name__ == '__main__':
                 if diff.max() < 2e-3:
                     dframes += 1
                     continue
-            
+
+            write_buffer.put((output_frame_num, current_frame))
+
             if dframes and not args.remove:
+                block = {
+                    'start_frame': IPrevious,
+                    'end_frame': ICurrent,
+                    'duration': dframes,
+                    'first_output_frame': output_frame_num - dframes
+                }
+                blocks_to_interpolate.append(block)
+
+            IPrevious = ICurrent
+            dframes = 0
+
+        pbar.close() # type: ignore
+
+        if blocks_to_interpolate:
+            total_frames_to_interpolate = 0
+            for block in blocks_to_interpolate:
+                total_frames_to_interpolate += block.get('duration')
+            pbar_int = tqdm(total=total_frames_to_interpolate, desc='Interpolarting frames...', unit='frame')
+            
+            for block in blocks_to_interpolate:
+                dframes = block.get('duration')
+                IPrevious = block.get('start_frame')
+                ICurrent = block.get('end_frame')
+                output_frame_num = block.get('first_output_frame')
                 rstep = 1 / ( dframes + 1 )
                 ratio = rstep
                 for dframe in range(0, dframes):
                     mid = make_inference_rational(model, IPrevious, ICurrent, ratio, scale = args.flow_scale)
                     mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
                     write_buffer.put((output_frame_num, mid[:h, :w]))
-                    # pbar.update(1) # type: ignore
-                    pbar_dup.update(1)
+                    pbar_int.update(1) # type: ignore
                     output_frame_num += 1
                     ratio += rstep
 
-            write_buffer.put((output_frame_num, current_frame))
-            # pbar.update(1) # type: ignore
-            IPrevious = ICurrent
-            output_frame_num += 1
-            dframes = 0
+            pbar_int.close() # type: ignore
+            
+            '''
+            frames_left = write_buffer.qsize()
+            pbar_write = tqdm(total=frames_left, desc='Writing remaining frames...', unit='frame')
+            while write_buffer.qsize() != 0:
+                if write_buffer.qsize() == frames_left:
+                    time.sleep(0.1)
+                else:
+                    pbar_write.update(frames_left - write_buffer.qsize())
+                    frames_left = write_buffer.qsize()
+                pbar_write.update(1)
+                pbar_write.close()
+            '''
+
+        else:
+            print ('no duplicated frames found')
 
         # send write loop exit code
         write_buffer.put((-1, -1))
@@ -341,9 +379,6 @@ if __name__ == '__main__':
         while(IOThreadsFlag):
             time.sleep(0.01)
 
-        # pbar.update(1)
-        pbar.close() # type: ignore
-        pbar_dup.close()
     
     else:
         # process on CPU
@@ -449,13 +484,6 @@ if __name__ == '__main__':
     for p in IOProcesses:
         p.terminate()
         p.join(timeout=0)
-
-    '''
-    import hashlib
-    lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
-    if os.path.isfile(lockfile):
-        os.remove(lockfile)
-    '''
 
     # input("Press Enter to continue...")
     sys.exit(0)
