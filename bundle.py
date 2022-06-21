@@ -26,14 +26,17 @@ if not os.path.isdir(bundle_folder):
     print('no folder named %s' % bundle_folder)
     sys.exit()
     
-tarfile_name = os.path.splitext(bundle_code)[0]
+tarfile_name = os.path.splitext(bundle_code)[0] + '_bundle.tar'
+tarfile_path = os.path.join(dest_dir,tarfile_name)
 
-print ('creating %s' % bundle_folder + '.tar\n---')
-cmd = 'tar cvf ' + bundle_folder + '.tar ' + bundle_folder + '/'
+print ('creating %s' % tarfile_path + '.tar\n---')
+cmd = 'tar cvf ' + tarfile_path + ' ' + bundle_folder + '/'
 print ('executing: %s\n---' % cmd)
 os.system(cmd)
 # cmd = bundle_folder + '/bin/pbzip2 -v ' + bundle_folder + '.tar'
 # os.system(cmd)
+
+'''
 
 print ('---\nadding data to python script %s' % python_source)
 
@@ -79,3 +82,4 @@ if args.copy:
 
 if args.run:
     os.system(flame_cmd)
+'''
