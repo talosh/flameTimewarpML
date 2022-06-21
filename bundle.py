@@ -26,6 +26,8 @@ if not os.path.isdir(bundle_folder):
     print('no folder named %s' % bundle_folder)
     sys.exit()
     
+tarfile_name = os.path.splitext(bundle_code)[0]
+
 print ('creating %s' % bundle_folder + '.tar\n---')
 cmd = 'tar cvf ' + bundle_folder + '.tar ' + bundle_folder + '/'
 print ('executing: %s\n---' % cmd)
