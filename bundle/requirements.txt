@@ -2,5 +2,5 @@ numpy
 scipy
 tqdm
 torch==1.10.2+cu111
-opencv-python==4.4.0.44
+opencv-python-headless==4.4.0.46
 psutil
