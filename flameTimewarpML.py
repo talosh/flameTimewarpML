@@ -550,8 +550,12 @@ class flameAppFramework(object):
         start = time.time()
         self.log('installing Miniconda packages...', logfile)
         cmd = """/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
-        cmd += 'pip3 install -r ' + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') + ' --no-index --find-links '
-        cmd += os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'packages')
+        
+        # cmd += 'pip3 install -r ' + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') + ' --no-index --find-links '
+        # cmd += os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'packages')
+        
+        cmd += 'pip3 install -r ' + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') + ' --extra-index-url https://download.pytorch.org/whl/cu111'
+
         cmd += ' 2>&1 | tee > '
         cmd += os.path.join(self.bundle_location, 'miniconda_packages_install.log')
         cmd += "'"
