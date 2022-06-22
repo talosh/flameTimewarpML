@@ -39,7 +39,7 @@ f = open(bundle_folder + '.tar', 'rb')
 bundle_data = f.read()
 f.close()
 
-encoded_bundle_data = base64.b64encode(bundle_data)
+encoded_bundle_data = base64.b64encode(bundle_data).decode()
 del bundle_data
 
 f = open(bundle_code, 'r')
