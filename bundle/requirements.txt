@@ -1,6 +1,6 @@
 numpy
 scipy
 tqdm
-torch
-opencv-python
+torch==1.10.2+cu111
+opencv-python==4.4.0.44
 psutil
