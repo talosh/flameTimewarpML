@@ -549,7 +549,13 @@ class flameAppFramework(object):
     def install_env_packages(self, env_folder, logfile):
         start = time.time()
         self.log('installing Miniconda packages...', logfile)
-        cmd = """/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+
+        if sys.platform == 'darwin':
+            cmd = ""
+        else:
+            cmd = """gnome-terminal --title=flameTimewarpML -- """
+
+        cmd += """/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
         
         # cmd += 'pip3 install -r ' + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') + ' --no-index --find-links '
         # cmd += os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'packages')
@@ -557,8 +563,8 @@ class flameAppFramework(object):
         cmd += 'pip3 install -r ' + os.path.join(self.bundle_location, 'bundle', 'requirements.txt')
         cmd += ' --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cu111'
 
-        # cmd += ' 2>&1 | tee > '
-        # cmd += os.path.join(self.bundle_location, 'miniconda_packages_install.log')
+        cmd += ' 2>&1 | tee > '
+        cmd += os.path.join(self.bundle_location, 'miniconda_packages_install.log')
         cmd += "'"
 
         self.log('Executing command: %s' % cmd, logfile)        
