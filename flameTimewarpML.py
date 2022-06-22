@@ -535,10 +535,12 @@ class flameAppFramework(object):
         
         if sys.platform == 'darwin':
             installer_file = os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'Miniconda3-latest-MacOSX-x86_64.sh')
+            cmd = ''
         else:
             installer_file = os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'Miniconda3-latest-Linux-x86_64.sh')
+            cmd = 'gnome-terminal --title=flameTimewarpML --wait -- '
 
-        cmd = '/bin/sh "' + installer_file + '" -b -p "' + env_folder + '"'
+        cmd += '/bin/sh "' + installer_file + '" -b -p "' + env_folder + '"'
         cmd += ' 2>&1 | tee > ' + os.path.join(self.bundle_location, 'miniconda_install.log')
         self.log('Executing command: %s' % cmd, logfile)
         status = os.system(cmd)
@@ -550,28 +552,39 @@ class flameAppFramework(object):
         start = time.time()
         self.log('installing Miniconda packages...', logfile)
 
+        rc = ''
+        rc += """/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + """ shell.bash hook)"; conda activate; """
+        rc += """pip3 install -r """ + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') 
+        rc += """ --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cu111'\n"""
+        rc += """exit"""
+
+        cmd = ''
+        
+        tmp_bash_rc_file = os.path.join(os.path.expanduser('~'), '.tmp_bashrc')
+
         if sys.platform == 'darwin':
-            cmd = ""
+            cmd += """/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + """ shell.bash hook)"; conda activate; """
+            cmd += 'pip3 install -r ' + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') + ' --no-index --find-links '
+            cmd += os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'packages')
+            cmd += ' 2>&1 | tee > '
+            cmd += os.path.join(self.bundle_location, 'miniconda_packages_install.log')
+            cmd += "'"
         else:
-            cmd = """gnome-terminal --title=flameTimewarpML -- """
-
-        cmd += """/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
-        
-        # cmd += 'pip3 install -r ' + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') + ' --no-index --find-links '
-        # cmd += os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'packages')
-        
-        cmd += 'pip3 install -r ' + os.path.join(self.bundle_location, 'bundle', 'requirements.txt')
-        cmd += ' --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cu111'
-
-        cmd += ' 2>&1 | tee > '
-        cmd += os.path.join(self.bundle_location, 'miniconda_packages_install.log')
-        cmd += "'"
+            with open(tmp_bash_rc_file, 'w') as tmp_rcfile:
+                tmp_rcfile.write(rc)
+                tmp_rcfile.close()
+            cmd += """gnome-terminal --title=flameTimewarpML --wait -- /bin/bash --rcfile """ + tmp_bash_rc_file
 
         self.log('Executing command: %s' % cmd, logfile)        
         status = os.system(cmd)
         self.log('exit status %s' % os.WEXITSTATUS(status), logfile)
         delta = time.time() - start
         self.log('installing Miniconda packages took %s sec' % '{:.1f}'.format(delta), logfile)
+
+        try:
+            os.remove(tmp_bash_rc_file)
+        except:
+            pass
 
     def show_exception(self, e):
         from PySide2 import QtWidgets
@@ -3383,6 +3396,9 @@ def project_changed_dict(info):
 def app_initialized(project_name):
     global app_framework
     global apps
+    
+    app_initialized.__dict__["waitCursor"] = False
+
     if not app_framework:
         app_framework = flameAppFramework()
         print ('PYTHON\t: %s initializing' % app_framework.bundle_name)
