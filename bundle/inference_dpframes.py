@@ -46,14 +46,9 @@ def signal_handler(sig, frame):
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
-
-def clear_write_buffer(args, write_buffer):
+def clear_write_buffer(args, write_buffer, input_duration, pbar=None):
     global IOThreadsFlag
     global IOProcesses
-
-    cv2_flags = []
-    if args.bit_depth != 32:
-        cv2_flags = [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF]
 
     number_of_write_threads = 4
 
@@ -77,19 +72,22 @@ def clear_write_buffer(args, write_buffer):
         path = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(frame_number))
         if len(IOProcesses) < number_of_write_threads:
             try:
-                p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], cv2_flags, ))
+                p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
                 p.start()
                 IOProcesses.append(p)
             except:
                 try:
-                    cv2.imwrite(path, image_data[:, :, ::-1], cv2_flags)
+                    cv2.imwrite(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
                 except Exception as e:
                     print ('Error wtiring %s: %s' % (path, e))
         else:
             try:
-                cv2.imwrite(path, image_data[:, :, ::-1], cv2_flags)
+                cv2.imwrite(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
             except Exception as e:
                 print ('Error wtiring %s: %s' % (path, e))
+
+        if pbar:
+            pbar.update(1)
 
 
 def build_read_buffer(user_args, read_buffer, videogen):
@@ -100,8 +98,7 @@ def build_read_buffer(user_args, read_buffer, videogen):
         read_buffer.put(frame_data)
     read_buffer.put(None)
 
-
-def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8, scale=1.0, always_interp=False):
+def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8, UHD=False, always_interp=False):
     I0_ratio = 0.0
     I1_ratio = 1.0
     rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
@@ -113,7 +110,7 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8
             return I1
     
     for inference_cycle in range(0, maxcycles):
-        middle = model.inference(I0, I1, scale)
+        middle = model.inference(I0, I1, UHD)
         middle_ratio = ( I0_ratio + I1_ratio ) / 2
 
         if not always_interp:
@@ -129,8 +126,7 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles = 8
     
     return middle #+ (rational_m - torch.mean(middle)).expand_as(middle)
 
-
-def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles = 8, scale=1.0, always_interp=False):
+def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles = 8, UHD=False, always_interp=False):
     device = torch.device("cpu")   
     torch.set_grad_enabled(False) 
     
@@ -149,7 +145,7 @@ def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buf
             return
     
     for inference_cycle in range(0, maxcycles):
-        middle = model.inference(I0, I1, scale)
+        middle = model.inference(I0, I1, UHD)
         middle_ratio = ( I0_ratio + I1_ratio ) / 2
 
         if not always_interp:
@@ -173,17 +169,6 @@ def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buf
     write_buffer.put((frame_num, middle[:h, :w]))
     return
 
-
-def get_padding(args, files_list):
-    first_image = cv2.imread(os.path.join(args.input, files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
-    h, w, _ = first_image.shape
-    pv = max(32, int(32 / args.flow_scale))
-    ph = ((h - 1) // pv + 1) * pv
-    pw = ((w - 1) // pv + 1) * pv
-    padding = (0, pw - w, 0, ph - h)
-    return h,w,padding
-
-
 if __name__ == '__main__':
     start = time.time()
 
@@ -195,9 +180,8 @@ if __name__ == '__main__':
     parser.add_argument('--output', dest='output', type=str, default=None, help='folder to output sequence to')
     parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v2.0.model')
     parser.add_argument('--remove', dest='remove', action='store_true', help='remove duplicate frames')
+    parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
     parser.add_argument('--cpu', dest='cpu', action='store_true', help='do not use GPU at all, process only on CPU')
-    parser.add_argument('--flow_scale', dest='flow_scale', type=float, help='motion analysis resolution scale')
-    parser.add_argument('--bit_depth', dest='bit_depth', type=int, default=16)
 
     args = parser.parse_args()
     if (args.output is None or args.input is None):
@@ -233,7 +217,7 @@ if __name__ == '__main__':
 
     if args.remove:
         write_buffer = Queue(maxsize=mp.cpu_count() - 3)
-        _thread.start_new_thread(clear_write_buffer, (args, write_buffer))
+        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
 
         if torch.cuda.is_available() and not args.cpu:
             device = torch.device("cuda")
@@ -250,7 +234,6 @@ if __name__ == '__main__':
 
         IPrevious = None
         output_frame_num = 1
-
         for file in files_list:
             current_frame = read_buffer.get()
             pbar.update(1) # type: ignore
@@ -276,33 +259,39 @@ if __name__ == '__main__':
     elif torch.cuda.is_available() and not args.cpu:
         # Process on GPU
 
-        model = inference_common.load_model(args.model)
+        if 'v1.8.model' in args.model:
+            from model.RIFE_HD import Model     # type: ignore
+        else:
+            from model.RIFE_HDv2 import Model     # type: ignore
+        model = Model()
+        model.load_model(args.model, -1)
         model.eval()
         model.device()
         print ('Trained model loaded: %s' % args.model)
     
-        h, w, padding = get_padding(args, files_list)
+        first_image = cv2.imread(os.path.join(args.input, files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
+        h, w, _ = first_image.shape
+        ph = ((h - 1) // 64 + 1) * 64
+        pw = ((w - 1) // 64 + 1) * 64
+        padding = (0, pw - w, 0, ph - h)
     
         device = torch.device("cuda")
         torch.set_grad_enabled(False)
         torch.backends.cudnn.enabled = True
         torch.backends.cudnn.benchmark = True
 
-        pbar = tqdm(total=input_duration, desc='Analyzing for duplicated frames...', unit='frame')
-        # pbar_dup = tqdm(total=input_duration, desc='Interpolating', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
+        pbar = tqdm(total=input_duration, desc='Total frames', unit='frame')
+        pbar_dup = tqdm(total=input_duration, desc='Interpolating', bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}')
 
         write_buffer = Queue(maxsize=mp.cpu_count() - 3)
-        _thread.start_new_thread(clear_write_buffer, (args, write_buffer))
+        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration, pbar))
 
         IPrevious = None
         dframes = 0
-        output_frame_num = 0
-        blocks_to_interpolate = []
+        output_frame_num = 1
 
         for file in files_list:
-            output_frame_num += 1
             current_frame = read_buffer.get()
-            pbar.update(1) # type: ignore
 
             ICurrent = torch.from_numpy(np.transpose(current_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
             if not args.remove:
@@ -316,61 +305,24 @@ if __name__ == '__main__':
                 if diff.max() < 2e-3:
                     dframes += 1
                     continue
-
-            write_buffer.put((output_frame_num, current_frame))
-
-            if dframes and not args.remove:
-                block = {
-                    'start_frame': IPrevious,
-                    'end_frame': ICurrent,
-                    'duration': dframes,
-                    'first_output_frame': output_frame_num - dframes
-                }
-                blocks_to_interpolate.append(block)
-
-            IPrevious = ICurrent
-            dframes = 0
-
-        pbar.close() # type: ignore
-
-        if blocks_to_interpolate:
-            total_frames_to_interpolate = 0
-            for block in blocks_to_interpolate:
-                total_frames_to_interpolate += block.get('duration')
-            pbar_int = tqdm(total=total_frames_to_interpolate, desc='Interpolarting frames...', unit='frame')
             
-            for block in blocks_to_interpolate:
-                dframes = block.get('duration')
-                IPrevious = block.get('start_frame')
-                ICurrent = block.get('end_frame')
-                output_frame_num = block.get('first_output_frame')
+            if dframes and not args.remove:
                 rstep = 1 / ( dframes + 1 )
                 ratio = rstep
                 for dframe in range(0, dframes):
-                    mid = make_inference_rational(model, IPrevious, ICurrent, ratio, scale = args.flow_scale)
+                    mid = make_inference_rational(model, IPrevious, ICurrent, ratio, UHD = args.UHD)
                     mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
                     write_buffer.put((output_frame_num, mid[:h, :w]))
-                    pbar_int.update(1) # type: ignore
+                    # pbar.update(1) # type: ignore
+                    pbar_dup.update(1)
                     output_frame_num += 1
                     ratio += rstep
 
-            pbar_int.close() # type: ignore
-            
-            '''
-            frames_left = write_buffer.qsize()
-            pbar_write = tqdm(total=frames_left, desc='Writing remaining frames...', unit='frame')
-            while write_buffer.qsize() != 0:
-                if write_buffer.qsize() == frames_left:
-                    time.sleep(0.1)
-                else:
-                    pbar_write.update(frames_left - write_buffer.qsize())
-                    frames_left = write_buffer.qsize()
-                pbar_write.update(1)
-                pbar_write.close()
-            '''
-
-        else:
-            print ('no duplicated frames found')
+            write_buffer.put((output_frame_num, current_frame))
+            # pbar.update(1) # type: ignore
+            IPrevious = ICurrent
+            output_frame_num += 1
+            dframes = 0
 
         # send write loop exit code
         write_buffer.put((-1, -1))
@@ -379,20 +331,27 @@ if __name__ == '__main__':
         while(IOThreadsFlag):
             time.sleep(0.01)
 
+        # pbar.update(1)
+        pbar.close() # type: ignore
+        pbar_dup.close()
     
     else:
         # process on CPU
 
-        model = inference_common.load_model(args.model, cpu=True)
+        if 'v1.8.model' in args.model:
+            from model_cpu.RIFE_HD import Model     # type: ignore
+        else:
+            from model_cpu.RIFE_HDv2 import Model     # type: ignore
+        model = Model()
+        model.load_model(args.model, -1)
         model.eval()
         model.device()
         print ('Trained model loaded: %s' % args.model)
 
         first_image = cv2.imread(os.path.join(args.input, files_list[0]), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
         h, w, _ = first_image.shape
-        pv = max(32, int(32 / args.flow_scale))
-        ph = ((h - 1) // pv + 1) * pv
-        pw = ((w - 1) // pv + 1) * pv
+        ph = ((h - 1) // 64 + 1) * 64
+        pw = ((w - 1) // 64 + 1) * 64
         padding = (0, pw - w, 0, ph - h)
 
         device = torch.device("cpu")
@@ -432,7 +391,7 @@ if __name__ == '__main__':
                 ratio = rstep
                 last_thread_time = time.time()
                 for dframe in range(dframes):
-                    p = mp.Process(target=make_inference_rational_cpu, args=(model, IPrevious, ICurrent, ratio, output_frame_num, w, h, write_buffer), kwargs = {'scale': args.flow_scale})
+                    p = mp.Process(target=make_inference_rational_cpu, args=(model, IPrevious, ICurrent, ratio, output_frame_num, w, h, write_buffer), kwargs = {'UHD': args.UHD})
                     p.start()
                     active_workers.append(p)
 
@@ -485,5 +444,10 @@ if __name__ == '__main__':
         p.terminate()
         p.join(timeout=0)
 
+    import hashlib
+    lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
+    if os.path.isfile(lockfile):
+        os.remove(lockfile)
+    
     # input("Press Enter to continue...")
     sys.exit(0)

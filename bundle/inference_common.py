@@ -1,7 +1,6 @@
 import os
 import sys
 import psutil
-import importlib
 
 # Constant values
 INPUT_QUEUE_SIZE = 96
@@ -16,12 +15,11 @@ def safe_threads_number(h, w, print_info=True):
     megapixels = (h * w) / (10 ** 6)
 
     if sys.platform == 'darwin':
-        thread_ram = megapixels * 0.99
+        thread_ram = megapixels * 1.99
     else:
-        thread_ram = megapixels * 0.99
+        thread_ram = megapixels * 2.4
 
     sim_workers = round(available_ram / thread_ram)
-    sim_workers = 4
 
     if sim_workers < 1:
         sim_workers = 1
@@ -40,30 +38,3 @@ def safe_threads_number(h, w, print_info=True):
             print('Warning: estimated peak memory usage is greater then RAM avaliable')
 
     return sim_workers, thread_ram
-
-
-def load_model(model_path, cpu=False):
-    model_names = [
-        'RIFE_HD',
-        'RIFE_HDv2',
-        'RIFE_HDv3'
-        ]
-
-    models_list = []
-    for model_name in model_names:
-        if cpu:
-            models_list.append('model_cpu.' + model_name)
-        else:
-            models_list.append('model.' + model_name)
-
-    for model_name in sorted(models_list, reverse=True):
-        try:
-            rife = importlib.import_module(model_name)
-            model = rife.Model()
-            model.load_model(model_path, -1)
-            return model
-        except:
-            continue
-            # print ('failed to load %s' % model_name)
-
-    
