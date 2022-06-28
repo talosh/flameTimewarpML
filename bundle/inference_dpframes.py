@@ -180,13 +180,21 @@ if __name__ == '__main__':
     parser.add_argument('--output', dest='output', type=str, default=None, help='folder to output sequence to')
     parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v2.0.model')
     parser.add_argument('--remove', dest='remove', action='store_true', help='remove duplicate frames')
-    parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
     parser.add_argument('--cpu', dest='cpu', action='store_true', help='do not use GPU at all, process only on CPU')
+    parser.add_argument('--flow_scale', dest='flow_scale', type=float, help='motion analysis resolution scale')
+    parser.add_argument('--bit_depth', dest='bit_depth', type=int, default=16)
+
+    parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
+        
+
 
     args = parser.parse_args()
     if (args.output is None or args.input is None):
          parser.print_help()
          sys.exit()
+
+    if args.flow_scale == 0.25:
+        args.UHD = True
 
     if args.remove:
         print('Initializing duplicate frames removal...')

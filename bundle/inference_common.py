@@ -15,9 +15,9 @@ def safe_threads_number(h, w, print_info=True):
     megapixels = (h * w) / (10 ** 6)
 
     if sys.platform == 'darwin':
-        thread_ram = megapixels * 1.99
+        thread_ram = megapixels * 0.99
     else:
-        thread_ram = megapixels * 2.4
+        thread_ram = megapixels * 0.99
 
     sim_workers = round(available_ram / thread_ram)
 
