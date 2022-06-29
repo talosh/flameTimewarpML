@@ -10,6 +10,7 @@ settings.json
 *.png
 flameTimewarpML.package
 flameTimewarpMLenv.tar.bz2
+flameTimewarpML.bundle.tar
 test_*
 trained_models.all/*
 !trained_models.all/README

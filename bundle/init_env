@@ -39,7 +39,7 @@ if sys.platform == 'darwin':
         import subprocess
         subprocess.Popen(['osascript', '-e', cmd_prefix])
 else:
-    cmd_prefix = 'konsole -e /bin/bash --rcfile ' + tmp_bash_rc_file
+    cmd_prefix = 'gnome-terminal --title=flameTimewarpML -- /bin/bash --rcfile ' + tmp_bash_rc_file
     if any ([os.getenv('SSH_TTY'), os.getenv('SSH_CONNECTION'), os.getenv('SSH_CLIENT')]):
         cmd_prefix = '/bin/bash --rcfile ' + tmp_bash_rc_file
     os.system(cmd_prefix)

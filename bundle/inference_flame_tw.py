@@ -56,10 +56,6 @@ def clear_write_buffer(args, write_buffer, output_duration):
     global IOThreadsFlag
     global IOProcesses
 
-    cv2_flags = []
-    if args.bit_depth != 32:
-        cv2_flags = [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF]
-
     number_of_write_threads = 4
 
     print('rendering %s frames to %s' % (output_duration, args.output))
@@ -87,17 +83,17 @@ def clear_write_buffer(args, write_buffer, output_duration):
         
         if len(IOProcesses) < number_of_write_threads:
             try:
-                p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], cv2_flags, ))
+                p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
                 p.start()
                 IOProcesses.append(p)
             except:
                 try:
-                    cv2.imwrite(path, image_data[:, :, ::-1], cv2_flags)
+                    cv2.imwrite(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
                 except Exception as e:
                     print ('Error wtiring %s: %s' % (path, e))  
         else:
             try:
-                cv2.imwrite(path, image_data[:, :, ::-1], cv2_flags)
+                cv2.imwrite(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
             except Exception as e:
                 print ('Error wtiring %s: %s' % (path, e))  
 
@@ -112,7 +108,7 @@ def build_read_buffer(user_args, read_buffer, videogen):
         read_buffer.put(frame_data)
     read_buffer.put(None)
 
-def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles=5, scale=1.0, always_interp=False):
+def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles=5, UHD=False, always_interp=False):
     I0_ratio = 0.0
     I1_ratio = 1.0
     rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
@@ -124,7 +120,7 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles=5, 
             return I1
 
     for inference_cycle in range(0, maxcycles):
-        middle = model.inference(I0, I1, scale)
+        middle = model.inference(I0, I1, UHD)
         middle_ratio = (I0_ratio + I1_ratio) / 2
         
         if not always_interp:
@@ -141,7 +137,7 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold=0.02, maxcycles=5, 
     return middle # + (rational_m - torch.mean(middle)).expand_as(middle)
 
 
-def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles=8, scale=1.0, always_interp=False):
+def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buffer, rthreshold=0.02, maxcycles=8, UHD=False, always_interp=False):
     device = torch.device("cpu")
     torch.set_grad_enabled(False)
 
@@ -160,7 +156,7 @@ def make_inference_rational_cpu(model, I0, I1, ratio, frame_num, w, h, write_buf
             return
 
     for inference_cycle in range(0, maxcycles):
-        middle = model.inference(I0, I1, scale)
+        middle = model.inference(I0, I1, UHD)
         middle_ratio = (I0_ratio + I1_ratio) / 2
         
         if not always_interp:
@@ -500,11 +496,16 @@ if __name__ == '__main__':
     parser.add_argument('--flow_scale', dest='flow_scale', type=float, help='motion analysis resolution scale')
     parser.add_argument('--bit_depth', dest='bit_depth', type=int, default=16)
 
+    parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
+
 
     args = parser.parse_args()
     if (args.output is None or args.input is None or args.setup is None):
          parser.print_help()
          sys.exit()
+
+    if args.flow_scale == 0.25:
+        args.UHD = True
 
     print('Initializing TimewarpML from Flame setup...')
 
@@ -541,7 +542,12 @@ if __name__ == '__main__':
     if torch.cuda.is_available() and not args.cpu:
         # Process on GPU
 
-        model = inference_common.load_model(args.model)
+        if 'v1.8.model' in args.model:
+            from model.RIFE_HD import Model     # type: ignore
+        else:
+            from model.RIFE_HDv2 import Model     # type: ignore
+        model = Model()
+        model.load_model(args.model, -1)
         model.eval()
         model.device()
         print ('Trained model loaded: %s' % args.model)
@@ -551,9 +557,8 @@ if __name__ == '__main__':
     
         src_start_frame = cv2.imread(src_files.get(start_frame), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
         h, w, _ = src_start_frame.shape
-        pv = max(32, int(32 / args.flow_scale))
-        ph = ((h - 1) // pv + 1) * pv
-        pw = ((w - 1) // pv + 1) * pv
+        ph = ((h - 1) // 64 + 1) * 64
+        pw = ((w - 1) // 64 + 1) * 64
         padding = (0, pw - w, 0, ph - h)
     
         device = torch.device("cuda")
@@ -591,7 +596,7 @@ if __name__ == '__main__':
             I0 = F.pad(I0, padding)
             I1 = F.pad(I1, padding)
             
-            mid = make_inference_rational(model, I0, I1, ratio, scale = args.flow_scale)
+            mid = make_inference_rational(model, I0, I1, ratio, UHD = args.UHD)
             mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
             write_buffer.put((output_frame_number, mid[:h, :w]))
 
@@ -607,16 +612,20 @@ if __name__ == '__main__':
     else:
         # process on GPU
 
-        model = inference_common.load_model(args.model, cpu=True)
+        if 'v1.8.model' in args.model:
+            from model_cpu.RIFE_HD import Model     # type: ignore
+        else:
+            from model_cpu.RIFE_HDv2 import Model     # type: ignore
+        model = Model()
+        model.load_model(args.model, -1)
         model.eval()
         model.device()
         print ('Trained model loaded: %s' % args.model)
 
         src_start_frame = cv2.imread(src_files.get(start_frame), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
         h, w, _ = src_start_frame.shape
-        pv = max(32, int(32 / args.flow_scale))
-        ph = ((h - 1) // pv + 1) * pv
-        pw = ((w - 1) // pv + 1) * pv
+        ph = ((h - 1) // 64 + 1) * 64
+        pw = ((w - 1) // 64 + 1) * 64
         padding = (0, pw - w, 0, ph - h)
 
         device = torch.device('cpu')
@@ -679,7 +688,7 @@ if __name__ == '__main__':
             I0 = F.pad(I0, padding)
             I1 = F.pad(I1, padding)
             
-            p = mp.Process(target=make_inference_rational_cpu, args=(model, I0, I1, ratio, output_frame_number, w, h, write_buffer), kwargs = {'scale': args.flow_scale})
+            p = mp.Process(target=make_inference_rational_cpu, args=(model, I0, I1, ratio, output_frame_number, w, h, write_buffer), kwargs = {'UHD': args.UHD})
             p.start()
             active_workers.append(p)
 

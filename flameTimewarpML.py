@@ -21,7 +21,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.4.beta.011'
+__version__ = 'v0.4.4.dev.015'
 
 gnome_terminal = False
 if not os.path.isfile('/usr/bin/konsole'):
@@ -535,10 +535,12 @@ class flameAppFramework(object):
         
         if sys.platform == 'darwin':
             installer_file = os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'Miniconda3-latest-MacOSX-x86_64.sh')
+            cmd = ''
         else:
             installer_file = os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'Miniconda3-latest-Linux-x86_64.sh')
+            cmd = 'gnome-terminal --title=flameTimewarpML --wait -- '
 
-        cmd = '/bin/sh "' + installer_file + '" -b -p "' + env_folder + '"'
+        cmd += '/bin/sh "' + installer_file + '" -b -p "' + env_folder + '"'
         cmd += ' 2>&1 | tee > ' + os.path.join(self.bundle_location, 'miniconda_install.log')
         self.log('Executing command: %s' % cmd, logfile)
         status = os.system(cmd)
@@ -549,18 +551,40 @@ class flameAppFramework(object):
     def install_env_packages(self, env_folder, logfile):
         start = time.time()
         self.log('installing Miniconda packages...', logfile)
-        cmd = """/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
-        cmd += 'pip3 install -r ' + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') + ' --no-index --find-links '
-        cmd += os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'packages')
-        cmd += ' 2>&1 | tee > '
-        cmd += os.path.join(self.bundle_location, 'miniconda_packages_install.log')
-        cmd += "'"
+
+        rc = ''
+        rc += """/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + """ shell.bash hook)"; conda activate; """
+        rc += """pip3 install -v -r """ + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') 
+        rc += """ --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cu111'\n"""
+        rc += """exit"""
+
+        cmd = ''
+        
+        tmp_bash_rc_file = os.path.join(os.path.expanduser('~'), '.tmp_bashrc')
+
+        if sys.platform == 'darwin':
+            cmd += """/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + """ shell.bash hook)"; conda activate; """
+            cmd += 'pip3 install -r ' + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') + ' --no-index --find-links '
+            cmd += os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'packages')
+            cmd += ' 2>&1 | tee > '
+            cmd += os.path.join(self.bundle_location, 'miniconda_packages_install.log')
+            cmd += "'"
+        else:
+            with open(tmp_bash_rc_file, 'w') as tmp_rcfile:
+                tmp_rcfile.write(rc)
+                tmp_rcfile.close()
+            cmd += """gnome-terminal --title=flameTimewarpML --wait -- /bin/bash --rcfile """ + tmp_bash_rc_file
 
         self.log('Executing command: %s' % cmd, logfile)        
         status = os.system(cmd)
         self.log('exit status %s' % os.WEXITSTATUS(status), logfile)
         delta = time.time() - start
         self.log('installing Miniconda packages took %s sec' % '{:.1f}'.format(delta), logfile)
+
+        try:
+            os.remove(tmp_bash_rc_file)
+        except:
+            pass
 
     def show_exception(self, e):
         from PySide2 import QtWidgets
@@ -1663,7 +1687,7 @@ class flameTimewarpML(flameMenuApp):
                     self.export_clip(clip, source_clip_folder)
 
                 cmd_package = {}
-                cmd_package['cmd_name'] = os.path.join(self.framework.bundle_path, 'inference_sequence.py')
+                cmd_package['cmd_name'] = os.path.join(self.framework.bundle_path, 'inference_dpframes.py')
                 cmd_package['cpu'] = self.cpu
                 
                 cmd_quoted_args = {}
@@ -1791,6 +1815,7 @@ class flameTimewarpML(flameMenuApp):
             0: 'Interpolate',
             1: 'Remove', 
         }
+        self.dedup_mode = self.prefs.get('dedup_mode', 0)
         
         window = QtWidgets.QDialog()
         window.setMinimumSize(280, 180)
@@ -1831,6 +1856,8 @@ class flameTimewarpML(flameMenuApp):
         btn_DfamesSelector.setText(self.modes_list.get(self.dedup_mode))
         def selectNewMode(new_mode_id):
             self.dedup_mode = new_mode_id
+            self.prefs['dedup_mode'] = new_mode_id
+            self.framework.save_prefs()
             btn_DfamesSelector.setText(self.modes_list.get(self.dedup_mode))
         btn_DfamesSelector.setFocusPolicy(QtCore.Qt.NoFocus)
         btn_DfamesSelector.setMinimumSize(120, 28)
@@ -3264,7 +3291,7 @@ class flameTimewarpML(flameMenuApp):
         except:
             pass
         if out:
-            self.x11_windows_list = out.splitlines()
+            self.x11_windows_list = out.decode().splitlines()
         else:
             self.x11_windows_list = []
 
@@ -3278,13 +3305,18 @@ class flameTimewarpML(flameMenuApp):
         wmctrl_path = '/usr/bin/wmctrl'
         if not os.path.isfile(wmctrl_path):
             wmctrl_path = os.path.join(self.framework.bundle_path, 'bin', 'wmctrl')
+        
+        if not os.path.isfile(wmctrl_path):
+            return
+        
         out = ''
         try:
             out = check_output([wmctrl_path, '-lp'])
         except:
             return
         if out:
-            lines = out.splitlines()
+            pprint (out.decode)
+            lines = out.decode().splitlines()
             for line in lines:
                 if line not in self.x11_windows_list:
                     if 'Flame' not in line:
@@ -3317,13 +3349,16 @@ apps = []
 def exeption_handler(exctype, value, tb):
     from PySide2 import QtWidgets
     import traceback
-    msg = 'flameTimewrarpML: Python exception %s in %s' % (value, exctype)
-    mbox = QtWidgets.QMessageBox()
-    mbox.setWindowTitle('flameTimewrarpML')
-    mbox.setText(msg)
-    mbox.setDetailedText(pformat(traceback.format_exception(exctype, value, tb)))
-    mbox.setStyleSheet('QLabel{min-width: 800px;}')
-    mbox.exec_()
+    
+    exception_text = traceback.format_exception(exctype, value, tb)
+    if 'flameTimewrarpML.py' in pformat(exception_text):
+        msg = 'flameTimewrarpML: Python exception %s in %s' % (value, exctype)
+        mbox = QtWidgets.QMessageBox()
+        mbox.setWindowTitle('flameTimewrarpML')
+        mbox.setText(msg)
+        mbox.setDetailedText(pformat(exception_text))
+        mbox.setStyleSheet('QLabel{min-width: 800px;}')
+        mbox.exec_()
     sys.__excepthook__(exctype, value, tb)
 sys.excepthook = exeption_handler
 
@@ -3364,6 +3399,9 @@ def project_changed_dict(info):
 def app_initialized(project_name):
     global app_framework
     global apps
+    
+    app_initialized.__dict__["waitCursor"] = False
+
     if not app_framework:
         app_framework = flameAppFramework()
         print ('PYTHON\t: %s initializing' % app_framework.bundle_name)
