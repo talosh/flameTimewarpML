@@ -216,12 +216,18 @@ if __name__ == '__main__':
     parser.add_argument('--input', dest='input', type=str, default=None)
     parser.add_argument('--output', dest='output', type=str, default=None)
     parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v2.0.model')
-    parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
     parser.add_argument('--exp', dest='exp', type=int, default=1)
     parser.add_argument('--cpu', dest='cpu', action='store_true', help='process only on CPU(s)')
+    parser.add_argument('--flow_scale', dest='flow_scale', type=float, help='motion analysis resolution scale')
+    parser.add_argument('--bit_depth', dest='bit_depth', type=int, default=16)
+
+    parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
 
     args = parser.parse_args()
     assert (not args.output is None or not args.input is None)
+
+    if args.flow_scale == 0.25:
+        args.UHD = True
 
     manager = mp.Manager()
     frames = manager.dict()

@@ -492,13 +492,20 @@ if __name__ == '__main__':
     parser.add_argument('--record_in', dest='record_in', type=int, default=1, help='record in point relative to tw setup')
     parser.add_argument('--record_out', dest='record_out', type=int, default=0, help='record out point relative to tw setup')
     parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v2.0.model')
-    parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
     parser.add_argument('--cpu', dest='cpu', action='store_true', help='do not use GPU at all, process only on CPU')
+    parser.add_argument('--flow_scale', dest='flow_scale', type=float, help='motion analysis resolution scale')
+    parser.add_argument('--bit_depth', dest='bit_depth', type=int, default=16)
+
+    parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
+
 
     args = parser.parse_args()
     if (args.output is None or args.input is None or args.setup is None):
          parser.print_help()
          sys.exit()
+
+    if args.flow_scale == 0.25:
+        args.UHD = True
 
     print('Initializing TimewarpML from Flame setup...')
 
