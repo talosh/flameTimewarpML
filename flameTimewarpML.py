@@ -554,7 +554,7 @@ class flameAppFramework(object):
 
         rc = ''
         rc += """/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + """ shell.bash hook)"; conda activate; """
-        rc += """pip3 install -r """ + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') 
+        rc += """pip3 install -v -r """ + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') 
         rc += """ --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cu111'\n"""
         rc += """exit"""
 
@@ -3349,13 +3349,16 @@ apps = []
 def exeption_handler(exctype, value, tb):
     from PySide2 import QtWidgets
     import traceback
-    msg = 'flameTimewrarpML: Python exception %s in %s' % (value, exctype)
-    mbox = QtWidgets.QMessageBox()
-    mbox.setWindowTitle('flameTimewrarpML')
-    mbox.setText(msg)
-    mbox.setDetailedText(pformat(traceback.format_exception(exctype, value, tb)))
-    mbox.setStyleSheet('QLabel{min-width: 800px;}')
-    mbox.exec_()
+    
+    exception_text = traceback.format_exception(exctype, value, tb)
+    if 'flameTimewrarpML.py' in pformat(exception_text):
+        msg = 'flameTimewrarpML: Python exception %s in %s' % (value, exctype)
+        mbox = QtWidgets.QMessageBox()
+        mbox.setWindowTitle('flameTimewrarpML')
+        mbox.setText(msg)
+        mbox.setDetailedText(pformat(exception_text))
+        mbox.setStyleSheet('QLabel{min-width: 800px;}')
+        mbox.exec_()
     sys.__excepthook__(exctype, value, tb)
 sys.excepthook = exeption_handler
 
