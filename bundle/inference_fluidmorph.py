@@ -47,14 +47,9 @@ def signal_handler(sig, frame):
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
-def clear_write_buffer(args, write_buffer, tot_frame):
+def clear_write_buffer(folder, write_buffer, tot_frame):
     global IOThreadsFlag
     global IOProcesses
-
-    folder = args.output
-    cv2_flags = []
-    if args.bit_depth != 32:
-        cv2_flags = [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF]
 
     cnt = 0
     print ('rendering %s frames to %s' % (tot_frame, folder))
@@ -71,7 +66,7 @@ def clear_write_buffer(args, write_buffer, tot_frame):
         
         # print ('recieved %s' % frame_number)
         path = os.path.join(os.path.abspath(folder), '{:0>7d}.exr'.format(frame_number))
-        p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], cv2_flags, ))
+        p = mp.Process(target=cv2.imwrite, args=(path, image_data[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF], ))
         p.start()
         IOProcesses.append(p)
 
@@ -88,7 +83,7 @@ def build_read_buffer(folder, read_buffer, file_list):
         read_buffer.put(frame_data)
     read_buffer.put(None)
 
-def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles = 49, scale=1.0, always_interp=False):
+def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles = 49, UHD=False, always_interp=False):
     I0_ratio = 0.0
     I1_ratio = 1.0
     rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
@@ -100,7 +95,7 @@ def make_inference_rational(model, I0, I1, ratio, rthreshold = 0.02, maxcycles =
             return I1
     # print ('target ratio: %s' % ratio)
     for inference_cycle in range(0, maxcycles):
-        middle = model.inference(I0, I1, scale)
+        middle = model.inference(I0, I1, UHD)
         middle_ratio = ( I0_ratio + I1_ratio ) / 2
         if not always_interp:
             if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
@@ -139,7 +134,7 @@ def three_of_a_perfect_pair(incoming_frame, outgoing_frame, frame_num, ratio, de
 
         # rational_m = torch.mean(I0) * ratio + torch.mean(I1) * (1 - ratio)
 
-        middle = model.inference(I0, I1, args.flow_scale)
+        middle = model.inference(I0, I1, args.UHD)
         # middle = middle + (rational_m - torch.mean(middle)).expand_as(middle)
         middle = (((middle[0]).cpu().detach().numpy().transpose(1, 2, 0)))
         middle_ratio = ( I0_ratio + I1_ratio ) / 2
@@ -173,10 +168,16 @@ if __name__ == '__main__':
     parser.add_argument('--flow_scale', dest='flow_scale', type=float, help='motion analysis resolution scale')
     parser.add_argument('--bit_depth', dest='bit_depth', type=int, default=16)
 
+    parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
+
+
     args = parser.parse_args()
     if (args.incoming is None or args.outgoing is None or args.output is None):
          parser.print_help()
          sys.exit()
+
+    if args.flow_scale == 0.25:
+        args.UHD = True
 
     img_formats = ['.exr',]
     incoming_files_list = []
@@ -226,10 +227,8 @@ if __name__ == '__main__':
     
     h = h_inc
     w = w_inc
-    
-    pv = max(32, int(32 / args.flow_scale))
-    ph = ((h - 1) // pv + 1) * pv
-    pw = ((w - 1) // pv + 1) * pv
+    ph = ((h - 1) // 64 + 1) * 64
+    pw = ((w - 1) // 64 + 1) * 64
     padding = (0, pw - w, 0, ph - h)
 
     output_folder = os.path.abspath(args.output)
@@ -252,7 +251,12 @@ if __name__ == '__main__':
         _thread.start_new_thread(build_read_buffer, (args.incoming, incoming_read_buffer, incoming_files_list))
         _thread.start_new_thread(build_read_buffer, (args.outgoing, outgoing_read_buffer, outgoing_files_list))
 
-        model = inference_common.load_model(args.model)
+        if 'v1.8.model' in args.model:
+            from model.RIFE_HD import Model     # type: ignore
+        else:
+            from model.RIFE_HDv2 import Model     # type: ignore
+        model = Model()
+        model.load_model(args.model, -1)
         model.eval()
         model.device()
         print ('Trained model loaded: %s' % args.model)
@@ -263,7 +267,7 @@ if __name__ == '__main__':
             torch.backends.cudnn.enabled = True
             torch.backends.cudnn.benchmark = True
 
-        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
+        _thread.start_new_thread(clear_write_buffer, (args.output, write_buffer, input_duration))
 
         rstep = 1 / ( input_duration + 1 )
         ratio = rstep
@@ -277,7 +281,7 @@ if __name__ == '__main__':
             I1 = torch.from_numpy(np.transpose(outgoing_frame, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
             I1 = F.pad(I1, padding)
 
-            mid = make_inference_rational(model, I0, I1, ratio, rthreshold = rstep / 2, scale = args.flow_scale)
+            mid = make_inference_rational(model, I0, I1, ratio, rthreshold = rstep / 2, UHD = args.UHD)
             mid = (((mid[0]).cpu().numpy().transpose(1, 2, 0)))
             write_buffer.put((frame, mid[:h, :w]))
             
@@ -308,7 +312,12 @@ if __name__ == '__main__':
         _thread.start_new_thread(build_read_buffer, (args.incoming, incoming_read_buffer, incoming_files_list))
         _thread.start_new_thread(build_read_buffer, (args.outgoing, outgoing_read_buffer, outgoing_files_list))
 
-        model = inference_common.load_model(args.model, cpu=True)
+        if 'v1.8.model' in args.model:
+            from model_cpu.RIFE_HD import Model     # type: ignore
+        else:
+            from model_cpu.RIFE_HDv2 import Model     # type: ignore
+        model = Model()
+        model.load_model(args.model, -1)
         model.eval()
         model.device()
         print ('Trained model loaded: %s' % args.model)
@@ -340,7 +349,7 @@ if __name__ == '__main__':
         '''
         
         # print ('rendering %s frames to %s/' % (last_frame_number, args.output))
-        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration))
+        _thread.start_new_thread(clear_write_buffer, (args.output, write_buffer, input_duration))
 
 
         active_workers = []

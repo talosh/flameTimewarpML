@@ -24,7 +24,6 @@ ThreadsFlag = True
 IOProcesses = []
 cv2.setNumThreads(1)
 
-
 # Exception handler
 def exeption_handler(exctype, value, tb):
     import traceback
@@ -48,23 +47,19 @@ def signal_handler(sig, frame):
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 
-def clear_write_buffer(args, write_buffer, tot_frame, frames_written):
+def clear_write_buffer(write_buffer, tot_frame, frames_written):
     global ThreadsFlag
     global IOProcesses
 
-    cv2_flags = []
-    if args.bit_depth != 32:
-        cv2_flags = [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF]
-
     def write_in_current_thread(path, item, cnt, frames_written):
         try:
-            cv2.imwrite(path, item[:, :, ::-1], cv2_flags)
+            cv2.imwrite(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
             frames_written[cnt] = path
         except Exception as e:
             print ('Error writing %s: %s' % (path, e))
 
     def write_in_new_thread(path, item, cnt, frames_written):
-        cv2.imwrite(path, item[:, :, ::-1], cv2_flags)
+        cv2.imwrite(path, item[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
         frames_written[cnt] = path
 
     number_of_write_threads = 8
@@ -116,12 +111,12 @@ def build_read_buffer(user_args, read_buffer, videogen):
         read_buffer.put(frame_data)
     read_buffer.put(None)
 
-def make_inference(model, I0, I1, exp, scale):
-    middle = model.inference(I0, I1, scale)
+def make_inference(model, I0, I1, exp, UHD):
+    middle = model.inference(I0, I1, UHD)
     if exp == 1:
         return [middle]
-    first_half = make_inference(model, I0, middle, exp=exp - 1, scale=scale)
-    second_half = make_inference(model, middle, I1, exp=exp - 1, scale=scale)
+    first_half = make_inference(model, I0, middle, exp=exp - 1, UHD=UHD)
+    second_half = make_inference(model, middle, I1, exp=exp - 1, UHD=UHD)
     return [*first_half, middle, *second_half]
 
 def find_middle_frame(frames, frames_taken):
@@ -157,10 +152,6 @@ def find_middle_frame(frames, frames_taken):
     return False
 
 def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_written, frames_taken):
-    cv2_flags = []
-    if args.bit_depth != 32:
-        cv2_flags = [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF]
-
     perfect_pair = find_middle_frame(frames, frames_taken)
 
     if not perfect_pair:
@@ -180,19 +171,19 @@ def three_of_a_perfect_pair(frames, device, padding, model, args, h, w, frames_w
     I0 = F.pad(I0, padding)
     I1 = F.pad(I1, padding)
     
-    mid = model.inference(I0, I1, args.flow_scale)
+    mid = model.inference(I0, I1, args.UHD)
     mid = (((mid[0]).cpu().detach().numpy().transpose(1, 2, 0)))
     midframe = mid[:h, :w]
-    cv2.imwrite(os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(middle_frame)), midframe[:, :, ::-1], cv2_flags)
+    cv2.imwrite(os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(middle_frame)), midframe[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
 
     start_frame_out_file_name = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(start_frame))
     if not os.path.isfile(start_frame_out_file_name):
-        cv2.imwrite(start_frame_out_file_name, frame0[:, :, ::-1], cv2_flags)
+        cv2.imwrite(start_frame_out_file_name, frame0[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
         frames_written[ start_frame ] = start_frame_out_file_name
 
     end_frame_out_file_name = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(end_frame))
     if not os.path.isfile(end_frame_out_file_name):
-        cv2.imwrite(end_frame_out_file_name, frame1[:, :, ::-1], cv2_flags)
+        cv2.imwrite(end_frame_out_file_name, frame1[:, :, ::-1], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
         frames_written[ end_frame ] = end_frame_out_file_name
 
     frames[ middle_frame ] = os.path.join(os.path.abspath(args.output), '{:0>7d}.exr'.format(middle_frame))
@@ -224,14 +215,19 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Interpolation for a sequence of exr images')
     parser.add_argument('--input', dest='input', type=str, default=None)
     parser.add_argument('--output', dest='output', type=str, default=None)
-    parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v3.1.model')
+    parser.add_argument('--model', dest='model', type=str, default='./trained_models/default/v2.0.model')
     parser.add_argument('--exp', dest='exp', type=int, default=1)
     parser.add_argument('--cpu', dest='cpu', action='store_true', help='process only on CPU(s)')
     parser.add_argument('--flow_scale', dest='flow_scale', type=float, help='motion analysis resolution scale')
     parser.add_argument('--bit_depth', dest='bit_depth', type=int, default=16)
 
+    parser.add_argument('--UHD', dest='UHD', action='store_true', help='flow size 1/4')
+
     args = parser.parse_args()
     assert (not args.output is None or not args.input is None)
+
+    if args.flow_scale == 0.25:
+        args.UHD = True
 
     manager = mp.Manager()
     frames = manager.dict()
@@ -275,9 +271,8 @@ if __name__ == '__main__':
     first_image = cv2.imread(frames.get(first_frame_number), cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)[:, :, ::-1].copy()
     h, w, _ = first_image.shape
 
-    pv = max(32, int(32 / args.flow_scale))
-    ph = ((h - 1) // pv + 1) * pv
-    pw = ((w - 1) // pv + 1) * pv
+    ph = ((h - 1) // 64 + 1) * 64
+    pw = ((w - 1) // 64 + 1) * 64
     padding = (0, pw - w, 0, ph - h)
 
     output_folder = os.path.abspath(args.output)
@@ -293,12 +288,18 @@ if __name__ == '__main__':
         write_buffer = Queue(maxsize=inference_common.OUTPUT_QUEUE_SIZE)
         read_buffer = Queue(maxsize=inference_common.INPUT_QUEUE_SIZE)
         _thread.start_new_thread(build_read_buffer, (args, read_buffer, files_list))
-        _thread.start_new_thread(clear_write_buffer, (args, write_buffer, input_duration, frames_written))
+        _thread.start_new_thread(clear_write_buffer, (write_buffer, input_duration, frames_written))
 
-        model = inference_common.load_model(args.model)
+        if 'v1.8.model' in args.model:
+            from model.RIFE_HD import Model     # type: ignore
+        else:
+            from model.RIFE_HDv2 import Model     # type: ignore
+        model = Model()
+        model.load_model(args.model, -1)
         model.eval()
         model.device()
         print ('Trained model loaded: %s' % args.model)
+
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if torch.cuda.is_available():
@@ -328,7 +329,7 @@ if __name__ == '__main__':
             I1 = F.pad(I1, padding)
 
             try:
-                output = make_inference(model, I0, I1, args.exp, args.flow_scale)
+                output = make_inference(model, I0, I1, args.exp, args.UHD)
             except Exception as e:
                 ThreadsFlag = False
                 time.sleep(0.1)
@@ -366,11 +367,16 @@ if __name__ == '__main__':
 
     else:
         # process on CPU(s)
-        
-        model = inference_common.load_model(args.model, cpu=True)
+        if 'v1.8.model' in args.model:
+            from model_cpu.RIFE_HD import Model     # type: ignore
+        else:
+            from model_cpu.RIFE_HDv2 import Model     # type: ignore
+        model = Model()
+        model.load_model(args.model, -1)
         model.eval()
         model.device()
         print ('Trained model loaded: %s' % args.model)
+
 
         device = torch.device('cpu')
         torch.set_grad_enabled(False)
@@ -429,12 +435,10 @@ if __name__ == '__main__':
         p.terminate()
         p.join(timeout=0)
 
-    '''
     import hashlib
     lockfile = os.path.join('locks', hashlib.sha1(output_folder.encode()).hexdigest().upper() + '.lock')
     if os.path.isfile(lockfile):
         os.remove(lockfile)
-    '''
-
+    
     # input("Press Enter to continue...")
     sys.exit()
