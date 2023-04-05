@@ -173,6 +173,12 @@ pip3 install -r /Volumes/software/flameTimewarpML/requirements.txt          # Ma
 pip3 install -r /mnt/software/flameTimewarpML/requirements.txt              # Linux
 ```
 
+* In case pip fails to find a match for torch, install torch with the '-f' flag:
+
+```bash
+pip3 install torch=="1.10.2+cu111" -f https://download.pytorch.org/whl/torch_stable.html
+```
+
 * It is possible to download the packages and install it without internet connection. Install Miniconda3 on the machine that is connected to internet and download dependency packages:
 
 ```bash
