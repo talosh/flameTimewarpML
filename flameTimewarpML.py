@@ -36,6 +36,8 @@ FLAMETWML_LOCKFILE_LOCATION = ''
 # allow for custom lockfile location
 if os.getenv('FLAMETWML_LOCKFILE_LOCATION') and not FLAMETWML_LOCKFILE_LOCATION:
     FLAMETWML_LOCKFILE_LOCATION = os.getenv('FLAMETWML_LOCKFILE_LOCATION')
+    if not os.path.isdir(os.path.join(FLAMETWML_LOCKFILE_LOCATION,'locks')):
+        os.makedirs(os.path.join(FLAMETWML_LOCKFILE_LOCATION,'locks'))
 
 if os.getenv('FLAMETWML_BUNDLE') and not FLAMETWML_BUNDLE_MAC:
     FLAMETWML_BUNDLE_MAC = os.getenv('FLAMETWML_BUNDLE')
