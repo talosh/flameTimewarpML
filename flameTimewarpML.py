@@ -21,7 +21,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 
-__version__ = 'v0.4.4.dev.015'
+__version__ = 'v0.4.4.dev.016'
 
 gnome_terminal = False
 if not os.path.isfile('/usr/bin/konsole'):
@@ -31,6 +31,13 @@ FLAMETWML_BUNDLE_MAC = ''
 FLAMETWML_BUNDLE_LINUX = ''
 FLAMETWML_MINICONDA_MAC = ''
 FLAMETWML_MINICONDA_LINUX = ''
+FLAMETWML_LOCKFILE_LOCATION = ''
+
+# allow for custom lockfile location
+if os.getenv('FLAMETWML_LOCKFILE_LOCATION') and not FLAMETWML_LOCKFILE_LOCATION:
+    FLAMETWML_LOCKFILE_LOCATION = os.getenv('FLAMETWML_LOCKFILE_LOCATION')
+    if not os.path.isdir(os.path.join(FLAMETWML_LOCKFILE_LOCATION,'locks')):
+        os.makedirs(os.path.join(FLAMETWML_LOCKFILE_LOCATION,'locks'))
 
 if os.getenv('FLAMETWML_BUNDLE') and not FLAMETWML_BUNDLE_MAC:
     FLAMETWML_BUNDLE_MAC = os.getenv('FLAMETWML_BUNDLE')
@@ -1283,7 +1290,10 @@ class flameTimewarpML(flameMenuApp):
                 cmd_package['args'] = cmd_args
 
                 lockfile_name = hashlib.sha1(result_folder.encode()).hexdigest().upper() + '.lock'
-                lockfile_path = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
+                lockfile_container = self.framework.bundle_path
+                if FLAMETWML_LOCKFILE_LOCATION:
+                    lockfile_container = FLAMETWML_LOCKFILE_LOCATION
+                lockfile_path = os.path.join(lockfile_container, 'locks', lockfile_name)
 
                 try:
                     lockfile = open(lockfile_path, 'wb')
@@ -1705,7 +1715,10 @@ class flameTimewarpML(flameMenuApp):
                 cmd_package['args'] = cmd_args
 
                 lockfile_name = hashlib.sha1(result_folder.encode()).hexdigest().upper() + '.lock'
-                lockfile_path = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
+                lockfile_container = self.framework.bundle_path
+                if FLAMETWML_LOCKFILE_LOCATION:
+                    lockfile_container = FLAMETWML_LOCKFILE_LOCATION
+                lockfile_path = os.path.join(lockfile_container, 'locks', lockfile_name)
 
                 try:
                     lockfile = open(lockfile_path, 'wb')
@@ -2140,7 +2153,10 @@ class flameTimewarpML(flameMenuApp):
         cmd_package['args'] = cmd_args
 
         lockfile_name = hashlib.sha1(result_folder.encode()).hexdigest().upper() + '.lock'
-        lockfile_path = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
+        lockfile_container = self.framework.bundle_path
+        if FLAMETWML_LOCKFILE_LOCATION:
+            lockfile_container = FLAMETWML_LOCKFILE_LOCATION
+        lockfile_path = os.path.join(lockfile_container, 'locks', lockfile_name)
 
         try:
             lockfile = open(lockfile_path, 'wb')
@@ -2705,7 +2721,10 @@ class flameTimewarpML(flameMenuApp):
             cmd_package['args'] = cmd_args
 
             lockfile_name = hashlib.sha1(result_folder.encode()).hexdigest().upper() + '.lock'
-            lockfile_path = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
+            lockfile_container = self.framework.bundle_path
+            if FLAMETWML_LOCKFILE_LOCATION:
+                lockfile_container = FLAMETWML_LOCKFILE_LOCATION
+            lockfile_path = os.path.join(lockfile_container, 'locks', lockfile_name)
 
             try:
                 lockfile = open(lockfile_path, 'wb')
