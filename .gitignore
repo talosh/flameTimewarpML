@@ -2,7 +2,7 @@
 miniconda3
 !bundle/site-packages/platform/*
 bundle/site-packages/platform/*/*
-!bundle/miniconda.package/packages/README
+packages/*
 settings.json
 *.pyc
 *.exr
