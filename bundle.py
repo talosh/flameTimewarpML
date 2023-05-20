@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 '''
 Andriy's bunlde packer
 '''
@@ -9,6 +9,7 @@ import base64
 import argparse
 
 parser = argparse.ArgumentParser(description='Interpolation for a sequence of exr images')
+parser.add_argument('--platform', dest='platform', action='store', default='all', help='bundle for specific platform')
 parser.add_argument('--copy', dest='copy', action='store_true', help='copy to /opt/Autodesk/shared/python')
 parser.add_argument('--run', dest='run', action='store_true', help='run flame')
 args = parser.parse_args()
@@ -17,15 +18,22 @@ flame_cmd = '/opt/Autodesk/flame_2023.2/bin/startApplication'
 plugin_dirname = os.path.dirname(os.path.abspath(__file__))
 plugin_file_name = os.path.basename(plugin_dirname) + '.py'
 python_source = os.path.join(plugin_dirname, plugin_file_name)
-bundle_folder = 'site-packages'
-bundle_code = 'flameTimewarpML.src.py'
-dest_dir = os.path.join(plugin_dirname, 'flameTimewarpML.package')
-dest_file = os.path.join(dest_dir, bundle_code)
+bundle_folder = 'bundle'
+bundle_code = 'flameTimewarpML.py'
+platform_folder = os.path.join(plugin_dirname, bundle_folder, 'site-packages', 'platform')
+
+# dest_dir = os.path.join(plugin_dirname, 'flameTimewarpML.package')
+# dest_file = os.path.join(dest_dir, bundle_code)
 
 if not os.path.isdir(bundle_folder):
     print('no folder named %s' % bundle_folder)
     sys.exit()
-    
+
+platform_folders = [d for d in os.listdir(platform_folder) if os.path.isdir(os.path.join(platform_folder, d))]
+
+print (platform_folders)
+sys.exit()
+
 print ('creating %s' % bundle_folder + '.tar\n---')
 cmd = 'tar cvf ' + bundle_folder + '.tar ' + bundle_folder + '/'
 print ('executing: %s\n---' % cmd)
