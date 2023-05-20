@@ -8,6 +8,15 @@ import sys
 import base64
 import argparse
 
+def find_value(filename, variable_name):
+    with open(filename, 'r') as file:
+        for line in file.readlines():
+            if line.startswith(variable_name + " = "):
+                # split the line by " = ", then strip whitespace, quotes...
+                value = line.split(" = ")[1].strip().strip("'\"")
+                return value
+    return "Variable not found"
+
 parser = argparse.ArgumentParser(description='Interpolation for a sequence of exr images')
 parser.add_argument('--platform', dest='platform', action='store', default='all', help='bundle for specific platform')
 parser.add_argument('--copy', dest='copy', action='store_true', help='copy to /opt/Autodesk/shared/python')
@@ -40,8 +49,13 @@ else:
     print ('platforms: %s' % platform_folders)
     sys.exit()
 
-print (platforms)
-sys.exit()
+version = find_value(
+    os.path.join(plugin_dirname, bundle_code),
+    '__version__'
+)
+
+print (version)
+sys.exit()    
 
 print ('creating %s' % bundle_folder + '.tar\n---')
 cmd = 'tar cvf ' + bundle_folder + '.tar ' + bundle_folder + '/'
