@@ -21,6 +21,7 @@ python_source = os.path.join(plugin_dirname, plugin_file_name)
 bundle_folder = 'bundle'
 bundle_code = 'flameTimewarpML.py'
 platform_folder = os.path.join(plugin_dirname, bundle_folder, 'site-packages', 'platform')
+packages_folder = os.path.join(plugin_dirname, 'packages')
 
 # dest_dir = os.path.join(plugin_dirname, 'flameTimewarpML.package')
 # dest_file = os.path.join(dest_dir, bundle_code)
@@ -30,8 +31,16 @@ if not os.path.isdir(bundle_folder):
     sys.exit()
 
 platform_folders = [d for d in os.listdir(platform_folder) if os.path.isdir(os.path.join(platform_folder, d))]
+if args.platform == 'all':
+    platforms = platform_folders
+elif args.platform in platform_folders:
+    platforms = [args.platform]
+else:
+    print ('unknown platform to create package: "%s"' % args.platform)
+    print ('platforms: %s' % platform_folders)
+    sys.exit()
 
-print (platform_folders)
+print (platforms)
 sys.exit()
 
 print ('creating %s' % bundle_folder + '.tar\n---')
