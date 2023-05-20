@@ -150,7 +150,10 @@ class flameAppFramework(object):
         )
 
         if not self.check_bundle_id():
-            self.unpack_bundle(os.path.dirname(self.site_packages_folder))
+            threading.Thread(
+                target=self.unpack_bundle,
+                args=(os.path.dirname(self.site_packages_folder), )
+            ).start()
 
     def log(self, message):
         try:
@@ -333,7 +336,7 @@ class flameAppFramework(object):
 
         payload_dest = os.path.join(
             bundle_path, 
-            self.sanitize_name(self.bundle_name + '.' + __version__ + '.bundle.tar')
+            self.sanitize_name(self.bundle_name + '.' + __version__ + '.bundle.tar.gz')
             )
         
         try:
@@ -365,7 +368,7 @@ class flameAppFramework(object):
             self.log_exception(e)
 
         try:
-            with open(os.path.join(bundle_path, 'bundle_id'), 'w+') as bundle_id_file:
+            with open(os.path.join(bundle_path, 'bundle_id'), 'w') as bundle_id_file:
                 bundle_id_file.write(self.version)
         except Exception as e:
             self.log_exception(e)
@@ -378,6 +381,7 @@ class flameAppFramework(object):
         self.log_debug(pformat(traceback.format_exc()))
 
     def sanitize_name(self, name_to_sanitize):
+        import re
         if name_to_sanitize is None:
             return None
         
@@ -2912,7 +2916,7 @@ def app_initialized(project_name):
     app_initialized.__dict__["waitCursor"] = False
 
     if not app_framework:
-        app_framework = flameAppFramework('app_name' = app_name)
+        app_framework = flameAppFramework(app_name = app_name)
         print ('PYTHON\t: %s initializing' % app_framework.bundle_name)
     if not apps:
         load_apps(apps, app_framework)

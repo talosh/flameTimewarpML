@@ -89,11 +89,12 @@ def find_value(filename, variable_name):
 
 parser = argparse.ArgumentParser(description='Interpolation for a sequence of exr images')
 parser.add_argument('--platform', dest='platform', action='store', default='all', help='bundle for specific platform')
+parser.add_argument('--c', dest='cleanup', action='store_true', help='clean up bundle folder')
 parser.add_argument('--copy', dest='copy', action='store_true', help='copy to /opt/Autodesk/shared/python')
 parser.add_argument('--run', dest='run', action='store_true', help='run flame')
 args = parser.parse_args()
 
-flame_cmd = '/opt/Autodesk/flame_2023.2/bin/startApplication'
+flame_cmd = '/opt/Autodesk/flame_2023.3/bin/startApplication'
 plugin_dirname = os.path.dirname(os.path.abspath(__file__))
 plugin_file_name = os.path.basename(plugin_dirname) + '.py'
 python_source = os.path.join(plugin_dirname, plugin_file_name)
@@ -126,134 +127,80 @@ version = find_value(
 )
 
 for platform in platforms:
-    package_folder = os.path.join(
+    version_folder = os.path.join(
         packages_folder,
         version,
+    )
+    os.makedirs(version_folder, exist_ok=True)
+
+    package_folder = os.path.join(
+        version_folder,
         os.path.splitext(bundle_code)[0] + '.' + platform + '.package'
     )
+    os.makedirs(package_folder, exist_ok=True)
+
     package_bundle_folder = os.path.join(
-        packages_folder,
-        version,
+        version_folder,
         os.path.splitext(bundle_code)[0] + '.' + platform + '.bundle'
     )
 
-    os.makedirs(package_folder, exist_ok=True)
-    os.makedirs(package_bundle_folder, exist_ok=True)
+    if not os.path.isdir(package_bundle_folder):
+        os.makedirs(package_bundle_folder, exist_ok=True)
 
-    cmd = 'rsync -avh ' + bundle_folder + os.path.sep + ' ' + package_bundle_folder + os.path.sep
+        cmd = 'rsync -avh --exclude="site-packages/*" ' + bundle_folder + os.path.sep + ' ' + package_bundle_folder + os.path.sep
+        os.system (cmd)
+        cmd = 'rsync -avh ' + os.path.join(platform_folder, platform) + os.path.sep \
+            + ' ' + os.path.join(package_bundle_folder, 'site-packages' + os.path.sep)
+        os.system(cmd)
 
-    print (package_folder)
+    tar_file_name = os.path.splitext(bundle_code)[0] + '.' + platform + '.bundle.tar.gz'
+    tar_file_path = os.path.join(version_folder, tar_file_name)
+    if not os.path.isfile(tar_file_path):
+        print ('creating %s' % tar_file_path + '\n---')
+        cmd = 'tar czvf ' + tar_file_path + ' -C ' + package_bundle_folder + '/ .'
+        print ('executing: %s\n---' % cmd)
+        os.system(cmd)
 
+    dest_python_file = os.path.join(package_folder, bundle_code)
 
-sys.exit()    
+    print ('---\nadding data to python script %s' % dest_python_file)
+    if os.path.isfile(dest_python_file):
+        os.remove(dest_python_file)
 
-print ('creating %s' % bundle_folder + '.tar\n---')
-cmd = 'tar cvf ' + bundle_folder + '.tar ' + bundle_folder + '/'
-print ('executing: %s\n---' % cmd)
-os.system(cmd)
-# cmd = bundle_folder + '/bin/pbzip2 -v ' + bundle_folder + '.tar'
-# os.system(cmd)
-
-print ('---\nadding data to python script %s' % python_source)
-
-f = open(bundle_folder + '.tar', 'rb')
-bundle_data = f.read()
-f.close()
-
-encoded_bundle_data = base64.b64encode(bundle_data).decode()
-del bundle_data
-
-f = open(bundle_code, 'r')
-bundle_code = f.read()
-f.close()
-
-bundled_code = bundle_code.replace('BUNDLE_PAYLOAD', encoded_bundle_data)
-del encoded_bundle_data
-
-if not os.path.isdir(dest_dir):
-    os.makedirs(dest_dir)
-
-with open(dest_file, 'w') as tempfile:
-    with open(python_source, 'r') as src:
-#       tempfile.write(src.read())
+    f = open(tar_file_path, 'rb')
+    bundle_data = f.read()
+    f.close()
+    encoded_bundle_data = base64.b64encode(bundle_data).decode()
+    del bundle_data
+    f = open(bundle_code, 'r')
+    bundle_code = f.read()
+    f.close()
+    bundled_code = bundle_code.replace('BUNDLE_PAYLOAD', encoded_bundle_data)
+    del encoded_bundle_data
+    with open(dest_python_file, 'w') as tempfile:
         tempfile.write(bundled_code)
+        tempfile.close()
+    del bundled_code
 
-del bundled_code
+    readme = os.path.join(plugin_dirname, 'README.md')
+    cmd = 'cp ' + readme + ' ' + package_bundle_folder + os.path.sep
+    os.system(cmd)
 
-# cmd = 'mv tmp.py /opt/Autodesk/shared/python/' + plugin_file_name
-# os.system(cmd)
+    if args.cleanup:
+        print ('cleaning up %s' % tar_file_path)
+        cmd = 'rm -rf ' + tar_file_path
+        os.system(cmd)
 
-
-print ('---\nremoving %s' % bundle_folder + '.tar')
-os.remove(bundle_folder + '.tar')
-
-readme = os.path.join(plugin_dirname, 'README.md')
-cmd = 'cp ' + readme + ' ' + dest_dir
-os.system(cmd)
+        print ('cleaning up %s' % package_bundle_folder)
+        cmd = 'rm -rf ' + package_bundle_folder
+        os.system(cmd)
 
 if args.copy:
-    cmd = 'cp flameTimewarpML.package/flameTimewarpML.py /opt/Autodesk/shared/python/'
-    print ('copying flameTimewarpML.package/flameTimewarpML.py to /opt/Autodesk/shared/python/')
+    cmd = 'cp ' + dest_python_file + ' /opt/Autodesk/shared/python/'
+    print ('copying %s to /opt/Autodesk/shared/python/' % dest_python_file)
     os.system(cmd)
 
 if args.run:
     os.system(flame_cmd)
 
-    cmd = 'rsync -avh ' + bundle_folder + os.path.sep + ' ' + package_bundle_folder + os.path.sep
-
-    print (package_folder)
-
-
-sys.exit()    
-
-print ('creating %s' % bundle_folder + '.tar\n---')
-cmd = 'tar cvf ' + bundle_folder + '.tar ' + bundle_folder + '/'
-print ('executing: %s\n---' % cmd)
-os.system(cmd)
-# cmd = bundle_folder + '/bin/pbzip2 -v ' + bundle_folder + '.tar'
-# os.system(cmd)
-
-print ('---\nadding data to python script %s' % python_source)
-
-f = open(bundle_folder + '.tar', 'rb')
-bundle_data = f.read()
-f.close()
-
-encoded_bundle_data = base64.b64encode(bundle_data).decode()
-del bundle_data
-
-f = open(bundle_code, 'r')
-bundle_code = f.read()
-f.close()
-
-bundled_code = bundle_code.replace('BUNDLE_PAYLOAD', encoded_bundle_data)
-del encoded_bundle_data
-
-if not os.path.isdir(dest_dir):
-    os.makedirs(dest_dir)
-
-with open(dest_file, 'w') as tempfile:
-    with open(python_source, 'r') as src:
-#       tempfile.write(src.read())
-        tempfile.write(bundled_code)
-
-del bundled_code
-
-# cmd = 'mv tmp.py /opt/Autodesk/shared/python/' + plugin_file_name
-# os.system(cmd)
-
-
-print ('---\nremoving %s' % bundle_folder + '.tar')
-os.remove(bundle_folder + '.tar')
-
-readme = os.path.join(plugin_dirname, 'README.md')
-cmd = 'cp ' + readme + ' ' + dest_dir
-os.system(cmd)
-
-if args.copy:
-    cmd = 'cp flameTimewarpML.package/flameTimewarpML.py /opt/Autodesk/shared/python/'
-    print ('copying flameTimewarpML.package/flameTimewarpML.py to /opt/Autodesk/shared/python/')
-    os.system(cmd)
-
-if args.run:
-    os.system(flame_cmd)
+sys.exit()
