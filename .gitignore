@@ -1,8 +1,6 @@
 .DS_Store
 miniconda3
-bundle/miniconda.package/Miniconda*
-bundle/miniconda.package/packages/*
-bundle/bin/*
+bundle/site-packages/platform/*
 !bundle/miniconda.package/packages/README
 settings.json
 *.pyc

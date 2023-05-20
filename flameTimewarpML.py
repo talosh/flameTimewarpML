@@ -20,46 +20,11 @@ from pprint import pformat
 # Configurable settings
 menu_group_name = 'Timewarp ML'
 DEBUG = False
-
-__version__ = 'v0.4.4.dev.016'
-
-gnome_terminal = False
-if not os.path.isfile('/usr/bin/konsole'):
-    gnome_terminal = True
-
-FLAMETWML_BUNDLE_MAC = ''
-FLAMETWML_BUNDLE_LINUX = ''
-FLAMETWML_MINICONDA_MAC = ''
-FLAMETWML_MINICONDA_LINUX = ''
-FLAMETWML_LOCKFILE_LOCATION = ''
-
-# allow for custom lockfile location
-if os.getenv('FLAMETWML_LOCKFILE_LOCATION') and not FLAMETWML_LOCKFILE_LOCATION:
-    FLAMETWML_LOCKFILE_LOCATION = os.getenv('FLAMETWML_LOCKFILE_LOCATION')
-    if not os.path.isdir(os.path.join(FLAMETWML_LOCKFILE_LOCATION,'locks')):
-        os.makedirs(os.path.join(FLAMETWML_LOCKFILE_LOCATION,'locks'))
-
-if os.getenv('FLAMETWML_BUNDLE') and not FLAMETWML_BUNDLE_MAC:
-    FLAMETWML_BUNDLE_MAC = os.getenv('FLAMETWML_BUNDLE')
-if os.getenv('FLAMETWML_BUNDLE') and not FLAMETWML_BUNDLE_LINUX:
-    FLAMETWML_BUNDLE_LINUX = os.getenv('FLAMETWML_BUNDLE')
-if os.getenv('FLAMETWML_MINICONDA') and not FLAMETWML_MINICONDA_MAC:
-    FLAMETWML_MINICONDA_MAC = os.getenv('FLAMETWML_MINICONDA')
-if os.getenv('FLAMETWML_MINICONDA') and not FLAMETWML_MINICONDA_LINUX:
-    FLAMETWML_MINICONDA_LINUX = os.getenv('FLAMETWML_MINICONDA')
-
-if os.getenv('FLAMETWML_BUNDLE_MAC') and not FLAMETWML_BUNDLE_MAC:
-    FLAMETWML_BUNDLE_MAC = os.getenv('FLAMETWML_BUNDLE_MAC')
-if os.getenv('FLAMETWML_BUNDLE_LINUX') and not FLAMETWML_BUNDLE_LINUX:
-    FLAMETWML_BUNDLE_LINUX = os.getenv('FLAMETWML_BUNDLE_LINUX')
-if os.getenv('FLAMETWML_MINICONDA_MAC') and not FLAMETWML_MINICONDA_MAC:
-    FLAMETWML_MINICONDA_MAC = os.getenv('FLAMETWML_MINICONDA_MAC')
-if os.getenv('FLAMETWML_MINICONDA_LINUX') and not FLAMETWML_MINICONDA_LINUX:
-    FLAMETWML_MINICONDA_LINUX = os.getenv('FLAMETWML_MINICONDA_LINUX')
-
+app_name = 'flameTimewarpML'
+__version__ = 'v0.5.0.dev.001'
 
 class flameAppFramework(object):
-    # flameAppFramework class takes care of preferences and bundle unpack/install routines
+    # flameAppFramework class takes care of preferences
 
     class prefs_dict(dict):
         # subclass of a dict() in order to directly link it 
@@ -120,18 +85,19 @@ class flameAppFramework(object):
         def master_keys(self):
             return list(self.master.keys())
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.name = self.__class__.__name__
-        self.bundle_name = 'flameTimewarpML'
-
+        self.app_name = kwargs.get('app_name', 'flameApp')
+        self.bundle_name = self.sanitize_name(self.app_name)
+        self.version = __version__
         # self.prefs scope is limited to flame project and user
         self.prefs = {}
         self.prefs_user = {}
         self.prefs_global = {}
-
-        self.gnome_terminal = gnome_terminal
         self.debug = DEBUG
         
+
+
         try:
             import flame
             self.flame = flame
@@ -139,8 +105,8 @@ class flameAppFramework(object):
             self.flame_user_name = flame.users.current_user.name
         except:
             self.flame = None
-            self.flame_project_name = None
-            self.flame_user_name = None
+            self.flame_project_name = 'UnknownFlameProject'
+            self.flame_user_name = 'UnknownFlameUser'
         
         import socket
         self.hostname = socket.gethostname()
@@ -165,176 +131,148 @@ class flameAppFramework(object):
         self.log('[%s] waking up' % self.__class__.__name__)
         self.load_prefs()
 
-        # preferences defaults
+        # menu auto-refresh defaults
 
-        if not self.prefs_global.get('bundle_location'):
-            if sys.platform == 'darwin':
-                self.bundle_location = os.path.join(
-                    os.path.expanduser('~'),
-                    'Documents',
-                    self.bundle_name)
-            else:
-                self.bundle_location = os.path.join(
-                    os.path.expanduser('~'),
-                    self.bundle_name)
-            self.prefs_global['bundle_location'] = self.bundle_location
-        
-        else:
-            self.bundle_location = self.prefs_global.get('bundle_location')
-        
+        if not self.prefs_global.get('menu_auto_refresh'):
+            self.prefs_global['menu_auto_refresh'] = {
+                'media_panel': True,
+                'batch': True,
+                'main_menu': True
+            }
+
         self.apps = []
 
-        import hashlib
-        self.bundle_id = hashlib.sha1(__version__.encode()).hexdigest()
+        # site-packages check and payload unpack if nessesary
+        self.site_packages_folder = os.path.join(
+            '/var/tmp',
+            self.bundle_name,
+            'site-packages'
+        )
 
-        bundle_path = os.path.join(self.bundle_location, 'bundle')
-        self.bundle_path = bundle_path
+        if not self.check_bundle_id():
+            self.unpack_bundle(os.path.dirname(self.site_packages_folder))
 
-        # If bundle location set on top of the file or in ENV variable
-        # we're in centralized deployment mode.
-        # Bundle and miniconda versions supposed to be set manually
-        # So there's no need to check for bundle ID
- 
-        if (sys.platform == 'darwin') and FLAMETWML_BUNDLE_MAC:
-            bundle_path = FLAMETWML_BUNDLE_MAC
-            self.bundle_path = FLAMETWML_BUNDLE_MAC
-            self.bundle_location = os.path.dirname(FLAMETWML_BUNDLE_MAC)
-            return
-        elif sys.platform.startswith('linux') and FLAMETWML_BUNDLE_LINUX:
-            bundle_path = FLAMETWML_BUNDLE_LINUX
-            self.bundle_path = FLAMETWML_BUNDLE_LINUX
-            self.bundle_location = os.path.dirname(FLAMETWML_BUNDLE_LINUX)
-            return
-
-        if (os.path.isdir(bundle_path) and os.path.isfile(os.path.join(bundle_path, 'bundle_id'))):
-            self.log('checking existing bundle id %s' % os.path.join(bundle_path, 'bundle_id'))
-            with open(os.path.join(bundle_path, 'bundle_id'), 'r') as bundle_id_file:
-                if bundle_id_file.read() == self.bundle_id:
-                    self.log('env bundle already exists with id matching current version')
-                    bundle_id_file.close()
-                    return
-                else:
-                    self.log('existing env bundle id does not match current one')
-
-        self.install_miniconda_libs = True
-        if self.show_unpack_dialog(bundle_path):
-            # bundle location is subject to change
-            self.bundle_location = self.prefs_global.get('bundle_location')
-            bundle_path = os.path.join(self.bundle_location, 'bundle')
-            self.bundle_path = bundle_path
-
-            # unpack bundle sequence
-            self.unpacking_thread = threading.Thread(target=self.unpack_bundle, args=(bundle_path, ))
-            self.unpacking_thread.daemon = True
-            self.unpacking_thread.start()
-        else:
-            self.log('user cancelled bundle unpack')
-
-    def log(self, message, logfile = None):
-        msg = '[%s] %s' % (self.bundle_name, message)
-        print (msg)
-        if logfile:
-            try:
-                logfile.write(msg + '\n')
-                logfile.flush()
-            except:
-                pass
+    def log(self, message):
+        try:
+            print ('[%s] %s' % (self.bundle_name, str(message)))
+        except:
+            pass
 
     def log_debug(self, message):
         if self.debug:
-            print ('[DEBUG %s] %s' % (self.bundle_name, message))
+            try:
+                print ('[DEBUG %s] %s' % (self.bundle_name, str(message)))
+            except:
+                pass
 
     def load_prefs(self):
-        import pickle
+        import json
         
         prefix = self.prefs_folder + os.path.sep + self.bundle_name
-        prefs_file_path = prefix + '.' + self.flame_user_name + '.' + self.flame_project_name + '.prefs'
-        prefs_user_file_path = prefix + '.' + self.flame_user_name  + '.prefs'
-        prefs_global_file_path = prefix + '.prefs'
+        prefs_file_path = prefix + '.' + self.flame_user_name + '.' + self.flame_project_name + '.prefs.json'
+        prefs_user_file_path = prefix + '.' + self.flame_user_name  + '.prefs.json'
+        prefs_global_file_path = prefix + '.prefs.json'
 
         try:
-            prefs_file = open(prefs_file_path, 'rb')
-            self.prefs = pickle.load(prefs_file)
-            prefs_file.close()
-            self.log('preferences loaded from %s' % prefs_file_path)
-            self.log_debug('preferences contents:\n' + pformat(self.prefs))
+            with open(prefs_file_path, 'w') as prefs_file:
+                json.dump(self.prefs, prefs_file)
+            self.log_debug('preferences saved to %s' % prefs_file_path)
+            self.log_debug('preferences contents:\n' + json.dumps(self.prefs, indent=4))
         except Exception as e:
-            self.log('unable to load preferences from %s' % prefs_file_path)
-            self.log(e)
+            self.log('unable to save preferences to %s' % prefs_file_path)
+            self.log_debug(e)
 
         try:
-            prefs_file = open(prefs_user_file_path, 'rb')
-            self.prefs_user = pickle.load(prefs_file)
-            prefs_file.close()
-            self.log('preferences loaded from %s' % prefs_user_file_path)
-            self.log_debug('preferences contents:\n' + pformat(self.prefs_user))
+            with open(prefs_user_file_path, 'w') as prefs_file:
+                json.dump(self.prefs_user, prefs_file)
+            self.log_debug('preferences saved to %s' % prefs_user_file_path)
+            self.log_debug('preferences contents:\n' + json.dumps(self.prefs_user, indent=4))
         except Exception as e:
-            self.log('unable to load preferences from %s' % prefs_user_file_path)
-            self.log(e)
+            self.log('unable to save preferences to %s' % prefs_user_file_path)
+            self.log_debug(e)
 
         try:
-            prefs_file = open(prefs_global_file_path, 'rb')
-            self.prefs_global = pickle.load(prefs_file)
-            prefs_file.close()
-            self.log('preferences loaded from %s' % prefs_global_file_path)
-            self.log_debug('preferences contents:\n' + pformat(self.prefs_global))
-
+            with open(prefs_global_file_path, 'w') as prefs_file:
+                json.dump(self.prefs_global, prefs_file)
+            self.log_debug('preferences saved to %s' % prefs_global_file_path)
+            self.log_debug('preferences contents:\n' + json.dumps(self.prefs_global, indent=4))
         except Exception as e:
-            self.log('unable to load preferences from %s' % prefs_global_file_path)
-            self.log(e)
+            self.log('unable to save preferences to %s' % prefs_global_file_path)
+            self.log_debug(e)
 
         return True
 
     def save_prefs(self):
-        import pickle
+        import json
 
         if not os.path.isdir(self.prefs_folder):
             try:
                 os.makedirs(self.prefs_folder)
-            except Exception as e:
+            except:
                 self.log('unable to create folder %s' % self.prefs_folder)
-                self.log(e)
                 return False
 
         prefix = self.prefs_folder + os.path.sep + self.bundle_name
-        prefs_file_path = prefix + '.' + self.flame_user_name + '.' + self.flame_project_name + '.prefs'
-        prefs_user_file_path = prefix + '.' + self.flame_user_name  + '.prefs'
-        prefs_global_file_path = prefix + '.prefs'
+        prefs_file_path = prefix + '.' + self.flame_user_name + '.' + self.flame_project_name + '.prefs.json'
+        prefs_user_file_path = prefix + '.' + self.flame_user_name  + '.prefs.json'
+        prefs_global_file_path = prefix + '.prefs.json'
 
         try:
-            prefs_file = open(prefs_file_path, 'wb')
-            pickle.dump(self.prefs, prefs_file)
-            prefs_file.close()
-            if self.debug:
-                self.log('preferences saved to %s' % prefs_file_path)
-                self.log('preferences contents:\n' + pformat(self.prefs))
+            with open(prefs_file_path, 'w') as prefs_file:
+                json.dump(self.prefs, prefs_file, indent=4)
+            self.log_debug('preferences saved to %s' % prefs_file_path)
+            self.log_debug('preferences contents:\n' + json.dumps(self.prefs, indent=4))
         except Exception as e:
             self.log('unable to save preferences to %s' % prefs_file_path)
-            self.log(e)
+            self.log_debug(e)
 
         try:
-            prefs_file = open(prefs_user_file_path, 'wb')
-            pickle.dump(self.prefs_user, prefs_file)
-            prefs_file.close()
-            if self.debug:
-                self.log('preferences saved to %s' % prefs_user_file_path)
-                self.log('preferences contents:\n' + pformat(self.prefs_user))
+            with open(prefs_user_file_path, 'w') as prefs_file:
+                json.dump(self.prefs_user, prefs_file, indent=4)
+            self.log_debug('preferences saved to %s' % prefs_user_file_path)
+            self.log_debug('preferences contents:\n' + json.dumps(self.prefs_user, indent=4))
         except Exception as e:
             self.log('unable to save preferences to %s' % prefs_user_file_path)
-            self.log(e)
+            self.log_debug(e)
 
         try:
-            prefs_file = open(prefs_global_file_path, 'wb')
-            pickle.dump(self.prefs_global, prefs_file)
-            prefs_file.close()
-            if self.debug:
-                self.log('preferences saved to %s' % prefs_global_file_path)
-                self.log('preferences contents:\n' + pformat(self.prefs_global))
+            with open(prefs_global_file_path, 'w') as prefs_file:
+                json.dump(self.prefs_global, prefs_file, indent=4)
+            self.log_debug('preferences saved to %s' % prefs_global_file_path)
+            self.log_debug('preferences contents:\n' + json.dumps(self.prefs_global, indent=4))
         except Exception as e:
             self.log('unable to save preferences to %s' % prefs_global_file_path)
-            self.log(e)
-
+            self.log_debug(e)
+            
         return True
+
+    def check_bundle_id(self):
+        bundle_id_file_path = os.path.join(
+            os.path.dirname(self.site_packages_folder),
+            'bundle_id'
+            )
+        bundle_id = self.version
+
+        if (os.path.isdir(self.site_packages_folder) and os.path.isfile(bundle_id_file_path)):
+            self.log('checking existing bundle id %s' % bundle_id_file_path)
+            try:
+                with open(bundle_id_file_path, 'r') as bundle_id_file:
+                    if bundle_id_file.read() == bundle_id:
+                        self.log('site packages folder exists with id matching current version')
+                        bundle_id_file.close()
+                        return True
+                    else:
+                        self.log('existing env bundle id does not match current one')
+                        return False
+            except Exception as e:
+                self.log(pformat(e))
+                return False
+        elif not os.path.isdir(self.site_packages_folder):
+            self.log('site packages folder does not exist: %s' % self.site_packages_folder)
+            return False
+        elif not os.path.isfile(bundle_id_file_path):
+            self.log('site packages bundle id file does not exist: %s' % bundle_id_file_path)
+            return False
 
     def unpack_bundle(self, bundle_path):
         start = time.time()
@@ -350,7 +288,6 @@ class flameAppFramework(object):
                 start_position = script.rfind('# bundle payload starts here')
                 
                 if script[start_position -1: start_position] != '\n':
-                    self.show_turncated_message()
                     scriptfile.close()
                     return False
 
@@ -359,531 +296,96 @@ class flameAppFramework(object):
                 # scriptfile.truncate(start_position - 34)
                 scriptfile.close()
         except Exception as e:
-            self.show_exception(e)
+            self.log_exception(e)
             return False
         
         del script
         if not payload:
             return False
 
-        if len(payload) <= 16:
-            self.show_turncated_message()
-            return False
-        
-        logfile = None
-        logfile_path = '/var/tmp/flameTimewarpML_install.log'
-        try:
-            open(logfile_path, "w").close()
-            logfile = open(logfile_path, 'w+')
-        except:
-            pass
-        
-        if sys.platform == 'darwin':
-            import subprocess
-            log_cmd = """tell application "Terminal" to activate do script "tail -f """ + os.path.abspath(logfile_path) + '; exit"'
-            subprocess.Popen(['osascript', '-e', log_cmd])
-        elif self.gnome_terminal:
-            log_cmd =  """gnome-terminal --title=flameTimewarpML -- /bin/bash -c 'trap exit SIGINT SIGTERM; tail -f """ + os.path.abspath(logfile_path) +"; sleep 2'"
-            os.system(log_cmd)
-        else:
-            log_cmd = """konsole --caption flameTimewarpML -e /bin/bash -c 'trap exit SIGINT SIGTERM; tail -f """ + os.path.abspath(logfile_path) +"; sleep 2'"
-            os.system(log_cmd)
-            
-        self.log('bundle_id: %s size %sMb' % (self.bundle_id, len(payload)//(1024 ** 2)), logfile)
-        
         bundle_backup_folder = ''
         if os.path.isdir(bundle_path):
             bundle_backup_folder = os.path.abspath(bundle_path + '.previous')
             if os.path.isdir(bundle_backup_folder):
                 try:
                     cmd = 'rm -rf "' + os.path.abspath(bundle_backup_folder) + '"'
-                    self.log('removing previous backup folder', logfile)
-                    self.log('Executing command: %s' % cmd, logfile)
+                    self.log('removing previous backup folder')
+                    self.log('Executing command: %s' % cmd)
                     os.system(cmd)
                 except Exception as e:
-                    self.show_exception(e)
+                    self.log_exception(e)
                     return False
             try:
                 cmd = 'mv "' + os.path.abspath(bundle_path) + '" "' + bundle_backup_folder + '"'
-                self.log('backing up existing bundle folder', logfile)
-                self.log('Executing command: %s' % cmd, logfile)
+                self.log('backing up existing bundle folder')
+                self.log('Executing command: %s' % cmd)
                 os.system(cmd)
             except Exception as e:
-                self.show_exception(e)
+                self.log_exception(e)
                 return False
 
         try:
-            self.log('creating new bundle folder: %s' % bundle_path, logfile)
+            self.log('creating new bundle folder: %s' % bundle_path)
             os.makedirs(bundle_path)
         except Exception as e:
-            self.show_exception(e)
+            self.log_exception(e)
             return False
 
         payload_dest = os.path.join(
-            self.bundle_location, 
-            self.bundle_name + '.' + __version__ + '.bundle.tar'
+            bundle_path, 
+            self.sanitize_name(self.bundle_name + '.' + __version__ + '.bundle.tar')
             )
         
         try:
             import base64
-            self.log('unpacking payload: %s' % payload_dest, logfile)
+            self.log('unpacking payload: %s' % payload_dest)
             with open(payload_dest, 'wb') as payload_file:
                 payload_file.write(base64.b64decode(payload))
                 payload_file.close()
-            cmd = 'tar xf "' + payload_dest + '" -C "' + self.bundle_location + '/"'
-            self.log('Executing command: %s' % cmd, logfile)
+            cmd = 'tar xf "' + payload_dest + '" -C "' + bundle_path + '/"'
+            self.log('Executing command: %s' % cmd)
             status = os.system(cmd)
-            self.log('exit status %s' % os.WEXITSTATUS(status), logfile)
+            self.log('exit status %s' % os.WEXITSTATUS(status))
 
             # self.log('cleaning up %s' % payload_dest, logfile)
             # os.remove(payload_dest)
         
         except Exception as e:
-            self.show_exception(e)
+            self.log_exception(e)
             return False
 
-        # rsync previous models back to current models folder
-        if bundle_backup_folder:
-            prev_models_folder = os.path.join(
-                bundle_backup_folder,
-                'trained_models'
-            )
-            current_models_folder = os.path.join(
-                bundle_path,
-                'trained_models'
-            )
-            try:
-                cmd = 'rsync -ur ' + prev_models_folder + os.path.sep
-                cmd += ' ' + current_models_folder + os.path.sep
-                os.system(cmd)
-            except Exception as e:
-                self.log(e)
-
         delta = time.time() - start
-        self.log('bundle extracted to %s' % bundle_path, logfile)
-        self.log('extracting bundle took %s sec' % '{:.1f}'.format(delta), logfile)
+        self.log('bundle extracted to %s' % bundle_path)
+        self.log('extracting bundle took %s sec' % '{:.1f}'.format(delta))
 
         del payload
-
-        env_folder = os.path.join(self.bundle_location, 'miniconda3')
-        if self.install_miniconda_libs:
-            self.install_env(env_folder, logfile)
-            self.install_env_packages(env_folder, logfile)
-
-            # cmd = 'rm -rf "' + os.path.join(self.bundle_location, 'bundle', 'miniconda.package') + '"'
-            # self.log('Executing command: %s' % cmd, logfile)
-            # os.system(cmd)
+        try:
+            os.remove(payload_dest)
+        except Exception as e:
+            self.log_exception(e)
 
         try:
             with open(os.path.join(bundle_path, 'bundle_id'), 'w+') as bundle_id_file:
-                bundle_id_file.write(self.bundle_id)
+                bundle_id_file.write(self.version)
         except Exception as e:
-            self.show_exception(e)
+            self.log_exception(e)
             return False
         
-        if self.install_miniconda_libs:
-            self.log('flameTimewarpML has finished unpacking its bundle and installing required packages', logfile)
-        else:
-            self.log('flameTimewarpML has finished unpacking its bundle', logfile)
-
-        try:
-            logfile.close()
-            os.system('killall tail')
-        except:
-            pass
-
-        if self.show_complete_message(env_folder):
-            # BUNDLE CLEANUP LOGIC
-            self.log('cleaning up %s' % payload_dest, logfile)
-            os.remove(payload_dest)
-            cmd = 'rm -rf "' + os.path.join(self.bundle_location, 'bundle', 'miniconda.package') + '"'
-            self.log('Executing command: %s' % cmd, logfile)
-            os.system(cmd)
-            try:
-                with open(script_file_name, 'r+') as scriptfile:
-                    script = scriptfile.read()
-                    start_position = script.rfind('# bundle payload starts here')
-                    
-                    if script[start_position -1: start_position] == '\n':
-                        start_position += 33
-                        self.log('removing bundle from script file')
-                        scriptfile.truncate(start_position - 34)
-                    scriptfile.close()
-                    del script
-            except Exception as e:
-                self.show_exception(e)
-                return False
-
-        return True
-                    
-    def install_env(self, env_folder, logfile):
-        env_backup_folder = os.path.abspath(env_folder + '.previous')
-        if os.path.isdir(env_backup_folder):
-            try:
-                cmd = 'rm -rf "' + env_backup_folder + '"'
-                self.log('Executing command: %s' % cmd, logfile)
-                os.system(cmd)
-            except Exception as e:
-                self.show_exception(e)
-                return False
-            
-        if os.path.isdir(env_folder):
-            try:
-                cmd = 'mv "' + env_folder + '" "' + env_backup_folder + '"'
-                self.log('Executing command: %s' % cmd, logfile)
-                os.system(cmd)
-            except Exception as e:
-                self.show_exception(e)
-                return False
-
-        start = time.time()
-        self.log('installing Miniconda3...', logfile)
-        self.log('installing into %s' % env_folder, logfile)
-        
-        if sys.platform == 'darwin':
-            installer_file = os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'Miniconda3-latest-MacOSX-x86_64.sh')
-            cmd = ''
-        else:
-            installer_file = os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'Miniconda3-latest-Linux-x86_64.sh')
-            cmd = 'gnome-terminal --title=flameTimewarpML --wait -- '
-
-        cmd += '/bin/sh "' + installer_file + '" -b -p "' + env_folder + '"'
-        cmd += ' 2>&1 | tee > ' + os.path.join(self.bundle_location, 'miniconda_install.log')
-        self.log('Executing command: %s' % cmd, logfile)
-        status = os.system(cmd)
-        self.log('exit status %s' % os.WEXITSTATUS(status), logfile)
-        delta = time.time() - start
-        self.log('installing Miniconda took %s sec' % '{:.1f}'.format(delta), logfile)
-
-    def install_env_packages(self, env_folder, logfile):
-        start = time.time()
-        self.log('installing Miniconda packages...', logfile)
-
-        rc = ''
-        rc += """/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + """ shell.bash hook)"; conda activate; """
-        rc += """pip3 install -v -r """ + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') 
-        rc += """ --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cu111'\n"""
-        rc += """exit"""
-
-        cmd = ''
-        
-        tmp_bash_rc_file = os.path.join(os.path.expanduser('~'), '.tmp_bashrc')
-
-        if sys.platform == 'darwin':
-            cmd += """/bin/bash -c 'eval "$(""" + os.path.join(env_folder, 'bin', 'conda') + """ shell.bash hook)"; conda activate; """
-            cmd += 'pip3 install -r ' + os.path.join(self.bundle_location, 'bundle', 'requirements.txt') + ' --no-index --find-links '
-            cmd += os.path.join(self.bundle_location, 'bundle', 'miniconda.package', 'packages')
-            cmd += ' 2>&1 | tee > '
-            cmd += os.path.join(self.bundle_location, 'miniconda_packages_install.log')
-            cmd += "'"
-        else:
-            with open(tmp_bash_rc_file, 'w') as tmp_rcfile:
-                tmp_rcfile.write(rc)
-                tmp_rcfile.close()
-            cmd += """gnome-terminal --title=flameTimewarpML --wait -- /bin/bash --rcfile """ + tmp_bash_rc_file
-
-        self.log('Executing command: %s' % cmd, logfile)        
-        status = os.system(cmd)
-        self.log('exit status %s' % os.WEXITSTATUS(status), logfile)
-        delta = time.time() - start
-        self.log('installing Miniconda packages took %s sec' % '{:.1f}'.format(delta), logfile)
-
-        try:
-            os.remove(tmp_bash_rc_file)
-        except:
-            pass
-
-    def show_exception(self, e):
-        from PySide2 import QtWidgets
-        import traceback
-
-        msg = 'flameTimewrarpML: %s' % e
-        dmsg = pformat(traceback.format_exc())
-
-        try:
-            import flame
-        except:
-            print (msg)
-            print (dmsg)
-            return False
-        
-        def show_error_mbox():
-            mbox = QtWidgets.QMessageBox()
-            mbox.setWindowTitle('flameTimewrarpML')
-            mbox.setText(msg)
-            mbox.setDetailedText(dmsg)
-            mbox.setStyleSheet('QLabel{min-width: 800px;}')
-            mbox.exec_()
-
-        flame.schedule_idle_event(show_error_mbox)
         return True
 
-    def show_unpack_dialog(self, bundle_path):
-        from PySide2 import QtWidgets, QtCore
+    def log_exception(self, e):
+        self.log(pformat(e))
+        self.log_debug(pformat(traceback.format_exc()))
 
-        title = 'flameTimeWarpML %s ' % __version__
-        msg = title + 'is going to unpack its bundle '
-        msg += 'and run additional package installation scrips. '
-        msg += 'Check console for details.'
-
-        window = QtWidgets.QDialog()
-        window.setMinimumSize(280, 120)
-        window.setWindowTitle(title)
-        window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
-        window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        window.setStyleSheet('background-color: #313131')
-
-        screen_res = QtWidgets.QDesktopWidget().screenGeometry()
-        window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
-
-        # Spacer
-        lbl_Spacer = QtWidgets.QLabel('', window)
-        lbl_Spacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
-        lbl_Spacer.setMinimumHeight(4)
-        lbl_Spacer.setMaximumHeight(4)
-        lbl_Spacer.setAlignment(QtCore.Qt.AlignCenter)
-
-        vbox = QtWidgets.QVBoxLayout()
-        vbox.setAlignment(QtCore.Qt.AlignTop)
-
-        # Unpack Bundle Message
-
-        lbl_UnpackMessage = QtWidgets.QLabel(msg, window)
-        lbl_UnpackMessage.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_UnpackMessage.setMinimumHeight(48)
-        lbl_UnpackMessage.setAlignment(QtCore.Qt.AlignCenter)
-        lbl_UnpackMessage.setWordWrap(True)
-        vbox.addWidget(lbl_UnpackMessage)
-
-        # Install Miniconda and Libs checkbox
-        def toggle_install_miniconda():
-            self.install_miniconda_libs = chk_InstallMinicondaLibs.isChecked()
-
-        chk_InstallMinicondaLibs = QtWidgets.QCheckBox(
-            ' Install Miniconda3 and dependency libraries',
-            window
-        )
-        chk_InstallMinicondaLibs.setStyleSheet('QCheckBox {border: none; color: #989898; background-color: #313131}')
-        chk_InstallMinicondaLibs.setMinimumHeight(28)
-        chk_InstallMinicondaLibs.setFocusPolicy(QtCore.Qt.NoFocus)
-        chk_InstallMinicondaLibs.setCheckState(QtCore.Qt.Checked)
-        chk_InstallMinicondaLibs.stateChanged.connect(toggle_install_miniconda)
-        vbox.addWidget(chk_InstallMinicondaLibs, alignment = QtCore.Qt.AlignCenter)
-
-        # Spaces in Path label
-        lbl_SpacesInPath = QtWidgets.QLabel(
-            'Can not install if path contain spaces:', 
-            window
-            )
-        lbl_SpacesInPath.setStyleSheet('QFrame {color: #989898; background-color: #373941}')
-        lbl_SpacesInPath.setMinimumHeight(28)
-        lbl_SpacesInPath.setAlignment(QtCore.Qt.AlignCenter)
-        lbl_SpacesInPath.setVisible(False)
-        vbox.addWidget(lbl_SpacesInPath)
-
-        # Unpack Path Label
-
-        lbl_UnpackPath = QtWidgets.QLabel(
-            self.bundle_location, 
-            window
-            )
-        lbl_UnpackPath.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_UnpackPath.setMinimumHeight(28)
-        lbl_UnpackPath.setAlignment(QtCore.Qt.AlignCenter)
-        vbox.addWidget(lbl_UnpackPath)
-        vbox.addWidget(lbl_Spacer)
-
-        def chooseFolder():
-            result_folder = str(QtWidgets.QFileDialog.getExistingDirectory(
-                window, 
-                "Open Directory", 
-                self.bundle_location, 
-                QtWidgets.QFileDialog.ShowDirsOnly))
-
-            if result_folder =='':
-                return
-
-            if ' ' in result_folder:
-                lbl_SpacesInPath.setVisible(True)
-                window.adjustSize()
-            else:
-                lbl_SpacesInPath.setVisible(False)
-                window.adjustSize()
-            
-            self.bundle_location = result_folder
-            lbl_UnpackPath.setText(self.bundle_location)
-        #    self.prefs['working_folder'] = self.working_folder
-
-        # Unpack, Location and Cancel Buttons
-        hbox_Create = QtWidgets.QHBoxLayout()
-
-        select_btn = QtWidgets.QPushButton('Unpack', window)
-        select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
-        select_btn.setMinimumSize(128, 28)
-        select_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
-        select_btn.clicked.connect(window.accept)
-        select_btn.setAutoDefault(True)
-        select_btn.setDefault(True)
-
-        cancel_btn = QtWidgets.QPushButton('Cancel', window)
-        cancel_btn.setFocusPolicy(QtCore.Qt.NoFocus)
-        cancel_btn.setMinimumSize(128, 28)
-        cancel_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
-        cancel_btn.clicked.connect(window.reject)
-
-        dest_btn = QtWidgets.QPushButton('Choose Dest', window)
-        dest_btn.setFocusPolicy(QtCore.Qt.NoFocus)
-        dest_btn.setMinimumSize(128, 28)
-        dest_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
-        dest_btn.clicked.connect(chooseFolder)
-
-        hbox_Create.addWidget(cancel_btn)
-        hbox_Create.addWidget(dest_btn)
-        hbox_Create.addWidget(select_btn)
-
-        vbox.addLayout(hbox_Create)
-
-        window.setLayout(vbox)
-
-        if window.exec_():
-            if ' ' in self.bundle_location:
-                self.show_install_spaces_message()
-                return False
-            self.prefs_global['bundle_location'] = self.bundle_location
-            self.save_prefs()
-            return True
-        else:
-            return False
-
-    def show_complete_message(self, bundle_path):
-        from PySide2 import QtWidgets
-
-        self.clean_status = False
-        self.clean_wait_flag = True
-
-        msg = 'flameTimewarpML has finished unpacking its bundle and required packages. Would you like to clean the bundle and installer files?'
-        dmsg = 'Bundle location: %s\n' % self.bundle_location
-        dmsg += '* Flame scipt written by Andrii Toloshnyy (c) 2021\n'
-        dmsg += '* RIFE: Real-Time Intermediate Flow Estimation for Video Frame Interpolation:\n'
-        dmsg += '  Huang, Zhewei and Zhang, Tianyuan and Heng, Wen and Shi, Boxin and Zhou, Shuchang, '
-        dmsg += 'arXiv preprint arXiv:2011.06294, 2020\n'
-        dmsg += '* Miniconda3: (c) 2017 Continuum Analytics, Inc. (dba Anaconda, Inc.). https://www.anaconda.com. All Rights Reserved\n'
-        dmsg += '* For info on additional packages see miniconda_packages_install.log'
-
-        try:
-            import flame
-        except:
-            print (msg)
-            print (dmsg)
-            return status
+    def sanitize_name(self, name_to_sanitize):
+        if name_to_sanitize is None:
+            return None
         
-        def show_mbox():
-            mbox = QtWidgets.QMessageBox()
-            mbox.setWindowTitle('flameTimewrarpML')
-            mbox.setText(msg)
-            mbox.setDetailedText(dmsg)
-            # mbox.setStyleSheet('QLabel{min-width: 400px;}')
-            mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
-            
-            btn_Clean = mbox.button(QtWidgets.QMessageBox.Cancel)
-            btn_Clean.setText('Clean')
-            btn_Clean.setAutoDefault(True)
-            btn_Clean.setDefault(True)
+        stripped_name = name_to_sanitize.strip()
+        exp = re.compile(u'[^\w\.-]', re.UNICODE)
 
-            btn_Keep = mbox.button(QtWidgets.QMessageBox.Ok)
-            btn_Keep.setText('Keep')
-            mbox.exec_()
-            if mbox.clickedButton() == btn_Clean:
-                self.clean_status = True
-                self.clean_wait_flag = False
-            else:
-                self.clean_status = False
-                self.clean_wait_flag = False
-
-        flame.schedule_idle_event(show_mbox)
-        while self.clean_wait_flag:
-            time.sleep(0.1)
-
-        return self.clean_status
-
-    def show_turncated_message(self):
-        from PySide2 import QtWidgets
-
-        script_file_name, ext = os.path.splitext(os.path.abspath(__file__))
-        script_file_name += '.py'
-
-        msg = 'flameTimewarpML bundle payload has already been turncated during previous install.'
-        msg += ' Please copy the original file and start again.'
-        msg += ' Script file location:\n%s' % script_file_name
-
-        try:
-            import flame
-        except:
-            print (msg)
-            print (dmsg)
-            return False
-        
-        def show_mbox():
-            mbox = QtWidgets.QMessageBox()
-            mbox.setWindowTitle('flameTimewrarpML')
-            mbox.setText(msg)
-            # mbox.setDetailedText(dmsg)
-            # mbox.setStyleSheet('QLabel{min-width: 400px;}')
-            mbox.exec_()
-
-        flame.schedule_idle_event(show_mbox)
-        return True
-
-    def show_install_spaces_message(self):
-        from PySide2 import QtWidgets, QtCore
-
-        script_file_name, ext = os.path.splitext(os.path.abspath(__file__))
-        script_file_name += '.py'
-
-        msg = 'Cannot install if path contain spaces. Install dialog will appear again once you restart Flame'
-
-        try:
-            import flame
-        except:
-            print (msg)
-            print (dmsg)
-            return False
-        
-        def show_mbox():
-            mbox = QtWidgets.QMessageBox()
-            mbox.setWindowTitle('flameTimewrarpML')
-            mbox.setText(msg)
-            mbox.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
-            # mbox.setDetailedText(dmsg)
-            # mbox.setStyleSheet('QLabel{min-width: 400px;}')
-            mbox.exec_()
-
-        flame.schedule_idle_event(show_mbox)
-        return True
-
-    def show_error_msg(self, msg, dmsg = ''):
-        from PySide2 import QtWidgets
-
-        try:
-            import flame
-        except:
-            print (msg)
-            print (dmsg)
-            return False
-        
-        def show_error_mbox():
-            mbox = QtWidgets.QMessageBox()
-            mbox.setWindowTitle(self.bundle_name)
-            mbox.setText(msg)
-            if dmsg:
-                mbox.setDetailedText(dmsg)
-            mbox.exec_()
-
-        flame.schedule_idle_event(show_error_mbox)
-        return True
+        result = exp.sub('_', stripped_name)
+        return re.sub('_\_+', '_', result)
 
 
 class flameMenuApp(object):
@@ -1290,10 +792,7 @@ class flameTimewarpML(flameMenuApp):
                 cmd_package['args'] = cmd_args
 
                 lockfile_name = hashlib.sha1(result_folder.encode()).hexdigest().upper() + '.lock'
-                lockfile_container = self.framework.bundle_path
-                if FLAMETWML_LOCKFILE_LOCATION:
-                    lockfile_container = FLAMETWML_LOCKFILE_LOCATION
-                lockfile_path = os.path.join(lockfile_container, 'locks', lockfile_name)
+                lockfile_path = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
 
                 try:
                     lockfile = open(lockfile_path, 'wb')
@@ -1715,10 +1214,7 @@ class flameTimewarpML(flameMenuApp):
                 cmd_package['args'] = cmd_args
 
                 lockfile_name = hashlib.sha1(result_folder.encode()).hexdigest().upper() + '.lock'
-                lockfile_container = self.framework.bundle_path
-                if FLAMETWML_LOCKFILE_LOCATION:
-                    lockfile_container = FLAMETWML_LOCKFILE_LOCATION
-                lockfile_path = os.path.join(lockfile_container, 'locks', lockfile_name)
+                lockfile_path = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
 
                 try:
                     lockfile = open(lockfile_path, 'wb')
@@ -2153,10 +1649,7 @@ class flameTimewarpML(flameMenuApp):
         cmd_package['args'] = cmd_args
 
         lockfile_name = hashlib.sha1(result_folder.encode()).hexdigest().upper() + '.lock'
-        lockfile_container = self.framework.bundle_path
-        if FLAMETWML_LOCKFILE_LOCATION:
-            lockfile_container = FLAMETWML_LOCKFILE_LOCATION
-        lockfile_path = os.path.join(lockfile_container, 'locks', lockfile_name)
+        lockfile_path = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
 
         try:
             lockfile = open(lockfile_path, 'wb')
@@ -2721,10 +2214,7 @@ class flameTimewarpML(flameMenuApp):
             cmd_package['args'] = cmd_args
 
             lockfile_name = hashlib.sha1(result_folder.encode()).hexdigest().upper() + '.lock'
-            lockfile_container = self.framework.bundle_path
-            if FLAMETWML_LOCKFILE_LOCATION:
-                lockfile_container = FLAMETWML_LOCKFILE_LOCATION
-            lockfile_path = os.path.join(lockfile_container, 'locks', lockfile_name)
+            lockfile_path = os.path.join(self.framework.bundle_path, 'locks', lockfile_name)
 
             try:
                 lockfile = open(lockfile_path, 'wb')
@@ -3422,7 +2912,7 @@ def app_initialized(project_name):
     app_initialized.__dict__["waitCursor"] = False
 
     if not app_framework:
-        app_framework = flameAppFramework()
+        app_framework = flameAppFramework('app_name' = app_name)
         print ('PYTHON\t: %s initializing' % app_framework.bundle_name)
     if not apps:
         load_apps(apps, app_framework)
