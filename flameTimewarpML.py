@@ -21,7 +21,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 app_name = 'flameTimewarpML'
-__version__ = 'v0.5.0.dev.001'
+__version__ = 'v0.5.0.dev.002'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -142,10 +142,24 @@ class flameAppFramework(object):
 
         self.apps = []
 
+        self.bundle_location = '/var/tmp'
+        self.bundle_path = os.path.join(
+            self.bundle_location,
+            self.bundle_name
+        )
+
+        if (sys.platform == 'darwin'):
+            if os.getenv('FLAMETWML_BUNDLE_MAC'):
+                self.bundle_location = os.path.dirname(os.getenv('FLAMETWML_BUNDLE_MAC'))
+                self.bundle_path = os.getenv('FLAMETWML_BUNDLE_MAC')
+        elif sys.platform.startswith('linux') and FLAMETWML_BUNDLE_LINUX:
+            if os.getenv('FLAMETWML_BUNDLE_LINUX'):
+                self.bundle_location = os.path.dirname(os.getenv('FLAMETWML_BUNDLE_LINUX'))
+                self.bundle_path = os.getenv('FLAMETWML_BUNDLE_LINUX')
+
         # site-packages check and payload unpack if nessesary
         self.site_packages_folder = os.path.join(
-            '/var/tmp',
-            self.bundle_name,
+            self.bundle_path,
             'site-packages'
         )
 
@@ -177,30 +191,30 @@ class flameAppFramework(object):
         prefs_global_file_path = prefix + '.prefs.json'
 
         try:
-            with open(prefs_file_path, 'w') as prefs_file:
-                json.dump(self.prefs, prefs_file)
-            self.log_debug('preferences saved to %s' % prefs_file_path)
+            with open(prefs_file_path, 'r') as prefs_file:
+                self.prefs = json.load(prefs_file)
+            self.log_debug('preferences loaded from %s' % prefs_file_path)
             self.log_debug('preferences contents:\n' + json.dumps(self.prefs, indent=4))
         except Exception as e:
-            self.log('unable to save preferences to %s' % prefs_file_path)
+            self.log('unable to load preferences from %s' % prefs_file_path)
             self.log_debug(e)
 
         try:
-            with open(prefs_user_file_path, 'w') as prefs_file:
-                json.dump(self.prefs_user, prefs_file)
-            self.log_debug('preferences saved to %s' % prefs_user_file_path)
+            with open(prefs_user_file_path, 'r') as prefs_file:
+                self.prefs_user = json.load(prefs_file)
+            self.log_debug('preferences loaded from %s' % prefs_user_file_path)
             self.log_debug('preferences contents:\n' + json.dumps(self.prefs_user, indent=4))
         except Exception as e:
-            self.log('unable to save preferences to %s' % prefs_user_file_path)
+            self.log('unable to load preferences from %s' % prefs_user_file_path)
             self.log_debug(e)
 
         try:
-            with open(prefs_global_file_path, 'w') as prefs_file:
-                json.dump(self.prefs_global, prefs_file)
-            self.log_debug('preferences saved to %s' % prefs_global_file_path)
+            with open(prefs_global_file_path, 'r') as prefs_file:
+                self.prefs_global = json.load(prefs_file)
+            self.log_debug('preferences loaded from %s' % prefs_global_file_path)
             self.log_debug('preferences contents:\n' + json.dumps(self.prefs_global, indent=4))
         except Exception as e:
-            self.log('unable to save preferences to %s' % prefs_global_file_path)
+            self.log('unable to load preferences from %s' % prefs_global_file_path)
             self.log_debug(e)
 
         return True
@@ -251,17 +265,17 @@ class flameAppFramework(object):
 
     def check_bundle_id(self):
         bundle_id_file_path = os.path.join(
-            os.path.dirname(self.site_packages_folder),
+            self.bundle_path,
             'bundle_id'
             )
         bundle_id = self.version
 
-        if (os.path.isdir(self.site_packages_folder) and os.path.isfile(bundle_id_file_path)):
+        if (os.path.isdir(self.bundle_path) and os.path.isfile(bundle_id_file_path)):
             self.log('checking existing bundle id %s' % bundle_id_file_path)
             try:
                 with open(bundle_id_file_path, 'r') as bundle_id_file:
                     if bundle_id_file.read() == bundle_id:
-                        self.log('site packages folder exists with id matching current version')
+                        self.log('bundle folder exists with id matching current version')
                         bundle_id_file.close()
                         return True
                     else:
@@ -270,11 +284,11 @@ class flameAppFramework(object):
             except Exception as e:
                 self.log(pformat(e))
                 return False
-        elif not os.path.isdir(self.site_packages_folder):
-            self.log('site packages folder does not exist: %s' % self.site_packages_folder)
+        elif not os.path.isdir(self.bundle_path):
+            self.log('bundle folder does not exist: %s' % self.bundle_path)
             return False
         elif not os.path.isfile(bundle_id_file_path):
-            self.log('site packages bundle id file does not exist: %s' % bundle_id_file_path)
+            self.log('bundle id file does not exist: %s' % bundle_id_file_path)
             return False
 
     def unpack_bundle(self, bundle_path):
@@ -602,20 +616,6 @@ class flameMenuApp(object):
 class flameTimewarpML(flameMenuApp):
     def __init__(self, framework):
         flameMenuApp.__init__(self, framework)
-        
-        self.env_folder = os.path.join(self.framework.bundle_location, 'miniconda3')
-        self.check_bundle_id = True
-
-        if (sys.platform == 'darwin') and FLAMETWML_MINICONDA_MAC:
-            self.env_folder = FLAMETWML_MINICONDA_MAC
-            self.check_bundle_id = False
-        elif sys.platform.startswith('linux') and FLAMETWML_MINICONDA_LINUX:
-            self.env_folder = FLAMETWML_MINICONDA_LINUX
-            self.check_bundle_id = False
-        
-        self.gnome_terminal = self.framework.gnome_terminal
-
-        self.loops = []
         self.threads = True
 
         if not self.prefs.master.get(self.name):
@@ -635,16 +635,6 @@ class flameTimewarpML(flameMenuApp):
 
         self.prefs['version'] = __version__
         self.framework.save_prefs()
-
-        if os.getenv('FLAMETWML_DEFAULT_WORK_FOLDER'):
-            self.prefs['working_folder'] = os.getenv('FLAMETWML_DEFAULT_WORK_FOLDER')
-
-        if os.getenv('FLAMETWML_WORK_FOLDER'):
-            self.prefs['working_folder'] = os.getenv('FLAMETWML_WORK_FOLDER')
-
-        self.working_folder = self.prefs.get('working_folder')
-        if not os.path.isdir(self.working_folder):
-            self.working_folder = '/var/tmp'
 
         # Module defaults
         self.new_speed = 1
@@ -688,6 +678,7 @@ class flameTimewarpML(flameMenuApp):
         menu = {'actions': []}
         menu['name'] = self.menu_group_name
 
+        '''
         menu_item = {}
         menu_item['name'] = 'Slow Down clip(s) with ML'
         menu_item['execute'] = self.slowmo
@@ -708,9 +699,10 @@ class flameTimewarpML(flameMenuApp):
         menu_item['isVisible'] = scope_clip
         menu_item['waitCursor'] = False
         menu['actions'].append(menu_item)
-
+        '''
+        
         menu_item = {}
-        menu_item['name'] = "Timewarp from Flame's TW effect (beta)"
+        menu_item['name'] = "Timewarp"
         menu_item['execute'] = self.fltw
         menu_item['isVisible'] = scope_clip
         menu_item['waitCursor'] = False
@@ -2025,6 +2017,9 @@ class flameTimewarpML(flameMenuApp):
             return {}
 
     def fltw(self, selection):
+        import flame
+        import xml.etree.ElementTree as ET
+
         def sequence_message():
             from PySide2 import QtWidgets, QtCore
             msg = 'Please select single-track clips with no versions or edits'
@@ -2034,20 +2029,12 @@ class flameTimewarpML(flameMenuApp):
             mbox.exec_()
         
         def effect_message():
-            from PySide2 import QtWidgets, QtCore
-            msg = 'Please select clips with Timewarp Timeline FX'
-            mbox = QtWidgets.QMessageBox()
-            mbox.setWindowTitle('flameTimewrarpML')
-            mbox.setText(msg)
-            mbox.exec_()
-
-        def bake_message():
-            from PySide2 import QtWidgets, QtCore
-            msg = 'Please bake your keyframes so there is a keyframe at every frame'
-            mbox = QtWidgets.QMessageBox()
-            mbox.setWindowTitle('flameTimewrarpML')
-            mbox.setText(msg)
-            mbox.exec_()
+            flame.messages.show_in_dialog(
+                title = 'flameTimewrarpML',
+                message = 'Please select clips with Timewarp Timeline FX',
+                type = 'error',
+                buttons = ['Ok']
+            )
 
         def parse_message(e):
             from PySide2 import QtWidgets, QtCore
@@ -2078,9 +2065,6 @@ class flameTimewarpML(flameMenuApp):
         verified_clips = []
         temp_setup_path = '/var/tmp/temporary_tw_setup.timewarp_node'
 
-        import flame
-        import xml.etree.ElementTree as ET
-
         for clip in selection:
             if isinstance(clip, (flame.PyClip)):
                 if len(clip.versions) != 1:
@@ -2091,6 +2075,8 @@ class flameTimewarpML(flameMenuApp):
                     return
                 if len (clip.versions[0].tracks[0].segments) != 1:
                     sequence_message()
+
+                print (flame.PyClip.get_wiretap_node_id(clip))
                 
                 effects = clip.versions[0].tracks[0].segments[0].effects
                 if not effects:
