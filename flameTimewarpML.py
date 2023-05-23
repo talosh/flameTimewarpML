@@ -14,6 +14,14 @@ import atexit
 import hashlib
 import pickle
 
+from adsk.libwiretapPythonClientAPI import WireTapClient
+from adsk.libwiretapPythonClientAPI import WireTapServerHandle
+from adsk.libwiretapPythonClientAPI import WireTapNodeHandle
+from adsk.libwiretapPythonClientAPI import WireTapStr
+from adsk.libwiretapPythonClientAPI import WireTapInt
+from adsk.libwiretapPythonClientAPI import WireTapClipFormat
+
+
 from pprint import pprint
 from pprint import pformat
 
@@ -2018,7 +2026,18 @@ class flameTimewarpML(flameMenuApp):
 
     def fltw(self, selection):
         import flame
-        import xml.etree.ElementTree as ET
+        sys.path.insert(0, self.framework.site_packages_folder)
+        import numpy as np
+        del sys.path[0]
+        from PySide2 import QtWidgets, QtCore, QtGui
+        class WireTapException(Exception):
+            def __init__(self, msg):
+                flame.messages.show_in_dialog(
+                    title = 'flameTimewrarpML',
+                    message = msg,
+                    type = 'error',
+                    buttons = ['Ok']
+                )
 
         def sequence_message():
             from PySide2 import QtWidgets, QtCore
@@ -2061,9 +2080,24 @@ class flameTimewarpML(flameMenuApp):
                     d[x.tag]=[]
                 d[x.tag].append(dictify(x,False))
             return d
+
+        def resize_nearest(src, new_shape):
+            # Compute scale factors
+            row_scale = src.shape[0] / new_shape[0]
+            col_scale = src.shape[1] / new_shape[1]
+
+            # Compute coordinates
+            row_coords = (np.arange(new_shape[0]) * row_scale).round().astype(int)
+            col_coords = (np.arange(new_shape[1]) * col_scale).round().astype(int)
+
+            # Index into original array with these coordinates
+            return src[row_coords][:, col_coords]
         
         verified_clips = []
         temp_setup_path = '/var/tmp/temporary_tw_setup.timewarp_node'
+
+        progress = self.publish_progress_dialog()
+        progress.show()
 
         for clip in selection:
             if isinstance(clip, (flame.PyClip)):
@@ -2076,43 +2110,115 @@ class flameTimewarpML(flameMenuApp):
                 if len (clip.versions[0].tracks[0].segments) != 1:
                     sequence_message()
 
-                print (flame.PyClip.get_wiretap_node_id(clip))
+                clip_matched = (clip.versions[0].tracks[0].segments[0].match(clip.parent, include_timeline_fx = False))
+                clip_matched.commit()
+
+                # test segment
+                # print (flame.PyClip.get_wiretap_node_id(clip))
+                # print (flame.PyClip.get_wiretap_node_id(clip.parent))
+                server_handle = WireTapServerHandle('localhost')
+                clip_node_id = flame.PyClip.get_wiretap_node_id(clip_matched)
+                clip_node_handle = WireTapNodeHandle(server_handle, clip_node_id)
+                num_frames = WireTapInt()
+
+                if not clip_node_handle.getNumFrames(num_frames):
+                    raise WireTapException(
+                        "Unable to obtain number of frames: %s." % clip_node_handle.lastError()
+                    )
+
                 
+                fmt = WireTapClipFormat()
+                if not clip_node_handle.getClipFormat(fmt):
+                    raise WireTapException("Unable to obtain clip format: %s." % clip.lastError())
+                                                
+                buff = "0" * fmt.frameBufferSize()
+
+                # pprint (dir(fmt))
+                # pprint(fmt.formatTag())
+
+                # new clip section
+                # ********
+
+                library = flame.projects.current_project.create_shared_library('twml')
+                parent_node_handle = WireTapNodeHandle(server_handle, flame.PyClip.get_wiretap_node_id(library))
+                new_clip_node_handle = WireTapNodeHandle()
+
+                if not parent_node_handle.createClipNode(
+                    "MyNewClip",  # display name
+                    fmt,  # clip format
+                    "CLIP",  # extended (server-specific) type
+                    new_clip_node_handle,  # created node returned here
+                ):
+                    raise WireTapException(
+                        "Unable to create clip node: %s." % parent_node_handle.lastError()
+                    )
+                
+                if not new_clip_node_handle.setNumFrames(int(num_frames)):
+                    raise WireTapException(
+                        "Unable to set the number of frames: %s." % clip_node_handle.lastError()
+                    )
+
+                new_fmt = WireTapClipFormat()
+                if not new_clip_node_handle.getClipFormat(new_fmt):
+                    raise WireTapException(
+                        "Unable to obtain clip format: %s." % clip_node_handle.lastError()
+                    )
+
+                # end of new clip section
+                # ********
+
+
+                for frame_number in range(0, num_frames):
+                    print("Reading frame %i." % frame_number)
+                    if not clip_node_handle.readFrame(frame_number, buff, fmt.frameBufferSize()):
+                        raise WireTapException(
+                            "Unable to obtain read frame %i: %s." % (frame_number, clip.lastError())
+                        )
+                    print("Successfully read frame %i." % frame_number)
+
+                    arr = np.frombuffer(buff.encode(), dtype=np.float16)[:-8]
+                    arr = arr.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
+                    frame = ((arr - np.min(arr)) / (np.max(arr) - np.min(arr)) * 255).astype(np.uint8)
+                    resized_img = resize_nearest(frame, (800, 600))
+                    resized_img = np.flip(resized_img, axis=0)
+                    # resized_img = np.flip(resized_img, axis=1)
+                    resized_img = np.flip(resized_img, axis=2)
+                    resized_img = np.ascontiguousarray(resized_img)
+                    height, width, channels = resized_img.shape
+                    bytesPerLine = channels * width
+                    img = QtGui.QImage(resized_img.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888).rgbSwapped()
+                    pixmap = QtGui.QPixmap.fromImage(img)
+                    progress.set_progress(pixmap)
+                    # lbl.setPixmap(pixmap)
+
+                    if not new_clip_node_handle.writeFrame(
+                        frame_number, buff, new_fmt.frameBufferSize()
+                    ):
+                        raise WireTapException(
+                            "Unable to obtain write frame %i: %s."
+                            % (frame_number, clip_node_handle.lastError())
+                        )
+                    print("Successfully wrote frame %i." % frame_number)
+
+                library.acquire_exclusive_access()
+                library.open()
+                if library.clips:
+                    flame.media_panel.move(source_entries = library.clips[0], destination = clip.parent, duplicate_action = 'add')
+                flame.delete(library)
+                flame.delete(clip_matched)
+
+                progress.hide()
+
                 effects = clip.versions[0].tracks[0].segments[0].effects
                 if not effects:
                     effect_message()
                     return
-
-                verified = False
-                for effect in effects:
-                    if effect.type == 'Timewarp':
-                        effect.save_setup(temp_setup_path)
-                        with open(temp_setup_path, 'r') as tw_setup_file:
-                            tw_setup_string = tw_setup_file.read()
-                            tw_setup_file.close()
-                            
-                        tw_setup_xml = ET.fromstring(tw_setup_string)
-                        tw_setup = dictify(tw_setup_xml)
-                        try:
-                            start = int(tw_setup['Setup']['Base'][0]['Range'][0]['Start'])
-                            end = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
-                            TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
-                            TW_SpeedTiming_size = int(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
-                            TW_RetimerMode = int(tw_setup['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
-                        except Exception as e:
-                            parse_message(e)
-                            return
-
-                        # pprint (tw_setup)
-                                
-                        verified = True
                 
-                if not verified:
-                    effect_message()
-                    return
 
-                verified_clips.append((clip, tw_setup_string))
-        
+
+                return
+
+
         os.remove(temp_setup_path)
 
         result = self.fltw_dialog()
@@ -2823,6 +2929,103 @@ class flameTimewarpML(flameMenuApp):
                         time.sleep(2)
                         for i in range(5):
                             os.system(cmd)
+
+    def publish_progress_dialog(self):
+        from sgtk.platform.qt import QtCore, QtGui
+        
+        class Ui_Progress(object):
+            def setupUi(self, Progress):
+                Progress.setObjectName("Progress")
+                Progress.resize(211, 50)
+                Progress.setStyleSheet("#Progress {background-color: #181818;} #frame {background-color: rgb(0, 0, 0, 20); border: 1px solid rgb(255, 255, 255, 20); border-radius: 5px;}\n")
+                self.horizontalLayout_2 = QtGui.QHBoxLayout(Progress)
+                self.horizontalLayout_2.setSpacing(0)
+                self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
+                self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+                self.frame = QtGui.QFrame(Progress)
+                self.frame.setFrameShape(QtGui.QFrame.StyledPanel)
+                self.frame.setFrameShadow(QtGui.QFrame.Raised)
+                self.frame.setObjectName("frame")
+
+                self.horizontalLayout = QtGui.QHBoxLayout(self.frame)
+                self.horizontalLayout.setSpacing(4)
+                self.horizontalLayout.setContentsMargins(4, 4, 4, 4)
+                self.horizontalLayout.setObjectName("horizontalLayout")
+                self.label = QtGui.QLabel(self.frame)
+                self.label.setMinimumSize(QtCore.QSize(640, 480))
+                self.label.setAlignment(QtCore.Qt.AlignCenter)
+                self.label.setStyleSheet("color: #989898; border: 2px solid #4679A4; border-radius: 20px;") 
+                # self.label.setText('[K]')
+                # self.label.setPixmap(QtGui.QPixmap(":/tk_flame_basic/shotgun_logo_blue.png"))
+                self.label.setScaledContents(True)
+                self.label.setObjectName("label")
+                self.horizontalLayout.addWidget(self.label)
+                self.verticalLayout = QtGui.QVBoxLayout()
+                self.verticalLayout.setObjectName("verticalLayout")
+
+                self.progress_header = QtGui.QLabel(self.frame)
+                self.progress_header.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft)
+                self.progress_header.setObjectName("progress_header")
+                self.progress_header.setStyleSheet("#progress_header {font-size: 10px; qproperty-alignment: \'AlignBottom | AlignLeft\'; font-weight: bold; font-family: Open Sans; font-style: Regular; color: #878787;}")
+
+                self.verticalLayout.addWidget(self.progress_header)
+                self.progress_message = QtGui.QLabel(self.frame)
+                self.progress_message.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
+                self.progress_message.setObjectName("progress_message")
+                self.progress_message.setStyleSheet("#progress_message {font-size: 10px; qproperty-alignment: \'AlignTop | AlignLeft\'; font-family: Open Sans; font-style: Regular; color: #58595A;}")
+                self.verticalLayout.addWidget(self.progress_message)
+                self.horizontalLayout.addLayout(self.verticalLayout)
+                self.horizontalLayout_2.addWidget(self.frame)
+
+                self.retranslateUi(Progress)
+                QtCore.QMetaObject.connectSlotsByName(Progress)
+
+            def retranslateUi(self, Progress):
+                Progress.setWindowTitle(QtGui.QApplication.translate("Progress", "Form", None, QtGui.QApplication.UnicodeUTF8))
+                self.progress_header.setText(QtGui.QApplication.translate("Progress", "Timewarp ML", None, QtGui.QApplication.UnicodeUTF8))
+                self.progress_message.setText(QtGui.QApplication.translate("Progress", "Reading images....", None, QtGui.QApplication.UnicodeUTF8))
+
+        class Progress(QtGui.QWidget):
+            """
+            Overlay widget that reports toolkit bootstrap progress to the user.
+            """
+
+            PROGRESS_HEIGHT = 640
+            PROGRESS_WIDTH = 960
+            PROGRESS_PADDING = 48
+
+            def __init__(self):
+                """
+                Constructor
+                """
+                # first, call the base class and let it do its thing.
+                QtGui.QWidget.__init__(self)
+
+                # now load in the UI that was created in the UI designer
+                self.ui = Ui_Progress()
+                self.ui.setupUi(self)
+
+                # make it frameless and have it stay on top
+                # self.setWindowFlags(
+                #    QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.X11BypassWindowManagerHint
+                # )
+
+                # place it in the lower left corner of the primary screen
+                primary_screen = QtGui.QApplication.desktop().primaryScreen()
+                rect_screen = QtGui.QApplication.desktop().availableGeometry(primary_screen)
+
+                self.setGeometry(
+                    ( rect_screen.left() + rect_screen.right() ) // 2 - self.PROGRESS_WIDTH // 2, 
+                    ( rect_screen.bottom() - rect_screen.top() ) // 2 - self.PROGRESS_PADDING,
+                    self.PROGRESS_WIDTH,
+                    self.PROGRESS_HEIGHT
+                )
+
+            def set_progress(self, pixmap):
+                self.ui.label.setPixmap(pixmap)
+                QtGui.QApplication.processEvents()
+
+        return Progress()
 
 
 # --- FLAME STARTUP SEQUENCE ---
