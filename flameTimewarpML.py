@@ -765,23 +765,23 @@ class flameTimewarpML(flameMenuApp):
                 'QPushButton::menu-indicator {subcontrol-origin: padding; subcontrol-position: center right}'
                 'QToolTip {color: rgb(170, 170, 170); background-color: rgb(71, 71, 71); border: 10px solid rgb(71, 71, 71)}')
 
-        """
-        Overlay widget that reports toolkit bootstrap progress to the user.
-        """
+        def __init__(self, selection, **kwargs):
+            self.mode = kwargs.get('mode', 'Timewarp')
 
-        PROGRESS_HEIGHT = 640
-        PROGRESS_WIDTH = 960
-        PROGRESS_PADDING = 48
-
-        def __init__(self, selection):
-            W = 1280
-            H = 720
+            try:
+                H = selection[0].height
+                W = selection[0].width
+            except:
+                W = 1280
+                H = 720
 
             super().__init__()
 
             # now load in the UI that was created in the UI designer
             self.ui = self.Ui_Progress()
             self.ui.setupUi(self)
+
+            self.ui.stripe_label.setText(self.mode)
 
             # Record the mouse position on a press event.
             self.mousePressPos = None
@@ -882,6 +882,12 @@ class flameTimewarpML(flameMenuApp):
 
         # self.scan_trained_models_folder()
 
+    def __getattr__(self, name):
+        def method(*args, **kwargs):
+            if name == 'Timewarp':
+                return self.Progress(args[0], parent = self, mode = 'Timewarp')
+        return method
+
     def build_menu(self):
         def scope_clip(selection):
             import flame
@@ -928,7 +934,7 @@ class flameTimewarpML(flameMenuApp):
         
         menu_item = {}
         menu_item['name'] = "Timewarp"
-        menu_item['execute'] = self.Progress
+        menu_item['execute'] = self.Timewarp
         menu_item['isVisible'] = scope_clip
         menu_item['waitCursor'] = False
         menu['actions'].append(menu_item)
@@ -2243,9 +2249,6 @@ class flameTimewarpML(flameMenuApp):
 
     def fltw(self, selection):
         import flame
-
-        progress = self.publish_progress_dialog()
-        progress.show()
 
         sys.path.insert(0, self.framework.site_packages_folder)
         import numpy as np
