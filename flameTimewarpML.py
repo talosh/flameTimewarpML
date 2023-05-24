@@ -14,8 +14,21 @@ import atexit
 import hashlib
 import pickle
 
+from PySide2 import QtWidgets, QtCore, QtGui
+
+
 from pprint import pprint
 from pprint import pformat
+
+
+
+'''
+from adsk.libwiretapPythonClientAPI import WireTapClient
+from adsk.libwiretapPythonClientAPI import WireTapServerHandle
+from adsk.libwiretapPythonClientAPI import WireTapNodeHandle
+from adsk.libwiretapPythonClientAPI import WireTapClipFormat
+from adsk.libwiretapPythonClientAPI import WireTapInt
+'''
 
 # Configurable settings
 menu_group_name = 'Timewarp ML'
@@ -614,6 +627,218 @@ class flameMenuApp(object):
 
 
 class flameTimewarpML(flameMenuApp):
+
+    class Progress(QtWidgets.QWidget):
+
+        class Ui_Progress(object):
+            def setupUi(self, Progress):
+                Progress.setObjectName("Progress")
+                Progress.setStyleSheet("#Progress {background-color: #242424;} #frame {border: 1px solid #474747; border-radius: 5px;}\n")
+
+                self.verticalLayout = QtWidgets.QVBoxLayout(Progress)  # Change from horizontal layout to vertical layout
+                self.verticalLayout.setSpacing(0)
+                self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+                self.verticalLayout.setObjectName("verticalLayout")
+
+                # Create a new widget for the stripe at the top
+                self.stripe_widget = QtWidgets.QWidget(Progress)
+                self.stripe_widget.setStyleSheet("background-color: #474747;")
+                self.stripe_widget.setFixedHeight(24)  # Adjust this value to change the height of the stripe
+
+                # Create a label inside the stripe widget
+                self.stripe_label = QtWidgets.QLabel("Your text here")  # Replace this with the text you want on the stripe
+                self.stripe_label.setStyleSheet("color: #cbcbcb;")  # Change this to set the text color
+
+                # Create a layout for the stripe widget and add the label to it
+                stripe_layout = QtWidgets.QHBoxLayout()
+                stripe_layout.addWidget(self.stripe_label)
+                stripe_layout.addStretch(1)
+                stripe_layout.setContentsMargins(18, 0, 0, 0)  # This will ensure the label fills the stripe widget
+
+                # Set the layout to stripe_widget
+                self.stripe_widget.setLayout(stripe_layout)
+
+                # Add the stripe widget to the top of the main window's layout
+                self.verticalLayout.addWidget(self.stripe_widget)
+                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
+
+                self.src_horisontal_layout = QtWidgets.QHBoxLayout(Progress)  # Change from horizontal layout to vertical layout
+                self.src_horisontal_layout.setSpacing(0)
+                self.src_horisontal_layout.setContentsMargins(0, 0, 0, 0)
+                self.src_horisontal_layout.setObjectName("srcHorisontalLayout")
+
+                self.src_frame_one = QtWidgets.QFrame(Progress)
+                self.src_frame_one.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.src_frame_one.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.src_frame_one.setObjectName("frame")
+
+                self.src_frame_two = QtWidgets.QFrame(Progress)
+                self.src_frame_two.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.src_frame_two.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.src_frame_two.setObjectName("frame")
+
+                self.src_horisontal_layout.addWidget(self.src_frame_one)
+                self.src_horisontal_layout.addWidget(self.src_frame_two)
+
+                self.verticalLayout.addLayout(self.src_horisontal_layout)
+                self.verticalLayout.setStretchFactor(self.src_horisontal_layout, 4)
+
+                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
+
+                self.int_horisontal_layout = QtWidgets.QHBoxLayout(Progress)  # Change from horizontal layout to vertical layout
+                self.int_horisontal_layout.setSpacing(0)
+                self.int_horisontal_layout.setContentsMargins(0, 0, 0, 0)
+                self.int_horisontal_layout.setObjectName("intHorisontalLayout")
+
+                self.int_frame_flow = QtWidgets.QFrame(Progress)
+                self.int_frame_flow.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.int_frame_flow.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.int_frame_flow.setObjectName("frame")
+
+                self.int_frame_wrp1 = QtWidgets.QFrame(Progress)
+                self.int_frame_wrp1.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.int_frame_wrp1.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.int_frame_wrp1.setObjectName("frame")
+
+                self.int_frame_wrp2 = QtWidgets.QFrame(Progress)
+                self.int_frame_wrp2.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.int_frame_wrp2.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.int_frame_wrp2.setObjectName("frame")
+
+                self.int_frame_mix = QtWidgets.QFrame(Progress)
+                self.int_frame_mix.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.int_frame_mix.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.int_frame_mix.setObjectName("frame")
+
+                self.int_horisontal_layout.addWidget(self.int_frame_flow)
+                self.int_horisontal_layout.addWidget(self.int_frame_wrp1)
+                self.int_horisontal_layout.addWidget(self.int_frame_wrp2)
+                self.int_horisontal_layout.addWidget(self.int_frame_mix)
+
+                self.verticalLayout.addLayout(self.int_horisontal_layout)
+                self.verticalLayout.setStretchFactor(self.int_horisontal_layout, 2)
+
+                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
+
+                self.res_frame = QtWidgets.QFrame(Progress)
+                self.res_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.res_frame.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.res_frame.setObjectName("frame")
+                self.verticalLayout.addWidget(self.res_frame)
+                self.verticalLayout.setStretchFactor(self.res_frame, 8)
+
+                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
+
+
+                # Create a new horizontal layout for the bottom of the window
+                bottom_layout = QtWidgets.QHBoxLayout()
+
+                # Add a close button to the bottom layout
+                self.close_button = QtWidgets.QPushButton("Close")
+                self.close_button.clicked.connect(Progress.close)
+                self.close_button.setContentsMargins(10, 4, 4, 4)
+                self.set_button_style(self.close_button)
+                bottom_layout.addWidget(self.close_button)
+
+                # Add some stretch to the bottom layout to push the close button to the left
+                bottom_layout.addStretch(1)
+
+                # Add the bottom layout to the main layout
+                self.verticalLayout.addLayout(bottom_layout)
+
+                self.retranslateUi(Progress)
+                QtCore.QMetaObject.connectSlotsByName(Progress)
+
+            def retranslateUi(self, Progress):
+                Progress.setWindowTitle("Form")
+                # self.progress_header.setText("Timewarp ML")
+                # self.progress_message.setText("Reading images....")
+
+            def set_button_style(self, button):
+                button.setMinimumSize(QtCore.QSize(150, 28))
+                button.setMaximumSize(QtCore.QSize(150, 28))
+                button.setFocusPolicy(QtCore.Qt.NoFocus)
+                button.setStyleSheet('QPushButton {color: rgb(154, 154, 154); background-color: rgb(58, 58, 58); border: none; font: 14px}'
+                'QPushButton:hover {border: 1px solid rgb(90, 90, 90)}'
+                'QPushButton:pressed {color: rgb(159, 159, 159); background-color: rgb(66, 66, 66); border: 1px solid rgb(90, 90, 90)}'
+                'QPushButton:disabled {color: rgb(116, 116, 116); background-color: rgb(58, 58, 58); border: none}'
+                'QPushButton::menu-indicator {subcontrol-origin: padding; subcontrol-position: center right}'
+                'QToolTip {color: rgb(170, 170, 170); background-color: rgb(71, 71, 71); border: 10px solid rgb(71, 71, 71)}')
+
+        """
+        Overlay widget that reports toolkit bootstrap progress to the user.
+        """
+
+        PROGRESS_HEIGHT = 640
+        PROGRESS_WIDTH = 960
+        PROGRESS_PADDING = 48
+
+        def __init__(self, selection):
+            W = 1280
+            H = 720
+
+            super().__init__()
+
+            # now load in the UI that was created in the UI designer
+            self.ui = self.Ui_Progress()
+            self.ui.setupUi(self)
+
+            # Record the mouse position on a press event.
+            self.mousePressPos = None
+
+            # make it frameless and have it stay on top
+            self.setWindowFlags(
+                QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint
+            )
+
+
+            desktop = QtWidgets.QApplication.desktop()
+            screen_geometry = desktop.screenGeometry(desktop.primaryScreen())
+
+            max_width = screen_geometry.width() * 0.8
+            max_height = screen_geometry.height() * 0.8
+
+            desired_width = W  # or whatever the aspect ratio calculation yields
+            desired_height = 1.89 * H  # or whatever the aspect ratio calculation yields
+
+            scale_factor = min(max_width / desired_width, max_height / desired_height)
+            scaled_width = desired_width * scale_factor
+            scaled_height = desired_height * scale_factor
+
+            # Set the window's dimensions
+            self.setGeometry(0, 0, scaled_width, scaled_height)
+            # Move the window to the center of the screen
+            screen_center = screen_geometry.center()
+            self.move(screen_center.x() - scaled_width // 2, screen_center.y() - scaled_height // 2 - 100)
+            self.show()
+
+        def set_progress(self, pixmap):
+            self.ui.label.setPixmap(pixmap)
+            QtWidgets.QApplication.processEvents()
+
+        def mousePressEvent(self, event):
+            # Record the position at which the mouse was pressed.
+            self.mousePressPos = event.globalPos()
+            super().mousePressEvent(event)
+
+        def mouseMoveEvent(self, event):
+            if self.mousePressPos is not None:
+                # Calculate the new position of the window.
+                newPos = self.pos() + (event.globalPos() - self.mousePressPos)
+                # Move the window to the new position.
+                self.move(newPos)
+                # Update the position at which the mouse was pressed.
+                self.mousePressPos = event.globalPos()
+            super().mouseMoveEvent(event)
+
+        def mouseReleaseEvent(self, event):
+            self.mousePressPos = None
+            super().mouseReleaseEvent(event)
+
+        def closeEvent(self, event):
+            self.deleteLater()
+            super().closeEvent(event)
+
     def __init__(self, framework):
         flameMenuApp.__init__(self, framework)
         self.threads = True
@@ -703,7 +928,7 @@ class flameTimewarpML(flameMenuApp):
         
         menu_item = {}
         menu_item['name'] = "Timewarp"
-        menu_item['execute'] = self.fltw
+        menu_item['execute'] = self.Progress
         menu_item['isVisible'] = scope_clip
         menu_item['waitCursor'] = False
         menu['actions'].append(menu_item)
@@ -2018,6 +2243,10 @@ class flameTimewarpML(flameMenuApp):
 
     def fltw(self, selection):
         import flame
+
+        progress = self.publish_progress_dialog()
+        progress.show()
+
         sys.path.insert(0, self.framework.site_packages_folder)
         import numpy as np
         del sys.path[0]
@@ -2079,126 +2308,106 @@ class flameTimewarpML(flameMenuApp):
         progress = self.publish_progress_dialog()
         progress.show()
 
-        for clip in selection:
-            if isinstance(clip, (flame.PyClip)):
-                if len(clip.versions) != 1:
-                    sequence_message()
-                    return
-                if len (clip.versions[0].tracks) != 1:
-                    sequence_message()
-                    return
-                if len (clip.versions[0].tracks[0].segments) != 1:
-                    sequence_message()
+        if not selection:
+            sequence_message()
+            return
+        clip = selection[0]
+        if not isinstance(clip, (flame.PyClip)):
+            sequence_message()
+            return
+        if len(clip.versions) != 1:
+            sequence_message()
+            return
+        if len (clip.versions[0].tracks) != 1:
+            sequence_message()
+            return
+        if len (clip.versions[0].tracks[0].segments) != 1:
+            sequence_message()
 
-                clip_matched = (clip.versions[0].tracks[0].segments[0].match(clip.parent, include_timeline_fx = False))
-                clip_matched.commit()
+        clip_matched = (clip.versions[0].tracks[0].segments[0].match(clip.parent, include_timeline_fx = False))
+        clip_matched.commit()
 
-                # test segment
-                # print (flame.PyClip.get_wiretap_node_id(clip))
-                # print (flame.PyClip.get_wiretap_node_id(clip.parent))
-                server_handle = WireTapServerHandle('localhost')
-                clip_node_id = flame.PyClip.get_wiretap_node_id(clip_matched)
-                clip_node_handle = WireTapNodeHandle(server_handle, clip_node_id)
-                num_frames = WireTapInt()
+        # Initialize the Wiretap Client API.
+        #
+        wiretap_client = WireTapClient()
+        if not wiretap_client.init():
+            raise WireTapException("Unable to initialize Wiretap client API.")
 
-                if not clip_node_handle.getNumFrames(num_frames):
-                    raise WireTapException(
-                        "Unable to obtain number of frames: %s." % clip_node_handle.lastError()
-                    )
+        server_handle = WireTapServerHandle('localhost')
+        clip_node_id = flame.PyClip.get_wiretap_node_id(clip_matched)
+        clip_node_handle = WireTapNodeHandle(server_handle, clip_node_id)
+        num_frames = WireTapInt()
 
-                
-                fmt = WireTapClipFormat()
-                if not clip_node_handle.getClipFormat(fmt):
-                    raise WireTapException("Unable to obtain clip format: %s." % clip.lastError())
-                                                
-                buff = "0" * fmt.frameBufferSize()
+        if not clip_node_handle.getNumFrames(num_frames):
+            raise WireTapException(
+                "Unable to obtain number of frames: %s." % clip_node_handle.lastError()
+            )
+        
+        fmt = WireTapClipFormat()
+        if not clip_node_handle.getClipFormat(fmt):
+            raise WireTapException("Unable to obtain clip format: %s." % clip.lastError())
+        
+        pprint (fmt.formatTag())
+        pprint (fmt.bitsPerPixel())
+        print  (fmt.numChannels())
+        
+        time.sleep(2)
+        return
 
-                # pprint (dir(fmt))
-                # pprint(fmt.formatTag())
+        buff = "0" * fmt.frameBufferSize()
 
-                # new clip section
-                # ********
+        for frame_number in range(0, num_frames):
+            print("Reading frame %i." % frame_number)
+            if not clip_node_handle.readFrame(frame_number, buff, fmt.frameBufferSize()):
+                raise WireTapException(
+                    "Unable to obtain read frame %i: %s." % (frame_number, clip.lastError())
+                )
+            print("Successfully read frame %i." % frame_number)
 
-                library = flame.projects.current_project.create_shared_library('twml')
-                parent_node_handle = WireTapNodeHandle(server_handle, flame.PyClip.get_wiretap_node_id(library))
-                new_clip_node_handle = WireTapNodeHandle()
+            buff_tail = frameBufferSize() - fmt.height() * fmt.width() * (fmt.bitsPerPixel()/8)
+            arr = np.frombuffer(buff.encode(), dtype=np.float16)[:-8]
+            arr = arr.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
+            frame = ((arr - np.min(arr)) / (np.max(arr) - np.min(arr)) * 255).astype(np.uint8)
+            resized_img = resize_nearest(frame, (800, 600))
+            resized_img = np.flip(resized_img, axis=0)
+            # resized_img = np.flip(resized_img, axis=1)
+            resized_img = np.flip(resized_img, axis=2)
+            resized_img = np.ascontiguousarray(resized_img)
+            height, width, channels = resized_img.shape
+            bytesPerLine = channels * width
+            img = QtGui.QImage(resized_img.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888).rgbSwapped()
+            pixmap = QtGui.QPixmap.fromImage(img)
+            progress.set_progress(pixmap)
+            # lbl.setPixmap(pixmap)
 
-                if not parent_node_handle.createClipNode(
-                    "MyNewClip",  # display name
-                    fmt,  # clip format
-                    "CLIP",  # extended (server-specific) type
-                    new_clip_node_handle,  # created node returned here
-                ):
-                    raise WireTapException(
-                        "Unable to create clip node: %s." % parent_node_handle.lastError()
-                    )
-                
-                if not new_clip_node_handle.setNumFrames(int(num_frames)):
-                    raise WireTapException(
-                        "Unable to set the number of frames: %s." % clip_node_handle.lastError()
-                    )
+            if not new_clip_node_handle.writeFrame(
+                frame_number, buff, new_fmt.frameBufferSize()
+            ):
+                raise WireTapException(
+                    "Unable to obtain write frame %i: %s."
+                    % (frame_number, clip_node_handle.lastError())
+                )
+            print("Successfully wrote frame %i." % frame_number)
 
-                new_fmt = WireTapClipFormat()
-                if not new_clip_node_handle.getClipFormat(new_fmt):
-                    raise WireTapException(
-                        "Unable to obtain clip format: %s." % clip_node_handle.lastError()
-                    )
+        library.acquire_exclusive_access()
+        library.open()
+        if library.clips:
+            flame.media_panel.move(source_entries = library.clips[0], destination = clip.parent, duplicate_action = 'add')
+        flame.delete(library)
+        flame.delete(clip_matched)
 
-                # end of new clip section
-                # ********
+        progress.hide()
 
-
-                for frame_number in range(0, num_frames):
-                    print("Reading frame %i." % frame_number)
-                    if not clip_node_handle.readFrame(frame_number, buff, fmt.frameBufferSize()):
-                        raise WireTapException(
-                            "Unable to obtain read frame %i: %s." % (frame_number, clip.lastError())
-                        )
-                    print("Successfully read frame %i." % frame_number)
-
-                    arr = np.frombuffer(buff.encode(), dtype=np.float16)[:-8]
-                    arr = arr.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
-                    frame = ((arr - np.min(arr)) / (np.max(arr) - np.min(arr)) * 255).astype(np.uint8)
-                    resized_img = resize_nearest(frame, (800, 600))
-                    resized_img = np.flip(resized_img, axis=0)
-                    # resized_img = np.flip(resized_img, axis=1)
-                    resized_img = np.flip(resized_img, axis=2)
-                    resized_img = np.ascontiguousarray(resized_img)
-                    height, width, channels = resized_img.shape
-                    bytesPerLine = channels * width
-                    img = QtGui.QImage(resized_img.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888).rgbSwapped()
-                    pixmap = QtGui.QPixmap.fromImage(img)
-                    progress.set_progress(pixmap)
-                    # lbl.setPixmap(pixmap)
-
-                    if not new_clip_node_handle.writeFrame(
-                        frame_number, buff, new_fmt.frameBufferSize()
-                    ):
-                        raise WireTapException(
-                            "Unable to obtain write frame %i: %s."
-                            % (frame_number, clip_node_handle.lastError())
-                        )
-                    print("Successfully wrote frame %i." % frame_number)
-
-                library.acquire_exclusive_access()
-                library.open()
-                if library.clips:
-                    flame.media_panel.move(source_entries = library.clips[0], destination = clip.parent, duplicate_action = 'add')
-                flame.delete(library)
-                flame.delete(clip_matched)
-
-                progress.hide()
-
-                effects = clip.versions[0].tracks[0].segments[0].effects
-                if not effects:
-                    # effect_message()
-                    return
-                
+        effects = clip.versions[0].tracks[0].segments[0].effects
+        if not effects:
+            # effect_message()
+            return
+        
 
 
-                return
+        return
 
-                verified_clips.append((clip, tw_setup_string))
+        verified_clips.append((clip, tw_setup_string))
         
         os.remove(temp_setup_path)
 
@@ -2912,61 +3121,144 @@ class flameTimewarpML(flameMenuApp):
                             os.system(cmd)
 
     def publish_progress_dialog(self):
-        from sgtk.platform.qt import QtCore, QtGui
         
         class Ui_Progress(object):
             def setupUi(self, Progress):
                 Progress.setObjectName("Progress")
-                Progress.resize(211, 50)
-                Progress.setStyleSheet("#Progress {background-color: #181818;} #frame {background-color: rgb(0, 0, 0, 20); border: 1px solid rgb(255, 255, 255, 20); border-radius: 5px;}\n")
-                self.horizontalLayout_2 = QtGui.QHBoxLayout(Progress)
-                self.horizontalLayout_2.setSpacing(0)
-                self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
-                self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-                self.frame = QtGui.QFrame(Progress)
-                self.frame.setFrameShape(QtGui.QFrame.StyledPanel)
-                self.frame.setFrameShadow(QtGui.QFrame.Raised)
-                self.frame.setObjectName("frame")
+                Progress.setStyleSheet("#Progress {background-color: #242424;} #frame {border: 1px solid #474747; border-radius: 5px;}\n")
 
-                self.horizontalLayout = QtGui.QHBoxLayout(self.frame)
-                self.horizontalLayout.setSpacing(4)
-                self.horizontalLayout.setContentsMargins(4, 4, 4, 4)
-                self.horizontalLayout.setObjectName("horizontalLayout")
-                self.label = QtGui.QLabel(self.frame)
-                self.label.setMinimumSize(QtCore.QSize(640, 480))
-                self.label.setAlignment(QtCore.Qt.AlignCenter)
-                self.label.setStyleSheet("color: #989898; border: 2px solid #4679A4; border-radius: 20px;") 
-                # self.label.setText('[K]')
-                # self.label.setPixmap(QtGui.QPixmap(":/tk_flame_basic/shotgun_logo_blue.png"))
-                self.label.setScaledContents(True)
-                self.label.setObjectName("label")
-                self.horizontalLayout.addWidget(self.label)
-                self.verticalLayout = QtGui.QVBoxLayout()
+                self.verticalLayout = QtWidgets.QVBoxLayout(Progress)  # Change from horizontal layout to vertical layout
+                self.verticalLayout.setSpacing(0)
+                self.verticalLayout.setContentsMargins(0, 0, 0, 0)
                 self.verticalLayout.setObjectName("verticalLayout")
 
-                self.progress_header = QtGui.QLabel(self.frame)
-                self.progress_header.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft)
-                self.progress_header.setObjectName("progress_header")
-                self.progress_header.setStyleSheet("#progress_header {font-size: 10px; qproperty-alignment: \'AlignBottom | AlignLeft\'; font-weight: bold; font-family: Open Sans; font-style: Regular; color: #878787;}")
+                # Create a new widget for the stripe at the top
+                self.stripe_widget = QtWidgets.QWidget(Progress)
+                self.stripe_widget.setStyleSheet("background-color: #474747;")
+                self.stripe_widget.setFixedHeight(24)  # Adjust this value to change the height of the stripe
 
-                self.verticalLayout.addWidget(self.progress_header)
-                self.progress_message = QtGui.QLabel(self.frame)
-                self.progress_message.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
-                self.progress_message.setObjectName("progress_message")
-                self.progress_message.setStyleSheet("#progress_message {font-size: 10px; qproperty-alignment: \'AlignTop | AlignLeft\'; font-family: Open Sans; font-style: Regular; color: #58595A;}")
-                self.verticalLayout.addWidget(self.progress_message)
-                self.horizontalLayout.addLayout(self.verticalLayout)
-                self.horizontalLayout_2.addWidget(self.frame)
+                # Create a label inside the stripe widget
+                self.stripe_label = QtWidgets.QLabel("Your text here")  # Replace this with the text you want on the stripe
+                self.stripe_label.setStyleSheet("color: #cbcbcb;")  # Change this to set the text color
+
+                # Create a layout for the stripe widget and add the label to it
+                stripe_layout = QtWidgets.QHBoxLayout()
+                stripe_layout.addWidget(self.stripe_label)
+                stripe_layout.addStretch(1)
+                stripe_layout.setContentsMargins(18, 0, 0, 0)  # This will ensure the label fills the stripe widget
+
+                # Set the layout to stripe_widget
+                self.stripe_widget.setLayout(stripe_layout)
+
+                # Add the stripe widget to the top of the main window's layout
+                self.verticalLayout.addWidget(self.stripe_widget)
+                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
+
+                self.src_horisontal_layout = QtWidgets.QHBoxLayout(Progress)  # Change from horizontal layout to vertical layout
+                self.src_horisontal_layout.setSpacing(0)
+                self.src_horisontal_layout.setContentsMargins(0, 0, 0, 0)
+                self.src_horisontal_layout.setObjectName("srcHorisontalLayout")
+
+                self.src_frame_one = QtWidgets.QFrame(Progress)
+                self.src_frame_one.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.src_frame_one.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.src_frame_one.setObjectName("frame")
+
+                self.src_frame_two = QtWidgets.QFrame(Progress)
+                self.src_frame_two.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.src_frame_two.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.src_frame_two.setObjectName("frame")
+
+                self.src_horisontal_layout.addWidget(self.src_frame_one)
+                self.src_horisontal_layout.addWidget(self.src_frame_two)
+
+                self.verticalLayout.addLayout(self.src_horisontal_layout)
+                self.verticalLayout.setStretchFactor(self.src_horisontal_layout, 4)
+
+                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
+
+                self.int_horisontal_layout = QtWidgets.QHBoxLayout(Progress)  # Change from horizontal layout to vertical layout
+                self.int_horisontal_layout.setSpacing(0)
+                self.int_horisontal_layout.setContentsMargins(0, 0, 0, 0)
+                self.int_horisontal_layout.setObjectName("intHorisontalLayout")
+
+                self.int_frame_flow = QtWidgets.QFrame(Progress)
+                self.int_frame_flow.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.int_frame_flow.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.int_frame_flow.setObjectName("frame")
+
+                self.int_frame_wrp1 = QtWidgets.QFrame(Progress)
+                self.int_frame_wrp1.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.int_frame_wrp1.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.int_frame_wrp1.setObjectName("frame")
+
+                self.int_frame_wrp2 = QtWidgets.QFrame(Progress)
+                self.int_frame_wrp2.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.int_frame_wrp2.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.int_frame_wrp2.setObjectName("frame")
+
+                self.int_frame_mix = QtWidgets.QFrame(Progress)
+                self.int_frame_mix.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.int_frame_mix.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.int_frame_mix.setObjectName("frame")
+
+                self.int_horisontal_layout.addWidget(self.int_frame_flow)
+                self.int_horisontal_layout.addWidget(self.int_frame_wrp1)
+                self.int_horisontal_layout.addWidget(self.int_frame_wrp2)
+                self.int_horisontal_layout.addWidget(self.int_frame_mix)
+
+                self.verticalLayout.addLayout(self.int_horisontal_layout)
+                self.verticalLayout.setStretchFactor(self.int_horisontal_layout, 2)
+
+                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
+
+                self.res_frame = QtWidgets.QFrame(Progress)
+                self.res_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.res_frame.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.res_frame.setObjectName("frame")
+                self.verticalLayout.addWidget(self.res_frame)
+                self.verticalLayout.setStretchFactor(self.res_frame, 8)
+
+                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
+
+
+                # Create a new horizontal layout for the bottom of the window
+                bottom_layout = QtWidgets.QHBoxLayout()
+
+                # Add a close button to the bottom layout
+                self.close_button = QtWidgets.QPushButton("Close")
+                self.close_button.clicked.connect(Progress.close)
+                self.close_button.setContentsMargins(10, 4, 4, 4)
+                self.set_button_style(self.close_button)
+                bottom_layout.addWidget(self.close_button)
+
+                # Add some stretch to the bottom layout to push the close button to the left
+                bottom_layout.addStretch(1)
+
+                # Add the bottom layout to the main layout
+                self.verticalLayout.addLayout(bottom_layout)
 
                 self.retranslateUi(Progress)
                 QtCore.QMetaObject.connectSlotsByName(Progress)
 
             def retranslateUi(self, Progress):
-                Progress.setWindowTitle(QtGui.QApplication.translate("Progress", "Form", None, QtGui.QApplication.UnicodeUTF8))
-                self.progress_header.setText(QtGui.QApplication.translate("Progress", "Timewarp ML", None, QtGui.QApplication.UnicodeUTF8))
-                self.progress_message.setText(QtGui.QApplication.translate("Progress", "Reading images....", None, QtGui.QApplication.UnicodeUTF8))
+                Progress.setWindowTitle("Form")
+                # self.progress_header.setText("Timewarp ML")
+                # self.progress_message.setText("Reading images....")
 
-        class Progress(QtGui.QWidget):
+            def set_button_style(self, button):
+                button.setMinimumSize(QtCore.QSize(150, 28))
+                button.setMaximumSize(QtCore.QSize(150, 28))
+                button.setFocusPolicy(QtCore.Qt.NoFocus)
+                button.setStyleSheet('QPushButton {color: rgb(154, 154, 154); background-color: rgb(58, 58, 58); border: none; font: 14px}'
+                'QPushButton:hover {border: 1px solid rgb(90, 90, 90)}'
+                'QPushButton:pressed {color: rgb(159, 159, 159); background-color: rgb(66, 66, 66); border: 1px solid rgb(90, 90, 90)}'
+                'QPushButton:disabled {color: rgb(116, 116, 116); background-color: rgb(58, 58, 58); border: none}'
+                'QPushButton::menu-indicator {subcontrol-origin: padding; subcontrol-position: center right}'
+                'QToolTip {color: rgb(170, 170, 170); background-color: rgb(71, 71, 71); border: 10px solid rgb(71, 71, 71)}')
+
+
+        class Progress(QtWidgets.QWidget):
             """
             Overlay widget that reports toolkit bootstrap progress to the user.
             """
@@ -2976,35 +3268,69 @@ class flameTimewarpML(flameMenuApp):
             PROGRESS_PADDING = 48
 
             def __init__(self):
-                """
-                Constructor
-                """
-                # first, call the base class and let it do its thing.
-                QtGui.QWidget.__init__(self)
+                W = 1280
+                H = 720
+
+                super().__init__()
 
                 # now load in the UI that was created in the UI designer
                 self.ui = Ui_Progress()
                 self.ui.setupUi(self)
 
+                # Record the mouse position on a press event.
+                self.mousePressPos = None
+
                 # make it frameless and have it stay on top
-                # self.setWindowFlags(
-                #    QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.X11BypassWindowManagerHint
-                # )
-
-                # place it in the lower left corner of the primary screen
-                primary_screen = QtGui.QApplication.desktop().primaryScreen()
-                rect_screen = QtGui.QApplication.desktop().availableGeometry(primary_screen)
-
-                self.setGeometry(
-                    ( rect_screen.left() + rect_screen.right() ) // 2 - self.PROGRESS_WIDTH // 2, 
-                    ( rect_screen.bottom() - rect_screen.top() ) // 2 - self.PROGRESS_PADDING,
-                    self.PROGRESS_WIDTH,
-                    self.PROGRESS_HEIGHT
+                self.setWindowFlags(
+                    QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint
                 )
+
+
+                desktop = QtWidgets.QApplication.desktop()
+                screen_geometry = desktop.screenGeometry(desktop.primaryScreen())
+
+                max_width = screen_geometry.width() * 0.8
+                max_height = screen_geometry.height() * 0.8
+
+                desired_width = W  # or whatever the aspect ratio calculation yields
+                desired_height = 1.89 * H  # or whatever the aspect ratio calculation yields
+
+                scale_factor = min(max_width / desired_width, max_height / desired_height)
+                scaled_width = desired_width * scale_factor
+                scaled_height = desired_height * scale_factor
+
+                # Set the window's dimensions
+                self.setGeometry(0, 0, scaled_width, scaled_height)
+                # Move the window to the center of the screen
+                screen_center = screen_geometry.center()
+                self.move(screen_center.x() - scaled_width // 2, screen_center.y() - scaled_height // 2)
 
             def set_progress(self, pixmap):
                 self.ui.label.setPixmap(pixmap)
-                QtGui.QApplication.processEvents()
+                QtWidgets.QApplication.processEvents()
+
+            def mousePressEvent(self, event):
+                # Record the position at which the mouse was pressed.
+                self.mousePressPos = event.globalPos()
+                super().mousePressEvent(event)
+
+            def mouseMoveEvent(self, event):
+                if self.mousePressPos is not None:
+                    # Calculate the new position of the window.
+                    newPos = self.pos() + (event.globalPos() - self.mousePressPos)
+                    # Move the window to the new position.
+                    self.move(newPos)
+                    # Update the position at which the mouse was pressed.
+                    self.mousePressPos = event.globalPos()
+                super().mouseMoveEvent(event)
+
+            def mouseReleaseEvent(self, event):
+                self.mousePressPos = None
+                super().mouseReleaseEvent(event)
+
+            def closeEvent(self, event):
+                self.deleteLater()
+                super().closeEvent(event)
 
         return Progress()
 
