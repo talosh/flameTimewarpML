@@ -14,14 +14,6 @@ import atexit
 import hashlib
 import pickle
 
-from adsk.libwiretapPythonClientAPI import WireTapClient
-from adsk.libwiretapPythonClientAPI import WireTapServerHandle
-from adsk.libwiretapPythonClientAPI import WireTapNodeHandle
-from adsk.libwiretapPythonClientAPI import WireTapStr
-from adsk.libwiretapPythonClientAPI import WireTapInt
-from adsk.libwiretapPythonClientAPI import WireTapClipFormat
-
-
 from pprint import pprint
 from pprint import pformat
 
@@ -2029,7 +2021,7 @@ class flameTimewarpML(flameMenuApp):
         sys.path.insert(0, self.framework.site_packages_folder)
         import numpy as np
         del sys.path[0]
-        # from PySide2 import QtWidgets, QtCore, QtGui
+        from PySide2 import QtWidgets, QtCore, QtGui
         class WireTapException(Exception):
             def __init__(self, msg):
                 flame.messages.show_in_dialog(
@@ -2080,55 +2072,12 @@ class flameTimewarpML(flameMenuApp):
                     d[x.tag]=[]
                 d[x.tag].append(dictify(x,False))
             return d
-
-        def resize_nearest(src, new_shape):
-            # Compute scale factors
-            row_scale = src.shape[0] / new_shape[0]
-            col_scale = src.shape[1] / new_shape[1]
-
-            # Compute coordinates
-            row_coords = (np.arange(new_shape[0]) * row_scale).round().astype(int)
-            col_coords = (np.arange(new_shape[1]) * col_scale).round().astype(int)
-
-            # Index into original array with these coordinates
-            return src[row_coords][:, col_coords]
         
         verified_clips = []
         temp_setup_path = '/var/tmp/temporary_tw_setup.timewarp_node'
 
-        main_tw_window = self.main_tw_window()
-        pprint (main_tw_window)
-        main_tw_window.show()
-        time.sleep(10)
-        main_tw_window.hide()
-
-        return
-
-        import ctypes
-        import ctypes.util
-
-        python_api = ctypes.CDLL(sys.executable)
-        python_api.PyUnicode_FromKindAndData.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_ssize_t]
-        python_api.PyUnicode_FromKindAndData.restype = ctypes.py_object
-
-        '''
-        PyUnicode_FromStringAndSize = ctypes.pythonapi.PyUnicode_FromStringAndSize
-        PyUnicode_FromStringAndSize.argtypes = [ctypes.c_char_p, ctypes.c_ssize_t]
-        PyUnicode_FromStringAndSize.restype = ctypes.py_object
-        '''
-
-        '''
-        wt = ctypes.CDLL('/opt/Autodesk/lib64/2023.3/libwiretapClientAPI.dylib')
-        wiretap_client_init = getattr(wt, '_Z17WireTapClientInitv')
-        pprint (wiretap_client_init)
-        '''
-
-        # cWireTapServerHandle = wt.WireTapServerHandle
-        # server_handle = cWireTapServerHandle(c_wchar_p('localhost'))
-
-        wiretap_client = WireTapClient()
-        if not wiretap_client.init():
-            raise WireTapException("Unable to initialize Wiretap client API.")
+        progress = self.publish_progress_dialog()
+        progress.show()
 
         for clip in selection:
             if isinstance(clip, (flame.PyClip)):
@@ -2161,30 +2110,22 @@ class flameTimewarpML(flameMenuApp):
                 fmt = WireTapClipFormat()
                 if not clip_node_handle.getClipFormat(fmt):
                     raise WireTapException("Unable to obtain clip format: %s." % clip.lastError())
-                                          
+                                                
+                buff = "0" * fmt.frameBufferSize()
+
+                # pprint (dir(fmt))
+                # pprint(fmt.formatTag())
+
                 # new clip section
                 # ********
 
-                num_frames = 4
                 library = flame.projects.current_project.create_shared_library('twml')
                 parent_node_handle = WireTapNodeHandle(server_handle, flame.PyClip.get_wiretap_node_id(library))
-
                 new_clip_node_handle = WireTapNodeHandle()
-
-                clip_format = WireTapClipFormat(
-                    24,
-                    24,  # width, height
-                    3 * 8,  # bits per pixel
-                    3,  # number of channels
-                    24,  # frame rate
-                    1,  # pixel ratio
-                    WireTapClipFormat.ScanFormat.SCAN_FORMAT_PROGRESSIVE,
-                    WireTapClipFormat.FORMAT_RGB(),
-                )
 
                 if not parent_node_handle.createClipNode(
                     "MyNewClip",  # display name
-                    clip_format,  # clip format
+                    fmt,  # clip format
                     "CLIP",  # extended (server-specific) type
                     new_clip_node_handle,  # created node returned here
                 ):
@@ -2202,92 +2143,22 @@ class flameTimewarpML(flameMenuApp):
                     raise WireTapException(
                         "Unable to obtain clip format: %s." % clip_node_handle.lastError()
                     )
-                
+
                 # end of new clip section
                 # ********
 
-                # buff = "0" * new_fmt.frameBufferSize()
 
                 for frame_number in range(0, num_frames):
-                    '''
                     print("Reading frame %i." % frame_number)
-                    try:
-                        if not clip_node_handle.readFrame(frame_number, buff, fmt.frameBufferSize()):
-                            raise WireTapException(
-                                "Unable to obtain read frame %i: %s." % (frame_number, clip.lastError())
-                            )
-                    except Exception as e:
-                        pprint (e)
-
+                    if not clip_node_handle.readFrame(frame_number, buff, fmt.frameBufferSize()):
+                        raise WireTapException(
+                            "Unable to obtain read frame %i: %s." % (frame_number, clip.lastError())
+                        )
                     print("Successfully read frame %i." % frame_number)
 
-                    print ('src')
-                    print (":".join("{:02x}".format(ord(c)) for c in buff))
-                    '''
-
-                    # buff_out = str(buff)
-
-                    
-                    # b = bytes(buff, 'latin-1')
-                    # del buff
-                    pattern = np.array([0xff, 0x00, 0x00], dtype=np.uint8)
-                    repeated_array = np.tile(pattern, new_fmt.frameBufferSize() // len(pattern))
-                    remainder = new_fmt.frameBufferSize() % len(pattern)
-                    if remainder > 0:
-                        arr = np.concatenate([repeated_array,
-                                              np.zeros(remainder, dtype=np.uint8)])
-                    # buff_out = python_api.PyUnicode_FromKindAndData(ctypes.c_int(1), arr.tobytes(), arr.nbytes)
-                    # buff_out = str(arr.tobytes(), 'latin-1')
-
-                    bytearr = bytearray(new_fmt.frameBufferSize())
-                    mv = memoryview(bytearr)
-                    mv[:] = arr
-                    buff_out = bytearr.decode('latin-1')
-
-                    # buff_out = "0" * new_fmt.frameBufferSize()
-                    # ctypes.memmove(id(buff_out), arr.ctypes.data, arr.nbytes)
-
-
-                    '''
-                    arr = np.ascontiguousarray(arr)
-                    data_ptr = arr.ctypes.data_as(ctypes.POINTER(ctypes.c_char))
-                    byte_string = ctypes.string_at(data_ptr, arr.nbytes)
-                    buff_out = python_api.PyUnicode_FromKindAndData(ctypes.c_int(1), byte_string, arr.nbytes)
-                    '''
-
-                    # buff_out = str(a.tobytes(), 'latin-1')
-
-                    # buff_out = "0" * new_fmt.frameBufferSize()
-
-                    # sttr = (chr(int('FF', 16)) + chr(int('00', 16)) + chr(int('00', 16))) * int ( new_fmt.frameBufferSize() / 3 )
-                    # buff_out = r'{}'.format(sttr)
-                    # sttr = bytes(sttr, 'latin-1')
-                    # buff_out = python_api.PyUnicode_FromKindAndData(ctypes.c_int(1), sttr, len(sttr))
-
-                    # print ('dest')
-                    print (":".join("{:02x}".format(ord(c)) for c in buff_out))
-
-
-                    # bytes_in = bytes(buff, 'latin-1')
-                    # buff_out = str(bytes_in, 'latin-1')
-                    # buff_out = "0" * fmt.frameBufferSize()
-
-                    '''
-                    print (":".join("{:02x}".format(ord(c)) for c in buff[0:8]))                    
-                    bytes_in = bytes(buff, 'latin-1')
-                    buff_out = str(bytes_in, 'latin-1')
-                    if buff_out != buff:
-                        print ('huipizda')
-                    print (":".join("{:02x}".format(ord(c)) for c in buff_out[0:8]))
-
-                    arr = np.frombuffer(bytes_in, dtype=np.float16)
-                    bytes_out = arr.tobytes()
-
-
-                    rarr = arr.copy()
-                    rarr = rarr[:-8]
-                    rarr = rarr.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
-                    frame = ((rarr - np.min(rarr)) / (np.max(rarr) - np.min(rarr)) * 255).astype(np.uint8)
+                    arr = np.frombuffer(buff.encode(), dtype=np.float16)[:-8]
+                    arr = arr.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
+                    frame = ((arr - np.min(arr)) / (np.max(arr) - np.min(arr)) * 255).astype(np.uint8)
                     resized_img = resize_nearest(frame, (800, 600))
                     resized_img = np.flip(resized_img, axis=0)
                     # resized_img = np.flip(resized_img, axis=1)
@@ -2300,24 +2171,19 @@ class flameTimewarpML(flameMenuApp):
                     progress.set_progress(pixmap)
                     # lbl.setPixmap(pixmap)
 
-                    # arr = arr.reshape(-1)
-                    # arr = arr.byteswap()
-
-                    # pprint (new_buff[0:2])
-
-                    '''
-                    if not new_clip_node_handle.writeFrame(frame_number, buff_out, new_fmt.frameBufferSize()):
+                    if not new_clip_node_handle.writeFrame(
+                        frame_number, buff, new_fmt.frameBufferSize()
+                    ):
                         raise WireTapException(
                             "Unable to obtain write frame %i: %s."
                             % (frame_number, clip_node_handle.lastError())
                         )
                     print("Successfully wrote frame %i." % frame_number)
-                    # libc.free(memory_ptr)
 
                 library.acquire_exclusive_access()
                 library.open()
                 if library.clips:
-                    flame.media_panel.copy(source_entries = library.clips[0], destination = clip.parent, duplicate_action = 'add')
+                    flame.media_panel.move(source_entries = library.clips[0], destination = clip.parent, duplicate_action = 'add')
                 flame.delete(library)
                 flame.delete(clip_matched)
 
@@ -2327,10 +2193,13 @@ class flameTimewarpML(flameMenuApp):
                 if not effects:
                     # effect_message()
                     return
+                
 
-        return
 
+                return
 
+                verified_clips.append((clip, tw_setup_string))
+        
         os.remove(temp_setup_path)
 
         result = self.fltw_dialog()
@@ -3042,7 +2911,7 @@ class flameTimewarpML(flameMenuApp):
                         for i in range(5):
                             os.system(cmd)
 
-    def main_tw_window(self):
+    def publish_progress_dialog(self):
         from sgtk.platform.qt import QtCore, QtGui
         
         class Ui_Progress(object):
@@ -3064,11 +2933,10 @@ class flameTimewarpML(flameMenuApp):
                 self.horizontalLayout.setContentsMargins(4, 4, 4, 4)
                 self.horizontalLayout.setObjectName("horizontalLayout")
                 self.label = QtGui.QLabel(self.frame)
-                self.label.setMinimumSize(QtCore.QSize(40, 40))
-                self.label.setMaximumSize(QtCore.QSize(40, 40))
+                self.label.setMinimumSize(QtCore.QSize(640, 480))
                 self.label.setAlignment(QtCore.Qt.AlignCenter)
                 self.label.setStyleSheet("color: #989898; border: 2px solid #4679A4; border-radius: 20px;") 
-                self.label.setText('[K]')
+                # self.label.setText('[K]')
                 # self.label.setPixmap(QtGui.QPixmap(":/tk_flame_basic/shotgun_logo_blue.png"))
                 self.label.setScaledContents(True)
                 self.label.setObjectName("label")
@@ -3095,16 +2963,16 @@ class flameTimewarpML(flameMenuApp):
 
             def retranslateUi(self, Progress):
                 Progress.setWindowTitle(QtGui.QApplication.translate("Progress", "Form", None, QtGui.QApplication.UnicodeUTF8))
-                self.progress_header.setText(QtGui.QApplication.translate("Progress", "ShotGrid Integration", None, QtGui.QApplication.UnicodeUTF8))
-                self.progress_message.setText(QtGui.QApplication.translate("Progress", "Updating config....", None, QtGui.QApplication.UnicodeUTF8))
+                self.progress_header.setText(QtGui.QApplication.translate("Progress", "Timewarp ML", None, QtGui.QApplication.UnicodeUTF8))
+                self.progress_message.setText(QtGui.QApplication.translate("Progress", "Reading images....", None, QtGui.QApplication.UnicodeUTF8))
 
         class Progress(QtGui.QWidget):
             """
             Overlay widget that reports toolkit bootstrap progress to the user.
             """
 
-            PROGRESS_HEIGHT = 48
-            PROGRESS_WIDTH = 280
+            PROGRESS_HEIGHT = 640
+            PROGRESS_WIDTH = 960
             PROGRESS_PADDING = 48
 
             def __init__(self):
@@ -3119,9 +2987,9 @@ class flameTimewarpML(flameMenuApp):
                 self.ui.setupUi(self)
 
                 # make it frameless and have it stay on top
-                self.setWindowFlags(
-                    QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.X11BypassWindowManagerHint
-                )
+                # self.setWindowFlags(
+                #    QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.X11BypassWindowManagerHint
+                # )
 
                 # place it in the lower left corner of the primary screen
                 primary_screen = QtGui.QApplication.desktop().primaryScreen()
@@ -3134,12 +3002,12 @@ class flameTimewarpML(flameMenuApp):
                     self.PROGRESS_HEIGHT
                 )
 
-            def set_progress(self, header, msg):
-                self.ui.progress_header.setText(header)
-                self.ui.progress_message.setText(msg)
+            def set_progress(self, pixmap):
+                self.ui.label.setPixmap(pixmap)
                 QtGui.QApplication.processEvents()
-        print ('returning progress')
+
         return Progress()
+
 
 # --- FLAME STARTUP SEQUENCE ---
 # Flame startup sequence is a bit complicated
