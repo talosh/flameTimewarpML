@@ -423,6 +423,7 @@ class flameMenuApp(object):
     def __init__(self, framework):
         self.name = self.__class__.__name__
         self.framework = framework
+        self.app_name = self.framework.app_name
         self.menu_group_name = menu_group_name
         self.debug = DEBUG
         self.dynamic_menu_data = {}
@@ -471,6 +472,19 @@ class flameMenuApp(object):
 
     def log(self, message):
         self.framework.log(message)
+
+    def message(self, message, type = 'Error'):
+        try:
+            import flame
+            flame.messages.show_in_dialog(
+                title = self.app_name,
+                message = message,
+                type = 'error',
+                buttons = ['Ok']
+            )
+        except Exception as e:
+            self.log('unable to use flame message')
+            self.log(pformat(e))
 
     def rescan(self, *args, **kwargs):
         if not self.flame:
@@ -626,6 +640,7 @@ class flameMenuApp(object):
         return timestamp + '_' + uid[:3]
 
 
+
 class flameTimewarpML(flameMenuApp):
 
     class Progress(QtWidgets.QWidget):
@@ -766,7 +781,19 @@ class flameTimewarpML(flameMenuApp):
                 'QToolTip {color: rgb(170, 170, 170); background-color: rgb(71, 71, 71); border: 10px solid rgb(71, 71, 71)}')
 
         def __init__(self, selection, **kwargs):
+            super().__init__()
             self.mode = kwargs.get('mode', 'Timewarp')
+            self.twml = kwargs.get('parent')
+            self.twml.progress = self
+            self.current_frame = 1
+
+            if not self.twml.import_torch():
+                return
+            if not self.twml.import_numpy():
+                return
+            
+            if self.mode == 'Timewarp':
+                self.frames_map = self.twml.frames_map_from_tw(selection)
 
             try:
                 H = selection[0].height
@@ -774,8 +801,6 @@ class flameTimewarpML(flameMenuApp):
             except:
                 W = 1280
                 H = 720
-
-            super().__init__()
 
             # now load in the UI that was created in the UI designer
             self.ui = self.Ui_Progress()
@@ -836,6 +861,7 @@ class flameTimewarpML(flameMenuApp):
             super().mouseReleaseEvent(event)
 
         def closeEvent(self, event):
+            self.twml.progress = None
             self.deleteLater()
             super().closeEvent(event)
 
@@ -879,6 +905,8 @@ class flameTimewarpML(flameMenuApp):
             'trained_models', 
             'default',
         )
+
+        self.progress = None
 
         # self.scan_trained_models_folder()
 
@@ -949,6 +977,68 @@ class flameTimewarpML(flameMenuApp):
 
         return menu
 
+    def import_torch(self):
+        import flame
+        flame.messages.show_in_console('TimewarpML: Initializing PyTorch backend', 'info', 8)
+        self.torch = None
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.rand(10, device = 'cuda')
+            elif torch.backends.mps.is_available():
+                torch.rand(10, device = 'mps')
+            else:
+                torch.rand(10)
+            self.torch = torch
+        except:
+            try:
+                if not self.framework.site_packages_folder in sys.path:
+                    sys.path.insert(0, self.framework.site_packages_folder)
+                import torch
+                if torch.cuda.is_available():
+                    torch.rand(10, device = 'cuda')
+                elif torch.backends.mps.is_available():
+                    torch.rand(10, device = 'mps')
+                else:
+                    torch.rand(10)
+                self.torch = torch
+            except Exception as e:
+                msg_str = 'Unable to import PyTorch module.\n'
+                msg_str += 'Please make sure PyTorch is installed and working '
+                msg_str += "with installed graphics card and Flame's python version "
+                msg_str += '.'.join(str(num) for num in sys.version_info[:3])
+                self.message(msg_str)
+                self.log(msg)
+                self.log(pformat(e))
+
+        flame.messages.clear_console()
+        return self.torch
+        
+    def import_numpy(self):
+        import flame
+        flame.messages.show_in_console('TimewarpML: Initializing Numpy module', 'info', 1)
+        self.np = None
+        try:
+            import numpy
+            self.np = numpy
+        except:
+            try:
+                if not self.framework.site_packages_folder in sys.path:
+                    sys.path.insert(0, self.framework.site_packages_folder)
+                import numpy
+                self.np = numpy
+            except Exception as e:
+                msg_str = 'Unable to import Numpy module.\n'
+                msg_str += 'Please make sure Numpy is installed and working '
+                msg_str += "with installed graphics card and Flame's python version "
+                msg_str += '.'.join(str(num) for num in sys.version_info[:3])
+                self.message(msg_str)
+                self.log(msg)
+                self.log(pformat(e))
+
+        flame.messages.clear_console()
+        return self.np
+    
     def slowmo(self, selection):
         result = self.slowmo_dialog()
         if not result:
@@ -3123,219 +3213,6 @@ class flameTimewarpML(flameMenuApp):
                         for i in range(5):
                             os.system(cmd)
 
-    def publish_progress_dialog(self):
-        
-        class Ui_Progress(object):
-            def setupUi(self, Progress):
-                Progress.setObjectName("Progress")
-                Progress.setStyleSheet("#Progress {background-color: #242424;} #frame {border: 1px solid #474747; border-radius: 5px;}\n")
-
-                self.verticalLayout = QtWidgets.QVBoxLayout(Progress)  # Change from horizontal layout to vertical layout
-                self.verticalLayout.setSpacing(0)
-                self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-                self.verticalLayout.setObjectName("verticalLayout")
-
-                # Create a new widget for the stripe at the top
-                self.stripe_widget = QtWidgets.QWidget(Progress)
-                self.stripe_widget.setStyleSheet("background-color: #474747;")
-                self.stripe_widget.setFixedHeight(24)  # Adjust this value to change the height of the stripe
-
-                # Create a label inside the stripe widget
-                self.stripe_label = QtWidgets.QLabel("Your text here")  # Replace this with the text you want on the stripe
-                self.stripe_label.setStyleSheet("color: #cbcbcb;")  # Change this to set the text color
-
-                # Create a layout for the stripe widget and add the label to it
-                stripe_layout = QtWidgets.QHBoxLayout()
-                stripe_layout.addWidget(self.stripe_label)
-                stripe_layout.addStretch(1)
-                stripe_layout.setContentsMargins(18, 0, 0, 0)  # This will ensure the label fills the stripe widget
-
-                # Set the layout to stripe_widget
-                self.stripe_widget.setLayout(stripe_layout)
-
-                # Add the stripe widget to the top of the main window's layout
-                self.verticalLayout.addWidget(self.stripe_widget)
-                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
-
-                self.src_horisontal_layout = QtWidgets.QHBoxLayout(Progress)  # Change from horizontal layout to vertical layout
-                self.src_horisontal_layout.setSpacing(0)
-                self.src_horisontal_layout.setContentsMargins(0, 0, 0, 0)
-                self.src_horisontal_layout.setObjectName("srcHorisontalLayout")
-
-                self.src_frame_one = QtWidgets.QFrame(Progress)
-                self.src_frame_one.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.src_frame_one.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.src_frame_one.setObjectName("frame")
-
-                self.src_frame_two = QtWidgets.QFrame(Progress)
-                self.src_frame_two.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.src_frame_two.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.src_frame_two.setObjectName("frame")
-
-                self.src_horisontal_layout.addWidget(self.src_frame_one)
-                self.src_horisontal_layout.addWidget(self.src_frame_two)
-
-                self.verticalLayout.addLayout(self.src_horisontal_layout)
-                self.verticalLayout.setStretchFactor(self.src_horisontal_layout, 4)
-
-                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
-
-                self.int_horisontal_layout = QtWidgets.QHBoxLayout(Progress)  # Change from horizontal layout to vertical layout
-                self.int_horisontal_layout.setSpacing(0)
-                self.int_horisontal_layout.setContentsMargins(0, 0, 0, 0)
-                self.int_horisontal_layout.setObjectName("intHorisontalLayout")
-
-                self.int_frame_flow = QtWidgets.QFrame(Progress)
-                self.int_frame_flow.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.int_frame_flow.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.int_frame_flow.setObjectName("frame")
-
-                self.int_frame_wrp1 = QtWidgets.QFrame(Progress)
-                self.int_frame_wrp1.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.int_frame_wrp1.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.int_frame_wrp1.setObjectName("frame")
-
-                self.int_frame_wrp2 = QtWidgets.QFrame(Progress)
-                self.int_frame_wrp2.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.int_frame_wrp2.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.int_frame_wrp2.setObjectName("frame")
-
-                self.int_frame_mix = QtWidgets.QFrame(Progress)
-                self.int_frame_mix.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.int_frame_mix.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.int_frame_mix.setObjectName("frame")
-
-                self.int_horisontal_layout.addWidget(self.int_frame_flow)
-                self.int_horisontal_layout.addWidget(self.int_frame_wrp1)
-                self.int_horisontal_layout.addWidget(self.int_frame_wrp2)
-                self.int_horisontal_layout.addWidget(self.int_frame_mix)
-
-                self.verticalLayout.addLayout(self.int_horisontal_layout)
-                self.verticalLayout.setStretchFactor(self.int_horisontal_layout, 2)
-
-                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
-
-                self.res_frame = QtWidgets.QFrame(Progress)
-                self.res_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.res_frame.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.res_frame.setObjectName("frame")
-                self.verticalLayout.addWidget(self.res_frame)
-                self.verticalLayout.setStretchFactor(self.res_frame, 8)
-
-                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
-
-
-                # Create a new horizontal layout for the bottom of the window
-                bottom_layout = QtWidgets.QHBoxLayout()
-
-                # Add a close button to the bottom layout
-                self.close_button = QtWidgets.QPushButton("Close")
-                self.close_button.clicked.connect(Progress.close)
-                self.close_button.setContentsMargins(10, 4, 4, 4)
-                self.set_button_style(self.close_button)
-                bottom_layout.addWidget(self.close_button)
-
-                # Add some stretch to the bottom layout to push the close button to the left
-                bottom_layout.addStretch(1)
-
-                # Add the bottom layout to the main layout
-                self.verticalLayout.addLayout(bottom_layout)
-
-                self.retranslateUi(Progress)
-                QtCore.QMetaObject.connectSlotsByName(Progress)
-
-            def retranslateUi(self, Progress):
-                Progress.setWindowTitle("Form")
-                # self.progress_header.setText("Timewarp ML")
-                # self.progress_message.setText("Reading images....")
-
-            def set_button_style(self, button):
-                button.setMinimumSize(QtCore.QSize(150, 28))
-                button.setMaximumSize(QtCore.QSize(150, 28))
-                button.setFocusPolicy(QtCore.Qt.NoFocus)
-                button.setStyleSheet('QPushButton {color: rgb(154, 154, 154); background-color: rgb(58, 58, 58); border: none; font: 14px}'
-                'QPushButton:hover {border: 1px solid rgb(90, 90, 90)}'
-                'QPushButton:pressed {color: rgb(159, 159, 159); background-color: rgb(66, 66, 66); border: 1px solid rgb(90, 90, 90)}'
-                'QPushButton:disabled {color: rgb(116, 116, 116); background-color: rgb(58, 58, 58); border: none}'
-                'QPushButton::menu-indicator {subcontrol-origin: padding; subcontrol-position: center right}'
-                'QToolTip {color: rgb(170, 170, 170); background-color: rgb(71, 71, 71); border: 10px solid rgb(71, 71, 71)}')
-
-
-        class Progress(QtWidgets.QWidget):
-            """
-            Overlay widget that reports toolkit bootstrap progress to the user.
-            """
-
-            PROGRESS_HEIGHT = 640
-            PROGRESS_WIDTH = 960
-            PROGRESS_PADDING = 48
-
-            def __init__(self):
-                W = 1280
-                H = 720
-
-                super().__init__()
-
-                # now load in the UI that was created in the UI designer
-                self.ui = Ui_Progress()
-                self.ui.setupUi(self)
-
-                # Record the mouse position on a press event.
-                self.mousePressPos = None
-
-                # make it frameless and have it stay on top
-                self.setWindowFlags(
-                    QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint
-                )
-
-
-                desktop = QtWidgets.QApplication.desktop()
-                screen_geometry = desktop.screenGeometry(desktop.primaryScreen())
-
-                max_width = screen_geometry.width() * 0.8
-                max_height = screen_geometry.height() * 0.8
-
-                desired_width = W  # or whatever the aspect ratio calculation yields
-                desired_height = 1.89 * H  # or whatever the aspect ratio calculation yields
-
-                scale_factor = min(max_width / desired_width, max_height / desired_height)
-                scaled_width = desired_width * scale_factor
-                scaled_height = desired_height * scale_factor
-
-                # Set the window's dimensions
-                self.setGeometry(0, 0, scaled_width, scaled_height)
-                # Move the window to the center of the screen
-                screen_center = screen_geometry.center()
-                self.move(screen_center.x() - scaled_width // 2, screen_center.y() - scaled_height // 2)
-
-            def set_progress(self, pixmap):
-                self.ui.label.setPixmap(pixmap)
-                QtWidgets.QApplication.processEvents()
-
-            def mousePressEvent(self, event):
-                # Record the position at which the mouse was pressed.
-                self.mousePressPos = event.globalPos()
-                super().mousePressEvent(event)
-
-            def mouseMoveEvent(self, event):
-                if self.mousePressPos is not None:
-                    # Calculate the new position of the window.
-                    newPos = self.pos() + (event.globalPos() - self.mousePressPos)
-                    # Move the window to the new position.
-                    self.move(newPos)
-                    # Update the position at which the mouse was pressed.
-                    self.mousePressPos = event.globalPos()
-                super().mouseMoveEvent(event)
-
-            def mouseReleaseEvent(self, event):
-                self.mousePressPos = None
-                super().mouseReleaseEvent(event)
-
-            def closeEvent(self, event):
-                self.deleteLater()
-                super().closeEvent(event)
-
-        return Progress()
 
 
 # --- FLAME STARTUP SEQUENCE ---
