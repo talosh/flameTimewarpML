@@ -642,8 +642,8 @@ class flameTimewarpML(flameMenuApp):
         class Ui_Progress(object):
             def setupUi(self, Progress):
                 Progress.setObjectName("Progress")
-                Progress.setStyleSheet("#Progress {background-color: #242424;} #frame {border: 1px solid #474747; border-radius: 5px;}\n")
-
+                Progress.setStyleSheet("#Progress {background-color: #242424;} #frame {border: 1px solid #474747; border-radius: 4px;}\n")
+                                
                 self.verticalLayout = QtWidgets.QVBoxLayout(Progress)  # Change from horizontal layout to vertical layout
                 self.verticalLayout.setSpacing(0)
                 self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -815,7 +815,7 @@ class flameTimewarpML(flameMenuApp):
             except:
                 W = 1280
                 H = 720
-
+            
             # now load in the UI that was created in the UI designer
             self.ui = self.Ui_Progress()
             self.ui.setupUi(self)
@@ -837,7 +837,7 @@ class flameTimewarpML(flameMenuApp):
             max_height = screen_geometry.height() * 0.8
 
             desired_width = W  # or whatever the aspect ratio calculation yields
-            desired_height = 1.89 * H  # or whatever the aspect ratio calculation yields
+            desired_height = 1.88 * H  # Coeeficient to accomodate additional rows
 
             scale_factor = min(max_width / desired_width, max_height / desired_height)
             scaled_width = desired_width * scale_factor
@@ -927,14 +927,18 @@ class flameTimewarpML(flameMenuApp):
                 inc_image_array = np.frombuffer(bytes(buff, 'latin-1'), dtype=dt)[:-1 * buff_tail]
                 inc_image_array = inc_image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
                 inc_image_array = np.flip(inc_image_array, axis=0)
-                self.update_interface_image(inc_image_array, self.ui.image_one_label)
+                self.update_interface_image(
+                    inc_image_array, 
+                    self.ui.image_one_label,
+                    text = 'frame: ' + str(inc_frame_number - 1)
+                    )
                 
 
                 del buff
             except Exception as e:
                 self.message('Error reading incoming source frame: %s' % e)
 
-        def update_interface_image(self, array, image_label):
+        def update_interface_image(self, array, image_label, text = None):
             np = self.twml.np
             # colourmanagement should go here
             if (array.dtype == np.float16) or (array.dtype == np.float32):
@@ -950,6 +954,30 @@ class flameTimewarpML(flameMenuApp):
             qt_pixmap = QtGui.QPixmap.fromImage(qt_image)
             parent_frame = image_label.parent()
             scaled_pixmap = qt_pixmap.scaled(parent_frame.size(), QtCore.Qt.KeepAspectRatio)
+
+            if text:
+                margin = 10
+                painter = QtGui.QPainter(scaled_pixmap)
+                font = QtGui.QFont("Discreet", 12)
+                painter.setFont(font)
+                metrics = QtGui.QFontMetrics(font)
+                text_width = metrics.horizontalAdvance(text)
+                text_height = metrics.height()
+
+                rect_x = 0
+                rect_y = scaled_pixmap.height() - text_height - margin * 2
+                rect_width = text_width + margin * 2
+                rect_height = text_height + margin * 2
+                color = QtGui.QColor(0, 0, 0, 48)
+                painter.fillRect(rect_x, rect_y, rect_width, rect_height, color)
+
+                painter.setPen(QtGui.QColor(255, 255, 255))
+                text_x = margin
+                text_y = scaled_pixmap.height() - margin
+                painter.drawText(text_x, text_y, text)
+
+                painter.end()
+
             image_label.setPixmap(scaled_pixmap)
 
         def info(self, message):
