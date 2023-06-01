@@ -14,14 +14,6 @@ import atexit
 import hashlib
 import pickle
 
-from PySide2 import QtWidgets, QtCore, QtGui
-
-from adsk.libwiretapPythonClientAPI import WireTapClient
-from adsk.libwiretapPythonClientAPI import WireTapServerHandle
-from adsk.libwiretapPythonClientAPI import WireTapNodeHandle
-from adsk.libwiretapPythonClientAPI import WireTapClipFormat
-from adsk.libwiretapPythonClientAPI import WireTapInt
-
 from pprint import pprint
 from pprint import pformat
 
@@ -29,7 +21,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 app_name = 'flameTimewarpML'
-__version__ = 'v0.5.0.dev.002'
+__version__ = 'v0.5.0.dev.001'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -150,32 +142,15 @@ class flameAppFramework(object):
 
         self.apps = []
 
-        self.bundle_location = '/var/tmp'
-        self.bundle_path = os.path.join(
-            self.bundle_location,
-            self.bundle_name
-        )
-
-        if (sys.platform == 'darwin'):
-            if os.getenv('FLAMETWML_BUNDLE_MAC'):
-                self.bundle_location = os.path.dirname(os.getenv('FLAMETWML_BUNDLE_MAC'))
-                self.bundle_path = os.getenv('FLAMETWML_BUNDLE_MAC')
-        elif sys.platform.startswith('linux') and FLAMETWML_BUNDLE_LINUX:
-            if os.getenv('FLAMETWML_BUNDLE_LINUX'):
-                self.bundle_location = os.path.dirname(os.getenv('FLAMETWML_BUNDLE_LINUX'))
-                self.bundle_path = os.getenv('FLAMETWML_BUNDLE_LINUX')
-
         # site-packages check and payload unpack if nessesary
         self.site_packages_folder = os.path.join(
-            self.bundle_path,
+            '/var/tmp',
+            self.bundle_name,
             'site-packages'
         )
 
         if not self.check_bundle_id():
-            threading.Thread(
-                target=self.unpack_bundle,
-                args=(os.path.dirname(self.site_packages_folder), )
-            ).start()
+            self.unpack_bundle(os.path.dirname(self.site_packages_folder))
 
     def log(self, message):
         try:
@@ -199,30 +174,30 @@ class flameAppFramework(object):
         prefs_global_file_path = prefix + '.prefs.json'
 
         try:
-            with open(prefs_file_path, 'r') as prefs_file:
-                self.prefs = json.load(prefs_file)
-            self.log_debug('preferences loaded from %s' % prefs_file_path)
+            with open(prefs_file_path, 'w') as prefs_file:
+                json.dump(self.prefs, prefs_file)
+            self.log_debug('preferences saved to %s' % prefs_file_path)
             self.log_debug('preferences contents:\n' + json.dumps(self.prefs, indent=4))
         except Exception as e:
-            self.log('unable to load preferences from %s' % prefs_file_path)
+            self.log('unable to save preferences to %s' % prefs_file_path)
             self.log_debug(e)
 
         try:
-            with open(prefs_user_file_path, 'r') as prefs_file:
-                self.prefs_user = json.load(prefs_file)
-            self.log_debug('preferences loaded from %s' % prefs_user_file_path)
+            with open(prefs_user_file_path, 'w') as prefs_file:
+                json.dump(self.prefs_user, prefs_file)
+            self.log_debug('preferences saved to %s' % prefs_user_file_path)
             self.log_debug('preferences contents:\n' + json.dumps(self.prefs_user, indent=4))
         except Exception as e:
-            self.log('unable to load preferences from %s' % prefs_user_file_path)
+            self.log('unable to save preferences to %s' % prefs_user_file_path)
             self.log_debug(e)
 
         try:
-            with open(prefs_global_file_path, 'r') as prefs_file:
-                self.prefs_global = json.load(prefs_file)
-            self.log_debug('preferences loaded from %s' % prefs_global_file_path)
+            with open(prefs_global_file_path, 'w') as prefs_file:
+                json.dump(self.prefs_global, prefs_file)
+            self.log_debug('preferences saved to %s' % prefs_global_file_path)
             self.log_debug('preferences contents:\n' + json.dumps(self.prefs_global, indent=4))
         except Exception as e:
-            self.log('unable to load preferences from %s' % prefs_global_file_path)
+            self.log('unable to save preferences to %s' % prefs_global_file_path)
             self.log_debug(e)
 
         return True
@@ -273,17 +248,17 @@ class flameAppFramework(object):
 
     def check_bundle_id(self):
         bundle_id_file_path = os.path.join(
-            self.bundle_path,
+            os.path.dirname(self.site_packages_folder),
             'bundle_id'
             )
         bundle_id = self.version
 
-        if (os.path.isdir(self.bundle_path) and os.path.isfile(bundle_id_file_path)):
+        if (os.path.isdir(self.site_packages_folder) and os.path.isfile(bundle_id_file_path)):
             self.log('checking existing bundle id %s' % bundle_id_file_path)
             try:
                 with open(bundle_id_file_path, 'r') as bundle_id_file:
                     if bundle_id_file.read() == bundle_id:
-                        self.log('bundle folder exists with id matching current version')
+                        self.log('site packages folder exists with id matching current version')
                         bundle_id_file.close()
                         return True
                     else:
@@ -292,11 +267,11 @@ class flameAppFramework(object):
             except Exception as e:
                 self.log(pformat(e))
                 return False
-        elif not os.path.isdir(self.bundle_path):
-            self.log('bundle folder does not exist: %s' % self.bundle_path)
+        elif not os.path.isdir(self.site_packages_folder):
+            self.log('site packages folder does not exist: %s' % self.site_packages_folder)
             return False
         elif not os.path.isfile(bundle_id_file_path):
-            self.log('bundle id file does not exist: %s' % bundle_id_file_path)
+            self.log('site packages bundle id file does not exist: %s' % bundle_id_file_path)
             return False
 
     def unpack_bundle(self, bundle_path):
@@ -358,7 +333,7 @@ class flameAppFramework(object):
 
         payload_dest = os.path.join(
             bundle_path, 
-            self.sanitize_name(self.bundle_name + '.' + __version__ + '.bundle.tar.gz')
+            self.sanitize_name(self.bundle_name + '.' + __version__ + '.bundle.tar')
             )
         
         try:
@@ -390,7 +365,7 @@ class flameAppFramework(object):
             self.log_exception(e)
 
         try:
-            with open(os.path.join(bundle_path, 'bundle_id'), 'w') as bundle_id_file:
+            with open(os.path.join(bundle_path, 'bundle_id'), 'w+') as bundle_id_file:
                 bundle_id_file.write(self.version)
         except Exception as e:
             self.log_exception(e)
@@ -403,7 +378,6 @@ class flameAppFramework(object):
         self.log_debug(pformat(traceback.format_exc()))
 
     def sanitize_name(self, name_to_sanitize):
-        import re
         if name_to_sanitize is None:
             return None
         
@@ -418,7 +392,6 @@ class flameMenuApp(object):
     def __init__(self, framework):
         self.name = self.__class__.__name__
         self.framework = framework
-        self.app_name = self.framework.app_name
         self.menu_group_name = menu_group_name
         self.debug = DEBUG
         self.dynamic_menu_data = {}
@@ -467,19 +440,6 @@ class flameMenuApp(object):
 
     def log(self, message):
         self.framework.log(message)
-
-    def message(self, message, type = 'Error'):
-        try:
-            import flame
-            flame.messages.show_in_dialog(
-                title = self.app_name,
-                message = message,
-                type = 'error',
-                buttons = ['Ok']
-            )
-        except Exception as e:
-            self.log('unable to use flame message')
-            self.log(pformat(e))
 
     def rescan(self, *args, **kwargs):
         if not self.flame:
@@ -636,361 +596,22 @@ class flameMenuApp(object):
 
 
 class flameTimewarpML(flameMenuApp):
-
-    class Progress(QtWidgets.QWidget):
-
-        class Ui_Progress(object):
-            def setupUi(self, Progress):
-                Progress.setObjectName("Progress")
-                Progress.setStyleSheet("#Progress {background-color: #242424;} #frame {border: 1px solid #474747; border-radius: 5px;}\n")
-
-                self.verticalLayout = QtWidgets.QVBoxLayout(Progress)  # Change from horizontal layout to vertical layout
-                self.verticalLayout.setSpacing(0)
-                self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-                self.verticalLayout.setObjectName("verticalLayout")
-
-                # Create a new widget for the stripe at the top
-                self.stripe_widget = QtWidgets.QWidget(Progress)
-                self.stripe_widget.setStyleSheet("background-color: #474747;")
-                self.stripe_widget.setFixedHeight(24)  # Adjust this value to change the height of the stripe
-
-                # Create a label inside the stripe widget
-                self.stripe_label = QtWidgets.QLabel("Your text here")  # Replace this with the text you want on the stripe
-                self.stripe_label.setStyleSheet("color: #cbcbcb;")  # Change this to set the text color
-
-                # Create a layout for the stripe widget and add the label to it
-                stripe_layout = QtWidgets.QHBoxLayout()
-                stripe_layout.addWidget(self.stripe_label)
-                stripe_layout.addStretch(1)
-                stripe_layout.setContentsMargins(18, 0, 0, 0)  # This will ensure the label fills the stripe widget
-
-                # Set the layout to stripe_widget
-                self.stripe_widget.setLayout(stripe_layout)
-
-                # Add the stripe widget to the top of the main window's layout
-                self.verticalLayout.addWidget(self.stripe_widget)
-                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
-
-                self.src_horisontal_layout = QtWidgets.QHBoxLayout(Progress)  # Change from horizontal layout to vertical layout
-                self.src_horisontal_layout.setSpacing(0)
-                self.src_horisontal_layout.setContentsMargins(0, 0, 0, 0)
-                self.src_horisontal_layout.setObjectName("srcHorisontalLayout")
-
-                self.src_frame_one = QtWidgets.QFrame(Progress)
-                self.src_frame_one.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.src_frame_one.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.src_frame_one.setObjectName("frame")
-
-                self.image_one_label = QtWidgets.QLabel(self.src_frame_one)
-
-                frame_one_layout = QtWidgets.QVBoxLayout()
-                frame_one_layout.setSpacing(0)
-                frame_one_layout.setContentsMargins(0, 0, 0, 0)
-                frame_one_layout.addWidget(self.image_one_label)
-                self.src_frame_one.setLayout(frame_one_layout)
-
-                self.src_frame_two = QtWidgets.QFrame(Progress)
-                self.src_frame_two.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.src_frame_two.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.src_frame_two.setObjectName("frame")
-
-                self.src_horisontal_layout.addWidget(self.src_frame_one)
-                self.src_horisontal_layout.addWidget(self.src_frame_two)
-
-                self.verticalLayout.addLayout(self.src_horisontal_layout)
-                self.verticalLayout.setStretchFactor(self.src_horisontal_layout, 4)
-
-                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
-
-                self.int_horisontal_layout = QtWidgets.QHBoxLayout(Progress)  # Change from horizontal layout to vertical layout
-                self.int_horisontal_layout.setSpacing(0)
-                self.int_horisontal_layout.setContentsMargins(0, 0, 0, 0)
-                self.int_horisontal_layout.setObjectName("intHorisontalLayout")
-
-                self.int_frame_flow = QtWidgets.QFrame(Progress)
-                self.int_frame_flow.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.int_frame_flow.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.int_frame_flow.setObjectName("frame")
-
-                self.int_frame_wrp1 = QtWidgets.QFrame(Progress)
-                self.int_frame_wrp1.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.int_frame_wrp1.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.int_frame_wrp1.setObjectName("frame")
-
-                self.int_frame_wrp2 = QtWidgets.QFrame(Progress)
-                self.int_frame_wrp2.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.int_frame_wrp2.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.int_frame_wrp2.setObjectName("frame")
-
-                self.int_frame_mix = QtWidgets.QFrame(Progress)
-                self.int_frame_mix.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.int_frame_mix.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.int_frame_mix.setObjectName("frame")
-
-                self.int_horisontal_layout.addWidget(self.int_frame_flow)
-                self.int_horisontal_layout.addWidget(self.int_frame_wrp1)
-                self.int_horisontal_layout.addWidget(self.int_frame_wrp2)
-                self.int_horisontal_layout.addWidget(self.int_frame_mix)
-
-                self.verticalLayout.addLayout(self.int_horisontal_layout)
-                self.verticalLayout.setStretchFactor(self.int_horisontal_layout, 2)
-
-                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
-
-                self.res_frame = QtWidgets.QFrame(Progress)
-                self.res_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.res_frame.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.res_frame.setObjectName("frame")
-                self.verticalLayout.addWidget(self.res_frame)
-                self.verticalLayout.setStretchFactor(self.res_frame, 8)
-
-                self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
-
-
-                # Create a new horizontal layout for the bottom of the window
-                bottom_layout = QtWidgets.QHBoxLayout()
-
-                # Add a close button to the bottom layout
-                self.close_button = QtWidgets.QPushButton("Close")
-                self.close_button.clicked.connect(Progress.close)
-                self.close_button.setContentsMargins(10, 4, 4, 4)
-                self.set_button_style(self.close_button)
-                bottom_layout.addWidget(self.close_button, alignment=QtCore.Qt.AlignLeft)
-
-                self.info_label = QtWidgets.QLabel('Frame:', Progress)
-                self.info_label.setContentsMargins(10, 4, 10, 4)
-                self.info_label.setStyleSheet("color: #cbcbcb;")
-                bottom_layout.addWidget(self.info_label)
-                bottom_layout.setStretchFactor(self.info_label, 1)
-
-                # Create a new QPushButton
-                self.right_button = QtWidgets.QPushButton("Right Button")
-                self.right_button.setContentsMargins(4, 4, 10, 4)
-                self.set_button_style(self.right_button)
-                bottom_layout.addWidget(self.right_button, alignment=QtCore.Qt.AlignRight)
-
-                # Add the bottom layout to the main layout
-                self.verticalLayout.addLayout(bottom_layout)
-
-                self.retranslateUi(Progress)
-                QtCore.QMetaObject.connectSlotsByName(Progress)
-
-            def retranslateUi(self, Progress):
-                Progress.setWindowTitle("Form")
-                # self.progress_header.setText("Timewarp ML")
-                # self.progress_message.setText("Reading images....")
-
-            def set_button_style(self, button):
-                button.setMinimumSize(QtCore.QSize(150, 28))
-                button.setMaximumSize(QtCore.QSize(150, 28))
-                button.setFocusPolicy(QtCore.Qt.NoFocus)
-                button.setStyleSheet('QPushButton {color: rgb(154, 154, 154); background-color: rgb(58, 58, 58); border: none; font: 14px}'
-                'QPushButton:hover {border: 1px solid rgb(90, 90, 90)}'
-                'QPushButton:pressed {color: rgb(159, 159, 159); background-color: rgb(66, 66, 66); border: 1px solid rgb(90, 90, 90)}'
-                'QPushButton:disabled {color: rgb(116, 116, 116); background-color: rgb(58, 58, 58); border: none}'
-                'QPushButton::menu-indicator {subcontrol-origin: padding; subcontrol-position: center right}'
-                'QToolTip {color: rgb(170, 170, 170); background-color: rgb(71, 71, 71); border: 10px solid rgb(71, 71, 71)}')
-
-        def __init__(self, selection, **kwargs):
-            super().__init__()
-            self.mode = kwargs.get('mode', 'Timewarp')
-            self.twml = kwargs.get('parent')
-            self.twml.progress = self
-            self.current_frame = 1
-
-            if not self.twml.import_numpy():
-                return
-            
-            self.frames_map = self.twml.compose_frames_map(selection, self.mode)
-            if not self.frames_map:
-                return
-            self.current_frame = min(self.frames_map.keys())
-
-            if not self.twml.import_torch():
-                return
-
-            try:
-                H = selection[0].height
-                W = selection[0].width
-            except:
-                W = 1280
-                H = 720
-
-            # now load in the UI that was created in the UI designer
-            self.ui = self.Ui_Progress()
-            self.ui.setupUi(self)
-
-            self.ui.stripe_label.setText(self.mode)
-
-            # Record the mouse position on a press event.
-            self.mousePressPos = None
-
-            # make it frameless and have it stay on top
-            self.setWindowFlags(
-                QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint
-            )
-
-            desktop = QtWidgets.QApplication.desktop()
-            screen_geometry = desktop.screenGeometry(desktop.primaryScreen())
-
-            max_width = screen_geometry.width() * 0.8
-            max_height = screen_geometry.height() * 0.8
-
-            desired_width = W  # or whatever the aspect ratio calculation yields
-            desired_height = 1.89 * H  # or whatever the aspect ratio calculation yields
-
-            scale_factor = min(max_width / desired_width, max_height / desired_height)
-            scaled_width = desired_width * scale_factor
-            scaled_height = desired_height * scale_factor
-
-            # Set the window's dimensions
-            self.setGeometry(0, 0, scaled_width, scaled_height)
-            # Move the window to the center of the screen
-            screen_center = screen_geometry.center()
-            self.move(screen_center.x() - scaled_width // 2, screen_center.y() - scaled_height // 2 - 100)
-            self.show()
-
-            try:
-                # Initialize the Wiretap Client API.
-                self.wiretap_client = WireTapClient()
-                if not self.wiretap_client.init():
-                    self.message('Unable to initialize Wiretap client API')
-                    return
-            except Exception as e:
-                self.message('Unable to initialize Wiretap client API: ' + pformat(e))
-                return
-
-            self.process_current_frame()
-
-        def process_current_frame(self):
-            np = self.twml.np
-            self.current_frame_data = self.frames_map.get(self.current_frame)
-            self.info('reading incoming source image data...')
-
-            try:
-                inc_clip = self.current_frame_data['incoming']['clip']
-                server_handle = WireTapServerHandle('localhost')
-                clip_node_id = inc_clip.get_wiretap_node_id()
-                inc_clip_node_handle = WireTapNodeHandle(server_handle, clip_node_id)
-                fmt = WireTapClipFormat()
-                if not inc_clip_node_handle.getClipFormat(fmt):
-                    raise Exception('Unable to obtain clip format: %s.' % inc_clip_node_handle.lastError())
-                num_frames = WireTapInt()
-                if not inc_clip_node_handle.getNumFrames(num_frames):
-                    raise Exception(
-                        "Unable to obtain number of frames: %s." % inc_clip_node_handle.lastError()
-                    )
-
-                buff = "0" * fmt.frameBufferSize()
-
-                inc_frame_number = self.current_frame_data['incoming']['frame_number']
-                if not inc_clip_node_handle.readFrame(int(inc_frame_number) - 1, buff, fmt.frameBufferSize()):
-                    raise Exception(
-                        'Unable to obtain read frame %i: %s.' % (inc_frame_number, inc_clip_node_handle.lastError())
-                    )
-                
-                frame_buffer_size = fmt.frameBufferSize()
-                bits_per_channel = fmt.bitsPerPixel() // fmt.numChannels()
-                if bits_per_channel == 8:
-                    dt = np.uint8
-                elif bits_per_channel == 10:
-                    dt = np.uint16
-                    # for value in bytes(buff, 'latin-1'):
-                    #     print (bin(value))
-                    byte_array = np.frombuffer(bytes(buff, 'latin-1'), dtype='>u4')
-                    # byte_array = np.frombuffer(bytes(buff, 'latin-1'), dtype='<u4')
-                    values_10bit = np.empty((len(byte_array) * 3,), dtype=np.uint16)
-                    # Extract the three 10-bit values from each 4-byte sequence
-                    for i, value in enumerate(byte_array):
-                        values_10bit[i*3] = (value >> 22) & 0x3FF  # first 10 bits
-                        values_10bit[i*3 + 1] = (value >> 12) & 0x3FF  # next 10 bits
-                        values_10bit[i*3 + 2] = (value >> 2) & 0x3FF  # last 10 bits
-
-                    values_16bit = (values_10bit // 1023) * 65535                    
-                    buff = values_16bit.astype('<u2').tobytes().decode('latin-1')
-                    frame_buffer_size = len(buff)
-
-                    del byte_array
-                    del values_10bit
-                    del values_16bit
-
-                elif bits_per_channel == 16 and not('float' in fmt.formatTag()):
-                    dt = np.uint16
-                elif (bits_per_channel == 16) and ('float' in fmt.formatTag()):
-                    dt = np.float16
-                elif bits_per_channel == 32:
-                    dt = np.float32
-                else:
-                    raise Exception('Unknown image format')
-                
-                buff_tail = (frame_buffer_size // np.dtype(dt).itemsize) - (fmt.height() * fmt.width() * fmt.numChannels())
-                inc_image_array = np.frombuffer(bytes(buff, 'latin-1'), dtype=dt)[:-1 * buff_tail]
-                inc_image_array = inc_image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
-                inc_image_array = np.flip(inc_image_array, axis=0)
-                self.update_interface_image(inc_image_array, self.ui.image_one_label)
-                
-
-                del buff
-            except Exception as e:
-                self.message('Error reading incoming source frame: %s' % e)
-
-        def update_interface_image(self, array, image_label):
-            np = self.twml.np
-            # colourmanagement should go here
-            if (array.dtype == np.float16) or (array.dtype == np.float32):
-                img = np.clip(array, 0, 1) * 255
-                img = img.astype(np.uint8)
-            else:
-                img = array.astype(np.uint8)
-
-            # Convert the numpy array to a QImage
-            height, width, _ = img.shape
-            bytes_per_line = 3 * width
-            qt_image = QtGui.QImage(img.data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
-            qt_pixmap = QtGui.QPixmap.fromImage(qt_image)
-            parent_frame = image_label.parent()
-            scaled_pixmap = qt_pixmap.scaled(parent_frame.size(), QtCore.Qt.KeepAspectRatio)
-            image_label.setPixmap(scaled_pixmap)
-
-        def info(self, message):
-            self.ui.info_label.setText(str(message))
-
-        def message(self, message):
-            self.info(message)
-            self.hide()
-            self.twml.message(message)
-            self.show()
-
-        def set_progress(self, pixmap):
-            self.ui.label.setPixmap(pixmap)
-            QtWidgets.QApplication.processEvents()
-
-        def mousePressEvent(self, event):
-            # Record the position at which the mouse was pressed.
-            self.mousePressPos = event.globalPos()
-            super().mousePressEvent(event)
-
-        def mouseMoveEvent(self, event):
-            if self.mousePressPos is not None:
-                # Calculate the new position of the window.
-                newPos = self.pos() + (event.globalPos() - self.mousePressPos)
-                # Move the window to the new position.
-                self.move(newPos)
-                # Update the position at which the mouse was pressed.
-                self.mousePressPos = event.globalPos()
-            super().mouseMoveEvent(event)
-
-        def mouseReleaseEvent(self, event):
-            self.mousePressPos = None
-            super().mouseReleaseEvent(event)
-
-        def closeEvent(self, event):
-            self.twml.progress = None
-            self.deleteLater()
-            super().closeEvent(event)
-
     def __init__(self, framework):
         flameMenuApp.__init__(self, framework)
+        
+        self.env_folder = os.path.join(self.framework.bundle_location, 'miniconda3')
+        self.check_bundle_id = True
+
+        if (sys.platform == 'darwin') and FLAMETWML_MINICONDA_MAC:
+            self.env_folder = FLAMETWML_MINICONDA_MAC
+            self.check_bundle_id = False
+        elif sys.platform.startswith('linux') and FLAMETWML_MINICONDA_LINUX:
+            self.env_folder = FLAMETWML_MINICONDA_LINUX
+            self.check_bundle_id = False
+        
+        self.gnome_terminal = self.framework.gnome_terminal
+
+        self.loops = []
         self.threads = True
 
         if not self.prefs.master.get(self.name):
@@ -1011,6 +632,16 @@ class flameTimewarpML(flameMenuApp):
         self.prefs['version'] = __version__
         self.framework.save_prefs()
 
+        if os.getenv('FLAMETWML_DEFAULT_WORK_FOLDER'):
+            self.prefs['working_folder'] = os.getenv('FLAMETWML_DEFAULT_WORK_FOLDER')
+
+        if os.getenv('FLAMETWML_WORK_FOLDER'):
+            self.prefs['working_folder'] = os.getenv('FLAMETWML_WORK_FOLDER')
+
+        self.working_folder = self.prefs.get('working_folder')
+        if not os.path.isdir(self.working_folder):
+            self.working_folder = '/var/tmp'
+
         # Module defaults
         self.new_speed = 1
         self.dedup_mode = 0
@@ -1030,15 +661,7 @@ class flameTimewarpML(flameMenuApp):
             'default',
         )
 
-        self.progress = None
-
         # self.scan_trained_models_folder()
-
-    def __getattr__(self, name):
-        def method(*args, **kwargs):
-            if name == 'Timewarp':
-                return self.Progress(args[0], parent = self, mode = 'Timewarp')
-        return method
 
     def build_menu(self):
         def scope_clip(selection):
@@ -1061,7 +684,6 @@ class flameTimewarpML(flameMenuApp):
         menu = {'actions': []}
         menu['name'] = self.menu_group_name
 
-        '''
         menu_item = {}
         menu_item['name'] = 'Slow Down clip(s) with ML'
         menu_item['execute'] = self.slowmo
@@ -1082,11 +704,10 @@ class flameTimewarpML(flameMenuApp):
         menu_item['isVisible'] = scope_clip
         menu_item['waitCursor'] = False
         menu['actions'].append(menu_item)
-        '''
-        
+
         menu_item = {}
-        menu_item['name'] = "Timewarp"
-        menu_item['execute'] = self.Timewarp
+        menu_item['name'] = "Timewarp from Flame's TW effect (beta)"
+        menu_item['execute'] = self.fltw
         menu_item['isVisible'] = scope_clip
         menu_item['waitCursor'] = False
         menu['actions'].append(menu_item)
@@ -1100,837 +721,6 @@ class flameTimewarpML(flameMenuApp):
         menu['actions'].append(menu_item)
 
         return menu
-
-    def import_torch(self):
-        import flame
-        flame.messages.show_in_console('TimewarpML: Initializing PyTorch backend', 'info', 8)
-        self.torch = None
-        try:
-            import torch
-            if torch.cuda.is_available():
-                torch.rand(10, device = 'cuda')
-            elif torch.backends.mps.is_available():
-                torch.rand(10, device = 'mps')
-            else:
-                torch.rand(10)
-            self.torch = torch
-        except:
-            try:
-                if not self.framework.site_packages_folder in sys.path:
-                    sys.path.append(self.framework.site_packages_folder)
-                import torch
-                if torch.cuda.is_available():
-                    torch.rand(10, device = 'cuda')
-                elif torch.backends.mps.is_available():
-                    torch.rand(10, device = 'mps')
-                else:
-                    torch.rand(10)
-                self.torch = torch
-            except Exception as e:
-                msg_str = 'Unable to import PyTorch module.\n'
-                msg_str += 'Please make sure PyTorch is installed and working '
-                msg_str += "with installed graphics card and Flame's python version "
-                msg_str += '.'.join(str(num) for num in sys.version_info[:3])
-                self.message(msg_str)
-                self.log(msg)
-                self.log(pformat(e))
-
-        flame.messages.clear_console()
-        return self.torch
-        
-    def import_numpy(self):
-        import flame
-        flame.messages.show_in_console('TimewarpML: Initializing Numpy module', 'info', 1)
-        self.np = None
-        try:
-            import numpy
-            self.np = numpy
-        except:
-            try:
-                if not self.framework.site_packages_folder in sys.path:
-                    sys.path.append(self.framework.site_packages_folder)
-                import numpy
-                self.np = numpy
-            except Exception as e:
-                msg_str = 'Unable to import Numpy module.\n'
-                msg_str += 'Please make sure Numpy is installed and working '
-                msg_str += "with installed graphics card and Flame's python version "
-                msg_str += '.'.join(str(num) for num in sys.version_info[:3])
-                self.message(msg_str)
-                self.log(msg)
-                self.log(pformat(e))
-
-        flame.messages.clear_console()
-        return self.np
-
-    def compose_frames_map(self, selection, mode):
-
-        '''
-        {
-            frame_number: {
-                ratio: float,
-                incoming: {clip: path, data: np.array([]), metadata: {}}
-                outgoing: {clip: path, data: np.array([]), metadata: {}}
-                temp_library:
-                destination:
-                cleanup: [{type, path}]
-            }
-        }
-        '''
-        
-        if mode == 'Timewarp':
-            return self.compose_frames_map_fltw(selection)
-        else:
-            return {}
-
-    def compose_frames_map_fltw(self, selection):
-        import flame
-        def sequence_message():
-            flame.messages.show_in_dialog(
-                        title = self.app_name,
-                        message = 'Please select single-track clips with no versions or edits',
-                        type = 'error',
-                        buttons = ['Ok']
-            )
-        
-        def effect_message():
-            flame.messages.show_in_dialog(
-                title = self.app_name,
-                message = 'Please select clips with Timewarp Timeline FX',
-                type = 'error',
-                buttons = ['Ok']
-            )
-
-        # sanity checks
-
-        if len(selection) < 1:
-            sequence_message()
-            return {}
-        
-        clip = selection[0]
-
-        effects = clip.versions[0].tracks[0].segments[0].effects
-
-        if not isinstance(clip, (flame.PyClip)):
-            sequence_message()
-            return {}
-        elif len(clip.versions) != 1:
-            sequence_message()
-            return {}
-        elif len (clip.versions[0].tracks) != 1:
-            sequence_message()
-            return {}
-        elif len (clip.versions[0].tracks[0].segments) != 1:
-            sequence_message()
-            return {}
-        
-        timewarp_effect = None
-        for effect in effects:
-            if effect.type == 'Timewarp':
-                timewarp_effect = effect
-                break
-        
-        if not timewarp_effect:
-            effect_message()
-            return {}
-        
-        temp_setup_path = '/var/tmp/temporary_tw_setup.timewarp_node'
-        try:
-            timewarp_effect.save_setup(temp_setup_path)
-            with open(temp_setup_path, 'r') as tw_setup_file:
-                tw_setup_string = tw_setup_file.read()
-                tw_setup_file.close()
-            os.remove(temp_setup_path)
-        except Exception as e:
-            self.message(pformat(e))
-            return {}
-
-        frame_value_map = self.bake_flame_tw_setup(tw_setup_string)
-        if not frame_value_map:
-            self.message('Unable to parse Timewarp effect setup')
-            return {}
-        
-        try:
-            clip_matched = (clip.versions[0].tracks[0].segments[0].match(clip.parent, include_timeline_fx = False))
-            head = clip_matched.versions[0].tracks[0].segments[0].head
-            head = 0 if head == 'infinite' else head
-            tail = clip_matched.versions[0].tracks[0].segments[0].tail
-            tail = 0 if tail == 'infinite' else tail
-            if head:
-                clip_matched.versions[0].tracks[0].segments[0].trim_head(-1 * head)
-            if tail:
-                clip_matched.versions[0].tracks[0].segments[0].trim_tail(-1 * tail)
-            clip_matched.render()
-            clip_matched.commit()
-        except Exception as e:
-            self.message(pformat(e))
-            return {}
-                
-        clip_matched.name.set_value(self.sanitized(clip.name.get_value()) + '_twml_src')
-        temp_library_name = self.app_name + '_' + self.sanitized(clip.name.get_value()) + '_' + self.create_timestamp_uid()
-        temp_library = flame.projects.current_project.create_shared_library(temp_library_name)
-        temp_library.acquire_exclusive_access()
-        temp_library.open()
-        flame.projects.current_project.refresh_shared_libraries()
-        clip_matched = flame.media_panel.move(source_entries = clip_matched, destination = temp_library, duplicate_action = 'replace')[0]
-        clip_matched.commit()
-        flame.projects.current_project.refresh_shared_libraries()
-
-        frames_map = {}
-        for frame in frame_value_map.keys():
-            frames_map[frame] = {
-                'ratio': frame_value_map[frame] - int(frame_value_map[frame]),
-                'incoming': {
-                    'clip': clip_matched,
-                    'wiretap_node_id': flame.PyClip.get_wiretap_node_id(clip_matched),
-                    'frame_number': int(frame_value_map[frame])
-                    },
-                'outgoing': {
-                    'clip': clip_matched,
-                    'wiretap_node_id': flame.PyClip.get_wiretap_node_id(clip_matched),
-                    'frame_number': int(frame_value_map[frame]) + 1
-                    },
-                'temp_library': temp_library,
-                'destination': clip.parent
-            }
-        return frames_map
-
-    def bake_flame_tw_setup(self, tw_setup_string):
-        np = self.np
-        import xml.etree.ElementTree as ET
-
-        # parses tw setup from flame and returns dictionary
-        # with baked frame - value pairs
-        
-        def dictify(r, root=True):
-            def string_to_value(s):
-                if (s.find('-') <= 0) and s.replace('-', '', 1).isdigit():
-                    return int(s)
-                elif (s.find('-') <= 0) and (s.count('.') < 2) and \
-                        (s.replace('-', '', 1).replace('.', '', 1).isdigit()):
-                    return float(s)
-                elif s == 'True':
-                    return True
-                elif s == 'False':
-                    return False
-                else:
-                    return s
-
-            from copy import copy
-
-            if root:
-                return {r.tag: dictify(r, False)}
-
-            d = copy(r.attrib)
-            if r.text:
-                # d["_text"] = r.text
-                d = r.text
-            for x in r.findall('./*'):
-                if x.tag not in d:
-                    v = dictify(x, False)
-                    if isinstance (v, str):
-                        d[x.tag] = string_to_value(v)
-                    else:
-                        d[x.tag] = []
-                if isinstance(d[x.tag], list):
-                    d[x.tag].append(dictify(x, False))
-            return d
-
-        class FlameChannellInterpolator:
-            # An attempt of a python rewrite of Julit Tarkhanov's original
-            # Flame Channel Parsr written in Ruby.
-
-            class ConstantSegment:
-                def __init__(self, from_frame, to_frame, value):
-                    self._mode = 'constant'
-                    self.start_frame = from_frame
-                    self.end_frame = to_frame
-                    self.v1 = value
-
-                def mode(self):
-                    return self._mode
-
-                def defines(self, frame):
-                    return (frame < self.end_frame) and (frame >= self.start_frame)
-
-                def value_at(self, frame):
-                    return self.v1
-
-            class LinearSegment(ConstantSegment):
-                def __init__(self, from_frame, to_frame, value1, value2):
-                    self.vint = (value2 - value1)
-                    super().__init__(from_frame, to_frame, value1)
-                    self._mode = 'linear'
-
-                def value_at(self, frame):
-                    on_t_interval = (frame - self.start_frame) / (self.end_frame - self.start_frame)
-                    return self.v1 + (on_t_interval * self.vint)
-                
-                '''
-                self.HERMATRIX = np.array([
-                    [2,  -2,  1,  1],
-                    [-3, 3,   -2, -1],
-                    [0,   0,  1,  0],
-                    [1,   0,  0,  0]
-                ])
-                '''
-
-            class HermiteSegment(LinearSegment):
-                def __init__(self, from_frame, to_frame, value1, value2, tangent1, tangent2):
-                    self.start_frame, self.end_frame = from_frame, to_frame
-                    frame_interval = (self.end_frame - self.start_frame)
-                    self._mode = 'hermite'
-
-                    self.HERMATRIX = np.array([
-                        [0,  0,  0,  1],
-                        [1,  1,  1,  1],
-                        [0,  0,  1,  0],
-                        [3,  2,  1,  0]
-                    ])
-                    self.HERMATRIX = np.linalg.inv(self.HERMATRIX)
-
-                    # Default tangents in flame are 0, so when we do None.to_f this is what we will get
-                    # CC = {P1, P2, T1, T2}
-                    p1, p2, t1, t2 = value1, value2, tangent1 * frame_interval, tangent2 * frame_interval
-                    self.hermite = np.array([p1, p2, t1, t2])
-                    self.basis = np.dot(self.HERMATRIX, self.hermite)
-
-                def value_at(self, frame):
-                    if frame == self.start_frame:
-                        return self.hermite[0]
-
-                    # Get the 0 < T < 1 interval we will interpolate on
-                    # Q[frame_] = P[ ( frame - 149 ) / (time_to - time_from)]
-                    t = (frame - self.start_frame) / (self.end_frame - self.start_frame)
-
-                    # S[s_] = {s^3, s^2, s^1, s^0}
-                    multipliers_vec = np.array([t ** 3, t ** 2, t ** 1, t ** 0])
-
-                    # P[s_] = S[s].h.CC
-                    interpolated_scalar = np.dot(self.basis, multipliers_vec)
-                    return interpolated_scalar
-
-            class HermiteSegmentQuartic(LinearSegment):
-                '''
-                Make sure not to confuse them with quartic (= degree 4) Hermite splines, 
-                which are defined by 5 values per segment: function value and first derivative at both ends, 
-                and one of the second derivatives.
-                '''
-                '''
-                P(x0) = y0    =>    a0 + a1*x0 + a2*x0^2 + a3*x0^3 + a4*x0^4 = y0   --(1)
-                P(x1) = y1    =>    a0 + a1*x1 + a2*x1^2 + a3*x1^3 + a4*x1^4 = y1   --(2)
-                
-                P'(x0) = tx0    =>    a1 + 2*a2*x0 + 3*a3*x0^2 + 4*a4*x0^3 = tx0   --(3)
-                P'(x1) = tx1    =>    a1 + 2*a2*x1 + 3*a3*x1^2 + 4*a4*x1^3 = tx1   --(4)
-
-                We have four equations (equations (1)-(4)) and five unknowns (a0, a1, a2, a3, a4). 
-                To solve this system of equations, we can rewrite it in matrix form:
-
-                A * X = B
-
-                where A is the coefficient matrix, 
-                X is the column vector of unknowns, 
-                and B is the column vector of constants.
-
-                A = | 1   x0   x0^2   x0^3   x0^4 |
-                    | 1   x1   x1^2   x1^3   x1^4 |
-                    | 0   1    2*x0   3*x0^2 4*x0^3 |
-                    | 0   1    2*x1   3*x1^2 4*x1^3 |
-
-                X = | a0 |
-                    | a1 |
-                    | a2 |
-                    | a3 |
-                    | a4 |
-
-                B = | y0 |
-                    | y1 |
-                    | tx0 |
-                    | tx1 |
-
-                To solve for X, we can compute X = inv(A) * B, where inv(A) is the inverse of matrix A.
-                Once we have the values of a0, a1, a2, a3, and a4, we can substitute them back 
-                into the quartic polynomial P(x) to obtain the interpolated values for any desired x.
-
-                P(x) = a0 + a1*x + a2*x^2 + a3*x^3 + a4*x^4
-                
-                '''
-                def __init__(self, from_frame, to_frame, value1, value2, tangent1, tangent2):
-                    self.start_frame, self.end_frame = from_frame, to_frame
-                    frame_interval = (self.end_frame - self.start_frame)
-                    self._mode = 'hermite'
-                    self.a = 0
-                    self.b = 0
-                    self.value1 = value1
-                    self.value2 = value2
-                    self.tangent1 = tangent1
-                    self.tangent2 = tangent2
-                    self.frame_interval = frame_interval
-
-                    self.HERMATRIX = np.array([
-                                [2, -2, 1, 1],
-                                [-3, 3, -2, -1],
-                                [0, 0, 1, 0],
-                                [1, 0, 0, 0],
-                                [2, 0, 0, 0]
-                            ])
-                    
-                    # self.HERMATRIX = np.linalg.inv(self.HERMATRIX)
-                    # pprint (self.HERMATRIX)
-
-                    # Default tangents in flame are 0, so when we do None.to_f this is what we will get
-                    # CC = {P1, P2, T1, T2}
-                    p1, p2, t1, t2 = value1, value2, tangent1 * frame_interval, tangent2 * frame_interval
-                    self.hermite = np.array([p1, p2, t1, t2])
-                    pprint (self.hermite)
-                    self.basis = np.dot(self.HERMATRIX, self.hermite)
-                    pprint (self.basis)
-
-                def value_at(self, frame):
-                    if frame == self.start_frame:
-                        return self.hermite[0]
-
-                    # Get the 0 < T < 1 interval we will interpolate on
-                    t = (frame - self.start_frame) / (self.end_frame - self.start_frame)
-
-                    # S[s_] = {s^4, s^3, s^2, s^1, s^0}
-                    multipliers_vec = np.array([t ** 4, t ** 3, t ** 2, t ** 1, t ** 0])
-
-                    # cubic functions
-                    a0 = (1 - 3 * (t ** 2) + 2 * (t ** 3))
-                    a1 = (3 * (t ** 2) - 2 * (t ** 3))
-                    b0 = (t - 2* (t ** 2) + t**3)
-                    b1 = -1 * (t ** 2) + (t ** 3)
-
-                    # quatric functions
-                    alpha = self.a
-                    beta = self.b
-
-                    aa0 = 1 + (alpha - 3)*(t ** 2) + 2 * (1 - alpha) * (t ** 3) + alpha * (t ** 4)
-                    aa1 = (3 - alpha) * (t **2) + 2 * (alpha - 1) * (t ** 3) - alpha * (t ** 4)
-                    bb0 = t + (beta - 2) * (t ** 2) + (1 - 2 * beta) * (t ** 3) + beta * (t ** 4)
-                    bb1 = -1 * (beta + 1) * (t ** 2) + (2 * beta + 1) * (t ** 3) - beta * (t ** 4)
-
-                    # P[s_] = S[s].h.CC
-                    # interpolated_scalar = np.dot(self.basis, multipliers_vec)
-                    p1, p2, t1, t2 = self.value1, self.value2, self.tangent1 * self.frame_interval, self.tangent2 * self.frame_interval
-                    # interpolated_scalar = a0*p1 + a1*p2 + b0*t1 + b1*t2
-                    interpolated_scalar = aa0*p1 + aa1*p2 + bb0*t1 + bb1*t2
-                    return interpolated_scalar
-
-            class HermiteSegmentQuartic5x5(LinearSegment):
-                '''
-                Make sure not to confuse them with quartic (= degree 4) Hermite splines, 
-                which are defined by 5 values per segment: function value and first derivative at both ends, 
-                and one of the second derivatives.
-                '''
-                '''
-                P(x0) = y0    =>    a0 + a1*x0 + a2*x0^2 + a3*x0^3 + a4*x0^4 = y0   --(1)
-                P(x1) = y1    =>    a0 + a1*x1 + a2*x1^2 + a3*x1^3 + a4*x1^4 = y1   --(2)
-                
-                P'(x0) = tx0    =>    a1 + 2*a2*x0 + 3*a3*x0^2 + 4*a4*x0^3 = tx0   --(3)
-                P'(x1) = tx1    =>    a1 + 2*a2*x1 + 3*a3*x1^2 + 4*a4*x1^3 = tx1   --(4)
-
-                We have four equations (equations (1)-(4)) and five unknowns (a0, a1, a2, a3, a4). 
-                To solve this system of equations, we can rewrite it in matrix form:
-
-                A * X = B
-
-                where A is the coefficient matrix, 
-                X is the column vector of unknowns, 
-                and B is the column vector of constants.
-
-                A = | 1   x0   x0^2   x0^3   x0^4 |
-                    | 1   x1   x1^2   x1^3   x1^4 |
-                    | 0   1    2*x0   3*x0^2 4*x0^3 |
-                    | 0   1    2*x1   3*x1^2 4*x1^3 |
-
-                X = | a0 |
-                    | a1 |
-                    | a2 |
-                    | a3 |
-                    | a4 |
-
-                B = | y0 |
-                    | y1 |
-                    | tx0 |
-                    | tx1 |
-
-                To solve for X, we can compute X = inv(A) * B, where inv(A) is the inverse of matrix A.
-                Once we have the values of a0, a1, a2, a3, and a4, we can substitute them back 
-                into the quartic polynomial P(x) to obtain the interpolated values for any desired x.
-
-                P(x) = a0 + a1*x + a2*x^2 + a3*x^3 + a4*x^4
-                
-                '''
-                def __init__(self, from_frame, to_frame, value1, value2, tangent1, tangent2):
-                    self.start_frame, self.end_frame = from_frame, to_frame
-                    frame_interval = (self.end_frame - self.start_frame)
-                    self._mode = 'hermite'
-
-                    self.HERMATRIX = np.array([
-                                [0, 0, 0, 0, 1],
-                                [1, 1, 1, 1, 1],
-                                [0, 0, 0, 1, 0],
-                                [4, 3, 2, 1, 0],
-                                [0, 0, 2, 0, 0]
-                            ])
-                    
-                    self.HERMATRIX = np.linalg.inv(self.HERMATRIX)
-                    pprint (self.HERMATRIX)
-
-                    # Default tangents in flame are 0, so when we do None.to_f this is what we will get
-                    # CC = {P1, P2, T1, T2}
-                    p1, p2, t1, t2 = value1, value2, tangent1 * frame_interval, tangent2 * frame_interval
-                    self.hermite = np.array([p1, p2, t1, t2, 0])
-                    pprint (self.hermite)
-                    self.basis = np.dot(self.HERMATRIX, self.hermite)
-                    pprint (self.basis)
-
-                def value_at(self, frame):
-                    if frame == self.start_frame:
-                        return self.hermite[0]
-
-                    # Get the 0 < T < 1 interval we will interpolate on
-                    t = (frame - self.start_frame) / (self.end_frame - self.start_frame)
-
-                    # S[s_] = {s^4, s^3, s^2, s^1, s^0}
-                    multipliers_vec = np.array([t ** 4, t ** 3, t ** 2, t ** 1, t ** 0])
-
-                    # P[s_] = S[s].h.CC
-                    interpolated_scalar = np.dot(self.basis, multipliers_vec)
-                    return interpolated_scalar
-
-            class BezierSegment(LinearSegment):
-                class Pt:
-                    def __init__(self, x, y, tanx, tany):
-                        self.x = x
-                        self.y = y
-                        self.tanx = tanx
-                        self.tany = tany
-                
-                def __init__(self, x1, x2, y1, y2, t1x, t1y, t2x, t2y):
-                    super().__init__(x1, x2, y1, y2)
-                    self.a = self.Pt(x1, y1, t1x, t1y)
-                    self.b = self.Pt(x2, y2, t2x, t2y)
-                    self._mode = 'bezier'
-
-                def value_at(self, frame):
-                    if frame == self.start_frame:
-                        return self.a.y
-                    
-                    t = self.approximate_t(frame, self.a.x, self.a.tanx, self.b.tanx, self.b.x)
-                    vy = self.bezier(t, self.a.y, self.a.tany, self.b.tany, self.b.y)
-                    return vy
-                
-                def bezier(self, t, a, b, c, d):
-                    return a + (a*(-3) + b*3)*(t) + (a*3 - b*6 + c*3)*(t**2) + (-a + b*3 - c*3 + d)*(t**3)
-                
-                def clamp(self, value):
-                    if value < 0:
-                        return 0.0
-                    elif value > 1:
-                        return 1.0
-                    else:
-                        return value
-                
-                APPROXIMATION_EPSILON = 1.0e-09
-                VERYSMALL = 1.0e-20
-                MAXIMUM_ITERATIONS = 100
-                
-                def approximate_t(self, atX, p0x, c0x, c1x, p1x):
-                    if atX - p0x < self.VERYSMALL:
-                        return 0.0
-                    elif p1x - atX < self.VERYSMALL:
-                        return 1.0
-
-                    u, v = 0.0, 1.0
-                    
-                    for i in range(self.MAXIMUM_ITERATIONS):
-                        a = (p0x + c0x) / 2.0
-                        b = (c0x + c1x) / 2.0
-                        c = (c1x + p1x) / 2.0
-                        d = (a + b) / 2.0
-                        e = (b + c) / 2.0
-                        f = (d + e) / 2.0
-                        
-                        if abs(f - atX) < self.APPROXIMATION_EPSILON:
-                            return self.clamp((u + v) * 0.5)
-                        
-                        if f < atX:
-                            p0x = f
-                            c0x = e
-                            c1x = c
-                            u = (u + v) / 2.0
-                        else:
-                            c0x = a
-                            c1x = d
-                            p1x = f
-                            v = (u + v) / 2.0
-                    
-                    return self.clamp((u + v) / 2.0)
-
-            class ConstantPrepolate(ConstantSegment):
-                def __init__(self, to_frame, base_value):
-                    super().__init__(float('-inf'), to_frame, base_value)
-                    self._mode = 'ConstantPrepolate'
-
-                def value_at(self, frame):
-                    return self.v1
-
-            class ConstantExtrapolate(ConstantSegment):
-                def __init__(self, from_frame, base_value):
-                    super().__init__(from_frame, float('inf'), base_value)
-                    self._mode = 'ConstantExtrapolate'
-
-                def value_at(self, frame):
-                    return self.v1
-                
-            class LinearPrepolate(ConstantPrepolate):
-                def __init__(self, to_frame, base_value, tangent):
-                    self.tangent = float(tangent)
-                    super().__init__(to_frame, base_value)
-                    self._mode = 'LinearPrepolate'
-
-                def value_at(self, frame):
-                    frame_diff = (self.end_frame - frame)
-                    return self.v1 + (self.tangent * frame_diff)
-                
-            class LinearExtrapolate(ConstantExtrapolate):
-                def __init__(self, from_frame, base_value, tangent):
-                    self.tangent = float(tangent)
-                    super().__init__(from_frame, base_value)
-                    self._mode = 'LinearExtrapolate'
-
-                def value_at(self, frame):
-                    frame_diff = (frame - self.start_frame)
-                    return self.v1 + (self.tangent * frame_diff)
-
-            class ConstantFunction(ConstantSegment):
-                def __init__(self, value):
-                    super().__init__(float('-inf'), float('inf'), value)
-                    self._mode = 'ConstantFunction'
-
-                def defines(self, frame):
-                    return True
-
-                def value_at(self, frame):
-                    return self.v1
-
-            def __init__(self, channel):
-                self.segments = []
-                self.extrap = channel.get('Extrap', 'constant')
-
-                if channel.get('Size', 0) == 0:
-                    self.segments = [FlameChannellInterpolator.ConstantFunction(channel.get('Value', 0))]
-                elif channel.get('Size') == 1 and self.extrap == 'constant':
-                    self.segments = [FlameChannellInterpolator.ConstantFunction(channel.get('Value', 0))]
-                elif channel.get('Size') == 1 and self.extrap == 'linear':
-                    kframes = channel.get('KFrames')
-                    frame = list(kframes.keys())[0]
-                    base_value = kframes[frame].get('Value')
-                    left_tangent = kframes[frame].get('LHandle_dY') / kframes[frame].get('LHandle_dX') * -1
-                    right_tangent = kframes[frame].get('RHandle_dY') / kframes[frame].get('RHandle_dX')
-                    self.segments = [
-                        FlameChannellInterpolator.LinearPrepolate(frame, base_value, left_tangent),
-                        FlameChannellInterpolator.LinearExtrapolate(frame, base_value, right_tangent)
-                    ]
-                else:
-                    self.segments = self.create_segments_from_channel(channel)
-
-            def sample_at(self, frame):
-                if self.extrap == 'cycle':
-                    return self.sample_from_segments(self.frame_number_in_cycle(frame))
-                elif self.extrap == 'revcycle':
-                    return self.sample_from_segments(self.frame_number_in_revcycle(frame))
-                else:
-                    return self.sample_from_segments(frame)
-
-            def first_defined_frame(self):
-                first_f = self.segments[0].end_frame
-                if first_f == float('-inf'):
-                    return 1
-                return first_f
-
-            def last_defined_frame(self):
-                last_f = self.segments[-1].start_frame
-                if last_f == float('inf'):
-                    return 100
-                return last_f
-
-            def frame_number_in_revcycle(self, frame):
-                animated_across = self.last_defined_frame() - self.first_defined_frame()
-                offset = abs(frame - self.first_defined_frame())
-                absolute_unit = offset % animated_across
-                cycles = offset // animated_across
-                if cycles % 2 == 0:
-                    return self.first_defined_frame() + absolute_unit
-                else:
-                    return self.last_defined_frame() - absolute_unit
-
-            def frame_number_in_cycle(self, frame):
-                animated_across = self.last_defined_frame() - self.first_defined_frame()
-                offset = frame - self.first_defined_frame()
-                modulo = offset % animated_across
-                return self.first_defined_frame() + modulo
-
-            def create_segments_from_channel(self, channel):
-                kframes = channel.get('KFrames')
-                index_frames = list(kframes.keys())
-                # First the prepolating segment
-                segments = [self.pick_prepolation(channel.get('Extrap', 'constant'), kframes[index_frames[0]], kframes[index_frames[1]])]
-
-                # Then all the intermediate segments, one segment between each pair of keys
-                for index, key in enumerate(index_frames[:-1]):
-                    segments.append(self.key_pair_to_segment(kframes[key], kframes[index_frames[index + 1]]))
-
-                # and the extrapolator
-                segments.append(self.pick_extrapolation(channel.get('Extrap', 'constant'), kframes[index_frames[-2]], kframes[index_frames[-1]]))
-                return segments
-
-            def sample_from_segments(self, at_frame):
-                for segment in self.segments:
-                    if segment.defines(at_frame):
-                        return segment.value_at(at_frame)
-                raise ValueError(f'No segment on this curve that can interpolate the value at {at_frame}')
-            
-            def segment_mode(self, at_frame):
-                for segment in self.segments:
-                    if segment.defines(at_frame):
-                        return segment.mode()
-                raise ValueError(f'No segment on this curve that can interpolate the value at {at_frame}')
-            
-            def get_segment(self, at_frame):
-                for segment in self.segments:
-                    if segment.defines(at_frame):
-                        return segment
-                raise ValueError(f'No segment on this curve that can interpolate the value at {at_frame}')
-
-            def pick_prepolation(self, extrap_symbol, first_key, second_key):
-                if extrap_symbol == 'linear' and second_key:
-                    if first_key.get('CurveMode') != 'linear':
-                        first_key_left_slope = first_key.get('LHandle_dY') / first_key.get('LHandle_dX') * -1
-                        return FlameChannellInterpolator.LinearPrepolate(
-                            first_key.get('Frame'), 
-                            first_key.get('Value'), 
-                            first_key_left_slope)
-                    else:
-                        # For linear keys the tangent actually does not do anything, so we need to look a frame
-                        # ahead and compute the increment
-                        increment = (second_key.get('Value') - first_key.get('Value')) / (second_key.get('Frame') - first_key.get('Frame'))
-                        return FlameChannellInterpolator.LinearPrepolate(first_key.get('Frame'), first_key.get('Value'), increment)
-                else:
-                    return FlameChannellInterpolator.ConstantPrepolate(first_key.get('Frame'), first_key.get('Value'))
-            
-            def pick_extrapolation(self, extrap_symbol, previous_key, last_key):
-                if extrap_symbol != 'constant':
-                    if previous_key and (last_key.get('CurveMode')  == 'linear' or last_key.get('CurveOrder')  == 'linear'):
-                        # For linear keys the tangent actually does not do anything, so we need to look a frame
-                        # ahead and compute the increment
-                        increment = (last_key.get('Value') - previous_key.get('Value')) / (last_key.get('Frame') - previous_key.get('Frame'))
-                        return FlameChannellInterpolator.LinearExtrapolate(last_key.get('Frame'), last_key.get('Value'), increment)
-                    else:
-                        last_key_right_slope = last_key.get('LHandle_dY') / last_key.get('LHandle_dX')
-                        return FlameChannellInterpolator.LinearExtrapolate(last_key.get('Frame'), last_key.get('Value'), last_key_right_slope)
-                else:
-                    return FlameChannellInterpolator.ConstantExtrapolate(last_key.get('Frame'), last_key.get('Value'))
-
-            def key_pair_to_segment(self, key, next_key):
-                key_left_tangent = key.get('LHandle_dY') / key.get('LHandle_dX') * -1
-                key_right_tangent = key.get('RHandle_dY') / key.get('RHandle_dX')
-                next_key_left_tangent = next_key.get('LHandle_dY') / next_key.get('LHandle_dX') * -1
-                next_key_right_tangent = next_key.get('RHandle_dY') / next_key.get('RHandle_dX')
-
-                if key.get('CurveMode') == 'bezier':
-                    return FlameChannellInterpolator.BezierSegment(
-                        key.get('Frame'), 
-                        next_key.get('Frame'),
-                        key.get('Value'), 
-                        next_key.get('Value'),
-                        float(key.get('Frame')) + float(key.get('RHandle_dX')), 
-                        float(key.get('Value')) + float(key.get('RHandle_dY')),
-                        float(next_key.get('Frame')) + float(next_key.get('LHandle_dX')),
-                        float(next_key.get('Value')) + float(next_key.get('LHandle_dY'))
-                        )
-                
-                elif (key.get('CurveMode') in ['natural', 'hermite']) and (key.get('CurveOrder') == 'cubic'):
-                    return FlameChannellInterpolator.HermiteSegment(
-                        key.get('Frame'), 
-                        next_key.get('Frame'), 
-                        key.get('Value'), 
-                        next_key.get('Value'),
-                        key_right_tangent, 
-                        next_key_left_tangent
-                        )
-                elif (key.get('CurveMode') in ['natural', 'hermite']) and (key.get('CurveOrder') == 'quartic'):
-                    return FlameChannellInterpolator.HermiteSegment(
-                        key.get('Frame'), 
-                        next_key.get('Frame'), 
-                        key.get('Value'), 
-                        next_key.get('Value'),
-                        key_right_tangent, 
-                        next_key_left_tangent
-                        )
-                elif key.get('CurveMode') == 'constant':
-                    return FlameChannellInterpolator.ConstantSegment(
-                        key.get('Frame'), 
-                        next_key.get('Frame'), 
-                        key.get('Value')
-                        )
-                else:  # Linear and safe
-                    return FlameChannellInterpolator.LinearSegment(
-                        key.get('Frame'), 
-                        next_key.get('Frame'), 
-                        key.get('Value'), 
-                        next_key.get('Value')
-                        )
-
-        tw_setup_xml = ET.fromstring(tw_setup_string)
-        tw_setup = dictify(tw_setup_xml)
-
-        start_frame = int(tw_setup['Setup']['Base'][0]['Range'][0]['Start'])
-        end_frame = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
-        # TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
-
-        TW_SpeedTiming_size = tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size']
-        TW_RetimerMode = tw_setup['Setup']['State'][0]['TW_RetimerMode']
-
-        frame_value_map = {}
-
-        if TW_RetimerMode == 1:
-            # 'Timing' channel is enough
-            tw_channel = 'TW_Timing'
-            channel = tw_setup['Setup']['State'][0][tw_channel][0]['Channel'][0]
-            if 'KFrames' in channel.keys():
-                channel['KFrames'] = {x['Frame']: x for x in sorted(channel['KFrames'][0]['Key'], key=lambda d: d['Index'])}
-            interpolator = FlameChannellInterpolator(channel)
-            for frame_number in range (start_frame, end_frame+1):
-                frame_value_map[frame_number] = interpolator.sample_at(frame_number)
-            return frame_value_map
-
-        else:
-            # speed - based timewarp seem to
-            # work in a different way
-            # depending on a segment mode
-
-            tw_channel = 'TW_Speed'
-            channel = tw_setup['Setup']['State'][0][tw_channel][0]['Channel'][0]
-            if 'KFrames' in channel.keys():
-                channel['KFrames'] = {x['Frame']: x for x in sorted(channel['KFrames'][0]['Key'], key=lambda d: d['Index'])}
-            speed_channel = dict(channel)
-            tw_channel = 'TW_SpeedTiming'
-            channel = tw_setup['Setup']['State'][0][tw_channel][0]['Channel'][0]
-            if 'KFrames' in channel.keys():
-                channel['KFrames'] = {x['Frame']: x for x in sorted(channel['KFrames'][0]['Key'], key=lambda d: d['Index'])}
-            speed_timing_channel = dict(channel)
-
-            speed_interpolator = FlameChannellInterpolator(speed_channel)
-            timing_interpolator = FlameChannellInterpolator(speed_timing_channel)
-
-            for frame_number in range (start_frame, end_frame+1):
-                frame_value_map[frame_number] = timing_interpolator.sample_at(frame_number)
-                    
-        return frame_value_map
 
     def slowmo(self, selection):
         result = self.slowmo_dialog()
@@ -3231,21 +2021,6 @@ class flameTimewarpML(flameMenuApp):
             return {}
 
     def fltw(self, selection):
-        import flame
-
-        sys.path.insert(0, self.framework.site_packages_folder)
-        import numpy as np
-        del sys.path[0]
-        from PySide2 import QtWidgets, QtCore, QtGui
-        class WireTapException(Exception):
-            def __init__(self, msg):
-                flame.messages.show_in_dialog(
-                    title = 'flameTimewrarpML',
-                    message = msg,
-                    type = 'error',
-                    buttons = ['Ok']
-                )
-
         def sequence_message():
             from PySide2 import QtWidgets, QtCore
             msg = 'Please select single-track clips with no versions or edits'
@@ -3255,12 +2030,20 @@ class flameTimewarpML(flameMenuApp):
             mbox.exec_()
         
         def effect_message():
-            flame.messages.show_in_dialog(
-                title = 'flameTimewrarpML',
-                message = 'Please select clips with Timewarp Timeline FX',
-                type = 'error',
-                buttons = ['Ok']
-            )
+            from PySide2 import QtWidgets, QtCore
+            msg = 'Please select clips with Timewarp Timeline FX'
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText(msg)
+            mbox.exec_()
+
+        def bake_message():
+            from PySide2 import QtWidgets, QtCore
+            msg = 'Please bake your keyframes so there is a keyframe at every frame'
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowTitle('flameTimewrarpML')
+            mbox.setText(msg)
+            mbox.exec_()
 
         def parse_message(e):
             from PySide2 import QtWidgets, QtCore
@@ -3291,109 +2074,54 @@ class flameTimewarpML(flameMenuApp):
         verified_clips = []
         temp_setup_path = '/var/tmp/temporary_tw_setup.timewarp_node'
 
-        progress = self.publish_progress_dialog()
-        progress.show()
+        import flame
+        import xml.etree.ElementTree as ET
 
-        if not selection:
-            sequence_message()
-            return
-        clip = selection[0]
-        if not isinstance(clip, (flame.PyClip)):
-            sequence_message()
-            return
-        if len(clip.versions) != 1:
-            sequence_message()
-            return
-        if len (clip.versions[0].tracks) != 1:
-            sequence_message()
-            return
-        if len (clip.versions[0].tracks[0].segments) != 1:
-            sequence_message()
+        for clip in selection:
+            if isinstance(clip, (flame.PyClip)):
+                if len(clip.versions) != 1:
+                    sequence_message()
+                    return
+                if len (clip.versions[0].tracks) != 1:
+                    sequence_message()
+                    return
+                if len (clip.versions[0].tracks[0].segments) != 1:
+                    sequence_message()
+                
+                effects = clip.versions[0].tracks[0].segments[0].effects
+                if not effects:
+                    effect_message()
+                    return
 
-        clip_matched = (clip.versions[0].tracks[0].segments[0].match(clip.parent, include_timeline_fx = False))
-        clip_matched.commit()
+                verified = False
+                for effect in effects:
+                    if effect.type == 'Timewarp':
+                        effect.save_setup(temp_setup_path)
+                        with open(temp_setup_path, 'r') as tw_setup_file:
+                            tw_setup_string = tw_setup_file.read()
+                            tw_setup_file.close()
+                            
+                        tw_setup_xml = ET.fromstring(tw_setup_string)
+                        tw_setup = dictify(tw_setup_xml)
+                        try:
+                            start = int(tw_setup['Setup']['Base'][0]['Range'][0]['Start'])
+                            end = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
+                            TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
+                            TW_SpeedTiming_size = int(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
+                            TW_RetimerMode = int(tw_setup['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
+                        except Exception as e:
+                            parse_message(e)
+                            return
 
-        # Initialize the Wiretap Client API.
-        #
-        wiretap_client = WireTapClient()
-        if not wiretap_client.init():
-            raise WireTapException("Unable to initialize Wiretap client API.")
+                        # pprint (tw_setup)
+                                
+                        verified = True
+                
+                if not verified:
+                    effect_message()
+                    return
 
-        server_handle = WireTapServerHandle('localhost')
-        clip_node_id = flame.PyClip.get_wiretap_node_id(clip_matched)
-        clip_node_handle = WireTapNodeHandle(server_handle, clip_node_id)
-        num_frames = WireTapInt()
-
-        if not clip_node_handle.getNumFrames(num_frames):
-            raise WireTapException(
-                "Unable to obtain number of frames: %s." % clip_node_handle.lastError()
-            )
-        
-        fmt = WireTapClipFormat()
-        if not clip_node_handle.getClipFormat(fmt):
-            raise WireTapException("Unable to obtain clip format: %s." % clip_node_handle.lastError())
-        
-        pprint (fmt.formatTag())
-        pprint (fmt.bitsPerPixel())
-        print  (fmt.numChannels())
-        
-        time.sleep(2)
-        return
-
-        buff = "0" * fmt.frameBufferSize()
-
-        for frame_number in range(0, num_frames):
-            print("Reading frame %i." % frame_number)
-            if not clip_node_handle.readFrame(frame_number, buff, fmt.frameBufferSize()):
-                raise WireTapException(
-                    "Unable to obtain read frame %i: %s." % (frame_number, clip.lastError())
-                )
-            print("Successfully read frame %i." % frame_number)
-
-            buff_tail = frameBufferSize() - fmt.height() * fmt.width() * (fmt.bitsPerPixel()/8)
-            arr = np.frombuffer(buff.encode(), dtype=np.float16)[:-8]
-            arr = arr.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
-            frame = ((arr - np.min(arr)) / (np.max(arr) - np.min(arr)) * 255).astype(np.uint8)
-            resized_img = resize_nearest(frame, (800, 600))
-            resized_img = np.flip(resized_img, axis=0)
-            # resized_img = np.flip(resized_img, axis=1)
-            resized_img = np.flip(resized_img, axis=2)
-            resized_img = np.ascontiguousarray(resized_img)
-            height, width, channels = resized_img.shape
-            bytesPerLine = channels * width
-            img = QtGui.QImage(resized_img.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888).rgbSwapped()
-            pixmap = QtGui.QPixmap.fromImage(img)
-            progress.set_progress(pixmap)
-            # lbl.setPixmap(pixmap)
-
-            if not new_clip_node_handle.writeFrame(
-                frame_number, buff, new_fmt.frameBufferSize()
-            ):
-                raise WireTapException(
-                    "Unable to obtain write frame %i: %s."
-                    % (frame_number, clip_node_handle.lastError())
-                )
-            print("Successfully wrote frame %i." % frame_number)
-
-        library.acquire_exclusive_access()
-        library.open()
-        if library.clips:
-            flame.media_panel.move(source_entries = library.clips[0], destination = clip.parent, duplicate_action = 'add')
-        flame.delete(library)
-        flame.delete(clip_matched)
-
-        progress.hide()
-
-        effects = clip.versions[0].tracks[0].segments[0].effects
-        if not effects:
-            # effect_message()
-            return
-        
-
-
-        return
-
-        verified_clips.append((clip, tw_setup_string))
+                verified_clips.append((clip, tw_setup_string))
         
         os.remove(temp_setup_path)
 
@@ -4107,7 +2835,6 @@ class flameTimewarpML(flameMenuApp):
                             os.system(cmd)
 
 
-
 # --- FLAME STARTUP SEQUENCE ---
 # Flame startup sequence is a bit complicated
 # If the app installed in /opt/Autodesk/<user>/python
@@ -4185,7 +2912,7 @@ def app_initialized(project_name):
     app_initialized.__dict__["waitCursor"] = False
 
     if not app_framework:
-        app_framework = flameAppFramework(app_name = app_name)
+        app_framework = flameAppFramework('app_name' = app_name)
         print ('PYTHON\t: %s initializing' % app_framework.bundle_name)
     if not apps:
         load_apps(apps, app_framework)
