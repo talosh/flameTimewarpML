@@ -87,10 +87,10 @@ width = 48
 height = 24
 
 # Initialize arrays
-R = np.ones((height, width), dtype=np.float16)
-G = np.full((height, width), 0.5, dtype=np.float16)
-B = np.zeros((height, width), dtype=np.float16)
-A = np.full((height, width), 0.8, dtype=np.float16)
+R = np.ones((height, width), dtype=np.float32)
+G = np.full((height, width), 0.5, dtype=np.float32)
+B = np.zeros((height, width), dtype=np.float32)
+A = np.full((height, width), 0.8, dtype=np.float32)
 
 # Write to file
-write_exr('test.exr', width, height, R, G, B, alpha=A)
+write_exr('test.exr', width, height, R, G, B, alpha=A, half_float = False)

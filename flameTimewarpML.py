@@ -16,11 +16,16 @@ import pickle
 
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from adsk.libwiretapPythonClientAPI import WireTapClient
-from adsk.libwiretapPythonClientAPI import WireTapServerHandle
-from adsk.libwiretapPythonClientAPI import WireTapNodeHandle
-from adsk.libwiretapPythonClientAPI import WireTapClipFormat
-from adsk.libwiretapPythonClientAPI import WireTapInt
+from adsk.libwiretapPythonClientAPI import (
+    WireTapClient,
+    WireTapClientUninit,
+    WireTapServerId,
+    WireTapServerHandle,
+    WireTapNodeHandle,
+    WireTapClipFormat,
+    WireTapInt,
+    WireTapStr,
+)
 
 from pprint import pprint
 from pprint import pformat
@@ -694,6 +699,13 @@ class flameTimewarpML(flameMenuApp):
                 self.src_frame_two.setFrameShadow(QtWidgets.QFrame.Raised)
                 self.src_frame_two.setObjectName("frame")
 
+                self.image_two_label = QtWidgets.QLabel(self.src_frame_two)
+                frame_two_layout = QtWidgets.QVBoxLayout()
+                frame_two_layout.setSpacing(0)
+                frame_two_layout.setContentsMargins(0, 0, 0, 0)
+                frame_two_layout.addWidget(self.image_two_label)
+                self.src_frame_two.setLayout(frame_two_layout)
+
                 self.src_horisontal_layout.addWidget(self.src_frame_one)
                 self.src_horisontal_layout.addWidget(self.src_frame_two)
 
@@ -741,6 +753,13 @@ class flameTimewarpML(flameMenuApp):
                 self.res_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
                 self.res_frame.setFrameShadow(QtWidgets.QFrame.Raised)
                 self.res_frame.setObjectName("frame")
+                self.image_res_label = QtWidgets.QLabel(self.res_frame)
+                frame_res_layout = QtWidgets.QVBoxLayout()
+                frame_res_layout.setSpacing(0)
+                frame_res_layout.setContentsMargins(0, 0, 0, 0)
+                frame_res_layout.addWidget(self.image_res_label)
+                self.res_frame.setLayout(frame_res_layout)
+
                 self.verticalLayout.addWidget(self.res_frame)
                 self.verticalLayout.setStretchFactor(self.res_frame, 8)
 
@@ -798,16 +817,34 @@ class flameTimewarpML(flameMenuApp):
             self.twml.progress = self
             self.current_frame = 1
 
+            if selection:
+                self.clip_parent = selection[0].parent
+
             if not self.twml.import_numpy():
                 return
             
+            '''
+            try:
+                # Initialize the Wiretap Client API.
+                self.wiretap_client = WireTapClient()
+                if not self.wiretap_client.init():
+                    self.twml.message('Unable to initialize Wiretap client API')
+                    return
+            except Exception as e:
+                self.twml.message('Unable to initialize Wiretap client API: ' + pformat(e))
+                return
+            '''
+
             self.frames_map = self.twml.compose_frames_map(selection, self.mode)
             if not self.frames_map:
                 return
+            
+            self.destination_node_id = self.twml.create_destination_node(
+                selection, 
+                len(self.frames_map.keys())
+                )
+                        
             self.current_frame = min(self.frames_map.keys())
-
-            if not self.twml.import_torch():
-                return
 
             try:
                 H = selection[0].height
@@ -819,7 +856,7 @@ class flameTimewarpML(flameMenuApp):
             # now load in the UI that was created in the UI designer
             self.ui = self.Ui_Progress()
             self.ui.setupUi(self)
-
+        
             self.ui.stripe_label.setText(self.mode)
 
             # Record the mouse position on a press event.
@@ -850,47 +887,95 @@ class flameTimewarpML(flameMenuApp):
             self.move(screen_center.x() - scaled_width // 2, screen_center.y() - scaled_height // 2 - 100)
             self.show()
 
-            try:
-                # Initialize the Wiretap Client API.
-                self.wiretap_client = WireTapClient()
-                if not self.wiretap_client.init():
-                    self.message('Unable to initialize Wiretap client API')
-                    return
-            except Exception as e:
-                self.message('Unable to initialize Wiretap client API: ' + pformat(e))
-                return
+            '''
+            self.wiretap_client = None
+            WireTapClientUninit()
 
-            self.process_current_frame()
+            return
+            '''
 
+            t = threading.Thread(target=self.process_current_frame)
+            t.daemon = True
+            t.start()
+            
         def process_current_frame(self):
             np = self.twml.np
             self.current_frame_data = self.frames_map.get(self.current_frame)
+            self.destination = self.current_frame_data['outgoing']['clip'].parent
             self.info('reading incoming source image data...')
 
+            inc_frame_number = self.current_frame_data['incoming']['frame_number'] - 1
+            incoming_image_data = self.read_image_data(
+                self.current_frame_data['incoming']['clip'], 
+                inc_frame_number
+                )
+            
+            self.update_interface_image(
+                incoming_image_data, 
+                self.ui.image_one_label,
+                text = 'src frame: ' + str(inc_frame_number + 1)
+                )
+            
+            self.info('reading outgoing source image data...')
+
+            outg_frame_number = self.current_frame_data['outgoing']['frame_number'] - 1
+            outgoing_image_data = self.read_image_data(
+                self.current_frame_data['outgoing']['clip'], 
+                outg_frame_number
+                )
+            
+            self.update_interface_image(
+                outgoing_image_data, 
+                self.ui.image_two_label,
+                text = 'src frame: ' + str(outg_frame_number + 1)
+                )
+            
+            self.info('initializing PyTorch environment...')
+            if not self.twml.import_torch():
+                self.close()
+                return
+
+            self.info('Processing frame %s ...' % self.current_frame)
+
+            self.update_interface_image(
+                incoming_image_data, 
+                self.ui.image_res_label
+                )
+            
+            self.info('Saving frame %s ...' % self.current_frame)
+            self.save_result_frame(
+                incoming_image_data.astype(np.float16),
+                self.current_frame - 1
+            )
+
+        def read_image_data(self, clip, frame_number):
+            import flame
+            np = self.twml.np
+
             try:
-                inc_clip = self.current_frame_data['incoming']['clip']
                 server_handle = WireTapServerHandle('localhost')
-                clip_node_id = inc_clip.get_wiretap_node_id()
-                inc_clip_node_handle = WireTapNodeHandle(server_handle, clip_node_id)
+                clip_node_id = clip.get_wiretap_node_id()
+                clip_node_handle = WireTapNodeHandle(server_handle, clip_node_id)
                 fmt = WireTapClipFormat()
-                if not inc_clip_node_handle.getClipFormat(fmt):
-                    raise Exception('Unable to obtain clip format: %s.' % inc_clip_node_handle.lastError())
+                if not clip_node_handle.getClipFormat(fmt):
+                    raise Exception('Unable to obtain clip format: %s.' % clip_node_handle.lastError())
                 num_frames = WireTapInt()
-                if not inc_clip_node_handle.getNumFrames(num_frames):
+                if not clip_node_handle.getNumFrames(num_frames):
                     raise Exception(
-                        "Unable to obtain number of frames: %s." % inc_clip_node_handle.lastError()
+                        "Unable to obtain number of frames: %s." % clip_node_handle.lastError()
                     )
 
                 buff = "0" * fmt.frameBufferSize()
 
-                inc_frame_number = self.current_frame_data['incoming']['frame_number']
-                if not inc_clip_node_handle.readFrame(int(inc_frame_number) - 1, buff, fmt.frameBufferSize()):
+                if not clip_node_handle.readFrame(int(frame_number), buff, fmt.frameBufferSize()):
                     raise Exception(
-                        'Unable to obtain read frame %i: %s.' % (inc_frame_number, inc_clip_node_handle.lastError())
+                        'Unable to obtain read frame %i: %s.' % (frame_number, clip_node_handle.lastError())
                     )
                 
                 frame_buffer_size = fmt.frameBufferSize()
+                
                 bits_per_channel = fmt.bitsPerPixel() // fmt.numChannels()
+
                 if bits_per_channel == 8:
                     dt = np.uint8
                 elif bits_per_channel == 10:
@@ -924,20 +1009,26 @@ class flameTimewarpML(flameMenuApp):
                     raise Exception('Unknown image format')
                 
                 buff_tail = (frame_buffer_size // np.dtype(dt).itemsize) - (fmt.height() * fmt.width() * fmt.numChannels())
-                inc_image_array = np.frombuffer(bytes(buff, 'latin-1'), dtype=dt)[:-1 * buff_tail]
-                inc_image_array = inc_image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
-                inc_image_array = np.flip(inc_image_array, axis=0)
-                self.update_interface_image(
-                    inc_image_array, 
-                    self.ui.image_one_label,
-                    text = 'frame: ' + str(inc_frame_number - 1)
-                    )
-                
+                image_array = np.frombuffer(bytes(buff, 'latin-1'), dtype=dt)[:-1 * buff_tail]
+                image_array = image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
+                image_array = np.flip(image_array, axis=0)
 
                 del buff
-            except Exception as e:
-                self.message('Error reading incoming source frame: %s' % e)
 
+                if image_array.dtype == np.uint8:
+                    return image_array.astype(np.float32) / 255
+                elif image_array.dtype == np.uint16:
+                    return image_array.astype(np.float32) / 65535
+                else:
+                    return image_array.astype(np.float32)
+
+            except Exception as e:
+                self.message('Error: %s' % e)
+
+            finally:
+                server_handle = None
+                clip_node_handle = None
+            
         def update_interface_image(self, array, image_label, text = None):
             np = self.twml.np
             # colourmanagement should go here
@@ -956,7 +1047,10 @@ class flameTimewarpML(flameMenuApp):
             scaled_pixmap = qt_pixmap.scaled(parent_frame.size(), QtCore.Qt.KeepAspectRatio)
 
             if text:
-                margin = 10
+                margin = 4
+                origin_x = 2
+                origin_y = 2
+
                 painter = QtGui.QPainter(scaled_pixmap)
                 font = QtGui.QFont("Discreet", 12)
                 painter.setFont(font)
@@ -964,16 +1058,22 @@ class flameTimewarpML(flameMenuApp):
                 text_width = metrics.horizontalAdvance(text)
                 text_height = metrics.height()
 
-                rect_x = 0
-                rect_y = scaled_pixmap.height() - text_height - margin * 2
-                rect_width = text_width + margin * 2
+                '''
+                rect_x = origin_x
+                rect_y = scaled_pixmap.height() - text_height - margin * 2 - origin_y
+                rect_width = text_width + margin * 2 + 2
                 rect_height = text_height + margin * 2
-                color = QtGui.QColor(0, 0, 0, 48)
-                painter.fillRect(rect_x, rect_y, rect_width, rect_height, color)
+                color = QtGui.QColor(0, 0, 0)
+                radius = 2
+                painter.setBrush(color)
+                painter.setOpacity(0.2)
+                painter.drawRoundedRect(rect_x, rect_y, rect_width, rect_height, radius, radius)
+                '''
 
+                painter.setOpacity(1.0)
                 painter.setPen(QtGui.QColor(255, 255, 255))
-                text_x = margin
-                text_y = scaled_pixmap.height() - margin
+                text_x = margin + origin_x
+                text_y = scaled_pixmap.height() - margin -origin_y
                 painter.drawText(text_x, text_y, text)
 
                 painter.end()
@@ -985,13 +1085,92 @@ class flameTimewarpML(flameMenuApp):
 
         def message(self, message):
             self.info(message)
-            self.hide()
-            self.twml.message(message)
-            self.show()
+            # self.hide()
+            # self.twml.message(message)
+            # self.show()
 
-        def set_progress(self, pixmap):
-            self.ui.label.setPixmap(pixmap)
-            QtWidgets.QApplication.processEvents()
+        def save_result_frame(self, image_data, frame_number):
+            import flame
+            np = self.twml.np
+
+            ext = '.exr' if 'float' in self.twml.fmt.formatTag() else '.dpx'
+                
+            file_path = os.path.join(
+                self.twml.framework.bundle_path,
+                'temp',
+                str(frame_number) + ext
+            )
+
+            # def wiretap_test():
+            try:
+                if not os.path.isdir(os.path.dirname(file_path)):
+                    os.makedirs(os.path.dirname(file_path))
+
+                height, width, depth = image_data.shape
+                red = image_data[:, :, 0]
+                green = image_data[:, :, 1]
+                blue = image_data[:, :, 2]
+                if depth > 3:
+                    alpha = image_data[:, :, 3]
+                else:
+                    alpha = np.array([])
+
+                if file_path.endswith('exr'):
+                    self.twml.write_exr(
+                        file_path,
+                        width,
+                        height,
+                        red,
+                        green,
+                        blue,
+                        alpha = alpha
+                    )
+                else:
+                    self.twml.write_dpx(
+                        file_path,
+                        width,
+                        height,
+                        red,
+                        green,
+                        blue,
+                        alpha = alpha,
+                        bit_depth = self.twml.bits_per_channel
+                    )
+
+                gateway_server_id = WireTapServerId('Gateway', 'localhost')
+                gateway_server_handle = WireTapServerHandle(gateway_server_id)
+                clip_node_handle = WireTapNodeHandle(gateway_server_handle, file_path + '@CLIP')
+                fmt = WireTapClipFormat()
+                if not clip_node_handle.getClipFormat(fmt):
+                    raise Exception('Unable to obtain clip format: %s.' % clip_node_handle.lastError())
+                
+                buff = "0" * fmt.frameBufferSize()
+
+                if not clip_node_handle.readFrame(0, buff, fmt.frameBufferSize()):
+                    raise Exception(
+                        'Unable to obtain read frame %i: %s.' % (frame_number, clip_node_handle.lastError())
+                    )
+                
+                server_handle = WireTapServerHandle('localhost')
+                destination_node_handle = WireTapNodeHandle(server_handle, self.destination_node_id)
+                
+                if not destination_node_handle.writeFrame(
+                    frame_number, buff, fmt.frameBufferSize()
+                ):
+                    raise Exception(
+                        "Unable to obtain write frame %i: %s."
+                        % (frame_number, destination_node_handle.lastError())
+                    )
+
+            except Exception as e:
+                self.message('Error: %s' % e)
+            finally:
+                gateway_server_handle = None
+                clip_node_handle = None
+                server_handle = None
+                destination_node_handle = None
+
+            # flame.schedule_idle_event(wiretap_test)
 
         def mousePressEvent(self, event):
             # Record the position at which the mouse was pressed.
@@ -1013,6 +1192,52 @@ class flameTimewarpML(flameMenuApp):
             super().mouseReleaseEvent(event)
 
         def closeEvent(self, event):
+            import flame
+            
+            result_clip = None
+            self.twml.temp_library.acquire_exclusive_access()
+
+            flame.execute_shortcut('Save Project')
+            flame.execute_shortcut('Refresh Thumbnails')
+            self.twml.temp_library.commit()
+            result_clip = flame.find_by_wiretap_node_id(self.destination_node_id)
+
+            if not result_clip:
+                # try harder
+                flame.execute_shortcut('Save Project')
+                flame.execute_shortcut('Refresh Thumbnails')
+                self.twml.temp_library.commit()
+                ch = self.twml.temp_library.children
+                for c in ch:
+                    if c.name.get_value() == self.twml.destination_node_name:
+                        result_clip = c
+            
+            if not result_clip:
+                flame.execute_shortcut('Save Project')
+                flame.execute_shortcut('Refresh Thumbnails')
+                self.twml.temp_library.commit()
+                result_clip = flame.find_by_wiretap_node_id(self.destination_node_id)
+
+            if not result_clip:
+                # try harder
+                flame.execute_shortcut('Save Project')
+                flame.execute_shortcut('Refresh Thumbnails')
+                self.twml.temp_library.commit()
+                ch = self.twml.temp_library.children
+                for c in ch:
+                    if c.name.get_value() == self.twml.destination_node_name:
+                        result_clip = c
+            
+            try:
+                flame.media_panel.copy(
+                    source_entries = result_clip, destination = self.clip_parent
+                    )
+            except:
+                pass
+
+            self.twml.temp_library.acquire_exclusive_access()
+            flame.delete(self.twml.temp_library)
+
             self.twml.progress = None
             self.deleteLater()
             super().closeEvent(event)
@@ -1236,6 +1461,8 @@ class flameTimewarpML(flameMenuApp):
             return {}
         
         clip = selection[0]
+        self.clip = clip
+        self.clip_parent = clip.parent
 
         effects = clip.versions[0].tracks[0].segments[0].effects
 
@@ -1296,11 +1523,12 @@ class flameTimewarpML(flameMenuApp):
                 
         clip_matched.name.set_value(self.sanitized(clip.name.get_value()) + '_twml_src')
         temp_library_name = self.app_name + '_' + self.sanitized(clip.name.get_value()) + '_' + self.create_timestamp_uid()
-        temp_library = flame.projects.current_project.create_shared_library(temp_library_name)
-        temp_library.acquire_exclusive_access()
-        temp_library.open()
+        self.temp_library_name = temp_library_name
+        self.temp_library = flame.projects.current_project.create_shared_library(temp_library_name)
+        self.temp_library.acquire_exclusive_access()
+        self.temp_library.open()
         flame.projects.current_project.refresh_shared_libraries()
-        clip_matched = flame.media_panel.move(source_entries = clip_matched, destination = temp_library, duplicate_action = 'replace')[0]
+        clip_matched = flame.media_panel.move(source_entries = clip_matched, destination = self.temp_library, duplicate_action = 'replace')[0]
         clip_matched.commit()
         flame.projects.current_project.refresh_shared_libraries()
 
@@ -1318,10 +1546,72 @@ class flameTimewarpML(flameMenuApp):
                     'wiretap_node_id': flame.PyClip.get_wiretap_node_id(clip_matched),
                     'frame_number': int(frame_value_map[frame]) + 1
                     },
-                'temp_library': temp_library,
+                'temp_library': self.temp_library,
                 'destination': clip.parent
             }
+
         return frames_map
+
+    def create_destination_node(self, selection, num_frames):
+        import flame
+        np = self.np
+
+        clip = selection[0]
+        self.destination_node_name = clip.name.get_value() + '_TWML'
+        destination_node_id = ''
+        # def CreateDestNode():
+        try:
+            server_handle = WireTapServerHandle('localhost')
+            clip_node_id = clip.get_wiretap_node_id()
+            clip_node_handle = WireTapNodeHandle(server_handle, clip_node_id)
+            fmt = WireTapClipFormat()
+            if not clip_node_handle.getClipFormat(fmt):
+                raise Exception('Unable to obtain clip format: %s.' % clip_node_handle.lastError())
+            
+            bits_per_channel = fmt.bitsPerPixel() // fmt.numChannels()
+            self.bits_per_channel = bits_per_channel
+            self.format_tag = fmt.formatTag()
+            self.fmt = fmt
+
+            self.temp_library.release_exclusive_access()
+            node_id = self.temp_library.get_wiretap_node_id()
+            parent_node_handle = WireTapNodeHandle(server_handle, node_id)
+            destination_node_handle = WireTapNodeHandle()
+
+            if not parent_node_handle.createClipNode(
+                self.destination_node_name,  # display name
+                fmt,  # clip format
+                "CLIP",  # extended (server-specific) type
+                destination_node_handle,  # created node returned here
+            ):
+                raise Exception(
+                    "Unable to create clip node: %s." % parent_node_handle.lastError()
+                )
+
+            if not destination_node_handle.setNumFrames(int(num_frames)):
+                raise Exception(
+                    "Unable to set the number of frames: %s." % clip_node_handle.lastError()
+                )
+            
+            dest_fmt = WireTapClipFormat()
+            if not destination_node_handle.getClipFormat(dest_fmt):
+                raise Exception(
+                    "Unable to obtain clip format: %s." % clip_node_handle.lastError()
+                )
+            
+            destination_node_id = destination_node_handle.getNodeId().id()
+
+        except Exception as e:
+            self.message('Error creating destination wiretap node: %s' % e)
+        finally:
+            server_handle = None
+            clip_node_handle = None
+            parent_node_handle = None
+            destination_node_handle = None
+
+        return destination_node_id
+
+        # flame.schedule_idle_event(CreateDestNode)
 
     def bake_flame_tw_setup(self, tw_setup_string):
         np = self.np
@@ -1959,6 +2249,213 @@ class flameTimewarpML(flameMenuApp):
                 frame_value_map[frame_number] = timing_interpolator.sample_at(frame_number)
                     
         return frame_value_map
+
+    def write_exr(self, filename, width, height, red, green, blue, alpha, half_float = True, pixelAspectRatio = 1.0):
+        np = self.np
+        import struct
+
+        MAGIC = 20000630
+        VERSION = 2
+        UINT = 0
+        HALF = 1
+        FLOAT = 2
+
+        channels_list = ['B', 'G', 'R'] if not alpha.size else ['A', 'B', 'G', 'R']
+
+        def write_attr(f, name, type, value):
+            f.write(name.encode('utf-8') + b'\x00')
+            f.write(type.encode('utf-8') + b'\x00')
+            f.write(struct.pack('<I', len(value)))
+            f.write(value)
+
+        def get_channels_attr(channels_list):
+            channel_list = b''
+            for channel_name in channels_list:
+                name_padded = channel_name[:254] + '\x00'
+                bit_depth = 1 if half_float else 2
+                pLinear = 0
+                reserved = (0, 0, 0)  # replace with your values if needed
+                xSampling = 1  # replace with your value
+                ySampling = 1  # replace with your value
+                channel_list += struct.pack(
+                    f"<{len(name_padded)}s i B 3B 2i",
+                    name_padded.encode(), 
+                    bit_depth, 
+                    pLinear, 
+                    *reserved, 
+                    xSampling, 
+                    ySampling
+                    )
+            channel_list += struct.pack('c', b'\x00')
+
+                # channel_list += (f'{i}\x00').encode('utf-8')
+                # channel_list += struct.pack("<i4B", HALF, 1, 1, 0, 0)
+            return channel_list
+        
+        def get_box2i_attr(x_min, y_min, x_max, y_max):
+            return struct.pack('<iiii', x_min, y_min, x_max, y_max)
+
+        with open(filename, 'wb') as f:
+            # Magic number and version field
+            f.write(struct.pack('I', 20000630))  # Magic number
+            f.write(struct.pack('H', 2))  # Version field
+            f.write(struct.pack('H', 0))  # Version field
+            write_attr(f, 'channels', 'chlist', get_channels_attr(channels_list))
+            write_attr(f, 'compression', 'compression', b'\x00')  # no compression
+            write_attr(f, 'dataWindow', 'box2i', get_box2i_attr(0, 0, width - 1, height - 1))
+            write_attr(f, 'displayWindow', 'box2i', get_box2i_attr(0, 0, width - 1, height - 1))
+            write_attr(f, 'lineOrder', 'lineOrder', b'\x00')  # increasing Y
+            write_attr(f, 'pixelAspectRatio', 'float', struct.pack('<f', pixelAspectRatio))
+            write_attr(f, 'screenWindowCenter', 'v2f', struct.pack('<ff', 0.0, 0.0))
+            write_attr(f, 'screenWindowWidth', 'float', struct.pack('<f', 1.0))
+            f.write(b'\x00')  # end of header
+
+            # Scan line offset table size and position
+            line_offset_pos = f.tell()
+            pixel_data_start = line_offset_pos + 8 * height
+            bytes_per_channel = 2 if half_float else 4
+            # each scan line starts with 4 bytes for y coord and 4 bytes for pixel data size
+            bytes_per_scan_line = width * len(channels_list) * bytes_per_channel + 8 
+
+            for y in range(height):
+                f.write(struct.pack('<Q', pixel_data_start + y * bytes_per_scan_line))
+
+            channel_data = {'R': red, 'G': green, 'B': blue, 'A': alpha}
+
+            # Pixel data
+            for y in range(height):
+                f.write(struct.pack('I', y))  # Line number
+                f.write(struct.pack('I', bytes_per_channel * len(channels_list) * width))  # Pixel data size
+                for channel in sorted(channels_list):
+                    f.write(channel_data[channel][y].tobytes())
+            f.close
+
+    def write_dpx(self, filename, width, height, red, green, blue, alpha, bit_depth):
+        import struct
+        np = self.np
+
+        depth = 3 if not alpha.size else 4
+        if bit_depth == 8:
+            dt = np.uint8
+            red = (red * 255).astype(dt)
+            green = (green * 255).astype(dt)
+            blue = (blue * 255).astype(dt)
+            alpha = (alpha * 255).astype(dt)
+        elif bit_depth == 16:
+            dt = np.uint16
+            red = (red * 65535).astype(dt)
+            green = (green * 65535).astype(dt)
+            blue = (blue * 65535).astype(dt)
+            alpha = (alpha * 65535).astype(dt)
+        else:
+            dt = np.float32
+
+        arr = np.ones((height, width, depth), dtype=dt)
+
+        arr[:,:,0] = red
+        arr[:,:,1] = green
+        arr[:,:,2] = blue
+        if alpha.size:
+            arr[:,:,3] = alpha
+            
+        file_size = 8192 + arr.size * bit_depth // 8
+
+        new_meta = {}
+        new_meta['colorimetry'] = 4
+        new_meta['copyright'] = '\x00' * 200
+        new_meta['creator'] = '\x00' * 100
+        new_meta['data_sign'] = 0
+        new_meta['depth'] = bit_depth
+        new_meta['descriptor'] = 50 if not alpha.size else 51
+        new_meta['ditto'] = 1
+        new_meta['dpx_version'] = 'V1.0\x00\x00\x00\x00'
+        new_meta['encoding'] = 0
+        new_meta['encryption_key'] = 4294967295
+        new_meta['endianness'] = 'be'
+        new_meta['file_size'] = file_size
+        new_meta['filename'] = os.path.basename(filename) + '\x00' * (100 - len(filename))
+        new_meta['height'] = height
+        new_meta['image_element_count'] = 1
+        new_meta['image_element_description'] = 'IMAGE DESCRIPTION DATA        \x00P'
+        new_meta['image_padding'] = 0
+        new_meta['input_device_name'] = '\x00' * 32
+        new_meta['input_device_sn'] = '\x00' * 32
+        new_meta['line_padding'] = 0
+        new_meta['magic'] = 'SDPX'
+        new_meta['offset'] = 8192
+        new_meta['orientation'] = 0
+        new_meta['packing'] = 0 if bit_depth != 10 else 1
+        new_meta['project_name'] = '\x00' * 200
+        new_meta['timestamp'] = '\x00' * 24
+        new_meta['transfer_characteristic'] = 4
+        new_meta['width'] = width
+
+        propertymap = [
+            #(field name, offset, length, type)
+
+            ('magic', 0, 4, 'magic'),
+            ('offset', 4, 4, 'I'),
+            ('dpx_version', 8, 8, 'utf8'),
+            ('file_size', 16, 4, 'I'),
+            ('ditto', 20, 4, 'I'),
+            ('filename', 36, 100, 'utf8'),
+            ('timestamp', 136, 24, 'utf8'),
+            ('creator', 160, 100, 'utf8'),
+            ('project_name', 260, 200, 'utf8'),
+            ('copyright', 460, 200, 'utf8'),
+            ('encryption_key', 660, 4, 'I'),
+
+            ('orientation', 768, 2, 'H'),
+            ('image_element_count', 770, 2, 'H'),
+            ('width', 772, 4, 'I'),
+            ('height', 776, 4, 'I'),
+
+            ('data_sign', 780, 4, 'I'),
+            ('descriptor', 800, 1, 'B'),
+            ('transfer_characteristic', 801, 1, 'B'),
+            ('colorimetry', 802, 1, 'B'),
+            ('depth', 803, 1, 'B'),
+            ('packing', 804, 2, 'H'),
+            ('encoding', 806, 2, 'H'),
+            ('line_padding', 812, 4, 'I'),
+            ('image_padding', 816, 4, 'I'),
+            ('image_element_description', 820, 32, 'utf8'),
+
+            ('input_device_name', 1556, 32, 'utf8'),
+            ('input_device_sn', 1588, 32, 'utf8')
+        ]
+
+        def writeDPX(f, image, meta):
+            endianness = ">" if meta['endianness'] == 'be' else "<"
+            for p in propertymap:
+                if p[0] in meta:
+                    f.seek(p[1])
+                    if p[3] == 'magic':
+                        bytes = ('SDPX' if meta['endianness'] == 'be' else 'XPDS').encode(encoding='UTF-8')
+                    elif p[3] == 'utf8':
+                        bytes = meta[p[0]].encode(encoding='UTF-8')
+                    else:
+                        bytes = struct.pack(endianness + p[3], meta[p[0]])
+                    f.write(bytes)
+            if meta['depth'] == 10:
+                raw = ((((image[:,:,0] * 0x000003FF).astype(np.dtype(np.int32)) & 0x000003FF) << 22) 
+                        | (((image[:,:,1] * 0x000003FF).astype(np.dtype(np.int32)) & 0x000003FF) << 12)
+                        | (((image[:,:,2] * 0x000003FF).astype(np.dtype(np.int32)) & 0x000003FF) << 2)
+                    )
+            else:
+                raw = image.flatten()
+
+            if meta['endianness'] == 'be':
+                raw = raw.byteswap()
+
+            f.seek(meta['offset'])
+            raw.tofile(f, sep="")
+
+        with open(filename, 'wb') as f:
+            writeDPX(f, arr, new_meta)
+            f.close()
+
+
 
     def slowmo(self, selection):
         result = self.slowmo_dialog()
@@ -4184,7 +4681,7 @@ def cleanup(local_apps, Local_app_framework):
             app = apps.pop()
             if DEBUG:
                 print ('[DEBUG %s] unloading: %s' % ('flameMenuSG', app.name))
-            app.terminate_loops()
+            # app.terminate_loops()
             del app        
         apps = []
 
