@@ -1,12 +1,16 @@
 import os
 import sys
 
-from adsk.libwiretapPythonClientAPI import WireTapClient
-from adsk.libwiretapPythonClientAPI import WireTapServerHandle
-from adsk.libwiretapPythonClientAPI import WireTapNodeHandle
-from adsk.libwiretapPythonClientAPI import WireTapStr
-from adsk.libwiretapPythonClientAPI import WireTapInt
-from adsk.libwiretapPythonClientAPI import WireTapClipFormat
+from adsk.libwiretapPythonClientAPI import (
+    WireTapClient,
+    WireTapClientUninit,
+    WireTapServerId,
+    WireTapServerHandle,
+    WireTapNodeHandle,
+    WireTapClipFormat,
+    WireTapInt,
+    WireTapStr,
+)
 
 import ctypes
 import flame
@@ -83,9 +87,15 @@ if remainder > 0:
 for frame_number in range(0, num_frames):
 
     # method 1
-    buff_out = str(arr.tobytes(), 'latin-1')
+    # buff_out = str(arr.tobytes(), 'latin-1')
     # method 2
-    buff_out = python_api.PyUnicode_FromKindAndData(ctypes.c_int(1), arr.tobytes(), arr.nbytes)
+    # buff_out = python_api.PyUnicode_FromKindAndData(ctypes.c_int(1), arr.tobytes(), arr.nbytes)
+    # method 3
+
+    temp_file_name = '/var/tmp/test.raw'
+    with open(temp_file_name, 'wb') as f:
+        arr.tofile(f, sep='')
+        buff_out = f.read()
 
     if not new_clip_node_handle.writeFrame(frame_number, buff_out, new_fmt.frameBufferSize()):
         raise WireTapException(

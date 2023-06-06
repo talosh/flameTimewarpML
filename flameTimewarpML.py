@@ -814,8 +814,23 @@ class flameTimewarpML(flameMenuApp):
             super().__init__()
             self.mode = kwargs.get('mode', 'Timewarp')
             self.twml = kwargs.get('parent')
+            self.app_name = self.twml.app_name
+            
+            # clean temp folder
+            self.temp_folder = os.path.join(
+                self.twml.framework.bundle_path,
+                'temp'
+            )
+            if os.path.isdir(self.temp_folder):
+                cmd = 'rm -rf ' + self.temp_folder + os.path.sep + '*'
+                try:
+                    os.system(cmd)
+                except:
+                    pass
+
             self.twml.progress = self
             self.current_frame = 1
+            self.threads = True
 
             if selection:
                 self.clip_parent = selection[0].parent
@@ -823,18 +838,6 @@ class flameTimewarpML(flameMenuApp):
             if not self.twml.import_numpy():
                 return
             
-            '''
-            try:
-                # Initialize the Wiretap Client API.
-                self.wiretap_client = WireTapClient()
-                if not self.wiretap_client.init():
-                    self.twml.message('Unable to initialize Wiretap client API')
-                    return
-            except Exception as e:
-                self.twml.message('Unable to initialize Wiretap client API: ' + pformat(e))
-                return
-            '''
-
             self.frames_map = self.twml.compose_frames_map(selection, self.mode)
             if not self.frames_map:
                 return
@@ -858,6 +861,7 @@ class flameTimewarpML(flameMenuApp):
             self.ui.setupUi(self)
         
             self.ui.stripe_label.setText(self.mode)
+            self.ui.info_label.setText('initializing PyTorch environment...')
 
             # Record the mouse position on a press event.
             self.mousePressPos = None
@@ -887,22 +891,54 @@ class flameTimewarpML(flameMenuApp):
             self.move(screen_center.x() - scaled_width // 2, screen_center.y() - scaled_height // 2 - 100)
             self.show()
 
-            '''
-            self.wiretap_client = None
-            WireTapClientUninit()
+            # QtCore.QTimer.singleShot(0, self.init_torch)
+            QtCore.QTimer.singleShot(0, self.after_show)
 
-            return
-            '''
+            # self.process_thread = threading.Thread(target=self.process_current_frame)
+            # self.process_thread.daemon = True
+            # self.process_thread.start()
 
-            t = threading.Thread(target=self.process_current_frame)
-            t.daemon = True
-            t.start()
-            
+        def showEvent(self, event):
+            super().showEvent(event)
+            max_label_width = self.ui.info_label.width()
+            self.ui.info_label.setMaximumWidth(max_label_width)
+
+        def init_torch(self):
+            if not self.twml.torch:
+                if not self.twml.import_torch():
+                    self.close()
+                    return
+
+        def after_show(self):
+            self.setFixedSize(self.size())
+            self.init_torch()
+            self.process_current_frame()
+
+        def keyPressEvent(self, event):
+            if event.key() == QtCore.Qt.Key_Left:
+                self.left_arrow_pressed()
+            elif event.key() == QtCore.Qt.Key_Right:
+                self.right_arrow_pressed()
+            else:
+                super().keyPressEvent(event)  # Pass the event to the parent's handler
+
+        def left_arrow_pressed(self):
+            min_frame = min(self.frames_map.keys())
+            self.current_frame = self.current_frame - 1 if self.current_frame > min_frame else min_frame
+            self.info('Frame ' + str(self.current_frame))
+            self.process_current_frame()
+
+        def right_arrow_pressed(self):
+            max_frame = max(self.frames_map.keys())
+            self.current_frame = self.current_frame + 1 if self.current_frame < max_frame else max_frame
+            self.info('Frame ' + str(self.current_frame))
+            self.process_current_frame()
+
         def process_current_frame(self):
-            np = self.twml.np
             self.current_frame_data = self.frames_map.get(self.current_frame)
+
             self.destination = self.current_frame_data['outgoing']['clip'].parent
-            self.info('reading incoming source image data...')
+            self.info('Frame ' + str(self.current_frame) + ': reading incoming source image data...')
 
             inc_frame_number = self.current_frame_data['incoming']['frame_number'] - 1
             incoming_image_data = self.read_image_data(
@@ -916,7 +952,10 @@ class flameTimewarpML(flameMenuApp):
                 text = 'src frame: ' + str(inc_frame_number + 1)
                 )
             
-            self.info('reading outgoing source image data...')
+            if not self.threads:
+                return
+            
+            self.info('Frame ' + str(self.current_frame) + ': reading outgoing source image data...')
 
             outg_frame_number = self.current_frame_data['outgoing']['frame_number'] - 1
             outgoing_image_data = self.read_image_data(
@@ -930,23 +969,42 @@ class flameTimewarpML(flameMenuApp):
                 text = 'src frame: ' + str(outg_frame_number + 1)
                 )
             
-            self.info('initializing PyTorch environment...')
-            if not self.twml.import_torch():
-                self.close()
+            if not self.threads:
+                return
+            
+            self.info('Frame ' + str(self.current_frame) + ': Processing...')
+
+            ratio = self.current_frame_data['ratio']
+            if ratio == 0.0:
+                result_image_data = incoming_image_data
+            elif ratio == 1.0:
+                result_image_data = outgoing_image_data
+            else:
+                flow = self.twml.flownet(incoming_image_data, outgoing_image_data, ratio, self.twml.flownet_model_path)
+                if not self.threads:
+                    return
+                result_image_data = outgoing_image_data
+
+            if not self.threads:
                 return
 
-            self.info('Processing frame %s ...' % self.current_frame)
-
             self.update_interface_image(
-                incoming_image_data, 
-                self.ui.image_res_label
+                result_image_data, 
+                self.ui.image_res_label,
+                text = 'frame: ' + str(self.current_frame)
                 )
             
-            self.info('Saving frame %s ...' % self.current_frame)
+            if self.current_frame_data.get('saved'):
+                self.info('Frame ' + str(self.current_frame))
+                return
+
+            self.info('Frame ' + str(self.current_frame) + ': Saving...')
             self.save_result_frame(
-                incoming_image_data.astype(np.float16),
+                result_image_data,
                 self.current_frame - 1
             )
+            self.current_frame_data['saved'] = True
+            self.info('Frame ' + str(self.current_frame))
 
         def read_image_data(self, clip, frame_number):
             import flame
@@ -1084,20 +1142,21 @@ class flameTimewarpML(flameMenuApp):
             self.ui.info_label.setText(str(message))
 
         def message(self, message):
+            import flame
             self.info(message)
+            flame.messages.show_in_console(self.app_name + ': ' + str(message), 'info', 8)
             # self.hide()
             # self.twml.message(message)
             # self.show()
 
         def save_result_frame(self, image_data, frame_number):
             import flame
-            np = self.twml.np
+            import numpy as np
 
             ext = '.exr' if 'float' in self.twml.fmt.formatTag() else '.dpx'
                 
             file_path = os.path.join(
-                self.twml.framework.bundle_path,
-                'temp',
+                self.temp_folder,
                 str(frame_number) + ext
             )
 
@@ -1105,6 +1164,7 @@ class flameTimewarpML(flameMenuApp):
             try:
                 if not os.path.isdir(os.path.dirname(file_path)):
                     os.makedirs(os.path.dirname(file_path))
+
 
                 height, width, depth = image_data.shape
                 red = image_data[:, :, 0]
@@ -1116,15 +1176,28 @@ class flameTimewarpML(flameMenuApp):
                     alpha = np.array([])
 
                 if file_path.endswith('exr'):
-                    self.twml.write_exr(
-                        file_path,
-                        width,
-                        height,
-                        red,
-                        green,
-                        blue,
-                        alpha = alpha
-                    )
+                    if self.twml.bits_per_channel == 32:
+                        self.twml.write_exr(
+                            file_path,
+                            width,
+                            height,
+                            red,
+                            green,
+                            blue,
+                            alpha = alpha,
+                            half_float = False
+                        )
+                    else:
+                        self.twml.write_exr(
+                            file_path,
+                            width,
+                            height,
+                            red.astype(np.float16),
+                            green.astype(np.float16),
+                            blue.astype(np.float16),
+                            alpha = alpha.astype(np.float16)
+                        )
+
                 else:
                     self.twml.write_dpx(
                         file_path,
@@ -1153,14 +1226,19 @@ class flameTimewarpML(flameMenuApp):
                 
                 server_handle = WireTapServerHandle('localhost')
                 destination_node_handle = WireTapNodeHandle(server_handle, self.destination_node_id)
-                
+                dest_fmt = WireTapClipFormat()
+                if not destination_node_handle.getClipFormat(dest_fmt):
+                    raise Exception('Unable to obtain clip format: %s.' % clip_node_handle.lastError())
+
                 if not destination_node_handle.writeFrame(
-                    frame_number, buff, fmt.frameBufferSize()
+                    frame_number, buff, dest_fmt.frameBufferSize()
                 ):
                     raise Exception(
                         "Unable to obtain write frame %i: %s."
                         % (frame_number, destination_node_handle.lastError())
                     )
+
+                os.remove(file_path)
 
             except Exception as e:
                 self.message('Error: %s' % e)
@@ -1193,6 +1271,9 @@ class flameTimewarpML(flameMenuApp):
 
         def closeEvent(self, event):
             import flame
+
+            self.threads = False
+            # self.process_thread.join()
             
             result_clip = None
             self.twml.temp_library.acquire_exclusive_access()
@@ -1228,15 +1309,16 @@ class flameTimewarpML(flameMenuApp):
                     if c.name.get_value() == self.twml.destination_node_name:
                         result_clip = c
             
-            try:
-                flame.media_panel.copy(
-                    source_entries = result_clip, destination = self.clip_parent
-                    )
-            except:
-                pass
+            if result_clip:
+                try:
+                    flame.media_panel.copy(
+                        source_entries = result_clip, destination = self.clip_parent
+                        )
+                    self.twml.temp_library.acquire_exclusive_access()
+                    flame.delete(self.twml.temp_library)
+                except:
+                    pass
 
-            self.twml.temp_library.acquire_exclusive_access()
-            flame.delete(self.twml.temp_library)
 
             self.twml.progress = None
             self.deleteLater()
@@ -1244,7 +1326,6 @@ class flameTimewarpML(flameMenuApp):
 
     def __init__(self, framework):
         flameMenuApp.__init__(self, framework)
-        self.threads = True
 
         if not self.prefs.master.get(self.name):
             # set general defaults
@@ -1283,9 +1364,14 @@ class flameTimewarpML(flameMenuApp):
             'default',
         )
 
-        self.progress = None
+        self.flownet_model_path = os.path.join(
+            self.trained_models_path,
+            'v2.4.model',
+            'flownet.pkl'
+        )
 
-        # self.scan_trained_models_folder()
+        self.progress = None
+        self.torch = None
 
     def __getattr__(self, name):
         def method(*args, **kwargs):
@@ -2455,6 +2541,24 @@ class flameTimewarpML(flameMenuApp):
             writeDPX(f, arr, new_meta)
             f.close()
 
+    def flownet(self, img0, img1, ratio, model_path):
+        import torch
+        import numpy as np
+        
+        if sys.platform == 'darwin':
+            device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+        else:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        # flip to BGR
+        img0 = np.flip(img0, axis=2).transpose(2, 0, 1).copy()
+        img1 = np.flip(img1, axis=2).transpose(2, 0, 1).copy()
+        img0 = (torch.tensor(img0).to(device)).unsqueeze(0)
+        img1 = (torch.tensor(img1).to(device)).unsqueeze(0)
+
+        torch.set_printoptions(profile="full")
+        print (ratio)
+        print (img0)
 
 
     def slowmo(self, selection):
