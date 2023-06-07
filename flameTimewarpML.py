@@ -34,7 +34,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 app_name = 'flameTimewarpML'
-__version__ = 'v0.5.0.dev.002'
+__version__ = 'v0.5.0.dev.003'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -714,35 +714,59 @@ class flameTimewarpML(flameMenuApp):
 
                 self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
 
-                self.int_horisontal_layout = QtWidgets.QHBoxLayout(Progress)  # Change from horizontal layout to vertical layout
+                self.int_horisontal_layout = QtWidgets.QHBoxLayout(Progress)
                 self.int_horisontal_layout.setSpacing(0)
                 self.int_horisontal_layout.setContentsMargins(0, 0, 0, 0)
                 self.int_horisontal_layout.setObjectName("intHorisontalLayout")
 
-                self.int_frame_flow = QtWidgets.QFrame(Progress)
-                self.int_frame_flow.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.int_frame_flow.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.int_frame_flow.setObjectName("frame")
+                self.int_frame_flow1 = QtWidgets.QFrame(Progress)
+                self.int_frame_flow1.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.int_frame_flow1.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.int_frame_flow1.setObjectName("frame")
+                self.flow1_label = QtWidgets.QLabel(self.int_frame_flow1)
+                flow1_layout = QtWidgets.QVBoxLayout()
+                flow1_layout.setSpacing(0)
+                flow1_layout.setContentsMargins(0, 0, 0, 0)
+                flow1_layout.addWidget(self.flow1_label)
+                self.int_frame_flow1.setLayout(flow1_layout)
 
-                self.int_frame_wrp1 = QtWidgets.QFrame(Progress)
-                self.int_frame_wrp1.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.int_frame_wrp1.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.int_frame_wrp1.setObjectName("frame")
+                self.int_frame_flow2 = QtWidgets.QFrame(Progress)
+                self.int_frame_flow2.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.int_frame_flow2.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.int_frame_flow2.setObjectName("frame")
+                self.flow2_label = QtWidgets.QLabel(self.int_frame_flow2)
+                flow2_layout = QtWidgets.QVBoxLayout()
+                flow2_layout.setSpacing(0)
+                flow2_layout.setContentsMargins(0, 0, 0, 0)
+                flow2_layout.addWidget(self.flow2_label)
+                self.int_frame_flow2.setLayout(flow2_layout)
 
-                self.int_frame_wrp2 = QtWidgets.QFrame(Progress)
-                self.int_frame_wrp2.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.int_frame_wrp2.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.int_frame_wrp2.setObjectName("frame")
+                self.int_frame_flow3 = QtWidgets.QFrame(Progress)
+                self.int_frame_flow3.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.int_frame_flow3.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.int_frame_flow3.setObjectName("frame")
+                self.flow3_label = QtWidgets.QLabel(self.int_frame_flow3)
+                flow3_layout = QtWidgets.QVBoxLayout()
+                flow3_layout.setSpacing(0)
+                flow3_layout.setContentsMargins(0, 0, 0, 0)
+                flow3_layout.addWidget(self.flow3_label)
+                self.int_frame_flow3.setLayout(flow3_layout)
 
-                self.int_frame_mix = QtWidgets.QFrame(Progress)
-                self.int_frame_mix.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.int_frame_mix.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.int_frame_mix.setObjectName("frame")
+                self.int_frame_flow4 = QtWidgets.QFrame(Progress)
+                self.int_frame_flow4.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.int_frame_flow4.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.int_frame_flow4.setObjectName("frame")
+                self.flow4_label = QtWidgets.QLabel(self.int_frame_flow4)
+                flow4_layout = QtWidgets.QVBoxLayout()
+                flow4_layout.setSpacing(0)
+                flow4_layout.setContentsMargins(0, 0, 0, 0)
+                flow4_layout.addWidget(self.flow4_label)
+                self.int_frame_flow4.setLayout(flow4_layout)
 
-                self.int_horisontal_layout.addWidget(self.int_frame_flow)
-                self.int_horisontal_layout.addWidget(self.int_frame_wrp1)
-                self.int_horisontal_layout.addWidget(self.int_frame_wrp2)
-                self.int_horisontal_layout.addWidget(self.int_frame_mix)
+                self.int_horisontal_layout.addWidget(self.int_frame_flow1)
+                self.int_horisontal_layout.addWidget(self.int_frame_flow2)
+                self.int_horisontal_layout.addWidget(self.int_frame_flow3)
+                self.int_horisontal_layout.addWidget(self.int_frame_flow4)
 
                 self.verticalLayout.addLayout(self.int_horisontal_layout)
                 self.verticalLayout.setStretchFactor(self.int_horisontal_layout, 2)
@@ -783,10 +807,11 @@ class flameTimewarpML(flameMenuApp):
                 bottom_layout.setStretchFactor(self.info_label, 1)
 
                 # Create a new QPushButton
-                self.right_button = QtWidgets.QPushButton("Right Button")
-                self.right_button.setContentsMargins(4, 4, 10, 4)
-                self.set_button_style(self.right_button)
-                bottom_layout.addWidget(self.right_button, alignment=QtCore.Qt.AlignRight)
+                self.render_button = QtWidgets.QPushButton("Render")
+                self.render_button.clicked.connect(Progress.render)
+                self.render_button.setContentsMargins(4, 4, 10, 4)
+                self.set_button_style(self.render_button)
+                bottom_layout.addWidget(self.render_button, alignment=QtCore.Qt.AlignRight)
 
                 # Add the bottom layout to the main layout
                 self.verticalLayout.addLayout(bottom_layout)
@@ -842,12 +867,16 @@ class flameTimewarpML(flameMenuApp):
             if not self.frames_map:
                 return
             
+            self.min_frame = min(self.frames_map.keys())
+            self.max_frame = max(self.frames_map.keys())
+            
             self.destination_node_id = self.twml.create_destination_node(
                 selection, 
                 len(self.frames_map.keys())
                 )
                         
             self.current_frame = min(self.frames_map.keys())
+            self.rendering = False
 
             try:
                 H = selection[0].height
@@ -923,16 +952,36 @@ class flameTimewarpML(flameMenuApp):
                 super().keyPressEvent(event)  # Pass the event to the parent's handler
 
         def left_arrow_pressed(self):
-            min_frame = min(self.frames_map.keys())
-            self.current_frame = self.current_frame - 1 if self.current_frame > min_frame else min_frame
+            self.current_frame = self.current_frame - 1 if self.current_frame > self.min_frame else self.min_frame
             self.info('Frame ' + str(self.current_frame))
             self.process_current_frame()
 
         def right_arrow_pressed(self):
-            max_frame = max(self.frames_map.keys())
-            self.current_frame = self.current_frame + 1 if self.current_frame < max_frame else max_frame
+            self.current_frame = self.current_frame + 1 if self.current_frame < self.max_frame else self.max_frame
             self.info('Frame ' + str(self.current_frame))
             self.process_current_frame()
+
+        def render(self):
+            self.rendering = not self.rendering
+            button_text = 'Stop' if self.rendering else 'Render'
+            print (button_text)
+            self.ui.render_button.setText(button_text)
+            QtWidgets.QApplication.instance().processEvents()
+            time.sleep(0.001)
+            self.ui.render_button.setText(button_text)
+            QtWidgets.QApplication.instance().processEvents()
+            if self.rendering:
+                self.render_loop()
+
+        def render_loop(self):
+            for frame in self.frames_map.keys():
+                if not self.rendering:
+                    break
+                if self.frames_map[frame].get('saved'):
+                    self.info('Frame ' + str(self.current_frame) + ': Already saved')
+                    continue
+                self.current_frame = frame
+                self.process_current_frame()
 
         def process_current_frame(self):
             self.current_frame_data = self.frames_map.get(self.current_frame)
@@ -941,6 +990,7 @@ class flameTimewarpML(flameMenuApp):
             self.info('Frame ' + str(self.current_frame) + ': reading incoming source image data...')
 
             inc_frame_number = self.current_frame_data['incoming']['frame_number'] - 1
+            
             incoming_image_data = self.read_image_data(
                 self.current_frame_data['incoming']['clip'], 
                 inc_frame_number
@@ -972,18 +1022,61 @@ class flameTimewarpML(flameMenuApp):
             if not self.threads:
                 return
             
-            self.info('Frame ' + str(self.current_frame) + ': Processing...')
-
             ratio = self.current_frame_data['ratio']
             if ratio == 0.0:
                 result_image_data = incoming_image_data
+                self.update_interface_image(
+                    incoming_image_data, 
+                    self.ui.flow1_label,
+                    text = 'copy of frame: ' + str(inc_frame_number + 1)
+                    )
+                self.update_interface_image(
+                    incoming_image_data, 
+                    self.ui.flow2_label,
+                    text = 'copy of frame: ' + str(inc_frame_number + 1)
+                    )
+                self.update_interface_image(
+                    incoming_image_data, 
+                    self.ui.flow3_label,
+                    text = 'copy of frame: ' + str(inc_frame_number + 1)
+                    )
+                self.update_interface_image(
+                    incoming_image_data, 
+                    self.ui.flow4_label,
+                    text = 'copy of frame: ' + str(inc_frame_number + 1)
+                    )
+
             elif ratio == 1.0:
                 result_image_data = outgoing_image_data
+                self.update_interface_image(
+                    incoming_image_data, 
+                    self.ui.flow1_label,
+                    text = 'copy of frame: ' + str(outg_frame_number + 1)
+                    )
+                self.update_interface_image(
+                    incoming_image_data, 
+                    self.ui.flow2_label,
+                    text = 'copy of frame: ' + str(outg_frame_number + 1)
+                    )
+                self.update_interface_image(
+                    incoming_image_data, 
+                    self.ui.flow3_label,
+                    text = 'copy of frame: ' + str(outg_frame_number + 1)
+                    )
+                self.update_interface_image(
+                    incoming_image_data, 
+                    self.ui.flow4_label,
+                    text = 'copy of frame: ' + str(outg_frame_number + 1)
+                    )
+
             else:
+
+                self.info('Frame ' + str(self.current_frame) + ': Processing...')
+
                 flow = self.twml.flownet(incoming_image_data, outgoing_image_data, ratio, self.twml.flownet_model_path)
                 if not self.threads:
                     return
-                result_image_data = outgoing_image_data
+                result_image_data = flow
 
             if not self.threads:
                 return
@@ -1102,7 +1195,7 @@ class flameTimewarpML(flameMenuApp):
             qt_image = QtGui.QImage(img.data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
             qt_pixmap = QtGui.QPixmap.fromImage(qt_image)
             parent_frame = image_label.parent()
-            scaled_pixmap = qt_pixmap.scaled(parent_frame.size(), QtCore.Qt.KeepAspectRatio)
+            scaled_pixmap = qt_pixmap.scaled(parent_frame.size() * 0.99, QtCore.Qt.KeepAspectRatio)
 
             if text:
                 margin = 4
@@ -1137,9 +1230,17 @@ class flameTimewarpML(flameMenuApp):
                 painter.end()
 
             image_label.setPixmap(scaled_pixmap)
+            QtWidgets.QApplication.instance().processEvents()
+            time.sleep(0.001)
+            image_label.setPixmap(scaled_pixmap)
+            QtWidgets.QApplication.instance().processEvents()
 
         def info(self, message):
             self.ui.info_label.setText(str(message))
+            QtWidgets.QApplication.instance().processEvents()
+            time.sleep(0.001)
+            self.ui.info_label.setText(str(message))
+            QtWidgets.QApplication.instance().processEvents()
 
         def message(self, message):
             import flame
@@ -1321,8 +1422,14 @@ class flameTimewarpML(flameMenuApp):
 
 
             self.twml.progress = None
+            self.twml.torch = None
             self.deleteLater()
             super().closeEvent(event)
+
+            def rescan_hooks():
+                flame.execute_shortcut('Rescan Python Hooks')
+
+            flame.schedule_idle_event(rescan_hooks)
 
     def __init__(self, framework):
         flameMenuApp.__init__(self, framework)
@@ -1364,6 +1471,11 @@ class flameTimewarpML(flameMenuApp):
             'default',
         )
 
+        self.model_path = os.path.join(
+            self.trained_models_path,
+            'v4.6.model'
+            )
+
         self.flownet_model_path = os.path.join(
             self.trained_models_path,
             'v2.4.model',
@@ -1372,6 +1484,9 @@ class flameTimewarpML(flameMenuApp):
 
         self.progress = None
         self.torch = None
+
+        # this enables fallback to CPU on Macs
+        os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
 
     def __getattr__(self, name):
         def method(*args, **kwargs):
@@ -1449,7 +1564,9 @@ class flameTimewarpML(flameMenuApp):
             if torch.cuda.is_available():
                 torch.rand(10, device = 'cuda')
             elif torch.backends.mps.is_available():
+                from torch import mps
                 torch.rand(10, device = 'mps')
+                mps.empty_cache()
             else:
                 torch.rand(10)
             self.torch = torch
@@ -1461,7 +1578,9 @@ class flameTimewarpML(flameMenuApp):
                 if torch.cuda.is_available():
                     torch.rand(10, device = 'cuda')
                 elif torch.backends.mps.is_available():
+                    from torch import mps
                     torch.rand(10, device = 'mps')
+                    mps.empty_cache()
                 else:
                     torch.rand(10)
                 self.torch = torch
@@ -1475,6 +1594,10 @@ class flameTimewarpML(flameMenuApp):
                 self.log(pformat(e))
 
         flame.messages.clear_console()
+
+        print ('import')
+        from torch import mps
+        print (mps.driver_allocated_memory())
         return self.torch
         
     def import_numpy(self):
@@ -1581,10 +1704,15 @@ class flameTimewarpML(flameMenuApp):
             with open(temp_setup_path, 'r') as tw_setup_file:
                 tw_setup_string = tw_setup_file.read()
                 tw_setup_file.close()
-            os.remove(temp_setup_path)
         except Exception as e:
             self.message(pformat(e))
             return {}
+
+        # match with 'include_timeline_fx = False' does not always work
+        # therefore we need to delete original timewarp 
+        # before matching and add it again from setup
+
+        flame.delete(timewarp_effect)
 
         frame_value_map = self.bake_flame_tw_setup(tw_setup_string)
         if not frame_value_map:
@@ -1592,7 +1720,7 @@ class flameTimewarpML(flameMenuApp):
             return {}
         
         try:
-            clip_matched = (clip.versions[0].tracks[0].segments[0].match(clip.parent, include_timeline_fx = False))
+            clip_matched = clip.versions[0].tracks[0].segments[0].match(clip.parent, include_timeline_fx = True)
             head = clip_matched.versions[0].tracks[0].segments[0].head
             head = 0 if head == 'infinite' else head
             tail = clip_matched.versions[0].tracks[0].segments[0].tail
@@ -1606,6 +1734,10 @@ class flameTimewarpML(flameMenuApp):
         except Exception as e:
             self.message(pformat(e))
             return {}
+        
+        new_timewarp = clip.versions[0].tracks[0].segments[0].create_effect('Timewarp')
+        new_timewarp.load_setup(temp_setup_path)
+        os.remove(temp_setup_path)
                 
         clip_matched.name.set_value(self.sanitized(clip.name.get_value()) + '_twml_src')
         temp_library_name = self.app_name + '_' + self.sanitized(clip.name.get_value()) + '_' + self.create_timestamp_uid()
@@ -2543,6 +2675,10 @@ class flameTimewarpML(flameMenuApp):
 
     def flownet(self, img0, img1, ratio, model_path):
         import torch
+        import torch.nn as nn
+        import torch.nn.functional as F
+        from torch.utils.checkpoint import checkpoint
+
         import numpy as np
         
         if sys.platform == 'darwin':
@@ -2550,15 +2686,349 @@ class flameTimewarpML(flameMenuApp):
         else:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+        torch.set_printoptions(profile="full")
+
+        print ('start')
+        from torch import mps
+        print (mps.driver_allocated_memory())
+
         # flip to BGR
         img0 = np.flip(img0, axis=2).transpose(2, 0, 1).copy()
         img1 = np.flip(img1, axis=2).transpose(2, 0, 1).copy()
         img0 = (torch.tensor(img0).to(device)).unsqueeze(0)
         img1 = (torch.tensor(img1).to(device)).unsqueeze(0)
 
-        torch.set_printoptions(profile="full")
-        print (ratio)
-        print (img0)
+        n, c, h, w = img0.shape
+        
+        ph = ((h - 1) // 32 + 1) * 32
+        pw = ((w - 1) // 32 + 1) * 32
+        padding = (0, pw - w, 0, ph - h)
+        img0 = F.pad(img0, padding)
+        img1 = F.pad(img1, padding)
+
+        print ('padding')
+        from torch import mps
+        print (mps.driver_allocated_memory())
+
+        # print (img0)
+        # print (img1)
+
+        print ('processing ratio %s' % ratio)
+
+        def warp(tenInput, tenFlow):
+            backwarp_tenGrid = {}
+            k = (str(tenFlow.device), str(tenFlow.size()))
+            if k not in backwarp_tenGrid:
+                tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3], device=device).view(
+                    1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+                tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2], device=device).view(
+                    1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+                backwarp_tenGrid[k] = torch.cat(
+                    [tenHorizontal, tenVertical], 1).to(device)
+
+            tenFlow = torch.cat([tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0),
+                                tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0)], 1)
+
+            g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+            # return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+            cpu_g = g.to('cpu')
+            cpu_tenInput = g.to('cpu')
+            cpu_result = torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bicubic', padding_mode='border', align_corners=True)
+            return cpu_result.to(device)
+
+        def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
+            return nn.Sequential(
+                nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
+                        padding=padding, dilation=dilation, bias=True),        
+                nn.LeakyReLU(0.2, True)
+            )
+        
+        class Conv2(nn.Module):
+            def __init__(self, in_planes, out_planes, stride=2):
+                super(Conv2, self).__init__()
+                self.conv1 = conv(in_planes, out_planes, 3, stride, 1)
+                self.conv2 = conv(out_planes, out_planes, 3, 1, 1)
+
+            def forward(self, x):
+                x = self.conv1(x)
+                x = self.conv2(x)
+                return x
+
+        class ContextNet(nn.Module):
+            def __init__(self):
+                print ('contextnet init')
+                c = 32
+                super(ContextNet, self).__init__()
+                self.conv0 = Conv2(3, c)
+                self.conv1 = Conv2(c, c)
+                self.conv2 = Conv2(c, 2*c)
+                self.conv3 = Conv2(2*c, 4*c)
+                self.conv4 = Conv2(4*c, 8*c)
+
+            def forward(self, x, flow):
+                print ('contextnet forward')
+
+                x = self.conv0(x)
+                x = self.conv1(x)
+                flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear", align_corners=False) * 0.5
+                f1 = warp(x, flow)
+                x = self.conv2(x)
+                flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
+                                    align_corners=False) * 0.5
+                f2 = warp(x, flow)
+                x = self.conv3(x)
+                flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
+                                    align_corners=False) * 0.5
+                f3 = warp(x, flow)
+                x = self.conv4(x)
+                flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
+                                    align_corners=False) * 0.5
+                f4 = warp(x, flow)
+                return [f1, f2, f3, f4]
+
+        class ResConv(nn.Module):
+            def __init__(self, c, dilation=1):
+                super(ResConv, self).__init__()
+                self.conv = nn.Conv2d(c, c, 3, 1, dilation, dilation=dilation, groups=1\
+        )
+                self.beta = nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.relu = nn.LeakyReLU(0.2, True)
+
+            def forward(self, x):
+                return self.relu(self.conv(x) * self.beta + x)
+
+        class IFBlock(nn.Module):
+            def __init__(self, in_planes, c=64):
+                super(IFBlock, self).__init__()
+                self.conv0 = nn.Sequential(
+                    conv(in_planes, c//2, 3, 2, 1),
+                    conv(c//2, c, 3, 2, 1),
+                    )
+                self.convblock = nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                )
+                self.lastconv = nn.Sequential(
+                    nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    nn.PixelShuffle(2)
+                )
+
+            def forward(self, x, flow, scale):
+                '''
+                x = x.to('cpu')
+                x = F.interpolate(x, scale_factor= 1. / scale, mode="bicubic", align_corners=False)
+                if flow is not None:
+                    flow = flow.to('cpu')
+                    flow = F.interpolate(flow, scale_factor= 1. / scale, mode="bicubic", align_corners=False) * 1. / scale
+                    x = torch.cat((x, flow), 1)
+                x = x.to(device)
+                feat = self.conv0(x)
+                feat = self.convblock(feat)
+                tmp = self.lastconv(feat)
+                tmp = tmp.to('cpu')
+                tmp = F.interpolate(tmp, scale_factor=scale, mode="bicubic", align_corners=False)
+                tmp = tmp.to(device)
+                flow = tmp[:, :4] * scale
+                mask = tmp[:, 4:5]
+                return flow, mask
+                '''
+
+                x = F.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                if flow is not None:
+                    flow = F.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
+                    x = torch.cat((x, flow), 1)
+                feat = self.conv0(x)
+                feat = self.convblock(feat)
+                tmp = self.lastconv(feat)
+                tmp = F.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
+                flow = tmp[:, :4] * scale
+                mask = tmp[:, 4:5]
+                return flow, mask
+
+        class IFNet(nn.Module):
+            def __init__(self, progress):
+                super(IFNet, self).__init__()
+                self.block0 = IFBlock(7, c=192)
+                self.block1 = IFBlock(8+4, c=128)
+                self.block2 = IFBlock(8+4, c=96)
+                self.block3 = IFBlock(8+4, c=64)
+                self.progress = progress
+                # self.contextnet = ContextNet()
+                # self.unet = Unet()
+
+            def forward(self, img0, img1, timestep=0.5, scale_list=[8, 4, 2, 1], fastmode=True, ensemble=False):
+                from torch import mps
+                print ('timestep: %s' % timestep)
+                # pprint (dir(mps))
+                # print (mps.current_allocated_memory())
+                timestep = (img0[:, :1].clone() * 0 + 1) * timestep
+                # print (mps.current_allocated_memory())
+
+                flow_list = []
+                merged = []
+                mask_list = []
+                warped_img0 = img0
+                warped_img1 = img1
+                flow = None
+                mask = None
+                block = [self.block0, self.block1, self.block2, self.block3]
+                # print (mps.current_allocated_memory())
+
+                for i in range(len(scale_list)):
+                    self.progress.info('Frame ' + str(self.progress.current_frame) + ': Processing: Optical flow pass {} of 4'.format(str(i+1)))
+                    print ('block %s' % i)
+                    if flow is None:
+                        flow, mask = checkpoint(block[i], torch.cat((img0[:, :3], img1[:, :3], timestep), 1), None, scale_list[i])
+                        if ensemble:
+                            f1, m1 = checkpoint(block[i], torch.cat((img1[:, :3], img0[:, :3], 1-timestep), 1), None, scale_list[i])
+                            flow = (flow + torch.cat((f1[:, 2:4], f1[:, :2]), 1)) / 2
+                            mask = (mask + (-m1)) / 2
+                    else:
+                        f0, m0 = checkpoint(block[i], torch.cat((warped_img0[:, :3], warped_img1[:, :3], timestep, mask), 1), flow, scale_list[i])
+                        if ensemble:
+                            f1, m1 = checkpoint(block[i], torch.cat((warped_img1[:, :3], warped_img0[:, :3], 1-timestep, -mask), 1), torch.cat((flow[:, 2:4], flow[:, :2]), 1), scale_list[i])
+                            f0 = (f0 + torch.cat((f1[:, 2:4], f1[:, :2]), 1)) / 2
+                            m0 = (m0 + (-m1)) / 2
+                        flow = flow + f0
+                        mask = mask + m0
+
+                    display_flow1 = flow[:, :2].cpu().detach().numpy()
+                    display_flow1 = np.pad(display_flow1, ((0, 0), (0, 1), (0, 0), (0, 0)))
+                    display_flow1 = display_flow1.transpose((0, 2, 3, 1)).squeeze(axis=0)
+                    display_flow1 = (display_flow1 + 1) / 2
+                    display_flow1 = np.flip(display_flow1, axis=2)
+                    self.progress.update_interface_image(
+                        display_flow1.copy(), 
+                        self.progress.ui.flow1_label,
+                        text = 'Flow pass {} of 4'.format(str(i+1))
+                        )
+                    display_flow2 = flow[:, 2:4].cpu().detach().numpy()
+                    display_flow2 = np.pad(display_flow2, ((0, 0), (0, 1), (0, 0), (0, 0)))
+                    display_flow2 = display_flow2.transpose((0, 2, 3, 1)).squeeze(axis=0)
+                    display_flow2 = (display_flow2 + 1) / 2
+                    display_flow2 = np.flip(display_flow2, axis=2)
+                    self.progress.update_interface_image(
+                        display_flow2.copy(), 
+                        self.progress.ui.flow2_label,
+                        text = 'Flow pass {} of 4'.format(str(i+1))
+                        )
+
+                    mask_list.append(mask)
+                    flow_list.append(flow)
+                    warped_img0 = warp(img0, flow[:, :2])
+                    display_warped_0 = warped_img0.cpu().detach().numpy().transpose((0, 2, 3, 1)).squeeze(axis=0)
+                    display_warped_0 = np.flip(display_warped_0, axis=2)
+                    self.progress.update_interface_image(
+                        display_warped_0.copy(), 
+                        self.progress.ui.flow3_label,
+                        text = 'Warp incoming pass {} of 4'.format(str(i+1))
+                        )
+
+                    warped_img1 = warp(img1, flow[:, 2:4])
+                    display_warped_1 = warped_img0.cpu().detach().numpy().transpose((0, 2, 3, 1)).squeeze(axis=0)
+                    display_warped_1 = np.flip(display_warped_1, axis=2)
+                    self.progress.update_interface_image(
+                        display_warped_1.copy(), 
+                        self.progress.ui.flow4_label,
+                        text = 'Warp outgoing pass {} of 4'.format(str(i+1))
+                        )
+        
+                    merged.append((warped_img0, warped_img1))
+                print ('sigmoid')
+                mask_list[3] = torch.sigmoid(mask_list[3])
+                merged[3] = merged[3][0] * mask_list[3] + merged[3][1] * (1 - mask_list[3])
+                if not fastmode:
+                    pass
+                    '''
+                    c0 = self.contextnet(img0, flow[:, :2])
+                    c1 = self.contextnet(img1, flow[:, 2:4])
+                    tmp = self.unet(img0, img1, warped_img0, warped_img1, mask, flow, c0, c1)
+                    res = tmp[:, :3] * 2 - 1
+                    merged[3] = torch.clamp(merged[3] + res, 0, 1)
+                    '''
+                return flow_list, mask_list[3], merged
+
+        class FlownetModel:
+            def __init__(self, progress):
+                self.progress = progress
+                self.flownet = IFNet(progress)
+                self.contextnet = ContextNet()
+                self.flownet.to(device)
+
+            def load_model(self, path, rank=0):
+                self.progress.info('Frame ' + str(self.progress.current_frame) + ': Processing: Loading models...')
+                
+                def convert(param):
+                    return {
+                        k.replace("module.", ""): v
+                        for k, v in param.items()
+                        if "module." in k
+                    }
+                print ('{}/flownet.pkl'.format(path))
+                self.flownet.load_state_dict(convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)), False)
+                self.contextnet.load_state_dict(convert(torch.load('/var/tmp/flameTimewarpML/trained_models/default/v2.4.model/contextnet.pkl', map_location=device)), False)
+
+            def inference(self, img0, img1, timestep=0.5, scale=1.0):
+                # imgs = torch.cat((img0, img1), 1)
+                scale_list = [8/scale, 4/scale, 2/scale, 1/scale]
+                flow_list, mask, merged = self.flownet(img0, img1, timestep, scale_list)
+
+                # c0 = self.contextnet(img0, flow[:, :2])
+                # c1 = self.contextnet(img1, flow[:, 2:4])
+
+                del self.flownet
+                del self.contextnet
+                from torch import mps
+                mps.empty_cache()
+
+                return merged[3]
+
+        flownet_model = FlownetModel(self.progress)
+
+        print ('Flownet init')
+        from torch import mps
+        print (mps.driver_allocated_memory())
+
+        flownet_model.load_model(self.model_path)
+
+        print ('Flownet after model load')
+        from torch import mps
+        print (mps.driver_allocated_memory())
+
+        res = flownet_model.inference(img0, img1, timestep=ratio)
+
+        print ('Flownet after inference')
+        from torch import mps
+        print (mps.driver_allocated_memory())
+
+        res_img = res[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
+        res_img = np.flip(res_img, axis=2).copy()
+
+        del(flownet_model)
+
+        print ('after del flownet model')
+        from torch import mps
+        print (mps.driver_allocated_memory())
+
+        mps.empty_cache()
+        print ('after empty_cache')
+        from torch import mps
+        print (mps.driver_allocated_memory())
+
+
+        return res_img
+
+        
+        # print (ratio)
+        # print (img0)
+
+
 
 
     def slowmo(self, selection):
