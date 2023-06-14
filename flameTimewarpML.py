@@ -685,9 +685,8 @@ class flameTimewarpML(flameMenuApp):
                 self.src_frame_one.setFrameShape(QtWidgets.QFrame.StyledPanel)
                 self.src_frame_one.setFrameShadow(QtWidgets.QFrame.Raised)
                 self.src_frame_one.setObjectName("frame")
-
                 self.image_one_label = QtWidgets.QLabel(self.src_frame_one)
-
+                self.image_one_label.setAlignment(QtCore.Qt.AlignCenter)
                 frame_one_layout = QtWidgets.QVBoxLayout()
                 frame_one_layout.setSpacing(0)
                 frame_one_layout.setContentsMargins(0, 0, 0, 0)
@@ -698,8 +697,8 @@ class flameTimewarpML(flameMenuApp):
                 self.src_frame_two.setFrameShape(QtWidgets.QFrame.StyledPanel)
                 self.src_frame_two.setFrameShadow(QtWidgets.QFrame.Raised)
                 self.src_frame_two.setObjectName("frame")
-
                 self.image_two_label = QtWidgets.QLabel(self.src_frame_two)
+                self.image_two_label.setAlignment(QtCore.Qt.AlignCenter)
                 frame_two_layout = QtWidgets.QVBoxLayout()
                 frame_two_layout.setSpacing(0)
                 frame_two_layout.setContentsMargins(0, 0, 0, 0)
@@ -724,6 +723,7 @@ class flameTimewarpML(flameMenuApp):
                 self.int_frame_flow1.setFrameShadow(QtWidgets.QFrame.Raised)
                 self.int_frame_flow1.setObjectName("frame")
                 self.flow1_label = QtWidgets.QLabel(self.int_frame_flow1)
+                self.flow1_label.setAlignment(QtCore.Qt.AlignCenter)
                 flow1_layout = QtWidgets.QVBoxLayout()
                 flow1_layout.setSpacing(0)
                 flow1_layout.setContentsMargins(0, 0, 0, 0)
@@ -735,6 +735,7 @@ class flameTimewarpML(flameMenuApp):
                 self.int_frame_flow2.setFrameShadow(QtWidgets.QFrame.Raised)
                 self.int_frame_flow2.setObjectName("frame")
                 self.flow2_label = QtWidgets.QLabel(self.int_frame_flow2)
+                self.flow2_label.setAlignment(QtCore.Qt.AlignCenter)
                 flow2_layout = QtWidgets.QVBoxLayout()
                 flow2_layout.setSpacing(0)
                 flow2_layout.setContentsMargins(0, 0, 0, 0)
@@ -746,6 +747,7 @@ class flameTimewarpML(flameMenuApp):
                 self.int_frame_flow3.setFrameShadow(QtWidgets.QFrame.Raised)
                 self.int_frame_flow3.setObjectName("frame")
                 self.flow3_label = QtWidgets.QLabel(self.int_frame_flow3)
+                self.flow3_label.setAlignment(QtCore.Qt.AlignCenter)
                 flow3_layout = QtWidgets.QVBoxLayout()
                 flow3_layout.setSpacing(0)
                 flow3_layout.setContentsMargins(0, 0, 0, 0)
@@ -757,6 +759,7 @@ class flameTimewarpML(flameMenuApp):
                 self.int_frame_flow4.setFrameShadow(QtWidgets.QFrame.Raised)
                 self.int_frame_flow4.setObjectName("frame")
                 self.flow4_label = QtWidgets.QLabel(self.int_frame_flow4)
+                self.flow4_label.setAlignment(QtCore.Qt.AlignCenter)
                 flow4_layout = QtWidgets.QVBoxLayout()
                 flow4_layout.setSpacing(0)
                 flow4_layout.setContentsMargins(0, 0, 0, 0)
@@ -778,6 +781,7 @@ class flameTimewarpML(flameMenuApp):
                 self.res_frame.setFrameShadow(QtWidgets.QFrame.Raised)
                 self.res_frame.setObjectName("frame")
                 self.image_res_label = QtWidgets.QLabel(self.res_frame)
+                self.image_res_label.setAlignment(QtCore.Qt.AlignCenter)
                 frame_res_layout = QtWidgets.QVBoxLayout()
                 frame_res_layout.setSpacing(0)
                 frame_res_layout.setContentsMargins(8, 8, 8, 8)
@@ -807,10 +811,13 @@ class flameTimewarpML(flameMenuApp):
                 bottom_layout.setStretchFactor(self.info_label, 1)
 
                 # mode selector button
-                self.mode_selector = QtWidgets.QPushButton('Test')
-                self.mode_selector.setContentsMargins(10, 4, 10, 4)
-                self.set_selector_button_style(self.mode_selector)
-                bottom_layout.addWidget(self.mode_selector, alignment=QtCore.Qt.AlignRight)
+                self.flow_res_selector = QtWidgets.QPushButton('Use Full Resolution')
+                self.flow_res_selector.setContentsMargins(10, 4, 10, 4)
+                self.set_selector_button_style(self.flow_res_selector)
+
+                # self.setup_dummy_modes_button(self.mode_selector)
+
+                bottom_layout.addWidget(self.flow_res_selector, alignment=QtCore.Qt.AlignRight)
                 bottom_layout.addSpacing(4)
 
                 # Create a new QPushButton
@@ -846,9 +853,11 @@ class flameTimewarpML(flameMenuApp):
                 button.setMinimumSize(QtCore.QSize(150, 28))
                 button.setMaximumSize(QtCore.QSize(150, 28))
                 button.setFocusPolicy(QtCore.Qt.NoFocus)
-                button.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
-                                    'QPushButton::menu-indicator {image: none;}')
+                button.setStyleSheet('QPushButton {color: rgb(154, 154, 154); background-color: rgb(44, 54, 68); border: none; font: 14px}'
+                'QPushButton:hover {border: 1px solid rgb(90, 90, 90)}'
+                'QPushButton:pressed {color: rgb(159, 159, 159); background-color: rgb(44, 54, 68); border: 1px solid rgb(90, 90, 90)}'
+                'QPushButton:disabled {color: rgb(116, 116, 116); background-color: rgb(58, 58, 58); border: none}'
+                'QPushButton::menu-indicator {image: none;}')
 
         def __init__(self, selection, **kwargs):
             super().__init__()
@@ -903,7 +912,24 @@ class flameTimewarpML(flameMenuApp):
             # now load in the UI that was created in the UI designer
             self.ui = self.Ui_Progress()
             self.ui.setupUi(self)
-        
+            
+            flow_res_menu = QtWidgets.QMenu(self)
+            for flow_res in sorted(self.twml.flow_res.keys(), reverse=True):
+                code = self.twml.flow_res.get(flow_res, 1.0)
+                action = flow_res_menu.addAction(code)
+                x = lambda chk=False, flow_res=flow_res: self.twml.select_flow_res(flow_res)
+                action.triggered[()].connect(x)
+            self.ui.flow_res_selector.setMenu(flow_res_menu)
+
+            '''
+            for mode_number in sorted(range(1, 10)):  # use a dummy list for testing
+                action = mode_menu.addAction(str(mode_number))
+                print(f"Adding action with text {action.text()} to the menu")
+                x = lambda chk=False, mode_number=mode_number: print(f"Selected mode {mode_number}")
+                action.triggered.connect(x)
+            self.ui.mode_selector.setMenu(mode_menu)
+            '''
+
             self.ui.stripe_label.setText(self.mode)
             self.ui.info_label.setText('initializing PyTorch environment...')
 
@@ -916,7 +942,7 @@ class flameTimewarpML(flameMenuApp):
             # )
 
             self.setWindowFlags(
-                QtCore.Qt.Window | QtCore.Qt.FramelessWindowHint
+                QtCore.Qt.Window | QtCore.Qt.Tool | QtCore.Qt.FramelessWindowHint
             )
 
             desktop = QtWidgets.QApplication.desktop()
@@ -931,6 +957,10 @@ class flameTimewarpML(flameMenuApp):
             scale_factor = min(max_width / desired_width, max_height / desired_height)
             scaled_width = desired_width * scale_factor
             scaled_height = desired_height * scale_factor
+
+            # Check that scaled_width is not less than the minimum
+            if scaled_width < 1024:
+                scaled_width = 1024
 
             # Set the window's dimensions
             self.setGeometry(0, 0, scaled_width, scaled_height)
@@ -1482,11 +1512,17 @@ class flameTimewarpML(flameMenuApp):
         self.cpu = False
         self.flow_scale = 1.0
 
-        self.flow_scale_list = {
-            2.0:  'Analyze 2x Resolution',
-            1.0:  'Analyze Full Resolution',
-            0.5:  'Analyze 1/2 Resolution',
-            0.25: 'Analyze 1/4 Resolution',
+        self.flow_res = {
+            2.0: 'Use 2x Resolution',
+            1.0: 'Use Full Resolution',
+            0.5: 'Use 1/2 Resolution',
+            0.25: 'Use 1/4 Resolution',
+            0.125: 'Use 1/8 Resolution',
+        }
+
+        self.modes = {
+            1: 'Fast',
+            2: 'Normal'
         }
 
         self.trained_models_path = os.path.join(
@@ -2710,6 +2746,10 @@ class flameTimewarpML(flameMenuApp):
         with open(filename, 'wb') as f:
             writeDPX(f, arr, new_meta)
             f.close()
+
+    def select_flow_res(self, flow_res):
+        print ('select mode')
+        print (flow_res)
 
     def flownet(self, img0, img1, ratio, model_path):
         import torch
