@@ -807,14 +807,11 @@ class flameTimewarpML(flameMenuApp):
                 bottom_layout.setStretchFactor(self.info_label, 1)
 
                 # mode selector button
-                self.mode_selector = QtWidgets.QPushButton(window)
-                self.mode_selector.setText('test')
-                self.mode_selector.setFocusPolicy(QtCore.Qt.NoFocus)
-                self.mode_selector.setMinimumSize(180, 28)
-                self.mode_selector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
-                                    'QPushButton::menu-indicator {image: none;}')
+                self.mode_selector = QtWidgets.QPushButton('Test')
+                self.mode_selector.setContentsMargins(10, 4, 10, 4)
+                self.set_selector_button_style(self.mode_selector)
                 bottom_layout.addWidget(self.mode_selector, alignment=QtCore.Qt.AlignRight)
+                bottom_layout.addSpacing(4)
 
                 # Create a new QPushButton
                 self.render_button = QtWidgets.QPushButton("Render")
@@ -844,6 +841,14 @@ class flameTimewarpML(flameMenuApp):
                 'QPushButton:disabled {color: rgb(116, 116, 116); background-color: rgb(58, 58, 58); border: none}'
                 'QPushButton::menu-indicator {subcontrol-origin: padding; subcontrol-position: center right}'
                 'QToolTip {color: rgb(170, 170, 170); background-color: rgb(71, 71, 71); border: 10px solid rgb(71, 71, 71)}')
+
+            def set_selector_button_style(self, button):
+                button.setMinimumSize(QtCore.QSize(150, 28))
+                button.setMaximumSize(QtCore.QSize(150, 28))
+                button.setFocusPolicy(QtCore.Qt.NoFocus)
+                button.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
 
         def __init__(self, selection, **kwargs):
             super().__init__()
@@ -906,8 +911,12 @@ class flameTimewarpML(flameMenuApp):
             self.mousePressPos = None
 
             # make it frameless and have it stay on top
+            # self.setWindowFlags(
+            #    QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint
+            # )
+
             self.setWindowFlags(
-                QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint
+                QtCore.Qt.Window | QtCore.Qt.FramelessWindowHint
             )
 
             desktop = QtWidgets.QApplication.desktop()
@@ -939,6 +948,8 @@ class flameTimewarpML(flameMenuApp):
 
         def showEvent(self, event):
             super().showEvent(event)
+            self.raise_()
+            self.activateWindow()
             max_label_width = self.ui.info_label.width()
             self.ui.info_label.setMaximumWidth(max_label_width)
 
