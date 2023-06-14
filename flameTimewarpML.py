@@ -811,12 +811,18 @@ class flameTimewarpML(flameMenuApp):
                 bottom_layout.setStretchFactor(self.info_label, 1)
 
                 # mode selector button
+                self.mode_selector = QtWidgets.QPushButton('Normal')
+                self.mode_selector.setContentsMargins(10, 4, 10, 4)
+                self.set_selector_button_style(self.mode_selector)
+                self.mode_selector.setMinimumSize(QtCore.QSize(80, 28))
+                self.mode_selector.setMaximumSize(QtCore.QSize(80, 28))
+                bottom_layout.addWidget(self.mode_selector, alignment=QtCore.Qt.AlignRight)
+                bottom_layout.addSpacing(4)
+
+                # flow res selector button
                 self.flow_res_selector = QtWidgets.QPushButton('Use Full Resolution')
                 self.flow_res_selector.setContentsMargins(10, 4, 10, 4)
                 self.set_selector_button_style(self.flow_res_selector)
-
-                # self.setup_dummy_modes_button(self.mode_selector)
-
                 bottom_layout.addWidget(self.flow_res_selector, alignment=QtCore.Qt.AlignRight)
                 bottom_layout.addSpacing(4)
 
@@ -912,7 +918,17 @@ class flameTimewarpML(flameMenuApp):
             # now load in the UI that was created in the UI designer
             self.ui = self.Ui_Progress()
             self.ui.setupUi(self)
-            
+
+            # set up mode menu
+            mode_menu = QtWidgets.QMenu(self)
+            for mode_number in sorted(self.twml.modes.keys(), reverse=True):
+                code = self.twml.modes.get(mode_number, 1.0)
+                action = mode_menu.addAction(code)
+                x = lambda chk=False, mode_number=mode_number: self.twml.select_mode(mode_number)
+                action.triggered[()].connect(x)
+            self.ui.mode_selector.setMenu(mode_menu)
+
+            # set up flow res menu
             flow_res_menu = QtWidgets.QMenu(self)
             for flow_res in sorted(self.twml.flow_res.keys(), reverse=True):
                 code = self.twml.flow_res.get(flow_res, 1.0)
@@ -920,15 +936,6 @@ class flameTimewarpML(flameMenuApp):
                 x = lambda chk=False, flow_res=flow_res: self.twml.select_flow_res(flow_res)
                 action.triggered[()].connect(x)
             self.ui.flow_res_selector.setMenu(flow_res_menu)
-
-            '''
-            for mode_number in sorted(range(1, 10)):  # use a dummy list for testing
-                action = mode_menu.addAction(str(mode_number))
-                print(f"Adding action with text {action.text()} to the menu")
-                x = lambda chk=False, mode_number=mode_number: print(f"Selected mode {mode_number}")
-                action.triggered.connect(x)
-            self.ui.mode_selector.setMenu(mode_menu)
-            '''
 
             self.ui.stripe_label.setText(self.mode)
             self.ui.info_label.setText('initializing PyTorch environment...')
@@ -1247,7 +1254,7 @@ class flameTimewarpML(flameMenuApp):
             qt_pixmap = QtGui.QPixmap.fromImage(qt_image)
             parent_frame = image_label.parent()
             scaled_pixmap = qt_pixmap.scaled(
-                parent_frame.size() * 0.99, 
+                parent_frame.size() * 0.9, 
                 QtCore.Qt.KeepAspectRatio, 
                 QtCore.Qt.SmoothTransformation)
 
@@ -2748,8 +2755,12 @@ class flameTimewarpML(flameMenuApp):
             f.close()
 
     def select_flow_res(self, flow_res):
-        print ('select mode')
+        print ('select flow res')
         print (flow_res)
+
+    def select_mode(self, mode_number):
+        print ('select mode')
+        print (mode_number)
 
     def flownet(self, img0, img1, ratio, model_path):
         import torch
