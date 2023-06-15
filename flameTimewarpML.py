@@ -9,6 +9,7 @@ andriy.toloshnyy@gmail.com
 import os
 import sys
 import time
+import queue
 import threading
 import atexit
 import hashlib
@@ -948,6 +949,7 @@ class flameTimewarpML(flameMenuApp):
             #    QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint
             # )
 
+
             self.setWindowFlags(
                 QtCore.Qt.Window | QtCore.Qt.Tool | QtCore.Qt.FramelessWindowHint
             )
@@ -979,9 +981,10 @@ class flameTimewarpML(flameMenuApp):
             # QtCore.QTimer.singleShot(0, self.init_torch)
             QtCore.QTimer.singleShot(0, self.after_show)
 
-            # self.process_thread = threading.Thread(target=self.process_current_frame)
-            # self.process_thread.daemon = True
-            # self.process_thread.start()
+            self.message_queue = queue.Queue()
+            self.message_thread = threading.Thread(target=self.process_messages)
+            self.message_thread.daemon = True
+            self.message_thread.start()
 
         def showEvent(self, event):
             super().showEvent(event)
@@ -1022,7 +1025,6 @@ class flameTimewarpML(flameMenuApp):
         def render(self):
             self.rendering = not self.rendering
             button_text = 'Stop' if self.rendering else 'Render'
-            print (button_text)
             self.ui.render_button.setText(button_text)
             QtWidgets.QApplication.instance().processEvents()
             time.sleep(0.001)
@@ -1032,16 +1034,31 @@ class flameTimewarpML(flameMenuApp):
                 self.render_loop()
 
         def render_loop(self):
+            render_loop_thread = threading.Thread(target=self._render_loop)
+            render_loop_thread.daemon = True
+            render_loop_thread.start()
+
+        def _render_loop(self):
             for frame in self.frames_map.keys():
+                if not self.threads:
+                    break
                 if not self.rendering:
                     break
                 if self.frames_map[frame].get('saved'):
                     self.info('Frame ' + str(self.current_frame) + ': Already saved')
                     continue
                 self.current_frame = frame
+                print ('current frame: %s' % self.current_frame)
+                print ('calling process_current_frame()')
                 self.process_current_frame()
+            return
 
         def process_current_frame(self):
+            frame_thread = threading.Thread(target=self._process_current_frame)
+            frame_thread.start()
+            frame_thread.join()
+
+        def _process_current_frame(self):
             self.current_frame_data = self.frames_map.get(self.current_frame)
 
             self.destination = self.current_frame_data['outgoing']['clip'].parent
@@ -1055,7 +1072,7 @@ class flameTimewarpML(flameMenuApp):
                 )
             
             self.update_interface_image(
-                incoming_image_data, 
+                incoming_image_data[::2, ::2, :], 
                 self.ui.image_one_label,
                 text = 'src frame: ' + str(inc_frame_number + 1)
                 )
@@ -1072,7 +1089,7 @@ class flameTimewarpML(flameMenuApp):
                 )
             
             self.update_interface_image(
-                outgoing_image_data, 
+                outgoing_image_data[::2, ::2, :], 
                 self.ui.image_two_label,
                 text = 'src frame: ' + str(outg_frame_number + 1)
                 )
@@ -1084,22 +1101,22 @@ class flameTimewarpML(flameMenuApp):
             if ratio == 0.0:
                 result_image_data = incoming_image_data
                 self.update_interface_image(
-                    incoming_image_data, 
+                    incoming_image_data[::4, ::4, :],
                     self.ui.flow1_label,
                     text = 'copy of frame: ' + str(inc_frame_number + 1)
                     )
                 self.update_interface_image(
-                    incoming_image_data, 
+                    incoming_image_data[::4, ::4, :], 
                     self.ui.flow2_label,
                     text = 'copy of frame: ' + str(inc_frame_number + 1)
                     )
                 self.update_interface_image(
-                    incoming_image_data, 
+                    incoming_image_data[::4, ::4, :], 
                     self.ui.flow3_label,
                     text = 'copy of frame: ' + str(inc_frame_number + 1)
                     )
                 self.update_interface_image(
-                    incoming_image_data, 
+                    incoming_image_data[::4, ::4, :], 
                     self.ui.flow4_label,
                     text = 'copy of frame: ' + str(inc_frame_number + 1)
                     )
@@ -1107,22 +1124,22 @@ class flameTimewarpML(flameMenuApp):
             elif ratio == 1.0:
                 result_image_data = outgoing_image_data
                 self.update_interface_image(
-                    incoming_image_data, 
+                    incoming_image_data[::4, ::4, :],
                     self.ui.flow1_label,
                     text = 'copy of frame: ' + str(outg_frame_number + 1)
                     )
                 self.update_interface_image(
-                    incoming_image_data, 
+                    incoming_image_data[::4, ::4, :], 
                     self.ui.flow2_label,
                     text = 'copy of frame: ' + str(outg_frame_number + 1)
                     )
                 self.update_interface_image(
-                    incoming_image_data, 
+                    incoming_image_data[::4, ::4, :], 
                     self.ui.flow3_label,
                     text = 'copy of frame: ' + str(outg_frame_number + 1)
                     )
                 self.update_interface_image(
-                    incoming_image_data, 
+                    incoming_image_data[::4, ::4, :], 
                     self.ui.flow4_label,
                     text = 'copy of frame: ' + str(outg_frame_number + 1)
                     )
@@ -1237,9 +1254,68 @@ class flameTimewarpML(flameMenuApp):
             finally:
                 server_handle = None
                 clip_node_handle = None
-            
+
+        def process_messages(self):
+            while self.threads:
+                try:
+                    item = self.message_queue.get_nowait()
+                except queue.Empty:
+                    if not self.threads:
+                        break
+                    time.sleep(0.05)
+                    continue
+                if item is None:
+                    time.sleep(0.05)
+                    continue
+                if not isinstance(item, dict):
+                    self.message_queue.task_done()
+                    time.sleep(0.05)
+                    continue
+                item_type = item.get('type')
+                if not item_type:
+                    self.message_queue.task_done()
+                    time.sleep(0.05)
+                    continue
+                elif item_type == 'info':
+                    message = item.get('message')
+                    self._info(f'{message}')
+                elif item_type == 'message':
+                    message = item.get('message')
+                    self._message(f'{message}')
+                elif item_type == 'image':
+                    self._update_interface_image(
+                        item.get('image'),
+                        item.get('image_label'),
+                        item.get('text')
+                    )
+                else:
+                    self.message_queue.task_done()
+                    time.sleep(0.05)
+                    continue
+                
+                self.message_queue.task_done()
+                time.sleep(0.05)
+            return
+
         def update_interface_image(self, array, image_label, text = None):
+            if self.message_queue.qsize() > 8:
+                if image_label != self.ui.image_res_label:
+                    return
+            
+            item = {
+                'type': 'image',
+                'image': array,
+                'image_label': image_label,
+                'text': text
+            }
+            self.message_queue.put(item)
+
+        def _update_interface_image(self, array, image_label, text = None):
             np = self.twml.np
+
+            if array is None:
+                return
+
             # colourmanagement should go here
             if (array.dtype == np.float16) or (array.dtype == np.float32):
                 img = np.clip(array, 0, 1) * 255
@@ -1297,6 +1373,13 @@ class flameTimewarpML(flameMenuApp):
             QtWidgets.QApplication.instance().processEvents()
 
         def info(self, message):
+            item = {
+                'type': 'info',
+                'message': message
+            }
+            self.message_queue.put(item)
+
+        def _info(self, message):
             self.ui.info_label.setText(str(message))
             QtWidgets.QApplication.instance().processEvents()
             time.sleep(0.001)
@@ -1304,12 +1387,16 @@ class flameTimewarpML(flameMenuApp):
             QtWidgets.QApplication.instance().processEvents()
 
         def message(self, message):
+            item = {
+                'type': 'message',
+                'message': message
+            }
+            self.message_queue.put(item)
+
+        def _message(self, message):
             import flame
             self.info(message)
             flame.messages.show_in_console(self.app_name + ': ' + str(message), 'info', 8)
-            # self.hide()
-            # self.twml.message(message)
-            # self.show()
 
         def save_result_frame(self, image_data, frame_number):
             import flame
@@ -1435,7 +1522,9 @@ class flameTimewarpML(flameMenuApp):
             import flame
 
             self.threads = False
-            # self.process_thread.join()
+            self.twml.threads = False
+            self.message_queue.join()
+            self.message_thread.join()
             
             result_clip = None
             self.twml.temp_library.acquire_exclusive_access()
@@ -1473,11 +1562,13 @@ class flameTimewarpML(flameMenuApp):
             
             if result_clip:
                 try:
-                    flame.media_panel.copy(
+                    copied_clip = flame.media_panel.copy(
                         source_entries = result_clip, destination = self.clip_parent
                         )
                     self.twml.temp_library.acquire_exclusive_access()
                     flame.delete(self.twml.temp_library)
+                    copied_clip.render()
+                    copied_clip.commit()
                 except:
                     pass
 
@@ -1551,6 +1642,7 @@ class flameTimewarpML(flameMenuApp):
 
         self.progress = None
         self.torch = None
+        self.threads = True
 
         # this enables fallback to CPU on Macs
         os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
