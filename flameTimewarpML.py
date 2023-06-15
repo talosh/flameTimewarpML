@@ -1477,7 +1477,27 @@ class flameTimewarpML(flameMenuApp):
                 dest_fmt = WireTapClipFormat()
                 if not destination_node_handle.getClipFormat(dest_fmt):
                     raise Exception('Unable to obtain clip format: %s.' % clip_node_handle.lastError())
+                
+                '''
+                frame_id = WireTapStr()
+                if not destination_node_handle. getFrameId(
+                    frame_number, frame_id
+                ):
+                    raise Exception(
+                        "Unable to obtain write frame %i: %s."
+                        % (frame_number, destination_node_handle.lastError())
+                    )
+                
+                if not server_handle.writeFrame(
+                    frame_id, buff, dest_fmt.frameBufferSize()
+                ):
+                    raise Exception(
+                        "Unable to obtain write frame %i: %s."
+                        % (frame_number, destination_node_handle.lastError())
+                    )
 
+                '''
+                
                 if not destination_node_handle.writeFrame(
                     frame_number, buff, dest_fmt.frameBufferSize()
                 ):
@@ -1489,6 +1509,7 @@ class flameTimewarpML(flameMenuApp):
                 os.remove(file_path)
 
             except Exception as e:
+                pprint (e)
                 self.message('Error: %s' % e)
             finally:
                 gateway_server_handle = None
@@ -1963,6 +1984,7 @@ class flameTimewarpML(flameMenuApp):
             if not clip_node_handle.getClipFormat(fmt):
                 raise Exception('Unable to obtain clip format: %s.' % clip_node_handle.lastError())
             
+            
             bits_per_channel = fmt.bitsPerPixel() // fmt.numChannels()
             self.bits_per_channel = bits_per_channel
             self.format_tag = fmt.formatTag()
@@ -1994,6 +2016,13 @@ class flameTimewarpML(flameMenuApp):
                     "Unable to obtain clip format: %s." % clip_node_handle.lastError()
                 )
             
+            '''
+            metadata = dest_fmt.metaData()
+            metadata_tag = dest_fmt.metaDataTag()
+            metadata = metadata.replace('<ProxyFormat>default</ProxyFormat>', '<ProxyFormat>none</ProxyFormat>')
+            destination_node_handle.setMetaData(metadata_tag, metadata)
+            '''
+
             destination_node_id = destination_node_handle.getNodeId().id()
 
         except Exception as e:
