@@ -1298,7 +1298,7 @@ class flameTimewarpML(flameMenuApp):
             return
 
         def update_interface_image(self, array, image_label, text = None):
-            if self.message_queue.qsize() > 8:
+            if self.message_queue.qsize() > 9:
                 if image_label != self.ui.image_res_label:
                     return
             
@@ -1342,11 +1342,11 @@ class flameTimewarpML(flameMenuApp):
                 painter = QtGui.QPainter(scaled_pixmap)
                 font = QtGui.QFont("Discreet", 12)
                 painter.setFont(font)
+                
+                '''
                 metrics = QtGui.QFontMetrics(font)
                 text_width = metrics.horizontalAdvance(text)
                 text_height = metrics.height()
-
-                '''
                 rect_x = origin_x
                 rect_y = scaled_pixmap.height() - text_height - margin * 2 - origin_y
                 rect_width = text_width + margin * 2 + 2
@@ -1363,7 +1363,6 @@ class flameTimewarpML(flameMenuApp):
                 text_x = margin + origin_x
                 text_y = scaled_pixmap.height() - margin -origin_y
                 painter.drawText(text_x, text_y, text)
-
                 painter.end()
 
             image_label.setPixmap(scaled_pixmap)
@@ -1567,10 +1566,17 @@ class flameTimewarpML(flameMenuApp):
                         )
                     self.twml.temp_library.acquire_exclusive_access()
                     flame.delete(self.twml.temp_library)
+                    '''
+                    copied_clip = copied_clip[0]
+                    segment = copied_clip.versions[0].tracks[0].segments[0]
+                    segment.create_effect('Colour Mgmt')
                     copied_clip.render()
-                    copied_clip.commit()
+                    '''
+                    flame.execute_shortcut('Save Project')
+                    flame.execute_shortcut('Refresh Thumbnails')
                 except:
                     pass
+
 
 
             self.twml.progress = None
