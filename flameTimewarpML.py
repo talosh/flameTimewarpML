@@ -19,7 +19,6 @@ from PySide2 import QtWidgets, QtCore, QtGui
 
 from adsk.libwiretapPythonClientAPI import (
     WireTapClient,
-    WireTapClientUninit,
     WireTapServerId,
     WireTapServerHandle,
     WireTapNodeHandle,
@@ -1497,7 +1496,47 @@ class flameTimewarpML(flameMenuApp):
                     )
 
                 '''
-                
+
+                num_children = WireTapInt(0)
+                if not destination_node_handle.getNumChildren(num_children):
+                    raise Exception(
+                        "Unable to obtain number of children: %s"
+                        % parent_node_handle.lastError()
+                    )
+
+                child = WireTapNodeHandle()
+                child_name = WireTapStr()
+                child_type_str = WireTapStr()
+                for child_index in range(0, num_children):
+                    # Get the child node.
+                    #
+                    destination_node_handle.getChild(child_index, child)
+
+                    # Get the node's display name and type.
+                    #
+                    if not child.getDisplayName(child_name):
+                        raise Exception(
+                            "Unable to obtain node name: %s." % child.lastError()
+                        )
+
+                    if not child.getNodeTypeStr(child_type_str):
+                        raise Exception(
+                            "Unable to obtain node type: %s." % child.lastError()
+                        )
+                    
+                    if child_type_str.c_str() == 'LOWRES':
+                        if not child.writeFrame(
+                            frame_number, buff, dest_fmt.frameBufferSize()
+                        ):
+                            raise Exception(
+                                "Unable to obtain write frame %i: %s."
+                                % (frame_number, destination_node_handle.lastError())
+                            )
+
+                    # Print the node info.
+                    #
+                    # print("Node: '%s' type: %s" % (child_name.c_str(), child_type_str.c_str()))
+
                 if not destination_node_handle.writeFrame(
                     frame_number, buff, dest_fmt.frameBufferSize()
                 ):
