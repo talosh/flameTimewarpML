@@ -4272,7 +4272,7 @@ class flameTimewarpML(flameMenuApp):
 
         if sys.platform == 'darwin':
             device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-            device = torch.device('cpu')
+            # device = torch.device('cpu')
         else:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -4658,7 +4658,11 @@ class flameTimewarpML(flameMenuApp):
         for current_pass in range(1, num_passes + 1):
             print ('pass %s of %s' % (current_pass, num_passes))
 
-            device = torch.device('cpu')
+            # torch.set_default_dtype(torch.float16)
+            # img0 = img0.to(torch.float16)
+            # img1 = img1.to(torch.float16)
+
+            device = torch.device('mps')
             img0 = img0.to(device)
             img1 = img1.to(device)
 
@@ -4676,7 +4680,7 @@ class flameTimewarpML(flameMenuApp):
             print ('del IFNetModel')
             del (ifnet_model)
 
-            device = torch.device('cpu')
+            device = torch.device('mps')
             img0 = img0.to(device)
             img1 = img1.to(device)
             flow = flow.to(device)
@@ -4728,6 +4732,7 @@ class flameTimewarpML(flameMenuApp):
                 img1 = middle
                 img1_ratio = middle_ratio
         
+        # res_img = middle[0].to(torch.float32)
         res_img = middle[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
         res_img = np.flip(res_img, axis=2).copy()
         print ('end of flownet24')
