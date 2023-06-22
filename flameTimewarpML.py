@@ -1151,7 +1151,7 @@ class flameTimewarpML(flameMenuApp):
 
                 self.info('Frame ' + str(self.current_frame) + ': Processing...')
 
-                flow = self.twml.flownet(incoming_image_data, outgoing_image_data, ratio, self.twml.flownet_model_path)
+                flow = self.twml.flownet24(incoming_image_data, outgoing_image_data, ratio, self.twml.flownet_model_path)
                 if not self.threads:
                     return
                 result_image_data = flow
@@ -4269,9 +4269,10 @@ class flameTimewarpML(flameMenuApp):
         from torch.utils.checkpoint import checkpoint
 
         import numpy as np
-        
+
         if sys.platform == 'darwin':
             device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+            device = torch.device('cpu')
         else:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -4283,10 +4284,10 @@ class flameTimewarpML(flameMenuApp):
         print (mps.driver_allocated_memory())
 
         # flip to BGR
-        img0 = np.flip(img0, axis=2).transpose(2, 0, 1).copy()
-        img1 = np.flip(img1, axis=2).transpose(2, 0, 1).copy()
-        img0 = (torch.tensor(img0).to(device)).unsqueeze(0)
-        img1 = (torch.tensor(img1).to(device)).unsqueeze(0)
+        img0 = np.flip(img0, axis=2).copy()
+        img1 = np.flip(img1, axis=2).copy()
+        img0 = torch.from_numpy(np.transpose(img0, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+        img1 = torch.from_numpy(np.transpose(img1, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
 
         n, c, h, w = img0.shape
         
@@ -4305,52 +4306,42 @@ class flameTimewarpML(flameMenuApp):
 
         print ('processing ratio %s' % ratio)
 
-        def calculate_passes(value, target_ratio, precision):
-            import math
-            """
-            Calculate the number of times the value needs to be halved to get close to the target ratio
-            within a specific precision.
+        def calculate_passes(target_ratio, precision, maxcycles=8):
+            img0_ratio = 0.0
+            img1_ratio = 1.0
 
-            Parameters:
-            value (float): The initial value.
-            target_ratio (float): The target ratio to be reached.
-            precision (float): The precision within which the target ratio needs to be reached.
+            if ratio <= img0_ratio + precision / 2:
+                return 1
+            if ratio >= img1_ratio - precision / 2:
+                return 1
+            
+            print ()
+            
+            for inference_cycle in range(0, maxcycles):
+                middle_ratio = (img0_ratio + img1_ratio) / 2
+                # print ('intermediate ratio: %s' % middle_ratio)
+                # print ('range: %s - %s' % (ratio - (precision / 2), ratio + (precision / 2)))
+                if ratio - (precision / 2) <= middle_ratio <= ratio + (precision / 2):
+                    return inference_cycle + 1
 
-            Returns:
-            int: The number of halving passes needed.
-            """
-            # Calculate the number of passes
-            passes = math.log(value / target_ratio, 2)
+                if ratio > middle_ratio:
+                    img0_ratio = middle_ratio
+                else:
+                    img1_ratio = middle_ratio
 
-            # Round down to get the next lower integer if the number of passes is not an integer
-            passes = math.floor(passes)
-
-            # Recursively reduce the value till the target_ratio is reached within the specified precision
-            while abs(value - target_ratio) > precision:
-                value /= 2 ** passes
-                extra_passes = calculate_passes(value, target_ratio, precision)
-                passes += extra_passes
-
-            return 
+            return maxcycles
         
-        num_passes = calculate_passes(1.0, ratio, 0.02)
+        num_passes = calculate_passes(ratio, 0.02, 8)
 
         print ('passes %s' % num_passes)
-
-        pred = img0
-        res_img = pred[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
-        res_img = np.flip(res_img, axis=2).copy()
-
-        return res_img
-
 
         def warp(tenInput, tenFlow):
             backwarp_tenGrid = {}
             k = (str(tenFlow.device), str(tenFlow.size()))
             if k not in backwarp_tenGrid:
-                tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3], device=device).view(
+                tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(
                     1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
-                tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2], device=device).view(
+                tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(
                     1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
                 backwarp_tenGrid[k] = torch.cat(
                     [tenHorizontal, tenVertical], 1).to(device)
@@ -4359,21 +4350,25 @@ class flameTimewarpML(flameMenuApp):
                                 tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0)], 1)
 
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-            return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
-            '''
-            cpu_g = g.to('cpu')
-            cpu_tenInput = g.to('cpu')
-            cpu_result = torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bicubic', padding_mode='border', align_corners=True)
-            return cpu_result.to(device)
-            '''
+            return torch.nn.functional.grid_sample(input=tenInput, grid=torch.clamp(g, -1, 1), mode='bilinear', padding_mode='zeros', align_corners=True)
 
-        def conv_leaky(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
-            return nn.Sequential(
-                nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
-                        padding=padding, dilation=dilation, bias=True),        
-                nn.LeakyReLU(0.2, True)
-            )
-        
+        def warp_cpu(tenInput, tenFlow):
+            backwarp_tenGrid = {}
+            k = (str(tenFlow.device), str(tenFlow.size()))
+            if k not in backwarp_tenGrid:
+                tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(
+                    1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+                tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(
+                    1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+                backwarp_tenGrid[k] = torch.cat(
+                    [tenHorizontal, tenVertical], 1).to(torch.device('cpu'))
+
+            tenFlow = torch.cat([tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0),
+                                tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0)], 1)
+
+            g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+            return torch.nn.functional.grid_sample(input=tenInput, grid=torch.clamp(g, -1, 1), mode='bilinear', padding_mode='zeros', align_corners=True)
+
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return nn.Sequential(
                 nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
@@ -4388,21 +4383,85 @@ class flameTimewarpML(flameMenuApp):
                 nn.PReLU(out_planes)
             )
 
+        class IFBlock(nn.Module):
+            def __init__(self, in_planes, scale=1, c=64):
+                super(IFBlock, self).__init__()
+                self.scale = scale
+                self.conv0 = nn.Sequential(
+                    conv(in_planes, c, 3, 2, 1),
+                    conv(c, 2*c, 3, 2, 1),
+                    )
+                self.convblock = nn.Sequential(
+                    conv(2*c, 2*c),
+                    conv(2*c, 2*c),
+                    conv(2*c, 2*c),
+                    conv(2*c, 2*c),
+                    conv(2*c, 2*c),
+                    conv(2*c, 2*c),
+                )        
+                self.conv1 = nn.ConvTranspose2d(2*c, 4, 4, 2, 1)
+                            
+            def forward(self, x):
+                if self.scale != 1:
+                    x = F.interpolate(x, scale_factor=1. / self.scale, mode="bilinear",
+                                    align_corners=False)
+                x = self.conv0(x)
+                x = self.convblock(x)
+                x = self.conv1(x)
+                flow = x
+                if self.scale != 1:
+                    flow = F.interpolate(flow, scale_factor=self.scale, mode="bilinear",
+                                        align_corners=False)
+                return flow
+
+        class IFNet(nn.Module):
+            def __init__(self):
+                super(IFNet, self).__init__()
+                self.block0 = IFBlock(6, scale=8, c=192)
+                self.block1 = IFBlock(10, scale=4, c=128)
+                self.block2 = IFBlock(10, scale=2, c=96)
+                self.block3 = IFBlock(10, scale=1, c=48)
+
+            def forward(self, x, UHD=False):
+                print ('IFNet forward')
+                if UHD:
+                    x = F.interpolate(x, scale_factor=0.5, mode="bilinear", align_corners=False)
+                flow0 = self.block0(x)
+                F1 = flow0
+                F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+                warped_img0 = warp(x[:, :3], F1_large[:, :2])
+                warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
+                flow1 = self.block1(torch.cat((warped_img0, warped_img1, F1_large), 1))
+                F2 = (flow0 + flow1)
+                F2_large = F.interpolate(F2, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+                warped_img0 = warp(x[:, :3], F2_large[:, :2])
+                warped_img1 = warp(x[:, 3:], F2_large[:, 2:4])
+                flow2 = self.block2(torch.cat((warped_img0, warped_img1, F2_large), 1))
+                F3 = (flow0 + flow1 + flow2)
+                F3_large = F.interpolate(F3, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+                warped_img0 = warp(x[:, :3], F3_large[:, :2])
+                warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
+                flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3_large), 1))
+                F4 = (flow0 + flow1 + flow2 + flow3)
+                return F4, [F1, F2, F3, F4]
+
         class Conv2(nn.Module):
             def __init__(self, in_planes, out_planes, stride=2):
                 super(Conv2, self).__init__()
+                # self.conv1 = conv(in_planes, out_planes, 3, stride, 1)
+                # self.conv2 = conv(out_planes, out_planes, 3, 1, 1)
                 self.conv1 = checkpoint(conv, in_planes, out_planes, 3, stride, 1)
                 self.conv2 = checkpoint(conv, out_planes, out_planes, 3, 1, 1)
 
             def forward(self, x):
+                # x = self.conv1(x)
+                # x = self.conv2(x)
                 x = checkpoint(self.conv1, x)
                 x = checkpoint(self.conv2, x)
                 return x
 
         class ContextNet(nn.Module):
-            def __init__(self):
-                print ('contextnet init')
-                c = 32
+            def __init__(self, c = 32):
                 super(ContextNet, self).__init__()
                 self.conv0 = Conv2(3, c)
                 self.conv1 = Conv2(c, c)
@@ -4411,31 +4470,28 @@ class flameTimewarpML(flameMenuApp):
                 self.conv4 = Conv2(4*c, 8*c)
 
             def forward(self, x, flow):
-                print ('contextnet forward')
-
-                x = checkpoint(self.conv0, x)
-                x = checkpoint(self.conv1, x)
-                flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear", 
-                                    align_corners=False) * 0.5
+                print ('ContextNet forward')
+                x = self.conv0(x)
+                x = self.conv1(x)
+                flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear", align_corners=False) * 0.5
                 f1 = warp(x, flow)
-                x = checkpoint(self.conv2, x)
+                x = self.conv2(x)
                 flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
                                     align_corners=False) * 0.5
                 f2 = warp(x, flow)
-                x = checkpoint(self.conv3, x)
+                x = self.conv3(x)
                 flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
                                     align_corners=False) * 0.5
                 f3 = warp(x, flow)
-                x = checkpoint(self.conv4, x)
+                x = self.conv4(x)
                 flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
                                     align_corners=False) * 0.5
                 f4 = warp(x, flow)
                 return [f1, f2, f3, f4]
 
         class FusionNet(nn.Module):
-            def __init__(self):
+            def __init__(self, c = 32):
                 super(FusionNet, self).__init__()
-                c = 32
                 self.conv0 = Conv2(10, c)
                 self.down0 = Conv2(c, 2*c)
                 self.down1 = Conv2(4*c, 4*c)
@@ -4447,20 +4503,34 @@ class flameTimewarpML(flameMenuApp):
                 self.up3 = deconv(4*c, c)
                 self.conv = nn.ConvTranspose2d(c, 4, 4, 2, 1)
 
-            def forward(self, img0, img1, flow, c0, c1, context_scale):
-                print ('fusionnet forward')
+            def forward(self, img0, img1, flow, c0, c1, flow_gt):
+                print ('FusionNet forward')
                 warped_img0 = warp(img0, flow[:, :2])
-                print ('warped_img0')
                 warped_img1 = warp(img1, flow[:, 2:4])
-                print ('warped_img1')
+                if flow_gt == None:
+                    warped_img0_gt, warped_img1_gt = None, None
+                else:
+                    warped_img0_gt = warp(img0, flow_gt[:, :2])
+                    warped_img1_gt = warp(img1, flow_gt[:, 2:4])
+
+                # x = self.conv0(torch.cat((warped_img0, warped_img1, flow), 1))
+                # s0 = self.down0(x)
+                # s1 = self.down1(torch.cat((s0, c0[0], c1[0]), 1))
+                # s2 = self.down2(torch.cat((s1, c0[1], c1[1]), 1))
+                # s3 = self.down3(torch.cat((s2, c0[2], c1[2]), 1))
+                # x = self.up0(torch.cat((s3, c0[3], c1[3]), 1))
+                # x = self.up1(torch.cat((x, s2), 1))
+                # x = self.up2(torch.cat((x, s1), 1))
+                # x = self.up3(torch.cat((x, s0), 1))
+                # x = self.conv(x)
 
                 x = checkpoint(self.conv0, torch.cat((warped_img0, warped_img1, flow), 1))
                 print ('x = checkpoint(self.conv0, torch.cat((warped_img0, warped_img1, flow), 1))')
 
                 s0 = checkpoint(self.down0, x)
                 print ('s0 = checkpoint(self.down0, x)')
-                s0 = F.interpolate(s0, scale_factor=context_scale, mode="bilinear", align_corners=False)
-                print (s0.shape)
+                # s0 = F.interpolate(s0, scale_factor=context_scale, mode="bilinear", align_corners=False)
+                # print (s0.shape)
 
                 s1 = checkpoint(self.down1, torch.cat((s0, c0[0], c1[0]), 1))
                 print ('s1 = checkpoint(self.down1, torch.cat((s0, c0[0], c1[0]), 1))')
@@ -4488,447 +4558,179 @@ class flameTimewarpML(flameMenuApp):
 
                 x = checkpoint(self.up3, torch.cat((x, s0), 1))
 
-                del(s0)
-                mps.empty_cache()
-
                 x = checkpoint(self.conv, x)
-                return x, warped_img0, warped_img1
 
-        class ResConv(nn.Module):
-            def __init__(self, c, dilation=1):
-                super(ResConv, self).__init__()
-                self.conv = nn.Conv2d(c, c, 3, 1, dilation, dilation=dilation, groups=1)
-                self.beta = nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu = nn.LeakyReLU(0.2, True)
+                return x, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt
 
-            def forward(self, x):
-                return self.relu(self.conv(x) * self.beta + x)
+        class IFNetModel:
+            def __init__(self):
+                self.flownet = IFNet()
+                self.device()
 
-        class IFBlock4(nn.Module):
-            def __init__(self, in_planes, c=64):
-                super(IFBlock, self).__init__()
-                self.conv0 = nn.Sequential(
-                    conv_leaky(in_planes, c//2, 3, 2, 1),
-                    conv_leaky(c//2, c, 3, 2, 1),
-                    )
-                self.convblock = nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                )
-                self.lastconv = nn.Sequential(
-                    nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
-                    nn.PixelShuffle(2)
-                )
+            def eval(self):
+                self.flownet.eval()
 
-            def forward(self, x, flow, scale):
-                x = F.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                if flow is not None:
-                    flow = F.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
-                    x = torch.cat((x, flow), 1)
-                feat = self.conv0(x)
-                feat = self.convblock(feat)
-                tmp = self.lastconv(feat)
-                tmp = F.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
-                flow = tmp[:, :4] * scale
-                mask = tmp[:, 4:5]
-                return flow, mask
+            def device(self):
+                self.flownet.to(device)
 
-        class IFNet4(nn.Module):
-            def __init__(self, progress):
-                super(IFNet, self).__init__()
-                self.block0 = IFBlock(7, c=192)
-                self.block1 = IFBlock(8+4, c=128)
-                self.block2 = IFBlock(8+4, c=96)
-                self.block3 = IFBlock(8+4, c=64)
-                self.progress = progress
-                # self.contextnet = ContextNet()
-                # self.unet = Unet()
-
-            def forward(self, img0, img1, timestep=0.5, scale_list=[8, 4, 2, 1], fastmode=True, ensemble=False):
-                from torch import mps
-                print ('timestep: %s' % timestep)
-                # pprint (dir(mps))
-                # print (mps.current_allocated_memory())
-                timestep = (img0[:, :1].clone() * 0 + 1) * timestep
-                # print (mps.current_allocated_memory())
-
-                flow_list = []
-                merged = []
-                mask_list = []
-                warped_img0 = img0
-                warped_img1 = img1
-                flow = None
-                mask = None
-                block = [self.block0, self.block1, self.block2, self.block3]
-                # print (mps.current_allocated_memory())
-
-                for i in range(len(scale_list)):
-                    self.progress.info('Frame ' + str(self.progress.current_frame) + ': Processing: Optical flow pass {} of 4'.format(str(i+1)))
-                    print ('block %s' % i)
-                    if flow is None:
-                        flow, mask = checkpoint(block[i], torch.cat((img0[:, :3], img1[:, :3], timestep), 1), None, scale_list[i])
-                        if ensemble:
-                            f1, m1 = checkpoint(block[i], torch.cat((img1[:, :3], img0[:, :3], 1-timestep), 1), None, scale_list[i])
-                            flow = (flow + torch.cat((f1[:, 2:4], f1[:, :2]), 1)) / 2
-                            mask = (mask + (-m1)) / 2
-                    else:
-                        f0, m0 = checkpoint(block[i], torch.cat((warped_img0[:, :3], warped_img1[:, :3], timestep, mask), 1), flow, scale_list[i])
-                        if ensemble:
-                            f1, m1 = checkpoint(block[i], torch.cat((warped_img1[:, :3], warped_img0[:, :3], 1-timestep, -mask), 1), torch.cat((flow[:, 2:4], flow[:, :2]), 1), scale_list[i])
-                            f0 = (f0 + torch.cat((f1[:, 2:4], f1[:, :2]), 1)) / 2
-                            m0 = (m0 + (-m1)) / 2
-                        flow = flow + f0
-                        mask = mask + m0
-
-                    display_flow1 = flow[:, :2].cpu().detach().numpy()
-                    display_flow1 = np.pad(display_flow1, ((0, 0), (0, 1), (0, 0), (0, 0)))
-                    display_flow1 = display_flow1.transpose((0, 2, 3, 1)).squeeze(axis=0)
-                    display_flow1 = (display_flow1 + 1) / 2
-                    display_flow1 = np.flip(display_flow1, axis=2)
-                    self.progress.update_interface_image(
-                        display_flow1.copy(), 
-                        self.progress.ui.flow1_label,
-                        text = 'Flow pass {} of 4'.format(str(i+1))
-                        )
-                    display_flow2 = flow[:, 2:4].cpu().detach().numpy()
-                    display_flow2 = np.pad(display_flow2, ((0, 0), (0, 1), (0, 0), (0, 0)))
-                    display_flow2 = display_flow2.transpose((0, 2, 3, 1)).squeeze(axis=0)
-                    display_flow2 = (display_flow2 + 1) / 2
-                    display_flow2 = np.flip(display_flow2, axis=2)
-                    self.progress.update_interface_image(
-                        display_flow2.copy(), 
-                        self.progress.ui.flow2_label,
-                        text = 'Flow pass {} of 4'.format(str(i+1))
-                        )
-
-                    mask_list.append(mask)
-                    flow_list.append(flow)
-                    warped_img0 = warp(img0, flow[:, :2])
-                    display_warped_0 = warped_img0.cpu().detach().numpy().transpose((0, 2, 3, 1)).squeeze(axis=0)
-                    display_warped_0 = np.flip(display_warped_0, axis=2)
-                    self.progress.update_interface_image(
-                        display_warped_0.copy(), 
-                        self.progress.ui.flow3_label,
-                        text = 'Warp incoming pass {} of 4'.format(str(i+1))
-                        )
-
-                    warped_img1 = warp(img1, flow[:, 2:4])
-                    display_warped_1 = warped_img0.cpu().detach().numpy().transpose((0, 2, 3, 1)).squeeze(axis=0)
-                    display_warped_1 = np.flip(display_warped_1, axis=2)
-                    self.progress.update_interface_image(
-                        display_warped_1.copy(), 
-                        self.progress.ui.flow4_label,
-                        text = 'Warp outgoing pass {} of 4'.format(str(i+1))
-                        )
-        
-                    merged.append((warped_img0, warped_img1))
-                print ('sigmoid')
-                mask_list[3] = torch.sigmoid(mask_list[3])
-                merged[3] = merged[3][0] * mask_list[3] + merged[3][1] * (1 - mask_list[3])
-                if not fastmode:
-                    pass
-                    '''
-                    c0 = self.contextnet(img0, flow[:, :2])
-                    c1 = self.contextnet(img1, flow[:, 2:4])
-                    tmp = self.unet(img0, img1, warped_img0, warped_img1, mask, flow, c0, c1)
-                    res = tmp[:, :3] * 2 - 1
-                    merged[3] = torch.clamp(merged[3] + res, 0, 1)
-                    '''
-                return flow_list, mask_list[3], merged
-
-        class IFBlock(nn.Module):
-            def __init__(self, in_planes, scale=1, c=64):
-                super(IFBlock2, self).__init__()
-                self.scale = scale
-                self.conv0 = nn.Sequential(
-                    conv(in_planes, c, 3, 2, 1),
-                    conv(c, 2*c, 3, 2, 1),
-                    )
-                self.convblock = nn.Sequential(
-                    conv(2*c, 2*c),
-                    conv(2*c, 2*c),
-                    conv(2*c, 2*c),
-                    conv(2*c, 2*c),
-                    conv(2*c, 2*c),
-                    conv(2*c, 2*c),
-                )        
-                self.conv1 = nn.ConvTranspose2d(2*c, 4, 4, 2, 1)
+            def load_model(self, path):
+                def convert(param):
+                    return {
+                        k.replace("module.", ""): v
+                        for k, v in param.items()
+                        if "module." in k
+                    }
                     
-            def forward(self, x):
-                if self.scale != 1:
-                    x = F.interpolate(x, scale_factor=1. / self.scale, mode="bilinear",
-                                    align_corners=False)
-                x = self.conv0(x)
-                x = self.convblock(x)
-                x = self.conv1(x)
-                flow = x
-                if self.scale != 1:
-                    flow = F.interpolate(flow, scale_factor=self.scale, mode="bilinear",
-                                        align_corners=False)
+                self.flownet.load_state_dict(
+                    convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
+
+            def inference(self, img0, img1, UHD=False):
+                imgs = torch.cat((img0, img1), 1)
+                flow, _ = self.flownet(imgs, UHD)
                 return flow
 
-        class IFNet(nn.Module):
-            def __init__(self):
-                super(IFNet2, self).__init__()
-                self.block0 = IFBlock2(6, scale=8, c=192)
-                self.block1 = IFBlock2(10, scale=4, c=128)
-                self.block2 = IFBlock2(10, scale=2, c=96)
-                self.block3 = IFBlock2(10, scale=1, c=48)
-
-            def forward(self, x, UHD=False):
-                if UHD:
-                    x = F.interpolate(x, scale_factor=0.5, mode="bilinear", align_corners=False)
-                flow0 = self.block0(x)
-                F1 = flow0
-                F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
-                warped_img0 = warp(x[:, :3], F1_large[:, :2])
-                warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
-                flow1 = self.block1(torch.cat((warped_img0, warped_img1, F1_large), 1))
-                F2 = (flow0 + flow1)
-                F2_large = F.interpolate(F2, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
-                warped_img0 = warp(x[:, :3], F2_large[:, :2])
-                warped_img1 = warp(x[:, 3:], F2_large[:, 2:4])
-                flow2 = self.block2(torch.cat((warped_img0, warped_img1, F2_large), 1))
-                F3 = (flow0 + flow1 + flow2)
-                F3_large = F.interpolate(F3, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
-                warped_img0 = warp(x[:, :3], F3_large[:, :2])
-                warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
-                flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3_large), 1))
-                F4 = (flow0 + flow1 + flow2 + flow3)
-                return F4, [F1, F2, F3, F4]
-
-        class FlownetModel:
-            def __init__(self, progress):
-                self.progress = progress
-                self.flownet = IFNet(progress)
-                # self.contextnet = ContextNet()
-                self.flownet.eval()
-                self.flownet.to(device)
-
-            def load_model(self, path, rank=0):
-                self.progress.info('Frame ' + str(self.progress.current_frame) + ': Processing: Loading optical flow...')
-                
-                def convert(param):
-                    return {
-                        k.replace("module.", ""): v
-                        for k, v in param.items()
-                        if "module." in k
-                    }
-                
-                # print ('{}/flownet.pkl'.format(path))
-                self.flownet.load_state_dict(convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)), False)
-                # self.contextnet.load_state_dict(convert(torch.load('/var/tmp/flameTimewarpML/trained_models/default/v2.4.model/contextnet.pkl', map_location=device)), False)
-                # self.fusionnet.load_state_dict(convert(torch.load('/var/tmp/flameTimewarpML/trained_models/default/v2.4.model/unet.pkl', map_location=device)), False)
-
-            def inference(self, img0, img1, timestep=0.5, scale=1.0):
-                # imgs = torch.cat((img0, img1), 1)
-                scale_list = [8/scale, 4/scale, 2/scale, 1/scale]
-                flow_list, mask, merged = self.flownet(img0, img1, timestep, scale_list)
-                flow = flow_list[3]
-
-                '''
-                img0 = img0.cpu().detach()
-                img1 = img1.cpu().detach()
-
-                print ('flow')
-                print (flow.dtype)
-                print (flow.device)
-
-                print ('img0')
-                print (img0.type)
-                print (img0.device)
-
-                c0 = self.contextnet(img0, flow[:, :2])
-                c1 = self.contextnet(img1, flow[:, 2:4])
-                '''
-
-                del self.flownet
-                # del self.contextnet
-                from torch import mps
-                mps.empty_cache()
-
-                return merged[3], flow_list
-
         class ContextNetModel:
-            def __init__(self, progress):
-                self.progress = progress
+            def __init__(self):
                 self.contextnet = ContextNet()
+                self.device()
+
+            def eval(self):
                 self.contextnet.eval()
+
+            def device(self):
                 self.contextnet.to(device)
 
-            def load_model(self, path, rank=0):
-                self.progress.info('Frame ' + str(self.progress.current_frame) + ': Processing: Loading context net...')
-                
+            def load_model(self, path):
                 def convert(param):
                     return {
                         k.replace("module.", ""): v
                         for k, v in param.items()
                         if "module." in k
                     }
-                self.contextnet.load_state_dict(convert(torch.load('/var/tmp/flameTimewarpML/trained_models/default/v2.4.model/contextnet.pkl', map_location=device)), False)
+                    
+                self.contextnet.load_state_dict(
+                    convert(torch.load('{}/contextnet.pkl'.format(path), map_location=device)))
+
+            def get_contexts(self, img0, img1, flow, training=True, flow_gt=None, UHD=False):
+                if UHD:
+                    flow = F.interpolate(flow, scale_factor=2.0, mode="bilinear", align_corners=False) * 2.0
+                c0 = self.contextnet(img0, flow[:, :2])
+                c1 = self.contextnet(img1, flow[:, 2:4])
+
+                return c0, c1
 
         class FusionNetModel:
-            def __init__(self, progress):
-                self.progress = progress
+            def __init__(self):
                 self.fusionnet = FusionNet()
+                self.device()
+
+            def eval(self):
                 self.fusionnet.eval()
+
+            def device(self):
                 self.fusionnet.to(device)
 
-            def load_model(self, path, rank=0):
-                self.progress.info('Frame ' + str(self.progress.current_frame) + ': Processing: Loading context net...')
-                
+            def load_model(self, path):
                 def convert(param):
                     return {
                         k.replace("module.", ""): v
                         for k, v in param.items()
                         if "module." in k
                     }
-                self.fusionnet.load_state_dict(convert(torch.load('/var/tmp/flameTimewarpML/trained_models/default/v2.4.model/unet.pkl', map_location=device)), False)
+                    
+                self.fusionnet.load_state_dict(
+                    convert(torch.load('{}/unet.pkl'.format(path), map_location=device)))
 
-        class FlownetV2:
-            def __init__(self, progress):
-                self.progress = progress
-                self.flownet = IFNet2()
-                self.flownet.eval()
-                self.flownet.to(device)
+            def predict(self, img0, img1, c0, c1, flow, training=True, flow_gt=None, UHD=False):
+                flow = F.interpolate(flow, scale_factor=2.0, mode="bilinear",
+                                    align_corners=False) * 2.0
+                refine_output, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt = self.fusionnet(
+                    img0, img1, flow, c0, c1, flow_gt)
+                res = torch.sigmoid(refine_output[:, :3]) * 2 - 1
+                mask = torch.sigmoid(refine_output[:, 3:4])
+                merged_img = warped_img0 * mask + warped_img1 * (1 - mask)
+                pred = merged_img + res
+                return pred
+      
+        img0_ratio = 0
+        img1_ratio = 1
 
-            def load_model(self, path, rank=0):
-                self.progress.info('Frame ' + str(self.progress.current_frame) + ': Processing: Loading context net...')
-                
-                def convert(param):
-                    return {
-                        k.replace("module.", ""): v
-                        for k, v in param.items()
-                        if "module." in k
-                    }
-                self.flownet.load_state_dict(convert(torch.load('/var/tmp/flameTimewarpML/trained_models/default/v2.4.model/flownet.pkl', map_location=device)), False)
+        for current_pass in range(1, num_passes + 1):
+            print ('pass %s of %s' % (current_pass, num_passes))
 
-        context_scale = 2
-        print ('context scale %s' % context_scale)
+            device = torch.device('cpu')
+            img0 = img0.to(device)
+            img1 = img1.to(device)
 
-        flownet_model = FlownetModel(self.progress)
-        print ('Flownet init')
-        from torch import mps
-        print (mps.driver_allocated_memory())
-        flownet_model.load_model(self.model_path)
-        print ('Flownet after model load')
-        from torch import mps
-        print (mps.driver_allocated_memory())
-        pred, flow_list = flownet_model.inference(img0, img1, timestep=ratio, scale=context_scale)
-        for flow in flow_list:
-            print ('flow shape')
-            print (flow.shape)
-        flow = flow_list[3]
+            print ('load IFNetModel')
+            ifnet_model = IFNetModel()
+            ifnet_model.load_model(
+                os.path.join(
+                    self.trained_models_path,
+                    'v2.4.model'))
+            ifnet_model.eval()
+            ifnet_model.device()
 
-        '''
-        flownet_model = FlownetV2(self.progress)
-        flownet_model.load_model(self.model_path)
-        imgs = torch.cat((img0, img1), 1)
-        flow2, _ = flownet_model.flownet(imgs, False)
-        print ('flow2 shape')
-        print (flow2.shape)
+            flow = ifnet_model.inference(img0, img1, False)
 
-        # flow = flow2
-        '''
+            print ('del IFNetModel')
+            del (ifnet_model)
 
-        print ('Flownet after inference')
-        from torch import mps
-        print (mps.driver_allocated_memory())
+            device = torch.device('cpu')
+            img0 = img0.to(device)
+            img1 = img1.to(device)
+            flow = flow.to(device)
 
-        del(flownet_model)
-        mps.empty_cache()
+            print ('load ContextNetModel')
+            contextnet_model = ContextNetModel()
+            contextnet_model.load_model(
+                os.path.join(
+                    self.trained_models_path,
+                    'v2.4.model'))
+            contextnet_model.eval()
+            contextnet_model.device()
 
-        print ('after del flownet model')
-        from torch import mps
-        print (mps.driver_allocated_memory())
+            c0, c1 = contextnet_model.get_contexts(img0, img1, flow)
 
-        context_net_model = ContextNetModel(self.progress)
-        context_net_model.load_model(self.model_path)
+            print ('del ContextNetModel')
+            del (contextnet_model)
 
-        print ('after loading contextnet')
-        from torch import mps
-        print (mps.driver_allocated_memory())
+            device = torch.device('mps')
+            img0 = img0.to(device)
+            img1 = img1.to(device)
+            flow = flow.to(device)
+            c00 = []
+            c11 = []
+            for fn in c0:
+                c00.append(fn.to(device))
+            for fn in c1:
+                c11.append(fn.to(device))
 
-        flow_c = F.interpolate(flow, scale_factor=context_scale/2, mode="bilinear", align_corners=False) * 0.5
-        c0 = context_net_model.contextnet(img0, flow_c[:, :2])
-        print ('c0')
-        for a in c0:
-            print(a.shape)
+            print ('load FusionNetModel')
+            fusion_model = FusionNetModel()
+            fusion_model.load_model(
+                os.path.join(
+                    self.trained_models_path,
+                    'v2.4.model'))
+            fusion_model.eval()
+            fusion_model.device()
 
-        print ('after first contextnet')
-        from torch import mps
-        print (mps.driver_allocated_memory())
+            middle = fusion_model.predict(img0, img1, c00, c11, flow)
 
-        c1 = context_net_model.contextnet(img1, flow_c[:, 2:4])
+            print ('del FusionNetModel')
+            del (fusion_model)
 
-        print ('after second contextnet')
-        from torch import mps
-        print (mps.driver_allocated_memory())
-
-        del (flow_c)
-        del context_net_model
-        mps.empty_cache()
-
-        fusion_net_model = FusionNetModel(self.progress)
+            middle_ratio = (img0_ratio + img1_ratio) / 2
+            if ratio > middle_ratio:
+                img0 = middle
+                img0_ratio = middle_ratio
+            else:
+                img1 = middle
+                img1_ratio = middle_ratio
         
-        print ('after fusion_net_model')
-        from torch import mps
-        print (mps.driver_allocated_memory())
-
-        fusion_net_model.load_model(self.model_path)
-
-        print ('fusion_net_model.load_model')
-        from torch import mps
-        print (mps.driver_allocated_memory())
-        
-        # flow = F.interpolate(flow, scale_factor=2.0, mode="bilinear", align_corners=False) * 2.0
-        refine_output, warped_img0, warped_img1 = fusion_net_model.fusionnet(
-            img0, img1, flow, c0, c1, context_scale)
-        
-        del (c0)
-        del (c1)
-        del (flow)
-        del (flow_list)
-        del (fusion_net_model)
-        mps.empty_cache()
-
-        res = torch.sigmoid(refine_output[:, :3]) * 2 - 1
-        res = F.interpolate(res, scale_factor=1/context_scale, mode="bilinear", align_corners=False)
-        print ('res')
-        print (res.shape)
-        mask = torch.sigmoid(refine_output[:, 3:4])
-        mask = F.interpolate(mask, scale_factor=1/context_scale, mode="bilinear", align_corners=False)
-        print ('mask')
-        print (mask.shape)
-
-        print ('warped_img0')
-        print (warped_img0.shape)
-        merged_img = warped_img0 * mask + warped_img1 * (1 - mask)
-        pred = merged_img + res
-        
-        print ('after del contextnet and empty cache')
-        from torch import mps
-        print (mps.driver_allocated_memory())
-
-        res_img = pred[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
+        res_img = middle[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
         res_img = np.flip(res_img, axis=2).copy()
-
-        del (res)
-        del (mask)
-        del (merged_img)
-        del (pred)
-
-        mps.empty_cache()
-        print ('after empty_cache')
-        from torch import mps
-        print (mps.driver_allocated_memory())
-
+        print ('end of flownet24')
 
         return res_img
 
