@@ -34,7 +34,7 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 app_name = 'flameTimewarpML'
-__version__ = 'v0.5.0.dev.003'
+__version__ = 'v0.5.0.dev.004'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences

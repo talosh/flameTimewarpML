@@ -99,7 +99,7 @@ plugin_dirname = os.path.dirname(os.path.abspath(__file__))
 plugin_file_name = os.path.basename(plugin_dirname) + '.py'
 python_source = os.path.join(plugin_dirname, plugin_file_name)
 bundle_folder_name = 'bundle'
-bundle_code = 'flameTimewarpML.py'
+bundle_code_file_name = 'flameTimewarpML.py'
 bundle_folder = os.path.join(plugin_dirname, bundle_folder_name)
 platform_folder = os.path.join(plugin_dirname, bundle_folder_name, 'site-packages', 'platform')
 packages_folder = os.path.join(plugin_dirname, 'packages')
@@ -122,26 +122,29 @@ else:
     sys.exit()
 
 version = find_value(
-    os.path.join(plugin_dirname, bundle_code),
+    os.path.join(plugin_dirname, bundle_code_file_name),
     '__version__'
 )
 
 for platform in platforms:
+    print ('processing packages for %s' % platform)
     version_folder = os.path.join(
         packages_folder,
         version,
     )
+    print ('version folder: %s' % version_folder)
     os.makedirs(version_folder, exist_ok=True)
 
     package_folder = os.path.join(
         version_folder,
-        os.path.splitext(bundle_code)[0] + '.' + platform + '.package'
+        os.path.splitext(bundle_code_file_name)[0] + '.' + platform + '.package'
     )
+    print ('package_folder: %s' % package_folder)
     os.makedirs(package_folder, exist_ok=True)
 
     package_bundle_folder = os.path.join(
         version_folder,
-        os.path.splitext(bundle_code)[0] + '.' + platform + '.bundle'
+        os.path.splitext(bundle_code_file_name)[0] + '.' + platform + '.bundle'
     )
 
     if not os.path.isdir(package_bundle_folder):
@@ -153,7 +156,7 @@ for platform in platforms:
             + ' ' + os.path.join(package_bundle_folder, 'site-packages' + os.path.sep)
         os.system(cmd)
 
-    tar_file_name = os.path.splitext(bundle_code)[0] + '.' + platform + '.bundle.tar.gz'
+    tar_file_name = os.path.splitext(bundle_code_file_name)[0] + '.' + platform + '.bundle.tar.gz'
     tar_file_path = os.path.join(version_folder, tar_file_name)
     if not os.path.isfile(tar_file_path):
         print ('creating %s' % tar_file_path + '\n---')
@@ -161,7 +164,7 @@ for platform in platforms:
         print ('executing: %s\n---' % cmd)
         os.system(cmd)
 
-    dest_python_file = os.path.join(package_folder, bundle_code)
+    dest_python_file = os.path.join(package_folder, bundle_code_file_name)
 
     print ('---\nadding data to python script %s' % dest_python_file)
     if os.path.isfile(dest_python_file):
@@ -172,7 +175,7 @@ for platform in platforms:
     f.close()
     encoded_bundle_data = base64.b64encode(bundle_data).decode()
     del bundle_data
-    f = open(bundle_code, 'r')
+    f = open(bundle_code_file_name, 'r')
     bundle_code = f.read()
     f.close()
     bundled_code = bundle_code.replace('BUNDLE_PAYLOAD', encoded_bundle_data)
