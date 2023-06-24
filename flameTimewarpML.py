@@ -109,8 +109,6 @@ class flameAppFramework(object):
         self.prefs_global = {}
         self.debug = DEBUG
         
-
-
         try:
             import flame
             self.flame = flame
@@ -173,6 +171,7 @@ class flameAppFramework(object):
         # site-packages check and payload unpack if nessesary
         self.site_packages_folder = os.path.join(
             self.bundle_path,
+            f'python{sys.version_info.major}.{sys.version_info.minor}',
             'site-packages'
         )
 
@@ -866,11 +865,15 @@ class flameTimewarpML(flameMenuApp):
                 'QPushButton::menu-indicator {image: none;}')
 
         def __init__(self, selection, **kwargs):
-            super().__init__()
             self.mode = kwargs.get('mode', 'Timewarp')
             self.twml = kwargs.get('parent')
             self.app_name = self.twml.app_name
+
+            if not self.twml.check_requirements():
+                return
             
+            super().__init__()
+
             # clean temp folder
             self.temp_folder = os.path.join(
                 self.twml.framework.bundle_path,
@@ -1783,6 +1786,44 @@ class flameTimewarpML(flameMenuApp):
         menu['actions'].append(menu_item)
 
         return menu
+
+    def check_requirements(self):
+        def import_packages():
+            import torch
+            import numpy
+
+        try:
+            import_packages()
+            return True
+        except:
+            try:
+                if not self.framework.site_packages_folder in sys.path:
+                    sys.path.append(self.framework.site_packages_folder)
+                import_packages()
+                return True
+            except:
+                self.install_requirements()
+
+    def install_requirements(self):
+        requirements = [
+            'torch',
+            'numpy'
+        ]
+
+        import flame
+        message = self.app_name + ' would like to install required python packages:\n\n'
+        for req in requirements:
+            message += req + '\n'
+        message += '\nPackages will be installed into ' + self.framework.site_packages_folder
+        message += ' and will not alter your main Flame python installation'
+
+        flame.messages.show_in_dialog(
+                title = self.app_name,
+                message = message,
+                type = 'error',
+                buttons = ['Ok']
+            )
+
 
     def import_torch(self):
         import flame
