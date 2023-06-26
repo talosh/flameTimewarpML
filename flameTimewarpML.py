@@ -171,6 +171,7 @@ class flameAppFramework(object):
         # site-packages check and payload unpack if nessesary
         self.site_packages_folder = os.path.join(
             self.bundle_path,
+            'lib',
             f'python{sys.version_info.major}.{sys.version_info.minor}',
             'site-packages'
         )
@@ -1787,22 +1788,27 @@ class flameTimewarpML(flameMenuApp):
 
         return menu
 
-    def check_requirements(self):
+    def check_requirements(self):        
         def import_packages():
             import torch
             import numpy
+
+        sys.path_importer_cache.clear()
 
         try:
             import_packages()
             return True
         except:
+            if not self.framework.site_packages_folder in sys.path:
+                sys.path.append(self.framework.site_packages_folder)
             try:
-                if not self.framework.site_packages_folder in sys.path:
-                    sys.path.append(self.framework.site_packages_folder)
                 import_packages()
                 return True
             except:
-                self.install_requirements()
+                # sys.path =  filter (lambda a: not a.startswith('/System'), sys.path)
+                if self.install_requirements():
+                    return True
+        return False
 
     def install_requirements(self):
         requirements = [
@@ -1814,16 +1820,41 @@ class flameTimewarpML(flameMenuApp):
         message = self.app_name + ' would like to install required python packages:\n\n'
         for req in requirements:
             message += req + '\n'
-        message += '\nPackages will be installed into ' + self.framework.site_packages_folder
+        message += '\nPackages will be installed into ' + self.framework.bundle_path
         message += ' and will not alter your main Flame python installation'
 
-        flame.messages.show_in_dialog(
+        user_response = flame.messages.show_in_dialog(
                 title = self.app_name,
                 message = message,
-                type = 'error',
-                buttons = ['Ok']
+                type = 'question',
+                buttons = ['Cancel', 'Ok']
             )
+        
+        if user_response == 'Cancel':
+            return
+                
+        if not os.path.isdir(self.framework.site_packages_folder):
+            try:
+                os.makedirs(self.framework.site_packages_folder)
+            except Exception as e:
+                msg_str = 'Unable to import PyTorch module.\n'
+                msg_str += 'Please make sure PyTorch is installed and working '
+                msg_str += "with installed graphics card and Flame's python version "
+                msg_str += '.'.join(str(num) for num in sys.version_info[:3])
+                self.message(msg_str)
+                self.log(msg)
+                self.log(pformat(e))
 
+        pip3_path = f'/opt/Autodesk/python/{flame.get_version()}/bin/pip3'
+
+        import subprocess
+        env = os.environ.copy()
+        env['PYTHONUSERBASE'] = self.framework.bundle_path
+        for req in requirements:
+            flame.messages.show_in_console(self.app_name + ' Installing ' + req, 'info', 8)
+            subprocess.run([pip3_path, 'install', '--user', req], env=env)
+        flame.messages.clear_console()
+        return True
 
     def import_torch(self):
         import flame
