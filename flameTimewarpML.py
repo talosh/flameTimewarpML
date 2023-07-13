@@ -1812,6 +1812,7 @@ class flameTimewarpML(flameMenuApp):
 
     def install_requirements(self):
         requirements = [
+            'tensorflow',
             'torch',
             'numpy'
         ]
@@ -4810,6 +4811,490 @@ class flameTimewarpML(flameMenuApp):
         print ('end of flownet24')
 
         return res_img
+
+
+    def flownet_raft(self, img0, img1, ratio, model_path):
+        import numpy as np
+
+        print (f'img0 shape: {img0.shape}')
+
+        return
+
+        import torch
+        import torch.nn as nn
+        import torch.nn.functional as F
+        from torch.utils.checkpoint import checkpoint
+
+
+        if sys.platform == 'darwin':
+            device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+            # device = torch.device('cpu')
+        else:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        torch.set_printoptions(profile="full")
+        torch.set_grad_enabled(False)
+
+        print ('start')
+        from torch import mps
+        print (mps.driver_allocated_memory())
+
+        # flip to BGR
+        img0 = np.flip(img0, axis=2).copy()
+        img1 = np.flip(img1, axis=2).copy()
+        img0 = torch.from_numpy(np.transpose(img0, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+        img1 = torch.from_numpy(np.transpose(img1, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+
+        n, c, h, w = img0.shape
+        
+        ph = ((h - 1) // 64 + 1) * 64
+        pw = ((w - 1) // 64 + 1) * 64
+        padding = (0, pw - w, 0, ph - h)
+        img0 = F.pad(img0, padding)
+        img1 = F.pad(img1, padding)
+
+        print ('padding')
+        from torch import mps
+        print (mps.driver_allocated_memory())
+
+        # print (img0)
+        # print (img1)
+
+        print ('processing ratio %s' % ratio)
+
+        def calculate_passes(target_ratio, precision, maxcycles=8):
+            img0_ratio = 0.0
+            img1_ratio = 1.0
+
+            if ratio <= img0_ratio + precision / 2:
+                return 1
+            if ratio >= img1_ratio - precision / 2:
+                return 1
+            
+            print ()
+            
+            for inference_cycle in range(0, maxcycles):
+                middle_ratio = (img0_ratio + img1_ratio) / 2
+                # print ('intermediate ratio: %s' % middle_ratio)
+                # print ('range: %s - %s' % (ratio - (precision / 2), ratio + (precision / 2)))
+                if ratio - (precision / 2) <= middle_ratio <= ratio + (precision / 2):
+                    return inference_cycle + 1
+
+                if ratio > middle_ratio:
+                    img0_ratio = middle_ratio
+                else:
+                    img1_ratio = middle_ratio
+
+            return maxcycles
+        
+        num_passes = calculate_passes(ratio, 0.02, 8)
+
+        print ('passes %s' % num_passes)
+
+        def warp(tenInput, tenFlow):
+            backwarp_tenGrid = {}
+            k = (str(tenFlow.device), str(tenFlow.size()))
+            if k not in backwarp_tenGrid:
+                tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(
+                    1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+                tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(
+                    1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+                backwarp_tenGrid[k] = torch.cat(
+                    [tenHorizontal, tenVertical], 1).to(device)
+
+            tenFlow = torch.cat([tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0),
+                                tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0)], 1)
+
+            g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+            return torch.nn.functional.grid_sample(input=tenInput, grid=torch.clamp(g, -1, 1), mode='bilinear', padding_mode='zeros', align_corners=True)
+
+        def warp_cpu(tenInput, tenFlow):
+            backwarp_tenGrid = {}
+            k = (str(tenFlow.device), str(tenFlow.size()))
+            if k not in backwarp_tenGrid:
+                tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(
+                    1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+                tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(
+                    1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+                backwarp_tenGrid[k] = torch.cat(
+                    [tenHorizontal, tenVertical], 1).to(torch.device('cpu'))
+
+            tenFlow = torch.cat([tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0),
+                                tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0)], 1)
+
+            g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+            return torch.nn.functional.grid_sample(input=tenInput, grid=torch.clamp(g, -1, 1), mode='bilinear', padding_mode='zeros', align_corners=True)
+
+        def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
+            return nn.Sequential(
+                nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
+                        padding=padding, dilation=dilation, bias=True),
+                nn.PReLU(out_planes)
+            )
+
+        def deconv(in_planes, out_planes, kernel_size=4, stride=2, padding=1):
+            return nn.Sequential(
+                torch.nn.ConvTranspose2d(in_channels=in_planes, out_channels=out_planes,
+                                        kernel_size=4, stride=2, padding=1, bias=True),
+                nn.PReLU(out_planes)
+            )
+
+        class IFBlock(nn.Module):
+            def __init__(self, in_planes, scale=1, c=64):
+                super(IFBlock, self).__init__()
+                self.scale = scale
+                self.conv0 = nn.Sequential(
+                    conv(in_planes, c, 3, 2, 1),
+                    conv(c, 2*c, 3, 2, 1),
+                    )
+                self.convblock = nn.Sequential(
+                    conv(2*c, 2*c),
+                    conv(2*c, 2*c),
+                    conv(2*c, 2*c),
+                    conv(2*c, 2*c),
+                    conv(2*c, 2*c),
+                    conv(2*c, 2*c),
+                )        
+                self.conv1 = nn.ConvTranspose2d(2*c, 4, 4, 2, 1)
+                            
+            def forward(self, x):
+                if self.scale != 1:
+                    x = F.interpolate(x, scale_factor=1. / self.scale, mode="bilinear",
+                                    align_corners=False)
+                x = self.conv0(x)
+                x = self.convblock(x)
+                x = self.conv1(x)
+                flow = x
+                if self.scale != 1:
+                    flow = F.interpolate(flow, scale_factor=self.scale, mode="bilinear",
+                                        align_corners=False)
+                return flow
+
+        class IFNet(nn.Module):
+            def __init__(self):
+                super(IFNet, self).__init__()
+                self.block0 = IFBlock(6, scale=8, c=192)
+                self.block1 = IFBlock(10, scale=4, c=128)
+                self.block2 = IFBlock(10, scale=2, c=96)
+                self.block3 = IFBlock(10, scale=1, c=48)
+
+            def forward(self, x, UHD=False):
+                print ('IFNet forward')
+                if UHD:
+                    x = F.interpolate(x, scale_factor=0.5, mode="bilinear", align_corners=False)
+                flow0 = self.block0(x)
+                F1 = flow0
+                F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+                warped_img0 = warp(x[:, :3], F1_large[:, :2])
+                warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
+                flow1 = self.block1(torch.cat((warped_img0, warped_img1, F1_large), 1))
+                F2 = (flow0 + flow1)
+                F2_large = F.interpolate(F2, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+                warped_img0 = warp(x[:, :3], F2_large[:, :2])
+                warped_img1 = warp(x[:, 3:], F2_large[:, 2:4])
+                flow2 = self.block2(torch.cat((warped_img0, warped_img1, F2_large), 1))
+                F3 = (flow0 + flow1 + flow2)
+                F3_large = F.interpolate(F3, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+                warped_img0 = warp(x[:, :3], F3_large[:, :2])
+                warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
+                flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3_large), 1))
+                F4 = (flow0 + flow1 + flow2 + flow3)
+                return F4, [F1, F2, F3, F4]
+
+        class Conv2(nn.Module):
+            def __init__(self, in_planes, out_planes, stride=2):
+                super(Conv2, self).__init__()
+                # self.conv1 = conv(in_planes, out_planes, 3, stride, 1)
+                # self.conv2 = conv(out_planes, out_planes, 3, 1, 1)
+                self.conv1 = checkpoint(conv, in_planes, out_planes, 3, stride, 1)
+                self.conv2 = checkpoint(conv, out_planes, out_planes, 3, 1, 1)
+
+            def forward(self, x):
+                # x = self.conv1(x)
+                # x = self.conv2(x)
+                x = checkpoint(self.conv1, x)
+                x = checkpoint(self.conv2, x)
+                return x
+
+        class ContextNet(nn.Module):
+            def __init__(self, c = 32):
+                super(ContextNet, self).__init__()
+                self.conv0 = Conv2(3, c)
+                self.conv1 = Conv2(c, c)
+                self.conv2 = Conv2(c, 2*c)
+                self.conv3 = Conv2(2*c, 4*c)
+                self.conv4 = Conv2(4*c, 8*c)
+
+            def forward(self, x, flow):
+                print ('ContextNet forward')
+                x = self.conv0(x)
+                x = self.conv1(x)
+                flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear", align_corners=False) * 0.5
+                f1 = warp(x, flow)
+                x = self.conv2(x)
+                flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
+                                    align_corners=False) * 0.5
+                f2 = warp(x, flow)
+                x = self.conv3(x)
+                flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
+                                    align_corners=False) * 0.5
+                f3 = warp(x, flow)
+                x = self.conv4(x)
+                flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
+                                    align_corners=False) * 0.5
+                f4 = warp(x, flow)
+                return [f1, f2, f3, f4]
+
+        class FusionNet(nn.Module):
+            def __init__(self, c = 32):
+                super(FusionNet, self).__init__()
+                self.conv0 = Conv2(10, c)
+                self.down0 = Conv2(c, 2*c)
+                self.down1 = Conv2(4*c, 4*c)
+                self.down2 = Conv2(8*c, 8*c)
+                self.down3 = Conv2(16*c, 16*c)
+                self.up0 = deconv(32*c, 8*c)
+                self.up1 = deconv(16*c, 4*c)
+                self.up2 = deconv(8*c, 2*c)
+                self.up3 = deconv(4*c, c)
+                self.conv = nn.ConvTranspose2d(c, 4, 4, 2, 1)
+
+            def forward(self, img0, img1, flow, c0, c1, flow_gt):
+                print ('FusionNet forward')
+                warped_img0 = warp(img0, flow[:, :2])
+                warped_img1 = warp(img1, flow[:, 2:4])
+                if flow_gt == None:
+                    warped_img0_gt, warped_img1_gt = None, None
+                else:
+                    warped_img0_gt = warp(img0, flow_gt[:, :2])
+                    warped_img1_gt = warp(img1, flow_gt[:, 2:4])
+
+                # x = self.conv0(torch.cat((warped_img0, warped_img1, flow), 1))
+                # s0 = self.down0(x)
+                # s1 = self.down1(torch.cat((s0, c0[0], c1[0]), 1))
+                # s2 = self.down2(torch.cat((s1, c0[1], c1[1]), 1))
+                # s3 = self.down3(torch.cat((s2, c0[2], c1[2]), 1))
+                # x = self.up0(torch.cat((s3, c0[3], c1[3]), 1))
+                # x = self.up1(torch.cat((x, s2), 1))
+                # x = self.up2(torch.cat((x, s1), 1))
+                # x = self.up3(torch.cat((x, s0), 1))
+                # x = self.conv(x)
+
+                x = checkpoint(self.conv0, torch.cat((warped_img0, warped_img1, flow), 1))
+                print ('x = checkpoint(self.conv0, torch.cat((warped_img0, warped_img1, flow), 1))')
+
+                s0 = checkpoint(self.down0, x)
+                print ('s0 = checkpoint(self.down0, x)')
+                # s0 = F.interpolate(s0, scale_factor=context_scale, mode="bilinear", align_corners=False)
+                # print (s0.shape)
+
+                s1 = checkpoint(self.down1, torch.cat((s0, c0[0], c1[0]), 1))
+                print ('s1 = checkpoint(self.down1, torch.cat((s0, c0[0], c1[0]), 1))')
+
+                s2 = checkpoint(self.down2, torch.cat((s1, c0[1], c1[1]), 1))
+                print ('s2 = checkpoint(self.down2, torch.cat((s1, c0[1], c1[1]), 1))')
+    
+                s3 = checkpoint(self.down3, torch.cat((s2, c0[2], c1[2]), 1))
+                print ('s3 = checkpoint(self.down3, torch.cat((s2, c0[2], c1[2]), 1))')
+
+                x = checkpoint(self.up0, torch.cat((s3, c0[3], c1[3]), 1))
+                
+                del(s3)
+                mps.empty_cache()
+                
+                x = checkpoint(self.up1, torch.cat((x, s2), 1))
+                
+                del(s2)
+                mps.empty_cache()
+
+                x = checkpoint(self.up2, torch.cat((x, s1), 1))
+
+                del(s1)
+                mps.empty_cache()
+
+                x = checkpoint(self.up3, torch.cat((x, s0), 1))
+
+                x = checkpoint(self.conv, x)
+
+                return x, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt
+
+        class IFNetModel:
+            def __init__(self):
+                self.flownet = IFNet()
+                self.device()
+
+            def eval(self):
+                self.flownet.eval()
+
+            def device(self):
+                self.flownet.to(device)
+
+            def load_model(self, path):
+                def convert(param):
+                    return {
+                        k.replace("module.", ""): v
+                        for k, v in param.items()
+                        if "module." in k
+                    }
+                    
+                self.flownet.load_state_dict(
+                    convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
+
+            def inference(self, img0, img1, UHD=False):
+                imgs = torch.cat((img0, img1), 1)
+                flow, _ = self.flownet(imgs, UHD)
+                return flow
+
+        class ContextNetModel:
+            def __init__(self):
+                self.contextnet = ContextNet()
+                self.device()
+
+            def eval(self):
+                self.contextnet.eval()
+
+            def device(self):
+                self.contextnet.to(device)
+
+            def load_model(self, path):
+                def convert(param):
+                    return {
+                        k.replace("module.", ""): v
+                        for k, v in param.items()
+                        if "module." in k
+                    }
+                    
+                self.contextnet.load_state_dict(
+                    convert(torch.load('{}/contextnet.pkl'.format(path), map_location=device)))
+
+            def get_contexts(self, img0, img1, flow, training=True, flow_gt=None, UHD=False):
+                if UHD:
+                    flow = F.interpolate(flow, scale_factor=2.0, mode="bilinear", align_corners=False) * 2.0
+                c0 = self.contextnet(img0, flow[:, :2])
+                c1 = self.contextnet(img1, flow[:, 2:4])
+
+                return c0, c1
+
+        class FusionNetModel:
+            def __init__(self):
+                self.fusionnet = FusionNet()
+                self.device()
+
+            def eval(self):
+                self.fusionnet.eval()
+
+            def device(self):
+                self.fusionnet.to(device)
+
+            def load_model(self, path):
+                def convert(param):
+                    return {
+                        k.replace("module.", ""): v
+                        for k, v in param.items()
+                        if "module." in k
+                    }
+                    
+                self.fusionnet.load_state_dict(
+                    convert(torch.load('{}/unet.pkl'.format(path), map_location=device)))
+
+            def predict(self, img0, img1, c0, c1, flow, training=True, flow_gt=None, UHD=False):
+                flow = F.interpolate(flow, scale_factor=2.0, mode="bilinear",
+                                    align_corners=False) * 2.0
+                refine_output, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt = self.fusionnet(
+                    img0, img1, flow, c0, c1, flow_gt)
+                res = torch.sigmoid(refine_output[:, :3]) * 2 - 1
+                mask = torch.sigmoid(refine_output[:, 3:4])
+                merged_img = warped_img0 * mask + warped_img1 * (1 - mask)
+                pred = merged_img + res
+                return pred
+      
+        img0_ratio = 0
+        img1_ratio = 1
+
+        for current_pass in range(1, num_passes + 1):
+            print ('pass %s of %s' % (current_pass, num_passes))
+
+            # torch.set_default_dtype(torch.float16)
+            # img0 = img0.to(torch.float16)
+            # img1 = img1.to(torch.float16)
+
+            device = torch.device('mps')
+            img0 = img0.to(device)
+            img1 = img1.to(device)
+
+            print ('load IFNetModel')
+            ifnet_model = IFNetModel()
+            ifnet_model.load_model(
+                os.path.join(
+                    self.trained_models_path,
+                    'v2.4.model'))
+            ifnet_model.eval()
+            ifnet_model.device()
+
+            flow = ifnet_model.inference(img0, img1, False)
+
+            print ('del IFNetModel')
+            del (ifnet_model)
+
+            device = torch.device('mps')
+            img0 = img0.to(device)
+            img1 = img1.to(device)
+            flow = flow.to(device)
+
+            print ('load ContextNetModel')
+            contextnet_model = ContextNetModel()
+            contextnet_model.load_model(
+                os.path.join(
+                    self.trained_models_path,
+                    'v2.4.model'))
+            contextnet_model.eval()
+            contextnet_model.device()
+
+            c0, c1 = contextnet_model.get_contexts(img0, img1, flow)
+
+            print ('del ContextNetModel')
+            del (contextnet_model)
+
+            device = torch.device('mps')
+            img0 = img0.to(device)
+            img1 = img1.to(device)
+            flow = flow.to(device)
+            c00 = []
+            c11 = []
+            for fn in c0:
+                c00.append(fn.to(device))
+            for fn in c1:
+                c11.append(fn.to(device))
+
+            print ('load FusionNetModel')
+            fusion_model = FusionNetModel()
+            fusion_model.load_model(
+                os.path.join(
+                    self.trained_models_path,
+                    'v2.4.model'))
+            fusion_model.eval()
+            fusion_model.device()
+
+            middle = fusion_model.predict(img0, img1, c00, c11, flow)
+
+            print ('del FusionNetModel')
+            del (fusion_model)
+
+            middle_ratio = (img0_ratio + img1_ratio) / 2
+            if ratio > middle_ratio:
+                img0 = middle
+                img0_ratio = middle_ratio
+            else:
+                img1 = middle
+                img1_ratio = middle_ratio
+        
+        # res_img = middle[0].to(torch.float32)
+        res_img = middle[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
+        res_img = np.flip(res_img, axis=2).copy()
+        print ('end of flownet24')
+
+        return res_img
+
 
 
     def slowmo(self, selection):
