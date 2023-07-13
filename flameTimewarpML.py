@@ -1155,7 +1155,7 @@ class flameTimewarpML(flameMenuApp):
 
                 self.info('Frame ' + str(self.current_frame) + ': Processing...')
 
-                flow = self.twml.flownet24(incoming_image_data, outgoing_image_data, ratio, self.twml.flownet_model_path)
+                flow = self.twml.flownet_raft(incoming_image_data, outgoing_image_data, ratio, self.twml.flownet_model_path)
                 if not self.threads:
                     return
                 result_image_data = flow
