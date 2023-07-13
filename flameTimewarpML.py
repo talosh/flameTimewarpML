@@ -1790,6 +1790,7 @@ class flameTimewarpML(flameMenuApp):
 
     def check_requirements(self):        
         def import_packages():
+            import tensorflow as tf
             import torch
             import numpy
 
