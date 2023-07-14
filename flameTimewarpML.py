@@ -644,6 +644,9 @@ class flameTimewarpML(flameMenuApp):
 
     class Progress(QtWidgets.QWidget):
 
+        allEventsProcessed = QtCore.Signal()
+        updateInterfaceImage = QtCore.Signal(dict)
+
         class Ui_Progress(object):
             def setupUi(self, Progress):
                 Progress.setObjectName("Progress")
@@ -912,6 +915,12 @@ class flameTimewarpML(flameMenuApp):
             self.current_frame = min(self.frames_map.keys())
             self.rendering = False
 
+            # A flag to check if all events have been processed
+            self.allEventsFlag = False
+            # Connect the signal to the slot
+            self.allEventsProcessed.connect(self.on_allEventsProcessed)
+            self.updateInterfaceImage.connect(self.on_UpdateInterfaceImage)
+
             try:
                 H = selection[0].height
                 W = selection[0].width
@@ -952,7 +961,6 @@ class flameTimewarpML(flameMenuApp):
             #    QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint
             # )
 
-
             self.setWindowFlags(
                 QtCore.Qt.Window | QtCore.Qt.Tool | QtCore.Qt.FramelessWindowHint
             )
@@ -989,6 +997,15 @@ class flameTimewarpML(flameMenuApp):
             self.message_thread.daemon = True
             self.message_thread.start()
 
+        def processEvents(self):
+            QtWidgets.QApplication.instance().processEvents()
+            self.allEventsProcessed.emit()
+            while not self.allEventsFlag:
+                time.sleep(0.0001)
+
+        def on_allEventsProcessed(self):
+            self.allEventsFlag = True
+
         def showEvent(self, event):
             super().showEvent(event)
             self.raise_()
@@ -1018,6 +1035,8 @@ class flameTimewarpML(flameMenuApp):
         def left_arrow_pressed(self):
             self.current_frame = self.current_frame - 1 if self.current_frame > self.min_frame else self.min_frame
             self.info('Frame ' + str(self.current_frame))
+            self.rendering = True
+            self.ui.render_button.setText('Stop')
             frame_thread = threading.Thread(target=self._process_current_frame)
             frame_thread.daemon = True
             frame_thread.start()
@@ -1025,6 +1044,8 @@ class flameTimewarpML(flameMenuApp):
         def right_arrow_pressed(self):
             self.current_frame = self.current_frame + 1 if self.current_frame < self.max_frame else self.max_frame
             self.info('Frame ' + str(self.current_frame))
+            self.rendering = True
+            self.ui.render_button.setText('Stop')
             frame_thread = threading.Thread(target=self._process_current_frame)
             frame_thread.daemon = True
             frame_thread.start()
@@ -1264,24 +1285,25 @@ class flameTimewarpML(flameMenuApp):
 
         def process_messages(self):
             while self.threads:
+                timeout = 0.0001
                 try:
                     item = self.message_queue.get_nowait()
                 except queue.Empty:
                     if not self.threads:
                         break
-                    time.sleep(0.05)
+                    time.sleep(timeout)
                     continue
                 if item is None:
-                    time.sleep(0.05)
+                    time.sleep(timeout)
                     continue
                 if not isinstance(item, dict):
                     self.message_queue.task_done()
-                    time.sleep(0.05)
+                    time.sleep(timeout)
                     continue
                 item_type = item.get('type')
                 if not item_type:
                     self.message_queue.task_done()
-                    time.sleep(0.05)
+                    time.sleep(timeout)
                     continue
                 elif item_type == 'info':
                     message = item.get('message')
@@ -1290,18 +1312,21 @@ class flameTimewarpML(flameMenuApp):
                     message = item.get('message')
                     self._message(f'{message}')
                 elif item_type == 'image':
+                    self.updateInterfaceImage.emit(item)
+                    '''
                     self._update_interface_image(
                         item.get('image'),
                         item.get('image_label'),
                         item.get('text')
                     )
+                    '''
                 else:
                     self.message_queue.task_done()
-                    time.sleep(0.05)
+                    time.sleep(timeout)
                     continue
                 
                 self.message_queue.task_done()
-                time.sleep(0.05)
+                time.sleep(timeout)
             return
 
         def update_interface_image(self, array, image_label, text = None):
@@ -1316,6 +1341,13 @@ class flameTimewarpML(flameMenuApp):
                 'text': text
             }
             self.message_queue.put(item)
+
+        def on_UpdateInterfaceImage(self, item):
+            self._update_interface_image(
+                item.get('image'),
+                item.get('image_label'),
+                item.get('text')
+            )
 
         def _update_interface_image(self, array, image_label, text = None):
             np = self.twml.np
@@ -1373,10 +1405,14 @@ class flameTimewarpML(flameMenuApp):
                 painter.end()
 
             image_label.setPixmap(scaled_pixmap)
+            self.processEvents()
+
+            '''
             QtWidgets.QApplication.instance().processEvents()
             time.sleep(0.001)
             image_label.setPixmap(scaled_pixmap)
             QtWidgets.QApplication.instance().processEvents()
+            '''
 
         def info(self, message):
             item = {
@@ -4813,84 +4849,30 @@ class flameTimewarpML(flameMenuApp):
 
         return res_img
 
-
     def flownet_raft(self, img0, img1, ratio, model_path):
         import numpy as np
 
-        print (f'img0 shape: {img0.shape}')
-
-        return
+        '''
+        import tensorflow as tf
+        start = time.time()
+        raft_model_path = os.path.join(
+            self.trained_models_path,
+            'raft.model')
+        raft_model = tf.compat.v2.saved_model.load(raft_model_path, options=tf.saved_model.LoadOptions(allow_partial_checkpoint=True))
+        print (f'model loaded in {time.time() - start}')
+        '''
 
         import torch
         import torch.nn as nn
         import torch.nn.functional as F
         from torch.utils.checkpoint import checkpoint
-
+        from torch import mps
 
         if sys.platform == 'darwin':
             device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-            # device = torch.device('cpu')
+            device = torch.device('cpu')
         else:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-        torch.set_printoptions(profile="full")
-        torch.set_grad_enabled(False)
-
-        print ('start')
-        from torch import mps
-        print (mps.driver_allocated_memory())
-
-        # flip to BGR
-        img0 = np.flip(img0, axis=2).copy()
-        img1 = np.flip(img1, axis=2).copy()
-        img0 = torch.from_numpy(np.transpose(img0, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
-        img1 = torch.from_numpy(np.transpose(img1, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
-
-        n, c, h, w = img0.shape
-        
-        ph = ((h - 1) // 64 + 1) * 64
-        pw = ((w - 1) // 64 + 1) * 64
-        padding = (0, pw - w, 0, ph - h)
-        img0 = F.pad(img0, padding)
-        img1 = F.pad(img1, padding)
-
-        print ('padding')
-        from torch import mps
-        print (mps.driver_allocated_memory())
-
-        # print (img0)
-        # print (img1)
-
-        print ('processing ratio %s' % ratio)
-
-        def calculate_passes(target_ratio, precision, maxcycles=8):
-            img0_ratio = 0.0
-            img1_ratio = 1.0
-
-            if ratio <= img0_ratio + precision / 2:
-                return 1
-            if ratio >= img1_ratio - precision / 2:
-                return 1
-            
-            print ()
-            
-            for inference_cycle in range(0, maxcycles):
-                middle_ratio = (img0_ratio + img1_ratio) / 2
-                # print ('intermediate ratio: %s' % middle_ratio)
-                # print ('range: %s - %s' % (ratio - (precision / 2), ratio + (precision / 2)))
-                if ratio - (precision / 2) <= middle_ratio <= ratio + (precision / 2):
-                    return inference_cycle + 1
-
-                if ratio > middle_ratio:
-                    img0_ratio = middle_ratio
-                else:
-                    img1_ratio = middle_ratio
-
-            return maxcycles
-        
-        num_passes = calculate_passes(ratio, 0.02, 8)
-
-        print ('passes %s' % num_passes)
 
         def warp(tenInput, tenFlow):
             backwarp_tenGrid = {}
@@ -4902,23 +4884,6 @@ class flameTimewarpML(flameMenuApp):
                     1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
                 backwarp_tenGrid[k] = torch.cat(
                     [tenHorizontal, tenVertical], 1).to(device)
-
-            tenFlow = torch.cat([tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0),
-                                tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0)], 1)
-
-            g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-            return torch.nn.functional.grid_sample(input=tenInput, grid=torch.clamp(g, -1, 1), mode='bilinear', padding_mode='zeros', align_corners=True)
-
-        def warp_cpu(tenInput, tenFlow):
-            backwarp_tenGrid = {}
-            k = (str(tenFlow.device), str(tenFlow.size()))
-            if k not in backwarp_tenGrid:
-                tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(
-                    1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
-                tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(
-                    1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
-                backwarp_tenGrid[k] = torch.cat(
-                    [tenHorizontal, tenVertical], 1).to(torch.device('cpu'))
 
             tenFlow = torch.cat([tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0),
                                 tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0)], 1)
@@ -5208,95 +5173,286 @@ class flameTimewarpML(flameMenuApp):
                 merged_img = warped_img0 * mask + warped_img1 * (1 - mask)
                 pred = merged_img + res
                 return pred
-      
-        img0_ratio = 0
-        img1_ratio = 1
 
-        for current_pass in range(1, num_passes + 1):
-            print ('pass %s of %s' % (current_pass, num_passes))
+        def calculate_passes(target_ratio, precision, maxcycles=8):
+            img0_ratio = 0.0
+            img1_ratio = 1.0
 
-            # torch.set_default_dtype(torch.float16)
-            # img0 = img0.to(torch.float16)
-            # img1 = img1.to(torch.float16)
+            if ratio <= img0_ratio + precision / 2:
+                return 1
+            if ratio >= img1_ratio - precision / 2:
+                return 1
+            
+            print ()
+            
+            for inference_cycle in range(0, maxcycles):
+                middle_ratio = (img0_ratio + img1_ratio) / 2
+                # print ('intermediate ratio: %s' % middle_ratio)
+                # print ('range: %s - %s' % (ratio - (precision / 2), ratio + (precision / 2)))
+                if ratio - (precision / 2) <= middle_ratio <= ratio + (precision / 2):
+                    return inference_cycle + 1
 
-            device = torch.device('mps')
-            img0 = img0.to(device)
-            img1 = img1.to(device)
+                if ratio > middle_ratio:
+                    img0_ratio = middle_ratio
+                else:
+                    img1_ratio = middle_ratio
 
-            print ('load IFNetModel')
-            ifnet_model = IFNetModel()
-            ifnet_model.load_model(
-                os.path.join(
-                    self.trained_models_path,
-                    'v2.4.model'))
-            ifnet_model.eval()
-            ifnet_model.device()
+            return maxcycles
 
-            flow = ifnet_model.inference(img0, img1, False)
+        def process_images(img0_np, img1_np, ratio):
 
-            print ('del IFNetModel')
-            del (ifnet_model)
+            self.progress.update_interface_image(
+                img0_np.copy(), 
+                self.progress.ui.flow1_label,
+                text = f'Incoming tile'
+                )
+            
+            self.progress.update_interface_image(
+                img0_np.copy(), 
+                self.progress.ui.flow3_label,
+                text = f'Outgoing tile'
+                )
 
-            device = torch.device('mps')
-            img0 = img0.to(device)
-            img1 = img1.to(device)
-            flow = flow.to(device)
-
-            print ('load ContextNetModel')
-            contextnet_model = ContextNetModel()
-            contextnet_model.load_model(
-                os.path.join(
-                    self.trained_models_path,
-                    'v2.4.model'))
-            contextnet_model.eval()
-            contextnet_model.device()
-
-            c0, c1 = contextnet_model.get_contexts(img0, img1, flow)
-
-            print ('del ContextNetModel')
-            del (contextnet_model)
-
-            device = torch.device('mps')
-            img0 = img0.to(device)
-            img1 = img1.to(device)
-            flow = flow.to(device)
-            c00 = []
-            c11 = []
-            for fn in c0:
-                c00.append(fn.to(device))
-            for fn in c1:
-                c11.append(fn.to(device))
-
-            print ('load FusionNetModel')
-            fusion_model = FusionNetModel()
-            fusion_model.load_model(
-                os.path.join(
-                    self.trained_models_path,
-                    'v2.4.model'))
-            fusion_model.eval()
-            fusion_model.device()
-
-            middle = fusion_model.predict(img0, img1, c00, c11, flow)
-
-            print ('del FusionNetModel')
-            del (fusion_model)
-
-            middle_ratio = (img0_ratio + img1_ratio) / 2
-            if ratio > middle_ratio:
-                img0 = middle
-                img0_ratio = middle_ratio
+            if sys.platform == 'darwin':
+                device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+                device = torch.device('cpu')
             else:
-                img1 = middle
-                img1_ratio = middle_ratio
+                device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+            torch.set_printoptions(profile="full")
+            torch.set_grad_enabled(False)
+
+            print ('start')
+            from torch import mps
+            print (mps.driver_allocated_memory())
+
+            # flip to BGR
+            img0 = np.flip(img0_np, axis=2).copy()
+            img1 = np.flip(img1_np, axis=2).copy()
+            img0 = torch.from_numpy(np.transpose(img0, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+            img1 = torch.from_numpy(np.transpose(img1, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+            n, c, h, w = img0.shape
+            ph = ((h - 1) // 64 + 1) * 64
+            pw = ((w - 1) // 64 + 1) * 64
+            padding = (0, pw - w, 0, ph - h)
+            img0 = F.pad(img0, padding)
+            img1 = F.pad(img1, padding)
+            print ('padding')
+            from torch import mps
+            print (mps.driver_allocated_memory())
+
+            num_passes = calculate_passes(ratio, 0.02, 8)
+
+            img0_ratio = 0
+            img1_ratio = 1
+
+            for current_pass in range(1, num_passes + 1):
+                print ('pass %s of %s' % (current_pass, num_passes))
+
+                device = torch.device('cpu')
+                img0 = img0.to(device)
+                img1 = img1.to(device)
+
+                if not self.progress.threads:
+                    break
+                if not self.progress.rendering:
+                    break
+
+                print ('load IFNetModel')
+                ifnet_model = IFNetModel()
+                ifnet_model.load_model(
+                    os.path.join(
+                        self.trained_models_path,
+                        'v2.4.model'))
+                ifnet_model.eval()
+                ifnet_model.device()
+
+                flow = ifnet_model.inference(img0, img1, False)
+
+                display_flow1 = flow[:, :2].cpu().detach().numpy()
+                display_flow1 = np.pad(display_flow1, ((0, 0), (0, 1), (0, 0), (0, 0)))
+                display_flow1 = display_flow1.transpose((0, 2, 3, 1)).squeeze(axis=0)
+                display_flow1 = (display_flow1 + 1) / 2
+                display_flow1 = np.flip(display_flow1, axis=2)
+                self.progress.update_interface_image(
+                    display_flow1.copy(), 
+                    self.progress.ui.flow2_label,
+                    text = f'Flow pass {current_pass} of {num_passes}'
+                    )
+                display_flow2 = flow[:, 2:4].cpu().detach().numpy()
+                display_flow2 = np.pad(display_flow2, ((0, 0), (0, 1), (0, 0), (0, 0)))
+                display_flow2 = display_flow2.transpose((0, 2, 3, 1)).squeeze(axis=0)
+                display_flow2 = (display_flow2 + 1) / 2
+                display_flow2 = np.flip(display_flow2, axis=2)
+                self.progress.update_interface_image(
+                    display_flow2.copy(), 
+                    self.progress.ui.flow4_label,
+                    text = f'Flow pass {current_pass} of {num_passes}'
+                    )
+
+                print ('del IFNetModel')
+                del (ifnet_model)
+
+                device = torch.device('cpu')
+                img0 = img0.to(device)
+                img1 = img1.to(device)
+                flow = flow.to(device)
+
+                if not self.progress.threads:
+                    break
+                if not self.progress.rendering:
+                    break
+
+                print ('load ContextNetModel')
+                contextnet_model = ContextNetModel()
+                contextnet_model.load_model(
+                    os.path.join(
+                        self.trained_models_path,
+                        'v2.4.model'))
+                contextnet_model.eval()
+                contextnet_model.device()
+
+                c0, c1 = contextnet_model.get_contexts(img0, img1, flow)
+
+                print ('del ContextNetModel')
+                del (contextnet_model)
+
+                device = torch.device('cpu')
+                img0 = img0.to(device)
+                img1 = img1.to(device)
+                flow = flow.to(device)
+                c00 = []
+                c11 = []
+                for fn in c0:
+                    c00.append(fn.to(device))
+                for fn in c1:
+                    c11.append(fn.to(device))
+
+                if not self.progress.threads:
+                    break
+                if not self.progress.rendering:
+                    break
+
+                print ('load FusionNetModel')
+                fusion_model = FusionNetModel()
+                fusion_model.load_model(
+                    os.path.join(
+                        self.trained_models_path,
+                        'v2.4.model'))
+                fusion_model.eval()
+                fusion_model.device()
+
+                middle = fusion_model.predict(img0, img1, c00, c11, flow)
+
+                print ('del FusionNetModel')
+                del (fusion_model)
+
+                middle_ratio = (img0_ratio + img1_ratio) / 2
+                if ratio > middle_ratio:
+                    img0 = middle
+                    img0_ratio = middle_ratio
+                else:
+                    img1 = middle
+                    img1_ratio = middle_ratio
+
+                tile0_display = img0[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
+                tile0_display = np.flip(tile0_display, axis=2).copy()
+                self.progress.update_interface_image(
+                    tile0_display.copy(), 
+                    self.progress.ui.flow1_label,
+                    text = f'Incoming tile'
+                    )
+
+                tile1_display = img1[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
+                tile1_display = np.flip(tile1_display, axis=2).copy()
+                self.progress.update_interface_image(
+                    tile1_display.copy(), 
+                    self.progress.ui.flow3_label,
+                    text = f'Outgoing tile'
+                    )
+
+            res_img = middle[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
+            res_img = np.flip(res_img, axis=2).copy()
+            return res_img
+
+        def create_overlapping_tiles(img, patch_size, stride):
+            padding = [(s//2, s//2) for s in patch_size] + [(0,0)]
+            img_padded = np.pad(img, padding, mode='constant')            
+            tiles = []
+            for i in range(0, img_padded.shape[0] - patch_size[0] + 1, stride):
+                for j in range(0, img_padded.shape[1] - patch_size[1] + 1, stride):
+                    tiles.append(img_padded[i : i + patch_size[0], j : j + patch_size[1]])
+            return np.stack(tiles)
+
+        def reassemble_from_tiles(img0_tiles, img1_tiles, img_shape, patch_size, stride):
+            img_padded = np.zeros((img_shape[0] + patch_size[0], img_shape[1] + patch_size[1], img_shape[2]), dtype=np.float32)
+            # img_padded[:,:,0] = 1
+            idx = 0
+            rows_coord = list(range(0, img_padded.shape[0] - patch_size[0] + 1, stride))
+            columns_coord = list(range(0, img_padded.shape[1] - patch_size[1] + 1, stride))
+            for i in rows_coord[:-1]:
+                for j in columns_coord:                    
+                    center_start = patch_size[0]//4
+                    center_end = center_start + patch_size[0]//2
+
+                    # print (f'img_padded[{i + center_start} : {i + center_end}, {j + center_start} : {j + center_end}] = tiles[{idx}][{center_start} : {center_end}, {center_start} : {center_end}]')
+
+                    if not self.progress.threads:
+                        break
+                    if not self.progress.rendering:
+                        break
+
+                    self.progress.info(f'Frame {self.progress.current_frame}: Processing tile {idx + 1} of {len(img0_tiles)}')
+                    tile = process_images(img0_tiles[idx], img1_tiles[idx], ratio)
+
+                    img_padded[i + center_start : i + center_end, 
+                            j + center_start : j + center_end] = tile[center_start : center_end, 
+                                                                            center_start : center_end]
+                    
+                    self.progress.update_interface_image(
+                        img_padded[patch_size[0]//2 : -patch_size[0]//2, patch_size[1]//2 : -patch_size[1]//2].copy(), 
+                        self.progress.ui.image_res_label,
+                        text = f'tile {idx + 1} of {len(img0_tiles)}'
+                        )
+
+                    idx += 1
+
+            i = rows_coord[-1]
+            for j in columns_coord:
+                center_start = patch_size[0]//4
+                center_end = center_start + patch_size[0]//2
+
+                if not self.progress.threads:
+                    break
+                if not self.progress.rendering:
+                    break
+
+                # print (f'img_padded[{i + center_start} : {i + patch_size[0]}, {j + center_start} : {j + center_end}] = tiles[{idx}][{center_start} : {patch_size[0]}, {center_start} : {center_end}]')
+                tile = process_images(img0_tiles[idx], img1_tiles[idx], ratio)
+                img_padded[i + center_start : i + patch_size[0], 
+                        j + center_start : j + center_end] = tile[center_start : patch_size[0], 
+                                                                        center_start : center_end]
+
+                self.progress.update_interface_image(
+                    img_padded[patch_size[0]//2 : -patch_size[0]//2, patch_size[1]//2 : -patch_size[1]//2].copy(), 
+                    self.progress.ui.image_res_label,
+                    text = f'tile {idx + 1} of {len(img0_tiles)}'
+                    )
+
+                idx += 1
+            
+            return img_padded[patch_size[0]//2 : -patch_size[0]//2, patch_size[1]//2 : -patch_size[1]//2]
         
-        # res_img = middle[0].to(torch.float32)
-        res_img = middle[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
-        res_img = np.flip(res_img, axis=2).copy()
-        print ('end of flownet24')
+        TILESIZE = 512
+        patch_size = (TILESIZE, TILESIZE)
+        stride = TILESIZE//2
 
-        return res_img
+        img0_tiles = create_overlapping_tiles(img0, patch_size, stride)
+        img1_tiles = create_overlapping_tiles(img1, patch_size, stride)
 
+        reassembled_img = reassemble_from_tiles(img0_tiles, img1_tiles, img0.shape, patch_size, stride)
 
+        return reassembled_img
 
     def slowmo(self, selection):
         result = self.slowmo_dialog()
