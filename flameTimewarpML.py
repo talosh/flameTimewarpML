@@ -646,6 +646,7 @@ class flameTimewarpML(flameMenuApp):
 
         allEventsProcessed = QtCore.Signal()
         updateInterfaceImage = QtCore.Signal(dict)
+        setText = QtCore.Signal(dict)
 
         class Ui_Progress(object):
             def setupUi(self, Progress):
@@ -802,7 +803,7 @@ class flameTimewarpML(flameMenuApp):
 
                 # Add a close button to the bottom layout
                 self.close_button = QtWidgets.QPushButton("Close")
-                self.close_button.clicked.connect(Progress.close)
+                self.close_button.clicked.connect(Progress.close_application)
                 self.close_button.setContentsMargins(10, 4, 4, 4)
                 self.set_button_style(self.close_button)
                 bottom_layout.addWidget(self.close_button, alignment=QtCore.Qt.AlignLeft)
@@ -913,6 +914,8 @@ class flameTimewarpML(flameMenuApp):
                 )
                         
             self.current_frame = min(self.frames_map.keys())
+
+            self.frame_thread = None
             self.rendering = False
 
             # A flag to check if all events have been processed
@@ -920,6 +923,7 @@ class flameTimewarpML(flameMenuApp):
             # Connect the signal to the slot
             self.allEventsProcessed.connect(self.on_allEventsProcessed)
             self.updateInterfaceImage.connect(self.on_UpdateInterfaceImage)
+            self.setText.connect(self.on_setText)
 
             try:
                 H = selection[0].height
@@ -1036,19 +1040,27 @@ class flameTimewarpML(flameMenuApp):
             self.current_frame = self.current_frame - 1 if self.current_frame > self.min_frame else self.min_frame
             self.info('Frame ' + str(self.current_frame))
             self.rendering = True
-            self.ui.render_button.setText('Stop')
-            frame_thread = threading.Thread(target=self._process_current_frame)
-            frame_thread.daemon = True
-            frame_thread.start()
+            self.message_queue.put(
+                {'type': 'setText',
+                'widget': 'render_button',
+                'text': 'Stop'}
+            )
+            self.frame_thread = threading.Thread(target=self._process_current_frame, kwargs={'single_frame': True})
+            self.frame_thread.daemon = True
+            self.frame_thread.start()
 
         def right_arrow_pressed(self):
             self.current_frame = self.current_frame + 1 if self.current_frame < self.max_frame else self.max_frame
             self.info('Frame ' + str(self.current_frame))
             self.rendering = True
-            self.ui.render_button.setText('Stop')
-            frame_thread = threading.Thread(target=self._process_current_frame)
-            frame_thread.daemon = True
-            frame_thread.start()
+            self.message_queue.put(
+                {'type': 'setText',
+                'widget': 'render_button',
+                'text': 'Stop'}
+            )
+            self.frame_thread = threading.Thread(target=self._process_current_frame, kwargs={'single_frame': True})
+            self.frame_thread.daemon = True
+            self.frame_thread.start()
 
         def render(self):
             self.rendering = not self.rendering
@@ -1082,11 +1094,11 @@ class flameTimewarpML(flameMenuApp):
             return
 
         def process_current_frame(self):
-            frame_thread = threading.Thread(target=self._process_current_frame)
-            frame_thread.start()
-            frame_thread.join()
+            self.frame_thread = threading.Thread(target=self._process_current_frame)
+            self.frame_thread.start()
+            self.frame_thread.join()
 
-        def _process_current_frame(self):
+        def _process_current_frame(self, single_frame=False):
             self.current_frame_data = self.frames_map.get(self.current_frame)
 
             self.destination = self.current_frame_data['outgoing']['clip'].parent
@@ -1176,10 +1188,17 @@ class flameTimewarpML(flameMenuApp):
 
                 self.info('Frame ' + str(self.current_frame) + ': Processing...')
 
-                flow = self.twml.flownet_raft(incoming_image_data, outgoing_image_data, ratio, self.twml.flownet_model_path)
+                result_image_data = self.twml.flownet_raft(incoming_image_data, outgoing_image_data, ratio, self.twml.flownet_model_path)
                 if not self.threads:
                     return
-                result_image_data = flow
+
+                if single_frame:
+                    self.rendering = False 
+                    self.message_queue.put(
+                        {'type': 'setText',
+                        'widget': 'render_button',
+                        'text': 'Render'}
+                    )
 
             if not self.threads:
                 return
@@ -1320,6 +1339,8 @@ class flameTimewarpML(flameMenuApp):
                         item.get('text')
                     )
                     '''
+                elif item_type == 'setText':
+                    self.setText.emit(item)
                 else:
                     self.message_queue.task_done()
                     time.sleep(timeout)
@@ -1439,6 +1460,13 @@ class flameTimewarpML(flameMenuApp):
             import flame
             self.info(message)
             flame.messages.show_in_console(self.app_name + ': ' + str(message), 'info', 8)
+
+        def on_setText(self, item):
+            widget_name = item.get('widget', 'unknown')
+            text = item.get('text', 'unknown')
+            if hasattr(self.ui, widget_name):
+                getattr(self.ui, widget_name).setText(text)
+            self.processEvents()
 
         def save_result_frame(self, image_data, frame_number):
             import flame
@@ -1622,10 +1650,19 @@ class flameTimewarpML(flameMenuApp):
             super().mouseReleaseEvent(event)
 
         def closeEvent(self, event):
+            event.accept()
+            QtWidgets.QApplication.instance().quit()
+            # super().closeEvent(event)
+
+        def close_application(self):
+            print ('close application')
             import flame
 
             self.threads = False
             self.twml.threads = False
+            self.rendering = False
+            if self.frame_thread:
+                self.frame_thread.join()
             self.message_queue.join()
             self.message_thread.join()
             
@@ -1681,17 +1718,14 @@ class flameTimewarpML(flameMenuApp):
                 except:
                     pass
 
-
-
             self.twml.progress = None
             self.twml.torch = None
             self.deleteLater()
-            super().closeEvent(event)
-
             def rescan_hooks():
                 flame.execute_shortcut('Rescan Python Hooks')
 
             flame.schedule_idle_event(rescan_hooks)
+
 
     def __init__(self, framework):
         flameMenuApp.__init__(self, framework)
@@ -4852,7 +4886,6 @@ class flameTimewarpML(flameMenuApp):
     def flownet_raft(self, img0, img1, ratio, model_path):
         import numpy as np
 
-        '''
         import tensorflow as tf
         start = time.time()
         raft_model_path = os.path.join(
@@ -4860,7 +4893,6 @@ class flameTimewarpML(flameMenuApp):
             'raft.model')
         raft_model = tf.compat.v2.saved_model.load(raft_model_path, options=tf.saved_model.LoadOptions(allow_partial_checkpoint=True))
         print (f'model loaded in {time.time() - start}')
-        '''
 
         import torch
         import torch.nn as nn
@@ -5200,17 +5232,17 @@ class flameTimewarpML(flameMenuApp):
             return maxcycles
 
         def process_images(img0_np, img1_np, ratio):
-
+            num_passes = calculate_passes(ratio, 0.02, 8)
             self.progress.update_interface_image(
                 img0_np.copy(), 
                 self.progress.ui.flow1_label,
-                text = f'Incoming tile'
+                text = f'Pass 1 of {num_passes}'
                 )
             
             self.progress.update_interface_image(
                 img0_np.copy(), 
                 self.progress.ui.flow3_label,
-                text = f'Outgoing tile'
+                text = f'Pass 1 of {num_passes}'
                 )
 
             if sys.platform == 'darwin':
@@ -5241,8 +5273,6 @@ class flameTimewarpML(flameMenuApp):
             from torch import mps
             print (mps.driver_allocated_memory())
 
-            num_passes = calculate_passes(ratio, 0.02, 8)
-
             img0_ratio = 0
             img1_ratio = 1
 
@@ -5268,6 +5298,7 @@ class flameTimewarpML(flameMenuApp):
                 ifnet_model.device()
 
                 flow = ifnet_model.inference(img0, img1, False)
+                print(flow.shape)
 
                 display_flow1 = flow[:, :2].cpu().detach().numpy()
                 display_flow1 = np.pad(display_flow1, ((0, 0), (0, 1), (0, 0), (0, 0)))
