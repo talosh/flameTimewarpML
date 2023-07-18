@@ -646,6 +646,7 @@ class flameTimewarpML(flameMenuApp):
 
         allEventsProcessed = QtCore.Signal()
         updateInterfaceImage = QtCore.Signal(dict)
+        updateFlowImage = QtCore.Signal(dict)
         setText = QtCore.Signal(dict)
 
         class Ui_Progress(object):
@@ -923,6 +924,7 @@ class flameTimewarpML(flameMenuApp):
             # Connect the signal to the slot
             self.allEventsProcessed.connect(self.on_allEventsProcessed)
             self.updateInterfaceImage.connect(self.on_UpdateInterfaceImage)
+            self.updateFlowImage.connect(self.on_UpdateFlowImage)
             self.setText.connect(self.on_setText)
 
             try:
@@ -1332,13 +1334,8 @@ class flameTimewarpML(flameMenuApp):
                     self._message(f'{message}')
                 elif item_type == 'image':
                     self.updateInterfaceImage.emit(item)
-                    '''
-                    self._update_interface_image(
-                        item.get('image'),
-                        item.get('image_label'),
-                        item.get('text')
-                    )
-                    '''
+                elif item_type == 'flow':
+                    self.updateFlowImage.emit(item)
                 elif item_type == 'setText':
                     self.setText.emit(item)
                 else:
@@ -1434,6 +1431,159 @@ class flameTimewarpML(flameMenuApp):
             image_label.setPixmap(scaled_pixmap)
             QtWidgets.QApplication.instance().processEvents()
             '''
+
+        def update_optical_flow(self, array, image_label, text = None):
+            if self.message_queue.qsize() > 9:
+                if image_label != self.ui.image_res_label:
+                    return
+                
+            item = {
+                'type': 'flow',
+                'image': array,
+                'image_label': image_label,
+                'text': text
+            }
+            self.message_queue.put(item)
+
+        def on_UpdateFlowImage(self, item):
+            def flow_to_img(flow):
+                import numpy as np
+
+                def sigmoid(x):
+                    return 1 / (1 + np.exp(-x))
+
+                '''
+                # flow = (flow / 2) + 1
+                flow = np.pad(flow, ((0, 0), (0, 1), (0, 0), (0, 0)))
+                flow = flow.transpose((0, 2, 3, 1)).squeeze(axis=0)
+                flow = np.flip(flow, axis=2)
+                flow = np.flip(flow, axis=2)
+                flow = np.tanh(flow)
+                return flow.copy()
+                '''
+
+                def make_colorwheel():
+                    """
+                    Generates a color wheel for optical flow visualization as presented in:
+                        Baker et al. "A Database and Evaluation Methodology for Optical Flow" (ICCV, 2007)
+                        URL: http://vision.middlebury.edu/flow/flowEval-iccv07.pdf
+
+                    Code follows the original C++ source code of Daniel Scharstein.
+                    Code follows the the Matlab source code of Deqing Sun.
+
+                    Returns:
+                        np.ndarray: Color wheel
+                    """
+
+                    RY = 15
+                    YG = 6
+                    GC = 4
+                    CB = 11
+                    BM = 13
+                    MR = 6
+
+                    ncols = RY + YG + GC + CB + BM + MR
+                    colorwheel = np.zeros((ncols, 3))
+                    col = 0
+
+                    # RY
+                    colorwheel[0:RY, 0] = 255
+                    colorwheel[0:RY, 1] = np.floor(255*np.arange(0,RY)/RY)
+                    col = col+RY
+                    # YG
+                    colorwheel[col:col+YG, 0] = 255 - np.floor(255*np.arange(0,YG)/YG)
+                    colorwheel[col:col+YG, 1] = 255
+                    col = col+YG
+                    # GC
+                    colorwheel[col:col+GC, 1] = 255
+                    colorwheel[col:col+GC, 2] = np.floor(255*np.arange(0,GC)/GC)
+                    col = col+GC
+                    # CB
+                    colorwheel[col:col+CB, 1] = 255 - np.floor(255*np.arange(CB)/CB)
+                    colorwheel[col:col+CB, 2] = 255
+                    col = col+CB
+                    # BM
+                    colorwheel[col:col+BM, 2] = 255
+                    colorwheel[col:col+BM, 0] = np.floor(255*np.arange(0,BM)/BM)
+                    col = col+BM
+                    # MR
+                    colorwheel[col:col+MR, 2] = 255 - np.floor(255*np.arange(MR)/MR)
+                    colorwheel[col:col+MR, 0] = 255
+                    return colorwheel
+
+                def flow_uv_to_colors(u, v, convert_to_bgr=False):
+                    """
+                    Applies the flow color wheel to (possibly clipped) flow components u and v.
+
+                    According to the C++ source code of Daniel Scharstein
+                    According to the Matlab source code of Deqing Sun
+
+                    Args:
+                        u (np.ndarray): Input horizontal flow of shape [H,W]
+                        v (np.ndarray): Input vertical flow of shape [H,W]
+                        convert_to_bgr (bool, optional): Convert output image to BGR. Defaults to False.
+
+                    Returns:
+                        np.ndarray: Flow visualization image of shape [H,W,3]
+                    """
+                    flow_image = np.zeros((u.shape[0], u.shape[1], 3), np.uint8)
+                    colorwheel = make_colorwheel()  # shape [55x3]
+                    ncols = colorwheel.shape[0]
+                    rad = np.sqrt(np.square(u) + np.square(v))
+                    a = np.arctan2(-v, -u)/np.pi
+                    fk = (a+1) / 2*(ncols-1)
+                    k0 = np.floor(fk).astype(np.int32)
+                    k1 = k0 + 1
+                    k1[k1 == ncols] = 0
+                    f = fk - k0
+                    for i in range(colorwheel.shape[1]):
+                        tmp = colorwheel[:,i]
+                        col0 = tmp[k0] / 255.0
+                        col1 = tmp[k1] / 255.0
+                        col = (1-f)*col0 + f*col1
+                        idx = (rad <= 1)
+                        col[idx]  = 1 - rad[idx] * (1-col[idx])
+                        col[~idx] = col[~idx] * 0.75   # out of range
+                        # Note the 2-i => BGR instead of RGB
+                        ch_idx = 2-i if convert_to_bgr else i
+                        flow_image[:,:,ch_idx] = np.floor(255 * col)
+                    return flow_image
+
+                def flow_to_color(flow_uv, clip_flow=None, convert_to_bgr=False):
+                    """
+                    Expects a two dimensional flow image of shape.
+
+                    Args:
+                        flow_uv (np.ndarray): Flow UV image of shape [H,W,2]
+                        clip_flow (float, optional): Clip maximum of flow values. Defaults to None.
+                        convert_to_bgr (bool, optional): Convert output image to BGR. Defaults to False.
+
+                    Returns:
+                        np.ndarray: Flow visualization image of shape [H,W,3]
+                    """
+                    assert flow_uv.ndim == 3, 'input flow must have three dimensions'
+                    assert flow_uv.shape[2] == 2, 'input flow must have shape [H,W,2]'
+                    if clip_flow is not None:
+                        flow_uv = np.clip(flow_uv, 0, clip_flow)
+                    u = flow_uv[:,:,0]
+                    v = flow_uv[:,:,1]
+                    rad = np.sqrt(np.square(u) + np.square(v))
+                    rad_max = np.max(rad)
+                    epsilon = 1e-5
+                    u = u / (rad_max + epsilon)
+                    v = v / (rad_max + epsilon)
+                    return flow_uv_to_colors(u, v, convert_to_bgr)
+
+                flow = np.squeeze(flow, axis=0) * -1
+                flow = np.transpose(flow, (1, 2, 0))
+                img = flow_to_color(flow).astype(np.float32) / 255.0
+                return img
+
+            self._update_interface_image(
+                flow_to_img(item.get('image')),
+                item.get('image_label'),
+                item.get('text')
+            )
 
         def info(self, message):
             item = {
@@ -3075,51 +3225,6 @@ class flameTimewarpML(flameMenuApp):
     def select_mode(self, mode_number):
         print ('select mode')
         print (mode_number)
-
-    def flow_to_img(self, flow, flow_mag_max=1.):
-        import numpy as np
-
-        def hsv_to_rgb(hsv):
-            h, s, v = hsv[..., 0], hsv[..., 1], hsv[..., 2]
-            hi = np.floor(h / 60.0) % 6
-            f = (h / 60.0) - np.floor(h / 60.0)
-            p = v * (1.0 - s)
-            q = v * (1.0 - (f * s))
-            t = v * (1.0 - ((1.0 - f) * s))
-
-            rgb = np.zeros(hsv.shape)
-            indices = hi.astype(int) % 6
-
-            rgb[..., 0] = np.choose(indices, [v, q, p, p, t, v])
-            rgb[..., 1] = np.choose(indices, [t, v, v, q, p, p])
-            rgb[..., 2] = np.choose(indices, [p, p, t, v, v, q])
-
-            return rgb
-        
-        hsv = np.zeros((flow.shape[0], flow.shape[1], 3), dtype=np.float32)
-
-        # Calculate magnitude and angle (replace cv2.cartToPolar)
-        flow_magnitude = np.sqrt(flow[..., 0]**2 + flow[..., 1]**2)
-        flow_angle = np.arctan2(flow[..., 1], flow[..., 0])
-
-        # A couple times, we've gotten NaNs out of the above...
-        nans = np.isnan(flow_magnitude)
-        if np.any(nans):
-            nans = np.where(nans)
-            flow_magnitude[nans] = 0.
-
-        # Normalize
-        hsv[..., 0] = flow_angle * 180 / np.pi / 2
-        if flow_mag_max is None:
-            hsv[..., 1] = flow_magnitude / flow_magnitude.max()
-        else:
-            hsv[..., 1] = flow_magnitude / flow_mag_max
-        hsv[..., 2] = 1
-
-        # Call the conversion function
-        img = hsv_to_rgb(hsv)
-
-        return img
 
     def flownet(self, img0, img1, ratio, model_path):
         import torch
@@ -4931,7 +5036,6 @@ class flameTimewarpML(flameMenuApp):
     def flownet_raft(self, img0, img1, ratio, model_path):
         import numpy as np
 
-        '''
         import tensorflow as tf
         start = time.time()
         raft_model_path = os.path.join(
@@ -4939,8 +5043,7 @@ class flameTimewarpML(flameMenuApp):
             'raft.model')
         raft_model = tf.compat.v2.saved_model.load(raft_model_path, options=tf.saved_model.LoadOptions(allow_partial_checkpoint=True))
         print (f'model loaded in {time.time() - start}')
-        '''
-
+        
         import torch
         import torch.nn as nn
         import torch.nn.functional as F
@@ -4952,6 +5055,9 @@ class flameTimewarpML(flameMenuApp):
             device = torch.device('cpu')
         else:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        import gc
+        gc.collect()
 
         def warp_old(tenInput, tenFlow):
             backwarp_tenGrid = {}
@@ -5062,6 +5168,51 @@ class flameTimewarpML(flameMenuApp):
                 F4 = (flow0 + flow1 + flow2 + flow3)
                 return F.interpolate(F4, scale_factor=1. / float(flow_scale), mode="bilinear", align_corners=False) * (1 / float(flow_scale))
 
+        class IFNetPreFlow(nn.Module):
+            def __init__(self, progress):
+                super(IFNetPreFlow, self).__init__()
+                self.progress = progress
+                self.block0 = IFBlock(6, scale=8, c=192)
+                self.block1 = IFBlock(10, scale=4, c=128)
+                self.block2 = IFBlock(10, scale=2, c=96)
+                self.block3 = IFBlock(10, scale=1, c=48)
+
+            def forward(self, x, preflow, flow_scale: float):
+                print ('IFNetPreFlow forward')
+                x = F.interpolate(x, scale_factor=float(flow_scale), mode="bilinear", align_corners=False)
+                warped_img0 = warp(x[:, :3, :, :], preflow[:, :2])
+                warped_img1 = warp(x[:, 3:, :, :], preflow[:, 2:4])
+                '''
+                self.progress.update_interface_image(
+                    np.flip(warped_img0.cpu().squeeze(0).permute(1, 2, 0).numpy(), axis = 2).copy(),
+                    self.progress.ui.flow1_label,
+                    text = f'Raft WARP Forward'
+                    )
+                self.progress.update_interface_image(
+                    np.flip(warped_img0.cpu().squeeze(0).permute(1, 2, 0).numpy(), axis = 2).copy(),
+                    self.progress.ui.flow3_label,
+                    text = f'Raft WARP Backward'
+                    )
+                '''
+                flow0 = self.block0(torch.cat((warped_img0, warped_img1), 1))
+                F1 = flow0
+                F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+                warped_img0 = warp(x[:, :3], F1_large[:, :2])
+                warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
+                flow1 = self.block1(torch.cat((warped_img0, warped_img1, F1_large), 1))
+                F2 = (flow0 + flow1)
+                F2_large = F.interpolate(F2, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+                warped_img0 = warp(x[:, :3], F2_large[:, :2])
+                warped_img1 = warp(x[:, 3:], F2_large[:, 2:4])
+                flow2 = self.block2(torch.cat((warped_img0, warped_img1, F2_large), 1))
+                F3 = (flow0 + flow1 + flow2)
+                F3_large = F.interpolate(F3, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+                warped_img0 = warp(x[:, :3], F3_large[:, :2])
+                warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
+                flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3_large), 1))
+                F4 = (flow0 + flow1 + flow2 + flow3)
+                return F.interpolate(F4, scale_factor=1. / float(flow_scale), mode="bilinear", align_corners=False) * (1 / float(flow_scale))
+
         class Conv2(nn.Module):
             def __init__(self, in_planes, out_planes, stride=2):
                 super(Conv2, self).__init__()
@@ -5130,52 +5281,42 @@ class flameTimewarpML(flameMenuApp):
                     warped_img0_gt = warp(img0, flow_gt[:, :2])
                     warped_img1_gt = warp(img1, flow_gt[:, 2:4])
 
-                # x = self.conv0(torch.cat((warped_img0, warped_img1, flow), 1))
-                # s0 = self.down0(x)
-                # s1 = self.down1(torch.cat((s0, c0[0], c1[0]), 1))
-                # s2 = self.down2(torch.cat((s1, c0[1], c1[1]), 1))
-                # s3 = self.down3(torch.cat((s2, c0[2], c1[2]), 1))
-                # x = self.up0(torch.cat((s3, c0[3], c1[3]), 1))
-                # x = self.up1(torch.cat((x, s2), 1))
-                # x = self.up2(torch.cat((x, s1), 1))
-                # x = self.up3(torch.cat((x, s0), 1))
-                # x = self.conv(x)
+                x = self.conv0(torch.cat((warped_img0, warped_img1, flow), 1))
+                s0 = self.down0(x)
+                s1 = self.down1(torch.cat((s0, c0[0], c1[0]), 1))
+                s2 = self.down2(torch.cat((s1, c0[1], c1[1]), 1))
+                s3 = self.down3(torch.cat((s2, c0[2], c1[2]), 1))
+                x = self.up0(torch.cat((s3, c0[3], c1[3]), 1))
+                x = self.up1(torch.cat((x, s2), 1))
+                x = self.up2(torch.cat((x, s1), 1))
+                x = self.up3(torch.cat((x, s0), 1))
+                x = self.conv(x)
 
+                '''
                 x = checkpoint(self.conv0, torch.cat((warped_img0, warped_img1, flow), 1))
                 print ('x = checkpoint(self.conv0, torch.cat((warped_img0, warped_img1, flow), 1))')
-
                 s0 = checkpoint(self.down0, x)
                 print ('s0 = checkpoint(self.down0, x)')
                 # s0 = F.interpolate(s0, scale_factor=context_scale, mode="bilinear", align_corners=False)
                 # print (s0.shape)
-
                 s1 = checkpoint(self.down1, torch.cat((s0, c0[0], c1[0]), 1))
                 print ('s1 = checkpoint(self.down1, torch.cat((s0, c0[0], c1[0]), 1))')
-
                 s2 = checkpoint(self.down2, torch.cat((s1, c0[1], c1[1]), 1))
                 print ('s2 = checkpoint(self.down2, torch.cat((s1, c0[1], c1[1]), 1))')
-    
                 s3 = checkpoint(self.down3, torch.cat((s2, c0[2], c1[2]), 1))
                 print ('s3 = checkpoint(self.down3, torch.cat((s2, c0[2], c1[2]), 1))')
-
                 x = checkpoint(self.up0, torch.cat((s3, c0[3], c1[3]), 1))
-                
                 del(s3)
                 mps.empty_cache()
-                
                 x = checkpoint(self.up1, torch.cat((x, s2), 1))
-                
                 del(s2)
                 mps.empty_cache()
-
                 x = checkpoint(self.up2, torch.cat((x, s1), 1))
-
                 del(s1)
                 mps.empty_cache()
-
                 x = checkpoint(self.up3, torch.cat((x, s0), 1))
-
                 x = checkpoint(self.conv, x)
+                '''
 
                 return x, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt
 
@@ -5300,13 +5441,11 @@ class flameTimewarpML(flameMenuApp):
                 text = f'Pass 1 of {num_passes}'
                 )
             
-            '''
             self.progress.update_interface_image(
                 img0_np.copy(), 
                 self.progress.ui.flow3_label,
                 text = f'Pass 1 of {num_passes}'
                 )
-            '''
 
             if sys.platform == 'darwin':
                 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
@@ -5332,11 +5471,8 @@ class flameTimewarpML(flameMenuApp):
             padding = (0, pw - w, 0, ph - h)
             img0 = F.pad(img0, padding)
             img1 = F.pad(img1, padding)
-            print ('padding')
             from torch import mps
             print (mps.driver_allocated_memory())
-
-            print (f'img0 shape {img0.shape}')
 
             img0_ratio = 0
             img1_ratio = 1
@@ -5344,46 +5480,71 @@ class flameTimewarpML(flameMenuApp):
             for current_pass in range(1, num_passes + 1):
                 print ('pass %s of %s' % (current_pass, num_passes))
 
-                '''
                 img0_raft = img0[0].cpu().detach().numpy().transpose(1, 2, 0)
                 img0_raft = np.flip(img0_raft, axis=2).copy()
                 img1_raft = img1[0].cpu().detach().numpy().transpose(1, 2, 0)
                 img1_raft = np.flip(img1_raft, axis=2).copy()
 
-                img0_resized = tf.image.resize(img0_raft, [img0_raft.shape[0] // 2, img0_raft.shape[1] // 2], method=tf.image.ResizeMethod.BILINEAR)
-                img1_resized = tf.image.resize(img1_raft, [img1_raft.shape[0] // 2, img1_raft.shape[1] // 2], method=tf.image.ResizeMethod.BILINEAR)
+                img0_resized = tf.image.resize(img0_raft, [img0_raft.shape[0] // 4, img0_raft.shape[1] // 4], method=tf.image.ResizeMethod.BICUBIC)
+                del img0_raft
+                gc.collect()
+                img1_resized = tf.image.resize(img1_raft, [img1_raft.shape[0] // 4, img1_raft.shape[1] // 4], method=tf.image.ResizeMethod.BICUBIC)
+                del img1_raft
+                gc.collect()                
                 # img0_resized = img0_raft
                 # img1_resized = img1_raft
-
-                print (f'img0_resized shape {img0_resized.shape}')
-
                 img0_normalized = tf.math.tanh(img0_resized * 2 - 1)
+                del img0_resized
+                gc.collect()
                 img1_normalized = tf.math.tanh(img1_resized * 2 - 1)
+                del img1_resized
+                gc.collect()
                 image0_batch = tf.reshape(img0_normalized, (1,) + tuple(img0_normalized.shape))
+                del img0_normalized
+                gc.collect()
                 image1_batch = tf.reshape(img1_normalized, (1,) + tuple(img1_normalized.shape))
+                del img1_normalized
+                gc.collect()
                 input_batch_fw = tf.concat([image0_batch, image1_batch], axis=0)
                 input_batch_fw = tf.expand_dims(input_batch_fw, axis=0)
                 input_batch_bw = tf.concat([image1_batch, image0_batch], axis=0)
                 input_batch_bw = tf.expand_dims(input_batch_bw, axis=0)
+                del image0_batch
+                del image1_batch
+                gc.collect()
 
                 start = time.time()
                 flow_forward = raft_model.signatures['serving_default'](input_1=input_batch_fw, input_2=tf.constant(12))['output_1'] * -9.99
                 flow_backwrd = raft_model.signatures['serving_default'](input_1=input_batch_bw, input_2=tf.constant(12))['output_1'] * -9.99
-                # flow_backwrd = raft_model.signatures['serving_default'](input_1=input_batch_fw, input_2=tf.constant(12))['output_1']
-                # flow_forward = tf.reverse(flow_forward, axis=[-1])
-                # flow_backwrd = tf.reverse(flow_backwrd, axis=[-1])
-                # flow_forward = flow_forward * 10
-                # flow_backwrd = flow_backwrd * 10
+                flow_forward = tf.image.resize(flow_forward, [flow_forward.shape[1] * 4, flow_forward.shape[2] * 4], method=tf.image.ResizeMethod.BICUBIC) * 4
+                flow_backwrd = tf.image.resize(flow_backwrd, [flow_backwrd.shape[1] * 4, flow_backwrd.shape[2] * 4], method=tf.image.ResizeMethod.BICUBIC) * 4
                 print ('model inference took %s' % (time.time() - start))
-
                 flow_combined = np.concatenate((flow_forward.numpy(), flow_backwrd.numpy()), axis=-1)
+                del flow_forward
+                del flow_backwrd
+                tf.keras.backend.clear_session()
+                gc.collect()
+
                 flow_torch_tensor = torch.from_numpy(flow_combined)
                 flow_torch_tensor = flow_torch_tensor.permute(0, 3, 1, 2)
                 print ('flow_torch_tensor shape:')
                 print (flow_torch_tensor.shape)
-                flow = flow_torch_tensor.to(device)
+                preflow = flow_torch_tensor.to(device)
                 # flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear", align_corners=False) * 0.5
-                '''
+                display_flow = F.interpolate(preflow, scale_factor=0.25, mode='nearest')
+                display_flow1 = display_flow[:, :2].cpu().detach().numpy()
+                self.progress.update_optical_flow(
+                    display_flow1,
+                    self.progress.ui.flow2_label,
+                    text = f'Raft Flow Forward'
+                    )
+                display_flow2 = display_flow[:, 2:4].cpu().detach().numpy()
+                self.progress.update_optical_flow(
+                    display_flow2, 
+                    self.progress.ui.flow4_label,
+                    text = f'Raft Flow Backward'
+                    )
+
                 mps_device = torch.device('cpu')
 
                 img0 = img0.to(mps_device)
@@ -5398,48 +5559,40 @@ class flameTimewarpML(flameMenuApp):
                         self.trained_models_path,
                         'v2.4.model')
 
+                # '''
                 print ('load IFNetModel')
-                '''
-                ifnet_model = IFNet()
+                ifnet_model = IFNetPreFlow(self.progress)
                 ifnet_model.load_state_dict(torch.load('{}/ifnet.pth'.format(models_path)))
                 ifnet_model.eval()
                 ifnet_model.to(mps_device)
-                flow = ifnet_model(torch.cat((img0, img1), 1), 1.)
+                flow = ifnet_model(torch.cat((img0, img1), 1), preflow, 1.)
                 print(flow.shape)
-                '''
+                # '''
 
+                '''
                 scripted_module = torch.jit.script(IFNet())
                 scripted_module.load_state_dict(torch.load('{}/ifnet.pth'.format(models_path)))
                 scripted_module.eval()
                 scripted_module.to(device)
                 flow = scripted_module(torch.cat((img0, img1), 1), 1.)
-
                 print ('del IFNetModel')
                 del (scripted_module)
+                '''
+
                 # '''
 
-                # flow = F.interpolate(flow, scale_factor=2.0, mode="bilinear", align_corners=False)
-
-                display_flow1 = flow[:, :2].cpu().detach().numpy()
-                # display_flow1 = np.squeeze(display_flow1, axis=0)
-                # display_flow1 = np.transpose(display_flow1, (1, 2, 0))
-                display_flow1 = (display_flow1 / 2) + 1
-                display_flow1 = np.pad(display_flow1, ((0, 0), (0, 1), (0, 0), (0, 0)))
-                display_flow1 = display_flow1.transpose((0, 2, 3, 1)).squeeze(axis=0)
-                display_flow1 = np.flip(display_flow1, axis=2)
-                display_flow1 = np.flip(display_flow1, axis=2)
-                self.progress.update_interface_image(
-                    display_flow1.copy(), 
+                start = time.time()
+                display_flow = F.interpolate(flow, scale_factor=0.25, mode='nearest')
+                display_flow1 = display_flow[:, :2].cpu().detach().numpy()
+                self.progress.update_optical_flow(
+                    display_flow1,
                     self.progress.ui.flow2_label,
                     text = f'Flow pass {current_pass} of {num_passes}'
                     )
-                display_flow2 = flow[:, 2:4].cpu().detach().numpy()
-                display_flow2 = np.pad(display_flow2, ((0, 0), (0, 1), (0, 0), (0, 0)))
-                display_flow2 = display_flow2.transpose((0, 2, 3, 1)).squeeze(axis=0)
-                display_flow2 = (display_flow2 + 1) / 2
-                display_flow2 = np.flip(display_flow2, axis=2)
-                self.progress.update_interface_image(
-                    display_flow2.copy(), 
+                print (f'flow to image took {time.time() - start}')
+                display_flow2 = display_flow[:, 2:4].cpu().detach().numpy()
+                self.progress.update_optical_flow(
+                    display_flow2, 
                     self.progress.ui.flow4_label,
                     text = f'Flow pass {current_pass} of {num_passes}'
                     )
