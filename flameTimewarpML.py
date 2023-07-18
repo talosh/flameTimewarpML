@@ -5515,7 +5515,9 @@ class flameTimewarpML(flameMenuApp):
 
                 start = time.time()
                 flow_forward = raft_model.signatures['serving_default'](input_1=input_batch_fw, input_2=tf.constant(12))['output_1'] * -9.99
+                gc.collect()
                 flow_backwrd = raft_model.signatures['serving_default'](input_1=input_batch_bw, input_2=tf.constant(12))['output_1'] * -9.99
+                gc.collect()
                 flow_forward = tf.image.resize(flow_forward, [flow_forward.shape[1] * 4, flow_forward.shape[2] * 4], method=tf.image.ResizeMethod.BICUBIC) * 4
                 flow_backwrd = tf.image.resize(flow_backwrd, [flow_backwrd.shape[1] * 4, flow_backwrd.shape[2] * 4], method=tf.image.ResizeMethod.BICUBIC) * 4
                 print ('model inference took %s' % (time.time() - start))
