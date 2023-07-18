@@ -1242,7 +1242,7 @@ class flameTimewarpML(flameMenuApp):
 
                 if not clip_node_handle.readFrame(int(frame_number), buff, fmt.frameBufferSize()):
                     raise Exception(
-                        'Unable to obtain read frame %i: %s.' % (frame_number, clip_node_handle.lastError())
+                        '[read_image_data] Unable to obtain read frame %i: %s.' % (frame_number, clip_node_handle.lastError())
                     )
                 
                 frame_buffer_size = fmt.frameBufferSize()
@@ -1726,7 +1726,6 @@ class flameTimewarpML(flameMenuApp):
 
             flame.schedule_idle_event(rescan_hooks)
 
-
     def __init__(self, framework):
         flameMenuApp.__init__(self, framework)
 
@@ -1875,7 +1874,8 @@ class flameTimewarpML(flameMenuApp):
             try:
                 import_packages()
                 return True
-            except:
+            except Exception as e:
+                print (pformat(e))
                 # sys.path =  filter (lambda a: not a.startswith('/System'), sys.path)
                 if self.install_requirements():
                     return True
@@ -3075,6 +3075,51 @@ class flameTimewarpML(flameMenuApp):
     def select_mode(self, mode_number):
         print ('select mode')
         print (mode_number)
+
+    def flow_to_img(self, flow, flow_mag_max=1.):
+        import numpy as np
+
+        def hsv_to_rgb(hsv):
+            h, s, v = hsv[..., 0], hsv[..., 1], hsv[..., 2]
+            hi = np.floor(h / 60.0) % 6
+            f = (h / 60.0) - np.floor(h / 60.0)
+            p = v * (1.0 - s)
+            q = v * (1.0 - (f * s))
+            t = v * (1.0 - ((1.0 - f) * s))
+
+            rgb = np.zeros(hsv.shape)
+            indices = hi.astype(int) % 6
+
+            rgb[..., 0] = np.choose(indices, [v, q, p, p, t, v])
+            rgb[..., 1] = np.choose(indices, [t, v, v, q, p, p])
+            rgb[..., 2] = np.choose(indices, [p, p, t, v, v, q])
+
+            return rgb
+        
+        hsv = np.zeros((flow.shape[0], flow.shape[1], 3), dtype=np.float32)
+
+        # Calculate magnitude and angle (replace cv2.cartToPolar)
+        flow_magnitude = np.sqrt(flow[..., 0]**2 + flow[..., 1]**2)
+        flow_angle = np.arctan2(flow[..., 1], flow[..., 0])
+
+        # A couple times, we've gotten NaNs out of the above...
+        nans = np.isnan(flow_magnitude)
+        if np.any(nans):
+            nans = np.where(nans)
+            flow_magnitude[nans] = 0.
+
+        # Normalize
+        hsv[..., 0] = flow_angle * 180 / np.pi / 2
+        if flow_mag_max is None:
+            hsv[..., 1] = flow_magnitude / flow_magnitude.max()
+        else:
+            hsv[..., 1] = flow_magnitude / flow_mag_max
+        hsv[..., 2] = 1
+
+        # Call the conversion function
+        img = hsv_to_rgb(hsv)
+
+        return img
 
     def flownet(self, img0, img1, ratio, model_path):
         import torch
@@ -4806,7 +4851,7 @@ class flameTimewarpML(flameMenuApp):
             # img0 = img0.to(torch.float16)
             # img1 = img1.to(torch.float16)
 
-            device = torch.device('mps')
+            device = torch.device('cpu')
             img0 = img0.to(device)
             img1 = img1.to(device)
 
@@ -4824,7 +4869,7 @@ class flameTimewarpML(flameMenuApp):
             print ('del IFNetModel')
             del (ifnet_model)
 
-            device = torch.device('mps')
+            device = torch.device('cpu')
             img0 = img0.to(device)
             img1 = img1.to(device)
             flow = flow.to(device)
@@ -4843,7 +4888,7 @@ class flameTimewarpML(flameMenuApp):
             print ('del ContextNetModel')
             del (contextnet_model)
 
-            device = torch.device('mps')
+            device = torch.device('cpu')
             img0 = img0.to(device)
             img1 = img1.to(device)
             flow = flow.to(device)
@@ -4886,6 +4931,7 @@ class flameTimewarpML(flameMenuApp):
     def flownet_raft(self, img0, img1, ratio, model_path):
         import numpy as np
 
+        '''
         import tensorflow as tf
         start = time.time()
         raft_model_path = os.path.join(
@@ -4893,6 +4939,7 @@ class flameTimewarpML(flameMenuApp):
             'raft.model')
         raft_model = tf.compat.v2.saved_model.load(raft_model_path, options=tf.saved_model.LoadOptions(allow_partial_checkpoint=True))
         print (f'model loaded in {time.time() - start}')
+        '''
 
         import torch
         import torch.nn as nn
@@ -4906,7 +4953,7 @@ class flameTimewarpML(flameMenuApp):
         else:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        def warp(tenInput, tenFlow):
+        def warp_old(tenInput, tenFlow):
             backwarp_tenGrid = {}
             k = (str(tenFlow.device), str(tenFlow.size()))
             if k not in backwarp_tenGrid:
@@ -4922,6 +4969,23 @@ class flameTimewarpML(flameMenuApp):
 
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=torch.clamp(g, -1, 1), mode='bilinear', padding_mode='zeros', align_corners=True)
+
+        def warp(tenInput, tenFlow):
+            original_device = tenInput.device
+            cpu_device = torch.device('cpu')
+            tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(
+                1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+            tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(
+                1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+            backwarp_tenGrid = torch.cat(
+                [tenHorizontal, tenVertical], 1).to(cpu_device)
+            tenFlow = torch.cat([tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0),
+                                tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0)], 1)
+            tenFlow = tenFlow.to(cpu_device)
+            tenInput = tenInput.to(cpu_device)
+            g = (backwarp_tenGrid + tenFlow).permute(0, 2, 3, 1)
+            res_flow = torch.nn.functional.grid_sample(input=tenInput, grid=torch.clamp(g, -1, 1), mode='bilinear', padding_mode='zeros', align_corners=True)
+            return res_flow.to(original_device)
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return nn.Sequential(
@@ -4964,7 +5028,7 @@ class flameTimewarpML(flameMenuApp):
                 x = self.conv1(x)
                 flow = x
                 if self.scale != 1:
-                    flow = F.interpolate(flow, scale_factor=self.scale, mode="bilinear",
+                    flow = F.interpolate(flow, scale_factor=float(self.scale), mode="bilinear",
                                         align_corners=False)
                 return flow
 
@@ -4976,10 +5040,9 @@ class flameTimewarpML(flameMenuApp):
                 self.block2 = IFBlock(10, scale=2, c=96)
                 self.block3 = IFBlock(10, scale=1, c=48)
 
-            def forward(self, x, UHD=False):
+            def forward(self, x, flow_scale: float):
                 print ('IFNet forward')
-                if UHD:
-                    x = F.interpolate(x, scale_factor=0.5, mode="bilinear", align_corners=False)
+                x = F.interpolate(x, scale_factor=float(flow_scale), mode="bilinear", align_corners=False)
                 flow0 = self.block0(x)
                 F1 = flow0
                 F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
@@ -4997,7 +5060,7 @@ class flameTimewarpML(flameMenuApp):
                 warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
                 flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3_large), 1))
                 F4 = (flow0 + flow1 + flow2 + flow3)
-                return F4, [F1, F2, F3, F4]
+                return F.interpolate(F4, scale_factor=1. / float(flow_scale), mode="bilinear", align_corners=False) * (1 / float(flow_scale))
 
         class Conv2(nn.Module):
             def __init__(self, in_planes, out_planes, stride=2):
@@ -5117,15 +5180,13 @@ class flameTimewarpML(flameMenuApp):
                 return x, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt
 
         class IFNetModel:
-            def __init__(self):
+            def __init__(self, device):
                 self.flownet = IFNet()
-                self.device()
+                self.device = device
+                self.flownet.to(device)
 
             def eval(self):
                 self.flownet.eval()
-
-            def device(self):
-                self.flownet.to(device)
 
             def load_model(self, path):
                 def convert(param):
@@ -5136,7 +5197,7 @@ class flameTimewarpML(flameMenuApp):
                     }
                     
                 self.flownet.load_state_dict(
-                    convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
+                    convert(torch.load('{}/flownet.pkl'.format(path), map_location=self.device)))
 
             def inference(self, img0, img1, UHD=False):
                 imgs = torch.cat((img0, img1), 1)
@@ -5239,11 +5300,13 @@ class flameTimewarpML(flameMenuApp):
                 text = f'Pass 1 of {num_passes}'
                 )
             
+            '''
             self.progress.update_interface_image(
                 img0_np.copy(), 
                 self.progress.ui.flow3_label,
                 text = f'Pass 1 of {num_passes}'
                 )
+            '''
 
             if sys.platform == 'darwin':
                 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
@@ -5273,37 +5336,97 @@ class flameTimewarpML(flameMenuApp):
             from torch import mps
             print (mps.driver_allocated_memory())
 
+            print (f'img0 shape {img0.shape}')
+
             img0_ratio = 0
             img1_ratio = 1
 
             for current_pass in range(1, num_passes + 1):
                 print ('pass %s of %s' % (current_pass, num_passes))
 
-                device = torch.device('cpu')
-                img0 = img0.to(device)
-                img1 = img1.to(device)
+                '''
+                img0_raft = img0[0].cpu().detach().numpy().transpose(1, 2, 0)
+                img0_raft = np.flip(img0_raft, axis=2).copy()
+                img1_raft = img1[0].cpu().detach().numpy().transpose(1, 2, 0)
+                img1_raft = np.flip(img1_raft, axis=2).copy()
+
+                img0_resized = tf.image.resize(img0_raft, [img0_raft.shape[0] // 2, img0_raft.shape[1] // 2], method=tf.image.ResizeMethod.BILINEAR)
+                img1_resized = tf.image.resize(img1_raft, [img1_raft.shape[0] // 2, img1_raft.shape[1] // 2], method=tf.image.ResizeMethod.BILINEAR)
+                # img0_resized = img0_raft
+                # img1_resized = img1_raft
+
+                print (f'img0_resized shape {img0_resized.shape}')
+
+                img0_normalized = tf.math.tanh(img0_resized * 2 - 1)
+                img1_normalized = tf.math.tanh(img1_resized * 2 - 1)
+                image0_batch = tf.reshape(img0_normalized, (1,) + tuple(img0_normalized.shape))
+                image1_batch = tf.reshape(img1_normalized, (1,) + tuple(img1_normalized.shape))
+                input_batch_fw = tf.concat([image0_batch, image1_batch], axis=0)
+                input_batch_fw = tf.expand_dims(input_batch_fw, axis=0)
+                input_batch_bw = tf.concat([image1_batch, image0_batch], axis=0)
+                input_batch_bw = tf.expand_dims(input_batch_bw, axis=0)
+
+                start = time.time()
+                flow_forward = raft_model.signatures['serving_default'](input_1=input_batch_fw, input_2=tf.constant(12))['output_1'] * -9.99
+                flow_backwrd = raft_model.signatures['serving_default'](input_1=input_batch_bw, input_2=tf.constant(12))['output_1'] * -9.99
+                # flow_backwrd = raft_model.signatures['serving_default'](input_1=input_batch_fw, input_2=tf.constant(12))['output_1']
+                # flow_forward = tf.reverse(flow_forward, axis=[-1])
+                # flow_backwrd = tf.reverse(flow_backwrd, axis=[-1])
+                # flow_forward = flow_forward * 10
+                # flow_backwrd = flow_backwrd * 10
+                print ('model inference took %s' % (time.time() - start))
+
+                flow_combined = np.concatenate((flow_forward.numpy(), flow_backwrd.numpy()), axis=-1)
+                flow_torch_tensor = torch.from_numpy(flow_combined)
+                flow_torch_tensor = flow_torch_tensor.permute(0, 3, 1, 2)
+                print ('flow_torch_tensor shape:')
+                print (flow_torch_tensor.shape)
+                flow = flow_torch_tensor.to(device)
+                # flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear", align_corners=False) * 0.5
+                '''
+                mps_device = torch.device('cpu')
+
+                img0 = img0.to(mps_device)
+                img1 = img1.to(mps_device)
 
                 if not self.progress.threads:
                     break
                 if not self.progress.rendering:
                     break
 
-                print ('load IFNetModel')
-                ifnet_model = IFNetModel()
-                ifnet_model.load_model(
-                    os.path.join(
+                models_path = os.path.join(
                         self.trained_models_path,
-                        'v2.4.model'))
-                ifnet_model.eval()
-                ifnet_model.device()
+                        'v2.4.model')
 
-                flow = ifnet_model.inference(img0, img1, False)
+                print ('load IFNetModel')
+                '''
+                ifnet_model = IFNet()
+                ifnet_model.load_state_dict(torch.load('{}/ifnet.pth'.format(models_path)))
+                ifnet_model.eval()
+                ifnet_model.to(mps_device)
+                flow = ifnet_model(torch.cat((img0, img1), 1), 1.)
                 print(flow.shape)
+                '''
+
+                scripted_module = torch.jit.script(IFNet())
+                scripted_module.load_state_dict(torch.load('{}/ifnet.pth'.format(models_path)))
+                scripted_module.eval()
+                scripted_module.to(device)
+                flow = scripted_module(torch.cat((img0, img1), 1), 1.)
+
+                print ('del IFNetModel')
+                del (scripted_module)
+                # '''
+
+                # flow = F.interpolate(flow, scale_factor=2.0, mode="bilinear", align_corners=False)
 
                 display_flow1 = flow[:, :2].cpu().detach().numpy()
+                # display_flow1 = np.squeeze(display_flow1, axis=0)
+                # display_flow1 = np.transpose(display_flow1, (1, 2, 0))
+                display_flow1 = (display_flow1 / 2) + 1
                 display_flow1 = np.pad(display_flow1, ((0, 0), (0, 1), (0, 0), (0, 0)))
                 display_flow1 = display_flow1.transpose((0, 2, 3, 1)).squeeze(axis=0)
-                display_flow1 = (display_flow1 + 1) / 2
+                display_flow1 = np.flip(display_flow1, axis=2)
                 display_flow1 = np.flip(display_flow1, axis=2)
                 self.progress.update_interface_image(
                     display_flow1.copy(), 
@@ -5320,10 +5443,15 @@ class flameTimewarpML(flameMenuApp):
                     self.progress.ui.flow4_label,
                     text = f'Flow pass {current_pass} of {num_passes}'
                     )
-
-                print ('del IFNetModel')
-                del (ifnet_model)
-
+                
+                '''
+                flow = flow[:, :2].cpu().detach().numpy()
+                flow = np.squeeze(flow, axis=0)
+                flow = np.transpose(flow, (1, 2, 0))
+                flow_image = flow_to_img(flow.copy())
+                return flow_image
+                '''
+            
                 device = torch.device('cpu')
                 img0 = img0.to(device)
                 img1 = img1.to(device)
@@ -5363,7 +5491,7 @@ class flameTimewarpML(flameMenuApp):
                     break
                 if not self.progress.rendering:
                     break
-
+                
                 print ('load FusionNetModel')
                 fusion_model = FusionNetModel()
                 fusion_model.load_model(
@@ -5388,11 +5516,11 @@ class flameTimewarpML(flameMenuApp):
 
                 tile0_display = img0[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
                 tile0_display = np.flip(tile0_display, axis=2).copy()
-                self.progress.update_interface_image(
-                    tile0_display.copy(), 
-                    self.progress.ui.flow1_label,
-                    text = f'Incoming tile'
-                    )
+                # self.progress.update_interface_image(
+                #    tile0_display.copy(), 
+                #    self.progress.ui.flow1_label,
+                #    text = f'Incoming tile'
+                #    )
 
                 tile1_display = img1[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
                 tile1_display = np.flip(tile1_display, axis=2).copy()
@@ -5402,8 +5530,22 @@ class flameTimewarpML(flameMenuApp):
                     text = f'Outgoing tile'
                     )
 
+            if not self.progress.threads:
+                return img0_np
+            if not self.progress.rendering:
+                return img0_np
+
             res_img = middle[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
             res_img = np.flip(res_img, axis=2).copy()
+
+            print (f'res_img shape {res_img.shape}')
+
+            self.progress.update_interface_image(
+                res_img.copy(), 
+                self.progress.ui.flow3_label,
+                text = f'Res IMG'
+                )
+
             return res_img
 
         def create_overlapping_tiles(img, patch_size, stride):
@@ -5473,7 +5615,14 @@ class flameTimewarpML(flameMenuApp):
                 idx += 1
             
             return img_padded[patch_size[0]//2 : -patch_size[0]//2, patch_size[1]//2 : -patch_size[1]//2]
-        
+
+        start = time.time()
+        res_img = process_images(img0, img1, ratio)
+        print (f'FRAME TOOK {time.time() - start} sec')
+        return res_img
+
+        start = time.time()
+
         TILESIZE = 512
         patch_size = (TILESIZE, TILESIZE)
         stride = TILESIZE//2
@@ -5482,6 +5631,8 @@ class flameTimewarpML(flameMenuApp):
         img1_tiles = create_overlapping_tiles(img1, patch_size, stride)
 
         reassembled_img = reassemble_from_tiles(img0_tiles, img1_tiles, img0.shape, patch_size, stride)
+        
+        print (f'FRAME TOOK {time.time() - start} sec')
 
         return reassembled_img
 
@@ -7658,7 +7809,6 @@ class flameTimewarpML(flameMenuApp):
                         time.sleep(2)
                         for i in range(5):
                             os.system(cmd)
-
 
 
 # --- FLAME STARTUP SEQUENCE ---
