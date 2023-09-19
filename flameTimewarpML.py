@@ -885,8 +885,44 @@ class flameTimewarpML(flameMenuApp):
             self.max_frame = 99
             self.current_frame = 1
 
+            # mouse position on a press event
+            self.mousePressPos = None
+
             self.frame_thread = None
             self.rendering = False
+
+            # A flag to check if all events have been processed
+            self.allEventsFlag = False
+            # Connect signals to slots
+            self.allEventsProcessed.connect(self.on_allEventsProcessed)
+            self.updateInterfaceImage.connect(self.on_UpdateInterfaceImage)
+            self.updateFlowImage.connect(self.on_UpdateFlowImage)
+            self.setText.connect(self.on_setText)
+
+            # load in the UI
+            self.ui = self.Ui_Progress()
+            self.ui.setupUi(self)
+
+            # set up mode menu
+            mode_menu = QtWidgets.QMenu(self)
+            for mode_number in sorted(self.twml.modes.keys(), reverse=True):
+                code = self.twml.modes.get(mode_number, 1.0)
+                action = mode_menu.addAction(code)
+                x = lambda chk=False, mode_number=mode_number: self.twml.select_mode(mode_number)
+                action.triggered[()].connect(x)
+            self.ui.mode_selector.setMenu(mode_menu)
+
+            # set up flow res menu
+            flow_res_menu = QtWidgets.QMenu(self)
+            for flow_res in sorted(self.twml.flow_res.keys(), reverse=True):
+                code = self.twml.flow_res.get(flow_res, 1.0)
+                action = flow_res_menu.addAction(code)
+                x = lambda chk=False, flow_res=flow_res: self.twml.select_flow_res(flow_res)
+                action.triggered[()].connect(x)
+            self.ui.flow_res_selector.setMenu(flow_res_menu)
+
+            self.ui.stripe_label.setText(self.mode)
+            self.ui.info_label.setText('initializing PyTorch environment...')
 
             ### end of UI window sequence
 
@@ -928,15 +964,6 @@ class flameTimewarpML(flameMenuApp):
                         
             self.current_frame = min(self.frames_map.keys())
 
-
-            # A flag to check if all events have been processed
-            self.allEventsFlag = False
-            # Connect the signal to the slot
-            self.allEventsProcessed.connect(self.on_allEventsProcessed)
-            self.updateInterfaceImage.connect(self.on_UpdateInterfaceImage)
-            self.updateFlowImage.connect(self.on_UpdateFlowImage)
-            self.setText.connect(self.on_setText)
-
             try:
                 H = selection[0].height
                 W = selection[0].width
@@ -944,33 +971,6 @@ class flameTimewarpML(flameMenuApp):
                 W = 1280
                 H = 720
             
-            # now load in the UI that was created in the UI designer
-            self.ui = self.Ui_Progress()
-            self.ui.setupUi(self)
-
-            # set up mode menu
-            mode_menu = QtWidgets.QMenu(self)
-            for mode_number in sorted(self.twml.modes.keys(), reverse=True):
-                code = self.twml.modes.get(mode_number, 1.0)
-                action = mode_menu.addAction(code)
-                x = lambda chk=False, mode_number=mode_number: self.twml.select_mode(mode_number)
-                action.triggered[()].connect(x)
-            self.ui.mode_selector.setMenu(mode_menu)
-
-            # set up flow res menu
-            flow_res_menu = QtWidgets.QMenu(self)
-            for flow_res in sorted(self.twml.flow_res.keys(), reverse=True):
-                code = self.twml.flow_res.get(flow_res, 1.0)
-                action = flow_res_menu.addAction(code)
-                x = lambda chk=False, flow_res=flow_res: self.twml.select_flow_res(flow_res)
-                action.triggered[()].connect(x)
-            self.ui.flow_res_selector.setMenu(flow_res_menu)
-
-            self.ui.stripe_label.setText(self.mode)
-            self.ui.info_label.setText('initializing PyTorch environment...')
-
-            # Record the mouse position on a press event.
-            self.mousePressPos = None
 
             # make it frameless and have it stay on top
             # self.setWindowFlags(
