@@ -871,15 +871,17 @@ class flameTimewarpML(flameMenuApp):
                 'QPushButton::menu-indicator {image: none;}')
 
         def __init__(self, selection, **kwargs):
+            super().__init__()
+
             self.mode = kwargs.get('mode', 'Timewarp')
             self.twml = kwargs.get('parent')
             self.app_name = self.twml.app_name
 
+            # startup UI in the very beginning
+
             if not self.twml.check_requirements():
                 return
             
-            super().__init__()
-
             # clean temp folder
             self.temp_folder = os.path.join(
                 self.twml.framework.bundle_path,
