@@ -163,7 +163,7 @@ class flameAppFramework(object):
             if os.getenv('FLAMETWML_BUNDLE_MAC'):
                 self.bundle_location = os.path.dirname(os.getenv('FLAMETWML_BUNDLE_MAC'))
                 self.bundle_path = os.getenv('FLAMETWML_BUNDLE_MAC')
-        elif sys.platform.startswith('linux') and FLAMETWML_BUNDLE_LINUX:
+        elif sys.platform.startswith('linux'):
             if os.getenv('FLAMETWML_BUNDLE_LINUX'):
                 self.bundle_location = os.path.dirname(os.getenv('FLAMETWML_BUNDLE_LINUX'))
                 self.bundle_path = os.getenv('FLAMETWML_BUNDLE_LINUX')
