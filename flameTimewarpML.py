@@ -878,6 +878,17 @@ class flameTimewarpML(flameMenuApp):
             self.app_name = self.twml.app_name
 
             # startup UI in the very beginning
+            ### start of UI window sequence
+            # some UI defaults
+            # frame range defaults before we actually have checked it
+            self.min_frame = 1
+            self.max_frame = 99
+            self.current_frame = 1
+
+            self.frame_thread = None
+            self.rendering = False
+
+            ### end of UI window sequence
 
             if not self.twml.check_requirements():
                 return
@@ -895,7 +906,6 @@ class flameTimewarpML(flameMenuApp):
                     pass
 
             self.twml.progress = self
-            self.current_frame = 1
             self.threads = True
 
             if selection:
@@ -918,8 +928,6 @@ class flameTimewarpML(flameMenuApp):
                         
             self.current_frame = min(self.frames_map.keys())
 
-            self.frame_thread = None
-            self.rendering = False
 
             # A flag to check if all events have been processed
             self.allEventsFlag = False
