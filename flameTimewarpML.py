@@ -921,11 +921,69 @@ class flameTimewarpML(flameMenuApp):
                 action.triggered[()].connect(x)
             self.ui.flow_res_selector.setMenu(flow_res_menu)
 
+            # set defalut text for text fields
             self.ui.stripe_label.setText(self.mode)
-            self.ui.info_label.setText('initializing PyTorch environment...')
+            self.ui.info_label.setText('initializing...')
+
+            # set window flags
+            self.setWindowFlags(
+                # QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint
+                # QtCore.Qt.Window | QtCore.Qt.Tool | QtCore.Qt.FramelessWindowHint
+                QtCore.Qt.Window | QtCore.Qt.Tool
+            )
+
+            # calculate window dimentions
+
+            try:
+                H = selection[0].height
+                W = selection[0].width
+            except:
+                W = 1280
+                H = 720
+            
+            desktop = QtWidgets.QApplication.desktop()
+            screen_geometry = desktop.screenGeometry(desktop.primaryScreen())
+
+            max_width = screen_geometry.width() * 0.8
+            max_height = screen_geometry.height() * 0.8
+
+            desired_width = W  # or whatever the aspect ratio calculation yields
+            desired_height = 1.88 * H  # Coeeficient to accomodate additional rows
+
+            scale_factor = min(max_width / desired_width, max_height / desired_height)
+            scaled_width = desired_width * scale_factor
+            scaled_height = desired_height * scale_factor
+
+            # Check that scaled_width is not less than the minimum
+            if scaled_width < 1024:
+                scaled_width = 1024
+
+            # Set window dimensions
+            self.setGeometry(0, 0, scaled_width, scaled_height)
+
+            # Move the window to the center of the screen
+            screen_center = screen_geometry.center()
+            self.move(screen_center.x() - scaled_width // 2, screen_center.y() - scaled_height // 2 - 100)
+
+            # show window and fix its size
+            self.show()
+            self.setFixedSize(self.size())
+
+            # set up message thread
+            self.threads = True
+            self.message_queue = queue.Queue()
+            self.message_thread = threading.Thread(target=self.process_messages)
+            self.message_thread.daemon = True
+            self.message_thread.start()
+
+            # QtCore.QTimer.singleShot(0, self.init_torch)
+            QtCore.QTimer.singleShot(0, self.after_show)
 
             ### end of UI window sequence
 
+            self.twml.progress = self
+
+            '''
             if not self.twml.check_requirements():
                 return
             
@@ -940,9 +998,6 @@ class flameTimewarpML(flameMenuApp):
                     os.system(cmd)
                 except:
                     pass
-
-            self.twml.progress = self
-            self.threads = True
 
             if selection:
                 self.clip_parent = selection[0].parent
@@ -963,55 +1018,7 @@ class flameTimewarpML(flameMenuApp):
                 )
                         
             self.current_frame = min(self.frames_map.keys())
-
-            try:
-                H = selection[0].height
-                W = selection[0].width
-            except:
-                W = 1280
-                H = 720
-            
-
-            # make it frameless and have it stay on top
-            # self.setWindowFlags(
-            #    QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint
-            # )
-
-            self.setWindowFlags(
-                QtCore.Qt.Window | QtCore.Qt.Tool | QtCore.Qt.FramelessWindowHint
-            )
-
-            desktop = QtWidgets.QApplication.desktop()
-            screen_geometry = desktop.screenGeometry(desktop.primaryScreen())
-
-            max_width = screen_geometry.width() * 0.8
-            max_height = screen_geometry.height() * 0.8
-
-            desired_width = W  # or whatever the aspect ratio calculation yields
-            desired_height = 1.88 * H  # Coeeficient to accomodate additional rows
-
-            scale_factor = min(max_width / desired_width, max_height / desired_height)
-            scaled_width = desired_width * scale_factor
-            scaled_height = desired_height * scale_factor
-
-            # Check that scaled_width is not less than the minimum
-            if scaled_width < 1024:
-                scaled_width = 1024
-
-            # Set the window's dimensions
-            self.setGeometry(0, 0, scaled_width, scaled_height)
-            # Move the window to the center of the screen
-            screen_center = screen_geometry.center()
-            self.move(screen_center.x() - scaled_width // 2, screen_center.y() - scaled_height // 2 - 100)
-            self.show()
-
-            # QtCore.QTimer.singleShot(0, self.init_torch)
-            QtCore.QTimer.singleShot(0, self.after_show)
-
-            self.message_queue = queue.Queue()
-            self.message_thread = threading.Thread(target=self.process_messages)
-            self.message_thread.daemon = True
-            self.message_thread.start()
+            '''
 
         def processEvents(self):
             QtWidgets.QApplication.instance().processEvents()
@@ -1036,9 +1043,9 @@ class flameTimewarpML(flameMenuApp):
                     return
 
         def after_show(self):
-            self.setFixedSize(self.size())
-            self.init_torch()
-            self.process_current_frame()
+            pass
+            # self.init_torch()
+            # self.process_current_frame()
 
         def keyPressEvent(self, event):
             if event.key() == QtCore.Qt.Key_Left:
