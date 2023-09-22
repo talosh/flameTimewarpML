@@ -874,6 +874,7 @@ class flameTimewarpML(flameMenuApp):
                 'QPushButton::menu-indicator {image: none;}')
 
         def __init__(self, selection, **kwargs):
+            start = time.time()
             super().__init__()
 
             self.mode = kwargs.get('mode', 'Timewarp')
@@ -987,6 +988,8 @@ class flameTimewarpML(flameMenuApp):
             ### end of UI window sequence
 
             self.twml.progress = self
+
+            print (f'init took {time.time() - start} sec')
 
             '''
             if not self.twml.check_requirements():
