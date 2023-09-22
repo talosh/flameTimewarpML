@@ -943,6 +943,8 @@ class flameTimewarpML(flameMenuApp):
             except:
                 W = 1280
                 H = 720
+
+            print (f'selection HxW: {H}x{W}')
             
             desktop = QtWidgets.QApplication.desktop()
             screen_geometry = desktop.screenGeometry(desktop.primaryScreen())
