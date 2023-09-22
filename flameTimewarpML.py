@@ -973,6 +973,8 @@ class flameTimewarpML(flameMenuApp):
 
             # show window and fix its size
             self.show()
+            self.processEvents()
+
             self.setFixedSize(self.size())
 
             # set up message thread
