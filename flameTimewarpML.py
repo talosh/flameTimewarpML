@@ -306,6 +306,7 @@ class flameAppFramework(object):
             return False
 
     def unpack_bundle(self, bundle_path):
+        pprint (bundle_path)
         start = time.time()
         script_file_name, ext = os.path.splitext(os.path.abspath(__file__))
         script_file_name += '.py'
@@ -370,7 +371,6 @@ class flameAppFramework(object):
         try:
             import base64
             self.log('unpacking payload: %s' % payload_dest)
-            pprint (payload)
             with open(payload_dest, 'wb') as payload_file:
                 payload_file.write(base64.b64decode(payload))
                 payload_file.close()
