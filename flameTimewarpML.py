@@ -1886,12 +1886,13 @@ class flameTimewarpML(flameMenuApp):
                 except:
                     pass
 
+            self.twml.temp_library = None
             self.twml.progress = None
             self.twml.torch = None
             self.deleteLater()
+
             def rescan_hooks():
                 flame.execute_shortcut('Rescan Python Hooks')
-
             flame.schedule_idle_event(rescan_hooks)
 
     def __init__(self, framework):
@@ -1954,7 +1955,8 @@ class flameTimewarpML(flameMenuApp):
         self.progress = None
         self.torch = None
         self.threads = True
-
+        self.temp_library = None
+        
         # this enables fallback to CPU on Macs
         os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
 
