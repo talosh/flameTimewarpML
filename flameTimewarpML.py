@@ -874,7 +874,6 @@ class flameTimewarpML(flameMenuApp):
                 'QPushButton::menu-indicator {image: none;}')
 
         def __init__(self, selection, **kwargs):
-            start = time.time()
             super().__init__()
 
             self.mode = kwargs.get('mode', 'Timewarp')
@@ -927,7 +926,7 @@ class flameTimewarpML(flameMenuApp):
 
             # set defalut text for text fields
             self.ui.stripe_label.setText(self.mode)
-            self.ui.info_label.setText('initializing...')
+            self.ui.info_label.setText('Initializing...')
 
             # set window flags
             self.setWindowFlags(
@@ -990,8 +989,6 @@ class flameTimewarpML(flameMenuApp):
 
             self.twml.progress = self
 
-            print (f'init took {time.time() - start} sec')
-
             '''
             if not self.twml.check_requirements():
                 return
@@ -1052,7 +1049,8 @@ class flameTimewarpML(flameMenuApp):
                     return
 
         def after_show(self):
-            pass
+            missing_packages = self.twml.check_requirements(self.twml.requirements)
+            pprint (missing_packages)
             # self.init_torch()
             # self.process_current_frame()
 
@@ -1972,6 +1970,11 @@ class flameTimewarpML(flameMenuApp):
         self.threads = True
         self.temp_library = None
         
+        self.requirements = [
+            'numpy',
+            'torch'
+        ]
+
         # this enables fallback to CPU on Macs
         os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
 
@@ -2046,29 +2049,26 @@ class flameTimewarpML(flameMenuApp):
 
         return menu
 
-    def check_requirements(self):        
-        def import_packages():
-            import tensorflow as tf
-            import torch
-            import numpy
-
+    def check_requirements(self, requirements):
         sys.path_importer_cache.clear()
 
-        try:
-            import_packages()
-            return True
-        except:
+        def import_packages(packages):
+            missing_packages = []
+
+            for package in packages:
+                try:
+                    __import__(package)
+                except:
+                    missing_packages.append(package)
+
+            return missing_packages
+
+        if import_packages(requirements):
             if not self.framework.site_packages_folder in sys.path:
                 sys.path.append(self.framework.site_packages_folder)
-            try:
-                import_packages()
-                return True
-            except Exception as e:
-                print (pformat(e))
-                # sys.path =  filter (lambda a: not a.startswith('/System'), sys.path)
-                if self.install_requirements():
-                    return True
-        return False
+                return import_packages()
+        else:
+            return []
 
     def install_requirements(self):
         requirements = [
