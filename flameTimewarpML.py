@@ -2061,13 +2061,12 @@ class flameTimewarpML(flameMenuApp):
                 except:
                     missing_packages.append(package)
 
-            pprint (missing_packages)
             return missing_packages
 
         if import_packages(requirements):
             if not self.framework.site_packages_folder in sys.path:
                 sys.path.append(self.framework.site_packages_folder)
-                return import_packages(requirements)
+            return import_packages(requirements)
         else:
             return []
 
