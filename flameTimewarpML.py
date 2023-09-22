@@ -306,7 +306,6 @@ class flameAppFramework(object):
             return False
 
     def unpack_bundle(self, bundle_path):
-        pprint (bundle_path)
         start = time.time()
         script_file_name, ext = os.path.splitext(os.path.abspath(__file__))
         script_file_name += '.py'
@@ -1976,12 +1975,14 @@ class flameTimewarpML(flameMenuApp):
         if not self.flame:
             return []
         
+        '''
         if self.check_bundle_id:
             if not os.path.isfile(
                 os.path.join(
                     self.framework.bundle_path,
                     'bundle_id')):
                 return []
+        '''
         
         menu = {'actions': []}
         menu['name'] = self.menu_group_name
