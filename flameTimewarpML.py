@@ -876,13 +876,9 @@ class flameTimewarpML(flameMenuApp):
         def __init__(self, selection, **kwargs):
             super().__init__()
 
-            print ('hello from progress init')
-
             self.mode = kwargs.get('mode', 'Timewarp')
             self.twml = kwargs.get('parent')
             self.app_name = self.twml.app_name
-
-            print (f'mode: {self.mode}')
 
             # startup UI in the very beginning
             ### start of UI window sequence
@@ -1029,8 +1025,6 @@ class flameTimewarpML(flameMenuApp):
                         
             self.current_frame = min(self.frames_map.keys())
             '''
-
-            print ('end of Progress init')
 
         def processEvents(self):
             QtWidgets.QApplication.instance().processEvents()
@@ -1835,7 +1829,7 @@ class flameTimewarpML(flameMenuApp):
             # super().closeEvent(event)
 
         def close_application(self):
-            print ('close application')
+            print (f'close application {self.app_name}')
             import flame
 
             self.threads = False
