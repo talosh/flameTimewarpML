@@ -1835,6 +1835,13 @@ class flameTimewarpML(flameMenuApp):
             self.message_thread.join()
             
             result_clip = None
+            if not self.twml.temp_library:
+                self.twml.temp_library = None
+                self.twml.progress = None
+                self.twml.torch = None
+                self.deleteLater()
+                return False
+
             self.twml.temp_library.acquire_exclusive_access()
 
             flame.execute_shortcut('Save Project')
