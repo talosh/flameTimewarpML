@@ -947,11 +947,13 @@ class flameTimewarpML(flameMenuApp):
             desktop = QtWidgets.QApplication.desktop()
             screen_geometry = desktop.screenGeometry(desktop.primaryScreen())
 
-            max_width = screen_geometry.width() * 0.8
-            max_height = screen_geometry.height() * 0.8
+            max_width = screen_geometry.width() * 0.88
+            max_height = screen_geometry.height() * 0.88
 
             desired_width = W
-            desired_height = (1 + (1/4)) * H + (24 + 28) # Coeeficient to accomodate additional rows: (1 + 1/n) * H + ttile_h + lower_stripe_h
+            # Coeeficient to accomodate additional rows: 
+            # (1 + 1/n) * H + ttile_h + title_spacing + lower_stripe_h + lower_stripe_spacing
+            desired_height = (1 + (1/4)) * H + (24 + 18 + 28 + 10) 
                                                             
             scale_factor = min(max_width / desired_width, max_height / desired_height)
             scaled_width = desired_width * scale_factor
