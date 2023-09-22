@@ -1959,10 +1959,12 @@ class flameTimewarpML(flameMenuApp):
         os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
 
     def __getattr__(self, name):
-        def method(*args, **kwargs):
-            if name == 'Timewarp':
+        if name == 'Timewarp':
+            def method(*args, **kwargs):
                 return self.Progress(args[0], parent = self, mode = 'Timewarp')
-        return method
+            return method
+        else:
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
     def build_menu(self):
         def scope_clip(selection):
