@@ -876,9 +876,13 @@ class flameTimewarpML(flameMenuApp):
         def __init__(self, selection, **kwargs):
             super().__init__()
 
+            print ('hello from progress init')
+
             self.mode = kwargs.get('mode', 'Timewarp')
             self.twml = kwargs.get('parent')
             self.app_name = self.twml.app_name
+
+            print (f'mode: {self.mode}')
 
             # startup UI in the very beginning
             ### start of UI window sequence
