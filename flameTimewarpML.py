@@ -938,13 +938,11 @@ class flameTimewarpML(flameMenuApp):
             # calculate window dimentions
 
             try:
-                H = selection[0].height
                 W = selection[0].width
+                H = selection[0].height
             except:
                 W = 1280
                 H = 720
-
-            print (f'selection HxW: {H}x{W}')
             
             desktop = QtWidgets.QApplication.desktop()
             screen_geometry = desktop.screenGeometry(desktop.primaryScreen())
@@ -952,8 +950,10 @@ class flameTimewarpML(flameMenuApp):
             max_width = screen_geometry.width() * 0.8
             max_height = screen_geometry.height() * 0.8
 
+            print ()
+
             desired_width = W  # or whatever the aspect ratio calculation yields
-            desired_height = 1.88 * H  # Coeeficient to accomodate additional rows
+            desired_height = 1.25 * H  # Coeeficient to accomodate additional rows
 
             scale_factor = min(max_width / desired_width, max_height / desired_height)
             scaled_width = desired_width * scale_factor
