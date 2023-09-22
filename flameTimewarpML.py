@@ -975,6 +975,7 @@ class flameTimewarpML(flameMenuApp):
             self.setWindowTitle(self.app_name)
             self.setFixedSize(self.size())
             self.show()
+            QtCore.QTimer.singleShot(0, self.after_show)
 
             # set up message thread
             self.threads = True
@@ -984,7 +985,6 @@ class flameTimewarpML(flameMenuApp):
             self.message_thread.start()
 
             # QtCore.QTimer.singleShot(0, self.init_torch)
-            QtCore.QTimer.singleShot(0, self.after_show)
 
             ### end of UI window sequence
 
