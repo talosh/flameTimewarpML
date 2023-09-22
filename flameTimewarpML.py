@@ -177,11 +177,13 @@ class flameAppFramework(object):
             'site-packages'
         )
 
+        '''
         if not self.check_bundle_id():
             threading.Thread(
                 target=self.unpack_bundle,
                 args=(os.path.dirname(self.site_packages_folder), )
             ).start()
+        '''
 
     def log(self, message):
         try:
