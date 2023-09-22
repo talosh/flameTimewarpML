@@ -972,6 +972,7 @@ class flameTimewarpML(flameMenuApp):
             self.move(screen_center.x() - scaled_width // 2, screen_center.y() - scaled_height // 2 - 100)
 
             # show window and fix its size
+            self.setWindowTitle(self.app_name)
             self.show()
             self.processEvents()
 
