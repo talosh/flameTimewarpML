@@ -973,8 +973,6 @@ class flameTimewarpML(flameMenuApp):
 
             # show window and fix its size
             self.setWindowTitle(self.app_name)
-            QtWidgets.QApplication.instance().processEvents()
-
             self.show()
             self.setFixedSize(self.size())
             QtCore.QTimer.singleShot(0, self.after_show)
