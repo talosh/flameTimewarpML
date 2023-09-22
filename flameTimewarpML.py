@@ -655,7 +655,7 @@ class flameTimewarpML(flameMenuApp):
                 Progress.setObjectName("Progress")
                 Progress.setStyleSheet("#Progress {background-color: #242424;} #frame {border: 1px solid #474747; border-radius: 4px;}\n")
                                 
-                self.verticalLayout = QtWidgets.QVBoxLayout(Progress)  # Change from horizontal layout to vertical layout
+                self.verticalLayout = QtWidgets.QVBoxLayout(Progress)
                 self.verticalLayout.setSpacing(0)
                 self.verticalLayout.setContentsMargins(0, 0, 0, 0)
                 self.verticalLayout.setObjectName("verticalLayout")
@@ -666,7 +666,7 @@ class flameTimewarpML(flameMenuApp):
                 self.stripe_widget.setFixedHeight(24)  # Adjust this value to change the height of the stripe
 
                 # Create a label inside the stripe widget
-                self.stripe_label = QtWidgets.QLabel("Your text here")  # Replace this with the text you want on the stripe
+                self.stripe_label = QtWidgets.QLabel("TimewarpML")  # Replace this with the text you want on the stripe
                 self.stripe_label.setStyleSheet("color: #cbcbcb;")  # Change this to set the text color
 
                 # Create a layout for the stripe widget and add the label to it
@@ -681,8 +681,9 @@ class flameTimewarpML(flameMenuApp):
                 # Add the stripe widget to the top of the main window's layout
                 self.verticalLayout.addWidget(self.stripe_widget)
                 self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
-
-                self.src_horisontal_layout = QtWidgets.QHBoxLayout(Progress)  # Change from horizontal layout to vertical layout
+                
+                '''
+                self.src_horisontal_layout = QtWidgets.QHBoxLayout(Progress)
                 self.src_horisontal_layout.setSpacing(0)
                 self.src_horisontal_layout.setContentsMargins(0, 0, 0, 0)
                 self.src_horisontal_layout.setObjectName("srcHorisontalLayout")
@@ -716,6 +717,7 @@ class flameTimewarpML(flameMenuApp):
 
                 self.verticalLayout.addLayout(self.src_horisontal_layout)
                 self.verticalLayout.setStretchFactor(self.src_horisontal_layout, 4)
+                '''
 
                 self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
 
