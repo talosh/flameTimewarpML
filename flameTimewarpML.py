@@ -496,7 +496,7 @@ class flameMenuApp(object):
                 self.flame = None
 
         if self.flame:
-            self.flame.execute_shortcut('Rescan Python Hooks')
+            # self.flame.execute_shortcut('Rescan Python Hooks')
             self.log('Rescan Python Hooks')
 
     def get_export_preset_fields(self, preset):
