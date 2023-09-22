@@ -2061,6 +2061,7 @@ class flameTimewarpML(flameMenuApp):
                 except:
                     missing_packages.append(package)
 
+            pprint (missing_packages)
             return missing_packages
 
         if import_packages(requirements):
