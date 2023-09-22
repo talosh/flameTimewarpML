@@ -953,7 +953,7 @@ class flameTimewarpML(flameMenuApp):
             print ()
 
             desired_width = W  # or whatever the aspect ratio calculation yields
-            desired_height = 1.25 * H  # Coeeficient to accomodate additional rows
+            desired_height = 1 + (1/4) * H + 100 # Coeeficient to accomodate additional rows
 
             scale_factor = min(max_width / desired_width, max_height / desired_height)
             scaled_width = desired_width * scale_factor
