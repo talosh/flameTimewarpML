@@ -335,6 +335,8 @@ class flameAppFramework(object):
         del script
         if not payload:
             return False
+        
+        pprint (payload)
 
         bundle_backup_folder = ''
         if os.path.isdir(bundle_path):
