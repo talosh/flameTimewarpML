@@ -1490,6 +1490,7 @@ class flameTimewarpML(flameMenuApp):
                     return
 
         def after_show(self):
+            self.message_queue.put({'type': 'info', 'message': 'Checking requirements...'})
             missing_requirements = self.twml.check_requirements(self.twml.requirements)
             if missing_requirements:
                 python_executable_path = sys.executable
