@@ -662,10 +662,9 @@ class flameTimewarpML(flameMenuApp):
 
         class Ui_Progress(object):
 
+            from typing import Union, List, Dict, Optional, Callable
+
             class FlameSlider(QtWidgets.QLineEdit):
-
-                from typing import Union, List, Dict, Optional, Callable
-
                 def __init__(self, start_value: int, min_value: int, max_value: int, value_is_float: Optional[bool]=False, slider_width: Optional[int]=110):
                     super(FlameSlider, self).__init__()
 
