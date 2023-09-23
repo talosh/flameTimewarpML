@@ -8116,8 +8116,8 @@ def app_initialized(project_name):
     app_initialized.__dict__["waitCursor"] = False
 
     if not app_framework:
-        app_framework = flameAppFramework(app_name = app_name)
         print ('PYTHON\t: %s initializing' % app_framework.bundle_name)
+        app_framework = flameAppFramework(app_name = app_name)
     if not apps:
         load_apps(apps, app_framework)
 
