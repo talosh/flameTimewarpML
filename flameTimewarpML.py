@@ -663,7 +663,7 @@ class flameTimewarpML(flameMenuApp):
         class Ui_Progress(object):
 
             class FlameSlider(QtWidgets.QLineEdit):
-                def __init__():
+                def __init__(self):
                     print ('huipizda')
 
             class FlameSlider2(QtWidgets.QLineEdit):
