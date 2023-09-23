@@ -2558,7 +2558,14 @@ class flameTimewarpML(flameMenuApp):
             missing_requirements = []
 
             for package_name in packages_by_name.keys():
-                try:
+                if self.progress:
+                    try:
+                        self.progress.message_queue.put(
+                            {'type': 'info', 'message': f'Checking requirements... importing {package_name}'}
+                        )
+                    except:
+                        pass
+                try:                        
                     __import__(package_name)
                 except:
                     missing_requirements.append(packages_by_name.get(package_name))
