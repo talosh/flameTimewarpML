@@ -1252,7 +1252,7 @@ class flameTimewarpML(flameMenuApp):
                 # TW Speed test field:
                 if Progress.tw_speed:
                     self.tw_speed_input = self.FlameSlider(Progress.tw_speed, -9999, 9999)
-                    self.tw_speed_input.setContentsMargins(10, 4, 10, 4)
+                    # self.tw_speed_input.setContentsMargins(10, 4, 10, 4)
                     bottom_layout.addWidget(self.tw_speed_input, alignment=QtCore.Qt.AlignRight)
                     bottom_layout.addSpacing(4)
 
