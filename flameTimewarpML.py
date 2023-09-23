@@ -668,19 +668,6 @@ class flameTimewarpML(flameMenuApp):
                     slider_width = 110
                     # super().__init__()
 
-                    # Check argument types
-
-                    if not isinstance(start_value, (int, float)):
-                        raise TypeError('FlameSlider: start_value must be integer.')
-                    if not isinstance(min_value, int):
-                        raise TypeError('FlameSlider: min_value must be integer.')
-                    if not isinstance(max_value, int):
-                        raise TypeError('FlameSlider: max_value must be integer.')
-                    if not isinstance(value_is_float, bool):
-                        raise TypeError('FlameSlider: value_is_float must be a boolean.')
-                    if not isinstance(max_value, int):
-                        raise TypeError('FlameSlider: slider_width must be integer.')
-
                     # Build slider
 
                     self.setAlignment(QtCore.Qt.AlignCenter)
