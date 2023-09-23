@@ -679,14 +679,15 @@ class flameTimewarpML(flameMenuApp):
                     else:
                         self.spinbox_type = 'Integer'
 
-                    print ('huipizda')
-                    return
-
                     self.min = min_value
                     self.max = max_value
                     self.steps = 1
                     self.value_at_press = None
                     self.pos_at_press = None
+
+                    print ('zaebis')
+                    return
+
                     self.setValue(start_value)
                     self.setReadOnly(True)
                     self.textChanged.connect(self.value_changed)
