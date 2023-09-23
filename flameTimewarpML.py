@@ -1502,7 +1502,7 @@ class flameTimewarpML(flameMenuApp):
                     pass
 
                 missing_req_string = '\n' + ', \n'.join(missing_requirements)
-                message_string = f'{self.app_name} is unable to import:\n{missing_req_string}\n\n'
+                message_string = f'Unable to import:\n{missing_req_string}\n\n'
                 message_string += f"Make sure reqiured packages are available to Flame's built-in python interpreter.\n"
                 message_string += f'To install manually use:\n"{python_executable_path} -m pip install <package-name>"'
                 self.message_queue.put(
