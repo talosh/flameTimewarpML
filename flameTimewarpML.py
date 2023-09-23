@@ -283,9 +283,10 @@ class flameAppFramework(object):
 
     def check_bundle_id(self):
         bundle_id_file_path = os.path.join(
-            self.bundle_path,
+            os.path.dirname(self.site_packages_folder),
             'bundle_id'
             )
+
         bundle_id = self.version
 
         if (os.path.isdir(self.bundle_path) and os.path.isfile(bundle_id_file_path)):
