@@ -140,7 +140,7 @@ class flameAppFramework(object):
             self.hostname,
         )
 
-        self.log('[%s] waking up' % self.__class__.__name__)
+        self.log_debug('[%s] waking up' % self.__class__.__name__)
         self.load_prefs()
 
         # menu auto-refresh defaults
