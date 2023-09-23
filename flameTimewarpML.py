@@ -1065,6 +1065,7 @@ class flameTimewarpML(flameMenuApp):
                 missing_req_string = '\n' + ', \n'.join(missing_requirements)
                 message_string = f'{self.app_name} requires {missing_req_string}\ninstalled to be able to work correctly.\n'
                 message_string += f"Please make sure requred packages are installed and available to import with Flame's built-in python interpreter."
+                message_string += f'Try installing with "{sys.executable} -m pip install <package-name>"'
                 self.message_queue.put(
                     {'type': 'mbox',
                     'message': message_string,
