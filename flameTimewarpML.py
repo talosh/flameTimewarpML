@@ -1510,6 +1510,7 @@ class flameTimewarpML(flameMenuApp):
                     'message': message_string,
                     'action': self.close_application}
                 )
+                return
 
             # self.init_torch()
             # self.process_current_frame()
