@@ -309,7 +309,7 @@ class flameAppFramework(object):
         start = time.time()
         script_file_name, ext = os.path.splitext(os.path.abspath(__file__))
         script_file_name += '.py'
-        self.log('script file: %s' % script_file_name)
+        # self.log('script file: %s' % script_file_name)
         script = None
         payload = None
 
