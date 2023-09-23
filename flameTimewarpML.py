@@ -1058,7 +1058,11 @@ class flameTimewarpML(flameMenuApp):
         def after_show(self):
             missing_packages = self.twml.check_requirements(self.twml.requirements)
             if missing_packages:
-                pprint (missing_packages)
+                
+                self.message_queue.put(
+                    {'type': 'mbox',
+                    'message': message_string}
+                )
             # self.init_torch()
             # self.process_current_frame()
 
@@ -1353,7 +1357,9 @@ class flameTimewarpML(flameMenuApp):
                     self.message_queue.task_done()
                     time.sleep(timeout)
                     continue
+
                 item_type = item.get('type')
+
                 if not item_type:
                     self.message_queue.task_done()
                     time.sleep(timeout)
@@ -1370,6 +1376,8 @@ class flameTimewarpML(flameMenuApp):
                     self.updateFlowImage.emit(item)
                 elif item_type == 'setText':
                     self.setText.emit(item)
+                elif item_type == 'mbox':
+                    self.showMessageBox.emit(item.get('message'))
                 else:
                     self.message_queue.task_done()
                     time.sleep(timeout)
