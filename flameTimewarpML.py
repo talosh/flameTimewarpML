@@ -658,7 +658,7 @@ class flameTimewarpML(flameMenuApp):
         updateInterfaceImage = QtCore.Signal(dict)
         updateFlowImage = QtCore.Signal(dict)
         setText = QtCore.Signal(dict)
-        showMessageBox = QtCore.Signal(str)
+        showMessageBox = QtCore.Signal(dict)
 
         class Ui_Progress(object):
             def setupUi(self, Progress):
@@ -1067,9 +1067,9 @@ class flameTimewarpML(flameMenuApp):
                 message_string += f"Please make sure requred packages are installed and available to import with Flame's built-in python interpreter."
                 self.message_queue.put(
                     {'type': 'mbox',
-                    'message': message_string}
+                    'message': message_string,
+                    'action': self.close_application}
                 )
-                self.close_application()
 
             # self.init_torch()
             # self.process_current_frame()
@@ -1385,7 +1385,7 @@ class flameTimewarpML(flameMenuApp):
                 elif item_type == 'setText':
                     self.setText.emit(item)
                 elif item_type == 'mbox':
-                    self.showMessageBox.emit(item.get('message'))
+                    self.showMessageBox.emit(item)
                 else:
                     self.message_queue.task_done()
                     time.sleep(timeout)
@@ -1666,7 +1666,10 @@ class flameTimewarpML(flameMenuApp):
                 getattr(self.ui, widget_name).setText(text)
             self.processEvents()
 
-        def on_showMessageBox(self, message):
+        def on_showMessageBox(self, item):
+            message = item.get('message')
+            action = item.get('action', None)
+
             mbox = QtWidgets.QMessageBox()
             mbox.setWindowFlags(QtCore.Qt.Tool)
             mbox.setWindowTitle(self.app_name)
@@ -1689,8 +1692,12 @@ class flameTimewarpML(flameMenuApp):
                     color: #d9d9d9
                 }
             """)
+
             mbox.setText(message)
             mbox.exec_()
+
+            if action and callable(action):
+                action()
 
         def save_result_frame(self, image_data, frame_number):
             import flame
