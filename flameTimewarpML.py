@@ -1952,7 +1952,8 @@ class flameTimewarpML(flameMenuApp):
             self.twml.temp_library = None
             self.twml.progress = None
             self.twml.torch = None
-            self.deleteLater()
+
+            self.deleteLater() # close Progress window after all events are processed
 
             '''
             def rescan_hooks():
