@@ -667,7 +667,7 @@ class flameTimewarpML(flameMenuApp):
                 from typing import Union, List, Dict, Optional, Callable
 
                 def __init__(self, start_value: int, min_value: int, max_value: int, value_is_float: Optional[bool]=False, slider_width: Optional[int]=110):
-                    super().__init__()
+                    super(FlameSlider, self).__init__()
 
                     # Check argument types
 
