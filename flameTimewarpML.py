@@ -334,7 +334,9 @@ class flameAppFramework(object):
         if not payload:
             return False
         
-        pprint (payload)
+        if payload == 'BUNDLE_PAYLOAD\n':
+            self.log (f'No bundle found in {__file__}')
+            return False
 
         bundle_backup_folder = ''
         if os.path.isdir(bundle_path):
