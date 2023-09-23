@@ -663,6 +663,10 @@ class flameTimewarpML(flameMenuApp):
         class Ui_Progress(object):
 
             class FlameSlider(QtWidgets.QLineEdit):
+                def __init__():
+                    print ('huipizda')
+
+            class FlameSlider2(QtWidgets.QLineEdit):
                 '''
                 Custom Qt Flame Slider Widget
 
@@ -683,8 +687,6 @@ class flameTimewarpML(flameMenuApp):
 
                 def __init__(self, start_value: int, min_value: int, max_value: int, value_is_float: Optional[bool]=False, slider_width: Optional[int]=110):
                     super(FlameSlider, self).__init__()
-                    print ('huipizda')
-                    return
 
                     # Check argument types
 
@@ -1282,7 +1284,8 @@ class flameTimewarpML(flameMenuApp):
                 bottom_layout.setStretchFactor(self.info_label, 1)
 
                 # TW Speed test field:
-                self.tw_speed_input = self.FlameSlider(0, -20, 20, True)
+                self.tw_speed_input = self.FlameSlider()
+                # self.tw_speed_input = self.FlameSlider(0, -20, 20, True)
                 # bottom_layout.addWidget(self.tw_speed_input, alignment=QtCore.Qt.AlignRight)
 
                 # mode selector button
