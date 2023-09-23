@@ -666,7 +666,7 @@ class flameTimewarpML(flameMenuApp):
                 def __init__(self, start_value: int, min_value: int, max_value: int):
                     value_is_float = True
                     slider_width = 110
-                    # super().__init__()
+                    super(FlameSlider, self).__init__()
 
                     # Build slider
 
