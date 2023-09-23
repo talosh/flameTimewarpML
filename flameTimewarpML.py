@@ -694,10 +694,6 @@ class flameTimewarpML(flameMenuApp):
                                     'QToolTip {color: rgb(170, 170, 170); background-color: rgb(71, 71, 71); border: 10px solid rgb(71, 71, 71)}')
                     self.clearFocus()
 
-                    print ('zaebis')
-                    return
-
-
                     class Slider(QtWidgets.QSlider):
 
                         def __init__(self, start_value, min_value, max_value, slider_width):
