@@ -684,10 +684,6 @@ class flameTimewarpML(flameMenuApp):
                     self.steps = 1
                     self.value_at_press = None
                     self.pos_at_press = None
-
-                    print ('zaebis')
-                    return
-
                     self.setValue(start_value)
                     self.setReadOnly(True)
                     self.textChanged.connect(self.value_changed)
@@ -697,6 +693,10 @@ class flameTimewarpML(flameMenuApp):
                                     'QLineEdit:disabled {color: rgb(106, 106, 106); background-color: rgb(55, 65, 75)}'
                                     'QToolTip {color: rgb(170, 170, 170); background-color: rgb(71, 71, 71); border: 10px solid rgb(71, 71, 71)}')
                     self.clearFocus()
+
+                    print ('zaebis')
+                    return
+
 
                     class Slider(QtWidgets.QSlider):
 
