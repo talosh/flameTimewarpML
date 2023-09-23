@@ -35,6 +35,10 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 app_name = 'flameTimewarpML'
+requirements = [
+    'numpy>=1.16',
+    'torch>=1.3.0'
+]
 __version__ = 'v0.5.0.dev.004'
 
 class flameAppFramework(object):
@@ -1058,7 +1062,7 @@ class flameTimewarpML(flameMenuApp):
         def after_show(self):
             missing_packages = self.twml.check_requirements(self.twml.requirements)
             if missing_packages:
-                
+
                 self.message_queue.put(
                     {'type': 'mbox',
                     'message': message_string}
@@ -2013,10 +2017,7 @@ class flameTimewarpML(flameMenuApp):
         self.threads = True
         self.temp_library = None
         
-        self.requirements = [
-            'numpy',
-            'torch'
-        ]
+        self.requirements = requirements
 
         # this enables fallback to CPU on Macs
         os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
