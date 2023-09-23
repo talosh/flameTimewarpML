@@ -338,7 +338,7 @@ class flameAppFramework(object):
         if not payload:
             return False
         
-        if payload == 'BUNDLE_PAYLOAD\n':
+        if payload.startswith('BUNDLE_PAYLO'):
             self.log(f'No payload attached to {__file__}')
             self.log('Nothing to unpack')
             return False
