@@ -889,6 +889,7 @@ class flameTimewarpML(flameMenuApp):
             self.mode = kwargs.get('mode', 'Timewarp')
             self.twml = kwargs.get('parent')
             self.app_name = self.twml.app_name
+            self.version = self.twml.version
 
             # startup UI in the very beginning
             ### start of UI window sequence
@@ -1995,6 +1996,7 @@ class flameTimewarpML(flameMenuApp):
                 'trained_models', 'default', 'v2.3.model'
                 )
 
+        self.version = __version__
         self.prefs['version'] = __version__
         self.framework.save_prefs()
 
