@@ -41,6 +41,11 @@ if not os.path.isdir(bundle_folder):
     sys.exit()
 
 platform_folders = [d for d in os.listdir(platform_folder) if os.path.isdir(os.path.join(platform_folder, d))]
+if not platform_folders:
+    print (f'no platformms defined in {platform_folder}')
+    print ('nothing to bundle')
+    sys.exit()
+
 if args.platform == 'all':
     platforms = platform_folders
 elif args.platform in platform_folders:
