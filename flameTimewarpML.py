@@ -1067,6 +1067,9 @@ class flameTimewarpML(flameMenuApp):
                     import flame
                     flame_version = flame.get_version()
                     python_executable_path = f'/opt/Autodesk/python/{flame_version}/bin/python'
+                except:
+                    pass
+
                 missing_req_string = '\n' + ', \n'.join(missing_requirements)
                 message_string = f'{self.app_name} is unable to import:\n{missing_req_string}\n\nThose packages are required.\n'
                 message_string += f"Please make sure requred packages are available to import with Flame's built-in python interpreter.\n"
