@@ -811,7 +811,6 @@ class flameTimewarpML(flameMenuApp):
 
                 self.verticalLayout.addSpacing(4)  # Add a 4-pixel space
 
-
                 # Create a new horizontal layout for the bottom of the window
                 bottom_layout = QtWidgets.QHBoxLayout()
 
@@ -827,6 +826,10 @@ class flameTimewarpML(flameMenuApp):
                 self.info_label.setStyleSheet("color: #cbcbcb;")
                 bottom_layout.addWidget(self.info_label)
                 bottom_layout.setStretchFactor(self.info_label, 1)
+
+                # TW Speed test field:
+                self.speed_spinbox = QtWidgets.QSpinBox(self)
+                bottom_layout.addWidget(self.speed_spinbox, alignment=QtCore.Qt.AlignRight)
 
                 # mode selector button
                 self.mode_selector = QtWidgets.QPushButton('Normal')
@@ -898,6 +901,7 @@ class flameTimewarpML(flameMenuApp):
             self.min_frame = 1
             self.max_frame = 99
             self.current_frame = 1
+            self.tw_speed = 100
 
             # mouse position on a press event
             self.mousePressPos = None
