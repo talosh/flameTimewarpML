@@ -1057,8 +1057,7 @@ class flameTimewarpML(flameMenuApp):
         def after_show(self):
             missing_packages = self.twml.check_requirements(self.twml.requirements)
             if missing_packages:
-
-            pprint (missing_packages)
+                pprint (missing_packages)
             # self.init_torch()
             # self.process_current_frame()
 
