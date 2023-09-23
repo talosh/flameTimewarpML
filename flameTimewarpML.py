@@ -1668,6 +1668,7 @@ class flameTimewarpML(flameMenuApp):
         def on_showMessageBox(self, message):
             mbox = QtWidgets.QMessageBox()
             mbox.setWindowFlags(QtCore.Qt.Tool)
+            mbox.setWindowTitle(self.app_name)
             mbox.setStyleSheet("""
                 QMessageBox {
                     background-color: #313131;
