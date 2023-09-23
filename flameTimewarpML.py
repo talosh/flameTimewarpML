@@ -982,7 +982,7 @@ class flameTimewarpML(flameMenuApp):
             self.move(screen_center.x() - scaled_width // 2, screen_center.y() - scaled_height // 2 - 100)
 
             # show window and fix its size
-            self.setWindowTitle(self.app_name)
+            self.setWindowTitle(self.app_name + ' ' + self.version)
             self.show()
             self.setFixedSize(self.size())
             QtCore.QTimer.singleShot(0, self.after_show)
@@ -1072,7 +1072,7 @@ class flameTimewarpML(flameMenuApp):
 
                 missing_req_string = '\n' + ', \n'.join(missing_requirements)
                 message_string = f'{self.app_name} is unable to import:\n{missing_req_string}\n\n'
-                message_string += f"Please make sure requred packages are available to import by Flame's built-in python interpreter.\n"
+                message_string += f"Make sure reqiured packages are available to Flame's built-in python interpreter.\n"
                 message_string += f'To install manually use:\n"{python_executable_path} -m pip install <package-name>"'
                 self.message_queue.put(
                     {'type': 'mbox',
