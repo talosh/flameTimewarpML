@@ -1251,7 +1251,7 @@ class flameTimewarpML(flameMenuApp):
 
                 # TW Speed test field:
                 self.tw_speed_input = self.FlameSlider(0, -20, 20)
-                # bottom_layout.addWidget(self.tw_speed_input, alignment=QtCore.Qt.AlignRight)
+                bottom_layout.addWidget(self.tw_speed_input, alignment=QtCore.Qt.AlignRight)
 
                 # mode selector button
                 self.mode_selector = QtWidgets.QPushButton('Normal')
