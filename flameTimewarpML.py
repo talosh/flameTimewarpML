@@ -667,11 +667,8 @@ class flameTimewarpML(flameMenuApp):
                     value_is_float = True
                     slider_width = 110
                     super().__init__()
-                    print ('huipizda')
-                    return
 
                     # Build slider
-
                     self.setAlignment(QtCore.Qt.AlignCenter)
                     self.setMinimumHeight(28)
                     self.setMinimumWidth(slider_width)
@@ -681,6 +678,9 @@ class flameTimewarpML(flameMenuApp):
                         self.spinbox_type = 'Float'
                     else:
                         self.spinbox_type = 'Integer'
+
+                    print ('huipizda')
+                    return
 
                     self.min = min_value
                     self.max = max_value
