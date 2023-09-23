@@ -16,9 +16,6 @@ import atexit
 import hashlib
 import pickle
 
-from typing import Union, List, Dict, Optional, Callable
-
-
 from PySide2 import QtWidgets, QtCore, QtGui
 
 from adsk.libwiretapPythonClientAPI import (
@@ -666,8 +663,10 @@ class flameTimewarpML(flameMenuApp):
         class Ui_Progress(object):
 
             class FlameSlider(QtWidgets.QLineEdit):
-                def __init__(self, start_value: int, min_value: int, max_value: int, value_is_float: Optional[bool]=False, slider_width: Optional[int]=110):
-                    super(FlameSlider, self).__init__()
+                def __init__(self, start_value: int, min_value: int, max_value: int):
+                    value_is_float = True
+                    slider_width = 110
+                    super().__init__()
 
                     # Check argument types
 
