@@ -16,6 +16,9 @@ import atexit
 import hashlib
 import pickle
 
+from typing import Union, List, Dict, Optional, Callable
+
+
 from PySide2 import QtWidgets, QtCore, QtGui
 
 from adsk.libwiretapPythonClientAPI import (
@@ -661,8 +664,6 @@ class flameTimewarpML(flameMenuApp):
         showMessageBox = QtCore.Signal(dict)
 
         class Ui_Progress(object):
-
-            from typing import Union, List, Dict, Optional, Callable
 
             class FlameSlider(QtWidgets.QLineEdit):
                 def __init__(self, start_value: int, min_value: int, max_value: int, value_is_float: Optional[bool]=False, slider_width: Optional[int]=110):
