@@ -651,6 +651,7 @@ class flameTimewarpML(flameMenuApp):
         updateInterfaceImage = QtCore.Signal(dict)
         updateFlowImage = QtCore.Signal(dict)
         setText = QtCore.Signal(dict)
+        showMessageBox = QtCore.pyqtSignal(str)
 
         class Ui_Progress(object):
             def setupUi(self, Progress):
@@ -903,6 +904,7 @@ class flameTimewarpML(flameMenuApp):
             self.updateInterfaceImage.connect(self.on_UpdateInterfaceImage)
             self.updateFlowImage.connect(self.on_UpdateFlowImage)
             self.setText.connect(self.on_setText)
+            self.showMessageBox.connect(self.on_showMessageBox)
 
             # load in the UI
             self.ui = self.Ui_Progress()
@@ -1052,6 +1054,8 @@ class flameTimewarpML(flameMenuApp):
 
         def after_show(self):
             missing_packages = self.twml.check_requirements(self.twml.requirements)
+            if missing_packages:
+
             pprint (missing_packages)
             # self.init_torch()
             # self.process_current_frame()
@@ -1643,6 +1647,31 @@ class flameTimewarpML(flameMenuApp):
             if hasattr(self.ui, widget_name):
                 getattr(self.ui, widget_name).setText(text)
             self.processEvents()
+
+        def on_showMessageBox(self, message):
+            mbox = QtWidgets.QMessageBox()
+            mbox.setWindowFlags(QtCore.Qt.Tool)
+            mbox.setStyleSheet("""
+                QMessageBox {
+                    background-color: #313131;
+                    color: #9a9a9a;
+                    text-align: center;
+                }
+                QMessageBox QPushButton {
+                    width: 80px;
+                    height: 24px;
+                    color: #9a9a9a;
+                    background-color: #424142;
+                    border-top: 1px inset #555555;
+                    border-bottom: 1px inset black
+                }
+                QMessageBox QPushButton:pressed {
+                    font:italic;
+                    color: #d9d9d9
+                }
+            """)
+            mbox.setText(message)
+            mbox.exec_()
 
         def save_result_frame(self, image_data, frame_number):
             import flame
