@@ -653,7 +653,7 @@ class flameTimewarpML(flameMenuApp):
         updateInterfaceImage = QtCore.Signal(dict)
         updateFlowImage = QtCore.Signal(dict)
         setText = QtCore.Signal(dict)
-        showMessageBox = QtCore.pyqtSignal(str)
+        showMessageBox = QtCore.Signal(str)
 
         class Ui_Progress(object):
             def setupUi(self, Progress):
