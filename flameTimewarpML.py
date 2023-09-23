@@ -1063,7 +1063,7 @@ class flameTimewarpML(flameMenuApp):
             missing_requirements = self.twml.check_requirements(self.twml.requirements)
             if missing_requirements:
                 missing_req_string = '\n' + ', \n'.join(missing_requirements)
-                message_string = f'{self.app_name} requires {missing_req_string}\n to be able to work correctly.\n'
+                message_string = f'{self.app_name} requires {missing_req_string}\ninstalled to be able to work correctly.\n'
                 message_string += f"Please make sure requred packages are installed and available to import with Flame's built-in python interpreter."
                 self.message_queue.put(
                     {'type': 'mbox',
