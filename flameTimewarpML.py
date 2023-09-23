@@ -1060,13 +1060,15 @@ class flameTimewarpML(flameMenuApp):
                     return
 
         def after_show(self):
-            missing_packages = self.twml.check_requirements(self.twml.requirements)
-            if missing_packages:
-
+            missing_requirements = self.twml.check_requirements(self.twml.requirements)
+            if missing_requirements:
+                pprint (missing_requirements)
+                '''
                 self.message_queue.put(
                     {'type': 'mbox',
                     'message': message_string}
                 )
+                '''
             # self.init_torch()
             # self.process_current_frame()
 
@@ -2096,21 +2098,23 @@ class flameTimewarpML(flameMenuApp):
     def check_requirements(self, requirements):
         sys.path_importer_cache.clear()
 
-        def import_packages(packages):
-            missing_packages = []
+        def import_required_packages(requirements):
+            import re
 
-            for package in packages:
+            packages_by_name = {re.split(r'[!<>=]', req)[0]: req for req in requirements}
+            missing_requirements = []
+
+            for package_name in packages_by_name.keys():
                 try:
-                    __import__(package)
+                    __import__(package_name)
                 except:
-                    missing_packages.append(package)
+                    missing_requirements.append(requirements.get(package_name))
+            return missing_requirements
 
-            return missing_packages
-
-        if import_packages(requirements):
+        if import_required_packages(requirements):
             if not self.framework.site_packages_folder in sys.path:
                 sys.path.append(self.framework.site_packages_folder)
-            return import_packages(requirements)
+            return import_required_packages(requirements)
         else:
             return []
 
