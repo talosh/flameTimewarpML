@@ -161,7 +161,7 @@ class flameAppFramework(object):
                 os.path.dirname(__file__)
             )
 
-        print (f'bundle folder: {bundle_folder}')
+        print (f'bundle folder: {self.bundle_folder}')
 
         self.bundle_location = '/var/tmp'
         self.bundle_path = os.path.join(
