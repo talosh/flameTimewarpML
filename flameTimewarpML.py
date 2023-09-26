@@ -178,7 +178,8 @@ class flameAppFramework(object):
 
         self.temp_fodler = os.path.join(
             '/var/tmp',
-            self.bundle_name
+            self.bundle_name,
+            'temp'
         )
         
         print (f'temp folder: {self.temp_fodler}')
