@@ -176,8 +176,12 @@ class flameAppFramework(object):
             'site-packages'
         )
 
-        pprint (f'site packages folder: {self.site_packages_folder}')
+        self.temp_fodler = os.path.join(
+            '/var/tmp',
+            self.bundle_name
+        )
         
+        print (f'temp folder: {self.temp_fodler}')
         '''
         self.bundle_path = os.path.join(
             self.bundle_folder,
