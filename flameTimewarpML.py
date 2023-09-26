@@ -38,6 +38,7 @@ app_name = 'flameTimewarpML'
 prefs_folder = os.getenv('FLAMETWML_PREFS')
 bundle_folder = os.getenv('FLAMETWML_BUNDLE')
 packages_folder = os.getenv('FLAMETWML_PACKAGES')
+temp_folder = os.getenv('FLAMETWML_TEMP')
 requirements = [
     'numpy>=1.16',
     'torch>=1.3.0'
@@ -176,7 +177,10 @@ class flameAppFramework(object):
             'site-packages'
         )
 
-        self.temp_fodler = os.path.join(
+        if temp_folder:
+            self.temp_fodler = temp_folder
+        else:
+            self.temp_fodler = os.path.join(
             '/var/tmp',
             self.bundle_name,
             'temp'
