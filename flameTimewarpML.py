@@ -301,7 +301,7 @@ class flameAppFramework(object):
 
         bundle_id = self.version
 
-        if (os.path.isdir(self.bundle_path) and os.path.isfile(bundle_id_file_path)):
+        if (os.path.isdir(self.bundle_folder) and os.path.isfile(bundle_id_file_path)):
             self.log('checking existing bundle id %s' % bundle_id_file_path)
             try:
                 with open(bundle_id_file_path, 'r') as bundle_id_file:
@@ -315,8 +315,8 @@ class flameAppFramework(object):
             except Exception as e:
                 self.log(pformat(e))
                 return False
-        elif not os.path.isdir(self.bundle_path):
-            self.log('bundle folder does not exist: %s' % self.bundle_path)
+        elif not os.path.isdir(self.bundle_folder):
+            self.log('bundle folder does not exist: %s' % self.bundle_folder)
             return False
         elif not os.path.isfile(bundle_id_file_path):
             self.log('bundle id file does not exist: %s' % bundle_id_file_path)
