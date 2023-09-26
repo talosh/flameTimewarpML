@@ -237,7 +237,7 @@ class flameAppFramework(object):
             self.log_debug('preferences loaded from %s' % prefs_file_path)
             self.log_debug('preferences contents:\n' + json.dumps(self.prefs, indent=4))
         except Exception as e:
-            self.log('unable to load preferences from %s' % prefs_file_path)
+            self.log_debug('unable to load preferences from %s' % prefs_file_path)
             self.log_debug(e)
 
         try:
@@ -246,7 +246,7 @@ class flameAppFramework(object):
             self.log_debug('preferences loaded from %s' % prefs_user_file_path)
             self.log_debug('preferences contents:\n' + json.dumps(self.prefs_user, indent=4))
         except Exception as e:
-            self.log('unable to load preferences from %s' % prefs_user_file_path)
+            self.log_debug('unable to load preferences from %s' % prefs_user_file_path)
             self.log_debug(e)
 
         try:
@@ -255,7 +255,7 @@ class flameAppFramework(object):
             self.log_debug('preferences loaded from %s' % prefs_global_file_path)
             self.log_debug('preferences contents:\n' + json.dumps(self.prefs_global, indent=4))
         except Exception as e:
-            self.log('unable to load preferences from %s' % prefs_global_file_path)
+            self.log_debug('unable to load preferences from %s' % prefs_global_file_path)
             self.log_debug(e)
 
         return True
