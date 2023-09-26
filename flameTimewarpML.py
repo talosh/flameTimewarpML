@@ -117,6 +117,8 @@ class flameAppFramework(object):
         self.prefs_global = {}
         self.debug = DEBUG
         
+        self.apps = []
+
         try:
             import flame
             self.flame = flame
@@ -152,8 +154,6 @@ class flameAppFramework(object):
         self.log_debug('[%s] waking up' % self.__class__.__name__)
         self.load_prefs()
 
-        self.apps = []
-
         if bundle_folder:
             self.bundle_folder = bundle_folder
         else:
@@ -161,22 +161,28 @@ class flameAppFramework(object):
                 os.path.dirname(__file__)
             )
 
-        print (f'bundle folder: {self.bundle_folder}')
+        if packages_folder:
+            self.packages_folder = packages_folder
+        else:
+            self.packages_folder = os.path.join(
+                self.bundle_folder,
+                'packages'
+            )
 
-        self.bundle_location = '/var/tmp'
-        self.bundle_path = os.path.join(
-            self.bundle_location,
-            self.bundle_name
+        self.site_packages_folder = os.path.join(
+            self.packages_folder,
+            '.lib',
+            f'python{sys.version_info.major}.{sys.version_info.minor}',
+            'site-packages'
         )
 
-        if (sys.platform == 'darwin'):
-            if os.getenv('FLAMETWML_BUNDLE_MAC'):
-                self.bundle_location = os.path.dirname(os.getenv('FLAMETWML_BUNDLE_MAC'))
-                self.bundle_path = os.getenv('FLAMETWML_BUNDLE_MAC')
-        elif sys.platform.startswith('linux'):
-            if os.getenv('FLAMETWML_BUNDLE_LINUX'):
-                self.bundle_location = os.path.dirname(os.getenv('FLAMETWML_BUNDLE_LINUX'))
-                self.bundle_path = os.getenv('FLAMETWML_BUNDLE_LINUX')
+        pprint (f'site packages folder: {self.site_packages_folder}')
+        
+        '''
+        self.bundle_path = os.path.join(
+            self.bundle_folder,
+            self.bundle_name
+        )
 
         # site-packages check and payload unpack if nessesary
         self.site_packages_folder = os.path.join(
@@ -191,6 +197,7 @@ class flameAppFramework(object):
                 target=self.unpack_bundle,
                 args=(os.path.dirname(self.site_packages_folder), )
             ).start()
+        '''
 
     def log(self, message):
         try:
