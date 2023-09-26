@@ -35,6 +35,9 @@ from pprint import pformat
 menu_group_name = 'Timewarp ML'
 DEBUG = False
 app_name = 'flameTimewarpML'
+prefs_folder = os.getenv('FLAMETWML_PREFS')
+bundle_folder = os.getenv('FLAMETWML_BUNDLE')
+packages_folder = os.getenv('FLAMETWML_PACKAGES')
 requirements = [
     'numpy>=1.16',
     'torch>=1.3.0'
@@ -126,8 +129,10 @@ class flameAppFramework(object):
         
         import socket
         self.hostname = socket.gethostname()
-        
-        if sys.platform == 'darwin':
+
+        if prefs_folder:
+            self.prefs_folder = prefs_folder        
+        elif sys.platform == 'darwin':
             self.prefs_folder = os.path.join(
                 os.path.expanduser('~'),
                  'Library',
@@ -147,16 +152,16 @@ class flameAppFramework(object):
         self.log_debug('[%s] waking up' % self.__class__.__name__)
         self.load_prefs()
 
-        # menu auto-refresh defaults
-
-        if not self.prefs_global.get('menu_auto_refresh'):
-            self.prefs_global['menu_auto_refresh'] = {
-                'media_panel': True,
-                'batch': True,
-                'main_menu': True
-            }
-
         self.apps = []
+
+        if bundle_folder:
+            self.bundle_folder = bundle_folder
+        else:
+            self.bundle_folder = os.path.realpath(
+                os.path.dirname(__file__)
+            )
+
+        print (f'bundle folder: {bundle_folder}')
 
         self.bundle_location = '/var/tmp'
         self.bundle_path = os.path.join(
@@ -312,7 +317,7 @@ class flameAppFramework(object):
 
     def unpack_bundle(self, bundle_path):
         start = time.time()
-        script_file_name, ext = os.path.splitext(os.path.abspath(__file__))
+        script_file_name, ext = os.path.splitext(os.path.realpath(__file__))
         script_file_name += '.py'
         # self.log('script file: %s' % script_file_name)
         script = None
@@ -346,10 +351,10 @@ class flameAppFramework(object):
 
         bundle_backup_folder = ''
         if os.path.isdir(bundle_path):
-            bundle_backup_folder = os.path.abspath(bundle_path + '.previous')
+            bundle_backup_folder = os.path.realpath(bundle_path + '.previous')
             if os.path.isdir(bundle_backup_folder):
                 try:
-                    cmd = 'rm -rf "' + os.path.abspath(bundle_backup_folder) + '"'
+                    cmd = 'rm -rf "' + os.path.realpath(bundle_backup_folder) + '"'
                     self.log('removing previous backup folder')
                     self.log('Executing command: %s' % cmd)
                     os.system(cmd)
@@ -357,7 +362,7 @@ class flameAppFramework(object):
                     self.log_exception(e)
                     return False
             try:
-                cmd = 'mv "' + os.path.abspath(bundle_path) + '" "' + bundle_backup_folder + '"'
+                cmd = 'mv "' + os.path.realpath(bundle_path) + '" "' + bundle_backup_folder + '"'
                 self.log('backing up existing bundle folder')
                 self.log('Executing command: %s' % cmd)
                 os.system(cmd)
@@ -6361,7 +6366,7 @@ class flameTimewarpML(flameMenuApp):
                 clip = item
                 clip_name = clip.name.get_value()
 
-                result_folder = os.path.abspath(
+                result_folder = os.path.realpath(
                     os.path.join(
                         working_folder,
                         self.sanitized(clip_name) + '_TWML' + str(2 ** speed) + '_' + self.create_timestamp_uid()
@@ -6782,7 +6787,7 @@ class flameTimewarpML(flameMenuApp):
                 clip = item
                 clip_name = clip.name.get_value()
                 
-                result_folder = os.path.abspath(
+                result_folder = os.path.realpath(
                     os.path.join(
                         working_folder, 
                         self.sanitized(clip_name) + '_DUPFR' + '_' + self.create_timestamp_uid()
@@ -7215,7 +7220,7 @@ class flameTimewarpML(flameMenuApp):
 
         incoming_clip_name = incoming_clip.name.get_value()
         outgoing_clip_name = outgoing_clip.name.get_value()
-        result_folder = os.path.abspath(
+        result_folder = os.path.realpath(
             os.path.join(
                 working_folder, 
                 self.sanitized(incoming_clip_name) + '_FLUID' + '_' + self.create_timestamp_uid()
@@ -7821,7 +7826,7 @@ class flameTimewarpML(flameMenuApp):
             number_of_clips += 1
             clip_name = clip.name.get_value()
 
-            result_folder = os.path.abspath(
+            result_folder = os.path.realpath(
                 os.path.join(
                     working_folder, 
                     self.sanitized(clip_name) + '_TWML' + '_' + self.create_timestamp_uid()
@@ -8398,7 +8403,7 @@ class flameTimewarpML(flameMenuApp):
                 # clean-up source files used
                 self.log('Cleaning up temporary files used: %s' % pformat(folders_to_cleanup))
                 for folder in folders_to_cleanup:
-                    cmd = 'rm -f "' + os.path.abspath(folder) + '/"*'
+                    cmd = 'rm -f "' + os.path.realpath(folder) + '/"*'
                     self.log('Executing command: %s' % cmd)
                     os.system(cmd)
                     try:
@@ -8408,7 +8413,7 @@ class flameTimewarpML(flameMenuApp):
 
                 if os.getenv('FLAMETWML_HARDCOMMIT') == 'True':
                     time.sleep(1)
-                    cmd = 'rm -f "' + os.path.abspath(import_path) + '/"*'
+                    cmd = 'rm -f "' + os.path.realpath(import_path) + '/"*'
                     self.log('Executing command: %s' % cmd)
                     os.system(cmd)
                     try:
