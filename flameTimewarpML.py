@@ -174,7 +174,8 @@ class flameAppFramework(object):
 
         self.site_packages_folder = os.path.join(
             self.packages_folder,
-            '.lib',
+            '.site-packages',
+            'lib',
             f'python{sys.version_info.major}.{sys.version_info.minor}',
             'site-packages'
         )
