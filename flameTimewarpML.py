@@ -33,7 +33,7 @@ from pprint import pformat
 
 # Configurable settings
 menu_group_name = 'Timewarp ML'
-DEBUG = False
+DEBUG = True
 app_name = 'flameTimewarpML'
 prefs_folder = os.getenv('FLAMETWML_PREFS')
 bundle_folder = os.getenv('FLAMETWML_BUNDLE')
@@ -178,6 +178,8 @@ class flameAppFramework(object):
             f'python{sys.version_info.major}.{sys.version_info.minor}',
             'site-packages'
         )
+
+        self.log_debug(f'site-packages folder: {self.site_packages_folder}')
 
         if temp_folder:
             self.temp_fodler = temp_folder
