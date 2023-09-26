@@ -120,6 +120,8 @@ class flameAppFramework(object):
         
         self.apps = []
 
+        self.requirements = requirements
+
         try:
             import flame
             self.flame = flame
@@ -2437,18 +2439,10 @@ class flameTimewarpML(flameMenuApp):
 
         if not self.prefs.master.get(self.name):
             # set general defaults
-            self.prefs['working_folder'] = '/var/tmp'
             self.prefs['slowmo_flow_scale'] = 1.0
             self.prefs['dedup_flow_scale'] = 1.0
             self.prefs['fluidmorph_flow_scale'] = 1.0
             self.prefs['fltw_flow_scale'] = 1.0
-
-        if (self.prefs.get('version') != __version__) or not os.path.isdir(str(self.prefs.get('trained_models_folder', ''))):
-            # set version-specific defaults
-            self.prefs['trained_models_folder'] = os.path.join(
-                self.framework.bundle_path,
-                'trained_models', 'default', 'v2.3.model'
-                )
 
         self.version = __version__
         self.prefs['version'] = __version__
@@ -2474,7 +2468,7 @@ class flameTimewarpML(flameMenuApp):
         }
 
         self.trained_models_path = os.path.join(
-            self.framework.bundle_path,
+            self.framework.bundle_folder,
             'trained_models', 
             'default',
         )
