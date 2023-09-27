@@ -1540,7 +1540,8 @@ class flameTimewarpML(flameMenuApp):
                 )
                 return
             
-            self.parent_app.compose_frames_map(self.selection, self.mode)
+            self.frames_map = self.parent_app.compose_frames_map(self.selection, self.mode)
+            pprint (self.frames_map)
 
             # self.process_current_frame()
 
