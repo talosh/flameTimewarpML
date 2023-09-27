@@ -1542,20 +1542,21 @@ class flameTimewarpML(flameMenuApp):
                     'action': self.close_application}
                 )
                 return
-            
+
+            self.message_queue.put({'type': 'info', 'message': 'Analyzing source...'})
             self.frames_map = self.parent_app.compose_frames_map(self.selection, self.mode)
 
             self.min_frame = min(self.frames_map.keys())
             self.max_frame = max(self.frames_map.keys())
 
+            self.message_queue.put({'type': 'info', 'message': 'Creating destination library...'})
             self.destination_node_id = self.parent_app.create_destination_node(
                 self.selection, 
                 len(self.frames_map.keys())
                 )
                         
             self.current_frame = min(self.frames_map.keys())
-
-            # self.process_current_frame()
+            self.process_current_frame()
 
         def keyPressEvent(self, event):
             if event.key() == QtCore.Qt.Key_Left:
@@ -1631,7 +1632,9 @@ class flameTimewarpML(flameMenuApp):
             self.current_frame_data = self.frames_map.get(self.current_frame)
 
             self.destination = self.current_frame_data['outgoing']['clip'].parent
-            self.info('Frame ' + str(self.current_frame) + ': reading incoming source image data...')
+            self.message_queue.put({
+                'type': 'info', 
+                'message': f'Frame {self.current_frame} : reading incoming source image data...'})
 
             inc_frame_number = self.current_frame_data['incoming']['frame_number'] - 1
             
@@ -1642,7 +1645,7 @@ class flameTimewarpML(flameMenuApp):
             
             self.update_interface_image(
                 incoming_image_data[::2, ::2, :], 
-                self.ui.image_one_label,
+                self.ui.flow1_label,
                 text = 'src frame: ' + str(inc_frame_number + 1)
                 )
             
@@ -1659,7 +1662,7 @@ class flameTimewarpML(flameMenuApp):
             
             self.update_interface_image(
                 outgoing_image_data[::2, ::2, :], 
-                self.ui.image_two_label,
+                self.ui.flow4_label,
                 text = 'src frame: ' + str(outg_frame_number + 1)
                 )
             
@@ -2369,7 +2372,6 @@ class flameTimewarpML(flameMenuApp):
             # super().closeEvent(event)
 
         def close_application(self):
-            print (f'close application {self.app_name}')
             import flame
 
             self.threads = False
@@ -2671,77 +2673,7 @@ class flameTimewarpML(flameMenuApp):
             subprocess.run([pip3_path, 'install', '--user', req], env=env)
         flame.messages.clear_console()
         return True
-
-    def import_torch(self):
-        import flame
-        flame.messages.show_in_console('TimewarpML: Initializing PyTorch backend', 'info', 8)
-        self.torch = None
-        try:
-            import torch
-            if torch.cuda.is_available():
-                torch.rand(10, device = 'cuda')
-            elif torch.backends.mps.is_available():
-                from torch import mps
-                torch.rand(10, device = 'mps')
-                mps.empty_cache()
-            else:
-                torch.rand(10)
-            self.torch = torch
-        except:
-            try:
-                if not self.framework.site_packages_folder in sys.path:
-                    sys.path.append(self.framework.site_packages_folder)
-                import torch
-                if torch.cuda.is_available():
-                    torch.rand(10, device = 'cuda')
-                elif torch.backends.mps.is_available():
-                    from torch import mps
-                    torch.rand(10, device = 'mps')
-                    mps.empty_cache()
-                else:
-                    torch.rand(10)
-                self.torch = torch
-            except Exception as e:
-                msg_str = 'Unable to import PyTorch module.\n'
-                msg_str += 'Please make sure PyTorch is installed and working '
-                msg_str += "with installed graphics card and Flame's python version "
-                msg_str += '.'.join(str(num) for num in sys.version_info[:3])
-                self.message(msg_str)
-                self.log(msg)
-                self.log(pformat(e))
-
-        flame.messages.clear_console()
-
-        print ('import')
-        from torch import mps
-        print (mps.driver_allocated_memory())
-        return self.torch
         
-    def import_numpy(self):
-        import flame
-        flame.messages.show_in_console('TimewarpML: Initializing Numpy module', 'info', 1)
-        self.np = None
-        try:
-            import numpy
-            self.np = numpy
-        except:
-            try:
-                if not self.framework.site_packages_folder in sys.path:
-                    sys.path.append(self.framework.site_packages_folder)
-                import numpy
-                self.np = numpy
-            except Exception as e:
-                msg_str = 'Unable to import Numpy module.\n'
-                msg_str += 'Please make sure Numpy is installed and working '
-                msg_str += "with installed graphics card and Flame's python version "
-                msg_str += '.'.join(str(num) for num in sys.version_info[:3])
-                self.message(msg_str)
-                self.log(msg)
-                self.log(pformat(e))
-
-        flame.messages.clear_console()
-        return self.np
-
     def compose_frames_map(self, selection, mode):
 
         '''
@@ -3608,7 +3540,7 @@ class flameTimewarpML(flameMenuApp):
         return frame_value_map
 
     def write_exr(self, filename, width, height, red, green, blue, alpha, half_float = True, pixelAspectRatio = 1.0):
-        np = self.np
+        import numpy
         import struct
 
         MAGIC = 20000630
@@ -3689,7 +3621,7 @@ class flameTimewarpML(flameMenuApp):
 
     def write_dpx(self, filename, width, height, red, green, blue, alpha, bit_depth):
         import struct
-        np = self.np
+        import numpy
 
         depth = 3 if not alpha.size else 4
         if bit_depth == 8:
