@@ -1339,6 +1339,10 @@ class flameTimewarpML(flameMenuApp):
         def __init__(self, selection, **kwargs):
             super().__init__()
             self.selection = selection
+            if selection:
+                self.clip_parent = selection[0].parent
+            else:
+                self.clip_parent = None
             self.frames_map = {}
 
             self.mode = kwargs.get('mode', 'Timewarp')
@@ -1540,7 +1544,16 @@ class flameTimewarpML(flameMenuApp):
                 return
             
             self.frames_map = self.parent_app.compose_frames_map(self.selection, self.mode)
-            pprint (self.frames_map)
+
+            self.min_frame = min(self.frames_map.keys())
+            self.max_frame = max(self.frames_map.keys())
+
+            self.destination_node_id = self.twml.create_destination_node(
+                self.selection, 
+                len(self.frames_map.keys())
+                )
+                        
+            self.current_frame = min(self.frames_map.keys())
 
             # self.process_current_frame()
 
@@ -2380,7 +2393,10 @@ class flameTimewarpML(flameMenuApp):
             flame.execute_shortcut('Save Project')
             flame.execute_shortcut('Refresh Thumbnails')
             self.parent_app.temp_library.commit()
-            result_clip = flame.find_by_wiretap_node_id(self.destination_node_id)
+            try:
+                result_clip = flame.find_by_wiretap_node_id(self.destination_node_id)
+            except:
+                result_clip = None
 
             if not result_clip:
                 # try harder
@@ -2748,7 +2764,6 @@ class flameTimewarpML(flameMenuApp):
         # sanity checks
 
         if len(selection) < 1:
-            sequence_message()
             return {}
         
         clip = selection[0]
@@ -2758,16 +2773,12 @@ class flameTimewarpML(flameMenuApp):
         effects = clip.versions[0].tracks[0].segments[0].effects
 
         if not isinstance(clip, (flame.PyClip)):
-            sequence_message()
             return {}
         elif len(clip.versions) != 1:
-            sequence_message()
             return {}
         elif len (clip.versions[0].tracks) != 1:
-            sequence_message()
             return {}
         elif len (clip.versions[0].tracks[0].segments) != 1:
-            sequence_message()
             return {}
         
         timewarp_effect = None
@@ -2777,7 +2788,6 @@ class flameTimewarpML(flameMenuApp):
                 break
         
         if not timewarp_effect:
-            effect_message()
             return {}
         
         temp_setup_path = '/var/tmp/temporary_tw_setup.timewarp_node'
