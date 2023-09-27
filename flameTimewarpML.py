@@ -5485,7 +5485,7 @@ class flameTimewarpML(flameMenuApp):
             # img0 = img0.to(torch.float16)
             # img1 = img1.to(torch.float16)
 
-            device = torch.device('cpu')
+            # device = torch.device('cpu')
             img0 = img0.to(device)
             img1 = img1.to(device)
 
@@ -5504,7 +5504,7 @@ class flameTimewarpML(flameMenuApp):
             print ('del IFNetModel')
             del (ifnet_model)
 
-            device = torch.device('cpu')
+            # device = torch.device('cpu')
             img0 = img0.to(device)
             img1 = img1.to(device)
             flow = flow.to(device)
@@ -5523,7 +5523,7 @@ class flameTimewarpML(flameMenuApp):
             print ('del ContextNetModel')
             del (contextnet_model)
 
-            device = torch.device('cpu')
+            # device = torch.device('cpu')
             img0 = img0.to(device)
             img1 = img1.to(device)
             flow = flow.to(device)
