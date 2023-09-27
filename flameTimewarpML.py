@@ -1339,6 +1339,9 @@ class flameTimewarpML(flameMenuApp):
         def __init__(self, selection, **kwargs):
             super().__init__()
 
+            self.selection = selection
+            self.frames_map = {}
+
             self.mode = kwargs.get('mode', 'Timewarp')
             self.parent_app = kwargs.get('parent')
             self.app_name = self.parent_app.app_name
@@ -1351,11 +1354,12 @@ class flameTimewarpML(flameMenuApp):
             self.min_frame = 1
             self.max_frame = 99
             self.current_frame = 1
-
             self.tw_speed = None
+
             if self.mode == 'Timewarp':
                 if not self.parent_app.check_timewarp_effect(selection):
                     self.tw_speed = self.parent_app.prefs.get('tw_speed', 100)
+                    self.mode = 'Speed'
 
             # mouse position on a press event
             self.mousePressPos = None
@@ -1512,12 +1516,6 @@ class flameTimewarpML(flameMenuApp):
             max_label_width = self.ui.info_label.width()
             self.ui.info_label.setMaximumWidth(max_label_width)
 
-        def init_torch(self):
-            if not self.parent_app.torch:
-                if not self.parent_app.import_torch():
-                    self.close()
-                    return
-
         def after_show(self):
             self.message_queue.put({'type': 'info', 'message': 'Checking requirements...'})
             missing_requirements = self.parent_app.check_requirements(self.parent_app.requirements)
@@ -1541,8 +1539,9 @@ class flameTimewarpML(flameMenuApp):
                     'action': self.close_application}
                 )
                 return
+            
+            self.parent_app.compose_frames_map(self.selection, self.mode)
 
-            # self.init_torch()
             # self.process_current_frame()
 
         def keyPressEvent(self, event):
@@ -2590,6 +2589,12 @@ class flameTimewarpML(flameMenuApp):
                         pass
                 try:                        
                     __import__(package_name)
+                    try:
+                        self.progress.message_queue.put(
+                            {'type': 'info', 'message': f'Checking requirements... successfully imported {package_name}'}
+                        )
+                    except:
+                        pass
                 except:
                     missing_requirements.append(packages_by_name.get(package_name))
             return missing_requirements
