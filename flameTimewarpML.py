@@ -1548,7 +1548,7 @@ class flameTimewarpML(flameMenuApp):
             self.min_frame = min(self.frames_map.keys())
             self.max_frame = max(self.frames_map.keys())
 
-            self.destination_node_id = self.parent_app.create_destination_node(
+            self.destination_node_id = self.twml.create_destination_node(
                 self.selection, 
                 len(self.frames_map.keys())
                 )
@@ -2387,60 +2387,63 @@ class flameTimewarpML(flameMenuApp):
                 self.parent_app.torch = None
                 self.deleteLater()
                 return False
-
-            self.parent_app.temp_library.acquire_exclusive_access()
-
-            flame.execute_shortcut('Save Project')
-            flame.execute_shortcut('Refresh Thumbnails')
-            self.parent_app.temp_library.commit()
+            
             try:
-                result_clip = flame.find_by_wiretap_node_id(self.destination_node_id)
-            except:
-                result_clip = None
+                self.parent_app.temp_library.acquire_exclusive_access()
 
-            if not result_clip:
-                # try harder
                 flame.execute_shortcut('Save Project')
                 flame.execute_shortcut('Refresh Thumbnails')
                 self.parent_app.temp_library.commit()
-                ch = self.parent_app.temp_library.children
-                for c in ch:
-                    if c.name.get_value() == self.parent_app.destination_node_name:
-                        result_clip = c
-            
-            if not result_clip:
-                flame.execute_shortcut('Save Project')
-                flame.execute_shortcut('Refresh Thumbnails')
-                self.parent_app.temp_library.commit()
-                result_clip = flame.find_by_wiretap_node_id(self.destination_node_id)
-
-            if not result_clip:
-                # try harder
-                flame.execute_shortcut('Save Project')
-                flame.execute_shortcut('Refresh Thumbnails')
-                self.parent_app.temp_library.commit()
-                ch = self.parent_app.temp_library.children
-                for c in ch:
-                    if c.name.get_value() == self.parent_app.destination_node_name:
-                        result_clip = c
-            
-            if result_clip:
                 try:
-                    copied_clip = flame.media_panel.copy(
-                        source_entries = result_clip, destination = self.clip_parent
-                        )
-                    self.parent_app.temp_library.acquire_exclusive_access()
-                    flame.delete(self.parent_app.temp_library)
-                    '''
-                    copied_clip = copied_clip[0]
-                    segment = copied_clip.versions[0].tracks[0].segments[0]
-                    segment.create_effect('Colour Mgmt')
-                    copied_clip.render()
-                    '''
+                    result_clip = flame.find_by_wiretap_node_id(self.destination_node_id)
+                except:
+                    result_clip = None
+
+                if not result_clip:
+                    # try harder
                     flame.execute_shortcut('Save Project')
                     flame.execute_shortcut('Refresh Thumbnails')
-                except:
-                    pass
+                    self.parent_app.temp_library.commit()
+                    ch = self.parent_app.temp_library.children
+                    for c in ch:
+                        if c.name.get_value() == self.parent_app.destination_node_name:
+                            result_clip = c
+                
+                if not result_clip:
+                    flame.execute_shortcut('Save Project')
+                    flame.execute_shortcut('Refresh Thumbnails')
+                    self.parent_app.temp_library.commit()
+                    result_clip = flame.find_by_wiretap_node_id(self.destination_node_id)
+
+                if not result_clip:
+                    # try harder
+                    flame.execute_shortcut('Save Project')
+                    flame.execute_shortcut('Refresh Thumbnails')
+                    self.parent_app.temp_library.commit()
+                    ch = self.parent_app.temp_library.children
+                    for c in ch:
+                        if c.name.get_value() == self.parent_app.destination_node_name:
+                            result_clip = c
+                
+                if result_clip:
+                    try:
+                        copied_clip = flame.media_panel.copy(
+                            source_entries = result_clip, destination = self.clip_parent
+                            )
+                        self.parent_app.temp_library.acquire_exclusive_access()
+                        flame.delete(self.parent_app.temp_library)
+                        '''
+                        copied_clip = copied_clip[0]
+                        segment = copied_clip.versions[0].tracks[0].segments[0]
+                        segment.create_effect('Colour Mgmt')
+                        copied_clip.render()
+                        '''
+                        flame.execute_shortcut('Save Project')
+                        flame.execute_shortcut('Refresh Thumbnails')
+                    except:
+                        pass
+            except Exception as e:
+                self.on_showMessageBox({'message': pformat(e)})
 
             self.parent_app.temp_library = None
             self.parent_app.progress = None
