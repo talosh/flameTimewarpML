@@ -1755,7 +1755,7 @@ class flameTimewarpML(flameMenuApp):
 
         def read_image_data(self, clip, frame_number):
             import flame
-            np = self.parent_app.np
+            import numpy
 
             try:
                 server_handle = WireTapServerHandle('localhost')
@@ -1902,7 +1902,7 @@ class flameTimewarpML(flameMenuApp):
             )
 
         def _update_interface_image(self, array, image_label, text = None):
-            np = self.parent_app.np
+            import numpy
 
             if array is None:
                 return
