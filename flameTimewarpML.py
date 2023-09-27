@@ -5101,8 +5101,8 @@ class flameTimewarpML(flameMenuApp):
         torch.set_grad_enabled(False)
 
         print ('start')
-        from torch import mps
-        print (mps.driver_allocated_memory())
+        # from torch import mps
+        # print (mps.driver_allocated_memory())
 
         # flip to BGR
         img0 = np.flip(img0, axis=2).copy()
@@ -5119,8 +5119,8 @@ class flameTimewarpML(flameMenuApp):
         img1 = F.pad(img1, padding)
 
         print ('padding')
-        from torch import mps
-        print (mps.driver_allocated_memory())
+        # from torch import mps
+        # print (mps.driver_allocated_memory())
 
         # print (img0)
         # print (img1)
@@ -5334,17 +5334,18 @@ class flameTimewarpML(flameMenuApp):
                     warped_img0_gt = warp(img0, flow_gt[:, :2])
                     warped_img1_gt = warp(img1, flow_gt[:, 2:4])
 
-                # x = self.conv0(torch.cat((warped_img0, warped_img1, flow), 1))
-                # s0 = self.down0(x)
-                # s1 = self.down1(torch.cat((s0, c0[0], c1[0]), 1))
-                # s2 = self.down2(torch.cat((s1, c0[1], c1[1]), 1))
-                # s3 = self.down3(torch.cat((s2, c0[2], c1[2]), 1))
-                # x = self.up0(torch.cat((s3, c0[3], c1[3]), 1))
-                # x = self.up1(torch.cat((x, s2), 1))
-                # x = self.up2(torch.cat((x, s1), 1))
-                # x = self.up3(torch.cat((x, s0), 1))
-                # x = self.conv(x)
+                x = self.conv0(torch.cat((warped_img0, warped_img1, flow), 1))
+                s0 = self.down0(x)
+                s1 = self.down1(torch.cat((s0, c0[0], c1[0]), 1))
+                s2 = self.down2(torch.cat((s1, c0[1], c1[1]), 1))
+                s3 = self.down3(torch.cat((s2, c0[2], c1[2]), 1))
+                x = self.up0(torch.cat((s3, c0[3], c1[3]), 1))
+                x = self.up1(torch.cat((x, s2), 1))
+                x = self.up2(torch.cat((x, s1), 1))
+                x = self.up3(torch.cat((x, s0), 1))
+                x = self.conv(x)
 
+                '''
                 x = checkpoint(self.conv0, torch.cat((warped_img0, warped_img1, flow), 1))
                 print ('x = checkpoint(self.conv0, torch.cat((warped_img0, warped_img1, flow), 1))')
 
@@ -5380,6 +5381,7 @@ class flameTimewarpML(flameMenuApp):
                 x = checkpoint(self.up3, torch.cat((x, s0), 1))
 
                 x = checkpoint(self.conv, x)
+                '''
 
                 return x, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt
 
