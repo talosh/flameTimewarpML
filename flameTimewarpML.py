@@ -5491,6 +5491,7 @@ class flameTimewarpML(flameMenuApp):
 
             print ('load IFNetModel')
             ifnet_model = IFNetModel()
+            print (f'trained models path: {self.trained_models_path}')
             ifnet_model.load_model(
                 os.path.join(
                     self.trained_models_path,
