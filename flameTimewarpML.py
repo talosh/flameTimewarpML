@@ -1548,7 +1548,7 @@ class flameTimewarpML(flameMenuApp):
             self.min_frame = min(self.frames_map.keys())
             self.max_frame = max(self.frames_map.keys())
 
-            self.destination_node_id = self.twml.create_destination_node(
+            self.destination_node_id = self.parent_app.create_destination_node(
                 self.selection, 
                 len(self.frames_map.keys())
                 )
