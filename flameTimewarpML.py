@@ -182,9 +182,9 @@ class flameAppFramework(object):
         self.log_debug(f'site-packages folder: {self.site_packages_folder}')
 
         if temp_folder:
-            self.temp_fodler = temp_folder
+            self.temp_folder = temp_folder
         else:
-            self.temp_fodler = os.path.join(
+            self.temp_folder = os.path.join(
             '/var/tmp',
             self.bundle_name,
             'temp'
