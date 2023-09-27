@@ -1721,7 +1721,7 @@ class flameTimewarpML(flameMenuApp):
 
                 self.info('Frame ' + str(self.current_frame) + ': Processing...')
 
-                result_image_data = self.parent_app.flownet_raft(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
+                result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
                 if not self.threads:
                     return
 
@@ -5562,8 +5562,8 @@ class flameTimewarpML(flameMenuApp):
 
     def flownet_raft(self, img0, img1, ratio, model_path):
         import numpy as np
-
         import tensorflow as tf
+        
         start = time.time()
         raft_model_path = os.path.join(
             self.trained_models_path,
