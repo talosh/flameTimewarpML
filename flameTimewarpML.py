@@ -1338,7 +1338,6 @@ class flameTimewarpML(flameMenuApp):
 
         def __init__(self, selection, **kwargs):
             super().__init__()
-
             self.selection = selection
             self.frames_map = {}
 
@@ -1346,6 +1345,9 @@ class flameTimewarpML(flameMenuApp):
             self.parent_app = kwargs.get('parent')
             self.app_name = self.parent_app.app_name
             self.version = self.parent_app.version
+
+            self.message_queue = queue.Queue()
+            self.parent_app.progress = self
 
             # startup UI in the very beginning
             ### start of UI window sequence
@@ -1452,7 +1454,6 @@ class flameTimewarpML(flameMenuApp):
 
             # set up message thread
             self.threads = True
-            self.message_queue = queue.Queue()
             self.message_thread = threading.Thread(target=self.process_messages)
             self.message_thread.daemon = True
             self.message_thread.start()
@@ -1460,8 +1461,6 @@ class flameTimewarpML(flameMenuApp):
             # QtCore.QTimer.singleShot(0, self.init_torch)
 
             ### end of UI window sequence
-
-            self.parent_app.progress = self
 
             '''
             if not self.twml.check_requirements():
