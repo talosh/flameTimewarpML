@@ -2746,22 +2746,6 @@ class flameTimewarpML(flameMenuApp):
 
     def compose_frames_map_fltw(self, selection):
         import flame
-        def sequence_message():
-            flame.messages.show_in_dialog(
-                        title = self.app_name,
-                        message = 'Please select single-track clips with no versions or edits',
-                        type = 'error',
-                        buttons = ['Ok']
-            )
-        
-        def effect_message():
-            flame.messages.show_in_dialog(
-                title = self.app_name,
-                message = 'Please select clips with Timewarp Timeline FX',
-                type = 'error',
-                buttons = ['Ok']
-            )
-
         # sanity checks
 
         if len(selection) < 1:
@@ -2889,12 +2873,32 @@ class flameTimewarpML(flameMenuApp):
         effects = clip.versions[0].tracks[0].segments[0].effects
 
         if not isinstance(clip, (flame.PyClip)):
+            self.progress.message_queue.put(
+                {'type': 'mbox',
+                'message': 'Please select single-track clips with no versions or edits',
+                'action': self.progress.close_application}
+            )
             return None
         elif len(clip.versions) != 1:
+            self.progress.message_queue.put(
+                {'type': 'mbox',
+                'message': 'Please select single-track clips with no versions or edits',
+                'action': self.progress.close_application}
+            )
             return None
         elif len (clip.versions[0].tracks) != 1:
+            self.progress.message_queue.put(
+                {'type': 'mbox',
+                'message': 'Please select single-track clips with no versions or edits',
+                'action': self.progress.close_application}
+            )
             return None
         elif len (clip.versions[0].tracks[0].segments) != 1:
+            self.progress.message_queue.put(
+                {'type': 'mbox',
+                'message': 'Please select single-track clips with no versions or edits',
+                'action': self.progress.close_application}
+            )
             return None
 
         for effect in effects:
