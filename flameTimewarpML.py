@@ -2973,7 +2973,7 @@ class flameTimewarpML(flameMenuApp):
         # flame.schedule_idle_event(CreateDestNode)
 
     def bake_flame_tw_setup(self, tw_setup_string):
-        np = self.np
+        import numpy as np
         import xml.etree.ElementTree as ET
 
         # parses tw setup from flame and returns dictionary
