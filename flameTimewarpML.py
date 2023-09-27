@@ -1755,7 +1755,7 @@ class flameTimewarpML(flameMenuApp):
 
         def read_image_data(self, clip, frame_number):
             import flame
-            import numpy
+            import numpy as np
 
             try:
                 server_handle = WireTapServerHandle('localhost')
@@ -1902,7 +1902,7 @@ class flameTimewarpML(flameMenuApp):
             )
 
         def _update_interface_image(self, array, image_label, text = None):
-            import numpy
+            import numpy as np
 
             if array is None:
                 return
@@ -3540,7 +3540,7 @@ class flameTimewarpML(flameMenuApp):
         return frame_value_map
 
     def write_exr(self, filename, width, height, red, green, blue, alpha, half_float = True, pixelAspectRatio = 1.0):
-        import numpy
+        import numpy as np
         import struct
 
         MAGIC = 20000630
@@ -3621,7 +3621,7 @@ class flameTimewarpML(flameMenuApp):
 
     def write_dpx(self, filename, width, height, red, green, blue, alpha, bit_depth):
         import struct
-        import numpy
+        import numpy as np
 
         depth = 3 if not alpha.size else 4
         if bit_depth == 8:
