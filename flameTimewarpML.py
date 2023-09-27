@@ -2872,32 +2872,12 @@ class flameTimewarpML(flameMenuApp):
         effects = clip.versions[0].tracks[0].segments[0].effects
 
         if not isinstance(clip, (flame.PyClip)):
-            self.progress.message_queue.put(
-                {'type': 'mbox',
-                'message': 'Please select single-track clips with no versions or edits',
-                'action': self.progress.close_application}
-            )
             return None
         elif len(clip.versions) != 1:
-            self.progress.message_queue.put(
-                {'type': 'mbox',
-                'message': 'Please select single-track clips with no versions or edits',
-                'action': self.progress.close_application}
-            )
             return None
         elif len (clip.versions[0].tracks) != 1:
-            self.progress.message_queue.put(
-                {'type': 'mbox',
-                'message': 'Please select single-track clips with no versions or edits',
-                'action': self.progress.close_application}
-            )
             return None
         elif len (clip.versions[0].tracks[0].segments) != 1:
-            self.progress.message_queue.put(
-                {'type': 'mbox',
-                'message': 'Please select single-track clips with no versions or edits',
-                'action': self.progress.close_application}
-            )
             return None
 
         for effect in effects:
