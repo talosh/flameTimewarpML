@@ -1343,13 +1343,13 @@ class flameTimewarpML(flameMenuApp):
                 self.clip_parent = selection[0].parent
             else:
                 self.clip_parent = None
-            self.temp_folder = self.parent_app.framework.temp_folder
             self.frames_map = {}
 
             self.mode = kwargs.get('mode', 'Timewarp')
             self.parent_app = kwargs.get('parent')
             self.app_name = self.parent_app.app_name
             self.version = self.parent_app.version
+            self.temp_folder = self.parent_app.framework.temp_folder
 
             self.message_queue = queue.Queue()
             self.parent_app.progress = self
