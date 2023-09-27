@@ -1352,10 +1352,10 @@ class flameTimewarpML(flameMenuApp):
             self.max_frame = 99
             self.current_frame = 1
 
-            if self.mode == 'Timewarp': and not self.parent_app.check_timewarp_effect(selection):
-                self.tw_speed = self.parent_app.prefs.get('tw_speed', 100)
-            else:
-                self.tw_speed = None
+            self.tw_speed = None
+            if self.mode == 'Timewarp':
+                if not self.parent_app.check_timewarp_effect(selection):
+                    self.tw_speed = self.parent_app.prefs.get('tw_speed', 100)
 
             # mouse position on a press event
             self.mousePressPos = None
