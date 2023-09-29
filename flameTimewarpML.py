@@ -1563,6 +1563,9 @@ class flameTimewarpML(flameMenuApp):
                 )
                         
             self.current_frame = min(self.frames_map.keys())
+
+            self.message_queue.put({'type': 'info', 'message': 'Reading source clip(s)...'})
+            self.processEvents()
             self.process_current_frame()
 
         def keyPressEvent(self, event):
