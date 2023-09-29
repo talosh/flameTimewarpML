@@ -2790,7 +2790,11 @@ class flameTimewarpML(flameMenuApp):
         
         new_timewarp = clip.versions[0].tracks[0].segments[0].create_effect('Timewarp')
         new_timewarp.load_setup(temp_setup_path)
-        # os.remove(temp_setup_path)
+        try:
+            # os.remove(temp_setup_path)
+            pass
+        except:
+            pass
 
         flame.execute_shortcut('Save Project')
         flame.execute_shortcut('Refresh Thumbnails')
