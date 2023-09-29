@@ -2710,7 +2710,7 @@ class flameTimewarpML(flameMenuApp):
         
         if mode == 'Timewarp':
             return self.compose_frames_map_fltw(selection)
-        elif mode == 'Speed'
+        elif mode == 'Speed':
             return self.compose_frames_map_speed(selection)
         else:
             return {}
