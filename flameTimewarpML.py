@@ -1462,9 +1462,7 @@ class flameTimewarpML(flameMenuApp):
             self.show()
             self.setFixedSize(self.size())
 
-            after_show_thread = threading.Thread(target=self.after_show)
-            after_show_thread.daemon = True
-            QtCore.QTimer.singleShot(99, after_show_thread.start)
+            QtCore.QTimer.singleShot(99, self.after_show)
 
             # QtCore.QTimer.singleShot(0, self.init_torch)
 
@@ -1525,6 +1523,11 @@ class flameTimewarpML(flameMenuApp):
 
         def after_show(self):
             print ('hello from after show')
+            after_show_thread = threading.Thread(target=self._after_show)
+            after_show_thread.daemon = True
+            after_show_thread.start()
+
+        def _after_show(self):
             self.message_queue.put({'type': 'info', 'message': 'Checking requirements...'})
             missing_requirements = self.parent_app.check_requirements(self.parent_app.requirements)
             if missing_requirements:
