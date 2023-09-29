@@ -1462,7 +1462,7 @@ class flameTimewarpML(flameMenuApp):
             self.show()
             self.setFixedSize(self.size())
 
-            after_show_thread = threading.Thread(target=self.process_messages)
+            after_show_thread = threading.Thread(target=self.after_show)
             after_show_thread.daemon = True
             QtCore.QTimer.singleShot(99, after_show_thread.start)
 
