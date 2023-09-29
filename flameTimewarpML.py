@@ -688,9 +688,10 @@ class flameTimewarpML(flameMenuApp):
         class Ui_Progress(object):
 
             class FlameSlider(QtWidgets.QLineEdit):
-                def __init__(self, start_value: int, min_value: int, max_value: int):
+                def __init__(self, start_value: int, min_value: int, max_value: int, value_changed_callback = None):
+                    self.callback = value_changed_callback
                     value_is_float = True
-                    slider_width = 110
+                    slider_width = 90
                     super().__init__()
 
                     # Build slider
@@ -1010,6 +1011,9 @@ class flameTimewarpML(flameMenuApp):
                     if int(self.value()) > self.max:
                         self.setText(str(self.max))
 
+                    if self.callback and callable(self.callback):
+                        self.callback()
+
                 def mousePressEvent(self, event):
 
                     if event.buttons() == QtCore.Qt.LeftButton:
@@ -1276,7 +1280,7 @@ class flameTimewarpML(flameMenuApp):
 
                 # TW Speed test field:
                 if Progress.tw_speed:
-                    self.tw_speed_input = self.FlameSlider(Progress.tw_speed, -9999, 9999)
+                    self.tw_speed_input = self.FlameSlider(Progress.tw_speed, -9999, 9999, Progress.on_SpeedValueChange)
                     # self.tw_speed_input.setContentsMargins(10, 4, 10, 4)
                     bottom_layout.addWidget(self.tw_speed_input, alignment=QtCore.Qt.AlignRight)
                     bottom_layout.addSpacing(4)
@@ -2377,6 +2381,9 @@ class flameTimewarpML(flameMenuApp):
         def mouseReleaseEvent(self, event):
             self.mousePressPos = None
             super().mouseReleaseEvent(event)
+
+        def on_SpeedValueChange(self):
+            print (self.ui.tw_speed_input.value())
 
         def closeEvent(self, event):
             event.accept()
