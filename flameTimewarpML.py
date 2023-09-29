@@ -2861,12 +2861,12 @@ class flameTimewarpML(flameMenuApp):
             frames_map[frame] = {
                 'ratio': frame_value - int(frame_value),
                 'incoming': {
-                    'clip': clip_matched,
+                    'clip': clip,
                     'wiretap_node_id': flame.PyClip.get_wiretap_node_id(clip),
                     'frame_number': int(frame_value)
                     },
                 'outgoing': {
-                    'clip': clip_matched,
+                    'clip': clip,
                     'wiretap_node_id': flame.PyClip.get_wiretap_node_id(clip),
                     'frame_number': int(frame_value) + 1
                     },
