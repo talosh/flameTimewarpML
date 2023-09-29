@@ -1522,13 +1522,8 @@ class flameTimewarpML(flameMenuApp):
             self.ui.info_label.setMaximumWidth(max_label_width)
 
         def after_show(self):
-            print ('hello from after show')
-            after_show_thread = threading.Thread(target=self._after_show)
-            after_show_thread.daemon = True
-            after_show_thread.start()
-
-        def _after_show(self):
             self.message_queue.put({'type': 'info', 'message': 'Checking requirements...'})
+            self.processEvents()
             missing_requirements = self.parent_app.check_requirements(self.parent_app.requirements)
             if missing_requirements:
                 self.message_queue.put({'type': 'info', 'message': 'Requirements check failed'})
@@ -1550,7 +1545,8 @@ class flameTimewarpML(flameMenuApp):
                     'action': self.close_application}
                 )
                 return
-
+            
+            self.processEvents()
             self.message_queue.put({'type': 'info', 'message': 'Analyzing source(s)...'})
             self.frames_map = self.parent_app.compose_frames_map(self.selection, self.mode)
 
