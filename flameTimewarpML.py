@@ -1524,6 +1524,7 @@ class flameTimewarpML(flameMenuApp):
             self.ui.info_label.setMaximumWidth(max_label_width)
 
         def after_show(self):
+            print ('hello from after show')
             self.message_queue.put({'type': 'info', 'message': 'Checking requirements...'})
             missing_requirements = self.parent_app.check_requirements(self.parent_app.requirements)
             if missing_requirements:
