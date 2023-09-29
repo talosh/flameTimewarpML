@@ -1557,7 +1557,7 @@ class flameTimewarpML(flameMenuApp):
             self.message_queue.put({'type': 'info', 'message': 'Creating destination library...'})
             self.processEvents()
 
-            pprint (self.selection.attributes)
+            pprint (self.selection.duration)
 
             self.destination_node_id = self.parent_app.create_destination_node(
                 self.selection,
