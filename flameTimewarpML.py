@@ -1524,7 +1524,7 @@ class flameTimewarpML(flameMenuApp):
         def after_show(self):
             class AfterShowThread(QtCore.QThread):
                 def __init__(self, parent):
-                    super.__init__()
+                    super().__init__()
                     self.parent = parent
                 def run(self):
                     # This will run in a separate thread when thread.start() is called
