@@ -1522,16 +1522,10 @@ class flameTimewarpML(flameMenuApp):
             self.ui.info_label.setMaximumWidth(max_label_width)
 
         def after_show(self):
-            class AfterShowThread(QtCore.QThread):
-                def __init__(self, parent):
-                    super().__init__()
-                    self.parent = parent
-                def run(self):
-                    # This will run in a separate thread when thread.start() is called
-                    self.parent._after_show()
-
-            aftershow_thread = AfterShowThread(self)
-            aftershow_thread.start()
+            print ('hello from after show')
+            after_show_thread = threading.Thread(target=self._after_show)
+            after_show_thread.daemon = True
+            after_show_thread.start()
 
         def _after_show(self):
             self.message_queue.put({'type': 'info', 'message': 'Checking requirements...'})
