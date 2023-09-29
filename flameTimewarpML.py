@@ -1558,7 +1558,8 @@ class flameTimewarpML(flameMenuApp):
             self.processEvents()
 
             try:
-                duration = self.selection[0].duration
+                duration = self.selection[0].duration.frame
+                pprint (type(duration))
                 pprint (dir(duration))
             except:
                 duration = len(self.frames_map.keys())
