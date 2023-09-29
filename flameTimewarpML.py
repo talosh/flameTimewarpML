@@ -2789,8 +2789,7 @@ class flameTimewarpML(flameMenuApp):
         new_timewarp = clip.versions[0].tracks[0].segments[0].create_effect('Timewarp')
         new_timewarp.load_setup(temp_setup_path)
         try:
-            # os.remove(temp_setup_path)
-            pass
+            os.remove(temp_setup_path)
         except:
             pass
 
