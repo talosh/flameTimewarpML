@@ -2718,8 +2718,8 @@ class flameTimewarpML(flameMenuApp):
         self.clip_parent = clip.parent
 
         duration = self.clip.duration.frame
-        pprint (type(self.clip.start_time.get_value()))
-        pprint (self.clip.start_time.get_value())
+        start_time = self.clip.start_time.get_value()
+        pprint (self.clip.start_time.frame)
 
 
         effects = clip.versions[0].tracks[0].segments[0].effects
