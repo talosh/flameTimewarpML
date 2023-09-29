@@ -1011,9 +1011,6 @@ class flameTimewarpML(flameMenuApp):
                     if int(self.value()) > self.max:
                         self.setText(str(self.max))
 
-                    if self.callback and callable(self.callback):
-                        self.callback()
-
                 def mousePressEvent(self, event):
 
                     if event.buttons() == QtCore.Qt.LeftButton:
@@ -1040,7 +1037,10 @@ class flameTimewarpML(flameMenuApp):
                         self.setCursor(QtGui.QCursor(QtCore.Qt.IBeamCursor))
                         return
 
-                    super(FlameSlider, self).mouseReleaseEvent(event)
+                    super().mouseReleaseEvent(event)
+
+                    if self.callback and callable(self.callback):
+                        self.callback()
 
                 def mouseMoveEvent(self, event):
 
@@ -1062,7 +1062,7 @@ class flameTimewarpML(flameMenuApp):
                     value = self.value_at_press + delta
                     self.setValue(value)
 
-                    super(FlameSlider, self).mouseMoveEvent(event)
+                    super().mouseMoveEvent(event)
 
                 def getStepsMultiplier(self, event):
 
