@@ -812,7 +812,7 @@ class flameTimewarpML(flameMenuApp):
                                 self.setValue(float(new_value))
 
                         close_calc()
-
+                        
                     def equals():
 
                         if calc_lineedit.text() == '':
@@ -863,6 +863,9 @@ class flameTimewarpML(flameMenuApp):
                         calc_window.close()
                         self.setStyleSheet('QLineEdit {color: rgb(154, 154, 154); background-color: rgb(55, 65, 75); selection-color: rgb(154, 154, 154); selection-background-color: rgb(55, 65, 75); border: none; padding-left: 5px; font: 14px "Discreet"}'
                                         'QLineEdit:hover {border: 1px solid rgb(90, 90, 90)}')
+                        if self.callback and callable(self.callback):
+                            self.callback()
+
                     def revert_color():
                         self.setStyleSheet('QLineEdit {color: rgb(154, 154, 154); background-color: rgb(55, 65, 75); selection-color: rgb(154, 154, 154); selection-background-color: rgb(55, 65, 75); border: none; padding-left: 5px; font: 14px "Discreet"}'
                                         'QLineEdit:hover {border: 1px solid rgb(90, 90, 90)}')
@@ -1035,12 +1038,13 @@ class flameTimewarpML(flameMenuApp):
                         self.value_at_press = None
                         self.pos_at_press = None
                         self.setCursor(QtGui.QCursor(QtCore.Qt.IBeamCursor))
+
+                        if self.callback and callable(self.callback):
+                            self.callback()
+
                         return
 
                     super().mouseReleaseEvent(event)
-
-                    if self.callback and callable(self.callback):
-                        self.callback()
 
                 def mouseMoveEvent(self, event):
 
