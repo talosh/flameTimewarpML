@@ -1551,6 +1551,8 @@ class flameTimewarpML(flameMenuApp):
             self.processEvents()
             self.frames_map = self.parent_app.compose_frames_map(self.selection, self.mode)
 
+            pprint(self.frames_map)
+
             self.min_frame = min(self.frames_map.keys())
             self.max_frame = max(self.frames_map.keys())
 
