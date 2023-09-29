@@ -2703,6 +2703,8 @@ class flameTimewarpML(flameMenuApp):
         
         if mode == 'Timewarp':
             return self.compose_frames_map_fltw(selection)
+        elif mode == 'Speed'
+            return self.compose_frames_map_speed(selection)
         else:
             return {}
 
@@ -2827,6 +2829,44 @@ class flameTimewarpML(flameMenuApp):
                 'temp_library': self.temp_library,
                 'destination': clip.parent
             }
+
+        return frames_map
+
+    def compose_frames_map_speed(self, selection):
+        clip = selection[0]
+        self.clip = clip
+        self.clip_parent = clip.parent
+
+        duration = self.clip.duration.frame
+        relative_start_frame = self.clip.start_time.get_value().relative_frame
+
+        if not self.progress.tw_speed:
+            speed = 100
+        else:
+            speed = self.progress.tw_speed
+
+        speed_multiplier = speed / 100
+        new_duration = int(duration / speed_multiplier)
+
+        frames_map = {}
+        frame_value = relative_start_frame
+        for frame in range(relative_start_frame, new_duration + 1):
+            frames_map[frame] = {
+                'ratio': frame_value - int(frame_value),
+                'incoming': {
+                    'clip': clip_matched,
+                    'wiretap_node_id': flame.PyClip.get_wiretap_node_id(clip_matched),
+                    'frame_number': int(frame_value)
+                    },
+                'outgoing': {
+                    'clip': clip_matched,
+                    'wiretap_node_id': flame.PyClip.get_wiretap_node_id(clip_matched),
+                    'frame_number': int(frame_value) + 1
+                    },
+                'temp_library': self.temp_library,
+                'destination': clip.parent
+            }
+            frame_value = frame_value + speed_multiplier
 
         return frames_map
 
