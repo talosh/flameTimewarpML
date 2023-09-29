@@ -1561,7 +1561,7 @@ class flameTimewarpML(flameMenuApp):
                 duration = self.selection[0].duration
                 pprint (dir(duration))
             except:
-                duration = len(self.frames_map.keys()
+                duration = len(self.frames_map.keys())
                                
             self.destination_node_id = self.parent_app.create_destination_node(
                 self.selection,
