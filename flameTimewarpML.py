@@ -2718,10 +2718,7 @@ class flameTimewarpML(flameMenuApp):
         self.clip_parent = clip.parent
 
         duration = self.clip.duration.frame
-        start_time = self.clip.start_time.get_value()
-        pprint (start_time.frame)
-        pprint (start_time.relative_frame)
-
+        relative_start_frame = self.clip.start_time.get_value().relative_frame
 
         effects = clip.versions[0].tracks[0].segments[0].effects
 
@@ -2811,7 +2808,10 @@ class flameTimewarpML(flameMenuApp):
         flame.projects.current_project.refresh_shared_libraries()
 
         frames_map = {}
-        for frame in frame_value_map.keys():
+        clip_frames = list(range(relative_start_frame, duration + 1))
+        for frame in list(frame_value_map.keys()):
+            if frame not in clip_frames:
+                continue
             frames_map[frame] = {
                 'ratio': frame_value_map[frame] - int(frame_value_map[frame]),
                 'incoming': {
