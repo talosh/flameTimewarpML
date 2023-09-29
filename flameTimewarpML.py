@@ -1410,7 +1410,6 @@ class flameTimewarpML(flameMenuApp):
             self.ui.info_label.setText('Initializing...')
 
             # set up message thread
-            self.message_queue.put({'type': 'info', 'message': 'Huipizda'})
             self.threads = True
             self.message_thread = threading.Thread(target=self.process_messages)
             self.message_thread.daemon = True
@@ -1462,7 +1461,9 @@ class flameTimewarpML(flameMenuApp):
             self.setWindowTitle(self.app_name + ' ' + self.version)
             self.show()
             self.setFixedSize(self.size())
-            QtCore.QTimer.singleShot(99, self.after_show)
+            after_show_thread = threading.Thread(target=self.after_show)
+            after_show_thread.daemon = True
+            QtCore.QTimer.singleShot(99, after_show_thread.start())
 
             # QtCore.QTimer.singleShot(0, self.init_torch)
 
