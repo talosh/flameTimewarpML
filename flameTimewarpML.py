@@ -1455,7 +1455,7 @@ class flameTimewarpML(flameMenuApp):
             self.setWindowTitle(self.app_name + ' ' + self.version)
             self.show()
             self.setFixedSize(self.size())
-            QtCore.QTimer.singleShot(0, self.after_show)
+            QtCore.QTimer.singleShot(999, self.after_show)
 
             # set up message thread
             self.threads = True
