@@ -1557,12 +1557,17 @@ class flameTimewarpML(flameMenuApp):
             self.message_queue.put({'type': 'info', 'message': 'Creating destination library...'})
             self.processEvents()
 
-            pprint (self.selection[0].duration.get_value())
+            try:
+                duration = self.selection[0].duration
+                pprint (dir(duration))
+            except:
+                duration = len(self.frames_map.keys()
+                               
             self.destination_node_id = self.parent_app.create_destination_node(
                 self.selection,
                 len(self.frames_map.keys())
                 )
-                        
+
             self.current_frame = min(self.frames_map.keys())
 
             self.message_queue.put({'type': 'info', 'message': 'Reading source clip(s)...'})
