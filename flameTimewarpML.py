@@ -2715,8 +2715,6 @@ class flameTimewarpML(flameMenuApp):
         try:
             import flame
 
-            x = 1 / 0
-
             clip = selection[0]
             temp_library_name = self.app_name + '_' + self.sanitized(clip.name.get_value()) + '_' + self.create_timestamp_uid()
             self.temp_library_name = temp_library_name
