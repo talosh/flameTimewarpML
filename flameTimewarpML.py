@@ -1587,6 +1587,16 @@ class flameTimewarpML(flameMenuApp):
 
             self.min_frame = min(self.frames_map.keys())
             self.max_frame = max(self.frames_map.keys())
+            self.message_queue.put(
+                {'type': 'setText',
+                'widget': 'start_frame_label',
+                'text': str(self.min_frame)}
+            )
+            self.message_queue.put(
+                {'type': 'setText',
+                'widget': 'end_frame_label',
+                'text': str(self.max_frame)}
+            )
 
             self.message_queue.put({'type': 'info', 'message': 'Creating destination shared library...'})
             self.processEvents()
