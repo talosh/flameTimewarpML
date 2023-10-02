@@ -5481,16 +5481,12 @@ class flameTimewarpML(flameMenuApp):
         class Conv2(nn.Module):
             def __init__(self, in_planes, out_planes, stride=2):
                 super(Conv2, self).__init__()
-                # self.conv1 = conv(in_planes, out_planes, 3, stride, 1)
-                # self.conv2 = conv(out_planes, out_planes, 3, 1, 1)
-                self.conv1 = checkpoint(conv, in_planes, out_planes, 3, stride, 1)
-                self.conv2 = checkpoint(conv, out_planes, out_planes, 3, 1, 1)
+                self.conv1 = conv(in_planes, out_planes, 3, stride, 1)
+                self.conv2 = conv(out_planes, out_planes, 3, 1, 1)
 
             def forward(self, x):
-                # x = self.conv1(x)
-                # x = self.conv2(x)
-                x = checkpoint(self.conv1, x)
-                x = checkpoint(self.conv2, x)
+                x = self.conv1(x)
+                x = self.conv2(x)
                 return x
 
         class ContextNet(nn.Module):
