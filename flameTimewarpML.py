@@ -2392,8 +2392,9 @@ class flameTimewarpML(flameMenuApp):
             super().mouseReleaseEvent(event)
 
         def on_SpeedValueChange(self):
-            print (self.ui.tw_speed_input.value())
-            print (self.destination_node_id)
+            print ('hello')
+            # print (self.ui.tw_speed_input.value())
+            # print (self.destination_node_id)
             
             server_handle = WireTapServerHandle('localhost')
             clip_node_handle = WireTapNodeHandle(server_handle, self.destination_node_id)
