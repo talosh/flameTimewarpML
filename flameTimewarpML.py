@@ -2434,8 +2434,19 @@ class flameTimewarpML(flameMenuApp):
                 self.tw_speed = self.ui.tw_speed_input.value()
             
             self.frames_map = self.parent_app.compose_frames_map(self.selection, self.mode)
+
             self.min_frame = min(self.frames_map.keys())
             self.max_frame = max(self.frames_map.keys())
+            self.message_queue.put(
+                {'type': 'setText',
+                'widget': 'start_frame_label',
+                'text': str(self.min_frame)}
+            )
+            self.message_queue.put(
+                {'type': 'setText',
+                'widget': 'end_frame_label',
+                'text': str(self.max_frame)}
+            )
 
             old_destination_node_id = str(self.destination_node_id)
 
