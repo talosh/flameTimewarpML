@@ -3941,9 +3941,8 @@ class flameTimewarpML(flameMenuApp):
             writeDPX(f, arr, new_meta)
             f.close()
 
-    def select_flow_res(self, flow_res):
-        print ('select flow res')
-        print (flow_res)
+    def select_flow_res(self, flow_scale):
+        self.flow_scale = flow_scale
 
     def select_mode(self, mode_number):
         print ('select mode')
@@ -5675,7 +5674,8 @@ class flameTimewarpML(flameMenuApp):
         img1_ratio = 1
 
         for current_pass in range(1, num_passes + 1):
-            print ('pass %s of %s' % (current_pass, num_passes))
+            info_text = self.progress.ui.info_label.text()
+            self.progress.info(f'{info_text} pass {current_pass} of {num_passes}')
 
             # torch.set_default_dtype(torch.float16)
             # img0 = img0.to(torch.float16)
