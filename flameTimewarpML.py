@@ -1282,6 +1282,11 @@ class flameTimewarpML(flameMenuApp):
                 bottom_layout.addWidget(self.info_label)
                 bottom_layout.setStretchFactor(self.info_label, 1)
 
+                # End frame label
+                self.end_frame_label = QtWidgets.QLabel('100', Progress)
+                self.end_frame_label.setStyleSheet("color: #cbcbcb;")
+                bottom_layout.addWidget(self.end_frame_label)
+
                 # TW Speed test field:
                 if Progress.tw_speed:
                     self.tw_speed_input = self.FlameSlider(Progress.tw_speed, -9999, 9999, Progress.on_SpeedValueChange)
