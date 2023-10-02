@@ -2397,7 +2397,7 @@ class flameTimewarpML(flameMenuApp):
             import flame
     
             # flame.execute_shortcut('Save Project')
-            # flame.execute_shortcut('Refresh Thumbnails')
+            flame.execute_shortcut('Refresh Thumbnails')
             self.parent_app.temp_library.commit()
 
             ch = self.parent_app.temp_library.children
