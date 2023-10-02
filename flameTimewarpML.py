@@ -2394,8 +2394,12 @@ class flameTimewarpML(flameMenuApp):
         def on_SpeedValueChange(self):
             print (self.ui.tw_speed_input.value())
             print (self.destination_node_id)
-            self.parent_app.temp_library.commit()
             import flame
+    
+            flame.execute_shortcut('Save Project')
+            flame.execute_shortcut('Refresh Thumbnails')
+            self.parent_app.temp_library.commit()
+
             ch = self.parent_app.temp_library.children
             pprint (ch)
             for c in ch:
