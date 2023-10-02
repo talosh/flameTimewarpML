@@ -1564,7 +1564,8 @@ class flameTimewarpML(flameMenuApp):
 
             self.message_queue.put({'type': 'info', 'message': 'Creating destination shared library...'})
             self.processEvents()
-            if not self.parent_app.create_temp_library(self.selection):
+            self.parent_app.create_temp_library(self.selection)
+            if not self.parent_app.temp_library:
                 return
 
             self.message_queue.put({'type': 'info', 'message': 'Creating destination clip node...'})
