@@ -1559,8 +1559,6 @@ class flameTimewarpML(flameMenuApp):
             self.processEvents()
             self.frames_map = self.parent_app.compose_frames_map(self.selection, self.mode)
 
-            pprint(self.frames_map)
-
             self.min_frame = min(self.frames_map.keys())
             self.max_frame = max(self.frames_map.keys())
 
@@ -2696,7 +2694,30 @@ class flameTimewarpML(flameMenuApp):
             subprocess.run([pip3_path, 'install', '--user', req], env=env)
         flame.messages.clear_console()
         return True
+
+    def create_temp_library(self, selection):        
+        try:
+            import flame
+
+            x = 1 / 0
+
+            clip = selection[0]
+            temp_library_name = self.app_name + '_' + self.sanitized(clip.name.get_value()) + '_' + self.create_timestamp_uid()
+            self.temp_library_name = temp_library_name
+            self.temp_library = flame.projects.current_project.create_shared_library(temp_library_name)
+            flame.projects.current_project.refresh_shared_libraries()
+
+            return self.temp_library
         
+        except Exception as e:
+            message_string = f'Unable to create temp shared library:\n"{e}"'
+            self.progress.message_queue.put(
+                {'type': 'mbox',
+                'message': message_string,
+                'action': self.close_application}
+            )
+            return None
+
     def compose_frames_map(self, selection, mode):
 
         '''
@@ -2810,9 +2831,13 @@ class flameTimewarpML(flameMenuApp):
         flame.execute_shortcut('Refresh Thumbnails')
                 
         clip_matched.name.set_value(self.sanitized(clip.name.get_value()) + '_twml_src')
+        '''
         temp_library_name = self.app_name + '_' + self.sanitized(clip.name.get_value()) + '_' + self.create_timestamp_uid()
         self.temp_library_name = temp_library_name
         self.temp_library = flame.projects.current_project.create_shared_library(temp_library_name)
+        flame.projects.current_project.refresh_shared_libraries()
+        '''
+
         self.temp_library.acquire_exclusive_access()
         self.temp_library.open()
         flame.projects.current_project.refresh_shared_libraries()
