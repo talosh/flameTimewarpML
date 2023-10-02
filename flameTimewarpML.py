@@ -5498,7 +5498,8 @@ class flameTimewarpML(flameMenuApp):
 
                 warped_img0 = warp(x[:, :3], F1_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
-                display_warp = F.interpolate((warped_img0[:, : :h, :w] + warped_img1[:, : :h, :w]) / 2, scale_factor=0.25, mode='nearest')
+                print (f'warped_img1 shape {warped_img1.shape}')
+                display_warp = F.interpolate((warped_img0 + warped_img1) / 2, scale_factor=0.25, mode='nearest')
                 display_warp = display_warp[0].cpu().detach().numpy().transpose(1, 2, 0)
                 display_warp = np.flip(display_warp, axis=2).copy()
                 self.progress.update_interface_image(
