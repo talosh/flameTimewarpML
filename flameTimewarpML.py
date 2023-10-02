@@ -2919,7 +2919,7 @@ class flameTimewarpML(flameMenuApp):
 
         duration = self.clip.duration.frame
         relative_start_frame = self.clip.start_time.get_value().relative_frame
-        max_frame_value = relative_start_frame + duration
+        max_frame_value = relative_start_frame + duration - 1
 
         if not self.progress.tw_speed:
             speed = 100
