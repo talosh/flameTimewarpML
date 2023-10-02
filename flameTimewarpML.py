@@ -1574,6 +1574,8 @@ class flameTimewarpML(flameMenuApp):
                 self.selection,
                 len(self.frames_map.keys())
                 )
+            if not self.destination_node_id:
+                return
 
             self.current_frame = min(self.frames_map.keys())
 
@@ -3000,6 +3002,7 @@ class flameTimewarpML(flameMenuApp):
 
         except Exception as e:
             self.message('Error creating destination wiretap node: %s' % e)
+            return None
         finally:
             server_handle = None
             clip_node_handle = None
