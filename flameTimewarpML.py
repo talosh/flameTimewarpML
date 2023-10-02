@@ -2194,7 +2194,7 @@ class flameTimewarpML(flameMenuApp):
                         col0 = tmp[k0] / 255.0
                         col1 = tmp[k1] / 255.0
                         col = (1-f)*col0 + f*col1
-                        col  = sigmoid(np.tanh(rad) * col)
+                        col  = np.tanh(rad) * col
                         # Note the 2-i => BGR instead of RGB
                         ch_idx = 2-i if convert_to_bgr else i
                         flow_image[:,:,ch_idx] = np.floor(255 * col)
