@@ -5504,7 +5504,7 @@ class flameTimewarpML(flameMenuApp):
                 display_warp = display_warp[:, :2].cpu().detach().numpy()
                 self.progress.update_interface_image(
                     display_warp,
-                    self.progress.ui.flow2_label,
+                    self.progress.ui.flow3_label,
                     text = f'Warp'
                     )
 
