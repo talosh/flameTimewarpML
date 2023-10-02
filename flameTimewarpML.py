@@ -1959,9 +1959,7 @@ class flameTimewarpML(flameMenuApp):
             return
 
         def update_interface_image(self, array, image_label, text = None):
-            print (image_label)
             if self.message_queue.qsize() > 9:
-                print ('hello')
                 if image_label != self.ui.image_res_label:
                     return
             
