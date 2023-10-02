@@ -5494,11 +5494,19 @@ class flameTimewarpML(flameMenuApp):
                 self.progress.update_optical_flow(
                     display_flow,
                     self.progress.ui.flow2_label,
-                    text = f'Flow pass 1 of 4'
+                    text = f'Flow'
                     )
 
                 warped_img0 = warp(x[:, :3], F1_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
+
+                display_warp = F.interpolate((warped_img0 + warped_img1) / 2, scale_factor=0.25, mode='nearest')
+                display_warp = display_warp[:, :2].cpu().detach().numpy()
+                self.progress.update_interface_image(
+                    display_warp,
+                    self.progress.ui.flow2_label,
+                    text = f'Warp'
+                    )
 
                 flow1 = self.block1(torch.cat((warped_img0, warped_img1, F1_large), 1))
                 F2 = (flow0 + flow1)
@@ -5541,7 +5549,7 @@ class flameTimewarpML(flameMenuApp):
                 self.progress.update_optical_flow(
                     display_flow,
                     self.progress.ui.flow2_label,
-                    text = f'Flow pass 4 of 4'
+                    text = f'Flow'
                     )
 
                 return F4, [F1, F2, F3, F4]
