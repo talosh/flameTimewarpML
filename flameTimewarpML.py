@@ -5498,7 +5498,6 @@ class flameTimewarpML(flameMenuApp):
 
                 warped_img0 = warp(x[:, :3], F1_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
-                print (f'warped_img1 shape {warped_img1.shape}')
                 display_warp = F.interpolate(
                     (warped_img0 + warped_img1)[:, :, :h, :w] / 2, 
                     scale_factor=0.25, mode='nearest'
@@ -5515,11 +5514,19 @@ class flameTimewarpML(flameMenuApp):
                 F2 = (flow0 + flow1)
                 F2_large = F.interpolate(F2, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
 
-
-
                 warped_img0 = warp(x[:, :3], F2_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F2_large[:, 2:4])
-
+                display_warp = F.interpolate(
+                    (warped_img0 + warped_img1)[:, :, :h, :w] / 2, 
+                    scale_factor=0.25, mode='nearest'
+                    )
+                display_warp = display_warp[0].cpu().detach().numpy().transpose(1, 2, 0)
+                display_warp = np.flip(display_warp, axis=2).copy()
+                self.progress.update_interface_image(
+                    display_warp,
+                    self.progress.ui.flow3_label,
+                    text = f'Warp'
+                    )
 
                 flow2 = self.block2(torch.cat((warped_img0, warped_img1, F2_large), 1))
                 F3 = (flow0 + flow1 + flow2)
@@ -5527,7 +5534,18 @@ class flameTimewarpML(flameMenuApp):
 
                 warped_img0 = warp(x[:, :3], F3_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
-
+                display_warp = F.interpolate(
+                    (warped_img0 + warped_img1)[:, :, :h, :w] / 2, 
+                    scale_factor=0.25, mode='nearest'
+                    )
+                display_warp = display_warp[0].cpu().detach().numpy().transpose(1, 2, 0)
+                display_warp = np.flip(display_warp, axis=2).copy()
+                self.progress.update_interface_image(
+                    display_warp,
+                    self.progress.ui.flow3_label,
+                    text = f'Warp'
+                    )
+                
                 flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3_large), 1))
                 F4 = (flow0 + flow1 + flow2 + flow3)
 
