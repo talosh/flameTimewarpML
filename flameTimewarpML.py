@@ -1718,6 +1718,9 @@ class flameTimewarpML(flameMenuApp):
                 inc_frame_number
                 )
             
+            print (f'incoming image data min: {incoming_image_data.min()}')
+            print (f'incoming image data max: {incoming_image_data.max()}')
+
             # incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
             
             self.update_interface_image(
