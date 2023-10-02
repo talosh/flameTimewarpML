@@ -1300,7 +1300,7 @@ class flameTimewarpML(flameMenuApp):
 
                 # EndFrame label
                 self.end_frame_label = QtWidgets.QLabel('100', Progress)
-                self.end_frame_label.setMinimumWidth(40)
+                self.end_frame_label.setMinimumWidth(28)
                 # self.end_frame_label.setContentsMargins(10, 0, 10, 0)
                 self.end_frame_label.setStyleSheet(
                     'QLabel {color: rgb(154, 154, 154); background-color: #292929; border: 1px solid #474747; font: 14px "Discreet";}'
