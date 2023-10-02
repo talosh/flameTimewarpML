@@ -1750,6 +1750,8 @@ class flameTimewarpML(flameMenuApp):
                     self.ui.flow1_label,
                     text = 'copy of frame: ' + str(inc_frame_number + 1)
                     )
+
+                '''
                 self.update_interface_image(
                     incoming_image_data[::4, ::4, :], 
                     self.ui.flow2_label,
@@ -1760,6 +1762,8 @@ class flameTimewarpML(flameMenuApp):
                     self.ui.flow3_label,
                     text = 'copy of frame: ' + str(inc_frame_number + 1)
                     )
+                '''
+                    
                 self.update_interface_image(
                     incoming_image_data[::4, ::4, :], 
                     self.ui.flow4_label,
@@ -1773,6 +1777,8 @@ class flameTimewarpML(flameMenuApp):
                     self.ui.flow1_label,
                     text = 'copy of frame: ' + str(outg_frame_number + 1)
                     )
+                
+                '''
                 self.update_interface_image(
                     incoming_image_data[::4, ::4, :], 
                     self.ui.flow2_label,
@@ -1783,6 +1789,8 @@ class flameTimewarpML(flameMenuApp):
                     self.ui.flow3_label,
                     text = 'copy of frame: ' + str(outg_frame_number + 1)
                     )
+                '''
+
                 self.update_interface_image(
                     incoming_image_data[::4, ::4, :], 
                     self.ui.flow4_label,
@@ -1978,6 +1986,7 @@ class flameTimewarpML(flameMenuApp):
             import numpy as np
 
             if array is None:
+                image_label.clear()
                 return
 
             # colourmanagement should go here
@@ -2055,6 +2064,9 @@ class flameTimewarpML(flameMenuApp):
         def on_UpdateFlowImage(self, item):
             def flow_to_img(flow):
                 import numpy as np
+
+                if flow is None:
+                    return None
 
                 def sigmoid(x):
                     return 1 / (1 + np.exp(-x))
