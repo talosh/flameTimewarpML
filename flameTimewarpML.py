@@ -1718,6 +1718,8 @@ class flameTimewarpML(flameMenuApp):
                 inc_frame_number
                 )
             
+            incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
+            
             self.update_interface_image(
                 incoming_image_data[::2, ::2, :], 
                 self.ui.flow1_label,
