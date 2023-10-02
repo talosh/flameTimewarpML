@@ -2612,6 +2612,18 @@ class flameTimewarpML(flameMenuApp):
 
         return menu
 
+    def message(self, message_string, type = 'Error'):
+        if type == 'Error':
+            action = self.preogress.close_application
+        else:
+            action = None
+
+        self.progress.message_queue.put(
+            {'type': 'mbox',
+            'message': message_string,
+            'action': self.close_application}
+        )
+ 
     def check_requirements(self, requirements):
         sys.path_importer_cache.clear()
 
