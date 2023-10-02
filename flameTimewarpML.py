@@ -2394,8 +2394,13 @@ class flameTimewarpML(flameMenuApp):
         def on_SpeedValueChange(self):
             print (self.ui.tw_speed_input.value())
             print (self.destination_node_id)
+            self.parent_app.temp_library.commit()
             import flame
             print (flame.find_by_wiretap_node_id(self.destination_node_id))
+
+            ch = self.parent_app.temp_library.children
+            for c in ch:
+                pass
 
         def closeEvent(self, event):
             event.accept()
