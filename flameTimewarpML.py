@@ -1580,8 +1580,14 @@ class flameTimewarpML(flameMenuApp):
                 )
                 return
             
+            self.message_queue.put({'type': 'info', 'message': 'Creating destination shared library...'})
             self.processEvents()
-            self.message_queue.put({'type': 'info', 'message': 'Analyzing source(s)...'})
+            self.parent_app.create_temp_library(self.selection)
+            if not self.parent_app.temp_library:
+                return
+
+            self.processEvents()
+            self.message_queue.put({'type': 'info', 'message': 'Building frames map...'})
             self.processEvents()
             self.frames_map = self.parent_app.compose_frames_map(self.selection, self.mode)
 
@@ -1597,12 +1603,6 @@ class flameTimewarpML(flameMenuApp):
                 'widget': 'end_frame_label',
                 'text': str(self.max_frame)}
             )
-
-            self.message_queue.put({'type': 'info', 'message': 'Creating destination shared library...'})
-            self.processEvents()
-            self.parent_app.create_temp_library(self.selection)
-            if not self.parent_app.temp_library:
-                return
 
             self.message_queue.put({'type': 'info', 'message': 'Creating destination clip node...'})
             self.processEvents()
@@ -2973,6 +2973,7 @@ class flameTimewarpML(flameMenuApp):
         flame.execute_shortcut('Refresh Thumbnails')
                 
         clip_matched.name.set_value(self.sanitized(clip.name.get_value()) + '_twml_src')
+
         '''
         temp_library_name = self.app_name + '_' + self.sanitized(clip.name.get_value()) + '_' + self.create_timestamp_uid()
         self.temp_library_name = temp_library_name
