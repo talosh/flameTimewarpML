@@ -1288,7 +1288,7 @@ class flameTimewarpML(flameMenuApp):
                 self.start_frame_label.setStyleSheet(
                     'QLabel {color: rgb(154, 154, 154); background-color: #292929; border: 1px solid #474747; font: 14px "Discreet";}'
                     )
-                # self.end_frame_label.setAlignment(QtCore.Qt.AlignHCenter)
+                self.end_frame_label.setAlignment(QtCore.Qt.AlignHCenter)
                 bottom_layout.addWidget(self.start_frame_label, alignment=QtCore.Qt.AlignLeft)
 
                 # Info label
