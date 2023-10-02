@@ -1276,6 +1276,11 @@ class flameTimewarpML(flameMenuApp):
                 self.set_button_style(self.close_button)
                 bottom_layout.addWidget(self.close_button, alignment=QtCore.Qt.AlignLeft)
 
+                # Add spacer
+                spacer = QtWidgets.QLabel('', Progress)
+                spacer.setMinimumWidth(10)
+                bottom_layout.addWidget(spacer, alignment=QtCore.Qt.AlignLeft)
+
                 # StartFrame label
                 self.start_frame_label = QtWidgets.QLabel('1', Progress)
                 self.start_frame_label.setMinimumWidth(40)
