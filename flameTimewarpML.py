@@ -2397,6 +2397,7 @@ class flameTimewarpML(flameMenuApp):
             self.parent_app.temp_library.commit()
             import flame
             ch = self.parent_app.temp_library.children
+            pprint (ch)
             for c in ch:
                 print (c.name.get_value())
 
