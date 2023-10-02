@@ -5486,8 +5486,10 @@ class flameTimewarpML(flameMenuApp):
                 if UHD:
                     x = F.interpolate(x, scale_factor=0.5, mode="bilinear", align_corners=False)
                 flow0 = self.block0(x)
+                F1 = flow0
+                F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
 
-                display_flow = F.interpolate(flow0, scale_factor=0.25, mode='nearest')
+                display_flow = F.interpolate(F1_large, scale_factor=0.25, mode='nearest')
                 display_flow = display_flow[:, :2].cpu().detach().numpy()
                 self.progress.update_optical_flow(
                     display_flow,
@@ -5495,14 +5497,14 @@ class flameTimewarpML(flameMenuApp):
                     text = f'Flow pass 1 of 4'
                     )
 
-                F1 = flow0
-                F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 warped_img0 = warp(x[:, :3], F1_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
 
                 flow1 = self.block1(torch.cat((warped_img0, warped_img1, F1_large), 1))
+                F2 = (flow0 + flow1)
+                F2_large = F.interpolate(F2, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
 
-                display_flow = F.interpolate(flow1, scale_factor=0.25, mode='nearest')
+                display_flow = F.interpolate(F2_large, scale_factor=0.25, mode='nearest')
                 display_flow = display_flow[:, :2].cpu().detach().numpy()
                 self.progress.update_optical_flow(
                     display_flow,
@@ -5510,13 +5512,13 @@ class flameTimewarpML(flameMenuApp):
                     text = f'Flow pass 2 of 4'
                     )
 
-                F2 = (flow0 + flow1)
-                F2_large = F.interpolate(F2, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 warped_img0 = warp(x[:, :3], F2_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F2_large[:, 2:4])
                 flow2 = self.block2(torch.cat((warped_img0, warped_img1, F2_large), 1))
+                F3 = (flow0 + flow1 + flow2)
+                F3_large = F.interpolate(F3, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
 
-                display_flow = F.interpolate(flow2, scale_factor=0.25, mode='nearest')
+                display_flow = F.interpolate(F3_large, scale_factor=0.25, mode='nearest')
                 display_flow = display_flow[:, :2].cpu().detach().numpy()
                 self.progress.update_optical_flow(
                     display_flow,
@@ -5524,13 +5526,13 @@ class flameTimewarpML(flameMenuApp):
                     text = f'Flow pass 3 of 4'
                     )
 
-                F3 = (flow0 + flow1 + flow2)
-                F3_large = F.interpolate(F3, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+
                 warped_img0 = warp(x[:, :3], F3_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
                 flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3_large), 1))
+                F4 = (flow0 + flow1 + flow2 + flow3)
 
-                display_flow = F.interpolate(flow3, scale_factor=0.25, mode='nearest')
+                display_flow = F.interpolate(F4, scale_factor=0.25, mode='nearest')
                 display_flow = display_flow[:, :2].cpu().detach().numpy()
                 self.progress.update_optical_flow(
                     display_flow,
@@ -5538,7 +5540,6 @@ class flameTimewarpML(flameMenuApp):
                     text = f'Flow pass 4 of 4'
                     )
 
-                F4 = (flow0 + flow1 + flow2 + flow3)
                 return F4, [F1, F2, F3, F4]
 
         class Conv2(nn.Module):
