@@ -1279,7 +1279,7 @@ class flameTimewarpML(flameMenuApp):
                 # StartFrame label
                 self.start_frame_label = QtWidgets.QLabel('1', Progress)
                 # self.start_frame_label.setFixedWidth(40)
-                self.start_frame_label.setContentsMargins(10, 10, 10, 10)
+                # self.start_frame_label.setContentsMargins(10, 10, 10, 10)
                 self.start_frame_label.setStyleSheet(
                     'QLabel {color: rgb(154, 154, 154); background-color: #292929; border: 1px solid #474747; font: 14px "Discreet";}'
                     )
@@ -1296,7 +1296,7 @@ class flameTimewarpML(flameMenuApp):
                 # EndFrame label
                 self.end_frame_label = QtWidgets.QLabel('100', Progress)
                 # self.end_frame_label.setFixedWidth(40)
-                self.end_frame_label.setContentsMargins(10, 0, 10, 0)
+                # self.end_frame_label.setContentsMargins(10, 0, 10, 0)
                 self.end_frame_label.setStyleSheet(
                     'QLabel {color: rgb(154, 154, 154); background-color: #292929; border: 1px solid #474747; font: 14px "Discreet";}'
                     )
