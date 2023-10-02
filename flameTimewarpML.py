@@ -2398,6 +2398,8 @@ class flameTimewarpML(flameMenuApp):
             server_handle = WireTapServerHandle('localhost')
             clip_node_handle = WireTapNodeHandle(server_handle, self.destination_node_id)
             clip_node_handle.destroyNode()
+            server_handle = None
+            clip_node_handle = None
 
             # import flame
     
