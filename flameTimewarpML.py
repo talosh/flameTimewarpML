@@ -1284,7 +1284,9 @@ class flameTimewarpML(flameMenuApp):
 
                 # End frame label
                 self.end_frame_label = QtWidgets.QLabel('100', Progress)
-                self.end_frame_label.setStyleSheet('{background-color: #242424;} #frame {border: 1px solid #474747; border-radius: 2px;}')
+                self.end_frame_label.setMinimumWidth(90)
+                self.end_frame_label.setMaximumWidth(90)
+                self.end_frame_label.setStyleSheet('{background-color: #242424; border: 1px solid #474747; border-radius: 2px;}')
                 bottom_layout.addWidget(self.end_frame_label)
 
                 # TW Speed test field:
