@@ -2919,6 +2919,7 @@ class flameTimewarpML(flameMenuApp):
 
         duration = self.clip.duration.frame
         relative_start_frame = self.clip.start_time.get_value().relative_frame
+        max_frame_value = relative_start_frame + duration
 
         if not self.progress.tw_speed:
             speed = 100
@@ -2936,12 +2937,12 @@ class flameTimewarpML(flameMenuApp):
                 'incoming': {
                     'clip': clip,
                     'wiretap_node_id': flame.PyClip.get_wiretap_node_id(clip),
-                    'frame_number': int(frame_value)
+                    'frame_number': int(frame_value) if int(frame_value) < max_frame_value else max_frame_value
                     },
                 'outgoing': {
                     'clip': clip,
                     'wiretap_node_id': flame.PyClip.get_wiretap_node_id(clip),
-                    'frame_number': int(frame_value) + 1
+                    'frame_number': int(frame_value) + 1 if int(frame_value) + 1 < max_frame_value else max_frame_value
                     },
                 'temp_library': self.temp_library,
                 'destination': clip.parent
