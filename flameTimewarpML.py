@@ -2393,6 +2393,9 @@ class flameTimewarpML(flameMenuApp):
 
         def on_SpeedValueChange(self):
             print (self.ui.tw_speed_input.value())
+            print (self.destination_node_id)
+            import flame
+            print (find_by_wiretap_node_id(self.destination_node_id))
 
         def closeEvent(self, event):
             event.accept()
@@ -2954,8 +2957,6 @@ class flameTimewarpML(flameMenuApp):
         try:
             import flame
             import numpy as np
-
-            x = 1 / 0
 
             clip = selection[0]
             self.destination_node_name = clip.name.get_value() + '_TWML'
