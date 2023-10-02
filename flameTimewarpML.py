@@ -2394,16 +2394,21 @@ class flameTimewarpML(flameMenuApp):
         def on_SpeedValueChange(self):
             print (self.ui.tw_speed_input.value())
             print (self.destination_node_id)
-            import flame
-    
-            flame.execute_shortcut('Save Project')
-            # flame.execute_shortcut('Refresh Thumbnails')
-            self.parent_app.temp_library.commit()
+            
+            server_handle = WireTapServerHandle('localhost')
+            clip_node_handle = WireTapNodeHandle(server_handle, self.destination_node_id)
+            clip_node_handle.destroyNode()
 
-            ch = self.parent_app.temp_library.children
-            pprint (ch)
-            for c in ch:
-                print (c.name.get_value())
+            # import flame
+    
+            # flame.execute_shortcut('Save Project')
+            # flame.execute_shortcut('Refresh Thumbnails')
+            # self.parent_app.temp_library.commit()
+
+            # ch = self.parent_app.temp_library.children
+            # pprint (ch)
+            # for c in ch:
+            #    print (c.name.get_value())
 
         def closeEvent(self, event):
             event.accept()
@@ -2969,7 +2974,7 @@ class flameTimewarpML(flameMenuApp):
             clip = selection[0]
             self.destination_node_name = clip.name.get_value() + '_TWML'
             destination_node_id = ''
-        # def CreateDestNode():
+
             server_handle = WireTapServerHandle('localhost')
             clip_node_id = clip.get_wiretap_node_id()
             clip_node_handle = WireTapNodeHandle(server_handle, clip_node_id)
