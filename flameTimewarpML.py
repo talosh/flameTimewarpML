@@ -2942,6 +2942,8 @@ class flameTimewarpML(flameMenuApp):
         import flame
         import numpy as np
 
+        x = 1 / 0
+
         clip = selection[0]
         self.destination_node_name = clip.name.get_value() + '_TWML'
         destination_node_id = ''
