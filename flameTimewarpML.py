@@ -1272,13 +1272,13 @@ class flameTimewarpML(flameMenuApp):
                 # Add a close button to the bottom layout
                 self.close_button = QtWidgets.QPushButton("Close")
                 self.close_button.clicked.connect(Progress.close_application)
-                self.close_button.setContentsMargins(10, 4, 4, 4)
+                self.close_button.setContentsMargins(10, 4, 10, 4)
                 self.set_button_style(self.close_button)
                 bottom_layout.addWidget(self.close_button, alignment=QtCore.Qt.AlignLeft)
 
                 # StartFrame label
                 self.start_frame_label = QtWidgets.QLabel('1', Progress)
-                self.start_frame_label.setFixedWidth(50)
+                self.start_frame_label.setFixedWidth(40)
                 self.start_frame_label.setContentsMargins(10, 0, 10, 0)
                 self.start_frame_label.setStyleSheet(
                     'QLabel {color: rgb(154, 154, 154); background-color: #292929; border: 1px solid #474747; font: 14px "Discreet";}'
@@ -1295,7 +1295,7 @@ class flameTimewarpML(flameMenuApp):
 
                 # EndFrame label
                 self.end_frame_label = QtWidgets.QLabel('100', Progress)
-                self.end_frame_label.setFixedWidth(50)
+                self.end_frame_label.setFixedWidth(40)
                 self.end_frame_label.setContentsMargins(10, 0, 10, 0)
                 self.end_frame_label.setStyleSheet(
                     'QLabel {color: rgb(154, 154, 154); background-color: #292929; border: 1px solid #474747; font: 14px "Discreet";}'
