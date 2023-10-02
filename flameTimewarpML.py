@@ -1282,14 +1282,14 @@ class flameTimewarpML(flameMenuApp):
                 bottom_layout.addWidget(spacer, alignment=QtCore.Qt.AlignLeft)
 
                 # StartFrame label
-                self.start_frame_label = QtWidgets.QLabel('1', Progress)
-                self.start_frame_label.setMinimumWidth(28)
-                self.start_frame_label.setContentsMargins(10, 0, 10, 0)
-                self.start_frame_label.setStyleSheet(
+                self.cur_frame_label = QtWidgets.QLabel(' ', Progress)
+                self.cur_frame_label.setMinimumWidth(28)
+                self.cur_frame_label.setContentsMargins(10, 0, 10, 0)
+                self.cur_frame_label.setStyleSheet(
                     'QLabel {color: rgb(154, 154, 154); background-color: #292929; border: 1px solid #474747; font: 14px "Discreet";}'
                     )
-                self.start_frame_label.setAlignment(QtCore.Qt.AlignCenter)
-                bottom_layout.addWidget(self.start_frame_label, alignment=QtCore.Qt.AlignLeft)
+                self.cur_frame_label.setAlignment(QtCore.Qt.AlignCenter)
+                bottom_layout.addWidget(self.cur_frame_label, alignment=QtCore.Qt.AlignLeft)
 
                 # Info label
                 self.info_label = QtWidgets.QLabel('Frame:', Progress)
@@ -1299,7 +1299,7 @@ class flameTimewarpML(flameMenuApp):
                 bottom_layout.setStretchFactor(self.info_label, 1)
 
                 # EndFrame label
-                self.end_frame_label = QtWidgets.QLabel('100', Progress)
+                self.end_frame_label = QtWidgets.QLabel(' ', Progress)
                 self.end_frame_label.setMinimumWidth(28)
                 self.end_frame_label.setContentsMargins(10, 0, 10, 0)
                 self.end_frame_label.setStyleSheet(
@@ -1589,7 +1589,7 @@ class flameTimewarpML(flameMenuApp):
             self.max_frame = max(self.frames_map.keys())
             self.message_queue.put(
                 {'type': 'setText',
-                'widget': 'start_frame_label',
+                'widget': 'cur_frame_label',
                 'text': str(self.min_frame)}
             )
             self.message_queue.put(
@@ -1629,6 +1629,12 @@ class flameTimewarpML(flameMenuApp):
 
         def left_arrow_pressed(self):
             self.current_frame = self.current_frame - 1 if self.current_frame > self.min_frame else self.min_frame
+            self.message_queue.put(
+                {'type': 'setText',
+                'widget': 'cur_frame_label',
+                'text': str(self.current_frame)}
+            )
+
             self.info('Frame ' + str(self.current_frame))
             self.rendering = True
             self.message_queue.put(
@@ -1642,6 +1648,12 @@ class flameTimewarpML(flameMenuApp):
 
         def right_arrow_pressed(self):
             self.current_frame = self.current_frame + 1 if self.current_frame < self.max_frame else self.max_frame
+            self.message_queue.put(
+                {'type': 'setText',
+                'widget': 'cur_frame_label',
+                'text': str(self.current_frame)}
+            )
+
             self.info('Frame ' + str(self.current_frame))
             self.rendering = True
             self.message_queue.put(
@@ -2437,11 +2449,6 @@ class flameTimewarpML(flameMenuApp):
 
             self.min_frame = min(self.frames_map.keys())
             self.max_frame = max(self.frames_map.keys())
-            self.message_queue.put(
-                {'type': 'setText',
-                'widget': 'start_frame_label',
-                'text': str(self.min_frame)}
-            )
             self.message_queue.put(
                 {'type': 'setText',
                 'widget': 'end_frame_label',
