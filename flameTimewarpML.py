@@ -2424,9 +2424,12 @@ class flameTimewarpML(flameMenuApp):
                 flame.execute_shortcut('Save Project')
                 flame.execute_shortcut('Refresh Thumbnails')
                 self.parent_app.temp_library.commit()
-                try:
-                    result_clip = flame.find_by_wiretap_node_id(self.destination_node_id)
-                except:
+                if self.destination_node_id:
+                    try:
+                        result_clip = flame.find_by_wiretap_node_id(self.destination_node_id)
+                    except:
+                        result_clip = None
+                else:
                     result_clip = None
 
                 if not result_clip:
