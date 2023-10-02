@@ -5290,7 +5290,6 @@ class flameTimewarpML(flameMenuApp):
         import torch
         import torch.nn as nn
         import torch.nn.functional as F
-        from torch.utils.checkpoint import checkpoint
 
         import numpy as np
 
@@ -5439,8 +5438,9 @@ class flameTimewarpML(flameMenuApp):
                 return flow
 
         class IFNet(nn.Module):
-            def __init__(self):
+            def __init__(self, progress):
                 super().__init__()
+                self.progress = progress
                 self.block0 = IFBlock(6, scale=8, c=192)
                 self.block1 = IFBlock(10, scale=4, c=128)
                 self.block2 = IFBlock(10, scale=2, c=96)
@@ -5598,8 +5598,8 @@ class flameTimewarpML(flameMenuApp):
                 return x, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt
 
         class IFNetModel:
-            def __init__(self):
-                self.flownet = IFNet()
+            def __init__(self, progress):
+                self.flownet = IFNet(progress)
                 self.device()
 
             def eval(self):
@@ -5704,7 +5704,7 @@ class flameTimewarpML(flameMenuApp):
             img1 = img1.to(device)
 
             print ('load IFNetModel')
-            ifnet_model = IFNetModel()
+            ifnet_model = IFNetModel(self.progress)
             print (f'trained models path: {self.trained_models_path}')
             ifnet_model.load_model(
                 os.path.join(
