@@ -1559,14 +1559,14 @@ class flameTimewarpML(flameMenuApp):
             self.processEvents()
             self.frames_map = self.parent_app.compose_frames_map(self.selection, self.mode)
 
-            # pprint(self.frames_map)
+            pprint(self.frames_map)
 
             self.min_frame = min(self.frames_map.keys())
             self.max_frame = max(self.frames_map.keys())
 
             self.message_queue.put({'type': 'info', 'message': 'Creating destination library...'})
             self.processEvents()
-                               
+    
             self.destination_node_id = self.parent_app.create_destination_node(
                 self.selection,
                 len(self.frames_map.keys())
