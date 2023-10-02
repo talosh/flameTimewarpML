@@ -2392,26 +2392,29 @@ class flameTimewarpML(flameMenuApp):
             super().mouseReleaseEvent(event)
 
         def on_SpeedValueChange(self):
-            print ('hello')
-            # print (self.ui.tw_speed_input.value())
-            # print (self.destination_node_id)
+            if self.tw_speed == self.ui.tw_speed_input.value():
+                return
+            else:
+                self.tw_speed = self.ui.tw_speed_input.value()
             
+            self.frames_map = self.parent_app.compose_frames_map(self.selection, self.mode)
+            self.min_frame = min(self.frames_map.keys())
+            self.max_frame = max(self.frames_map.keys())
+
+            old_destination_node_id = str(self.destination_node_id)
+
+            self.message_queue.put({'type': 'info', 'message': 'Creating destination clip node...'})
+            self.processEvents()
+            self.destination_node_id = self.parent_app.create_destination_node(
+                self.selection,
+                len(self.frames_map.keys())
+                )
+
             server_handle = WireTapServerHandle('localhost')
-            clip_node_handle = WireTapNodeHandle(server_handle, self.destination_node_id)
+            clip_node_handle = WireTapNodeHandle(server_handle, old_destination_node_id)
             clip_node_handle.destroyNode()
             server_handle = None
             clip_node_handle = None
-
-            # import flame
-    
-            # flame.execute_shortcut('Save Project')
-            # flame.execute_shortcut('Refresh Thumbnails')
-            # self.parent_app.temp_library.commit()
-
-            # ch = self.parent_app.temp_library.children
-            # pprint (ch)
-            # for c in ch:
-            #    print (c.name.get_value())
 
         def closeEvent(self, event):
             event.accept()
