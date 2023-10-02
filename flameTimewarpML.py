@@ -2621,7 +2621,7 @@ class flameTimewarpML(flameMenuApp):
         self.progress.message_queue.put(
             {'type': 'mbox',
             'message': message_string,
-            'action': self.close_application}
+            'action': action}
         )
  
     def check_requirements(self, requirements):
