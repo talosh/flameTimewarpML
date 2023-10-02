@@ -1750,7 +1750,7 @@ class flameTimewarpML(flameMenuApp):
             outgoing_image_data = (np.tanh((outgoing_image_data * 2) - 1) + 1) / 2
 
             if ratio == 0.0:
-                result_image_data = ((np.arctanh(np.clip((incoming_image_data * 2) - 1), 0, 1)) + 1) / 2
+                result_image_data = (np.arctanh(np.clip(((incoming_image_data * 2) - 1), 0, 1)) + 1) / 2
                 self.update_interface_image(
                     incoming_image_data[::4, ::4, :],
                     self.ui.flow1_label,
@@ -1775,7 +1775,7 @@ class flameTimewarpML(flameMenuApp):
                     )
 
             elif ratio == 1.0:
-                result_image_data = ((np.arctanh(np.clip((outgoing_image_data * 2) - 1), 0, 1)) + 1) / 2
+                result_image_data = (np.arctanh(np.clip(((outgoing_image_data * 2) - 1), 0, 1)) + 1) / 2
                 self.update_interface_image(
                     incoming_image_data[::4, ::4, :],
                     self.ui.flow1_label,
@@ -1804,7 +1804,7 @@ class flameTimewarpML(flameMenuApp):
                 self.info('Frame ' + str(self.current_frame) + ': Processing...')
 
                 result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
-                result_image_data = ((np.arctanh(np.clip((result_image_data * 2) - 1), 0, 1)) + 1) / 2
+                result_image_data = (np.arctanh(np.clip(((result_image_data * 2) - 1), 0, 1)) + 1) / 2
 
                 if not self.threads:
                     return
