@@ -5440,17 +5440,25 @@ class flameTimewarpML(flameMenuApp):
 
         class IFNet(nn.Module):
             def __init__(self):
-                super(IFNet, self).__init__()
+                super().__init__()
                 self.block0 = IFBlock(6, scale=8, c=192)
                 self.block1 = IFBlock(10, scale=4, c=128)
                 self.block2 = IFBlock(10, scale=2, c=96)
                 self.block3 = IFBlock(10, scale=1, c=48)
 
             def forward(self, x, UHD=False):
-                print ('IFNet forward')
                 if UHD:
                     x = F.interpolate(x, scale_factor=0.5, mode="bilinear", align_corners=False)
                 flow0 = self.block0(x)
+
+                display_flow = F.interpolate(flow0, scale_factor=0.25, mode='nearest')
+                display_flow = display_flow[:, :2].cpu().detach().numpy()
+                self.progress.update_optical_flow(
+                    display_flow,
+                    self.progress.ui.flow2_label,
+                    text = f'Flow pass 1 of 4'
+                    )
+
                 F1 = flow0
                 F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 warped_img0 = warp(x[:, :3], F1_large[:, :2])
