@@ -2396,11 +2396,9 @@ class flameTimewarpML(flameMenuApp):
             print (self.destination_node_id)
             self.parent_app.temp_library.commit()
             import flame
-            print (flame.find_by_wiretap_node_id(self.destination_node_id))
-
             ch = self.parent_app.temp_library.children
             for c in ch:
-                pass
+                print (c.name.get_value())
 
         def closeEvent(self, event):
             event.accept()
