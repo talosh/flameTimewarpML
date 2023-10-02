@@ -5675,6 +5675,7 @@ class flameTimewarpML(flameMenuApp):
 
         for current_pass in range(1, num_passes + 1):
             info_text = self.progress.ui.info_label.text()
+            info_text = info_text.split('pass')[0]
             self.progress.info(f'{info_text} pass {current_pass} of {num_passes}')
 
             # torch.set_default_dtype(torch.float16)
