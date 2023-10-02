@@ -5451,6 +5451,7 @@ class flameTimewarpML(flameMenuApp):
                     x = F.interpolate(x, scale_factor=0.5, mode="bilinear", align_corners=False)
                 flow0 = self.block0(x)
 
+                print ('display_flow')
                 display_flow = F.interpolate(flow0, scale_factor=0.25, mode='nearest')
                 display_flow = display_flow[:, :2].cpu().detach().numpy()
                 self.progress.update_optical_flow(
