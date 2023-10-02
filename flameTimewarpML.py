@@ -1562,9 +1562,12 @@ class flameTimewarpML(flameMenuApp):
             self.min_frame = min(self.frames_map.keys())
             self.max_frame = max(self.frames_map.keys())
 
-            self.message_queue.put({'type': 'info', 'message': 'Creating destination library...'})
+            self.message_queue.put({'type': 'info', 'message': 'Creating destination shared library...'})
             self.processEvents()
-    
+            self.parent_app.create_temp_library(self.selection)
+
+            self.message_queue.put({'type': 'info', 'message': 'Creating destination clip node...'})
+            self.processEvents()
             self.destination_node_id = self.parent_app.create_destination_node(
                 self.selection,
                 len(self.frames_map.keys())
