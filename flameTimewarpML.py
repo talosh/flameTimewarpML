@@ -5489,7 +5489,7 @@ class flameTimewarpML(flameMenuApp):
                     x = F.interpolate(x, scale_factor=0.5, mode="bilinear", align_corners=False)
                 flow0 = self.block0(x)
                 F1 = flow0
-                F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+                F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0 [:,:,:h,:w]
                 print (f'F1_large shape {F1_large.shape}')
 
                 display_flow = F.interpolate(F1_large, scale_factor=0.25, mode='nearest')
