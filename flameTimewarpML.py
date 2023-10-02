@@ -2714,6 +2714,9 @@ class flameTimewarpML(flameMenuApp):
 
     def create_temp_library(self, selection):        
         try:
+
+            x = 1 / 0
+
             import flame
 
             clip = selection[0]
