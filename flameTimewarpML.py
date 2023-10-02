@@ -1718,10 +1718,7 @@ class flameTimewarpML(flameMenuApp):
                 inc_frame_number
                 )
             
-            print (f'incoming image data min: {incoming_image_data.min()}')
-            print (f'incoming image data max: {incoming_image_data.max()}')
-
-            # incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
+            incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
             
             self.update_interface_image(
                 incoming_image_data[::2, ::2, :], 
@@ -1740,6 +1737,8 @@ class flameTimewarpML(flameMenuApp):
                 outg_frame_number
                 )
             
+            outgoing_image_data = (np.tanh((outgoing_image_data * 2) - 1) + 1) / 2
+
             self.update_interface_image(
                 outgoing_image_data[::2, ::2, :], 
                 self.ui.flow4_label,
@@ -1752,8 +1751,7 @@ class flameTimewarpML(flameMenuApp):
             ratio = self.current_frame_data['ratio']
 
             if ratio == 0.0:
-                # result_image_data = (np.arctanh(np.clip((incoming_image_data * 2) - 1, -1, 1)) + 1) / 2
-                result_image_data = incoming_image_data
+                result_image_data = (np.arctanh(np.clip((incoming_image_data * 2) - 1, -1, 1)) + 1) / 2
 
                 self.update_interface_image(
                     incoming_image_data[::4, ::4, :],
@@ -1779,7 +1777,7 @@ class flameTimewarpML(flameMenuApp):
                     )
 
             elif ratio == 1.0:
-                result_image_data = outgoing_image_data
+                result_image_data = (np.arctanh(np.clip((outgoing_image_data * 2) - 1, -1, 1)) + 1) / 2
                 self.update_interface_image(
                     incoming_image_data[::4, ::4, :],
                     self.ui.flow1_label,
@@ -1807,13 +1805,7 @@ class flameTimewarpML(flameMenuApp):
 
                 self.info('Frame ' + str(self.current_frame) + ': Processing...')
 
-                incoming_image_data_normalized = (incoming_image_data * 2) - 1
-                incoming_image_data_tanh = np.tanh(incoming_image_data_normalized)
-                incoming_image_data = (incoming_image_data_tanh + 1) / 2
-                # outgoing_image_data = (np.tanh((outgoing_image_data * 2) - 1) + 1) / 2
-
                 result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
-                # result_image_data = (np.arctanh(np.clip(((result_image_data * 2) - 1), 0, 1)) + 1) / 2
 
                 if not self.threads:
                     return
@@ -1840,6 +1832,7 @@ class flameTimewarpML(flameMenuApp):
                 return
 
             self.info('Frame ' + str(self.current_frame) + ': Saving...')
+            result_image_data = (np.arctanh(np.clip((outgoing_image_data * 2) - 1, -1, 1)) + 1) / 2
             self.save_result_frame(
                 result_image_data,
                 self.current_frame - 1
