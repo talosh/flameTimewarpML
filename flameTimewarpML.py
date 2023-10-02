@@ -2726,11 +2726,7 @@ class flameTimewarpML(flameMenuApp):
         
         except Exception as e:
             message_string = f'Unable to create temp shared library:\n"{e}"'
-            self.progress.message_queue.put(
-                {'type': 'mbox',
-                'message': message_string,
-                'action': self.close_application}
-            )
+            self.message(message_string)
             return None
 
     def compose_frames_map(self, selection, mode):
