@@ -1278,7 +1278,7 @@ class flameTimewarpML(flameMenuApp):
 
                 # Add spacer
                 spacer = QtWidgets.QLabel('', Progress)
-                spacer.setMinimumWidth(10)
+                spacer.setMinimumWidth(4)
                 bottom_layout.addWidget(spacer, alignment=QtCore.Qt.AlignLeft)
 
                 # StartFrame label
