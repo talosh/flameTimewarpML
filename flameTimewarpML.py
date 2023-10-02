@@ -2939,16 +2939,16 @@ class flameTimewarpML(flameMenuApp):
         return None
 
     def create_destination_node(self, selection, num_frames):
-        import flame
-        import numpy as np
-
-        x = 1 / 0
-
-        clip = selection[0]
-        self.destination_node_name = clip.name.get_value() + '_TWML'
-        destination_node_id = ''
-        # def CreateDestNode():
         try:
+            import flame
+            import numpy as np
+
+            x = 1 / 0
+
+            clip = selection[0]
+            self.destination_node_name = clip.name.get_value() + '_TWML'
+            destination_node_id = ''
+        # def CreateDestNode():
             server_handle = WireTapServerHandle('localhost')
             clip_node_id = clip.get_wiretap_node_id()
             clip_node_handle = WireTapNodeHandle(server_handle, clip_node_id)
