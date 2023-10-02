@@ -2163,6 +2163,45 @@ class flameTimewarpML(flameMenuApp):
                         ch_idx = 2-i if convert_to_bgr else i
                         flow_image[:,:,ch_idx] = np.floor(255 * col)
                     return flow_image
+                
+                def flow_uv_to_colors_dark(u, v, convert_to_bgr=False):
+                    """
+                    Applies the flow color wheel to (possibly clipped) flow components u and v.
+
+                    According to the C++ source code of Daniel Scharstein
+                    According to the Matlab source code of Deqing Sun
+
+                    Args:
+                        u (np.ndarray): Input horizontal flow of shape [H,W]
+                        v (np.ndarray): Input vertical flow of shape [H,W]
+                        convert_to_bgr (bool, optional): Convert output image to BGR. Defaults to False.
+
+                    Returns:
+                        np.ndarray: Flow visualization image of shape [H,W,3]
+                    """
+                    flow_image = np.zeros((u.shape[0], u.shape[1], 3), np.uint8)
+                    colorwheel = make_colorwheel()  # shape [55x3]
+                    ncols = colorwheel.shape[0]
+                    rad = np.sqrt(np.square(u) + np.square(v))
+                    a = np.arctan2(-v, -u)/np.pi
+                    fk = (a+1) / 2*(ncols-1)
+                    k0 = np.floor(fk).astype(np.int32)
+                    k1 = k0 + 1
+                    k1[k1 == ncols] = 0
+                    f = fk - k0
+                    for i in range(colorwheel.shape[1]):
+                        tmp = colorwheel[:,i]
+                        col0 = tmp[k0] / 255.0
+                        col1 = tmp[k1] / 255.0
+                        col = (1-f)*col0 + f*col1
+                        idx = (rad <= 1)
+                        col[idx]  = rad[idx] * col[idx]
+                        col[~idx] = col[~idx] * 0.75   # out of range
+                        # Note the 2-i => BGR instead of RGB
+                        ch_idx = 2-i if convert_to_bgr else i
+                        flow_image[:,:,ch_idx] = np.floor(255 * col)
+                    return flow_image
+
 
                 def flow_to_color(flow_uv, clip_flow=None, convert_to_bgr=False):
                     """
@@ -2187,7 +2226,7 @@ class flameTimewarpML(flameMenuApp):
                     epsilon = 1e-5
                     u = u / (rad_max + epsilon)
                     v = v / (rad_max + epsilon)
-                    return flow_uv_to_colors(u, v, convert_to_bgr)
+                    return flow_uv_to_colors_dark(u, v, convert_to_bgr)
 
                 flow = np.squeeze(flow, axis=0) * -1
                 flow = np.transpose(flow, (1, 2, 0))
