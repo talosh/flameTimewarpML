@@ -1287,7 +1287,7 @@ class flameTimewarpML(flameMenuApp):
                 self.end_frame_label.setFixedWidth(80)
                 self.end_frame_label.setContentsMargins(10, 0, 10, 0)
                 self.end_frame_label.setStyleSheet(
-                    'QLabel {color: #cbcbcb; background-color: #282828; border: 1px solid #474747;}'
+                    'QLabel {color: rgb(154, 154, 154); background-color: #292929; border: 1px solid #474747;}'
                     )
                 bottom_layout.addWidget(self.end_frame_label)
 
