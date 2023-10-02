@@ -2614,7 +2614,7 @@ class flameTimewarpML(flameMenuApp):
 
     def message(self, message_string, type = 'Error'):
         if type == 'Error':
-            action = self.preogress.close_application
+            action = self.progress.close_application
         else:
             action = None
 
