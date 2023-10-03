@@ -1941,26 +1941,19 @@ class flameTimewarpML(flameMenuApp):
                     image_array = torch.flip(image_array, [0])
                     return image_array / 1024
 
-                    '''
-                    values_16bit = values_10bit * 64
-                    buff = values_16bit.astype('<u2').tobytes().decode('latin-1')
-                    frame_buffer_size = len(buff)
-
-                    del byte_array
-                    del values_10bit
-                    del values_16bit
-
-                    buff_tail = (frame_buffer_size // np.dtype(dt).itemsize) - (fmt.height() * fmt.width() * fmt.numChannels())
-                    image_array = np.frombuffer(bytes(buff, 'latin-1'), dtype=dt)[:-1 * buff_tail]
-                    image_array = image_array.astype(np.float32) / 65535
-                    image_array = torch.from_numpy(image_array)
-                    image_array = image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
-                    image_array = torch.flip(image_array, [0])
-                    return image_array
-                    '''
-
                 elif bits_per_channel == 16 and not('float' in fmt.formatTag()):
                     dt = np.uint16
+                    buff_tail = (frame_buffer_size // np.dtype(dt).itemsize) - (fmt.height() * fmt.width() * fmt.numChannels())
+                    image_array = np.frombuffer(bytes(buff, 'latin-1'), dtype=dt)[:-1 * buff_tail]
+                    image_array = torch.from_numpy(image_array.astype(np.float32))
+                    image_array = image_array.to(
+                        device = self.parent_app.torch_device,
+                        dtype = torch.float32
+                        )
+                    image_array = image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
+                    image_array = torch.flip(image_array, [0])
+                    return image_array / 65535
+                
                 elif (bits_per_channel == 16) and ('float' in fmt.formatTag()):
                     dt = torch.float16
                 elif bits_per_channel == 32:
