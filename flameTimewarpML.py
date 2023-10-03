@@ -1715,10 +1715,12 @@ class flameTimewarpML(flameMenuApp):
         def normalize_values(self, image_array):
             import torch
 
-            def custom_bend(x, l=4.8, k=1):
+            def custom_bend(x, l=4.8, m=99.0, k=1):
                 linear_part = x
-                exp_positive = 1 + (4 * (1 - torch.exp(-k * (x - 1))))
-                exp_negative = -1 - (4 * (1 - torch.exp(k * (x + 1))))
+                exp_positive = 1 + ((torch.clamp(x, 1, m) - 1) / m - 1 ) * (l - 1)
+                exp_negative = -1.0 * l + ((torch.clamp(x, -1.0 * m, -1) + m) / -1 + m) * (-1.0 - l * -1.0)
+                # exp_positive = 1 + (4 * (1 - torch.exp(-k * (x - 1))))
+                # exp_negative = -1 - (4 * (1 - torch.exp(k * (x + 1))))
     
                 return torch.where(x > 1, exp_positive, torch.where(x < -1, exp_negative, linear_part))
 
@@ -1726,6 +1728,9 @@ class flameTimewarpML(flameMenuApp):
             image_array = (image_array * 2) - 1
             # bend values below -1.0 and above 1.0 exponentially so they are not larger then (-4.0 - 4.0)
             image_array = custom_bend(image_array)
+
+            print (f'min: {torch.min(image_array)}, max: {torch.max(image_array)}')
+
             # bend everything to fit -1.0 - 1.0 with hyperbolic tanhent
             image_array = torch.tanh(image_array)
             # move it to 0.0 - 1.0 range
