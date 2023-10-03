@@ -1698,11 +1698,14 @@ class flameTimewarpML(flameMenuApp):
 
         def process_current_frame(self):
             self.frame_thread = threading.Thread(target=self._process_current_frame)
+            self.frame_thread.daemon = True
             self.frame_thread.start()
             self.frame_thread.join()
 
         def _process_current_frame(self, single_frame=False):
             import numpy as np
+
+            start = time.time()
 
             self.current_frame_data = self.frames_map.get(self.current_frame)
 
@@ -1713,15 +1716,21 @@ class flameTimewarpML(flameMenuApp):
 
             inc_frame_number = self.current_frame_data['incoming']['frame_number'] - 1
             
+            print (f'timing: \tbefore read: \t{time.time() - start} sec')
+
             incoming_image_data = self.read_image_data(
                 self.current_frame_data['incoming']['clip'], 
                 inc_frame_number
                 )
-            
+
+            print (f'timing: \ainc read: \t{time.time() - start} sec')
+
             inc_min = np.min(incoming_image_data)
             inc_max = np.max(incoming_image_data)
             incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
-            
+
+            print (f'timing: \ainc tanh: \t{time.time() - start} sec')
+
             self.update_interface_image(
                 incoming_image_data[::2, ::2, :], 
                 self.ui.flow1_label,
@@ -1730,6 +1739,8 @@ class flameTimewarpML(flameMenuApp):
             
             if not self.threads:
                 return
+            
+            print (f'timing: \ainc upd: \t{time.time() - start} sec')
             
             self.info('Frame ' + str(self.current_frame) + ': reading outgoing source image data...')
 
@@ -2503,9 +2514,6 @@ class flameTimewarpML(flameMenuApp):
             super().mouseReleaseEvent(event)
 
         def on_SpeedValueChange(self):
-            
-            start = time.time()
-
             if self.tw_speed == self.ui.tw_speed_input.value():
                 return
             else:
@@ -2539,9 +2547,6 @@ class flameTimewarpML(flameMenuApp):
             ratio = self.current_frame_data['ratio']
             if int(ratio) == ratio:
                 self.process_current_frame()
-            
-            print (f'on speed value took {time.time() - start} sec')
-
 
         def closeEvent(self, event):
             event.accept()
