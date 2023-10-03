@@ -1712,6 +1712,16 @@ class flameTimewarpML(flameMenuApp):
             self.frame_thread.start()
             self.frame_thread.join()
 
+        def normalize_values(self, image_array):
+            import torch
+            return (torch.tanh((incoming_image_data * 2) - 1) + 1) / 2
+        
+        def restore_normalized_values(self, image_aray):
+            import torch
+            epsilon = torch.tensor(1.40129846e-45, dtype=torch.float32)
+            image_array = torch.clamp(image_array, min=epsilon, max=1.0-epsilon)
+            return (torch.arctanh(torch.clamp((result_image_data * 2) - 1, -1.0, 1.0)) + 1.0) / 2.0
+
         def _process_current_frame(self, single_frame=False):
             import numpy as np
             import torch
@@ -1740,42 +1750,28 @@ class flameTimewarpML(flameMenuApp):
             print (f'timing: \tinc image read: \t{time.time() - read_start} sec')
             
             torch_tanh_start = time.time()
-            inc_min = torch.min(incoming_image_data).item()
-            inc_max = torch.max(incoming_image_data).item()
-            incoming_image_data = (torch.tanh((incoming_image_data * 2) - 1) + 1) / 2
-            print (f'timing: \ttorch tanh: \t{time.time() - torch_tanh_start} sec')
-            incoming_image_data = incoming_image_data.cpu().numpy()
+            incoming_image_data = self.normalize_values(incoming_image_data)
 
+            print (f'timing: \ttorch tanh: \t{time.time() - torch_tanh_start} sec')
+            
             self.update_interface_image(
                 incoming_image_data[::2, ::2, :], 
                 self.ui.flow1_label,
                 text = 'src frame: ' + str(inc_frame_number + 1)
                 )
-            
-            '''
-            np_tanh_start = time.time()
-            inc_min = np.min(incoming_image_data)
-            inc_max = np.max(incoming_image_data)
-            incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
-            print (f'timing: \tnumpy tanh: \t{time.time() - np_tanh_start} sec')
-            '''
-            
+                        
             if not self.threads:
                 return
-            
-            print (f'timing: \ainc upd: \t{time.time() - start} sec')
-            
+                        
             self.info('Frame ' + str(self.current_frame) + ': reading outgoing source image data...')
 
             outg_frame_number = self.current_frame_data['outgoing']['frame_number'] - 1
-            outgoing_image_data = self.read_image_data(
+            outgoing_image_data = self.read_image_data_torch(
                 self.current_frame_data['outgoing']['clip'], 
                 outg_frame_number
                 )
-            
-            outg_min = np.min(outgoing_image_data)
-            outg_max = np.max(outgoing_image_data)
-            outgoing_image_data = (np.tanh((outgoing_image_data * 2) - 1) + 1) / 2
+
+            outgoing_image_data = self.normalize_values(incoming_image_data)
 
             self.update_interface_image(
                 outgoing_image_data[::2, ::2, :], 
@@ -1787,8 +1783,6 @@ class flameTimewarpML(flameMenuApp):
                 return
             
             ratio = self.current_frame_data['ratio']
-            common_min = min(inc_min, outg_min)
-            common_max = max(inc_max, outg_max)
 
             if ratio == 0.0:
                 result_image_data = incoming_image_data
@@ -1873,13 +1867,14 @@ class flameTimewarpML(flameMenuApp):
 
             self.info('Frame ' + str(self.current_frame) + ': Saving...')
             
-            result_image_data = (np.arctanh(np.clip((result_image_data * 2) - 1, -1, 1)) + 1) / 2
-            result_image_data = np.clip(result_image_data, common_min, common_max)
+            result_image_data = self.restore_normalized_values(result_image_data)
+            result_image_data = result_image_data.cpu().numpy()
 
             self.save_result_frame(
                 result_image_data,
                 self.current_frame - 1
             )
+
             self.current_frame_data['saved'] = True
             self.info('Frame ' + str(self.current_frame))
 
