@@ -1751,7 +1751,7 @@ class flameTimewarpML(flameMenuApp):
             inc_min = np.min(incoming_image_data)
             inc_max = np.max(incoming_image_data)
             incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
-            print (f'timing: \ttorch tanh: \t{time.time() - np_tanh_start} sec')
+            print (f'timing: \tnumpy tanh: \t{time.time() - np_tanh_start} sec')
 
             '''
             torch_tensor = torch.from_numpy(incoming_image_data)
