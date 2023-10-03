@@ -1719,6 +1719,8 @@ class flameTimewarpML(flameMenuApp):
                 )
             
             incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
+            inc_min = np.min(incoming_image_data)
+            inc_max = np,max(incoming_image_data)
             
             self.update_interface_image(
                 incoming_image_data[::2, ::2, :], 
@@ -1738,6 +1740,8 @@ class flameTimewarpML(flameMenuApp):
                 )
             
             outgoing_image_data = (np.tanh((outgoing_image_data * 2) - 1) + 1) / 2
+            outg_min = np.min(outgoing_image_data)
+            outg_max = np.nax(outgoing_image_data)
 
             self.update_interface_image(
                 outgoing_image_data[::2, ::2, :], 
@@ -1749,6 +1753,8 @@ class flameTimewarpML(flameMenuApp):
                 return
             
             ratio = self.current_frame_data['ratio']
+            common_min = min(inc_min, outg_min)
+            common_max = max(inc_min, outg_min)
 
             pprint (f'current ratio: {ratio}')
 
@@ -1835,6 +1841,7 @@ class flameTimewarpML(flameMenuApp):
 
             self.info('Frame ' + str(self.current_frame) + ': Saving...')
             result_image_data = (np.arctanh(np.clip((result_image_data * 2) - 1, -1, 1)) + 1) / 2
+            result_image_data = np.clip(result_image_data, common_min, common_max)
             self.save_result_frame(
                 result_image_data,
                 self.current_frame - 1
