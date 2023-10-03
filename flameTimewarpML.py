@@ -1555,6 +1555,14 @@ class flameTimewarpML(flameMenuApp):
             max_label_width = self.ui.info_label.width()
             self.ui.info_label.setMaximumWidth(max_label_width)
 
+        def set_torch_device(self):
+            import torch
+            if sys.platform == 'darwin':
+                device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+            else:
+                device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            return device
+
         def after_show(self):
             self.message_queue.put({'type': 'info', 'message': 'Checking requirements...'})
             self.processEvents()
@@ -1579,7 +1587,9 @@ class flameTimewarpML(flameMenuApp):
                     'action': self.close_application}
                 )
                 return
-            
+
+            self.parent_app.torch_device = self.set_torch_device()
+
             self.message_queue.put({'type': 'info', 'message': 'Creating destination shared library...'})
             self.processEvents()
             self.parent_app.create_temp_library(self.selection)
@@ -1708,8 +1718,6 @@ class flameTimewarpML(flameMenuApp):
 
             start = time.time()
 
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
             self.current_frame_data = self.frames_map.get(self.current_frame)
 
             self.destination = self.current_frame_data['outgoing']['clip'].parent
@@ -1730,12 +1738,13 @@ class flameTimewarpML(flameMenuApp):
 
             inc_min = np.min(incoming_image_data)
             inc_max = np.max(incoming_image_data)
+            incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
 
-            # incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
-
+            '''
             torch_tensor = torch.from_numpy(incoming_image_data)
             torch_tensor = (torch.tanh((torch_tensor * 2) - 1) + 1) / 2
             incoming_image_data = torch_tensor.cpu().numpy()
+            '''
 
             print (f'timing: \ainc tanh: \t{time.time() - start} sec')
 
@@ -2714,6 +2723,8 @@ class flameTimewarpML(flameMenuApp):
         self.threads = True
         self.temp_library = None
         
+        self,torch_device = None
+
         self.requirements = requirements
 
         # this enables fallback to CPU on Macs
