@@ -1913,7 +1913,7 @@ class flameTimewarpML(flameMenuApp):
             self.info('Frame ' + str(self.current_frame) + ': Saving...')
             
             result_image_data = self.restore_normalized_values(result_image_data)
-            result_image_data = result_image_data.cpu().numpy()
+            result_image_data = result_image_data.cpu().detach().numpy()
 
             self.save_result_frame(
                 result_image_data,
@@ -2180,7 +2180,7 @@ class flameTimewarpML(flameMenuApp):
                 return
             
             if isinstance(array, torch.Tensor):
-                array = array.cpu().numpy()
+                array = array.cpu().detach().numpy()
 
             # colourmanagement should go here
             if (array.dtype == np.float16) or (array.dtype == np.float32):
