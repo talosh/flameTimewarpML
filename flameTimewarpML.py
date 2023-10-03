@@ -1715,13 +1715,13 @@ class flameTimewarpML(flameMenuApp):
         def normalize_values(self, image_array):
             import torch
 
-            def normalize(value, old_min, old_max, new_min, new_max):
+            def lin_normalize(value, old_min, old_max, new_min, new_max):
                 return new_min + (value - old_min) * (new_max - new_min) / (old_max - old_min)
 
             def custom_bend(x, l=4.8, m=99.0, k=1):
                 linear_part = x
-                exp_positive = normalize(torch.clamp(x, -m, m), 1, m, 1, l)
-                exp_negative = normalize(torch.clamp(x, -m, m), -m, -1, -l, -1)
+                exp_positive = lin_normalize(torch.clamp(x, -m, m), 1, m, 1, l)
+                exp_negative = lin_normalize(torch.clamp(x, -m, m), -m, -1, -l, -1)
                 # exp_positive = 1 + (4 * (1 - torch.exp(-k * (x - 1))))
                 # exp_negative = -1 - (4 * (1 - torch.exp(k * (x + 1))))
     
@@ -1743,6 +1743,9 @@ class flameTimewarpML(flameMenuApp):
         
         def restore_normalized_values(self, image_array):
             import torch
+
+            def normalize(value, old_min, old_max, new_min, new_max):
+                return new_min + (value - old_min) * (new_max - new_min) / (old_max - old_min)
 
             def inverse_custom_bend(y, k=1):
                 linear_part = y
@@ -1787,7 +1790,6 @@ class flameTimewarpML(flameMenuApp):
                 inc_frame_number
                 )
             
-            print (type(incoming_image_data))
             print (f'timing: \tinc image read: \t{time.time() - read_start} sec')
             
             torch_tanh_start = time.time()
@@ -1812,7 +1814,7 @@ class flameTimewarpML(flameMenuApp):
                 outg_frame_number
                 )
 
-            outgoing_image_data = self.normalize_values(incoming_image_data)
+            outgoing_image_data = self.normalize_values(outgoing_image_data)
 
             self.update_interface_image(
                 outgoing_image_data[::2, ::2, :], 
