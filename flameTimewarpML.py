@@ -1704,8 +1704,11 @@ class flameTimewarpML(flameMenuApp):
 
         def _process_current_frame(self, single_frame=False):
             import numpy as np
+            import torch
 
             start = time.time()
+
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
             self.current_frame_data = self.frames_map.get(self.current_frame)
 
@@ -1727,7 +1730,12 @@ class flameTimewarpML(flameMenuApp):
 
             inc_min = np.min(incoming_image_data)
             inc_max = np.max(incoming_image_data)
-            incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
+
+            # incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
+
+            torch_tensor = torch.from_numpy(incoming_image_data)
+            torch_tensor = (torch.tanh((torch_tensor * 2) - 1) + 1) / 2
+            incoming_image_data = torch_tensor.cpu().numpy()
 
             print (f'timing: \ainc tanh: \t{time.time() - start} sec')
 
