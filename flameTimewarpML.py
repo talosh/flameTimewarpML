@@ -1754,7 +1754,7 @@ class flameTimewarpML(flameMenuApp):
             
             ratio = self.current_frame_data['ratio']
             common_min = min(inc_min, outg_min)
-            common_max = max(inc_min, outg_min)
+            common_max = max(inc_max, outg_max)
 
             pprint (f'current ratio: {ratio}')
 
