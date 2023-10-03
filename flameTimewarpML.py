@@ -1715,7 +1715,7 @@ class flameTimewarpML(flameMenuApp):
         def normalize_values(self, image_array):
             import torch
 
-            def custom_bend(x, k=1):
+            def custom_bend(x, l=4.8, k=1):
                 linear_part = x
                 exp_positive = 1 + (4 * (1 - torch.exp(-k * (x - 1))))
                 exp_negative = -1 - (4 * (1 - torch.exp(k * (x + 1))))
