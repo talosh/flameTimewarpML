@@ -1717,8 +1717,8 @@ class flameTimewarpML(flameMenuApp):
 
             def custom_bend(x, k=1):
                 linear_part = x
-                exp_positive = 1 + (4 * (1 - torch.exp(-k * (x - 1))))
-                exp_negative = -1 - (4 * (1 - torch.exp(k * (x + 1))))
+                exp_positive = 1 + (3 * (1 - torch.exp(-k * (x - 1))))
+                exp_negative = -1 - (3 * (1 - torch.exp(k * (x + 1))))
     
                 return torch.where(x > 1, exp_positive, torch.where(x < -1, exp_negative, linear_part))
 
@@ -1735,8 +1735,25 @@ class flameTimewarpML(flameMenuApp):
         
         def restore_normalized_values(self, image_array):
             import torch
+
+            def inverse_custom_bend(y, k=1):
+                linear_part = y
+                inv_positive = 1 + torch.log(1 - (y - 1) / 3) / (-k)
+                inv_negative = -1 + torch.log(1 + (y + 1) / 3) / k
+                
+                return torch.where(y > 4, inv_positive, torch.where(y < -4, inv_negative, linear_part))
+
             epsilon = torch.tensor(4e-8, dtype=torch.float32).to(image_array.device)
-            return (torch.arctanh(torch.clamp((image_array * 2) - 1, -1.0 + epsilon, 1.0 - epsilon)) + 1.0) / 2.0
+            # clamp image befor arctanh
+            image_array = torch.clamp((image_array * 2) - 1, -1.0 + epsilon, 1.0 - epsilon)
+            # restore values from tanh  s-curve
+            image_array = torch.arctanh(image_array)
+            # restore custom bended values
+            image_array = inverse_custom_bend(image_array)
+            # move it to 0.0 - 1.0 range
+            image_array = ( image_array + 1.0) / 2.0
+
+            return image_array
 
         def _process_current_frame(self, single_frame=False):
             import numpy as np
