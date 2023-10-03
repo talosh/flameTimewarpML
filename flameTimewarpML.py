@@ -1840,8 +1840,10 @@ class flameTimewarpML(flameMenuApp):
                 return
 
             self.info('Frame ' + str(self.current_frame) + ': Saving...')
+            
             result_image_data = (np.arctanh(np.clip((result_image_data * 2) - 1, -1, 1)) + 1) / 2
             result_image_data = np.clip(result_image_data, common_min, common_max)
+
             self.save_result_frame(
                 result_image_data,
                 self.current_frame - 1
