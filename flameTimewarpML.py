@@ -1717,15 +1717,15 @@ class flameTimewarpML(flameMenuApp):
 
             def custom_bend(x, k=1):
                 linear_part = x
-                exp_positive = 1 + (3 * (1 - torch.exp(-k * (x - 1))))
-                exp_negative = -1 - (3 * (1 - torch.exp(k * (x + 1))))
+                exp_positive = 1 + (4 * (1 - torch.exp(-k * (x - 1))))
+                exp_negative = -1 - (4 * (1 - torch.exp(k * (x + 1))))
     
                 return torch.where(x > 1, exp_positive, torch.where(x < -1, exp_negative, linear_part))
 
             # transfer (0.0 - 1.0) onto (-1.0 - 1.0) for tanh
             image_array = (image_array * 2) - 1
             # bend values below -1.0 and above 1.0 exponentially so they are not larger then (-4.0 - 4.0)
-            # image_array = custom_bend(image_array)
+            image_array = custom_bend(image_array)
             # bend everything to fit -1.0 - 1.0 with hyperbolic tanhent
             image_array = torch.tanh(image_array)
             # move it to 0.0 - 1.0 range
