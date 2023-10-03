@@ -1718,7 +1718,7 @@ class flameTimewarpML(flameMenuApp):
         
         def restore_normalized_values(self, image_array):
             import torch
-            epsilon = torch.tensor(1.40129846e-18, dtype=torch.float32).to(image_array.device)
+            epsilon = torch.tensor(1.40129846e-1, dtype=torch.float32).to(image_array.device)
             return (torch.arctanh(torch.clamp((image_array * 2) - 1, -1.0 + epsilon, 1.0 - epsilon)) + 1.0) / 2.0
 
         def _process_current_frame(self, single_frame=False):
