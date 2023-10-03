@@ -1955,9 +1955,19 @@ class flameTimewarpML(flameMenuApp):
                     return image_array / 65535
                 
                 elif (bits_per_channel == 16) and ('float' in fmt.formatTag()):
-                    dt = torch.float16
+                    buff_tail = (frame_buffer_size // np.dtype(np.float16).itemsize) - (fmt.height() * fmt.width() * fmt.numChannels())
+                    image_array = torch.frombuffer(bytes(buff, 'latin-1'), dtype=torch.float16)[:-1 * buff_tail]
+                    image_array = image_array.to(
+                        device = self.parent_app.torch_device,
+                        dtype = torch.float32
+                        )
+                    image_array = image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
+                    image_array = torch.flip(image_array, [0])
+                    return image_array
+
                 elif bits_per_channel == 32:
                     dt = torch.float32
+                    
                 else:
                     raise Exception('Unknown image format')
                 
