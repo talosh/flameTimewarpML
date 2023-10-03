@@ -1753,7 +1753,7 @@ class flameTimewarpML(flameMenuApp):
             pprint (f'current ratio: {ratio}')
 
             if ratio == 0.0:
-                result_image_data = (np.arctanh(np.clip((incoming_image_data * 2) - 1, -1, 1)) + 1) / 2
+                result_image_data = incoming_image_data
 
                 self.update_interface_image(
                     incoming_image_data[::4, ::4, :],
@@ -1779,7 +1779,7 @@ class flameTimewarpML(flameMenuApp):
                     )
 
             elif ratio == 1.0:
-                result_image_data = (np.arctanh(np.clip((outgoing_image_data * 2) - 1, -1, 1)) + 1) / 2
+                result_image_data = outgoing_image_data
                 self.update_interface_image(
                     incoming_image_data[::4, ::4, :],
                     self.ui.flow1_label,
@@ -1834,7 +1834,7 @@ class flameTimewarpML(flameMenuApp):
                 return
 
             self.info('Frame ' + str(self.current_frame) + ': Saving...')
-            result_image_data = (np.arctanh(np.clip((outgoing_image_data * 2) - 1, -1, 1)) + 1) / 2
+            result_image_data = (np.arctanh(np.clip((result_image_data * 2) - 1, -1, 1)) + 1) / 2
             self.save_result_frame(
                 result_image_data,
                 self.current_frame - 1
