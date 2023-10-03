@@ -1733,9 +1733,11 @@ class flameTimewarpML(flameMenuApp):
                 self.current_frame_data['incoming']['clip'], 
                 inc_frame_number
                 )
-
+            
+            print (type(incoming_image_data))
             print (f'timing: \ainc read: \t{time.time() - start} sec')
 
+            incoming_image_data = incoming_image_data.cpu().numpy()
             inc_min = np.min(incoming_image_data)
             inc_max = np.max(incoming_image_data)
             incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
