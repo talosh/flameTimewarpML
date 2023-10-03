@@ -1927,18 +1927,14 @@ class flameTimewarpML(flameMenuApp):
 
                 elif bits_per_channel == 10:
                     dt = np.uint16
-                    # for value in bytes(buff, 'latin-1'):
-                    #     print (bin(value))
                     byte_array = np.frombuffer(bytes(buff, 'latin-1'), dtype='>u4')
                     # byte_array = np.frombuffer(bytes(buff, 'latin-1'), dtype='<u4')
                     values_10bit = np.empty((len(byte_array) * 3,), dtype=np.uint16)
-                    # Extract the three 10-bit values from each 4-byte sequence
-                    for i, value in enumerate(byte_array):
-                        values_10bit[i*3] = (value >> 22) & 0x3FF  # first 10 bits
-                        values_10bit[i*3 + 1] = (value >> 12) & 0x3FF  # next 10 bits
-                        values_10bit[i*3 + 2] = (value >> 2) & 0x3FF  # last 10 bits
-
-                    values_16bit = (values_10bit // 1023) * 65535                    
+                    values_10bit[::3] = (byte_array >> 22) & 0x3FF
+                    values_10bit[1::3] = (byte_array >> 12) & 0x3FF
+                    values_10bit[2::3] = (byte_array >> 2) & 0x3FF
+                    # values_16bit = (values_10bit.astype(np.float32) // 256) * 65535
+                    values_16bit = values_10bit * 64
                     buff = values_16bit.astype('<u2').tobytes().decode('latin-1')
                     frame_buffer_size = len(buff)
 
@@ -2016,18 +2012,15 @@ class flameTimewarpML(flameMenuApp):
                     dt = np.uint8
                 elif bits_per_channel == 10:
                     dt = np.uint16
-                    # for value in bytes(buff, 'latin-1'):
-                    #     print (bin(value))
                     byte_array = np.frombuffer(bytes(buff, 'latin-1'), dtype='>u4')
                     # byte_array = np.frombuffer(bytes(buff, 'latin-1'), dtype='<u4')
-                    values_10bit = np.empty((len(byte_array) * 3,), dtype=np.uint16)
+                    values_10bit = np.empty((len(byte_array) * fmt.numChannels(),), dtype=np.uint16)
                     values_10bit[::3] = (byte_array >> 22) & 0x3FF
                     values_10bit[1::3] = (byte_array >> 12) & 0x3FF
                     values_10bit[2::3] = (byte_array >> 2) & 0x3FF
                     # values_16bit = (values_10bit.astype(np.float32) // 256) * 65535
-                    values_16bit = values_10bit * 64
-
-                    # values_16bit = (values_10bit // 1023) * 65535                    
+                    
+                    values_16bit = values_10bit * 64 
                     buff = values_16bit.astype('<u2').tobytes().decode('latin-1')
                     frame_buffer_size = len(buff)
 
