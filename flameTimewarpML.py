@@ -1945,6 +1945,14 @@ class flameTimewarpML(flameMenuApp):
                     del values_10bit
                     del values_16bit
 
+                    buff_tail = (frame_buffer_size // np.dtype(dt).itemsize) - (fmt.height() * fmt.width() * fmt.numChannels())
+                    image_array = np.frombuffer(bytes(buff, 'latin-1'), dtype=dt)[:-1 * buff_tail]
+                    image_array = image_array.astype(np.float32) / 65535
+                    image_array = torch.from_numpy(image_array)
+                    image_array = image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
+                    image_array = torch.flip(image_array, [0])
+                    return image_array
+
                 elif bits_per_channel == 16 and not('float' in fmt.formatTag()):
                     dt = np.uint16
                 elif (bits_per_channel == 16) and ('float' in fmt.formatTag()):
