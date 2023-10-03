@@ -1745,6 +1745,12 @@ class flameTimewarpML(flameMenuApp):
             incoming_image_data = (torch.tanh((incoming_image_data * 2) - 1) + 1) / 2
             print (f'timing: \ttorch tanh: \t{time.time() - torch_tanh_start} sec')
 
+            self.update_interface_image(
+                incoming_image_data[::2, ::2, :], 
+                self.ui.flow1_label,
+                text = 'src frame: ' + str(inc_frame_number + 1)
+                )
+
             incoming_image_data = incoming_image_data.cpu().numpy()
 
             np_tanh_start = time.time()
@@ -1753,11 +1759,7 @@ class flameTimewarpML(flameMenuApp):
             incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
             print (f'timing: \tnumpy tanh: \t{time.time() - np_tanh_start} sec')
 
-            self.update_interface_image(
-                incoming_image_data[::2, ::2, :], 
-                self.ui.flow1_label,
-                text = 'src frame: ' + str(inc_frame_number + 1)
-                )
+
             
             if not self.threads:
                 return
