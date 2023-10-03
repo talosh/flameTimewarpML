@@ -1753,14 +1753,6 @@ class flameTimewarpML(flameMenuApp):
             incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
             print (f'timing: \tnumpy tanh: \t{time.time() - np_tanh_start} sec')
 
-            '''
-            torch_tensor = torch.from_numpy(incoming_image_data)
-            torch_tensor = (torch.tanh((torch_tensor * 2) - 1) + 1) / 2
-            incoming_image_data = torch_tensor.cpu().numpy()
-            '''
-
-            print (f'timing: \ainc tanh: \t{time.time() - start} sec')
-
             self.update_interface_image(
                 incoming_image_data[::2, ::2, :], 
                 self.ui.flow1_label,
@@ -2131,10 +2123,14 @@ class flameTimewarpML(flameMenuApp):
 
         def _update_interface_image(self, array, image_label, text = None):
             import numpy as np
+            import torch
 
             if array is None:
                 image_label.clear()
                 return
+            
+            if isinstance(array, torch.Tensor):
+                array = array.cpu().numpy()
 
             # colourmanagement should go here
             if (array.dtype == np.float16) or (array.dtype == np.float32):
