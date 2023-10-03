@@ -1939,7 +1939,7 @@ class flameTimewarpML(flameMenuApp):
                         )
                     image_array = image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
                     image_array = torch.flip(image_array, [0])
-                    return image_array / 1024
+                    return image_array / 1023.99
 
                     '''
                     values_16bit = values_10bit * 64
