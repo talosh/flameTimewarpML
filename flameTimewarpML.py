@@ -1729,7 +1729,9 @@ class flameTimewarpML(flameMenuApp):
             
             print (f'timing: \tbefore read: \t{time.time() - start} sec')
 
-            incoming_image_data = self.read_image_data(
+            start = time.time()
+
+            incoming_image_data = self.read_image_data_torch(
                 self.current_frame_data['incoming']['clip'], 
                 inc_frame_number
                 )
