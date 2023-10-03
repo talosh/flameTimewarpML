@@ -2024,7 +2024,7 @@ class flameTimewarpML(flameMenuApp):
                     values_10bit[::3] = (byte_array >> 22) & 0x3FF
                     values_10bit[1::3] = (byte_array >> 12) & 0x3FF
                     values_10bit[2::3] = (byte_array >> 2) & 0x3FF
-                    values_16bit = (values_10bit.astype(np.float32) // 4095) * 65535
+                    values_16bit = (values_10bit.astype(np.float32) // 256) * 65535
                     values_16bit = values_16bit.astype(np.uint16)
 
                     # Extract the three 10-bit values from each 4-byte sequence
