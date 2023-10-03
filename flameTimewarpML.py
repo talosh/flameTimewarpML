@@ -5547,11 +5547,18 @@ class flameTimewarpML(flameMenuApp):
         # from torch import mps
         # print (mps.driver_allocated_memory())
 
+        img0 = img0.flip(-1).contiguous()
+        img1 = img1.flip(-1).contiguous()
+        img0 = img0.permute(2, 0, 1).unsqueeze(0)
+        img1 = img1.permute(2, 0, 1).unsqueeze(0)
+
+        '''
         # flip to BGR
         img0 = np.flip(img0, axis=2).copy()
         img1 = np.flip(img1, axis=2).copy()
         img0 = torch.from_numpy(np.transpose(img0, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
         img1 = torch.from_numpy(np.transpose(img1, (2,0,1))).to(device, non_blocking=True).unsqueeze(0)
+        '''
 
         n, c, h, w = img0.shape
         
@@ -6065,9 +6072,14 @@ class flameTimewarpML(flameMenuApp):
                 img1 = middle
                 img1_ratio = middle_ratio
         
+        '''
         # res_img = middle[0].to(torch.float32)
         res_img = middle[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
         res_img = np.flip(res_img, axis=2).copy()
+        '''
+        res_img = middle[0]
+        res_img = res_img.permute(1, 2, 0)[:h, :w]
+        res_img = res_img.flip(-1)
         print ('end of flownet24')
 
         return res_img
