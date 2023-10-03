@@ -1750,6 +1750,8 @@ class flameTimewarpML(flameMenuApp):
             
             ratio = self.current_frame_data['ratio']
 
+            pprint (f'current ratio: {ratio}')
+
             if ratio == 0.0:
                 result_image_data = (np.arctanh(np.clip((incoming_image_data * 2) - 1, -1, 1)) + 1) / 2
 
