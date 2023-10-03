@@ -2874,8 +2874,9 @@ class flameTimewarpML(flameMenuApp):
             temp_library_name = self.app_name + '_' + self.sanitized(clip.name.get_value()) + '_' + self.create_timestamp_uid()
             self.temp_library_name = temp_library_name
             self.temp_library = flame.projects.current_project.create_shared_library(temp_library_name)
+            flame.execute_shortcut('Save Project')
             flame.projects.current_project.refresh_shared_libraries()
-
+            
             return self.temp_library
         
         except Exception as e:
