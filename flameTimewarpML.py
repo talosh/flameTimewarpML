@@ -1748,7 +1748,7 @@ class flameTimewarpML(flameMenuApp):
                 return new_min + (value - old_min) * (new_max - new_min) / (old_max - old_min)
 
             def inverse_custom_bend(x, l=4.8, m=99.0, k=1):
-                linear_part = y
+                linear_part = x
                 inv_positive = normalize(x, 1, l, 1, m)
                 inv_negative = normalize(x, -l, -1, -m, -1)
                 # inv_positive = 1 + torch.log(1 - (y - 1) / 4) / (-k)
