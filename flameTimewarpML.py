@@ -1745,6 +1745,7 @@ class flameTimewarpML(flameMenuApp):
             inc_max = torch.max(incoming_image_data).item()
             incoming_image_data = (torch.tanh((incoming_image_data * 2) - 1) + 1) / 2
             print (f'timing: \ttorch tanh: \t{time.time() - torch_tanh_start} sec')
+            incoming_image_data = incoming_image_data.cpu().numpy()
             '''
 
             self.update_interface_image(
@@ -1752,8 +1753,6 @@ class flameTimewarpML(flameMenuApp):
                 self.ui.flow1_label,
                 text = 'src frame: ' + str(inc_frame_number + 1)
                 )
-
-            incoming_image_data = incoming_image_data.cpu().numpy()
 
             np_tanh_start = time.time()
             inc_min = np.min(incoming_image_data)
