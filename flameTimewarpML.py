@@ -1729,7 +1729,7 @@ class flameTimewarpML(flameMenuApp):
             
             print (f'timing: \tbefore read: \t{time.time() - start} sec')
 
-            start = time.time()
+            read_start = time.time()
 
             incoming_image_data = self.read_image_data_torch(
                 self.current_frame_data['incoming']['clip'], 
@@ -1737,12 +1737,21 @@ class flameTimewarpML(flameMenuApp):
                 )
             
             print (type(incoming_image_data))
-            print (f'timing: \ainc read: \t{time.time() - start} sec')
+            print (f'timing: \tinc image read: \t{time.time() - read_start} sec')
+
+            torch_tanh_start = time.time()
+            inc_min = torch.min(incoming_image_data).item()
+            inc_max = torch.max(incoming_image_data).item()
+            incoming_image_data = (torch.tanh((incoming_image_data * 2) - 1) + 1) / 2
+            print (f'timing: \ttorch tanh: \t{time.time() - torch_tanh_start} sec')
 
             incoming_image_data = incoming_image_data.cpu().numpy()
+
+            np_tanh_start = time.time()
             inc_min = np.min(incoming_image_data)
             inc_max = np.max(incoming_image_data)
             incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
+            print (f'timing: \ttorch tanh: \t{time.time() - np_tanh_start} sec')
 
             '''
             torch_tensor = torch.from_numpy(incoming_image_data)
