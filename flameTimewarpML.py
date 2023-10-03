@@ -1734,7 +1734,7 @@ class flameTimewarpML(flameMenuApp):
             # incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
 
             torch_tensor = torch.from_numpy(incoming_image_data)
-            torch_tensor = (torch.tanh((torch_tensor * 2) - 1) + 1) / 2
+            # torch_tensor = (torch.tanh((torch_tensor * 2) - 1) + 1) / 2
             incoming_image_data = torch_tensor.cpu().numpy()
 
             print (f'timing: \ainc tanh: \t{time.time() - start} sec')
