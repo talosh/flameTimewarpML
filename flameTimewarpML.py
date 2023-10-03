@@ -1756,6 +1756,8 @@ class flameTimewarpML(flameMenuApp):
             common_min = min(inc_min, outg_min)
             common_max = max(inc_max, outg_max)
 
+            print (f'inc_min: {inc_min}, inc_max: {inc_max}, common_min: {common_min}, common max: {common_max}')
+
             if ratio == 0.0:
                 result_image_data = incoming_image_data
 
