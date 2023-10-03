@@ -1756,8 +1756,6 @@ class flameTimewarpML(flameMenuApp):
             common_min = min(inc_min, outg_min)
             common_max = max(inc_max, outg_max)
 
-            print (f'inc_min: {inc_min}, inc_max: {inc_max}, common_min: {common_min}, common max: {common_max}')
-
             if ratio == 0.0:
                 result_image_data = incoming_image_data
 
@@ -2535,7 +2533,9 @@ class flameTimewarpML(flameMenuApp):
             server_handle = None
             clip_node_handle = None
 
-            self.process_current_frame()
+            ratio = self.current_frame_data['ratio']
+            if int(ratio) == ratio:
+                self.process_current_frame()
 
         def closeEvent(self, event):
             event.accept()
