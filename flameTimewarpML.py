@@ -1744,13 +1744,13 @@ class flameTimewarpML(flameMenuApp):
         def restore_normalized_values(self, image_array):
             import torch
 
-            def normalize(value, old_min, old_max, new_min, new_max):
+            def lin_normalize(value, old_min, old_max, new_min, new_max):
                 return new_min + (value - old_min) * (new_max - new_min) / (old_max - old_min)
 
             def inverse_custom_bend(x, l=4.8, m=99.0, k=1):
                 linear_part = x
-                inv_positive = normalize(x, 1, l, 1, m)
-                inv_negative = normalize(x, -l, -1, -m, -1)
+                inv_positive = lin_normalize(x, 1, l, 1, m)
+                inv_negative = lin_normalize(x, -l, -1, -m, -1)
                 # inv_positive = 1 + torch.log(1 - (y - 1) / 4) / (-k)
                 # inv_negative = -1 + torch.log(1 + (y + 1) / 4) / k
                 
