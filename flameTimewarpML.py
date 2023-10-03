@@ -1731,19 +1731,21 @@ class flameTimewarpML(flameMenuApp):
 
             read_start = time.time()
 
-            incoming_image_data = self.read_image_data_torch(
+            incoming_image_data = self.read_image_data(
                 self.current_frame_data['incoming']['clip'], 
                 inc_frame_number
                 )
             
             print (type(incoming_image_data))
             print (f'timing: \tinc image read: \t{time.time() - read_start} sec')
-
+            
+            '''
             torch_tanh_start = time.time()
             inc_min = torch.min(incoming_image_data).item()
             inc_max = torch.max(incoming_image_data).item()
             incoming_image_data = (torch.tanh((incoming_image_data * 2) - 1) + 1) / 2
             print (f'timing: \ttorch tanh: \t{time.time() - torch_tanh_start} sec')
+            '''
 
             self.update_interface_image(
                 incoming_image_data[::2, ::2, :], 
