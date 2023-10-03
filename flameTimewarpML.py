@@ -2830,6 +2830,9 @@ class flameTimewarpML(flameMenuApp):
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
     def build_menu(self):
+
+        print ('TWML build menu')
+
         def scope_clip(selection):
             import flame
             for item in selection:
