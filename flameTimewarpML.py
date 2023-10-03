@@ -1717,8 +1717,8 @@ class flameTimewarpML(flameMenuApp):
 
             def custom_bend(x, k=1):
                 linear_part = x
-                exp_positive = 1 + (3 * (1 - torch.exp(-k * (x - 1))))
-                exp_negative = -1 - (3 * (1 - torch.exp(k * (x + 1))))
+                exp_positive = 1 + (4 * (1 - torch.exp(-k * (x - 1))))
+                exp_negative = -1 - (4 * (1 - torch.exp(k * (x + 1))))
     
                 return torch.where(x > 1, exp_positive, torch.where(x < -1, exp_negative, linear_part))
 
@@ -1738,10 +1738,10 @@ class flameTimewarpML(flameMenuApp):
 
             def inverse_custom_bend(y, k=1):
                 linear_part = y
-                inv_positive = 1 + torch.log(1 - (y - 1) / 3) / (-k)
-                inv_negative = -1 + torch.log(1 + (y + 1) / 3) / k
+                inv_positive = 1 + torch.log(1 - (y - 1) / 4) / (-k)
+                inv_negative = -1 + torch.log(1 + (y + 1) / 4) / k
                 
-                return torch.where(y > 4, inv_positive, torch.where(y < -4, inv_negative, linear_part))
+                return torch.where(y > 5, inv_positive, torch.where(y < -5, inv_negative, linear_part))
 
             epsilon = torch.tensor(4e-8, dtype=torch.float32).to(image_array.device)
             # clamp image befor arctanh
