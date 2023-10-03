@@ -2814,7 +2814,7 @@ class flameTimewarpML(flameMenuApp):
         self.threads = True
         self.temp_library = None
         
-        self,torch_device = None
+        self.torch_device = None
 
         self.requirements = requirements
 
