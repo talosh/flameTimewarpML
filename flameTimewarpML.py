@@ -2503,6 +2503,9 @@ class flameTimewarpML(flameMenuApp):
             super().mouseReleaseEvent(event)
 
         def on_SpeedValueChange(self):
+            
+            start = time.time()
+
             if self.tw_speed == self.ui.tw_speed_input.value():
                 return
             else:
@@ -2533,9 +2536,11 @@ class flameTimewarpML(flameMenuApp):
             server_handle = None
             clip_node_handle = None
 
-            ratio = self.current_frame_data['ratio']
-            if int(ratio) == ratio:
-                self.process_current_frame()
+            print (f'on speed value took {time.time() - start} sec')
+
+            # ratio = self.current_frame_data['ratio']
+            # if int(ratio) == ratio:
+            #     self.process_current_frame()
 
         def closeEvent(self, event):
             event.accept()
