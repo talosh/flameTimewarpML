@@ -1718,9 +1718,9 @@ class flameTimewarpML(flameMenuApp):
                 inc_frame_number
                 )
             
-            incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
             inc_min = np.min(incoming_image_data)
             inc_max = np.max(incoming_image_data)
+            incoming_image_data = (np.tanh((incoming_image_data * 2) - 1) + 1) / 2
             
             self.update_interface_image(
                 incoming_image_data[::2, ::2, :], 
@@ -1739,9 +1739,9 @@ class flameTimewarpML(flameMenuApp):
                 outg_frame_number
                 )
             
-            outgoing_image_data = (np.tanh((outgoing_image_data * 2) - 1) + 1) / 2
             outg_min = np.min(outgoing_image_data)
             outg_max = np.max(outgoing_image_data)
+            outgoing_image_data = (np.tanh((outgoing_image_data * 2) - 1) + 1) / 2
 
             self.update_interface_image(
                 outgoing_image_data[::2, ::2, :], 
