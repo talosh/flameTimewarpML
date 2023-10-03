@@ -1877,6 +1877,97 @@ class flameTimewarpML(flameMenuApp):
             self.current_frame_data['saved'] = True
             self.info('Frame ' + str(self.current_frame))
 
+        def read_image_data_torch(self, clip, frame_number):
+            import flame
+            import numpy as np
+            import torch
+
+            try:
+                server_handle = WireTapServerHandle('localhost')
+                clip_node_id = clip.get_wiretap_node_id()
+                clip_node_handle = WireTapNodeHandle(server_handle, clip_node_id)
+                fmt = WireTapClipFormat()
+                if not clip_node_handle.getClipFormat(fmt):
+                    raise Exception('Unable to obtain clip format: %s.' % clip_node_handle.lastError())
+                num_frames = WireTapInt()
+                if not clip_node_handle.getNumFrames(num_frames):
+                    raise Exception(
+                        "Unable to obtain number of frames: %s." % clip_node_handle.lastError()
+                    )
+
+                buff = "0" * fmt.frameBufferSize()
+
+                if not clip_node_handle.readFrame(int(frame_number), buff, fmt.frameBufferSize()):
+                    raise Exception(
+                        '[read_image_data] Unable to obtain read frame %i: %s.' % (frame_number, clip_node_handle.lastError())
+                    )
+                
+                frame_buffer_size = fmt.frameBufferSize()
+                
+                bits_per_channel = fmt.bitsPerPixel() // fmt.numChannels()
+
+                if bits_per_channel == 8:
+                    buff_tail = frame_buffer_size - (fmt.height() * fmt.width() * fmt.numChannels())
+                    image_array = torch.frombuffer(bytes(buff, 'latin-1'), dtype=torch.uint8)[:-1 * buff_tail]
+                    image_array = image_array.to(
+                        device = self.parent_app.torch_device,
+                        dtype = torch.float32
+                        )
+                    image_array = image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
+                    image_array = torch.flip(image_array, [0])
+                    return image_array / 255
+
+                elif bits_per_channel == 10:
+                    dt = np.uint16
+                    # for value in bytes(buff, 'latin-1'):
+                    #     print (bin(value))
+                    byte_array = np.frombuffer(bytes(buff, 'latin-1'), dtype='>u4')
+                    # byte_array = np.frombuffer(bytes(buff, 'latin-1'), dtype='<u4')
+                    values_10bit = np.empty((len(byte_array) * 3,), dtype=np.uint16)
+                    # Extract the three 10-bit values from each 4-byte sequence
+                    for i, value in enumerate(byte_array):
+                        values_10bit[i*3] = (value >> 22) & 0x3FF  # first 10 bits
+                        values_10bit[i*3 + 1] = (value >> 12) & 0x3FF  # next 10 bits
+                        values_10bit[i*3 + 2] = (value >> 2) & 0x3FF  # last 10 bits
+
+                    values_16bit = (values_10bit // 1023) * 65535                    
+                    buff = values_16bit.astype('<u2').tobytes().decode('latin-1')
+                    frame_buffer_size = len(buff)
+
+                    del byte_array
+                    del values_10bit
+                    del values_16bit
+
+                elif bits_per_channel == 16 and not('float' in fmt.formatTag()):
+                    dt = np.uint16
+                elif (bits_per_channel == 16) and ('float' in fmt.formatTag()):
+                    dt = torch.float16
+                elif bits_per_channel == 32:
+                    dt = torch.float32
+                else:
+                    raise Exception('Unknown image format')
+                
+                buff_tail = (frame_buffer_size // np.dtype(dt).itemsize) - (fmt.height() * fmt.width() * fmt.numChannels())
+                image_array = np.frombuffer(bytes(buff, 'latin-1'), dtype=dt)[:-1 * buff_tail]
+                image_array = image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
+                image_array = np.flip(image_array, axis=0)
+
+                del buff
+
+                if image_array.dtype == np.uint8:
+                    return image_array.astype(np.float32) / 255
+                elif image_array.dtype == np.uint16:
+                    return image_array.astype(np.float32) / 65535
+                else:
+                    return image_array.astype(np.float32)
+
+            except Exception as e:
+                self.message('Error: %s' % e)
+
+            finally:
+                server_handle = None
+                clip_node_handle = None
+
         def read_image_data(self, clip, frame_number):
             import flame
             import numpy as np
