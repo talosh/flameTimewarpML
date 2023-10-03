@@ -1931,8 +1931,8 @@ class flameTimewarpML(flameMenuApp):
                     values_10bit[::3] = (byte_array >> 22) & 0x3FF
                     values_10bit[1::3] = (byte_array >> 12) & 0x3FF
                     values_10bit[2::3] = (byte_array >> 2) & 0x3FF
-                    linear_array_size  = fmt.height() * fmt.width() * fmt.numChannels()
-                    image_array = torch.from_numpy(values_10bit.astype(np.float32))[:linear_array_size]
+                    image_array = torch.from_numpy(values_10bit.astype(np.float32))
+                    image_array = image_array[:fmt.height() * fmt.width() * fmt.numChannels()]
                     image_array = image_array.to(
                         device = self.parent_app.torch_device,
                         dtype = torch.float32
