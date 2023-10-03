@@ -2535,6 +2535,8 @@ class flameTimewarpML(flameMenuApp):
             server_handle = None
             clip_node_handle = None
 
+            self.process_current_frame()
+
         def closeEvent(self, event):
             event.accept()
             QtWidgets.QApplication.instance().quit()
