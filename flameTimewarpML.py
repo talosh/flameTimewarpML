@@ -1797,30 +1797,30 @@ class flameTimewarpML(flameMenuApp):
                 self.update_interface_image(
                     display_image_data[::4, ::4, :],
                     self.ui.flow1_label,
-                    text = 'copy of frame: ' + str(inc_frame_number + 1)
+                    text = 'Frame: ' + str(inc_frame_number + 1)
                     )
 
                 self.update_interface_image(
                     None,
                     self.ui.flow2_label,
-                    text = 'copy of frame: ' + str(inc_frame_number + 1)
+                    text = 'Frame: ' + str(inc_frame_number + 1)
                     )
                 self.update_interface_image(
                     None, 
                     self.ui.flow3_label,
-                    text = 'copy of frame: ' + str(inc_frame_number + 1)
+                    text = 'Frame: ' + str(inc_frame_number + 1)
                     )
                     
                 self.update_interface_image(
                     None, 
                     self.ui.flow4_label,
-                    text = 'copy of frame: ' + str(inc_frame_number + 1)
+                    text = 'Frame: ' + str(inc_frame_number + 1)
                     )
                 
                 self.update_interface_image(
                     display_image_data,
                     self.ui.image_res_label,
-                    text = 'frame: ' + str(self.current_frame)
+                    text = 'Frame: ' + str(self.current_frame)
                     )
                 
                 save_image_data = result_image_data.cpu().detach().numpy()
