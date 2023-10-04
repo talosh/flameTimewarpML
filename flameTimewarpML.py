@@ -2595,7 +2595,7 @@ class flameTimewarpML(flameMenuApp):
                     )
 
                 file_save_time = time.time() - save_file_start
-                gateway_write_start = time.time()
+                read_back_start = time.time()
 
                 gateway_server_id = WireTapServerId('Gateway', 'localhost')
                 gateway_server_handle = WireTapServerHandle(gateway_server_id)
@@ -2611,6 +2611,9 @@ class flameTimewarpML(flameMenuApp):
                         'Unable to obtain read frame %i: %s.' % (frame_number, clip_node_handle.lastError())
                     )
                 
+                read_back_time = time.time() - read_back_start
+                framestore_write_start = time.time()
+
                 server_handle = WireTapServerHandle('localhost')
                 destination_node_handle = WireTapNodeHandle(server_handle, self.destination_node_id)
                 dest_fmt = WireTapClipFormat()
@@ -2684,8 +2687,10 @@ class flameTimewarpML(flameMenuApp):
                         "Unable to obtain write frame %i: %s."
                         % (frame_number, destination_node_handle.lastError())
                     )
+                
+                framestore_write_time = time.time() - framestore_write_start
 
-                print (f'save file took {file_save_time}, getaway save took: {time.time() - gateway_write_start}')
+                print (f'save file took {file_save_time}, read back: {read_back_time}, getaway save took: {framestore_write_time}')
 
                 os.remove(file_path)
 
