@@ -1761,23 +1761,23 @@ class flameTimewarpML(flameMenuApp):
 
             self.current_frame_data = self.frames_map.get(self.current_frame)
             self.destination = self.current_frame_data['outgoing']['clip'].parent
-            self.message_queue.put({
-                'type': 'info', 
-                'message': f'Frame {self.current_frame} : reading incoming source image data...'})
             inc_frame_number = self.current_frame_data['incoming']['frame_number'] - 1
-
             ratio = self.current_frame_data['ratio']
 
             if ratio == 0.0:
+                self.message_queue.put({
+                    'type': 'info', 
+                    'message': f'Frame {self.current_frame} : reading incoming source image data...'})
+
                 result_image_data = self.read_image_data_torch(
                     self.current_frame_data['incoming']['clip'], 
                     inc_frame_number
                     )
                 
-                # display_image_data = self.normalize_values(result_image_data)
+                display_image_data = self.normalize_values(result_image_data)
 
                 self.update_interface_image(
-                    result_image_data[::4, ::4, :],
+                    display_image_data[::4, ::4, :],
                     self.ui.flow1_label,
                     text = 'copy of frame: ' + str(inc_frame_number + 1)
                     )
@@ -1800,10 +1800,13 @@ class flameTimewarpML(flameMenuApp):
                     )
                 
                 self.update_interface_image(
-                    result_image_data,
+                    display_image_data,
                     self.ui.image_res_label,
                     text = 'frame: ' + str(self.current_frame)
                     )
+                
+                del display_image_data
+
                 '''
                 # result_image_data = result_image_data.cpu().detach().numpy()
                 self.save_result_frame(
@@ -1811,6 +1814,9 @@ class flameTimewarpML(flameMenuApp):
                     self.current_frame - 1
                 )
                 '''
+
+                del result_image_data
+                return
 
             print (f'timing: \tbefore read: \t{time.time() - start} sec')
 
