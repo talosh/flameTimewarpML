@@ -3145,8 +3145,13 @@ class flameTimewarpML(flameMenuApp):
                 clip_matched.versions[0].tracks[0].segments[0].trim_head(-1 * head)
             if tail:
                 clip_matched.versions[0].tracks[0].segments[0].trim_tail(-1 * tail)
-            clip_matched.render()
+
+            if not clip_matched.is_rendered():
+                self.progress.hide()
+                clip_matched.render()
+                self.progress.show()
             clip_matched.commit()
+
         except Exception as e:
             self.message(pformat(e))
             return {}
