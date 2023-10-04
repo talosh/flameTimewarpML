@@ -2178,26 +2178,35 @@ class flameTimewarpML(flameMenuApp):
                 return
             
             if isinstance(array, torch.Tensor):
-                array = array.cpu().detach().numpy()
-
-            # colourmanagement should go here
-            if (array.dtype == np.float16) or (array.dtype == np.float32):
-                img = np.clip(array, 0, 1) * 255
-                img = img.astype(np.uint8)
+                # colourmanagement should go here
+                if (array.dtype == torch.float16) or (array.dtype == torch.float32):
+                    img = torch.clip(array, 0, 1) * 255
+                    img = img.byte()
+                else:
+                    img = img.byte()
+                    img = img.cpu().detach().numpy()
             else:
-                img = array.astype(np.uint8)
-
+                # colourmanagement should go here
+                if (array.dtype == np.float16) or (array.dtype == np.float32):
+                    img = np.clip(array, 0, 1) * 255
+                    img = img.astype(np.uint8)
+                else:
+                    img = array.astype(np.uint8)
+            
             # Convert the numpy array to a QImage
             height, width, _ = img.shape
             bytes_per_line = 3 * width
             qt_image = QtGui.QImage(img.data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
             qt_pixmap = QtGui.QPixmap.fromImage(qt_image)
+            del img
+
             parent_frame = image_label.parent()
             scaled_pixmap = qt_pixmap.scaled(
                 parent_frame.size() * 0.9, 
                 QtCore.Qt.KeepAspectRatio, 
                 QtCore.Qt.SmoothTransformation)
-
+            del qt_pixmap
+            
             if text:
                 margin = 4
                 origin_x = 2
@@ -2231,6 +2240,8 @@ class flameTimewarpML(flameMenuApp):
 
             image_label.setPixmap(scaled_pixmap)
             self.processEvents()
+
+            del scaled_pixmap
 
             '''
             QtWidgets.QApplication.instance().processEvents()
