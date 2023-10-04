@@ -6172,10 +6172,6 @@ class flameTimewarpML(flameMenuApp):
         img1_ratio = 1
 
         for current_pass in range(1, num_passes + 1):
-            info_text = self.progress.ui.info_label.text()
-            info_text = info_text.split(' - pass')[0]
-            self.progress.info(f'{info_text} - pass {current_pass} of {num_passes}')
-
             # torch.set_default_dtype(torch.float16)
             # img0 = img0.to(torch.float16)
             # img1 = img1.to(torch.float16)
@@ -6193,6 +6189,10 @@ class flameTimewarpML(flameMenuApp):
                     'v2.4.model'))
             ifnet_model.eval()
             ifnet_model.device()
+
+            info_text = self.progress.ui.info_label.text()
+            info_text = info_text.split(' - pass')[0]
+            self.progress.info(f'{info_text} - pass {current_pass} of {num_passes}')
 
             flow = ifnet_model.inference(img0, img1, False)
 
