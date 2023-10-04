@@ -1759,13 +1759,14 @@ class flameTimewarpML(flameMenuApp):
 
             start = time.time()
 
-            ratio = self.current_frame_data['ratio']
             self.current_frame_data = self.frames_map.get(self.current_frame)
             self.destination = self.current_frame_data['outgoing']['clip'].parent
             self.message_queue.put({
                 'type': 'info', 
                 'message': f'Frame {self.current_frame} : reading incoming source image data...'})
             inc_frame_number = self.current_frame_data['incoming']['frame_number'] - 1
+
+            ratio = self.current_frame_data['ratio']
 
             if ratio == 0.0:
                 result_image_data = self.read_image_data(
