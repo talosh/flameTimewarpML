@@ -5890,21 +5890,17 @@ class flameTimewarpML(flameMenuApp):
                 F1 = flow0
                 F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 display_flow = F.interpolate(F1_large[:, :, :h, :w], scale_factor=0.25, mode='nearest')
-                print (f'display_flow shape: {display_flow.shape}')
                 self.progress.update_optical_flow(
                     display_flow[:, :2].cpu().detach().numpy(),
                     self.progress.ui.flow2_label,
                     text = f'Flow FWD'
                     )
 
-                '''
-                display_flow = display_flow[:, 2:4].cpu().detach().numpy()
                 self.progress.update_optical_flow(
-                    display_flow[:, 2:4].cpu().detach().numpy(),
+                    display_flow[:, 2:].cpu().detach().numpy(),
                     self.progress.ui.flow3_label,
                     text = f'Flow BKW'
                     )
-                '''
 
                 warped_img0 = warp(x[:, :3], F1_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
