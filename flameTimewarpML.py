@@ -1961,7 +1961,15 @@ class flameTimewarpML(flameMenuApp):
                     self.current_frame_data['saved'] = True
 
                 del result_image_data
-                
+
+            if single_frame:
+                self.rendering = False 
+                self.message_queue.put(
+                    {'type': 'setText',
+                    'widget': 'render_button',
+                    'text': 'Render'}
+                )
+
             self.info('Frame ' + str(self.current_frame))         
             return
 
