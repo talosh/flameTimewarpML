@@ -1818,6 +1818,7 @@ class flameTimewarpML(flameMenuApp):
                 )
                 '''
 
+            return
 
             print (f'timing: \tbefore read: \t{time.time() - start} sec')
 
