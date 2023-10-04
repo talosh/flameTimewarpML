@@ -1725,9 +1725,6 @@ class flameTimewarpML(flameMenuApp):
             image_array = (image_array * 2) - 1
             # bend values below -1.0 and above 1.0 exponentially so they are not larger then (-4.0 - 4.0)
             image_array = custom_bend(image_array)
-
-            print (f'min: {torch.min(image_array)}, max: {torch.max(image_array)}')
-
             # bend everything to fit -1.0 - 1.0 with hyperbolic tanhent
             image_array = torch.tanh(image_array)
             # move it to 0.0 - 1.0 range
