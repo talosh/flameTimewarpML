@@ -10,17 +10,21 @@ def exponential_torch(x, k=1):
     return torch.exp(k * x)
 
 def custom_bend(x):
-    linear_part = x
     l = 4
     k = 0.25
+
+    linear_part = x
     # exp_positive = 1 + (l * (1 - torch.exp( - (k/torch.sqrt(x)) * (x - 1))))
     # exp_positive = 1 + (l * (1 - torch.exp( - (k) * (x - 1))))
-    exp_positive = torch.pow(x, 1/3)
-    exp_negative = -torch.pow(-x, 1/3)
+    exp_positive = torch.pow(x, 1 / 3)
+    exp_negative = -torch.pow(-x, 1 / 3)
     # exp_negative = -1 - (l * (1 - torch.exp( (k) * (x + 1))))
     return torch.where(x > 1, exp_positive, torch.where(x < -1, exp_negative, linear_part))
 
-def custom_de_bend(x, l=1, k=1):
+def custom_de_bend(x):
+    l = 4
+    k = 0.25
+
     linear_part = x
     inv_positive = torch.pow(x, 3)
     inv_negative = -torch.pow(-x, 3)
@@ -29,12 +33,15 @@ def custom_de_bend(x, l=1, k=1):
     return torch.where(x > 1, inv_positive, torch.where(x < -1, inv_negative, linear_part))
 
 x = torch.linspace(-200, 200, 400).to(device=torch.device('mps'), dtype = torch.float32)
-m = custom_bend(x, l=4, k=0.25)
-m = torch.tanh(m)
-m = torch.arctanh(m)
-y = custom_de_bend(m, l=4, k=0.25)
 
-# y = custom_bend(x, l=4, k=0.25)
+'''
+m = custom_bend(x)
+y = torch.tanh(m)
+m = torch.arctanh(m)
+# y = custom_de_bend(m)
+'''
+
+y = custom_bend(x)
 
 plt.plot(x.cpu().detach().numpy(), y.cpu().detach().numpy())
 plt.xlabel('x')

@@ -1759,23 +1759,61 @@ class flameTimewarpML(flameMenuApp):
 
             start = time.time()
 
+            ratio = self.current_frame_data['ratio']
             self.current_frame_data = self.frames_map.get(self.current_frame)
-
             self.destination = self.current_frame_data['outgoing']['clip'].parent
             self.message_queue.put({
                 'type': 'info', 
                 'message': f'Frame {self.current_frame} : reading incoming source image data...'})
-
             inc_frame_number = self.current_frame_data['incoming']['frame_number'] - 1
-            
+
+            if ratio == 0.0:
+                result_image_data = self.read_image_data(
+                    self.current_frame_data['incoming']['clip'], 
+                    inc_frame_number
+                    )
+                
+                # display_image_data = self.normalize_values(result_image_data)
+
+                self.update_interface_image(
+                    result_image_data[::4, ::4, :],
+                    self.ui.flow1_label,
+                    text = 'copy of frame: ' + str(inc_frame_number + 1)
+                    )
+
+                self.update_interface_image(
+                    None,
+                    self.ui.flow2_label,
+                    text = 'copy of frame: ' + str(inc_frame_number + 1)
+                    )
+                self.update_interface_image(
+                    None, 
+                    self.ui.flow3_label,
+                    text = 'copy of frame: ' + str(inc_frame_number + 1)
+                    )
+                    
+                self.update_interface_image(
+                    None, 
+                    self.ui.flow4_label,
+                    text = 'copy of frame: ' + str(inc_frame_number + 1)
+                    )
+                
+                self.update_interface_image(
+                    result_image_data, 
+                    self.ui.image_res_label,
+                    text = 'frame: ' + str(self.current_frame)
+                    )
+
+                # result_image_data = result_image_data.cpu().detach().numpy()
+                self.save_result_frame(
+                    result_image_data,
+                    self.current_frame - 1
+                )
+
             print (f'timing: \tbefore read: \t{time.time() - start} sec')
 
             read_start = time.time()
 
-            incoming_image_data = self.read_image_data_torch(
-                self.current_frame_data['incoming']['clip'], 
-                inc_frame_number
-                )
             
             print (f'timing: \tinc image read: \t{time.time() - read_start} sec')
             
@@ -1812,33 +1850,6 @@ class flameTimewarpML(flameMenuApp):
             if not self.threads:
                 return
             
-            ratio = self.current_frame_data['ratio']
-
-            if ratio == 0.0:
-                result_image_data = incoming_image_data
-
-                self.update_interface_image(
-                    incoming_image_data[::4, ::4, :],
-                    self.ui.flow1_label,
-                    text = 'copy of frame: ' + str(inc_frame_number + 1)
-                    )
-
-                self.update_interface_image(
-                    None, 
-                    self.ui.flow2_label,
-                    text = 'copy of frame: ' + str(inc_frame_number + 1)
-                    )
-                self.update_interface_image(
-                    None, 
-                    self.ui.flow3_label,
-                    text = 'copy of frame: ' + str(inc_frame_number + 1)
-                    )
-                    
-                self.update_interface_image(
-                    incoming_image_data[::4, ::4, :], 
-                    self.ui.flow4_label,
-                    text = 'copy of frame: ' + str(inc_frame_number + 1)
-                    )
 
             elif ratio == 1.0:
                 result_image_data = outgoing_image_data
@@ -2499,7 +2510,6 @@ class flameTimewarpML(flameMenuApp):
             try:
                 if not os.path.isdir(os.path.dirname(file_path)):
                     os.makedirs(os.path.dirname(file_path))
-
 
                 height, width, depth = image_data.shape
                 red = image_data[:, :, 0]
