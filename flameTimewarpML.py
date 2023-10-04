@@ -1629,7 +1629,9 @@ class flameTimewarpML(flameMenuApp):
 
             self.message_queue.put({'type': 'info', 'message': 'Reading source clip(s)...'})
             self.processEvents()
-            self.process_current_frame()
+            self.frame_thread = threading.Thread(target=self._process_current_frame, kwargs={'single_frame': True})
+            self.frame_thread.daemon = True
+            self.frame_thread.start()
 
         def keyPressEvent(self, event):
             if event.key() == QtCore.Qt.Key_Left:
