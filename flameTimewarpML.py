@@ -2347,6 +2347,8 @@ class flameTimewarpML(flameMenuApp):
                 else:
                     img = array.astype(np.uint8)
             
+            img_contiguous = img.copy(order='C')
+
             # Convert the numpy array to a QImage
             height, width, _ = img.shape
             bytes_per_line = 3 * width
@@ -2392,6 +2394,7 @@ class flameTimewarpML(flameMenuApp):
             self.processEvents()
 
             del img
+            del img_contiguous
             del qt_pixmap
 
             '''
