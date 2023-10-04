@@ -33,7 +33,7 @@ from pprint import pformat
 
 # Configurable settings
 menu_group_name = 'Timewarp ML'
-DEBUG = False
+DEBUG = True
 app_name = 'flameTimewarpML'
 prefs_folder = os.getenv('FLAMETWML_PREFS')
 bundle_folder = os.getenv('FLAMETWML_BUNDLE')
