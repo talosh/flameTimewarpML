@@ -1715,15 +1715,10 @@ class flameTimewarpML(flameMenuApp):
         def normalize_values(self, image_array):
             import torch
 
-            def lin_normalize(value, old_min, old_max, new_min, new_max):
-                return new_min + (value - old_min) * (new_max - new_min) / (old_max - old_min)
-
-            def custom_bend(x, l=4.8, m=99.0, k=1):
+            def custom_bend(x):
                 linear_part = x
-                exp_positive = lin_normalize(torch.clamp(x, -m, m), 1, m, 1, l)
-                exp_negative = lin_normalize(torch.clamp(x, -m, m), -m, -1, -l, -1)
-                # exp_positive = 1 + (4 * (1 - torch.exp(-k * (x - 1))))
-                # exp_negative = -1 - (4 * (1 - torch.exp(k * (x + 1))))
+                exp_positive = torch.pow(x, 1/3)
+                exp_negative = -torch.pow(-x, 1/3)
     
                 return torch.where(x > 1, exp_positive, torch.where(x < -1, exp_negative, linear_part))
 
@@ -1744,16 +1739,10 @@ class flameTimewarpML(flameMenuApp):
         def restore_normalized_values(self, image_array):
             import torch
 
-            def lin_normalize(value, old_min, old_max, new_min, new_max):
-                return new_min + (value - old_min) * (new_max - new_min) / (old_max - old_min)
-
-            def inverse_custom_bend(x, l=4.8, m=99.0, k=1):
+            def custom_de_bend(x):
                 linear_part = x
-                inv_positive = lin_normalize(x, 1, l, 1, m)
-                inv_negative = lin_normalize(x, -l, -1, -m, -1)
-                # inv_positive = 1 + torch.log(1 - (y - 1) / 4) / (-k)
-                # inv_negative = -1 + torch.log(1 + (y + 1) / 4) / k
-                
+                inv_positive = torch.pow(x, 3)
+                inv_negative = -torch.pow(-x, 3)
                 return torch.where(x > 1, inv_positive, torch.where(x < -1, inv_negative, linear_part))
 
             epsilon = torch.tensor(4e-8, dtype=torch.float32).to(image_array.device)
@@ -1762,7 +1751,7 @@ class flameTimewarpML(flameMenuApp):
             # restore values from tanh  s-curve
             image_array = torch.arctanh(image_array)
             # restore custom bended values
-            image_array = inverse_custom_bend(image_array)
+            image_array = custom_de_bend(image_array)
             # move it to 0.0 - 1.0 range
             image_array = ( image_array + 1.0) / 2.0
 
