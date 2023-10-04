@@ -1388,6 +1388,8 @@ class flameTimewarpML(flameMenuApp):
             self.message_queue = queue.Queue()
             self.parent_app.progress = self
 
+            self.log_debug = self.parent_app.framework.log_debug
+
             # startup UI in the very beginning
             ### start of UI window sequence
             # some UI defaults
@@ -2690,7 +2692,7 @@ class flameTimewarpML(flameMenuApp):
                 
                 framestore_write_time = time.time() - framestore_write_start
 
-                print (f'save file: {file_save_time:.2f}, read back: {read_back_time:.2f}, fs save: {framestore_write_time:.2f}')
+                self.log_debug(f'save file: {file_save_time:.2f}, read back: {read_back_time:.2f}, fs save: {framestore_write_time:.2f}')
 
                 os.remove(file_path)
 
