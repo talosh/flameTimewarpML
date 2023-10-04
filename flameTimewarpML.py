@@ -1776,6 +1776,10 @@ class flameTimewarpML(flameMenuApp):
                 
                 display_image_data = self.normalize_values(result_image_data)
 
+                del display_image_data
+                del result_image_data
+                return
+
                 self.update_interface_image(
                     display_image_data[::4, ::4, :],
                     self.ui.flow1_label,
@@ -1805,7 +1809,6 @@ class flameTimewarpML(flameMenuApp):
                     text = 'frame: ' + str(self.current_frame)
                     )
                 
-                del display_image_data
 
                 '''
                 # result_image_data = result_image_data.cpu().detach().numpy()
@@ -1815,8 +1818,6 @@ class flameTimewarpML(flameMenuApp):
                 )
                 '''
 
-                del result_image_data
-                return
 
             print (f'timing: \tbefore read: \t{time.time() - start} sec')
 
