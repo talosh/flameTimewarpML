@@ -1777,17 +1777,17 @@ class flameTimewarpML(flameMenuApp):
             import numpy as np
             import torch
 
-            start = time.time()
-
             self.current_frame_data = self.frames_map.get(self.current_frame)
             self.destination = self.current_frame_data['outgoing']['clip'].parent
             inc_frame_number = self.current_frame_data['incoming']['frame_number'] - 1
+            outg_frame_number = self.current_frame_data['outgoing']['frame_number'] - 1
             ratio = self.current_frame_data['ratio']
 
             if ratio == 0.0:
-                self.message_queue.put({
-                    'type': 'info', 
-                    'message': f'Frame {self.current_frame} : reading incoming source image data...'})
+                self.message_queue.put(
+                    {'type': 'info', 
+                    'message': f'Frame {self.current_frame} : reading incoming source image data...'}
+                    )
                 
                 result_image_data = self.read_image_data_torch(
                     self.current_frame_data['incoming']['clip'], 
@@ -1825,16 +1825,132 @@ class flameTimewarpML(flameMenuApp):
                     text = 'Frame: ' + str(self.current_frame)
                     )
                 
-                self.info('Frame ' + str(self.current_frame) + ': Saving...')
-                save_image_data = result_image_data.cpu().detach().numpy()
-                self.save_result_frame(
-                    save_image_data,
-                    self.current_frame - 1
-                )
-
                 del display_image_data
+
+                if not single_frame:
+                    self.info('Frame ' + str(self.current_frame) + ': Saving...')
+                    save_image_data = result_image_data.cpu().detach().numpy()
+                    self.save_result_frame(
+                        save_image_data,
+                        self.current_frame - 1
+                    )
+                    self.current_frame_data['saved'] = True
+                    del save_image_data
+
                 del result_image_data
-                del save_image_data
+            
+            elif ratio == 1.0:
+                self.message_queue.put(
+                    {'type': 'info', 
+                    'message': f'Frame {self.current_frame} : reading outgoing source image data...'}
+                    )
+                
+                result_image_data = self.read_image_data_torch(
+                    self.current_frame_data['outgoing']['clip'], 
+                    outg_frame_number
+                    )
+                
+                display_image_data = self.normalize_values(result_image_data)
+                
+                self.update_interface_image(
+                    None,
+                    self.ui.flow1_label,
+                    text = 'Frame: ' + str(inc_frame_number + 1)
+                    )
+
+                self.update_interface_image(
+                    None,
+                    self.ui.flow2_label,
+                    text = 'Frame: ' + str(inc_frame_number + 1)
+                    )
+                self.update_interface_image(
+                    None, 
+                    self.ui.flow3_label,
+                    text = 'Frame: ' + str(inc_frame_number + 1)
+                    )
+                    
+                self.update_interface_image(
+                    display_image_data[::4, ::4, :], 
+                    self.ui.flow4_label,
+                    text = 'Frame: ' + str(inc_frame_number + 1)
+                    )
+                
+                self.update_interface_image(
+                    display_image_data,
+                    self.ui.image_res_label,
+                    text = 'Frame: ' + str(self.current_frame)
+                    )
+                
+                del display_image_data
+
+                if not single_frame:
+                    self.info('Frame ' + str(self.current_frame) + ': Saving...')
+                    save_image_data = result_image_data.cpu().detach().numpy()
+                    self.save_result_frame(
+                        save_image_data,
+                        self.current_frame - 1
+                    )
+                    self.current_frame_data['saved'] = True
+                    del save_image_data
+                    
+                del result_image_data
+                
+            else:
+                self.message_queue.put(
+                    {'type': 'info', 
+                    'message': f'Frame {self.current_frame} : reading incoming source image data...'}
+                    )
+
+                incoming_image_data = self.read_image_data_torch(
+                    self.current_frame_data['incoming']['clip'], 
+                    inc_frame_number
+                    )
+                
+                incoming_image_data = self.normalize_values(incoming_image_data)
+
+                self.update_interface_image(
+                    incoming_image_data[::4, ::4, :],
+                    self.ui.flow1_label,
+                    text = 'Frame: ' + str(inc_frame_number + 1)
+                    )
+  
+                outgoing_image_data = self.read_image_data_torch(
+                    self.current_frame_data['outgoing']['clip'], 
+                    outg_frame_number
+                    )
+                
+                outgoing_image_data = self.normalize_values(outgoing_image_data)
+ 
+                self.update_interface_image(
+                    outgoing_image_data[::4, ::4, :], 
+                    self.ui.flow4_label,
+                    text = 'Frame: ' + str(inc_frame_number + 1)
+                    )
+                
+                self.info('Frame ' + str(self.current_frame) + ': Processing...')
+                self.processEvents()
+
+                result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
+
+                self.update_interface_image(
+                    result_image_data,
+                    self.ui.image_res_label,
+                    text = 'Frame: ' + str(self.current_frame)
+                    )
+
+                del incoming_image_data
+                del outgoing_image_data
+
+                if not single_frame:
+                    save_image_data = result_image_data.cpu().detach().numpy()
+                    self.save_result_frame(
+                        save_image_data,
+                        self.current_frame - 1
+                    )
+                    del save_image_data
+                    self.current_frame_data['saved'] = True
+
+                del result_image_data
                 
             self.info('Frame ' + str(self.current_frame))         
             return
