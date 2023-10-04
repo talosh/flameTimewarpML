@@ -2228,12 +2228,14 @@ class flameTimewarpML(flameMenuApp):
             height, width, _ = img.shape
             bytes_per_line = 3 * width
             qt_image = QtGui.QImage(img.data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
+            del img
             qt_pixmap = QtGui.QPixmap.fromImage(qt_image)
             parent_frame = image_label.parent()
             scaled_pixmap = qt_pixmap.scaled(
                 parent_frame.size() * 0.9, 
                 QtCore.Qt.KeepAspectRatio, 
-                QtCore.Qt.SmoothTransformation)            
+                QtCore.Qt.SmoothTransformation)
+            del qt_pixmap  
             if text:
                 margin = 4
                 origin_x = 2
@@ -2267,6 +2269,7 @@ class flameTimewarpML(flameMenuApp):
 
             image_label.setPixmap(scaled_pixmap)
             self.processEvents()
+            del scaled_pixmap
 
             '''
             QtWidgets.QApplication.instance().processEvents()
