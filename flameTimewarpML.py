@@ -1934,14 +1934,10 @@ class flameTimewarpML(flameMenuApp):
                     text = 'Frame: ' + str(inc_frame_number + 1)
                     )
                 
-                self.processEvents()
-
                 self.message_queue.put(
                     {'type': 'info', 
-                    'message': f'Frame {self.current_frame} : reading outgoing source image data...'}
+                    'message': f'Frame {self.current_frame} : : Processing...'}
                     )
-
-                self.info('Frame ' + str(self.current_frame) + ': Processing...')
                 self.processEvents()
 
                 result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
