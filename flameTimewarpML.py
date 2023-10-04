@@ -1916,6 +1916,11 @@ class flameTimewarpML(flameMenuApp):
                     text = 'Frame: ' + str(inc_frame_number + 1)
                     )
   
+                self.message_queue.put(
+                    {'type': 'info', 
+                    'message': f'Frame {self.current_frame} : reading outgoing source image data...'}
+                    )
+
                 outgoing_image_data = self.read_image_data_torch(
                     self.current_frame_data['outgoing']['clip'], 
                     outg_frame_number
@@ -1929,6 +1934,7 @@ class flameTimewarpML(flameMenuApp):
                     text = 'Frame: ' + str(inc_frame_number + 1)
                     )
                 
+                self.processEvents()
                 self.info('Frame ' + str(self.current_frame) + ': Processing...')
                 self.processEvents()
 
