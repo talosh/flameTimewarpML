@@ -5993,7 +5993,6 @@ class flameTimewarpML(flameMenuApp):
                 # return F4, [F1, F2, F3, F4]
                 return F4, [F4, F4, F4, F4]
 
-
         class Conv2(nn.Module):
             def __init__(self, in_planes, out_planes, stride=2):
                 super(Conv2, self).__init__()
