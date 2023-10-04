@@ -1834,7 +1834,7 @@ class flameTimewarpML(flameMenuApp):
                 del result_image_data
                 del save_image_data
                 
-            self.info('Frame ' + str(self.current_frame) + ': Idle')         
+            self.info('Frame ' + str(self.current_frame))         
             return
 
             print (f'timing: \tbefore read: \t{time.time() - start} sec')
