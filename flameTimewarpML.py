@@ -2352,9 +2352,9 @@ class flameTimewarpML(flameMenuApp):
             img_contiguous = img.copy(order='C')
 
             # Convert the numpy array to a QImage
-            height, width, _ = img.shape
+            height, width, _ = img_contiguous.shape
             bytes_per_line = 3 * width
-            qt_image = QtGui.QImage(img.data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
+            qt_image = QtGui.QImage(img_contiguous.data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
             qt_pixmap = QtGui.QPixmap.fromImage(qt_image)
             parent_frame = image_label.parent()
             scaled_pixmap = qt_pixmap.scaled(
