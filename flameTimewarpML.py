@@ -1792,13 +1792,6 @@ class flameTimewarpML(flameMenuApp):
                     inc_frame_number
                     )
                 
-                display_image_data = self.normalize_values(result_image_data)
-                save_image_data = result_image_data.cpu().detach().numpy()
-                del display_image_data
-                del result_image_data
-                del save_image_data
-                return
-
                 self.update_interface_image(
                     display_image_data[::4, ::4, :],
                     self.ui.flow1_label,
@@ -1827,6 +1820,13 @@ class flameTimewarpML(flameMenuApp):
                     self.ui.image_res_label,
                     text = 'frame: ' + str(self.current_frame)
                     )
+                
+                display_image_data = self.normalize_values(result_image_data)
+                save_image_data = result_image_data.cpu().detach().numpy()
+                del display_image_data
+                del result_image_data
+                del save_image_data
+                return
                 
 
                 '''
@@ -2207,11 +2207,14 @@ class flameTimewarpML(flameMenuApp):
             if isinstance(array, torch.Tensor):
                 # colourmanagement should go here
                 if (array.dtype == torch.float16) or (array.dtype == torch.float32):
-                    img = torch.clip(array, 0, 1) * 255
-                    img = img.byte()
+                    img_torch = torch.clip(array, 0, 1) * 255
+                    img_torch = img_torch.byte()
+                    img = img_torch.cpu().detach().numpy()
+                    del img_torch
                 else:
-                    img = img.byte()
-                    img = img.cpu().detach().numpy()
+                    img_torch = array.byte()
+                    img = img_torch.cpu().detach().numpy()
+                    del img_torch
             else:
                 # colourmanagement should go here
                 if (array.dtype == np.float16) or (array.dtype == np.float32):
@@ -2225,15 +2228,11 @@ class flameTimewarpML(flameMenuApp):
             bytes_per_line = 3 * width
             qt_image = QtGui.QImage(img.data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
             qt_pixmap = QtGui.QPixmap.fromImage(qt_image)
-            del img
-
             parent_frame = image_label.parent()
             scaled_pixmap = qt_pixmap.scaled(
                 parent_frame.size() * 0.9, 
                 QtCore.Qt.KeepAspectRatio, 
-                QtCore.Qt.SmoothTransformation)
-            del qt_pixmap
-            
+                QtCore.Qt.SmoothTransformation)            
             if text:
                 margin = 4
                 origin_x = 2
@@ -2267,8 +2266,6 @@ class flameTimewarpML(flameMenuApp):
 
             image_label.setPixmap(scaled_pixmap)
             self.processEvents()
-
-            del scaled_pixmap
 
             '''
             QtWidgets.QApplication.instance().processEvents()
