@@ -6181,8 +6181,8 @@ class flameTimewarpML(flameMenuApp):
             # img1 = img1.to(torch.float16)
 
             # device = torch.device('cpu')
-            img0 = img0.to(device)
-            img1 = img1.to(device)
+            # img0 = img0.to(device)
+            # img1 = img1.to(device)
 
             print ('load IFNetModel')
             ifnet_model = IFNetModel(self.progress)
