@@ -1701,6 +1701,8 @@ class flameTimewarpML(flameMenuApp):
             render_loop_thread.start()
 
         def _render_loop(self):
+            render_loop_start = time.time()
+
             for frame in self.frames_map.keys():
                 if not self.threads:
                     break
@@ -1712,6 +1714,7 @@ class flameTimewarpML(flameMenuApp):
                 self.current_frame = frame
                 self.process_current_frame()
 
+            self.info(f'Rendering completed in {time.time() - render_loop_start} sec')
             self.rendering = not self.rendering
             button_text = 'Stop' if self.rendering else 'Render'
             self.message_queue.put(
