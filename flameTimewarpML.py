@@ -1678,11 +1678,20 @@ class flameTimewarpML(flameMenuApp):
         def render(self):
             self.rendering = not self.rendering
             button_text = 'Stop' if self.rendering else 'Render'
+            self.message_queue.put(
+                    {'type': 'setText',
+                    'widget': 'render_button',
+                    'text': button_text}
+                )
+
+            self.processEvents()
+            '''
             self.ui.render_button.setText(button_text)
             QtWidgets.QApplication.instance().processEvents()
             time.sleep(0.001)
             self.ui.render_button.setText(button_text)
             QtWidgets.QApplication.instance().processEvents()
+            '''
             if self.rendering:
                 self.render_loop()
 
@@ -1701,9 +1710,16 @@ class flameTimewarpML(flameMenuApp):
                     self.info('Frame ' + str(self.current_frame) + ': Already saved')
                     continue
                 self.current_frame = frame
-                print ('current frame: %s' % self.current_frame)
-                print ('calling process_current_frame()')
                 self.process_current_frame()
+
+            self.rendering = not self.rendering
+            button_text = 'Stop' if self.rendering else 'Render'
+            self.message_queue.put(
+                    {'type': 'setText',
+                    'widget': 'render_button',
+                    'text': button_text}
+                )
+            self.processEvents()
             return
 
         def process_current_frame(self):
