@@ -2544,7 +2544,8 @@ class flameTimewarpML(flameMenuApp):
                 str(frame_number) + ext
             )
 
-            # def wiretap_test():
+            save_file_start = time.time()
+
             try:
                 if not os.path.isdir(os.path.dirname(file_path)):
                     os.makedirs(os.path.dirname(file_path))
@@ -2592,6 +2593,8 @@ class flameTimewarpML(flameMenuApp):
                         alpha = alpha,
                         bit_depth = self.parent_app.bits_per_channel
                     )
+
+                print (f'save file took {time.time() - save_file_start} sec')
 
                 gateway_server_id = WireTapServerId('Gateway', 'localhost')
                 gateway_server_handle = WireTapServerHandle(gateway_server_id)
