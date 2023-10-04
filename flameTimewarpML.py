@@ -3202,7 +3202,8 @@ class flameTimewarpML(flameMenuApp):
 
     def compose_frames_map_speed(self, selection):
         clip = selection[0]
-        clip.render()
+        print (f'renderd: {clip.is_rendered()}'
+        
         self.clip = clip
         self.clip_parent = clip.parent
 
