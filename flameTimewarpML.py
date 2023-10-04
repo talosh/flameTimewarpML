@@ -1775,9 +1775,10 @@ class flameTimewarpML(flameMenuApp):
                     )
                 
                 display_image_data = self.normalize_values(result_image_data)
-
+                save_image_data = result_image_data.cpu().detach().numpy()
                 del display_image_data
                 del result_image_data
+                del save_image_data
                 return
 
                 self.update_interface_image(
