@@ -5897,6 +5897,7 @@ class flameTimewarpML(flameMenuApp):
                     x = F.interpolate(x, scale_factor=0.5, mode="bilinear", align_corners=False)
                 flow0 = self.block0(x)
                 F1 = flow0
+                del flow0
                 F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 display_flow = F.interpolate(F1_large[:, :, :h, :w], scale_factor=0.25, mode='nearest')
                 self.progress.update_optical_flow(
@@ -5917,7 +5918,9 @@ class flameTimewarpML(flameMenuApp):
                 flow1 = self.block1(torch.cat((warped_img0, warped_img1, F1_large), 1))
                 del F1_large
 
-                F2 = (flow0 + flow1)
+                F2 = (F1 + flow1)
+                del F1
+                del flow1
                 F2_large = F.interpolate(F2, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 display_flow = F.interpolate(F2_large[:, :, :h, :w], scale_factor=0.25, mode='nearest')
                 self.progress.update_optical_flow(
@@ -5939,7 +5942,10 @@ class flameTimewarpML(flameMenuApp):
                 flow2 = self.block2(torch.cat((warped_img0, warped_img1, F2_large), 1))
                 del F2_large
 
-                F3 = (flow0 + flow1 + flow2)
+                F3 = (F2 + flow2)
+                del F2
+                del flow2
+
                 F3_large = F.interpolate(F3, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 display_flow = F.interpolate(F3_large[:, :, :h, :w], scale_factor=0.25, mode='nearest')
                 self.progress.update_optical_flow(
@@ -5961,7 +5967,9 @@ class flameTimewarpML(flameMenuApp):
                 flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3_large), 1))
                 del F3_large
 
-                F4 = (flow0 + flow1 + flow2 + flow3)
+                F4 = (F3 + flow3)
+                del F3
+                del flow3
 
                 # F4_large = F.interpolate(F4, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 # display_flow = F.interpolate(F4_large[:, :, :h, :w], scale_factor=0.25, mode='nearest')
@@ -5982,7 +5990,9 @@ class flameTimewarpML(flameMenuApp):
                 
                 del display_flow
 
-                return F4, [F1, F2, F3, F4]
+                # return F4, [F1, F2, F3, F4]
+                return F4, [F4, F4, F4, F4]
+
 
         class Conv2(nn.Module):
             def __init__(self, in_planes, out_planes, stride=2):
