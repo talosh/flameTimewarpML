@@ -1769,7 +1769,7 @@ class flameTimewarpML(flameMenuApp):
             ratio = self.current_frame_data['ratio']
 
             if ratio == 0.0:
-                result_image_data = self.read_image_data(
+                result_image_data = self.read_image_data_torch(
                     self.current_frame_data['incoming']['clip'], 
                     inc_frame_number
                     )
@@ -1804,12 +1804,13 @@ class flameTimewarpML(flameMenuApp):
                     self.ui.image_res_label,
                     text = 'frame: ' + str(self.current_frame)
                     )
-
+                '''
                 # result_image_data = result_image_data.cpu().detach().numpy()
                 self.save_result_frame(
                     result_image_data,
                     self.current_frame - 1
                 )
+                '''
 
             print (f'timing: \tbefore read: \t{time.time() - start} sec')
 
