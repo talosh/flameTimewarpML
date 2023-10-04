@@ -1833,7 +1833,6 @@ class flameTimewarpML(flameMenuApp):
                 del display_image_data
                 del result_image_data
                 del save_image_data
-                return
                 
             self.info('Frame ' + str(self.current_frame) + ': Idle')         
             return
