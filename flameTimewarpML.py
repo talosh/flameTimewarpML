@@ -1800,7 +1800,7 @@ class flameTimewarpML(flameMenuApp):
                     )
                 
                 self.update_interface_image(
-                    result_image_data, 
+                    result_image_data,
                     self.ui.image_res_label,
                     text = 'frame: ' + str(self.current_frame)
                     )
