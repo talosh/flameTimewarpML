@@ -1823,21 +1823,18 @@ class flameTimewarpML(flameMenuApp):
                     text = 'Frame: ' + str(self.current_frame)
                     )
                 
+                self.info('Frame ' + str(self.current_frame) + ': Saving...')
                 save_image_data = result_image_data.cpu().detach().numpy()
+                self.save_result_frame(
+                    save_image_data,
+                    self.current_frame - 1
+                )
+
                 del display_image_data
                 del result_image_data
                 del save_image_data
                 return
                 
-
-                '''
-                # result_image_data = result_image_data.cpu().detach().numpy()
-                self.save_result_frame(
-                    result_image_data,
-                    self.current_frame - 1
-                )
-                '''
-
             return
 
             print (f'timing: \tbefore read: \t{time.time() - start} sec')
