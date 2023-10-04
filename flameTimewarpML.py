@@ -5905,6 +5905,8 @@ class flameTimewarpML(flameMenuApp):
                 warped_img0 = warp(x[:, :3], F1_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
 
+                del F1_large
+
                 flow1 = self.block1(torch.cat((warped_img0, warped_img1, F1_large), 1))
                 F2 = (flow0 + flow1)
                 F2_large = F.interpolate(F2, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
@@ -5937,6 +5939,8 @@ class flameTimewarpML(flameMenuApp):
                     self.progress.ui.flow3_label,
                     text = f'Flow BKW'
                     )
+                
+                del display_flow
 
                 return F4, [F1, F2, F3, F4]
 
