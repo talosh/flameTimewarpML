@@ -5889,16 +5889,24 @@ class flameTimewarpML(flameMenuApp):
                 flow0 = self.block0(x)
                 F1 = flow0
                 F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
-                display_flow = F.interpolate(F1_large[:, :2, :h, :w], scale_factor=0.25, mode='nearest')
-                display_flow = display_flow[:, :2].cpu().detach().numpy()
+                display_flow = F.interpolate(F1_large[:, :, :h, :w], scale_factor=0.25, mode='nearest')
                 self.progress.update_optical_flow(
-                    display_flow,
+                    display_flow[:, :2].cpu().detach().numpy(),
                     self.progress.ui.flow2_label,
-                    text = f'Flow'
+                    text = f'Flow FWD'
+                    )
+
+                display_flow = display_flow[:, 2:4].cpu().detach().numpy()
+                self.progress.update_optical_flow(
+                    display_flow[:, 2:4].cpu().detach().numpy(),
+                    self.progress.ui.flow3_label,
+                    text = f'Flow BKW'
                     )
 
                 warped_img0 = warp(x[:, :3], F1_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
+
+                '''
                 display_warp = F.interpolate(
                     (warped_img0 + warped_img1)[:, :, :h, :w] / 2, 
                     scale_factor=0.25, mode='nearest'
@@ -5910,6 +5918,7 @@ class flameTimewarpML(flameMenuApp):
                     self.progress.ui.flow3_label,
                     text = f'Warp'
                     )
+                '''
 
                 flow1 = self.block1(torch.cat((warped_img0, warped_img1, F1_large), 1))
                 F2 = (flow0 + flow1)
@@ -5917,6 +5926,8 @@ class flameTimewarpML(flameMenuApp):
 
                 warped_img0 = warp(x[:, :3], F2_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F2_large[:, 2:4])
+
+                '''
                 display_warp = F.interpolate(
                     (warped_img0 + warped_img1)[:, :, :h, :w] / 2, 
                     scale_factor=0.25, mode='nearest'
@@ -5928,6 +5939,7 @@ class flameTimewarpML(flameMenuApp):
                     self.progress.ui.flow3_label,
                     text = f'Warp'
                     )
+                '''
 
                 flow2 = self.block2(torch.cat((warped_img0, warped_img1, F2_large), 1))
                 F3 = (flow0 + flow1 + flow2)
@@ -5935,6 +5947,8 @@ class flameTimewarpML(flameMenuApp):
 
                 warped_img0 = warp(x[:, :3], F3_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
+                
+                '''
                 display_warp = F.interpolate(
                     (warped_img0 + warped_img1)[:, :, :h, :w] / 2, 
                     scale_factor=0.25, mode='nearest'
@@ -5946,6 +5960,7 @@ class flameTimewarpML(flameMenuApp):
                     self.progress.ui.flow3_label,
                     text = f'Warp'
                     )
+                '''
                 
                 flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3_large), 1))
                 F4 = (flow0 + flow1 + flow2 + flow3)
@@ -5956,7 +5971,7 @@ class flameTimewarpML(flameMenuApp):
                 self.progress.update_optical_flow(
                     display_flow,
                     self.progress.ui.flow2_label,
-                    text = f'Flow'
+                    text = f'Flow FWD'
                     )
 
                 return F4, [F1, F2, F3, F4]
