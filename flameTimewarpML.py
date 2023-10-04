@@ -1786,11 +1786,13 @@ class flameTimewarpML(flameMenuApp):
                 self.message_queue.put({
                     'type': 'info', 
                     'message': f'Frame {self.current_frame} : reading incoming source image data...'})
-
+                
                 result_image_data = self.read_image_data_torch(
                     self.current_frame_data['incoming']['clip'], 
                     inc_frame_number
                     )
+                
+                display_image_data = self.normalize_values(result_image_data)
                 
                 self.update_interface_image(
                     display_image_data[::4, ::4, :],
@@ -1821,7 +1823,6 @@ class flameTimewarpML(flameMenuApp):
                     text = 'frame: ' + str(self.current_frame)
                     )
                 
-                display_image_data = self.normalize_values(result_image_data)
                 save_image_data = result_image_data.cpu().detach().numpy()
                 del display_image_data
                 del result_image_data
