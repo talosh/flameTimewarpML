@@ -1874,7 +1874,7 @@ class flameTimewarpML(flameMenuApp):
                 self.update_interface_image(
                     display_image_data[::4, ::4, :], 
                     self.ui.flow4_label,
-                    text = 'Frame: ' + str(inc_frame_number + 1)
+                    text = 'Frame: ' + str(outg_frame_number + 1)
                     )
                 
                 self.update_interface_image(
@@ -1931,7 +1931,7 @@ class flameTimewarpML(flameMenuApp):
                 self.update_interface_image(
                     outgoing_image_data[::4, ::4, :], 
                     self.ui.flow4_label,
-                    text = 'Frame: ' + str(inc_frame_number + 1)
+                    text = 'Frame: ' + str(outg_frame_number + 1)
                     )
                 
                 self.message_queue.put(
@@ -1952,6 +1952,7 @@ class flameTimewarpML(flameMenuApp):
                 del outgoing_image_data
 
                 if not single_frame:
+                    result_image_data = self.restore_normalized_values(result_image_data)
                     save_image_data = result_image_data.cpu().detach().numpy()
                     self.save_result_frame(
                         save_image_data,
