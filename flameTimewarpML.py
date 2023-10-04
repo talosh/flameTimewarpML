@@ -1719,7 +1719,6 @@ class flameTimewarpML(flameMenuApp):
                 linear_part = x
                 exp_positive = torch.pow(x, 1/3)
                 exp_negative = -torch.pow(-x, 1/3)
-    
                 return torch.where(x > 1, exp_positive, torch.where(x < -1, exp_negative, linear_part))
 
             # transfer (0.0 - 1.0) onto (-1.0 - 1.0) for tanh
