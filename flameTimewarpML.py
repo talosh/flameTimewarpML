@@ -1739,8 +1739,8 @@ class flameTimewarpML(flameMenuApp):
 
             def custom_bend(x):
                 linear_part = x
-                exp_positive = torch.pow( x, 1 / 8 )
-                exp_negative = -torch.pow( -x, 1 / 8 )
+                exp_positive = torch.pow( x, 1 / 4 )
+                exp_negative = -torch.pow( -x, 1 / 4 )
                 return torch.where(x > 1, exp_positive, torch.where(x < -1, exp_negative, linear_part))
 
             # transfer (0.0 - 1.0) onto (-1.0 - 1.0) for tanh
@@ -1759,8 +1759,8 @@ class flameTimewarpML(flameMenuApp):
 
             def custom_de_bend(x):
                 linear_part = x
-                inv_positive = torch.pow( x, 8 )
-                inv_negative = -torch.pow( -x, 8 )
+                inv_positive = torch.pow( x, 4 )
+                inv_negative = -torch.pow( -x, 4 )
                 return torch.where(x > 1, inv_positive, torch.where(x < -1, inv_negative, linear_part))
 
             epsilon = torch.tensor(4e-8, dtype=torch.float32).to(image_array.device)
