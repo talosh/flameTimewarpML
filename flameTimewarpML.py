@@ -2690,7 +2690,7 @@ class flameTimewarpML(flameMenuApp):
                 
                 framestore_write_time = time.time() - framestore_write_start
 
-                print (f'save file: {file_save_time.2f}, read back: {read_back_time.2f}, fs save: {framestore_write_time.2f}')
+                print (f'save file: {file_save_time:.2f}, read back: {read_back_time:.2f}, fs save: {framestore_write_time:.2f}')
 
                 os.remove(file_path)
 
