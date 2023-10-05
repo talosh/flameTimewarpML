@@ -1569,6 +1569,12 @@ class flameTimewarpML(flameMenuApp):
                 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             return device
 
+        def stop_frame_rendering_thread():
+            if isinstance(self.frame_thread, threading.Thread):
+                if self.frame_thread.is_alive():
+                    self.rendering = False
+                    self.frame_thread.join()
+
         def set_current_frame(self, new_current_frame):
             self.current_frame = new_current_frame
             self.message_queue.put(
@@ -1580,10 +1586,7 @@ class flameTimewarpML(flameMenuApp):
             self.updateFramePositioner.emit()
             self.processEvents()
 
-            if isinstance(self.frame_thread, threading.Thread):
-                if self.frame_thread.is_alive():
-                    self.rendering = False
-                    self.frame_thread.join()
+            self.stop_frame_rendering_thread()
 
             self.message_queue.put(
                 {'type': 'setText',
@@ -1724,6 +1727,9 @@ class flameTimewarpML(flameMenuApp):
             '''
 
         def render(self):
+            if self.rendering:
+                self.stop_frame_rendering_thread()
+                
             self.rendering = not self.rendering
             button_text = 'Stop' if self.rendering else 'Render'
             self.message_queue.put(
