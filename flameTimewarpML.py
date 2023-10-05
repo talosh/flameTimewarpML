@@ -1585,7 +1585,7 @@ class flameTimewarpML(flameMenuApp):
             # map x1 from [x,y] to [m, n]: m1 = m + (x1 - x) * (n - m) / (y - x)
             marker_pos = 0 + (self.current_frame - self.min_frame) * (label_width - 0) / (self.max_frame - self.min_frame)
             bg = np.full((1, label_width, 3), [36, 36, 36], dtype=np.uint8)
-            bg[0, int(marker_pos), :] = [202, 182, 54]
+            bg[0, int(marker_pos), :] = [202/2, 182/2, 54/2]
             bg = np.repeat(bg, label_height, axis=0)
             qt_image = QtGui.QImage(bg.data, label_width, label_height, 3 * label_width, QtGui.QImage.Format_RGB888)
             qt_pixmap = QtGui.QPixmap.fromImage(qt_image)
