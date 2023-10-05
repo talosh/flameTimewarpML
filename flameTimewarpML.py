@@ -1580,7 +1580,7 @@ class flameTimewarpML(flameMenuApp):
 
             if isinstance(self.frame_thread, threading.Thread):
                 if self.frame_thread.is_alive():
-                    print ('still alive')
+                    self.rendering = False
                     self.frame_thread.join()
 
             self.message_queue.put(
