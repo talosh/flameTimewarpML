@@ -1575,6 +1575,7 @@ class flameTimewarpML(flameMenuApp):
                 'text': str(self.current_frame)}
             )
             self.updateFramePositioner.emit()
+            self.processEvents()
 
         def update_frame_positioner(self):
             import numpy as np
