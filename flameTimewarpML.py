@@ -6269,9 +6269,9 @@ class flameTimewarpML(flameMenuApp):
                 self.flownet.load_state_dict(
                     convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
 
-            def inference(self, img0, img1, UHD=False):
+            def inference(self, img0, img1, UHD=False, flow_scale = 1):
                 imgs = torch.cat((img0, img1), 1)
-                flow, _ = self.flownet(imgs, UHD, flow_scale = self.flow_scale)
+                flow, _ = self.flownet(imgs, UHD, flow_scale)
                 return flow
 
         class ContextNetModel:
@@ -6368,7 +6368,7 @@ class flameTimewarpML(flameMenuApp):
             info_text = info_text.split(' - pass')[0]
             self.progress.info(f'{info_text} - pass {current_pass} of {num_passes}')
 
-            flow = ifnet_model.inference(img0, img1, False)
+            flow = ifnet_model.inference(img0, img1, False, flow_scale=self.flow_scale)
 
             self.log_debug('del IFNetModel')
             del (ifnet_model)
