@@ -6305,7 +6305,7 @@ class flameTimewarpML(flameMenuApp):
 
             self.log_debug('load IFNetModel')
             ifnet_model = IFNetModel(self.progress)
-            print (f'trained models path: {self.trained_models_path}')
+            self.log_debug(f'trained models path: {self.trained_models_path}')
             ifnet_model.load_model(
                 os.path.join(
                     self.trained_models_path,
@@ -6319,15 +6319,18 @@ class flameTimewarpML(flameMenuApp):
 
             flow = ifnet_model.inference(img0, img1, False)
 
-            print ('del IFNetModel')
+            self.log_debug('del IFNetModel')
             del (ifnet_model)
+
+            if not self.progress.rendering:
+                return img0
 
             # device = torch.device('cpu')
             img0 = img0.to(device)
             img1 = img1.to(device)
             flow = flow.to(device)
 
-            print ('load ContextNetModel')
+            self.log_debug('load ContextNetModel')
             contextnet_model = ContextNetModel()
             contextnet_model.load_model(
                 os.path.join(
@@ -6338,8 +6341,11 @@ class flameTimewarpML(flameMenuApp):
 
             c0, c1 = contextnet_model.get_contexts(img0, img1, flow)
 
-            print ('del ContextNetModel')
+            self.log_debug('del ContextNetModel')
             del (contextnet_model)
+
+            if not self.progress.rendering:
+                return img0
 
             # device = torch.device('cpu')
             img0 = img0.to(device)
@@ -6352,7 +6358,7 @@ class flameTimewarpML(flameMenuApp):
             for fn in c1:
                 c11.append(fn.to(device))
 
-            print ('load FusionNetModel')
+            self.log_debug('load FusionNetModel')
             fusion_model = FusionNetModel()
             fusion_model.load_model(
                 os.path.join(
@@ -6373,7 +6379,7 @@ class flameTimewarpML(flameMenuApp):
                 text = f'Frame: {self.progress.current_frame} - pass {current_pass} of {num_passes}'
                 )
 
-            print ('del FusionNetModel')
+            self.log_debug('del FusionNetModel')
             del (fusion_model)
 
             middle_ratio = (img0_ratio + img1_ratio) / 2
@@ -6392,7 +6398,7 @@ class flameTimewarpML(flameMenuApp):
         res_img = middle[0]
         res_img = res_img.permute(1, 2, 0)[:h, :w]
         res_img = res_img.flip(-1)
-        print ('end of flownet24')
+        self.log_debug('end of flownet24')
 
         return res_img
 
