@@ -3138,7 +3138,6 @@ class flameTimewarpML(flameMenuApp):
         self.flow_scale = 1.0
 
         self.flow_res = {
-            2.0: 'Use 2x Resolution',
             1.0: 'Use Full Resolution',
             0.5: 'Use 1/2 Resolution',
             0.25: 'Use 1/4 Resolution',
