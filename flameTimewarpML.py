@@ -1577,7 +1577,7 @@ class flameTimewarpML(flameMenuApp):
         def update_frame_positioner(self):
             width = self.ui.info_label.width()
             height = self.info_label.height()
-            print (f'h: {height}, w: {with}')
+            print (f'h: {height}, w: {width}')
 
         def after_show(self):
             self.message_queue.put({'type': 'info', 'message': 'Checking requirements...'})
