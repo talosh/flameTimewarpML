@@ -1570,11 +1570,16 @@ class flameTimewarpML(flameMenuApp):
             return device
 
         def stop_frame_rendering_thread(self):
+            print ('Stop rendering thread func')
             self.info(f'Frame {self.current_frame} : Stopping...')
             if isinstance(self.frame_thread, threading.Thread):
                 if self.frame_thread.is_alive():
+                    print ('Thread is alive')
                     self.rendering = False
+                    print ('Waiting')
                     self.frame_thread.join()
+                    print ('Finished')
+
 
         def set_current_frame(self, new_current_frame):
             self.current_frame = new_current_frame
