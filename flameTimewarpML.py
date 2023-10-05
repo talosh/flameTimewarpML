@@ -1575,9 +1575,12 @@ class flameTimewarpML(flameMenuApp):
             self.update_frame_positioner()
 
         def update_frame_positioner(self):
-            width = self.ui.info_label.width()
-            height = self.ui.info_label.height()
-            print (f'h: {height}, w: {width}')
+            label_width = self.ui.info_label.width()
+            label_height = self.ui.info_label.height()
+            # map x1 from [x,y] to [m, n]: m1 = m + (x1 - x) * (n - m) / (y - x)
+            marker_pos = 0 + (self.current_frame - self.min_frame) * (label_width - 0) / (self.max_frame - self.min_frame)
+            print (f'w: {label_width}, pos: {marker_pos}')
+
 
         def after_show(self):
             self.message_queue.put({'type': 'info', 'message': 'Checking requirements...'})
