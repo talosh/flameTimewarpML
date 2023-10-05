@@ -6289,6 +6289,10 @@ class flameTimewarpML(flameMenuApp):
         img1_ratio = 1
 
         for current_pass in range(1, num_passes + 1):
+            
+            if not self.progress.rendering:
+                return img0
+
             # torch.set_default_dtype(torch.float16)
             # img0 = img0.to(torch.float16)
             # img1 = img1.to(torch.float16)
