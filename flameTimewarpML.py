@@ -1585,7 +1585,7 @@ class flameTimewarpML(flameMenuApp):
                     print ('Finished')
             print ('exiting Stop rendering thread func')
 
-        def set_current_frame(self, new_current_frame):
+        def set_current_frame(self, new_current_frame, render = True):
             self.current_frame = new_current_frame
             self.message_queue.put(
                 {'type': 'setText',
@@ -1595,17 +1595,18 @@ class flameTimewarpML(flameMenuApp):
             self.info('Frame ' + str(self.current_frame))
             self.updateFramePositioner.emit()
             self.processEvents()
+            
+            if render:
+                self.stop_frame_rendering_thread()
 
-            self.stop_frame_rendering_thread()
-
-            self.message_queue.put(
-                {'type': 'setText',
-                'widget': 'render_button',
-                'text': 'Stop'}
-            )
-            self.frame_thread = threading.Thread(target=self._process_current_frame, kwargs={'single_frame': True})
-            self.frame_thread.daemon = True
-            self.frame_thread.start()
+                self.message_queue.put(
+                    {'type': 'setText',
+                    'widget': 'render_button',
+                    'text': 'Stop'}
+                )
+                self.frame_thread = threading.Thread(target=self._process_current_frame, kwargs={'single_frame': True})
+                self.frame_thread.daemon = True
+                self.frame_thread.start()
 
         def update_frame_positioner(self):
             import numpy as np
@@ -2950,6 +2951,11 @@ class flameTimewarpML(flameMenuApp):
         def mouseMoveEvent(self, event):
             child = self.childAt(event.pos())
             if child == self.ui.info_label:
+                relative_pos = self.ui.info_label.mapFromParent(event.pos())
+                label_width = self.ui.info_label.width()
+                new_frame = int(self.min_frame + (relative_pos.x() - 0) * (self.max_frame - self.min_frame) / (label_width - 0))
+                self.set_current_frame(new_frame, render = False)
+                super().mouseReleaseEvent(event)
                 return
             
             if self.mousePressPos is not None:
