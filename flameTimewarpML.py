@@ -2882,6 +2882,11 @@ class flameTimewarpML(flameMenuApp):
 
         def mouseReleaseEvent(self, event):
             self.mousePressPos = None
+            child = self.childAt(event.pos())
+            if child == self.ui.info_label:
+                relative_pos = self.label.mapFromParent(event.pos())
+                print(f"Clicked on label at position: {relative_pos.x()}, {relative_pos.y()}")
+
             super().mouseReleaseEvent(event)
 
         def on_SpeedValueChange(self):
