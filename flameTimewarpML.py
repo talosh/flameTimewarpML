@@ -2948,6 +2948,10 @@ class flameTimewarpML(flameMenuApp):
             super().mousePressEvent(event)
 
         def mouseMoveEvent(self, event):
+            child = self.childAt(event.pos())
+            if child == self.ui.info_label:
+                return
+            
             if self.mousePressPos is not None:
                 # Calculate the new position of the window.
                 newPos = self.pos() + (event.globalPos() - self.mousePressPos)
