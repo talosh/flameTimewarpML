@@ -1574,7 +1574,7 @@ class flameTimewarpML(flameMenuApp):
             )
             self.update_frame_positioner()
 
-        def update_frame_positioner(self)
+        def update_frame_positioner(self):
             width = self.ui.info_label.width()
             height = self.info_label.height()
             print (f'h: {height}, w: {with}')
