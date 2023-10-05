@@ -1757,6 +1757,7 @@ class flameTimewarpML(flameMenuApp):
                 self.render_loop()
 
         def render_loop(self):
+            print ('hello from render loop')
             render_loop_thread = threading.Thread(target=self._render_loop)
             render_loop_thread.daemon = True
             render_loop_thread.start()
