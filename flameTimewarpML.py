@@ -461,7 +461,9 @@ class flameMenuApp(object):
         self.app_name = self.framework.app_name
         self.menu_group_name = menu_group_name
         self.debug = DEBUG
+        self.log_debug = self.framework.log_debug
         self.dynamic_menu_data = {}
+        
 
         # flame module is only avaliable when a 
         # flame project is loaded and initialized
@@ -6301,7 +6303,7 @@ class flameTimewarpML(flameMenuApp):
             # img0 = img0.to(device)
             # img1 = img1.to(device)
 
-            print ('load IFNetModel')
+            self.log_debug('load IFNetModel')
             ifnet_model = IFNetModel(self.progress)
             print (f'trained models path: {self.trained_models_path}')
             ifnet_model.load_model(
