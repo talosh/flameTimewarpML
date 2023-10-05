@@ -1566,14 +1566,18 @@ class flameTimewarpML(flameMenuApp):
             return device
 
         def set_current_frame(self, new_current_frame):
-            if self.current_frame == new_current_frame:
-                return
             self.current_frame = new_current_frame
             self.message_queue.put(
                 {'type': 'setText',
                 'widget': 'cur_frame_label',
                 'text': str(self.current_frame)}
             )
+            self.update_frame_positioner()
+
+        def update_frame_positioner(self)
+            width = self.ui.info_label.width()
+            height = self.info_label.height()
+            print (f'h: {height}, w: {with}')
 
         def after_show(self):
             self.message_queue.put({'type': 'info', 'message': 'Checking requirements...'})
