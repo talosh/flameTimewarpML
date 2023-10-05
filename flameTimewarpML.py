@@ -5855,7 +5855,7 @@ class flameTimewarpML(flameMenuApp):
         torch.set_printoptions(profile="full")
         torch.set_grad_enabled(False)
 
-        print ('start')
+        # print ('start')
         # from torch import mps
         # print (mps.driver_allocated_memory())
 
@@ -5880,14 +5880,14 @@ class flameTimewarpML(flameMenuApp):
         img0 = F.pad(img0, padding)
         img1 = F.pad(img1, padding)
 
-        print ('padding')
+        # print ('padding')
         # from torch import mps
         # print (mps.driver_allocated_memory())
 
         # print (img0)
         # print (img1)
 
-        print ('processing ratio %s' % ratio)
+        self.log_debug('processing ratio %s' % ratio)
 
         def calculate_passes(target_ratio, precision, maxcycles=8):
             img0_ratio = 0.0
@@ -5916,7 +5916,7 @@ class flameTimewarpML(flameMenuApp):
         
         num_passes = calculate_passes(ratio, 0.02, 8)
 
-        print ('passes %s' % num_passes)
+        self.log_debug('passes %s' % num_passes)
 
         def warp(tenInput, tenFlow):
             backwarp_tenGrid = {}
@@ -6006,9 +6006,9 @@ class flameTimewarpML(flameMenuApp):
                 self.block2 = IFBlock(10, scale=2, c=96)
                 self.block3 = IFBlock(10, scale=1, c=48)
 
-            def forward(self, x, UHD=False):
-                if UHD:
-                    x = F.interpolate(x, scale_factor=0.5, mode="bilinear", align_corners=False)
+            def forward(self, x, UHD=False, flow_scale = 1):
+                if flow_scale != 1:
+                    x = F.interpolate(x, scale_factor=flow_scale, mode="bilinear", align_corners=False)
                 flow0 = self.block0(x)
                 F1 = flow0
                 del flow0
@@ -6104,6 +6104,9 @@ class flameTimewarpML(flameMenuApp):
                 
                 del display_flow
 
+                if flow_scale != 1:
+                    F4 = F.interpolate(F4, scale_factor=1 / flow_scale, mode="bilinear", align_corners=False, recompute_scale_factor=False) * flow_scale
+
                 # return F4, [F1, F2, F3, F4]
                 return F4, [F4, F4, F4, F4]
 
@@ -6128,7 +6131,6 @@ class flameTimewarpML(flameMenuApp):
                 self.conv4 = Conv2(4*c, 8*c)
 
             def forward(self, x, flow):
-                print ('ContextNet forward')
                 x = self.conv0(x)
                 x = self.conv1(x)
                 flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear", align_corners=False) * 0.5
@@ -6162,7 +6164,6 @@ class flameTimewarpML(flameMenuApp):
                 self.conv = nn.ConvTranspose2d(c, 4, 4, 2, 1)
 
             def forward(self, img0, img1, flow, c0, c1, flow_gt):
-                print ('FusionNet forward')
                 warped_img0 = warp(img0, flow[:, :2])
                 warped_img1 = warp(img1, flow[:, 2:4])
                 if flow_gt == None:
