@@ -1757,7 +1757,6 @@ class flameTimewarpML(flameMenuApp):
                 self.render_loop()
 
         def render_loop(self):
-            print ('hello from render loop')
             render_loop_thread = threading.Thread(target=self._render_loop)
             render_loop_thread.daemon = True
             render_loop_thread.start()
@@ -1773,10 +1772,10 @@ class flameTimewarpML(flameMenuApp):
                 if self.frames_map[frame].get('saved'):
                     self.info('Frame ' + str(self.current_frame) + ': Already saved')
                     continue
-                self.set_current_frame(frame)
+                self.set_current_frame(frame, render = False)
                 self.process_current_frame()
 
-            self.info(f'Rendering completed in {time.time() - render_loop_start} sec')
+            self.info(f'Rendering completed in {(time.time() - render_loop_start):.2f} sec')
             self.rendering = False
             self.message_queue.put(
                     {'type': 'setText',
