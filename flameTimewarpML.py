@@ -1574,8 +1574,18 @@ class flameTimewarpML(flameMenuApp):
                 'widget': 'cur_frame_label',
                 'text': str(self.current_frame)}
             )
+            self.info('Frame ' + str(self.current_frame))
             self.updateFramePositioner.emit()
             self.processEvents()
+            self.rendering = True
+            self.message_queue.put(
+                {'type': 'setText',
+                'widget': 'render_button',
+                'text': 'Stop'}
+            )
+            self.frame_thread = threading.Thread(target=self._process_current_frame, kwargs={'single_frame': True})
+            self.frame_thread.daemon = True
+            self.frame_thread.start()
 
         def update_frame_positioner(self):
             import numpy as np
@@ -1646,7 +1656,7 @@ class flameTimewarpML(flameMenuApp):
                 'text': str(self.max_frame)}
             )
 
-            self.set_current_frame(self.min_frame)
+            
 
             self.message_queue.put({'type': 'info', 'message': 'Creating destination clip node...'})
             self.processEvents()
@@ -1659,9 +1669,14 @@ class flameTimewarpML(flameMenuApp):
 
             self.message_queue.put({'type': 'info', 'message': 'Reading source clip(s)...'})
             self.processEvents()
+            
+            self.set_current_frame(self.min_frame)
+
+            '''
             self.frame_thread = threading.Thread(target=self._process_current_frame, kwargs={'single_frame': True})
             self.frame_thread.daemon = True
             self.frame_thread.start()
+            '''
 
         def keyPressEvent(self, event):
             if event.key() == QtCore.Qt.Key_Left:
@@ -1674,6 +1689,7 @@ class flameTimewarpML(flameMenuApp):
         def left_arrow_pressed(self):
             self.set_current_frame(self.current_frame - 1 if self.current_frame > self.min_frame else self.min_frame)
 
+            '''
             self.info('Frame ' + str(self.current_frame))
             self.rendering = True
             self.message_queue.put(
@@ -1684,10 +1700,12 @@ class flameTimewarpML(flameMenuApp):
             self.frame_thread = threading.Thread(target=self._process_current_frame, kwargs={'single_frame': True})
             self.frame_thread.daemon = True
             self.frame_thread.start()
+            '''
 
         def right_arrow_pressed(self):
             self.set_current_frame(self.current_frame + 1 if self.current_frame < self.max_frame else self.max_frame)
 
+            '''
             self.info('Frame ' + str(self.current_frame))
             self.rendering = True
             self.message_queue.put(
@@ -1698,6 +1716,7 @@ class flameTimewarpML(flameMenuApp):
             self.frame_thread = threading.Thread(target=self._process_current_frame, kwargs={'single_frame': True})
             self.frame_thread.daemon = True
             self.frame_thread.start()
+            '''
 
         def render(self):
             self.rendering = not self.rendering
