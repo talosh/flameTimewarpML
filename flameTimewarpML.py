@@ -6269,9 +6269,9 @@ class flameTimewarpML(flameMenuApp):
                 self.flownet.load_state_dict(
                     convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
 
-            def inference(self, img0, img1, UHD=False, flow_scale = self.flow_scale):
+            def inference(self, img0, img1, UHD=False):
                 imgs = torch.cat((img0, img1), 1)
-                flow, _ = self.flownet(imgs, UHD)
+                flow, _ = self.flownet(imgs, UHD, flow_scale = self.flow_scale)
                 return flow
 
         class ContextNetModel:
