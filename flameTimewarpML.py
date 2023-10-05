@@ -1574,7 +1574,7 @@ class flameTimewarpML(flameMenuApp):
             return device
 
         def stop_frame_rendering_thread(self):
-            self.info(f'Frame {self.current_frame} : Stopping...')
+            self.info(f'Frame {self.current_frame}: Stopping...')
             if isinstance(self.frame_thread, threading.Thread):
                 if self.frame_thread.is_alive():
                     self.rendering = False
@@ -1847,7 +1847,7 @@ class flameTimewarpML(flameMenuApp):
             if ratio == 0.0:
                 self.message_queue.put(
                     {'type': 'info', 
-                    'message': f'Frame {self.current_frame} : reading incoming source image data...'}
+                    'message': f'Frame {self.current_frame}: reading incoming source image data...'}
                     )
                                 
                 result_image_data = self.read_image_data_torch(
@@ -1911,7 +1911,7 @@ class flameTimewarpML(flameMenuApp):
             elif ratio == 1.0:
                 self.message_queue.put(
                     {'type': 'info', 
-                    'message': f'Frame {self.current_frame} : reading outgoing source image data...'}
+                    'message': f'Frame {self.current_frame}: reading outgoing source image data...'}
                     )
                 
                 result_image_data = self.read_image_data_torch(
@@ -1975,7 +1975,7 @@ class flameTimewarpML(flameMenuApp):
             else:
                 self.message_queue.put(
                     {'type': 'info', 
-                    'message': f'Frame {self.current_frame} : reading incoming source image data...'}
+                    'message': f'Frame {self.current_frame}: reading incoming source image data...'}
                     )
 
                 incoming_image_data = self.read_image_data_torch(
@@ -1997,7 +1997,7 @@ class flameTimewarpML(flameMenuApp):
   
                 self.message_queue.put(
                     {'type': 'info', 
-                    'message': f'Frame {self.current_frame} : reading outgoing source image data...'}
+                    'message': f'Frame {self.current_frame}: reading outgoing source image data...'}
                     )
 
                 outgoing_image_data = self.read_image_data_torch(
@@ -2020,7 +2020,7 @@ class flameTimewarpML(flameMenuApp):
                 
                 self.message_queue.put(
                     {'type': 'info', 
-                    'message': f'Frame {self.current_frame} : : Processing...'}
+                    'message': f'Frame {self.current_frame}: Processing...'}
                     )
                 self.processEvents()
 
