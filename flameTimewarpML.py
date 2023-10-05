@@ -1578,7 +1578,7 @@ class flameTimewarpML(flameMenuApp):
             self.updateFramePositioner.emit()
             self.processEvents()
 
-            if (self.frame_thread, threading.Thread):
+            if isinstance(self.frame_thread, threading.Thread):
                 if self.frame_thread.is_alive():
                     print ('still alive')
                     self.frame_thread.join()
