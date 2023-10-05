@@ -2015,6 +2015,10 @@ class flameTimewarpML(flameMenuApp):
                 self.processEvents()
 
                 result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
+                if not result_image_data:
+                    del incoming_image_data
+                    del outgoing_image_data
+                    return
 
                 self.update_interface_image(
                     result_image_data,
@@ -6298,7 +6302,8 @@ class flameTimewarpML(flameMenuApp):
         for current_pass in range(1, num_passes + 1):
             
             if not self.progress.rendering:
-                return img0.squeeze(0).permute(1, 2, 0)[:h, :w].flip(-1)
+                # return img0.squeeze(0).permute(1, 2, 0)[:h, :w].flip(-1)
+                return None
 
             # torch.set_default_dtype(torch.float16)
             # img0 = img0.to(torch.float16)
@@ -6328,7 +6333,7 @@ class flameTimewarpML(flameMenuApp):
             del (ifnet_model)
 
             if not self.progress.rendering:
-                return img0.squeeze(0).permute(1, 2, 0)[:h, :w].flip(-1)
+                return None
 
             # device = torch.device('cpu')
             img0 = img0.to(device)
@@ -6350,7 +6355,7 @@ class flameTimewarpML(flameMenuApp):
             del (contextnet_model)
 
             if not self.progress.rendering:
-                return img0.squeeze(0).permute(1, 2, 0)[:h, :w].flip(-1)
+                return None
 
             # device = torch.device('cpu')
             img0 = img0.to(device)
