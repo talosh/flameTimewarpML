@@ -3017,9 +3017,6 @@ class flameTimewarpML(flameMenuApp):
 
             self.threads = False
             self.parent_app.threads = False
-            self.rendering = False
-            if self.frame_thread:
-                self.frame_thread.join()
             self.message_queue.join()
             self.message_thread.join()
             
