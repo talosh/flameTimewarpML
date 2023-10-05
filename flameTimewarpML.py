@@ -1444,6 +1444,7 @@ class flameTimewarpML(flameMenuApp):
                 x = lambda chk=False, flow_res=flow_res: self.parent_app.select_flow_res(flow_res)
                 action.triggered[()].connect(x)
             self.ui.flow_res_selector.setMenu(flow_res_menu)
+            self.ui.flow_res_selector.setText(self.parent_app.flow_res.get(self.parent_app.flow_scale, 'Use Full Resolution'))
 
             # set defalut text for text fields
             self.ui.stripe_label.setText(self.mode)
@@ -3135,7 +3136,7 @@ class flameTimewarpML(flameMenuApp):
         self.new_speed = 1
         self.dedup_mode = 0
         self.cpu = False
-        self.flow_scale = 1.0
+        self.flow_scale = self.prefs.get('flow_scale', 1.0)
 
         self.flow_res = {
             1.0: 'Use Full Resolution',
@@ -4504,6 +4505,15 @@ class flameTimewarpML(flameMenuApp):
 
     def select_flow_res(self, flow_scale):
         self.flow_scale = flow_scale
+
+        self.progress.message_queue.put(
+                {'type': 'setText',
+                'widget': 'flow_res_selector',
+                'text': self.flow_res.get(flow_scale, 'Use Full Resolution')}
+            )
+
+        self.prefs['flow_scale'] = flow_scale
+        self.framework.save_prefs()
 
     def select_mode(self, mode_number):
         print ('select mode')
