@@ -2885,7 +2885,10 @@ class flameTimewarpML(flameMenuApp):
             child = self.childAt(event.pos())
             if child == self.ui.info_label:
                 relative_pos = self.ui.info_label.mapFromParent(event.pos())
+                label_width = self.ui.info_label.width()
+                new_frame = int(self.min_frame + (relative_pos.x() - 0) * (self.max_frame - self.min_frame) / (label_width - 0))
                 print(f"Clicked on label at position: {relative_pos.x()}, {relative_pos.y()}")
+                print (f'frame: {new_frame}')
 
             super().mouseReleaseEvent(event)
 
