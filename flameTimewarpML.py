@@ -1565,6 +1565,16 @@ class flameTimewarpML(flameMenuApp):
                 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             return device
 
+        def set_current_frame(self, new_current_frame):
+            if self.current_frame == new_current_frame:
+                return
+            self.current_frame = new_current_frame
+            self.message_queue.put(
+                {'type': 'setText',
+                'widget': 'cur_frame_label',
+                'text': str(self.current_frame)}
+            )
+
         def after_show(self):
             self.message_queue.put({'type': 'info', 'message': 'Checking requirements...'})
             self.processEvents()
@@ -1605,11 +1615,8 @@ class flameTimewarpML(flameMenuApp):
 
             self.min_frame = min(self.frames_map.keys())
             self.max_frame = max(self.frames_map.keys())
-            self.message_queue.put(
-                {'type': 'setText',
-                'widget': 'cur_frame_label',
-                'text': str(self.min_frame)}
-            )
+            self.set_current_frame(self.min_frame)
+
             self.message_queue.put(
                 {'type': 'setText',
                 'widget': 'end_frame_label',
@@ -1624,8 +1631,6 @@ class flameTimewarpML(flameMenuApp):
                 )
             if not self.destination_node_id:
                 return
-
-            self.current_frame = min(self.frames_map.keys())
 
             self.message_queue.put({'type': 'info', 'message': 'Reading source clip(s)...'})
             self.processEvents()
@@ -1642,12 +1647,7 @@ class flameTimewarpML(flameMenuApp):
                 super().keyPressEvent(event)  # Pass the event to the parent's handler
 
         def left_arrow_pressed(self):
-            self.current_frame = self.current_frame - 1 if self.current_frame > self.min_frame else self.min_frame
-            self.message_queue.put(
-                {'type': 'setText',
-                'widget': 'cur_frame_label',
-                'text': str(self.current_frame)}
-            )
+            self.set_current_frame(self.current_frame - 1 if self.current_frame > self.min_frame else self.min_frame)
 
             self.info('Frame ' + str(self.current_frame))
             self.rendering = True
@@ -1661,12 +1661,7 @@ class flameTimewarpML(flameMenuApp):
             self.frame_thread.start()
 
         def right_arrow_pressed(self):
-            self.current_frame = self.current_frame + 1 if self.current_frame < self.max_frame else self.max_frame
-            self.message_queue.put(
-                {'type': 'setText',
-                'widget': 'cur_frame_label',
-                'text': str(self.current_frame)}
-            )
+            self.set_current_frame(self.current_frame + 1 if self.current_frame < self.max_frame else self.max_frame)
 
             self.info('Frame ' + str(self.current_frame))
             self.rendering = True
@@ -1715,7 +1710,7 @@ class flameTimewarpML(flameMenuApp):
                 if self.frames_map[frame].get('saved'):
                     self.info('Frame ' + str(self.current_frame) + ': Already saved')
                     continue
-                self.current_frame = frame
+                self.set_current_frame(frame)
                 self.process_current_frame()
 
             self.info(f'Rendering completed in {time.time() - render_loop_start} sec')
