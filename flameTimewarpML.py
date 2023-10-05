@@ -2944,12 +2944,12 @@ class flameTimewarpML(flameMenuApp):
                 self.mousePressPos = None
                 super().mousePressEvent(event)
                 return
-            elif child = self.ui.cur_frame_label:
+            elif child == self.ui.cur_frame_label:
                 self.set_current_frame(self.min_frame)
                 self.mousePressPos = None
                 super().mousePressEvent(event)
                 return
-            elif child = self.ui.end_frame_label:
+            elif child == self.ui.end_frame_label:
                 self.set_current_frame(self.max_frame)
                 self.mousePressPos = None
                 super().mousePressEvent(event)
