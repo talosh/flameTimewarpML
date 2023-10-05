@@ -1577,6 +1577,12 @@ class flameTimewarpML(flameMenuApp):
             self.info('Frame ' + str(self.current_frame))
             self.updateFramePositioner.emit()
             self.processEvents()
+
+            if (self.frame_thread, threading.Thread):
+                if self.frame_thread.is_alive():
+                    print ('still alive')
+                    self.frame_thread.join()
+
             self.rendering = True
             self.message_queue.put(
                 {'type': 'setText',
