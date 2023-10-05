@@ -6293,7 +6293,7 @@ class flameTimewarpML(flameMenuApp):
         for current_pass in range(1, num_passes + 1):
             
             if not self.progress.rendering:
-                return img0
+                return img0.permute(1, 2, 0)[:h, :w].flip(-1)
 
             # torch.set_default_dtype(torch.float16)
             # img0 = img0.to(torch.float16)
@@ -6323,7 +6323,7 @@ class flameTimewarpML(flameMenuApp):
             del (ifnet_model)
 
             if not self.progress.rendering:
-                return img0
+                return img0.permute(1, 2, 0)[:h, :w].flip(-1)
 
             # device = torch.device('cpu')
             img0 = img0.to(device)
@@ -6345,7 +6345,7 @@ class flameTimewarpML(flameMenuApp):
             del (contextnet_model)
 
             if not self.progress.rendering:
-                return img0
+                return img0.permute(1, 2, 0)[:h, :w].flip(-1)
 
             # device = torch.device('cpu')
             img0 = img0.to(device)
