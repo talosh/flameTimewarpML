@@ -1569,7 +1569,7 @@ class flameTimewarpML(flameMenuApp):
                 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             return device
 
-        def stop_frame_rendering_thread():
+        def stop_frame_rendering_thread(self):
             if isinstance(self.frame_thread, threading.Thread):
                 if self.frame_thread.is_alive():
                     self.rendering = False
