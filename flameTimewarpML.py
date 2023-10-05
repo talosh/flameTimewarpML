@@ -2944,6 +2944,12 @@ class flameTimewarpML(flameMenuApp):
             # flame.schedule_idle_event(wiretap_test)
 
         def mousePressEvent(self, event):
+            child = self.childAt(event.pos())
+            if child == self.ui.info_label:
+                self.mousePressPos = None
+                super().mousePressEvent(event)
+                return
+            
             # Record the position at which the mouse was pressed.
             self.mousePressPos = event.globalPos()
             super().mousePressEvent(event)
