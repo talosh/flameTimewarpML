@@ -1546,10 +1546,13 @@ class flameTimewarpML(flameMenuApp):
             '''
 
         def processEvents(self):
-            QtWidgets.QApplication.instance().processEvents()
-            self.allEventsProcessed.emit()
-            while not self.allEventsFlag:
-                time.sleep(0.0001)
+            try:
+                QtWidgets.QApplication.instance().processEvents()
+                self.allEventsProcessed.emit()
+                while not self.allEventsFlag:
+                    time.sleep(0.0001)
+            except:
+                pass
 
         def on_allEventsProcessed(self):
             self.allEventsFlag = True
@@ -1579,7 +1582,6 @@ class flameTimewarpML(flameMenuApp):
                     print ('Waiting')
                     self.frame_thread.join()
                     print ('Finished')
-
 
         def set_current_frame(self, new_current_frame):
             self.current_frame = new_current_frame
