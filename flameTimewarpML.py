@@ -1785,12 +1785,6 @@ class flameTimewarpML(flameMenuApp):
             self.processEvents()
             return
 
-        def process_current_frame(self):
-            self.frame_thread = threading.Thread(target=self._process_current_frame)
-            self.frame_thread.daemon = True
-            self.frame_thread.start()
-            self.frame_thread.join()
-
         def normalize_values(self, image_array):
             import torch
 
@@ -1831,6 +1825,12 @@ class flameTimewarpML(flameMenuApp):
             image_array = ( image_array + 1.0) / 2.0
 
             return image_array
+
+        def process_current_frame(self):
+            self.frame_thread = threading.Thread(target=self._process_current_frame)
+            self.frame_thread.daemon = True
+            self.frame_thread.start()
+            self.frame_thread.join()
 
         def _process_current_frame(self, single_frame=False):
             import numpy as np
@@ -2025,7 +2025,7 @@ class flameTimewarpML(flameMenuApp):
                 self.processEvents()
 
                 result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
-                if not result_image_data:
+                if result_image_data is None:
                     del incoming_image_data
                     del outgoing_image_data
                     return
