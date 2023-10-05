@@ -684,6 +684,7 @@ class flameTimewarpML(flameMenuApp):
         updateFlowImage = QtCore.Signal(dict)
         setText = QtCore.Signal(dict)
         showMessageBox = QtCore.Signal(dict)
+        updateFramePositioner = QtCore.Signal()
 
         class Ui_Progress(object):
 
@@ -1418,6 +1419,7 @@ class flameTimewarpML(flameMenuApp):
             self.updateFlowImage.connect(self.on_UpdateFlowImage)
             self.setText.connect(self.on_setText)
             self.showMessageBox.connect(self.on_showMessageBox)
+            self.updateFramePositioner.connect(self.update_frame_positioner)
 
             # load in the UI
             self.ui = self.Ui_Progress()
@@ -1572,15 +1574,24 @@ class flameTimewarpML(flameMenuApp):
                 'widget': 'cur_frame_label',
                 'text': str(self.current_frame)}
             )
-            self.update_frame_positioner()
+            self.updateFramePositioner.emit()
 
         def update_frame_positioner(self):
+            import numpy as np
+
             label_width = self.ui.info_label.width()
             label_height = self.ui.info_label.height()
             # map x1 from [x,y] to [m, n]: m1 = m + (x1 - x) * (n - m) / (y - x)
             marker_pos = 0 + (self.current_frame - self.min_frame) * (label_width - 0) / (self.max_frame - self.min_frame)
-            print (f'w: {label_width}, pos: {marker_pos}')
-
+            bg = np.full((1, w, 3), [36, 36, 36], dtype=np.uint8)
+            bg[0, int(marker_pos), :] = [202, 182, 54]
+            bg = np.repeat(bg, label_height, axis=0)
+            qt_image = QtGui.QImage(bg.data, label_width, label_height, 3 * label_width, QtGui.QImage.Format_RGB888)
+            qt_pixmap = QtGui.QPixmap.fromImage(qt_image)
+            palette = QtGui.QPalette()
+            palette.setBrush(QtGui.QPalette.Background, QtGui.QBrush(qt_pixmap))
+            self.ui.info_label.setAutoFillBackground(True)
+            self.ui.info_label.setPalette(palette)
 
         def after_show(self):
             self.message_queue.put({'type': 'info', 'message': 'Checking requirements...'})
