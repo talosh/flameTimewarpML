@@ -3014,11 +3014,6 @@ class flameTimewarpML(flameMenuApp):
             import flame
 
             self.stop_frame_rendering_thread()
-
-            self.threads = False
-            self.parent_app.threads = False
-            self.message_queue.join()
-            self.message_thread.join()
             
             result_clip = None
             if not self.parent_app.temp_library:
@@ -3093,6 +3088,11 @@ class flameTimewarpML(flameMenuApp):
                         pass
             except Exception as e:
                 self.on_showMessageBox({'message': pformat(e)})
+
+            self.threads = False
+            self.parent_app.threads = False
+            # self.message_queue.join()
+            # self.message_thread.join()
 
             self.parent_app.temp_library = None
             self.parent_app.progress = None
