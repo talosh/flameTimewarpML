@@ -6269,7 +6269,7 @@ class flameTimewarpML(flameMenuApp):
                 self.flownet.load_state_dict(
                     convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
 
-            def inference(self, img0, img1, UHD=False):
+            def inference(self, img0, img1, UHD=False, flow_scale = self.flow_scale):
                 imgs = torch.cat((img0, img1), 1)
                 flow, _ = self.flownet(imgs, UHD)
                 return flow
@@ -6326,7 +6326,7 @@ class flameTimewarpML(flameMenuApp):
                 self.fusionnet.load_state_dict(
                     convert(torch.load('{}/unet.pkl'.format(path), map_location=device)))
 
-            def predict(self, img0, img1, c0, c1, flow, training=True, flow_gt=None, UHD=False, flow_scale = self.flow_scale):
+            def predict(self, img0, img1, c0, c1, flow, training=True, flow_gt=None, UHD=False):
                 flow = F.interpolate(flow, scale_factor=2.0, mode="bilinear",
                                     align_corners=False) * 2.0
                 refine_output, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt = self.fusionnet(
