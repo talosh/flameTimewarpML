@@ -1608,9 +1608,13 @@ class flameTimewarpML(flameMenuApp):
 
             label_width = self.ui.info_label.width()
             label_height = self.ui.info_label.height()
-            # margin = 4
+            margin = 4
             # map x1 from [x,y] to [m, n]: m1 = m + (x1 - x) * (n - m) / (y - x)
             marker_pos = 4 + (self.current_frame - self.min_frame) * (label_width - 8) / (self.max_frame - self.min_frame)
+            if marker_pos < margin:
+                marker_pos = margin
+            elif marker_pos > label_width - margin:
+                marker_pos = label_width - margin
             bg = np.full((1, label_width, 3), [36, 36, 36], dtype=np.uint8)
             bg[0, int(marker_pos), :] = [135, 122, 28]
             bg = np.repeat(bg, label_height, axis=0)
