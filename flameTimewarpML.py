@@ -6138,7 +6138,7 @@ class flameTimewarpML(flameMenuApp):
                 del display_flow
 
                 if flow_scale != 1:
-                    F4 = F.interpolate(F4[:, :, :org_h, :org_w], 
+                    F4 = F.interpolate(F4[:, :, :org_h//2, :org_w//2], 
                         scale_factor= 1 / flow_scale, 
                         mode="bilinear", 
                         align_corners=False, 
