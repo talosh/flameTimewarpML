@@ -1873,7 +1873,7 @@ class flameTimewarpML(flameMenuApp):
                 self.update_interface_image(
                     display_image_data[::4, ::4, :],
                     self.ui.flow1_label,
-                    text = 'Frame: ' + str(inc_frame_number + 1)
+                    text = 'From Frame: ' + str(inc_frame_number + 1)
                     )
 
                 self.update_interface_image(
@@ -1937,7 +1937,7 @@ class flameTimewarpML(flameMenuApp):
                 self.update_interface_image(
                     None,
                     self.ui.flow1_label,
-                    text = 'Frame: ' + str(inc_frame_number + 1)
+                    text = 'From Frame: ' + str(inc_frame_number + 1)
                     )
 
                 self.update_interface_image(
@@ -1954,7 +1954,7 @@ class flameTimewarpML(flameMenuApp):
                 self.update_interface_image(
                     display_image_data[::4, ::4, :], 
                     self.ui.flow4_label,
-                    text = 'Frame: ' + str(outg_frame_number + 1)
+                    text = 'To Frame: ' + str(outg_frame_number + 1)
                     )
                 
                 self.update_interface_image(
@@ -2001,7 +2001,7 @@ class flameTimewarpML(flameMenuApp):
                 self.update_interface_image(
                     incoming_image_data[::4, ::4, :],
                     self.ui.flow1_label,
-                    text = 'Frame: ' + str(inc_frame_number + 1)
+                    text = 'From Frame: ' + str(inc_frame_number + 1)
                     )
   
                 self.message_queue.put(
@@ -2024,7 +2024,7 @@ class flameTimewarpML(flameMenuApp):
                 self.update_interface_image(
                     outgoing_image_data[::4, ::4, :], 
                     self.ui.flow4_label,
-                    text = 'Frame: ' + str(outg_frame_number + 1)
+                    text = 'To Frame: ' + str(outg_frame_number + 1)
                     )
                 
                 self.message_queue.put(
