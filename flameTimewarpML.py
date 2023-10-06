@@ -6144,7 +6144,7 @@ class flameTimewarpML(flameMenuApp):
                         align_corners=False, 
                         recompute_scale_factor=False) * (1 / flow_scale)
 
-                print (f'F4 shape')
+                print (f'F4 shape: {F4.shape}')
 
                 # return F4, [F1, F2, F3, F4]
                 return F4, [F4, F4, F4, F4]
