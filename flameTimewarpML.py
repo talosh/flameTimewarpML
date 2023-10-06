@@ -6404,7 +6404,7 @@ class flameTimewarpML(flameMenuApp):
         img1_ratio = 1
 
         current_pass = 0
-        for current_pass in range(1, num_passes + 1):
+        # for current_pass in range(1, num_passes + 1):
             
         if not self.progress.rendering:
             # return img0.squeeze(0).permute(1, 2, 0)[:h, :w].flip(-1)
@@ -6466,9 +6466,9 @@ class flameTimewarpML(flameMenuApp):
             return None
 
         # device = torch.device('cpu')
-        img0 = img0.to(device)
-        img1 = img1.to(device)
-        flow = flow.to(device)
+        # img0 = img0.to(device)
+        # img1 = img1.to(device)
+        # flow = flow.to(device)
         c00 = []
         c11 = []
         for fn in c0:
