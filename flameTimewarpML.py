@@ -1389,6 +1389,7 @@ class flameTimewarpML(flameMenuApp):
             self.temp_folder = self.parent_app.framework.temp_folder
 
             self.message_queue = queue.Queue()
+            self.frames_to_save_queue = queue.Queue(maxsize=8)
             self.parent_app.progress = self
 
             self.log_debug = self.parent_app.framework.log_debug
@@ -1397,6 +1398,7 @@ class flameTimewarpML(flameMenuApp):
             ### start of UI window sequence
             # some UI defaults
             # frame range defaults before we actually have checked it
+
             self.min_frame = 1
             self.max_frame = 99
             self.current_frame = 1
@@ -1450,9 +1452,15 @@ class flameTimewarpML(flameMenuApp):
             self.ui.stripe_label.setText(self.mode)
             self.ui.info_label.setText('Initializing...')
 
-            # set up message thread
             self.threads = True
+
+            # set up message thread
             self.message_thread = threading.Thread(target=self.process_messages)
+            self.message_thread.daemon = True
+            self.message_thread.start()
+
+            # set up save thread
+            self.message_thread = threading.Thread(target=self.process_frames_to_save)
             self.message_thread.daemon = True
             self.message_thread.start()
 
@@ -2363,8 +2371,9 @@ class flameTimewarpML(flameMenuApp):
                 clip_node_handle = None
 
         def process_messages(self):
+            timeout = 0.0001
+
             while self.threads:
-                timeout = 0.0001
                 try:
                     item = self.message_queue.get_nowait()
                 except queue.Empty:
@@ -2404,6 +2413,37 @@ class flameTimewarpML(flameMenuApp):
                     self.message_queue.task_done()
                     time.sleep(timeout)
                     continue
+                
+                self.message_queue.task_done()
+                time.sleep(timeout)
+            return
+
+        def process_frames_to_save(self):
+            timeout = 0.0001
+
+            while self.threads:
+                try:
+                    item = self.frames_to_save_queue.get_nowait()
+                except queue.Empty:
+                    if not self.threads:
+                        break
+                    time.sleep(timeout)
+                    continue
+                if item is None:
+                    time.sleep(timeout)
+                    continue
+                if not isinstance(item, dict):
+                    self.message_queue.task_done()
+                    time.sleep(timeout)
+                    continue
+                
+                try:
+                    self._save_result_frame(
+                        item.get('image_data'),
+                        item.get('frame_number')
+                    )
+                except:
+                    time.sleep(timeout)
                 
                 self.message_queue.task_done()
                 time.sleep(timeout)
@@ -2772,6 +2812,14 @@ class flameTimewarpML(flameMenuApp):
                 action()
 
         def save_result_frame(self, image_data, frame_number):
+            self.frames_to_save_queue.put(
+                {
+                    'image_data': image_data,
+                    'frame_number': frame_number
+                }
+            )
+
+        def _save_result_frame(self, image_data, frame_number):
             import flame
             import numpy as np
 
@@ -3040,6 +3088,11 @@ class flameTimewarpML(flameMenuApp):
             import flame
 
             self.stop_frame_rendering_thread()
+
+            while not self.frames_to_save_queue.empty():
+                qsize = self.frames_to_save_queue.qsize()
+                self.info(f'Waiting for {qsize} frames to be saved')
+                time.sleep(0.01)
             
             result_clip = None
             if not self.parent_app.temp_library:
