@@ -6031,9 +6031,13 @@ class flameTimewarpML(flameMenuApp):
                 self.block3 = IFBlock(10, scale=1, c=48)
 
             def forward(self, x, UHD=False, flow_scale = 1):
-                print (f'x shape: {x.shape}')
+                n, c, loch, locw = img0.shape
                 if flow_scale != 1:
                     x = F.interpolate(x, scale_factor=flow_scale, mode="bilinear", align_corners=False)
+                    loc_ph = ((loc_h - 1) // 64 + 1) * 64
+                    loc_pw = ((loc_w - 1) // 64 + 1) * 64
+                    padding = (0, loc_pw - loc_w, 0, loc_ph - loc_h)
+                    x = F.pad(x, padding)
                 flow0 = self.block0(x)
                 F1 = flow0
                 del flow0
@@ -6130,9 +6134,11 @@ class flameTimewarpML(flameMenuApp):
                 del display_flow
 
                 if flow_scale != 1:
-                    print (f'flow scale: {flow_scale}')
-                    print (f'1 / flow scale: {1/flow_scale}')
-                    F4 = F.interpolate(F4, scale_factor= 1 / flow_scale, mode="bilinear", align_corners=False, recompute_scale_factor=False) * (1 / flow_scale)
+                    F4 = F.interpolate(F4[:, :, :loc_h, :loc_w], 
+                        scale_factor= 1 / flow_scale, 
+                        mode="bilinear", 
+                        align_corners=False, 
+                        recompute_scale_factor=False) * (1 / flow_scale)
 
                 # return F4, [F1, F2, F3, F4]
                 return F4, [F4, F4, F4, F4]
