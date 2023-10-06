@@ -6032,7 +6032,6 @@ class flameTimewarpML(flameMenuApp):
                 self.block3 = IFBlock(10, scale=1, c=48)
 
             def forward(self, x, UHD=False, flow_scale = 1):
-                print (f'x shape: {x.shape}')
                 if flow_scale != 1:
                     org_n, org_c, org_h, org_w = x.shape
                     x = F.interpolate(x, scale_factor=flow_scale, mode="bilinear", align_corners=False)
