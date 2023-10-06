@@ -6040,6 +6040,7 @@ class flameTimewarpML(flameMenuApp):
                     new_pw = ((new_w - 1) // 64 + 1) * 64
                     padding = (0, new_pw - new_w, 0, new_ph - new_h)
                     x = F.pad(x, padding)
+                    print (f'x new shape: {x.shape}')
 
                 flow0 = self.block0(x)
                 F1 = flow0
@@ -6284,9 +6285,7 @@ class flameTimewarpML(flameMenuApp):
                     convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
 
             def inference(self, img0, img1, UHD=False, flow_scale = 1):
-                print (f'img0 shape: {img0.shape}')
                 imgs = torch.cat((img0, img1), 1)
-                print (f'imgs shape: {imgs.shape}')
                 flow, _ = self.flownet(imgs, UHD, flow_scale)
                 return flow
 
