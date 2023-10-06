@@ -6036,8 +6036,8 @@ class flameTimewarpML(flameMenuApp):
                     org_n, org_c, org_h, org_w = x.shape
                     x = F.interpolate(x, scale_factor=flow_scale, mode="bilinear", align_corners=False)
                     new_n, new_c, new_h, new_w = x.shape
-                    new_ph = ((new_h - 1) // 64 + 1) * 64
-                    new_pw = ((new_w - 1) // 64 + 1) * 64
+                    new_ph = ((new_h - 1) // 32 + 1) * 32
+                    new_pw = ((new_w - 1) // 32 + 1) * 32
                     padding = (0, new_pw - new_w, 0, new_ph - new_h)
                     x = F.pad(x, padding)
                     print (f'x new shape: {x.shape}')
