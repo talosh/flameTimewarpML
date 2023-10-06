@@ -6403,7 +6403,7 @@ class flameTimewarpML(flameMenuApp):
         img0_ratio = 0
         img1_ratio = 1
 
-        print ('ratio: {ratio}')
+        print (f'ratio: {ratio}')
 
         for current_pass in range(1, num_passes + 1):
             
