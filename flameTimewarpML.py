@@ -6433,16 +6433,18 @@ class flameTimewarpML(flameMenuApp):
             fusion_model.device()
 
             middle = fusion_model.predict(img0, img1, c00, c11, flow)
-            display_middle = middle[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
-            display_middle = np.flip(display_middle, axis=2).copy()
             
             # img_text = self.progress.ui.info_label.text()
             # img_text = info_text.split(' - pass')[0]
-            self.progress.update_interface_image(
-                display_middle,
-                self.progress.ui.image_res_label,
-                text = f'Frame: {self.progress.current_frame} - pass {current_pass} of {num_passes}'
-                )
+
+            if num_passes > 1:
+                # display_middle = middle[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
+                # display_middle = np.flip(display_middle, axis=2).copy()
+                self.progress.update_interface_image(
+                    middle[0].permute(1, 2, 0)[:h, :w].flip(-1),
+                    self.progress.ui.image_res_label,
+                    text = f'Frame: {self.progress.current_frame} - pass {current_pass} of {num_passes}'
+                    )
 
             self.log_debug('del FusionNetModel')
             del (fusion_model)
