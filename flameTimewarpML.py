@@ -6040,7 +6040,6 @@ class flameTimewarpML(flameMenuApp):
                     new_pw = ((new_w - 1) // 32 + 1) * 32
                     padding = (0, new_pw - new_w, 0, new_ph - new_h)
                     x = F.pad(x, padding)
-                    print (f'x new shape: {x.shape}')
 
                 flow0 = self.block0(x)
                 F1 = flow0
@@ -6144,8 +6143,6 @@ class flameTimewarpML(flameMenuApp):
                         align_corners=False, 
                         recompute_scale_factor=False) * (1 / flow_scale)
                     F4 = F4[:, :, :org_h//2, :org_w//2]
-
-                print (f'F4 shape: {F4.shape}')
 
                 # return F4, [F1, F2, F3, F4]
                 return F4, [F4, F4, F4, F4]
