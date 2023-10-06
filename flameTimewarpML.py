@@ -5974,9 +5974,7 @@ class flameTimewarpML(flameMenuApp):
                 return 1
             if ratio >= img1_ratio - precision / 2:
                 return 1
-            
-            print ()
-            
+                        
             for inference_cycle in range(0, maxcycles):
                 middle_ratio = (img0_ratio + img1_ratio) / 2
                 # print ('intermediate ratio: %s' % middle_ratio)
