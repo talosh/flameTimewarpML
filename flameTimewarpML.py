@@ -2414,7 +2414,6 @@ class flameTimewarpML(flameMenuApp):
                     time.sleep(timeout)
                     continue
                 
-                self.message_queue.task_done()
                 time.sleep(timeout)
             return
 
@@ -2442,10 +2441,10 @@ class flameTimewarpML(flameMenuApp):
                         item.get('image_data'),
                         item.get('frame_number')
                     )
+                    self.message_queue.task_done()
                 except:
                     time.sleep(timeout)
                 
-                self.message_queue.task_done()
                 time.sleep(timeout)
             return
 
