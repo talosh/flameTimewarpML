@@ -6403,7 +6403,8 @@ class flameTimewarpML(flameMenuApp):
         img0_ratio = 0
         img1_ratio = 1
 
-        current_pass = 0
+        print ('ratio: {ratio}')
+
         for current_pass in range(1, num_passes + 1):
             
             if not self.progress.rendering:
