@@ -1784,7 +1784,7 @@ class flameTimewarpML(flameMenuApp):
                 self.process_current_frame()
 
             time_spent = time.time() - render_loop_start
-            self.info(f'Rendering completed in {time_spent // 60} min {time_spent % 60} sec')
+            self.info(f'Rendering completed in {int(time_spent // 60)} min {int(time_spent % 60)} sec')
             self.rendering = False
             self.message_queue.put(
                     {'type': 'setText',
