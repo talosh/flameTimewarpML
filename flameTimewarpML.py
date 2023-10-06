@@ -1853,7 +1853,7 @@ class flameTimewarpML(flameMenuApp):
             outg_frame_number = self.current_frame_data['outgoing']['frame_number'] - 1
             ratio = self.current_frame_data['ratio']
             # round ratio to a second sign
-            ratio = round( ratio * 100 ) / 100
+            ratio = round( ratio * 1000 ) / 1000
 
 
             if ratio == 0.0:
