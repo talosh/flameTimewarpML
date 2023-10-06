@@ -1852,6 +1852,9 @@ class flameTimewarpML(flameMenuApp):
             inc_frame_number = self.current_frame_data['incoming']['frame_number'] - 1
             outg_frame_number = self.current_frame_data['outgoing']['frame_number'] - 1
             ratio = self.current_frame_data['ratio']
+            # round ratio to a third sign
+            ratio = round( ratio * 1000 ) / 1000
+
 
             if ratio == 0.0:
                 self.message_queue.put(
@@ -2032,6 +2035,7 @@ class flameTimewarpML(flameMenuApp):
                     'message': f'Frame {self.current_frame}: Processing...'}
                     )
                 self.processEvents()
+
 
                 result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
                 if result_image_data is None:
