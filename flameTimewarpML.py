@@ -1867,9 +1867,7 @@ class flameTimewarpML(flameMenuApp):
                     self.current_frame_data['incoming']['clip'], 
                     inc_frame_number
                     )
-                
-                print (f'here we go, self.rendering: {self.rendering}')
-                
+                                
                 if not self.rendering:
                     del result_image_data
                     return
@@ -1881,6 +1879,8 @@ class flameTimewarpML(flameMenuApp):
                     self.ui.flow1_label,
                     text = 'From Frame: ' + str(inc_frame_number + 1)
                     )
+                
+                print ('and here we go')
 
                 self.update_interface_image(
                     None,
