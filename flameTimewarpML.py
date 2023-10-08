@@ -2225,7 +2225,7 @@ class flameTimewarpML(flameMenuApp):
 
                 if bits_per_channel == 8:
                     buff_tail = frame_buffer_size - (fmt.height() * fmt.width() * fmt.numChannels())
-                    image_array = np.frombuffer(bytes(buff, 'latin-1'), dtype=torch.uint8)[:-1 * buff_tail]
+                    image_array = np.frombuffer(bytes(buff, 'latin-1'), dtype=np.uint8)[:-1 * buff_tail]
                     image_array = torch.from_numpy(image_array)
                     image_array = image_array.to(
                         device = self.parent_app.torch_device,
