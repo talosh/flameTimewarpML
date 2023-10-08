@@ -3218,7 +3218,7 @@ class flameTimewarpML(flameMenuApp):
 
         self.modes = {
             1: 'Fast',
-            2: 'Normal'
+            2: 'Classic'
         }
 
         self.trained_models_path = os.path.join(
