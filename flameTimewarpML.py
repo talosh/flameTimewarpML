@@ -2460,12 +2460,9 @@ class flameTimewarpML(flameMenuApp):
             return
 
         def update_interface_image(self, array, image_label, text = None):
-            pprint (image_label)
-            pprint (image_label.__name__)
-
-            if self.message_queue.qsize() > 9:
-                if image_label != self.ui.image_res_label:
-                    return
+            # if self.message_queue.qsize() > 9:
+            #    if image_label != self.ui.image_res_label:
+            #        return
             
             item = {
                 'type': 'image',
