@@ -1868,7 +1868,7 @@ class flameTimewarpML(flameMenuApp):
                     inc_frame_number
                     )
                 
-                print ('here we go')
+                print (f'here we go, self.rendering: {self.rendering}')
                 
                 if not self.rendering:
                     del result_image_data
