@@ -1745,6 +1745,7 @@ class flameTimewarpML(flameMenuApp):
             '''
 
         def render(self):
+            print (f'hello from render, self.rendering: {self.rendering}')
             self.rendering = not self.rendering
             button_text = 'Stop' if self.rendering else 'Render'
             self.message_queue.put(
