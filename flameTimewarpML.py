@@ -5928,6 +5928,9 @@ class flameTimewarpML(flameMenuApp):
 
         return res_img
 
+    def flownet47(self, img0, img1, ratio, model_path):
+        pass
+
     def flownet24(self, img0, img1, ratio, model_path):
         import torch
         import torch.nn as nn
