@@ -5993,7 +5993,7 @@ class flameTimewarpML(flameMenuApp):
 
             return maxcycles
         
-        num_passes = calculate_passes(ratio, 0.02, 8)
+        num_passes = calculate_passes(ratio, 0.01, 16)
 
         self.log_debug('passes %s' % num_passes)
 
