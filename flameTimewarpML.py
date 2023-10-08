@@ -3217,7 +3217,7 @@ class flameTimewarpML(flameMenuApp):
         }
 
         self.modes = {
-            1: 'Fast',
+            1: 'Faster',
             2: 'Classic'
         }
 
