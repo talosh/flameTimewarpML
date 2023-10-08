@@ -1389,7 +1389,7 @@ class flameTimewarpML(flameMenuApp):
             self.temp_folder = self.parent_app.framework.temp_folder
 
             self.message_queue = queue.Queue()
-            self.frames_to_save_queue = queue.Queue(maxsize=8)
+            self.frames_to_save_queue = queue.Queue(maxsize=32)
             self.parent_app.progress = self
 
             self.log_debug = self.parent_app.framework.log_debug
