@@ -1880,8 +1880,6 @@ class flameTimewarpML(flameMenuApp):
                     text = 'From Frame: ' + str(inc_frame_number + 1)
                     )
                 
-                print ('and here we go')
-
                 self.update_interface_image(
                     None,
                     self.ui.flow2_label,
@@ -2462,6 +2460,8 @@ class flameTimewarpML(flameMenuApp):
             return
 
         def update_interface_image(self, array, image_label, text = None):
+            pprint (image_label)
+            
             if self.message_queue.qsize() > 9:
                 if image_label != self.ui.image_res_label:
                     return
