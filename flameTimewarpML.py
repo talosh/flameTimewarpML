@@ -1857,7 +1857,7 @@ class flameTimewarpML(flameMenuApp):
             ratio = round( ratio * 1000 ) / 1000
 
 
-            if ratio == 0.0:
+            if ratio == 0.0:                
                 self.message_queue.put(
                     {'type': 'info', 
                     'message': f'Frame {self.current_frame}: reading incoming source image data...'}
@@ -1867,6 +1867,8 @@ class flameTimewarpML(flameMenuApp):
                     self.current_frame_data['incoming']['clip'], 
                     inc_frame_number
                     )
+                
+                print ('here we go')
                 
                 if not self.rendering:
                     del result_image_data
