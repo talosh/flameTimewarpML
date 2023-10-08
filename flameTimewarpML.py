@@ -3087,7 +3087,8 @@ class flameTimewarpML(flameMenuApp):
 
             ratio = self.current_frame_data['ratio']
             if int(ratio) == ratio:
-                self.process_current_frame(render = False)
+                self.process_current_frame()
+            self.rendering = False
 
         def closeEvent(self, event):
             event.accept()
