@@ -6409,112 +6409,112 @@ class flameTimewarpML(flameMenuApp):
 
         print (f'ratio: {ratio}')
         
-        # for current_pass in range(1, num_passes + 1):
-        current_pass = 0
+        for current_pass in range(1, num_passes + 1):
+            # current_pass = 0
 
-        if not self.progress.rendering:
-            # return img0.squeeze(0).permute(1, 2, 0)[:h, :w].flip(-1)
-            return None
+            if not self.progress.rendering:
+                # return img0.squeeze(0).permute(1, 2, 0)[:h, :w].flip(-1)
+                return None
 
-        # torch.set_default_dtype(torch.float16)
-        # img0 = img0.to(torch.float16)
-        # img1 = img1.to(torch.float16)
+            # torch.set_default_dtype(torch.float16)
+            # img0 = img0.to(torch.float16)
+            # img1 = img1.to(torch.float16)
 
-        # device = torch.device('cpu')
-        # img0 = img0.to(device)
-        # img1 = img1.to(device)
+            # device = torch.device('cpu')
+            # img0 = img0.to(device)
+            # img1 = img1.to(device)
 
-        self.log_debug('load IFNetModel')
-        ifnet_model = IFNetModel(self.progress)
-        self.log_debug(f'trained models path: {self.trained_models_path}')
-        ifnet_model.load_model(
-            os.path.join(
-                self.trained_models_path,
-                'v2.4.model'))
-        ifnet_model.eval()
-        ifnet_model.device()
+            self.log_debug('load IFNetModel')
+            ifnet_model = IFNetModel(self.progress)
+            self.log_debug(f'trained models path: {self.trained_models_path}')
+            ifnet_model.load_model(
+                os.path.join(
+                    self.trained_models_path,
+                    'v2.4.model'))
+            ifnet_model.eval()
+            ifnet_model.device()
 
-        info_text = self.progress.ui.info_label.text()
-        info_text = info_text.split(' - pass')[0]
-        self.progress.info(f'{info_text} - pass {current_pass} of {num_passes}')
+            info_text = self.progress.ui.info_label.text()
+            info_text = info_text.split(' - pass')[0]
+            self.progress.info(f'{info_text} - pass {current_pass} of {num_passes}')
 
-        flow = ifnet_model.inference(img0, img1, False, flow_scale=self.flow_scale)
+            flow = ifnet_model.inference(img0, img1, False, flow_scale=self.flow_scale)
 
-        flow[:, :2] = flow[:, :2] * 2 * ratio
-        flow[:, 2:] = flow[:, 2:] * 2 * (1 - ratio)
+            # flow[:, :2] = flow[:, :2] * 2 * ratio
+            # flow[:, 2:] = flow[:, 2:] * 2 * (1 - ratio)
 
-        self.log_debug('del IFNetModel')
-        del (ifnet_model)
+            self.log_debug('del IFNetModel')
+            del (ifnet_model)
 
-        if not self.progress.rendering:
-            return None
+            if not self.progress.rendering:
+                return None
 
-        # device = torch.device('cpu')
-        # img0 = img0.to(device)
-        # img1 = img1.to(device)
-        # flow = flow.to(device)
+            # device = torch.device('cpu')
+            # img0 = img0.to(device)
+            # img1 = img1.to(device)
+            # flow = flow.to(device)
 
-        self.log_debug('load ContextNetModel')
-        contextnet_model = ContextNetModel()
-        contextnet_model.load_model(
-            os.path.join(
-                self.trained_models_path,
-                'v2.4.model'))
-        contextnet_model.eval()
-        contextnet_model.device()
+            self.log_debug('load ContextNetModel')
+            contextnet_model = ContextNetModel()
+            contextnet_model.load_model(
+                os.path.join(
+                    self.trained_models_path,
+                    'v2.4.model'))
+            contextnet_model.eval()
+            contextnet_model.device()
 
-        c0, c1 = contextnet_model.get_contexts(img0, img1, flow)
+            c0, c1 = contextnet_model.get_contexts(img0, img1, flow)
 
-        self.log_debug('del ContextNetModel')
-        del (contextnet_model)
+            self.log_debug('del ContextNetModel')
+            del (contextnet_model)
 
-        if not self.progress.rendering:
-            return None
+            if not self.progress.rendering:
+                return None
 
-        # device = torch.device('cpu')
-        # img0 = img0.to(device)
-        # img1 = img1.to(device)
-        # flow = flow.to(device)
-        c00 = []
-        c11 = []
-        for fn in c0:
-            c00.append(fn.to(device))
-        for fn in c1:
-            c11.append(fn.to(device))
+            # device = torch.device('cpu')
+            # img0 = img0.to(device)
+            # img1 = img1.to(device)
+            # flow = flow.to(device)
+            c00 = []
+            c11 = []
+            for fn in c0:
+                c00.append(fn.to(device))
+            for fn in c1:
+                c11.append(fn.to(device))
 
-        self.log_debug('load FusionNetModel')
-        fusion_model = FusionNetModel()
-        fusion_model.load_model(
-            os.path.join(
-                self.trained_models_path,
-                'v2.4.model'))
-        fusion_model.eval()
-        fusion_model.device()
+            self.log_debug('load FusionNetModel')
+            fusion_model = FusionNetModel()
+            fusion_model.load_model(
+                os.path.join(
+                    self.trained_models_path,
+                    'v2.4.model'))
+            fusion_model.eval()
+            fusion_model.device()
 
-        middle = fusion_model.predict(img0, img1, c00, c11, flow)
-        
-        # img_text = self.progress.ui.info_label.text()
-        # img_text = info_text.split(' - pass')[0]
+            middle = fusion_model.predict(img0, img1, c00, c11, flow)
+            
+            # img_text = self.progress.ui.info_label.text()
+            # img_text = info_text.split(' - pass')[0]
 
-        if num_passes > 1:
-            # display_middle = middle[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
-            # display_middle = np.flip(display_middle, axis=2).copy()
-            self.progress.update_interface_image(
-                middle[0].permute(1, 2, 0)[:h, :w].flip(-1),
-                self.progress.ui.image_res_label,
-                text = f'Frame: {self.progress.current_frame} - pass {current_pass} of {num_passes}'
-                )
+            if num_passes > 1:
+                # display_middle = middle[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
+                # display_middle = np.flip(display_middle, axis=2).copy()
+                self.progress.update_interface_image(
+                    middle[0].permute(1, 2, 0)[:h, :w].flip(-1),
+                    self.progress.ui.image_res_label,
+                    text = f'Frame: {self.progress.current_frame} - pass {current_pass} of {num_passes}'
+                    )
 
-        self.log_debug('del FusionNetModel')
-        del (fusion_model)
+            self.log_debug('del FusionNetModel')
+            del (fusion_model)
 
-        middle_ratio = (img0_ratio + img1_ratio) / 2
-        if ratio > middle_ratio:
-            img0 = middle
-            img0_ratio = middle_ratio
-        else:
-            img1 = middle
-            img1_ratio = middle_ratio
+            middle_ratio = (img0_ratio + img1_ratio) / 2
+            if ratio > middle_ratio:
+                img0 = middle
+                img0_ratio = middle_ratio
+            else:
+                img1 = middle
+                img1_ratio = middle_ratio
         
         '''
         # res_img = middle[0].to(torch.float32)
