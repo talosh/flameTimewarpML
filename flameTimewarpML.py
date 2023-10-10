@@ -6451,11 +6451,6 @@ class flameTimewarpML(flameMenuApp):
 
             flow = ifnet_model.inference(img0, img1, False, flow_scale=self.flow_scale)
 
-            print ('trying RAFT')
-            raft_flow_list = self.raft(img0, img1)
-            raft_flow = raft_flow_list[-1]
-            print (f'flow shape: {flow.shape}, raft_flow shape: {raft_flow.shape}')
-
             # flow[:, :2] = flow[:, :2] * 2 * ratio
             # flow[:, 2:] = flow[:, 2:] * 2 * (1 - ratio)
 
@@ -6464,6 +6459,13 @@ class flameTimewarpML(flameMenuApp):
 
             if not self.progress.rendering:
                 return None
+
+            print ('trying RAFT')
+            img0_raft = F.interpolate(img0, scale_factor=0.25, mode="bilinear", align_corners=False)
+            img1_raft = F.interpolate(img1, scale_factor=0.25, mode="bilinear", align_corners=False)
+            raft_flow_list = self.raft(img0, img1)
+            raft_flow = raft_flow_list[-1]
+            print (f'flow shape: {flow.shape}, raft_flow shape: {raft_flow.shape}')
 
             # device = torch.device('cpu')
             # img0 = img0.to(device)
@@ -8073,7 +8075,6 @@ class flameTimewarpML(flameMenuApp):
         model.eval()
 
         return model(img0, img1, num_flow_updates = 12)
-
 
     def slowmo(self, selection):
         result = self.slowmo_dialog()
