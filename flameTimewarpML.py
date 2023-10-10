@@ -6513,7 +6513,7 @@ class flameTimewarpML(flameMenuApp):
 
             F_large = F.interpolate(flow, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
             warped_img0 = warp(img0, F_large[:, :2])
-            warped_img1 = warp(img1, F1_large[:, 2:4])
+            warped_img1 = warp(img1, F_large[:, 2:4])
 
             return warped_img0
 
