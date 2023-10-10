@@ -8116,7 +8116,7 @@ class flameTimewarpML(flameMenuApp):
         model.to(self.torch_device)
         model.eval()
 
-        flow = model(img0, img1, num_flow_updates = 12)[-1]
+        flow = model(img0, img1, num_flow_updates = 2)[-1]
         
         del model
         del mask_predictor
