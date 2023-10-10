@@ -8068,7 +8068,9 @@ class flameTimewarpML(flameMenuApp):
         )
 
         model.load_state_dict(torch.load(raft_trained_model_path))
-        
+        model.eval()
+        model.to(self.torch_device)
+
 
     def slowmo(self, selection):
         result = self.slowmo_dialog()
