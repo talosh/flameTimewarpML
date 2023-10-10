@@ -6122,7 +6122,7 @@ class flameTimewarpML(flameMenuApp):
                 del raft_flow_f
                 del raft_flow_b
 
-                flow0 = torch.cat((warped_img0, warped_img1, FR_large), 1)
+                flow0 = torch.cat((warped_img0, warped_img1), 1)
                 F1 = flow0
                 del flow0
 
