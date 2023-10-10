@@ -8044,6 +8044,14 @@ class flameTimewarpML(flameMenuApp):
             padding=recurrent_block_padding,
         )
 
+        flow_head = FlowHead(in_channels=recurrent_block_hidden_state_size, hidden_size=flow_head_hidden_size)
+        update_block = UpdateBlock(motion_encoder=motion_encoder, recurrent_block=recurrent_block, flow_head=flow_head)
+
+        mask_predictor = MaskPredictor(
+            in_channels=recurrent_block_hidden_state_size,
+            hidden_size=256,
+            multiplier=0.25,  # See comment in MaskPredictor about this
+        )
 
         '''
 
