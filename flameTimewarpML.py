@@ -6473,17 +6473,16 @@ class flameTimewarpML(flameMenuApp):
                 )
             '''
 
-            self.progress.update_optical_flow(
-                raft_flow_fwd.cpu().detach().numpy(),
-                self.progress.ui.flow3_label,
-                text = f'Flow BKW'
-                )
-
-
             raft_flow_bkw = self.raft(img1_raft, img0_raft)
             raft_flow = torch.cat((raft_flow_fwd, raft_flow_bkw), 1)
             print (f'flow shape: {flow.shape}, raft_flow shape: {raft_flow.shape}')
 
+
+            self.progress.update_optical_flow(
+                raft_flow_bkw.cpu().detach().numpy(),
+                self.progress.ui.flow3_label,
+                text = f'Flow BKW'
+                )
 
             # device = torch.device('cpu')
             # img0 = img0.to(device)
