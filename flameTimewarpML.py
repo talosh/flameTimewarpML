@@ -6123,7 +6123,7 @@ class flameTimewarpML(flameMenuApp):
                     )
 
                 FR = torch.cat((raft_flow_f, raft_flow_b), 1)
-                FR_large = F.interpolate(FR, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 1.5
+                FR_large = F.interpolate(FR, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 1
 
                 warped_img0 = warp(x[:, :3], FR_large[:, :2])
                 warped_img1 = warp(x[:, 3:], FR_large[:, 2:4])
