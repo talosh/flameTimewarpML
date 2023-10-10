@@ -6465,7 +6465,7 @@ class flameTimewarpML(flameMenuApp):
             img1_raft = F.interpolate(img1, scale_factor=0.5, mode="bilinear", align_corners=False)
             raft_flow_fwd = self.raft(img0_raft, img1_raft)
             raft_flow_bkw = self.raft(img1_raft, img0_raft)
-            raft_flow = raft_flow_list[-1]
+            raft_flow = torch.cat((raft_flow_fwd, raft_flow_bkw), 1)
             print (f'flow shape: {flow.shape}, raft_flow shape: {raft_flow.shape}')
 
             # device = torch.device('cpu')
@@ -8075,7 +8075,19 @@ class flameTimewarpML(flameMenuApp):
         model.to(self.torch_device)
         model.eval()
 
-        return model(img0, img1, num_flow_updates = 12)
+        flow = model(img0, img1, num_flow_updates = 12)[-1]
+        
+        del model
+        del mask_predictor
+        del update_block
+        del flow_head
+        del recurrent_block
+        del motion_encoder
+        del corr_block
+        del context_encoder
+        del feature_encoder
+        
+        return flow
 
     def slowmo(self, selection):
         result = self.slowmo_dialog()
