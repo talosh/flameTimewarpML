@@ -6509,12 +6509,12 @@ class flameTimewarpML(flameMenuApp):
 
             flow = raft_flow
 
-            F_large = F.interpolate(flow, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+            raft_flow_fwd = F.interpolate(raft_flow_fwd, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
             # warped_img0 = warp(img0, F_large[:, :2])[0]
             # warped_img1 = warp(img1, F_large[:, 2:4])[0]
             warped_img1 = warp(img1, raft_flow_fwd)[0]
 
-            res = warped_img0.permute(1, 2, 0)[:h, :w]
+            res = warped_img1.permute(1, 2, 0)[:h, :w]
             res = res.flip(-1)
             return res
 
