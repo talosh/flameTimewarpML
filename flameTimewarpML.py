@@ -6108,20 +6108,20 @@ class flameTimewarpML(flameMenuApp):
 
                 raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
                 raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
-                raft_flow_f = self.progress.parent_app.raft(raft_img1, raft_img0) / 8
-                raft_flow_b = self.progress.parent_app.raft(raft_img0, raft_img1) / 2
+                raft_flow_f = self.progress.parent_app.raft(raft_img1, raft_img0) / 4
+                raft_flow_b = self.progress.parent_app.raft(raft_img0, raft_img1) / 4
 
-                '''
                 F1 = torch.cat((raft_flow_f, raft_flow_b), 1)
                 del raft_img0
                 del raft_img1
                 del raft_flow_f
                 del raft_flow_b
-                '''
 
+                '''
                 flow0 = self.block0(x)
                 F1 = flow0
                 del flow0
+                '''
 
                 F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 display_flow = F.interpolate(F1_large[:, :, :h, :w], scale_factor=0.25, mode='nearest')
@@ -6132,8 +6132,8 @@ class flameTimewarpML(flameMenuApp):
                     )
 
                 self.progress.update_optical_flow(
-                    # display_flow[:, 2:].cpu().detach().numpy(),
-                    raft_flow_f.cpu().detach().numpy(),
+                    display_flow[:, 2:].cpu().detach().numpy(),
+                    # raft_flow_f.cpu().detach().numpy(),
                     self.progress.ui.flow3_label,
                     text = f'Flow BKW'
                     )
