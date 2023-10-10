@@ -6106,9 +6106,22 @@ class flameTimewarpML(flameMenuApp):
                     padding = (0, new_pw - new_w, 0, new_ph - new_h)
                     x = F.pad(x, padding)
 
+                raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
+                raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
+                raft_flow_f = self.raft(raft_img1, raft_img0) / 2
+                raft_flow_b = self.raft(raft_img1, raft_img0) / 2
+                F1 = torch.cat((raft_flow_f, raft_flow_b), 1)
+                del raft_img0
+                del raft_img1
+                del raft_flow_f
+                del raft_flow_b
+
+                '''
                 flow0 = self.block0(x)
                 F1 = flow0
                 del flow0
+                '''
+
                 F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 display_flow = F.interpolate(F1_large[:, :, :h, :w], scale_factor=0.25, mode='nearest')
                 self.progress.update_optical_flow(
@@ -6460,30 +6473,17 @@ class flameTimewarpML(flameMenuApp):
             if not self.progress.rendering:
                 return None
 
+            '''
             print ('trying RAFT')
             img0_raft = F.interpolate(img0*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
             img1_raft = F.interpolate(img1*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
             raft_flow_fwd = self.raft(img0_raft, img1_raft) / 2
-
-            '''
-            self.progress.update_optical_flow(
-                display_flow[:, :2].cpu().detach().numpy(),
-                self.progress.ui.flow2_label,
-                text = f'Flow FWD'
-                )
-            '''
-
             raft_flow_bkw = self.raft(img1_raft, img0_raft) / 2
             raft_flow = torch.cat((raft_flow_bkw, raft_flow_fwd), 1)
             print (f'flow shape: {flow.shape}, raft_flow shape: {raft_flow.shape}')
 
             flow = raft_flow
-
-            self.progress.update_optical_flow(
-                raft_flow_bkw.cpu().detach().numpy(),
-                self.progress.ui.flow3_label,
-                text = f'Flow BKW'
-                )
+            '''
 
             # device = torch.device('cpu')
             # img0 = img0.to(device)
