@@ -8061,9 +8061,14 @@ class flameTimewarpML(flameMenuApp):
             mask_predictor=mask_predictor
         )
 
-        '''
-        model.load_state_dict(weights.get_state_dict(progress=progress, check_hash=True))
-        '''
+        raft_trained_model_path = os.path.join(
+            self.trained_models_path,
+            'raft.model',
+            'raft_large_C_T_SKHT_V2-ff5fadd5.pth'
+        )
+
+        model.load_state_dict(torch.load(raft_trained_model_path))
+        
 
     def slowmo(self, selection):
         result = self.slowmo_dialog()
