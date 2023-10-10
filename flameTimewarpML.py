@@ -6468,6 +6468,8 @@ class flameTimewarpML(flameMenuApp):
             raft_flow = torch.cat((raft_flow_fwd, raft_flow_bkw), 1)
             print (f'flow shape: {flow.shape}, raft_flow shape: {raft_flow.shape}')
 
+            flow = raft_flow
+
             # device = torch.device('cpu')
             # img0 = img0.to(device)
             # img1 = img1.to(device)
@@ -8086,7 +8088,7 @@ class flameTimewarpML(flameMenuApp):
         del corr_block
         del context_encoder
         del feature_encoder
-        
+
         return flow
 
     def slowmo(self, selection):
