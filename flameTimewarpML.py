@@ -8042,6 +8042,32 @@ class flameTimewarpML(flameMenuApp):
 
                 return flow_predictions
 
+        # parameters from torchvision raft_small
+        # Feature encoder
+        feature_encoder_layers=(32, 32, 64, 96, 128)
+        feature_encoder_block=BottleneckBlock
+        feature_encoder_norm_layer=InstanceNorm2d
+        # Context encoder
+        context_encoder_layers=(32, 32, 64, 96, 160)
+        context_encoder_block=BottleneckBlock
+        context_encoder_norm_layer=None
+        # Correlation block
+        corr_block_num_levels=4
+        corr_block_radius=3
+        # Motion encoder
+        motion_encoder_corr_layers=(96,)
+        motion_encoder_flow_layers=(64, 32)
+        motion_encoder_out_channels=82
+        # Recurrent block
+        recurrent_block_hidden_state_size=96
+        recurrent_block_kernel_size=(3,)
+        recurrent_block_padding=(1,)
+        # Flow head
+        flow_head_hidden_size=128
+        # Mask predictor
+        use_mask_predictor=False
+
+        '''
         # parameters from torchvision raft_large
         # Feature encoder
         feature_encoder_layers=(64, 64, 96, 128, 256)
@@ -8066,6 +8092,7 @@ class flameTimewarpML(flameMenuApp):
         flow_head_hidden_size=256
         # Mask predictor
         use_mask_predictor=True
+        '''
 
         feature_encoder = FeatureEncoder(
                 block=feature_encoder_block, 
@@ -8115,11 +8142,19 @@ class flameTimewarpML(flameMenuApp):
             update_block=update_block,
             mask_predictor=mask_predictor
         )
-
+        
+        '''
         raft_trained_model_path = os.path.join(
             self.trained_models_path,
             'raft.model',
             'raft_large_C_T_SKHT_V2-ff5fadd5.pth'
+        )
+        '''
+        
+        raft_trained_model_path = os.path.join(
+            self.trained_models_path,
+            'raft.model',
+            'raft_small_C_T_V2-01064c6d.pth'
         )
 
         model.load_state_dict(torch.load(raft_trained_model_path))
