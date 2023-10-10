@@ -6511,13 +6511,13 @@ class flameTimewarpML(flameMenuApp):
             flow = raft_flow
             '''
 
-            F_large = F.interpolate(flow, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
-            warped_img0 = warp(img0, F_large[:, :2])
-            warped_img1 = warp(img1, F_large[:, 2:4])
+            # F_large = F.interpolate(flow, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+            # warped_img0 = warp(img0, F_large[:, :2])
+            # warped_img1 = warp(img1, F_large[:, 2:4])
 
-            res = warped_img0.permute(1, 2, 0)[:h, :w]
-            res = res.flip(-1)
-            return res
+            # res = warped_img0.permute(1, 2, 0)[:h, :w]
+            # res = res.flip(-1)
+            # return res
 
             # device = torch.device('cpu')
             # img0 = img0.to(device)
@@ -6592,6 +6592,7 @@ class flameTimewarpML(flameMenuApp):
         res_img = np.flip(res_img, axis=2).copy()
         '''
         res_img = middle[0]
+        print (f'res img shape: {res_img.shape}')
         res_img = res_img.permute(1, 2, 0)[:h, :w]
         res_img = res_img.flip(-1)
         self.log_debug('end of flownet24')
