@@ -6109,7 +6109,19 @@ class flameTimewarpML(flameMenuApp):
                 raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
                 raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
                 raft_flow_f = self.progress.parent_app.raft(raft_img1, raft_img0) / 4
+                self.progress.update_optical_flow(
+                    raft_flow_f.cpu().detach().numpy(),
+                    self.progress.ui.flow2_label,
+                    text = f'Flow FWD'
+                    )
+
                 raft_flow_b = self.progress.parent_app.raft(raft_img0, raft_img1) / 4
+                self.progress.update_optical_flow(
+                    raft_flow_b.cpu().detach().numpy(),
+                    self.progress.ui.flow3_label,
+                    text = f'Flow BKW'
+                    )
+
                 FR = torch.cat((raft_flow_f, raft_flow_b), 1)
                 FR_large = F.interpolate(FR, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
 
