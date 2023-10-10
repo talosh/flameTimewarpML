@@ -6149,7 +6149,6 @@ class flameTimewarpML(flameMenuApp):
                 del flow1
                 F2_large = F.interpolate(F2, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
 
-                '''
                 display_flow = F.interpolate(F2_large[:, :, :h, :w], scale_factor=0.25, mode='nearest')
                 self.progress.update_optical_flow(
                     display_flow[:, :2].cpu().detach().numpy(),
@@ -6162,7 +6161,6 @@ class flameTimewarpML(flameMenuApp):
                     self.progress.ui.flow3_label,
                     text = f'Flow BKW'
                     )
-                '''
 
                 warped_img0 = warp(x[:, :3], F2_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F2_large[:, 2:4])
@@ -6177,7 +6175,6 @@ class flameTimewarpML(flameMenuApp):
 
                 F3_large = F.interpolate(F3, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 
-                '''
                 display_flow = F.interpolate(F3_large[:, :, :h, :w], scale_factor=0.25, mode='nearest')
                 self.progress.update_optical_flow(
                     display_flow[:, :2].cpu().detach().numpy(),
@@ -6190,7 +6187,6 @@ class flameTimewarpML(flameMenuApp):
                     self.progress.ui.flow3_label,
                     text = f'Flow BKW'
                     )
-                '''
 
                 warped_img0 = warp(x[:, :3], F3_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
@@ -6207,7 +6203,6 @@ class flameTimewarpML(flameMenuApp):
                 # display_flow = F.interpolate(F4_large[:, :, :h, :w], scale_factor=0.25, mode='nearest')
                 # del F4_large
 
-                '''
                 display_flow = F.interpolate(F4[:, :, :h//2, :w//2], scale_factor=0.5, mode='nearest')
                 self.progress.update_optical_flow(
                     display_flow[:, :2].cpu().detach().numpy(),
@@ -6220,7 +6215,6 @@ class flameTimewarpML(flameMenuApp):
                     self.progress.ui.flow3_label,
                     text = f'Flow BKW'
                     )
-                '''
 
                 del display_flow
 
