@@ -7988,30 +7988,62 @@ class flameTimewarpML(flameMenuApp):
                 return flow_predictions
 
         # parameters from torchvision raft_large
+        # Feature encoder
+        feature_encoder_layers=(64, 64, 96, 128, 256),
+        feature_encoder_block=ResidualBlock,
+        feature_encoder_norm_layer=InstanceNorm2d,
+        # Context encoder
+        context_encoder_layers=(64, 64, 96, 128, 256),
+        context_encoder_block=ResidualBlock,
+        context_encoder_norm_layer=BatchNorm2d,
+        # Correlation block
+        corr_block_num_levels=4,
+        corr_block_radius=4,
+        # Motion encoder
+        motion_encoder_corr_layers=(256, 192),
+        motion_encoder_flow_layers=(128, 64),
+        motion_encoder_out_channels=128,
+        # Recurrent block
+        recurrent_block_hidden_state_size=128,
+        recurrent_block_kernel_size=((1, 5), (5, 1)),
+        recurrent_block_padding=((0, 2), (2, 0)),
+        # Flow head
+        flow_head_hidden_size=256,
+        # Mask predictor
+        use_mask_predictor=True,
 
         feature_encoder = FeatureEncoder(
-                block=ResidualBlock, 
-                layers=(64, 64, 96, 128, 256), 
-                norm_layer=InstanceNorm2d
+                block=feature_encoder_block, 
+                layers=feature_encoder_layers, 
+                norm_layer=feature_encoder_norm_layer
             )
 
         context_encoder = FeatureEncoder(
-                block=ResidualBlock, 
-                layers=(64, 64, 96, 128, 256), 
-                norm_layer=BatchNorm2d
+                block=context_encoder_block, 
+                layers=context_encoder_layers, 
+                norm_layer=context_encoder_norm_layer
             )
         
         corr_block = CorrBlock(
-                num_levels=4, 
-                radius=4
+                num_levels=corr_block_num_levels, 
+                radius=corr_block_radius
             )
 
         motion_encoder = MotionEncoder(
             in_channels_corr=corr_block.out_channels,
-            corr_layers=(256, 192),
-            flow_layers=(128, 64),
-            out_channels=128,
+            corr_layers=motion_encoder_corr_layers,
+            flow_layers=motion_encoder_flow_layers,
+            out_channels=motion_encoder_out_channels,
         )
+
+        out_channels_context = context_encoder_layers[-1] - recurrent_block_hidden_state_size
+        recurrent_block = RecurrentBlock(
+            input_size=motion_encoder.out_channels + out_channels_context,
+            hidden_size=recurrent_block_hidden_state_size,
+            kernel_size=recurrent_block_kernel_size,
+            padding=recurrent_block_padding,
+        )
+
 
         '''
 
