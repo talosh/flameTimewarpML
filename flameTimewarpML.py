@@ -7989,28 +7989,28 @@ class flameTimewarpML(flameMenuApp):
 
         # parameters from torchvision raft_large
         # Feature encoder
-        feature_encoder_layers=(64, 64, 96, 128, 256),
-        feature_encoder_block=ResidualBlock,
-        feature_encoder_norm_layer=InstanceNorm2d,
+        feature_encoder_layers=(64, 64, 96, 128, 256)
+        feature_encoder_block=ResidualBlock
+        feature_encoder_norm_layer=InstanceNorm2d
         # Context encoder
-        context_encoder_layers=(64, 64, 96, 128, 256),
-        context_encoder_block=ResidualBlock,
-        context_encoder_norm_layer=BatchNorm2d,
+        context_encoder_layers=(64, 64, 96, 128, 256)
+        context_encoder_block=ResidualBlock
+        context_encoder_norm_layer=BatchNorm2d
         # Correlation block
-        corr_block_num_levels=4,
-        corr_block_radius=4,
+        corr_block_num_levels=4
+        corr_block_radius=4
         # Motion encoder
-        motion_encoder_corr_layers=(256, 192),
-        motion_encoder_flow_layers=(128, 64),
-        motion_encoder_out_channels=128,
+        motion_encoder_corr_layers=(256, 192)
+        motion_encoder_flow_layers=(128, 64)
+        motion_encoder_out_channels=128
         # Recurrent block
-        recurrent_block_hidden_state_size=128,
-        recurrent_block_kernel_size=((1, 5), (5, 1)),
-        recurrent_block_padding=((0, 2), (2, 0)),
+        recurrent_block_hidden_state_size=128
+        recurrent_block_kernel_size=((1, 5), (5, 1))
+        recurrent_block_padding=((0, 2), (2, 0))
         # Flow head
-        flow_head_hidden_size=256,
+        flow_head_hidden_size=256
         # Mask predictor
-        use_mask_predictor=True,
+        use_mask_predictor=True
 
         feature_encoder = FeatureEncoder(
                 block=feature_encoder_block, 
