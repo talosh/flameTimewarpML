@@ -6463,7 +6463,7 @@ class flameTimewarpML(flameMenuApp):
             print ('trying RAFT')
             img0_raft = F.interpolate(img0, scale_factor=0.25, mode="bilinear", align_corners=False)
             img1_raft = F.interpolate(img1, scale_factor=0.25, mode="bilinear", align_corners=False)
-            raft_flow_list = self.raft(img0, img1)
+            raft_flow_list = self.raft(img0_raft, img1_raft)
             raft_flow = raft_flow_list[-1]
             print (f'flow shape: {flow.shape}, raft_flow shape: {raft_flow.shape}')
 
