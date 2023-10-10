@@ -6108,14 +6108,14 @@ class flameTimewarpML(flameMenuApp):
 
                 raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor=0.5, mode="nearest")
                 raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor=0.5, mode="nearest")
-                raft_flow_f = self.progress.parent_app.raft(raft_img1, raft_img0) / 1
+                raft_flow_f = self.progress.parent_app.raft(raft_img1, raft_img0) / 8
                 self.progress.update_optical_flow(
                     raft_flow_f.cpu().detach().numpy(),
                     self.progress.ui.flow2_label,
                     text = f'Flow FWD'
                     )
 
-                raft_flow_b = self.progress.parent_app.raft(raft_img0, raft_img1) / 1
+                raft_flow_b = self.progress.parent_app.raft(raft_img0, raft_img1) / 8
                 self.progress.update_optical_flow(
                     raft_flow_b.cpu().detach().numpy(),
                     self.progress.ui.flow3_label,
