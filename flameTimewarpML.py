@@ -6108,8 +6108,8 @@ class flameTimewarpML(flameMenuApp):
 
                 raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
                 raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
-                raft_flow_f = self.raft(raft_img1, raft_img0) / 2
-                raft_flow_b = self.raft(raft_img1, raft_img0) / 2
+                raft_flow_f = self.progress.parent_app.raft(raft_img1, raft_img0) / 2
+                raft_flow_b = self.progress.parent_app.raft(raft_img1, raft_img0) / 2
                 F1 = torch.cat((raft_flow_f, raft_flow_b), 1)
                 del raft_img0
                 del raft_img1
