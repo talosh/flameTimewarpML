@@ -6515,7 +6515,7 @@ class flameTimewarpML(flameMenuApp):
             warped_img0 = warp(img0, F_large[:, :2])[0]
             warped_img1 = warp(img1, F_large[:, 2:4])[0]
 
-            res = warped_img0.permute(1, 2, 0)[:h, :w]
+            res = warped_img1.permute(1, 2, 0)[:h, :w]
             res = res.flip(-1)
             return res
 
