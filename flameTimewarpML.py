@@ -8006,6 +8006,13 @@ class flameTimewarpML(flameMenuApp):
                 radius=4
             )
 
+        motion_encoder = MotionEncoder(
+            in_channels_corr=corr_block.out_channels,
+            corr_layers=(256, 192),
+            flow_layers=(128, 64),
+            out_channels=128,
+        )
+
         '''
 
         model = RAFT(
