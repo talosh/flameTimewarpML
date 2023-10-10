@@ -5972,10 +5972,6 @@ class flameTimewarpML(flameMenuApp):
         img0 = F.pad(img0, padding)
         img1 = F.pad(img1, padding)
 
-
-        print ('trying RAFT')
-        self.raft(img0, img1)
-
         # print ('padding')
         # from torch import mps
         # print (mps.driver_allocated_memory())
@@ -6454,6 +6450,11 @@ class flameTimewarpML(flameMenuApp):
             self.progress.info(f'{info_text} - pass {current_pass} of {num_passes}')
 
             flow = ifnet_model.inference(img0, img1, False, flow_scale=self.flow_scale)
+
+            print ('trying RAFT')
+            raft_flow_list = self.raft(img0, img1)
+            raft_flow = raft_flow_list[-1]
+            print (f'flow shape: {flow.shape}, raft_flow shape: {raft_flow.shape}')
 
             # flow[:, :2] = flow[:, :2] * 2 * ratio
             # flow[:, 2:] = flow[:, 2:] * 2 * (1 - ratio)
@@ -8068,8 +8069,10 @@ class flameTimewarpML(flameMenuApp):
         )
 
         model.load_state_dict(torch.load(raft_trained_model_path))
-        model.eval()
         model.to(self.torch_device)
+        model.eval()
+
+        return model(img0, img1, num_flow_updates = 12)
 
 
     def slowmo(self, selection):
