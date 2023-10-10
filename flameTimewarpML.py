@@ -8053,17 +8053,15 @@ class flameTimewarpML(flameMenuApp):
             multiplier=0.25,  # See comment in MaskPredictor about this
         )
 
-        '''
-
         model = RAFT(
             feature_encoder=feature_encoder,
             context_encoder=context_encoder,
             corr_block=corr_block,
             update_block=update_block,
-            mask_predictor=mask_predictor,
-            **kwargs,  # not really needed, all params should be consumed by now
+            mask_predictor=mask_predictor
         )
 
+        '''
         model.load_state_dict(weights.get_state_dict(progress=progress, check_hash=True))
         '''
 
