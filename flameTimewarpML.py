@@ -7995,18 +7995,18 @@ class flameTimewarpML(flameMenuApp):
                 norm_layer=InstanceNorm2d
             )
 
-        '''
         context_encoder = FeatureEncoder(
-                block=context_encoder_block, 
-                layers=context_encoder_layers, 
-                norm_layer=context_encoder_norm_layer
+                block=ResidualBlock, 
+                layers=(64, 64, 96, 128, 256), 
+                norm_layer=BatchNorm2d
             )
         
         corr_block = CorrBlock(
-                num_levels=corr_block_num_levels, 
-                radius=corr_block_radius
+                num_levels=4, 
+                radius=4
             )
 
+        '''
 
         model = RAFT(
             feature_encoder=feature_encoder,
