@@ -6106,16 +6106,16 @@ class flameTimewarpML(flameMenuApp):
                     padding = (0, new_pw - new_w, 0, new_ph - new_h)
                     x = F.pad(x, padding)
 
-                raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor=0.25, mode="nearest")
-                raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor=0.25, mode="nearest")
-                raft_flow_f = self.progress.parent_app.raft(raft_img1, raft_img0) / 4
+                raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor=0.5, mode="nearest")
+                raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor=0.5, mode="nearest")
+                raft_flow_f = self.progress.parent_app.raft(raft_img1, raft_img0) / 1
                 self.progress.update_optical_flow(
                     raft_flow_f.cpu().detach().numpy(),
                     self.progress.ui.flow2_label,
                     text = f'Flow FWD'
                     )
 
-                raft_flow_b = self.progress.parent_app.raft(raft_img0, raft_img1) / 4
+                raft_flow_b = self.progress.parent_app.raft(raft_img0, raft_img1) / 1
                 self.progress.update_optical_flow(
                     raft_flow_b.cpu().detach().numpy(),
                     self.progress.ui.flow3_label,
@@ -6123,7 +6123,6 @@ class flameTimewarpML(flameMenuApp):
                     )
 
                 FR = torch.cat((raft_flow_f, raft_flow_b), 1)
-                FR = F.interpolate(FR, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 FR_large = F.interpolate(FR, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
 
                 warped_img0 = warp(x[:, :3], FR_large[:, :2])
