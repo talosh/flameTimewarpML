@@ -8133,7 +8133,7 @@ class flameTimewarpML(flameMenuApp):
             in_channels=recurrent_block_hidden_state_size,
             hidden_size=256,
             multiplier=0.25,  # See comment in MaskPredictor about this
-        )
+        ) if use_mask_predictor else None
 
         model = RAFT(
             feature_encoder=feature_encoder,
