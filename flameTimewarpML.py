@@ -6106,17 +6106,16 @@ class flameTimewarpML(flameMenuApp):
                     padding = (0, new_pw - new_w, 0, new_ph - new_h)
                     x = F.pad(x, padding)
 
-                '''
-                raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor=0.5, mode="bilinear")
-                raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor=0.5, mode="bilinear")
-                raft_flow_f = self.progress.parent_app.raft(raft_img1, raft_img0) / 4
+                raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
+                raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
+                raft_flow_f = self.progress.parent_app.raft(raft_img0, raft_img1) * -0.5
                 self.progress.update_optical_flow(
                     raft_flow_f[:, :, :h//2, :w//2].cpu().detach().numpy(),
                     self.progress.ui.flow2_label,
                     text = f'Flow FWD'
                     )
 
-                raft_flow_b = self.progress.parent_app.raft(raft_img0, raft_img1) / 4
+                raft_flow_b = self.progress.parent_app.raft(raft_img1, raft_img0) * -0.5
                 self.progress.update_optical_flow(
                     raft_flow_b[:, :, :h//2, :w//2].cpu().detach().numpy(),
                     self.progress.ui.flow3_label,
@@ -6124,7 +6123,7 @@ class flameTimewarpML(flameMenuApp):
                     )
 
                 FR = torch.cat((raft_flow_f, raft_flow_b), 1)
-                FR_large = F.interpolate(FR, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+                FR_large = F.interpolate(FR, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 1.8
 
                 warped_img0 = warp(x[:, :3], FR_large[:, :2])
                 warped_img1 = warp(x[:, 3:], FR_large[:, 2:4])
@@ -6137,13 +6136,12 @@ class flameTimewarpML(flameMenuApp):
                 flow0 = self.block0(torch.cat((warped_img0, warped_img1), 1))
                 F1 = FR + flow0
                 del flow0
-                '''
 
-                #'''
+                '''
                 flow0 = self.block0(x)
                 F1 = flow0
                 del flow0
-                #'''
+                '''
 
                 F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 display_flow = F.interpolate(F1_large[:, :, :h, :w], scale_factor=0.25, mode='nearest')
@@ -6499,6 +6497,7 @@ class flameTimewarpML(flameMenuApp):
             if not self.progress.rendering:
                 return None
 
+            '''
             print ('trying RAFT')
             img0_raft = F.interpolate(img0*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
             img1_raft = F.interpolate(img1*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
@@ -6517,6 +6516,7 @@ class flameTimewarpML(flameMenuApp):
             res = warped_img1.permute(1, 2, 0)[:h, :w]
             res = res.flip(-1)
             return res
+            '''
 
             # device = torch.device('cpu')
             # img0 = img0.to(device)
