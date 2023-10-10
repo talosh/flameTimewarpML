@@ -7302,7 +7302,7 @@ class flameTimewarpML(flameMenuApp):
         return reassembled_img
 
     def raft(self, img0, img1):
-        from typing import Callable, List, Optional, Sequence, Tuple, Union
+        from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
 
         import collections
         from itertools import repeat
