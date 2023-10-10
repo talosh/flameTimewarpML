@@ -6499,23 +6499,21 @@ class flameTimewarpML(flameMenuApp):
             if not self.progress.rendering:
                 return None
 
-            '''
             print ('trying RAFT')
             img0_raft = F.interpolate(img0*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
             img1_raft = F.interpolate(img1*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
-            raft_flow_fwd = self.raft(img0_raft, img1_raft) / 2
-            raft_flow_bkw = self.raft(img1_raft, img0_raft) / 2
-            raft_flow = torch.cat((raft_flow_bkw, raft_flow_fwd), 1)
-            print (f'flow shape: {flow.shape}, raft_flow shape: {raft_flow.shape}')
+            raft_flow_fwd = self.raft(img0_raft, img1_raft)
+            raft_flow_bkw = self.raft(img1_raft, img0_raft)
+            raft_flow = torch.cat((raft_flow_fwd, raft_flow_bkw), 1)
+            # print (f'flow shape: {flow.shape}, raft_flow shape: {raft_flow.shape}')
 
             flow = raft_flow
-            '''
 
             F_large = F.interpolate(flow, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
             warped_img0 = warp(img0, F_large[:, :2])[0]
             warped_img1 = warp(img1, F_large[:, 2:4])[0]
 
-            res = warped_img1.permute(1, 2, 0)[:h, :w]
+            res = warped_img0.permute(1, 2, 0)[:h, :w]
             res = res.flip(-1)
             return res
 
