@@ -5973,8 +5973,8 @@ class flameTimewarpML(flameMenuApp):
         img1 = F.pad(img1, padding)
 
 
-        print ('trying RAFT')
-        self.raft(img0, img1)
+        #print ('trying RAFT')
+        #self.raft(img0, img1)
 
         # print ('padding')
         # from torch import mps
