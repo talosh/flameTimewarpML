@@ -6088,7 +6088,7 @@ class flameTimewarpML(flameMenuApp):
             'flownet.pkl'
         )
 
-        flownet.load_state_dict(convert(torch.load(model_path), False))
+        flownet.load_state_dict(convert(torch.load(model_path)), False)
         scale = self.flow_scale
         timestep = ratio
 
