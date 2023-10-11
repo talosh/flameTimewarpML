@@ -6100,6 +6100,8 @@ class flameTimewarpML(flameMenuApp):
 
 
         flownet = IFNet()
+        flownet.to(device)
+        flownet.eval()
 
         model_path = os.path.join(
             self.trained_models_path,
