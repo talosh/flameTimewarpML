@@ -6117,7 +6117,7 @@ class flameTimewarpML(flameMenuApp):
         scale_list = [8/scale, 4/scale, 2/scale, 1/scale]
         flow, mask, merged = flownet(imgs, timestep, scale_list)
 
-        res_img = merged[3]
+        res_img = merged[3][0]
         print (f'res img shape: {res_img.shape}')
         res_img = res_img.permute(1, 2, 0)[:h, :w]
         res_img = res_img.flip(-1)
