@@ -5935,7 +5935,26 @@ class flameTimewarpML(flameMenuApp):
         import torch.nn as nn
         import torch.nn.functional as F
 
-        device = self.torch_device
+        torch.set_grad_enabled(False)
+        if sys.platform == 'darwin':
+            device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+            # device = torch.device('cpu')
+        else:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        img0 = img0.flip(-1).contiguous()
+        img1 = img1.flip(-1).contiguous()
+        img0 = img0.permute(2, 0, 1).unsqueeze(0)
+        img1 = img1.permute(2, 0, 1).unsqueeze(0)
+
+        n, c, h, w = img0.shape
+        
+        ph = ((h - 1) // 64 + 1) * 64
+        pw = ((w - 1) // 64 + 1) * 64
+        padding = (0, pw - w, 0, ph - h)
+        img0 = F.pad(img0, padding)
+        img1 = F.pad(img1, padding)
+
 
         def warp(tenInput, tenFlow):
             backwarp_tenGrid = {}
