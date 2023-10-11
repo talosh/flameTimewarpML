@@ -6084,7 +6084,7 @@ class flameTimewarpML(flameMenuApp):
 
         model_path = os.path.join(
             self.trained_models_path,
-            'v4.6.model'
+            'v4.7.model',
             'flownet.pkl'
         )
 
