@@ -8042,6 +8042,7 @@ class flameTimewarpML(flameMenuApp):
 
                 return flow_predictions
 
+        '''
         # parameters from torchvision raft_small
         # Feature encoder
         feature_encoder_layers=(32, 32, 64, 96, 128)
@@ -8066,8 +8067,8 @@ class flameTimewarpML(flameMenuApp):
         flow_head_hidden_size=128
         # Mask predictor
         use_mask_predictor=False
-
         '''
+
         # parameters from torchvision raft_large
         # Feature encoder
         feature_encoder_layers=(64, 64, 96, 128, 256)
@@ -8092,7 +8093,6 @@ class flameTimewarpML(flameMenuApp):
         flow_head_hidden_size=256
         # Mask predictor
         use_mask_predictor=True
-        '''
 
         feature_encoder = FeatureEncoder(
                 block=feature_encoder_block, 
@@ -8143,19 +8143,20 @@ class flameTimewarpML(flameMenuApp):
             mask_predictor=mask_predictor
         )
         
-        '''
         raft_trained_model_path = os.path.join(
             self.trained_models_path,
             'raft.model',
             'raft_large_C_T_SKHT_V2-ff5fadd5.pth'
         )
-        '''
         
+        '''
+        # small raft
         raft_trained_model_path = os.path.join(
             self.trained_models_path,
             'raft.model',
             'raft_small_C_T_V2-01064c6d.pth'
         )
+        '''
 
         model.load_state_dict(torch.load(raft_trained_model_path))
         model.to(self.torch_device)
