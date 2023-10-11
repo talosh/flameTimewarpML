@@ -4600,7 +4600,7 @@ class flameTimewarpML(flameMenuApp):
         print ('select mode')
         print (mode_number)
 
-    def flownet(self, img0, img1, ratio, model_path):
+    def flownet_hzsho(self, img0, img1, ratio, model_path):
         import torch
         import torch.nn as nn
         import torch.nn.functional as F
@@ -6094,7 +6094,7 @@ class flameTimewarpML(flameMenuApp):
 
         imgs = torch.cat((img0, img1), 1)
         scale_list = [8/scale, 4/scale, 2/scale, 1/scale]
-        flow, mask, merged = self.flownet(imgs, timestep, scale_list)
+        flow, mask, merged = flownet(imgs, timestep, scale_list)
 
         res_img = merged[3]
         print (f'res img shape: {res_img.shape}')
