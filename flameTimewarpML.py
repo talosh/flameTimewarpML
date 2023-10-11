@@ -6086,9 +6086,20 @@ class flameTimewarpML(flameMenuApp):
             'flownet.pkl'
         )
 
-        flownet.load_state_dict(convert(torch.load(model_path), False)
+        flownet.load_state_dict(convert(torch.load(model_path), False))
+        scale = self.flow_scale
+        timestep = ratio
 
+        imgs = torch.cat((img0, img1), 1)
+        scale_list = [8/scale, 4/scale, 2/scale, 1/scale]
+        flow, mask, merged = self.flownet(imgs, timestep, scale_list)
 
+        res_img = merged[3]
+        print (f'res img shape: {res_img.shape}')
+        res_img = res_img.permute(1, 2, 0)[:h, :w]
+        res_img = res_img.flip(-1)
+
+        return res_img
 
 
     def flownet24(self, img0, img1, ratio, model_path):
