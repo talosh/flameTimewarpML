@@ -2038,8 +2038,8 @@ class flameTimewarpML(flameMenuApp):
                 self.processEvents()
 
 
-                result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
-                # result_image_data = self.parent_app.flownet47(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
+                # result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
+                result_image_data = self.parent_app.flownet47(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
 
                 if result_image_data is None:
                     del incoming_image_data
@@ -6115,6 +6115,12 @@ class flameTimewarpML(flameMenuApp):
 
         imgs = torch.cat((img0, img1), 1)
         scale_list = [8/scale, 4/scale, 2/scale, 1/scale]
+
+        img0_raft = F.interpolate(img0*2 - 1, scale_factor= 1 / 4, mode="bilinear", align_corners=False)
+        img1_raft = F.interpolate(img1*2 - 1, scale_factor= 1 / 4, mode="bilinear", align_corners=False)
+        raft_flow_fwd = self.raft(img0_raft, img1_raft) * - (timestep)
+        raft_flow_bkw = self.raft(img1_raft, img0_raft) * - (1 - timestep)
+
         flow, mask, merged = flownet(imgs, timestep, scale_list)
 
         res_img = merged[3][0]
@@ -6123,7 +6129,6 @@ class flameTimewarpML(flameMenuApp):
         res_img = res_img.flip(-1)
 
         return res_img
-
 
     def flownet24(self, img0, img1, ratio, model_path):
         import torch
