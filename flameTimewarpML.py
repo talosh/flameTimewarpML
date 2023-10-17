@@ -6165,7 +6165,7 @@ class flameTimewarpML(flameMenuApp):
         img1_raft = F.interpolate(img1*2 - 1, scale_factor= 1 / 4, mode="bilinear", align_corners=False)
         raft_flow_fwd = self.raft(img0_raft, img1_raft) * - (timestep)
         raft_flow_bkw = self.raft(img1_raft, img0_raft) * - (1 - timestep)
-        initial_flow = torch.cat(raft_flow_fwd, raft_flow_bkw)
+        initial_flow = torch.cat((raft_flow_fwd, raft_flow_bkw), 1)
 
         print (f'initial flow {initial_flow.shape}'
 
