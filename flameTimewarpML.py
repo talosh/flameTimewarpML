@@ -6044,7 +6044,7 @@ class flameTimewarpML(flameMenuApp):
                 # self.contextnet = Contextnet()
                 # self.unet = Unet()
 
-            def forward(self, x, initial_flow = None, timestep=0.5, scale_list=[8, 4, 2, 1], training=False, fastmode=True, ensemble=False):
+            def forward(self, x, timestep=0.5, scale_list=[8, 4, 2, 1], training=False, fastmode=True, ensemble=False):
                 if ensemble:
                     print('ensemble is removed')
                 if training == False:
@@ -6055,10 +6055,8 @@ class flameTimewarpML(flameMenuApp):
                     timestep = (x[:, :1].clone() * 0 + 1) * timestep
                 else:
                     timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
-
                 f0 = self.encode(img0[:, :3])
                 f1 = self.encode(img1[:, :3])
-
                 flow_list = []
                 merged = []
                 mask_list = []
@@ -6161,15 +6159,11 @@ class flameTimewarpML(flameMenuApp):
         img1_raft = F.interpolate(img1*2 - 1, scale_factor= 1 / 4, mode="bilinear", align_corners=False)
         raft_flow_fwd = self.raft(img0_raft, img1_raft) * - (timestep)
         raft_flow_bkw = self.raft(img1_raft, img0_raft) * - (1 - timestep)
-        initial_flow = torch.cat((raft_flow_fwd, raft_flow_bkw), 1)
-
-        print (f'initial flow {initial_flow.shape}')
 
         flow, mask, merged = flownet(imgs, timestep, scale_list)
 
-        print (f'result flow {flow.shape}')
-
         res_img = merged[3][0]
+        print (f'res img shape: {res_img.shape}')
         res_img = res_img.permute(1, 2, 0)[:h, :w]
         res_img = res_img.flip(-1)
 
