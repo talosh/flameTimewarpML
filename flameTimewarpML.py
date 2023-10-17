@@ -6167,11 +6167,11 @@ class flameTimewarpML(flameMenuApp):
         raft_flow_bkw = self.raft(img1_raft, img0_raft) * - (1 - timestep)
         initial_flow = torch.cat((raft_flow_fwd, raft_flow_bkw), 1)
 
-        print (f'initial flow {initial_flow.shape}'
+        print (f'initial flow {initial_flow.shape}')
 
         flow, mask, merged = flownet(imgs, timestep, scale_list)
 
-        print (f'result flow {flow.shape}'
+        print (f'result flow {flow.shape}')
 
         res_img = merged[3][0]
         res_img = res_img.permute(1, 2, 0)[:h, :w]
