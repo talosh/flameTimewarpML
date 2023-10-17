@@ -6066,6 +6066,44 @@ class flameTimewarpML(flameMenuApp):
                 mask = None
                 loss_cons = 0
                 block = [self.block0, self.block1, self.block2, self.block3]
+
+                # block 0
+                flow, mask = block[0](torch.cat((img0[:, :3], img1[:, :3], f0, f1, timestep), 1), None, scale=scale_list[0])
+                mask_list.append(mask)
+                flow_list.append(flow)
+                warped_img0 = warp(img0, flow[:, :2])
+                warped_img1 = warp(img1, flow[:, 2:4])
+                merged.append((warped_img0, warped_img1))
+
+                # block 1
+                fd, mask = block[1](torch.cat((warped_img0[:, :3], warped_img1[:, :3], warp(f0, flow[:, :2]), warp(f1, flow[:, 2:4]), timestep, mask), 1), flow, scale=scale_list[1])
+                flow = flow + fd
+                mask_list.append(mask)
+                flow_list.append(flow)
+                warped_img0 = warp(img0, flow[:, :2])
+                warped_img1 = warp(img1, flow[:, 2:4])
+                merged.append((warped_img0, warped_img1))
+
+                # block 2
+                fd, mask = block[2](torch.cat((warped_img0[:, :3], warped_img1[:, :3], warp(f0, flow[:, :2]), warp(f1, flow[:, 2:4]), timestep, mask), 1), flow, scale=scale_list[2])
+                flow = flow + fd
+                mask_list.append(mask)
+                flow_list.append(flow)
+                warped_img0 = warp(img0, flow[:, :2])
+                warped_img1 = warp(img1, flow[:, 2:4])
+                merged.append((warped_img0, warped_img1))
+
+                # block 3
+                fd, mask = block[3](torch.cat((warped_img0[:, :3], warped_img1[:, :3], warp(f0, flow[:, :2]), warp(f1, flow[:, 2:4]), timestep, mask), 1), flow, scale=scale_list[3])
+                flow = flow + fd
+                mask_list.append(mask)
+                flow_list.append(flow)
+                warped_img0 = warp(img0, flow[:, :2])
+                warped_img1 = warp(img1, flow[:, 2:4])
+                merged.append((warped_img0, warped_img1))
+
+
+                '''
                 for i in range(4):
                     if flow is None:
                         flow, mask = block[i](torch.cat((img0[:, :3], img1[:, :3], f0, f1, timestep), 1), None, scale=scale_list[i])
@@ -6077,6 +6115,7 @@ class flameTimewarpML(flameMenuApp):
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
                     merged.append((warped_img0, warped_img1))
+                '''
                 mask = torch.sigmoid(mask)
                 merged[3] = (warped_img0 * mask + warped_img1 * (1 - mask))
                 if not fastmode:
