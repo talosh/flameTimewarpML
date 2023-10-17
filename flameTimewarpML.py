@@ -6044,7 +6044,7 @@ class flameTimewarpML(flameMenuApp):
                 # self.contextnet = Contextnet()
                 # self.unet = Unet()
 
-            def forward(self, x, timestep=0.5, scale_list=[8, 4, 2, 1], training=False, fastmode=True, ensemble=False):
+            def forward(self, x, initial_flow = None, timestep=0.5, scale_list=[8, 4, 2, 1], training=False, fastmode=True, ensemble=False):
                 if ensemble:
                     print('ensemble is removed')
                 if training == False:
@@ -6055,8 +6055,14 @@ class flameTimewarpML(flameMenuApp):
                     timestep = (x[:, :1].clone() * 0 + 1) * timestep
                 else:
                     timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
+
                 f0 = self.encode(img0[:, :3])
                 f1 = self.encode(img1[:, :3])
+
+                if initial_flow:
+                    f0 = warp(f0, initial_flow[:, :2])
+                    f1 = warp(f1, initial_flow[:, 2:4])
+
                 flow_list = []
                 merged = []
                 mask_list = []
