@@ -6075,6 +6075,7 @@ class flameTimewarpML(flameMenuApp):
                 warped_img0 = warp(img0, flow[:, :2])
                 warped_img1 = warp(img1, flow[:, 2:4])
                 merged.append((warped_img0, warped_img1))
+                print (f'block0 flow shape: {flow.shape}')
 
                 # block 1
                 fd, mask = block[1](torch.cat((warped_img0[:, :3], warped_img1[:, :3], warp(f0, flow[:, :2]), warp(f1, flow[:, 2:4]), timestep, mask), 1), flow, scale=scale_list[1])
