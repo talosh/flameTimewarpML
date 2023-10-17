@@ -6068,6 +6068,7 @@ class flameTimewarpML(flameMenuApp):
                 block = [self.block0, self.block1, self.block2, self.block3]
 
                 # block 0
+                print ('block0')
                 flow, mask = block[0](torch.cat((img0[:, :3], img1[:, :3], f0, f1, timestep), 1), None, scale=scale_list[0])
                 mask_list.append(mask)
                 flow_list.append(flow)
