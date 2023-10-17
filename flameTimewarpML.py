@@ -6059,10 +6059,6 @@ class flameTimewarpML(flameMenuApp):
                 f0 = self.encode(img0[:, :3])
                 f1 = self.encode(img1[:, :3])
 
-                if initial_flow:
-                    f0 = warp(f0, initial_flow[:, :2])
-                    f1 = warp(f1, initial_flow[:, 2:4])
-
                 flow_list = []
                 merged = []
                 mask_list = []
