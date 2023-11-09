@@ -3093,10 +3093,11 @@ class flameTimewarpML(flameMenuApp):
             self.rendering = False
 
         def closeEvent(self, event):
-            self.close_application()
-            event.accept()
-            QtWidgets.QApplication.instance().quit()
-            super().closeEvent(event)
+            print ('close event called')
+            # self.close_application()
+            # event.accept()
+            # QtWidgets.QApplication.instance().quit()
+            # super().closeEvent(event)
 
         def close_application(self):
             import flame
