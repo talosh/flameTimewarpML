@@ -6413,16 +6413,15 @@ class flameTimewarpML(flameMenuApp):
                 raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor= 1 /4, mode="bilinear", align_corners=False)
                 raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor= 1/ 4, mode="bilinear", align_corners=False)
 
-                current_device = self.torch_device
+                current_device = img0.device
                 try:
                     self.progress.info(f'{info_text} - pre-building forward flow')
                     raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0, raft_img1) / 2)
                 except:
                     self.progress.info(f'{info_text} - pre-building forward flow - CPU (slow)')
-                    self.torch_device = torch.device('cpu')
-                    raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0.to(self.torch_device), raft_img1.to(self.torch_device)) / 2)
-                self.torch_device = current_device
-                raft_flow_f = raft_flow_f.to(self.torch_device)
+                    cpu_device = torch.device('cpu')
+                    raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0.to(cpu_device), raft_img1.to(cpu_device)) / 2)
+                raft_flow_f = raft_flow_f.to(current_device)
 
                 self.progress.update_optical_flow(
                     raft_flow_f[:, :, :h//2, :w//2].cpu().detach().numpy(),
@@ -8493,7 +8492,7 @@ class flameTimewarpML(flameMenuApp):
         '''
 
         model.load_state_dict(torch.load(raft_trained_model_path))
-        model.to(self.torch_device)
+        model.to(img0.device)
         model.eval()
 
         flow = model(img0, img1, num_flow_updates = 4)[-1]
