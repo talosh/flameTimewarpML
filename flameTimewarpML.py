@@ -6417,7 +6417,8 @@ class flameTimewarpML(flameMenuApp):
                 try:
                     self.progress.info(f'{info_text} - pre-building forward flow')
                     raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0, raft_img1) / 2)
-                except:
+                except Exception as e:
+                    print (e)
                     self.progress.info(f'{info_text} - pre-building forward flow - CPU (slow)')
                     cpu_device = torch.device('cpu')
                     raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0.to(cpu_device), raft_img1.to(cpu_device)) / 4)
@@ -6434,7 +6435,8 @@ class flameTimewarpML(flameMenuApp):
                 try:
                     self.progress.info(f'{info_text} - pre-building backward flow')
                     raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1, raft_img0) / 2)
-                except:
+                except Exception as e:
+                    print (e)
                     self.progress.info(f'{info_text} - pre-building forward flow - CPU (slow)')
                     cpu_device = torch.device('cpu')
                     raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1.to(cpu_device), raft_img0.to(cpu_device)) / 4)
