@@ -6466,7 +6466,6 @@ class flameTimewarpML(flameMenuApp):
                 warped_img0 = warp(x[:, :3], F1_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
 
-                info_text = self.progress.ui.info_label.text()
                 self.progress.info(f'{info_text} - flow iteration 2 of 4')
 
                 flow1 = self.block1(torch.cat((warped_img0, warped_img1, F1_large), 1))
@@ -6493,7 +6492,6 @@ class flameTimewarpML(flameMenuApp):
                 warped_img0 = warp(x[:, :3], F2_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F2_large[:, 2:4])
 
-                info_text = self.progress.ui.info_label.text()
                 self.progress.info(f'{info_text} - flow iteration 3 of 4')
 
                 flow2 = self.block2(torch.cat((warped_img0, warped_img1, F2_large), 1))
@@ -6521,7 +6519,6 @@ class flameTimewarpML(flameMenuApp):
                 warped_img0 = warp(x[:, :3], F3_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
 
-                info_text = self.progress.ui.info_label.text()
                 self.progress.info(f'{info_text} - flow iteration 4 of 4')
                 
                 flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3_large), 1))
