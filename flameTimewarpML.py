@@ -3109,6 +3109,15 @@ class flameTimewarpML(flameMenuApp):
 
         def close_application(self):
             import flame
+            import torch
+
+            if sys.platform == 'darwin':
+                self.torch_device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+            else:
+                if torch.cuda.is_avaliable():
+                    print ('emptying CUDA cahce')
+                    torch.cuda.empty_cache()
+                # self.torch_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
             self.stop_frame_rendering_thread()
 
