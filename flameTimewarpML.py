@@ -6408,12 +6408,22 @@ class flameTimewarpML(flameMenuApp):
                     x = F.pad(x, padding)
 
                 info_text = self.progress.ui.info_label.text()
-                self.progress.info(f'{info_text} - pre-building forward flow')
 
                 # '''
-                raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
-                raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
-                raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0, raft_img1) / 4)
+                raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor= 1 /4, mode="bilinear", align_corners=False)
+                raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor= 1/ 4, mode="bilinear", align_corners=False)
+
+                current_device = self.torch_device
+                try:
+                    self.progress.info(f'{info_text} - pre-building forward flow')
+                    raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0, raft_img1) / 2)
+                except:
+                    self.progress.info(f'{info_text} - pre-building forward flow - CPU (slow)')
+                    self.torch_device = torch.device('cpu')
+                    raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0.to(self.torch_device), raft_img1.to(self.torch_device)) / 2)
+                self.torch_device = current_device
+                raft_flow_f = raft_flow_f.to(self.torch_device)
+
                 self.progress.update_optical_flow(
                     raft_flow_f[:, :, :h//2, :w//2].cpu().detach().numpy(),
                     self.progress.ui.flow2_label,
@@ -6422,7 +6432,7 @@ class flameTimewarpML(flameMenuApp):
 
                 self.progress.info(f'{info_text} - pre-building backward flow')
 
-                raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1, raft_img0) / 4)
+                raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1, raft_img0) / 2)
                 self.progress.update_optical_flow(
                     raft_flow_b[:, :, :h//2, :w//2].cpu().detach().numpy(),
                     self.progress.ui.flow3_label,
@@ -8486,7 +8496,7 @@ class flameTimewarpML(flameMenuApp):
         model.to(self.torch_device)
         model.eval()
 
-        flow = model(img0, img1, num_flow_updates = 3)[-1]
+        flow = model(img0, img1, num_flow_updates = 4)[-1]
         
         del model
         del mask_predictor
