@@ -3238,11 +3238,8 @@ class flameTimewarpML(flameMenuApp):
             4: 'CPU - Faster'
         }
 
-        if not self.prefs.get('current_mode'):
-            print (f'no current mode')
-        else:
-            self.current_mode = self.prefs.get('current_mode')
-            print (f'current mode: {self.current_mode}')
+        self.current_mode = self.prefs.get('current_mode', 1)
+        print (f'current mode: {self.current_mode}')
 
         self.trained_models_path = os.path.join(
             self.framework.bundle_folder,
