@@ -1431,8 +1431,7 @@ class flameTimewarpML(flameMenuApp):
 
             # set up mode menu
             mode_menu = QtWidgets.QMenu(self)
-            print (sorted(self.parent_app.modes.keys()))
-            for mode_number in sorted(self.parent_app.modes.keys(), reverse=True):
+            for mode_number in sorted(self.parent_app.modes.keys(), reverse=False):
                 code = self.parent_app.modes.get(mode_number, 1)
                 action = mode_menu.addAction(code)
                 x = lambda chk=False, mode_number=mode_number: self.parent_app.select_mode(mode_number)
