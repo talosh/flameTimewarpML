@@ -6234,8 +6234,9 @@ class flameTimewarpML(flameMenuApp):
         if self.modes[self.current_mode].startswith('CPU'):
             device = torch.device('cpu')
 
-        torch.set_printoptions(profile="full")
         torch.set_grad_enabled(False)
+
+        print (f'flownet 24, device: {device}')
 
         # print ('start')
         # from torch import mps
