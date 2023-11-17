@@ -6408,7 +6408,7 @@ class flameTimewarpML(flameMenuApp):
                     x = F.pad(x, padding)
 
                 info_text = self.progress.ui.info_label.text()
-                self.progress.info(f'{info_text} - flow iteration 1 of 4')
+                self.progress.info(f'{info_text} - pre-building forward flow')
 
                 # '''
                 raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
@@ -6419,6 +6419,8 @@ class flameTimewarpML(flameMenuApp):
                     self.progress.ui.flow2_label,
                     text = f'Flow FWD'
                     )
+
+                self.progress.info(f'{info_text} - pre-building backward flow')
 
                 raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1, raft_img0) / 4)
                 self.progress.update_optical_flow(
@@ -6438,6 +6440,7 @@ class flameTimewarpML(flameMenuApp):
                 del raft_flow_f
                 del raft_flow_b
 
+                self.progress.info(f'{info_text} - flow iteration 1 of 4')
                 flow0 = self.block0(torch.cat((warped_img0, warped_img1), 1))
                 F1 = FR + flow0
                 del flow0
