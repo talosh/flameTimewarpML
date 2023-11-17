@@ -3231,8 +3231,8 @@ class flameTimewarpML(flameMenuApp):
         self.modes = {
             1: 'Normal',
             2: 'Faster',
-            3: 'Normal CPU',
-            4: 'Faster CPU'
+            3: 'CPU - Normal',
+            4: 'CPU - Faster'
         }
 
         if not self.prefs.get('current_mode'):
