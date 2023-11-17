@@ -2040,9 +2040,14 @@ class flameTimewarpML(flameMenuApp):
                     )
                 self.processEvents()
 
-
-                result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
-                # result_image_data = self.parent_app.flownet47(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
+                if self.parent_app.current_mode == 1:
+                    result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
+                elif self.parent_app.current_mode == 2:
+                    result_image_data = self.parent_app.flownet47(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
+                elif self.parent_app.current_mode == 3:
+                    result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
+                elif self.parent_app.current_mode == 4:
+                    result_image_data = self.parent_app.flownet47(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
 
                 if result_image_data is None:
                     del incoming_image_data
@@ -6233,6 +6238,9 @@ class flameTimewarpML(flameMenuApp):
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if self.modes[self.current_mode].startswith('CPU'):
             device = torch.device('cpu')
+
+        img0 = img0.to(device)
+        img1 = img1.to(device)
 
         torch.set_grad_enabled(False)
 
