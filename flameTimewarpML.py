@@ -6439,6 +6439,10 @@ class flameTimewarpML(flameMenuApp):
                 '''
 
                 # '''
+
+                info_text = self.progress.ui.info_label.text()
+                self.progress.info(f'{info_text} - flow iteration 1 of 4')
+
                 flow0 = self.block0(x)
                 F1 = flow0
                 del flow0
@@ -6461,6 +6465,9 @@ class flameTimewarpML(flameMenuApp):
 
                 warped_img0 = warp(x[:, :3], F1_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
+
+                info_text = self.progress.ui.info_label.text()
+                self.progress.info(f'{info_text} - flow iteration 2 of 4')
 
                 flow1 = self.block1(torch.cat((warped_img0, warped_img1, F1_large), 1))
                 del F1_large
@@ -6486,6 +6493,8 @@ class flameTimewarpML(flameMenuApp):
                 warped_img0 = warp(x[:, :3], F2_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F2_large[:, 2:4])
 
+                info_text = self.progress.ui.info_label.text()
+                self.progress.info(f'{info_text} - flow iteration 3 of 4')
 
                 flow2 = self.block2(torch.cat((warped_img0, warped_img1, F2_large), 1))
                 del F2_large
@@ -6511,7 +6520,9 @@ class flameTimewarpML(flameMenuApp):
 
                 warped_img0 = warp(x[:, :3], F3_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
-                
+
+                info_text = self.progress.ui.info_label.text()
+                self.progress.info(f'{info_text} - flow iteration 4 of 4')
                 
                 flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3_large), 1))
                 del F3_large
@@ -6546,6 +6557,9 @@ class flameTimewarpML(flameMenuApp):
                         align_corners=False, 
                         recompute_scale_factor=False) * (1 / flow_scale)
                     F4 = F4[:, :, :org_h//2, :org_w//2]
+
+                info_text = self.progress.ui.info_label.text()
+                self.progress.info(info_text)
 
                 # return F4, [F1, F2, F3, F4]
                 return F4, [F4, F4, F4, F4]
