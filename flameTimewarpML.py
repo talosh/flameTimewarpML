@@ -6233,11 +6233,13 @@ class flameTimewarpML(flameMenuApp):
         import numpy as np
 
         if sys.platform == 'darwin':
-            device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+            self.torch_device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
         else:
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            self.torch_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if self.modes[self.current_mode].startswith('CPU'):
-            device = torch.device('cpu')
+            self.torch_device = torch.device('cpu')
+
+        device = self.torch_device
 
         img0 = img0.to(device)
         img1 = img1.to(device)
