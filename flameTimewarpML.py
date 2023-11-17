@@ -6413,7 +6413,7 @@ class flameTimewarpML(flameMenuApp):
                 raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor= 1 /4, mode="bilinear", align_corners=False)
                 raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor= 1/ 4, mode="bilinear", align_corners=False)
 
-                current_device = img0.device
+                current_device = torch.device(img0.device)
                 try:
                     self.progress.info(f'{info_text} - pre-building forward flow')
                     raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0, raft_img1) / 2)
