@@ -6229,9 +6229,10 @@ class flameTimewarpML(flameMenuApp):
 
         if sys.platform == 'darwin':
             device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-            # device = torch.device('cpu')
         else:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if self.modes[self.current_mode].startswith('CPU'):
+            device = torch.device('cpu')
 
         torch.set_printoptions(profile="full")
         torch.set_grad_enabled(False)
