@@ -8958,7 +8958,7 @@ class flameTimewarpML(flameMenuApp):
                     small: bool = True,
                     scale_factor: int = 4,
                     pretrained: str = None, 
-                    device: torch.device('cpu')
+                    device = torch.device('cpu')
             ):
                 super().__init__()
                 self.scale_factor = scale_factor
