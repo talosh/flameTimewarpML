@@ -6408,7 +6408,7 @@ class flameTimewarpML(flameMenuApp):
                 info_text = self.progress.ui.info_label.text()
                 self.progress.info(f'{info_text} - flow iteration 1 of 4')
 
-                '''
+                # '''
                 raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
                 raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
                 raft_flow_f = self.progress.parent_app.raft(raft_img1, raft_img0) / 4
@@ -6439,13 +6439,13 @@ class flameTimewarpML(flameMenuApp):
                 flow0 = self.block0(torch.cat((warped_img0, warped_img1), 1))
                 F1 = FR + flow0
                 del flow0
-                '''
-
                 # '''
+
+                '''
                 flow0 = self.block0(x)
                 F1 = flow0
                 del flow0
-                # '''
+                '''
 
                 F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 display_flow = F.interpolate(F1_large[:, :, :h, :w], scale_factor=0.25, mode='nearest')
