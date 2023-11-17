@@ -3230,8 +3230,8 @@ class flameTimewarpML(flameMenuApp):
 
         self.modes = {
             1: 'Normal',
-            2: 'Fater'
-            3: 'Normal CPU'
+            2: 'Fater',
+            3: 'Normal CPU',
             4: 'Faster CPU'
         }
 
