@@ -1325,8 +1325,8 @@ class flameTimewarpML(flameMenuApp):
                 self.mode_selector = QtWidgets.QPushButton(mode_selector_text)
                 self.mode_selector.setContentsMargins(10, 4, 10, 4)
                 self.set_selector_button_style(self.mode_selector)
-                self.mode_selector.setMinimumSize(QtCore.QSize(80, 28))
-                self.mode_selector.setMaximumSize(QtCore.QSize(80, 28))
+                self.mode_selector.setMinimumSize(QtCore.QSize(120, 28))
+                # self.mode_selector.setMaximumSize(QtCore.QSize(120, 28))
                 bottom_layout.addWidget(self.mode_selector, alignment=QtCore.Qt.AlignRight)
                 bottom_layout.addSpacing(4)
 
