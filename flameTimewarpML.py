@@ -1431,6 +1431,7 @@ class flameTimewarpML(flameMenuApp):
 
             # set up mode menu
             mode_menu = QtWidgets.QMenu(self)
+            print (sorted(self.parent_app.modes.keys()))
             for mode_number in sorted(self.parent_app.modes.keys(), reverse=True):
                 code = self.parent_app.modes.get(mode_number, 1)
                 action = mode_menu.addAction(code)
@@ -3230,7 +3231,7 @@ class flameTimewarpML(flameMenuApp):
 
         self.modes = {
             1: 'Normal',
-            2: 'Fater',
+            2: 'Faster',
             3: 'Normal CPU',
             4: 'Faster CPU'
         }
