@@ -6671,7 +6671,7 @@ class flameTimewarpML(flameMenuApp):
             def eval(self):
                 self.flownet.eval()
 
-            def device(self. model_device):
+            def device(self, model_device):
                 self.flownet.to(model_device)
 
             def load_model(self, path):
