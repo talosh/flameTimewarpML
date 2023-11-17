@@ -6422,6 +6422,7 @@ class flameTimewarpML(flameMenuApp):
                     cpu_device = torch.device('cpu')
                     raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0.to(cpu_device), raft_img1.to(cpu_device)) / 2)
                 raft_flow_f = raft_flow_f.to(current_device)
+                
 
                 self.progress.update_optical_flow(
                     raft_flow_f[:, :, :h//2, :w//2].cpu().detach().numpy(),
@@ -6429,9 +6430,16 @@ class flameTimewarpML(flameMenuApp):
                     text = f'Flow FWD'
                     )
 
-                self.progress.info(f'{info_text} - pre-building backward flow')
+                current_device = torch.device(img0.device)
+                try:
+                    self.progress.info(f'{info_text} - pre-building backward flow')
+                    raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1, raft_img0) / 2)
+                except:
+                    self.progress.info(f'{info_text} - pre-building forward flow - CPU (slow)')
+                    cpu_device = torch.device('cpu')
+                    raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1.to(cpu_device), raft_img0.to(cpu_device)) / 2)
+                raft_flow_b = raft_flow_b.to(current_device)
 
-                raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1, raft_img0) / 2)
                 self.progress.update_optical_flow(
                     raft_flow_b[:, :, :h//2, :w//2].cpu().detach().numpy(),
                     self.progress.ui.flow3_label,
@@ -6439,7 +6447,7 @@ class flameTimewarpML(flameMenuApp):
                     )
 
                 FR = torch.cat((raft_flow_f, raft_flow_b), 1)
-                FR_large = F.interpolate(FR, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+                FR_large = F.interpolate(FR, scale_factor=4, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 4.0
 
                 warped_img0 = warp(x[:, :3], FR_large[:, :2])
                 warped_img1 = warp(x[:, 3:], FR_large[:, 2:4])
