@@ -3114,7 +3114,7 @@ class flameTimewarpML(flameMenuApp):
             if sys.platform == 'darwin':
                 self.torch_device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
             else:
-                if torch.cuda.is_avaliable():
+                if torch.cuda.is_available():
                     print ('emptying CUDA cahce')
                     torch.cuda.empty_cache()
                 # self.torch_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
