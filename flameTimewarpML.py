@@ -2047,7 +2047,11 @@ class flameTimewarpML(flameMenuApp):
                 elif self.parent_app.current_mode == 3:
                     result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
                 elif self.parent_app.current_mode == 4:
+                    result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
+                elif self.parent_app.current_mode == 5:
                     result_image_data = self.parent_app.flownet47(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
+                elif self.parent_app.current_mode == 6:
+                    result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
 
                 if result_image_data is None:
                     del incoming_image_data
@@ -3114,6 +3118,7 @@ class flameTimewarpML(flameMenuApp):
 
             self.stop_frame_rendering_thread()
 
+            '''
             def print_all_tensors():
                 print ('printing all tensors')
                 for obj in gc.get_objects():
@@ -3123,15 +3128,16 @@ class flameTimewarpML(flameMenuApp):
                     except:
                         pass
 
+            print_all_tensors()
+            '''
+
             if sys.platform == 'darwin':
                 self.torch_device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
             else:
                 if torch.cuda.is_available():
-                    print ('emptying CUDA cahce')
                     torch.cuda.empty_cache()
                 # self.torch_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-            print_all_tensors()
 
             while not self.frames_to_save_queue.empty():
                 qsize = self.frames_to_save_queue.qsize()
@@ -3263,8 +3269,10 @@ class flameTimewarpML(flameMenuApp):
         self.modes = {
             1: 'Normal',
             2: 'Faster',
-            3: 'CPU - Normal',
-            4: 'CPU - Faster'
+            3: 'Slower'
+            4: 'CPU - Normal',
+            5: 'CPU - Faster'
+            6: 'CPU - Slower'
         }
 
         self.current_mode = self.prefs.get('current_mode', 1)
@@ -6430,68 +6438,65 @@ class flameTimewarpML(flameMenuApp):
 
                 info_text = self.progress.ui.info_label.text()
 
-                '''
-                raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor= 1 / 2, mode="bilinear", align_corners=False)
-                raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor= 1 / 2, mode="bilinear", align_corners=False)
+                if (self.progress.parent_app.current_mode == 3) or (self.progress.parent_app.current_mode == 6):
+                    raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor= 1 / 2, mode="bilinear", align_corners=False)
+                    raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor= 1 / 2, mode="bilinear", align_corners=False)
 
-                current_device = torch.device(img0.device)
-                try:
-                    self.progress.info(f'{info_text} - pre-building forward flow')
-                    raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0, raft_img1) / 2)
-                except Exception as e:
-                    print (e)
-                    self.progress.info(f'{info_text} - pre-building forward flow - CPU (slow - low GPU memory?)')
-                    cpu_device = torch.device('cpu')
-                    raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0.to(cpu_device), raft_img1.to(cpu_device)) / 4)
-                raft_flow_f = raft_flow_f.to(current_device)
-                
+                    current_device = torch.device(img0.device)
+                    try:
+                        self.progress.info(f'{info_text} - pre-building forward flow')
+                        raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0, raft_img1) / 2)
+                    except Exception as e:
+                        print (e)
+                        self.progress.info(f'{info_text} - pre-building forward flow - CPU (slow - low GPU memory?)')
+                        cpu_device = torch.device('cpu')
+                        raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0.to(cpu_device), raft_img1.to(cpu_device)) / 4)
+                    raft_flow_f = raft_flow_f.to(current_device)
+                    
 
-                self.progress.update_optical_flow(
-                    raft_flow_f[:, :, :h//2, :w//2].cpu().detach().numpy(),
-                    self.progress.ui.flow2_label,
-                    text = f'Flow FWD'
-                    )
+                    self.progress.update_optical_flow(
+                        raft_flow_f[:, :, :h//2, :w//2].cpu().detach().numpy(),
+                        self.progress.ui.flow2_label,
+                        text = f'Flow FWD'
+                        )
 
-                current_device = torch.device(img0.device)
-                try:
-                    self.progress.info(f'{info_text} - pre-building backward flow')
-                    raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1, raft_img0) / 2)
-                except Exception as e:
-                    print (e)
-                    self.progress.info(f'{info_text} - pre-building backward flow - CPU (slow - low GPU memory?)')
-                    cpu_device = torch.device('cpu')
-                    raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1.to(cpu_device), raft_img0.to(cpu_device)) / 4)
-                raft_flow_b = raft_flow_b.to(current_device)
+                    current_device = torch.device(img0.device)
+                    try:
+                        self.progress.info(f'{info_text} - pre-building backward flow')
+                        raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1, raft_img0) / 2)
+                    except Exception as e:
+                        print (e)
+                        self.progress.info(f'{info_text} - pre-building backward flow - CPU (slow - low GPU memory?)')
+                        cpu_device = torch.device('cpu')
+                        raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1.to(cpu_device), raft_img0.to(cpu_device)) / 4)
+                    raft_flow_b = raft_flow_b.to(current_device)
 
-                self.progress.update_optical_flow(
-                    raft_flow_b[:, :, :h//2, :w//2].cpu().detach().numpy(),
-                    self.progress.ui.flow3_label,
-                    text = f'Flow BKW'
-                    )
+                    self.progress.update_optical_flow(
+                        raft_flow_b[:, :, :h//2, :w//2].cpu().detach().numpy(),
+                        self.progress.ui.flow3_label,
+                        text = f'Flow BKW'
+                        )
 
-                FR = torch.cat((raft_flow_f, raft_flow_b), 1)
-                FR_large = F.interpolate(FR, scale_factor=2, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
+                    FR = torch.cat((raft_flow_f, raft_flow_b), 1)
+                    FR_large = F.interpolate(FR, scale_factor=2, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
 
-                warped_img0 = warp(x[:, :3], FR_large[:, :2])
-                warped_img1 = warp(x[:, 3:], FR_large[:, 2:4])
+                    warped_img0 = warp(x[:, :3], FR_large[:, :2])
+                    warped_img1 = warp(x[:, 3:], FR_large[:, 2:4])
 
-                del raft_img0
-                del raft_img1
-                del raft_flow_f
-                del raft_flow_b
+                    del raft_img0
+                    del raft_img1
+                    del raft_flow_f
+                    del raft_flow_b
 
-                self.progress.info(f'{info_text} - flow iteration 1 of 4')
-                flow0 = self.block0(torch.cat((warped_img0, warped_img1), 1))
-                F1 = FR + flow0
-                del flow0
-                '''
-
-                # '''
-                self.progress.info(f'{info_text} - flow iteration 1 of 4')
-                flow0 = self.block0(x)
-                F1 = flow0
-                del flow0
-                # '''
+                    self.progress.info(f'{info_text} - flow iteration 1 of 4')
+                    flow0 = self.block0(torch.cat((warped_img0, warped_img1), 1))
+                    F1 = FR + flow0
+                    del flow0
+                else:
+                    self.progress.info(f'{info_text} - flow iteration 1 of 4')
+                    flow0 = self.block0(x)
+                    F1 = flow0
+                    del flow0
 
                 F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 display_flow = F.interpolate(F1_large[:, :, :h, :w], scale_factor=0.25, mode='nearest')
@@ -8539,6 +8544,502 @@ class flameTimewarpML(flameMenuApp):
         del context_encoder
         del feature_encoder
 
+        print (f'raft flow shape: {flow.shape}')
+        return flow
+
+    def raft_unofficial(self, img0, img1):
+        from collections import OrderedDict
+
+        import torch
+        import torch.nn as nn
+        import torch.nn.functional as F
+
+        class FlowHead(nn.Module):
+            def __init__(self, input_dim=128, hidden_dim=256):
+                super().__init__()
+                self.conv1 = nn.Conv2d(input_dim, hidden_dim, 3, padding=1)
+                self.conv2 = nn.Conv2d(hidden_dim, 2, 3, padding=1)
+                self.relu = nn.ReLU()
+
+            def forward(self, x):
+                return self.conv2(self.relu(self.conv1(x)))
+
+        class ConvGRU(nn.Module):
+            def __init__(self, hidden_dim=128, input_dim=192+128):
+                super().__init__()
+                self.convz = nn.Conv2d(hidden_dim+input_dim, hidden_dim, 3, padding=1)
+                self.convr = nn.Conv2d(hidden_dim+input_dim, hidden_dim, 3, padding=1)
+                self.convq = nn.Conv2d(hidden_dim+input_dim, hidden_dim, 3, padding=1)
+
+            def forward(self, h, x):
+                hx = torch.cat([h, x], dim=1)
+
+                z = torch.sigmoid(self.convz(hx))
+                r = torch.sigmoid(self.convr(hx))
+                q = torch.tanh(self.convq(torch.cat([r*h, x], dim=1)))
+
+                h = (1-z) * h + z * q
+                return h
+
+        class SepConvGRU(nn.Module):
+            def __init__(self, hidden_dim=128, input_dim=192+128):
+                super().__init__()
+                self.convz1 = nn.Conv2d(hidden_dim+input_dim, hidden_dim, (1,5), padding=(0,2))
+                self.convr1 = nn.Conv2d(hidden_dim+input_dim, hidden_dim, (1,5), padding=(0,2))
+                self.convq1 = nn.Conv2d(hidden_dim+input_dim, hidden_dim, (1,5), padding=(0,2))
+
+                self.convz2 = nn.Conv2d(hidden_dim+input_dim, hidden_dim, (5,1), padding=(2,0))
+                self.convr2 = nn.Conv2d(hidden_dim+input_dim, hidden_dim, (5,1), padding=(2,0))
+                self.convq2 = nn.Conv2d(hidden_dim+input_dim, hidden_dim, (5,1), padding=(2,0))
+
+
+            def forward(self, h, x):
+                # horizontal
+                hx = torch.cat([h, x], dim=1)
+                z = torch.sigmoid(self.convz1(hx))
+                r = torch.sigmoid(self.convr1(hx))
+                q = torch.tanh(self.convq1(torch.cat([r*h, x], dim=1)))        
+                h = (1-z) * h + z * q
+
+                # vertical
+                hx = torch.cat([h, x], dim=1)
+                z = torch.sigmoid(self.convz2(hx))
+                r = torch.sigmoid(self.convr2(hx))
+                q = torch.tanh(self.convq2(torch.cat([r*h, x], dim=1)))       
+                h = (1-z) * h + z * q
+
+                return h
+
+        class SmallMotionEncoder(nn.Module):
+            def __init__(self, corr_levels, corr_radius):
+                super().__init__()
+                cor_planes = corr_levels * (2*corr_radius + 1)**2
+                self.convc1 = nn.Conv2d(cor_planes, 96, 1, padding=0)
+                self.convf1 = nn.Conv2d(2, 64, 7, padding=3)
+                self.convf2 = nn.Conv2d(64, 32, 3, padding=1)
+                self.conv = nn.Conv2d(128, 80, 3, padding=1)
+
+            def forward(self, flow, corr):
+                cor = F.relu(self.convc1(corr))
+                flo = F.relu(self.convf1(flow))
+                flo = F.relu(self.convf2(flo))
+                cor_flo = torch.cat([cor, flo], dim=1)
+                out = F.relu(self.conv(cor_flo))
+                return torch.cat([out, flow], dim=1)
+
+        class BasicMotionEncoder(nn.Module):
+            def __init__(self, corr_levels, corr_radius):
+                super().__init__()
+                cor_planes = corr_levels * (2*corr_radius + 1)**2
+                self.convc1 = nn.Conv2d(cor_planes, 256, 1, padding=0)
+                self.convc2 = nn.Conv2d(256, 192, 3, padding=1)
+                self.convf1 = nn.Conv2d(2, 128, 7, padding=3)
+                self.convf2 = nn.Conv2d(128, 64, 3, padding=1)
+                self.conv = nn.Conv2d(64+192, 128-2, 3, padding=1)
+
+            def forward(self, flow, corr):
+                cor = F.relu(self.convc1(corr))
+                cor = F.relu(self.convc2(cor))
+                flo = F.relu(self.convf1(flow))
+                flo = F.relu(self.convf2(flo))
+
+                cor_flo = torch.cat([cor, flo], dim=1)
+                out = F.relu(self.conv(cor_flo))
+                return torch.cat([out, flow], dim=1)
+
+        class SmallUpdateBlock(nn.Module):
+            def __init__(self, corr_levels, corr_radius, hidden_dim=96):
+                super().__init__()
+                self.encoder = SmallMotionEncoder(corr_levels, corr_radius)
+                self.gru = ConvGRU(hidden_dim=hidden_dim, input_dim=82+64)
+                self.flow_head = FlowHead(hidden_dim, hidden_dim=128)
+
+            def forward(self, net, inp, corr, flow):
+                motion_features = self.encoder(flow, corr)
+                inp = torch.cat([inp, motion_features], dim=1)
+                net = self.gru(net, inp)
+                delta_flow = self.flow_head(net)
+
+                return net, None, delta_flow
+
+        class BasicUpdateBlock(nn.Module):
+            def __init__(self, corr_levels, corr_radius, hidden_dim=128):
+                super().__init__()
+                self.encoder = BasicMotionEncoder(corr_levels, corr_radius)
+                self.gru = SepConvGRU(hidden_dim=hidden_dim, input_dim=128+hidden_dim)
+                self.flow_head = FlowHead(hidden_dim, hidden_dim=256)
+
+                self.mask = nn.Sequential(
+                    nn.Conv2d(128, 256, 3, padding=1),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(256, 64*9, 1, padding=0))
+
+            def forward(self, net, inp, corr, flow):
+                motion_features = self.encoder(flow, corr)
+                inp = torch.cat([inp, motion_features], dim=1)
+
+                net = self.gru(net, inp)
+                delta_flow = self.flow_head(net)
+
+                # scale mask to balence gradients
+                mask = .25 * self.mask(net)
+                return net, mask, delta_flow
+
+        class ResidualBlock(nn.Module):
+            def __init__(self, in_planes, planes, norm_fn='instance', stride=1):
+                super().__init__()
+        
+                self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, padding=1, stride=stride)
+                self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, padding=1)
+                self.relu = nn.ReLU()
+
+                if norm_fn == 'batch':
+                    self.norm1 = nn.BatchNorm2d(planes)
+                    self.norm2 = nn.BatchNorm2d(planes)
+                    if not stride == 1:
+                        self.norm3 = nn.BatchNorm2d(planes)
+                
+                elif norm_fn == 'instance':
+                    self.norm1 = nn.InstanceNorm2d(planes)
+                    self.norm2 = nn.InstanceNorm2d(planes)
+                    if not stride == 1:
+                        self.norm3 = nn.InstanceNorm2d(planes)
+
+                if stride == 1:
+                    self.downsample = None
+                
+                else:    
+                    self.downsample = nn.Sequential(
+                        nn.Conv2d(in_planes, planes, kernel_size=1, stride=stride), self.norm3)
+
+
+            def forward(self, x):
+                y = x
+                y = self.relu(self.norm1(self.conv1(y)))
+                y = self.relu(self.norm2(self.conv2(y)))
+
+                if self.downsample is not None:
+                    x = self.downsample(x)
+
+                return self.relu(x+y)
+
+        class BottleneckBlock(nn.Module):
+            def __init__(self, in_planes, planes, norm_fn='instance', stride=1):
+                super().__init__()
+        
+                self.conv1 = nn.Conv2d(in_planes, planes//4, kernel_size=1, padding=0)
+                self.conv2 = nn.Conv2d(planes//4, planes//4, kernel_size=3, padding=1, stride=stride)
+                self.conv3 = nn.Conv2d(planes//4, planes, kernel_size=1, padding=0)
+                self.relu = nn.ReLU(inplace=True)
+                
+                if norm_fn == 'instance':
+                    self.norm1 = nn.InstanceNorm2d(planes//4)
+                    self.norm2 = nn.InstanceNorm2d(planes//4)
+                    self.norm3 = nn.InstanceNorm2d(planes)
+                    if not stride == 1:
+                        self.norm4 = nn.InstanceNorm2d(planes)
+
+                elif norm_fn == 'none':
+                    self.norm1 = nn.Sequential()
+                    self.norm2 = nn.Sequential()
+                    self.norm3 = nn.Sequential()
+                    if not stride == 1:
+                        self.norm4 = nn.Sequential()
+
+                if stride == 1:
+                    self.downsample = None
+                
+                else:    
+                    self.downsample = nn.Sequential(
+                        nn.Conv2d(in_planes, planes, kernel_size=1, stride=stride), self.norm4)
+
+
+            def forward(self, x):
+                y = x
+                y = self.relu(self.norm1(self.conv1(y)))
+                y = self.relu(self.norm2(self.conv2(y)))
+                y = self.relu(self.norm3(self.conv3(y)))
+
+                if self.downsample is not None:
+                    x = self.downsample(x)
+
+                return self.relu(x+y)
+
+        class BasicEncoder(nn.Module):
+            def __init__(self, output_dim=128, norm_fn='batch'):
+                super().__init__()
+                self.norm_fn = norm_fn
+                    
+                if self.norm_fn == 'batch':
+                    self.norm1 = nn.BatchNorm2d(64)
+
+                elif self.norm_fn == 'instance':
+                    self.norm1 = nn.InstanceNorm2d(64)
+
+                self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3)
+                self.relu1 = nn.ReLU(inplace=True)
+
+                self.in_planes = 64
+                self.layer1 = self._make_layer(64,  stride=1)
+                self.layer2 = self._make_layer(96, stride=2)
+                self.layer3 = self._make_layer(128, stride=2)
+
+                # output convolution
+                self.conv2 = nn.Conv2d(128, output_dim, kernel_size=1)
+
+                for m in self.modules():
+                    if isinstance(m, nn.Conv2d):
+                        nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                    elif isinstance(m, (nn.BatchNorm2d, nn.InstanceNorm2d, nn.GroupNorm)):
+                        if m.weight is not None:
+                            nn.init.constant_(m.weight, 1)
+                        if m.bias is not None:
+                            nn.init.constant_(m.bias, 0)
+
+            def _make_layer(self, dim, stride=1):
+                layer1 = ResidualBlock(self.in_planes, dim, self.norm_fn, stride=stride)
+                layer2 = ResidualBlock(dim, dim, self.norm_fn, stride=1)
+                layers = (layer1, layer2)
+                
+                self.in_planes = dim
+                return nn.Sequential(*layers)
+
+
+            def forward(self, x):
+
+                # if input is list, combine batch dimension
+                is_list = isinstance(x, tuple) or isinstance(x, list)
+                if is_list:
+                    batch_dim = x[0].shape[0]
+                    x = torch.cat(x, dim=0)
+
+                x = self.conv1(x)
+                x = self.norm1(x)
+                x = self.relu1(x)
+
+                x = self.layer1(x)
+                x = self.layer2(x)
+                x = self.layer3(x)
+
+                x = self.conv2(x)
+
+                if is_list:
+                    x = torch.split(x, [batch_dim, batch_dim], dim=0)
+
+                return x
+
+        class SmallEncoder(nn.Module):
+            def __init__(self, output_dim=128, norm_fn='batch'):
+                super().__init__()
+                self.norm_fn = norm_fn
+
+                if self.norm_fn == 'instance':
+                    self.norm1 = nn.InstanceNorm2d(32)
+
+                elif self.norm_fn == 'none':
+                    self.norm1 = nn.Sequential()
+
+                self.conv1 = nn.Conv2d(3, 32, kernel_size=7, stride=2, padding=3)
+                self.relu1 = nn.ReLU(inplace=True)
+
+                self.in_planes = 32
+                self.layer1 = self._make_layer(32,  stride=1)
+                self.layer2 = self._make_layer(64, stride=2)
+                self.layer3 = self._make_layer(96, stride=2)
+                
+                self.conv2 = nn.Conv2d(96, output_dim, kernel_size=1)
+
+                for m in self.modules():
+                    if isinstance(m, nn.Conv2d):
+                        nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                    elif isinstance(m, (nn.BatchNorm2d, nn.InstanceNorm2d, nn.GroupNorm)):
+                        if m.weight is not None:
+                            nn.init.constant_(m.weight, 1)
+                        if m.bias is not None:
+                            nn.init.constant_(m.bias, 0)
+
+            def _make_layer(self, dim, stride=1):
+                layer1 = BottleneckBlock(self.in_planes, dim, self.norm_fn, stride=stride)
+                layer2 = BottleneckBlock(dim, dim, self.norm_fn, stride=1)
+                layers = (layer1, layer2)
+            
+                self.in_planes = dim
+                return nn.Sequential(*layers)
+
+
+            def forward(self, x):
+
+                # if input is list, combine batch dimension
+                is_list = isinstance(x, tuple) or isinstance(x, list)
+                if is_list:
+                    batch_dim = x[0].shape[0]
+                    x = torch.cat(x, dim=0)
+
+                x = self.conv1(x)
+                x = self.norm1(x)
+                x = self.relu1(x)
+
+                x = self.layer1(x)
+                x = self.layer2(x)
+                x = self.layer3(x)
+                x = self.conv2(x)
+
+                if is_list:
+                    x = torch.split(x, [batch_dim, batch_dim], dim=0)
+
+                return x
+
+        def bilinear_sampler(img, coords, mask=False):
+            """ Wrapper for grid_sample, uses pixel coordinates """
+            H, W = img.shape[-2:]
+            xgrid, ygrid = coords.split([1,1], dim=-1)
+            xgrid = 2*xgrid/(W-1) - 1
+            ygrid = 2*ygrid/(H-1) - 1
+
+            grid = torch.cat([xgrid, ygrid], dim=-1)
+            img = F.grid_sample(img, grid, align_corners=True)
+
+            if mask:
+                mask = (xgrid > -1) & (ygrid > -1) & (xgrid < 1) & (ygrid < 1)
+                return img, mask.float()
+
+            return img
+
+        def coords_grid(batch, ht, wd, device):
+            coords = torch.meshgrid(torch.arange(ht, device=device), torch.arange(wd, device=device))
+            coords = torch.stack(coords[::-1], dim=0).float()
+            return coords[None].repeat(batch, 1, 1, 1)
+
+        def upflow(flow, scale_factor=2, mode='bilinear'):
+            return  scale_factor * F.interpolate(flow, scale_factor=scale_factor, mode=mode, align_corners=True)
+
+        def correlation(coords, fmap1, fmap2, num_levels=4, radius=4):
+            corr_pyramid = []
+            batch, dim, ht, wd = fmap1.shape
+            fmap1 = fmap1.view(batch, dim, ht * wd)
+            fmap2 = fmap2.view(batch, dim, ht * wd)
+
+            corr = torch.matmul(fmap1.transpose(1, 2), fmap2)
+            corr = corr.view(batch, ht, wd, 1, ht, wd)
+            corr = corr / torch.sqrt(torch.tensor(dim).float())
+
+            batch, h1, w1, dim, h2, w2 = corr.shape
+            corr = corr.reshape(batch * h1 * w1, dim, h2, w2)
+
+            corr_pyramid.append(corr)
+            for i in range(num_levels - 1):
+                corr = F.avg_pool2d(corr, 2, stride=2)
+                corr_pyramid.append(corr)
+
+            coords = coords.permute(0, 2, 3, 1)
+            batch, h1, w1, _ = coords.shape
+
+            out_pyramid = []
+            for i in range(num_levels):
+                corr = corr_pyramid[i]
+                dx = torch.linspace(-radius, radius, 2 * radius + 1, device=coords.device)
+                dy = torch.linspace(-radius, radius, 2 * radius + 1, device=coords.device)
+                delta = torch.stack(torch.meshgrid(dy, dx), axis=-1)
+
+                centroid_lvl = coords.reshape(batch * h1 * w1, 1, 1, 2) / 2 ** i
+                delta_lvl = delta.view(1, 2 * radius + 1, 2 * radius + 1, 2)
+                coords_lvl = centroid_lvl + delta_lvl
+
+                corr = bilinear_sampler(corr, coords_lvl)
+                corr = corr.view(batch, h1, w1, -1)
+                out_pyramid.append(corr)
+
+            out = torch.cat(out_pyramid, dim=-1)
+            return out.permute(0, 3, 1, 2).contiguous().float()
+
+        class RAFT(nn.Module):
+            def __init__(
+                    self,
+                    small: bool = True,
+                    scale_factor: int = 4,
+                    pretrained: str = None, 
+                    device: torch.device('cpu')
+            ):
+                super().__init__()
+                self.scale_factor = scale_factor
+
+                if small:
+                    self.hidden_dim = 96
+                    self.context_dim = 64
+                    self.corr_levels = 4
+                    self.corr_radius = 3
+                    self.fnet = SmallEncoder(output_dim=128, norm_fn='instance')
+                    self.cnet = SmallEncoder(output_dim=self.hidden_dim+self.context_dim, norm_fn='none')
+                    self.update_block = SmallUpdateBlock(self.corr_levels, self.corr_radius, hidden_dim=self.hidden_dim)
+
+                    if pretrained:
+                        state_dict = torch.load('./weights/raft-small.pth')
+                        new_dict = OrderedDict([(k.partition('module.')[-1], v) for k, v in state_dict.items()])
+                        self.load_state_dict(new_dict, strict=True)
+                
+                else:
+                    self.hidden_dim = 128
+                    self.context_dim = 128
+                    self.corr_levels = 4
+                    self.corr_radius = 4
+                    self.fnet = BasicEncoder(output_dim=256, norm_fn='instance')
+                    self.cnet = BasicEncoder(output_dim=self.hidden_dim+self.context_dim, norm_fn='batch')
+                    self.update_block = BasicUpdateBlock(self.corr_levels, self.corr_radius, hidden_dim=self.hidden_dim)
+
+                    if pretrained:
+
+                        state_dict = torch.load(pretrained, map_location=device)
+                        new_dict = OrderedDict([(k.partition('module.')[-1], v) for k, v in state_dict.items()])
+                        self.load_state_dict(new_dict)
+
+            def freeze_bn(self):
+                for m in self.modules():
+                    if isinstance(m, nn.BatchNorm2d):
+                        m.eval()
+
+            @staticmethod
+            def initialize_flow(img):
+                N, C, H, W = img.shape
+                coords0 = coords_grid(N, H//8, W//8, device=img.device)
+                coords1 = coords_grid(N, H//8, W//8, device=img.device)
+
+                return coords0, coords1
+
+            def forward(self, image1, image2, iters=12):
+                fmap1, fmap2 = self.fnet([image1, image2])
+
+                cnet = self.cnet(image1)
+                net, inp = torch.split(cnet, [self.hidden_dim, self.context_dim], dim=1)
+                net = torch.tanh(net)
+                inp = torch.relu(inp)
+
+                coords0, coords1 = self.initialize_flow(image1)
+
+                for itr in range(iters):
+                    coords1 = coords1.detach()
+                    corr = correlation(coords1, fmap1, fmap2, self.corr_levels, self.corr_radius)
+
+                    flow = coords1 - coords0
+                    net, up_mask, delta_flow = self.update_block(net, inp, corr, flow)
+
+                    coords1 = coords1 + delta_flow
+
+                flow_up = upflow(coords1-coords0, scale_factor=self.scale_factor)
+                    
+                return flow_up
+
+        raft_trained_model_path = os.path.join(
+            self.trained_models_path,
+            'raft.model',
+            'raft_large_C_T_SKHT_V2-ff5fadd5.pth'
+        )
+
+        device = img0.device
+        model = RAFT(small=False, pretrained=raft_trained_model_path, device=device)
+        model.to(device)
+        model.eval()
+        flow = model(img0, img1, iters=4)
+        del model
         return flow
 
     def slowmo(self, selection):
