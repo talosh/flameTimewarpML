@@ -3204,6 +3204,9 @@ class flameTimewarpML(flameMenuApp):
             '''
 
     def __init__(self, framework):
+        
+        print ('TWML Init')
+
         flameMenuApp.__init__(self, framework)
 
         if not self.prefs.master.get(self.name):
