@@ -3110,6 +3110,17 @@ class flameTimewarpML(flameMenuApp):
         def close_application(self):
             import flame
             import torch
+            import gc
+
+            self.stop_frame_rendering_thread()
+
+            def print_all_tensors():
+                for obj in gc.get_objects():
+                    try:
+                        if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+                            print(type(obj), obj.size())
+                    except:
+                        pass
 
             if sys.platform == 'darwin':
                 self.torch_device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
@@ -3119,7 +3130,7 @@ class flameTimewarpML(flameMenuApp):
                     torch.cuda.empty_cache()
                 # self.torch_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-            self.stop_frame_rendering_thread()
+            print_all_tensors()
 
             while not self.frames_to_save_queue.empty():
                 qsize = self.frames_to_save_queue.qsize()
