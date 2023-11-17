@@ -1432,7 +1432,7 @@ class flameTimewarpML(flameMenuApp):
             # set up mode menu
             mode_menu = QtWidgets.QMenu(self)
             for mode_number in sorted(self.parent_app.modes.keys(), reverse=True):
-                code = self.parent_app.modes.get(mode_number, 1.0)
+                code = self.parent_app.modes.get(mode_number, 1)
                 action = mode_menu.addAction(code)
                 x = lambda chk=False, mode_number=mode_number: self.parent_app.select_mode(mode_number)
                 action.triggered[()].connect(x)
@@ -3234,6 +3234,9 @@ class flameTimewarpML(flameMenuApp):
             3: 'Normal CPU'
             4: 'Faster CPU'
         }
+
+        if not self.prefs.get('current_mode'):
+            print (f'no current mode')
 
         self.trained_models_path = os.path.join(
             self.framework.bundle_folder,
