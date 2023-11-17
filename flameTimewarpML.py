@@ -3115,6 +3115,7 @@ class flameTimewarpML(flameMenuApp):
             self.stop_frame_rendering_thread()
 
             def print_all_tensors():
+                print ('printing all tensors')
                 for obj in gc.get_objects():
                     try:
                         if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
