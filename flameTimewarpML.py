@@ -4610,10 +4610,17 @@ class flameTimewarpML(flameMenuApp):
         self.framework.save_prefs()
 
     def select_mode(self, mode_number):
-        print ('select mode')
-        print (mode_number)
-        self.prefs['current_mode'] = mode_number
+        self.current_mode = mode_number
+
+        self.progress.message_queue.put(
+                {'type': 'setText',
+                'widget': 'mode_selector',
+                'text': self.modes.get(mode_number, self.modes[1])}
+            )
+
+        self.prefs['current_mode'] = self.current_mode
         self.framework.save_prefs()
+
     
     def flownet_hzsho(self, img0, img1, ratio, model_path):
         import torch
