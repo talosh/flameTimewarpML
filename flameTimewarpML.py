@@ -9030,7 +9030,7 @@ class flameTimewarpML(flameMenuApp):
         raft_trained_model_path = os.path.join(
             self.trained_models_path,
             'raft.model',
-            'raft_large_C_T_SKHT_V2-ff5fadd5.pth'
+            'raft-sintel-unofficial.pth'
         )
 
         device = img0.device
