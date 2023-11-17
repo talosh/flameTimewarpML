@@ -6671,8 +6671,8 @@ class flameTimewarpML(flameMenuApp):
             def eval(self):
                 self.flownet.eval()
 
-            def device(self):
-                self.flownet.to(device)
+            def device(self. model_device):
+                self.flownet.to(model_device)
 
             def load_model(self, path):
                 def convert(param):
@@ -6686,6 +6686,7 @@ class flameTimewarpML(flameMenuApp):
                     convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
 
             def inference(self, img0, img1, UHD=False, flow_scale = 1):
+                print (f'Ifnet Model Inference img0 device: {img0.device} img1 device: {img1.device}' )
                 imgs = torch.cat((img0, img1), 1)
                 flow, _ = self.flownet(imgs, UHD, flow_scale)
                 return flow
@@ -6755,8 +6756,6 @@ class flameTimewarpML(flameMenuApp):
       
         img0_ratio = 0
         img1_ratio = 1
-
-        print (f'ratio: {ratio}')
         
         for current_pass in range(1, num_passes + 1):
             # current_pass = 0
@@ -6781,7 +6780,7 @@ class flameTimewarpML(flameMenuApp):
                     self.trained_models_path,
                     'v2.4.model'))
             ifnet_model.eval()
-            ifnet_model.device()
+            ifnet_model.device(device)
 
             info_text = self.progress.ui.info_label.text()
             info_text = info_text.split(' - pass')[0]
