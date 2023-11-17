@@ -6666,7 +6666,6 @@ class flameTimewarpML(flameMenuApp):
         class IFNetModel:
             def __init__(self, progress):
                 self.flownet = IFNet(progress)
-                self.device()
 
             def eval(self):
                 self.flownet.eval()
