@@ -2041,8 +2041,8 @@ class flameTimewarpML(flameMenuApp):
                 self.processEvents()
 
 
-                # result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
-                result_image_data = self.parent_app.flownet47(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
+                result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
+                # result_image_data = self.parent_app.flownet47(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
 
                 if result_image_data is None:
                     del incoming_image_data
