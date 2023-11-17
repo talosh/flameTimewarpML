@@ -4621,7 +4621,6 @@ class flameTimewarpML(flameMenuApp):
         self.prefs['current_mode'] = self.current_mode
         self.framework.save_prefs()
 
-    
     def flownet_hzsho(self, img0, img1, ratio, model_path):
         import torch
         import torch.nn as nn
