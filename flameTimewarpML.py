@@ -1319,8 +1319,8 @@ class flameTimewarpML(flameMenuApp):
                     bottom_layout.addSpacing(4)
 
                 # mode selector button
-                print (self.Progress.parent_app.current_mode)
-                print (self.progress.parent_app.modes)
+                print (Progress.parent_app.current_mode)
+                print (Progress.parent_app.modes)
                 self.mode_selector = QtWidgets.QPushButton('Normal')
                 self.mode_selector.setContentsMargins(10, 4, 10, 4)
                 self.set_selector_button_style(self.mode_selector)
