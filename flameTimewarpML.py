@@ -6405,6 +6405,9 @@ class flameTimewarpML(flameMenuApp):
                     padding = (0, new_pw - new_w, 0, new_ph - new_h)
                     x = F.pad(x, padding)
 
+                info_text = self.progress.ui.info_label.text()
+                self.progress.info(f'{info_text} - flow iteration 1 of 4')
+
                 '''
                 raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
                 raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor=0.5, mode="bilinear", align_corners=False)
@@ -6439,10 +6442,6 @@ class flameTimewarpML(flameMenuApp):
                 '''
 
                 # '''
-
-                info_text = self.progress.ui.info_label.text()
-                self.progress.info(f'{info_text} - flow iteration 1 of 4')
-
                 flow0 = self.block0(x)
                 F1 = flow0
                 del flow0
@@ -6842,10 +6841,15 @@ class flameTimewarpML(flameMenuApp):
             contextnet_model.eval()
             contextnet_model.device()
 
+            current_info_text = self.progress.ui.info_label.text()
+            self.progress.info(f'{current_info_text} - building contexts')
+
             c0, c1 = contextnet_model.get_contexts(img0, img1, flow)
 
             self.log_debug('del ContextNetModel')
             del (contextnet_model)
+
+            self.progress.info(current_info_text)
 
             if not self.progress.rendering:
                 return None
@@ -6869,6 +6873,9 @@ class flameTimewarpML(flameMenuApp):
                     'v2.4.model'))
             fusion_model.eval()
             fusion_model.device()
+
+            current_info_text = self.progress.ui.info_label.text()
+            self.progress.info(f'{current_info_text} - building ouput image')
 
             middle = fusion_model.predict(img0, img1, c00, c11, flow)
             
