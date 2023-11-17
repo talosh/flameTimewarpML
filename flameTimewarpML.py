@@ -6409,7 +6409,7 @@ class flameTimewarpML(flameMenuApp):
 
                 info_text = self.progress.ui.info_label.text()
 
-                # '''
+                '''
                 raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor= 1 / 2, mode="bilinear", align_corners=False)
                 raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor= 1 / 2, mode="bilinear", align_corners=False)
 
@@ -6419,7 +6419,7 @@ class flameTimewarpML(flameMenuApp):
                     raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0, raft_img1) / 2)
                 except Exception as e:
                     print (e)
-                    self.progress.info(f'{info_text} - pre-building forward flow - CPU (slow)')
+                    self.progress.info(f'{info_text} - pre-building forward flow - CPU (slow - low GPU memory?)')
                     cpu_device = torch.device('cpu')
                     raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0.to(cpu_device), raft_img1.to(cpu_device)) / 4)
                 raft_flow_f = raft_flow_f.to(current_device)
@@ -6437,7 +6437,7 @@ class flameTimewarpML(flameMenuApp):
                     raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1, raft_img0) / 2)
                 except Exception as e:
                     print (e)
-                    self.progress.info(f'{info_text} - pre-building forward flow - CPU (slow)')
+                    self.progress.info(f'{info_text} - pre-building backward flow - CPU (slow - low GPU memory?)')
                     cpu_device = torch.device('cpu')
                     raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1.to(cpu_device), raft_img0.to(cpu_device)) / 4)
                 raft_flow_b = raft_flow_b.to(current_device)
@@ -6463,13 +6463,14 @@ class flameTimewarpML(flameMenuApp):
                 flow0 = self.block0(torch.cat((warped_img0, warped_img1), 1))
                 F1 = FR + flow0
                 del flow0
-                # '''
-
                 '''
+
+                # '''
+                self.progress.info(f'{info_text} - flow iteration 1 of 4')
                 flow0 = self.block0(x)
                 F1 = flow0
                 del flow0
-                '''
+                # '''
 
                 F1_large = F.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 display_flow = F.interpolate(F1_large[:, :, :h, :w], scale_factor=0.25, mode='nearest')
