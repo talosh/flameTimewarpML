@@ -6882,6 +6882,8 @@ class flameTimewarpML(flameMenuApp):
             # img_text = self.progress.ui.info_label.text()
             # img_text = info_text.split(' - pass')[0]
 
+            self.progress.info(current_info_text)
+
             if num_passes > 1:
                 # display_middle = middle[0].cpu().detach().numpy().transpose(1, 2, 0)[:h, :w]
                 # display_middle = np.flip(display_middle, axis=2).copy()
