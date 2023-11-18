@@ -6380,6 +6380,8 @@ class flameTimewarpML(flameMenuApp):
                 for i in range(4):
                     if flow is None:
                         flow, mask = block[i](torch.cat((img0[:, :3], img1[:, :3], f0, f1, timestep), 1), None, scale=scale_list[i])
+                        self.empty_torch_cache()
+
                         if ensemble:
                             f_, m_ = block[i](torch.cat((img1[:, :3], img0[:, :3], f1, f0, 1-timestep), 1), None, scale=scale_list[i])
                             flow = (flow + torch.cat((f_[:, 2:4], f_[:, :2]), 1)) / 2
@@ -6390,6 +6392,8 @@ class flameTimewarpML(flameMenuApp):
                         wf0 = warp(f0, flow[:, :2])
                         wf1 = warp(f1, flow[:, 2:4])
                         fd, m0 = block[i](torch.cat((warped_img0[:, :3], warped_img1[:, :3], wf0, wf1, timestep, mask), 1), flow, scale=scale_list[i])
+                        self.empty_torch_cache()
+
                         if ensemble:
                             f_, m_ = block[i](torch.cat((warped_img1[:, :3], warped_img0[:, :3], wf1, wf0, 1-timestep, -mask), 1), torch.cat((flow[:, 2:4], flow[:, :2]), 1), scale=scale_list[i])
                             fd = (fd + torch.cat((f_[:, 2:4], f_[:, :2]), 1)) / 2
@@ -6399,6 +6403,10 @@ class flameTimewarpML(flameMenuApp):
                         else:
                             mask = m0
                         flow = flow + fd
+                        del fd
+                        del m0
+                        del wf0
+                        del wf1
                     
                     self.empty_torch_cache()
                     # mask_list.append(mask)
