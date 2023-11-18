@@ -6230,7 +6230,6 @@ class flameTimewarpML(flameMenuApp):
         return res_img
 
     def flownet412(self, img0, img1, ratio, model_path):
-        print ('flownet 412 called')
         import torch
         import torch.nn as nn
         import torch.nn.functional as F
@@ -6335,8 +6334,9 @@ class flameTimewarpML(flameMenuApp):
                 return flow, mask
                 
         class IFNet(nn.Module):
-            def __init__(self):
+            def __init__(self, progress):
                 super(IFNet, self).__init__()
+                self.progress = progress
                 self.block0 = IFBlock(7+16, c=192)
                 self.block1 = IFBlock(8+4+16, c=128)
                 self.block2 = IFBlock(8+4+16, c=96)
@@ -6353,7 +6353,7 @@ class flameTimewarpML(flameMenuApp):
                 # self.contextnet = Contextnet()
                 # self.unet = Unet()
 
-            def forward(self, x, timestep=0.5, scale_list=[8, 4, 2, 1], training=False, fastmode=True, ensemble=False):
+            def forward(self, x, timestep=0.5, scale_list=[8, 4, 2, 1], training=False, fastmode=True, ensemble=True):
                 if training == False:
                     channel = x.shape[1] // 2
                     img0 = x[:, :channel]
@@ -6416,7 +6416,6 @@ class flameTimewarpML(flameMenuApp):
                 if "module." in k
             }
 
-
         flownet = IFNet()
         flownet.to(device)
         flownet.eval()
@@ -6463,8 +6462,6 @@ class flameTimewarpML(flameMenuApp):
         img1 = img1.to(device)
 
         torch.set_grad_enabled(False)
-
-        print (f'flownet 24, device: {device}')
 
         # print ('start')
         # from torch import mps
@@ -6978,7 +6975,6 @@ class flameTimewarpML(flameMenuApp):
                     convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
 
             def inference(self, img0, img1, UHD=False, flow_scale = 1):
-                print (f'Ifnet Model Inference img0 device: {img0.device} img1 device: {img1.device}' )
                 imgs = torch.cat((img0, img1), 1)
                 flow, _ = self.flownet(imgs, UHD, flow_scale)
                 return flow
