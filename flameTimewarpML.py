@@ -6485,7 +6485,6 @@ class flameTimewarpML(flameMenuApp):
 
                     preview_img = ( warped_img0 + warped_img1 ) / 2
                     preview_img = F.interpolate(preview_img, scale_factor= 1 / flow_scale, mode="bilinear", align_corners=False)
-
                     self.progress.update_interface_image(
                         preview_img.squeeze(0).permute(1, 2, 0).flip(-1)[:h, :w],
                         self.progress.ui.image_res_label,
@@ -6527,6 +6526,14 @@ class flameTimewarpML(flameMenuApp):
                 warped_img0 = warp(x[:, :3], F1_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
 
+                preview_img = ( warped_img0 + warped_img1 ) / 2
+                preview_img = F.interpolate(preview_img, scale_factor= 1 / flow_scale, mode="bilinear", align_corners=False)
+                self.progress.update_interface_image(
+                    preview_img.squeeze(0).permute(1, 2, 0).flip(-1)[:h, :w],
+                    self.progress.ui.image_res_label,
+                    text = 'Frame: ' + str(self.progress.current_frame)
+                )
+
                 self.progress.info(f'{info_text} - flow iteration 2 of 4')
 
                 flow1 = self.block1(torch.cat((warped_img0, warped_img1, F1_large), 1))
@@ -6552,6 +6559,14 @@ class flameTimewarpML(flameMenuApp):
 
                 warped_img0 = warp(x[:, :3], F2_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F2_large[:, 2:4])
+
+                preview_img = ( warped_img0 + warped_img1 ) / 2
+                preview_img = F.interpolate(preview_img, scale_factor= 1 / flow_scale, mode="bilinear", align_corners=False)
+                self.progress.update_interface_image(
+                    preview_img.squeeze(0).permute(1, 2, 0).flip(-1)[:h, :w],
+                    self.progress.ui.image_res_label,
+                    text = 'Frame: ' + str(self.progress.current_frame)
+                )
 
                 self.progress.info(f'{info_text} - flow iteration 3 of 4')
 
@@ -6579,6 +6594,14 @@ class flameTimewarpML(flameMenuApp):
 
                 warped_img0 = warp(x[:, :3], F3_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
+
+                preview_img = ( warped_img0 + warped_img1 ) / 2
+                preview_img = F.interpolate(preview_img, scale_factor= 1 / flow_scale, mode="bilinear", align_corners=False)
+                self.progress.update_interface_image(
+                    preview_img.squeeze(0).permute(1, 2, 0).flip(-1)[:h, :w],
+                    self.progress.ui.image_res_label,
+                    text = 'Frame: ' + str(self.progress.current_frame)
+                )
 
                 self.progress.info(f'{info_text} - flow iteration 4 of 4')
                 
@@ -6616,10 +6639,12 @@ class flameTimewarpML(flameMenuApp):
                         recompute_scale_factor=False) * (1 / flow_scale)
                     F4 = F4[:, :, :org_h//2, :org_w//2]
 
+                
                 info_text = self.progress.ui.info_label.text()
                 self.progress.info(info_text)
 
                 # return F4, [F1, F2, F3, F4]
+                del preview_img
                 return F4, [F4, F4, F4, F4]
 
         class Conv2(nn.Module):
