@@ -6399,7 +6399,7 @@ class flameTimewarpML(flameMenuApp):
                 current_device = torch.device(img0.device)
                 try:
                     self.progress.info(f'{info_text} - pre-building backward flow')
-                    raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1, raft_img0))
+                    raft_flow_b = (self.progress.parent_app.raft(raft_img1, raft_img0))
                 except Exception as e:
                     print (e)
                     self.progress.info(f'{info_text} - pre-building backward flow - CPU (slow - low GPU memory?)')
