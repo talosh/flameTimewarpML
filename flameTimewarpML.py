@@ -6415,6 +6415,8 @@ class flameTimewarpML(flameMenuApp):
                 if "module." in k
             }
 
+        print (f'before flownet: {torch.cuda.memory_allocated(torch.cuda.current_device()) / 1024 ** 2}')
+
         flownet = IFNet(self.progress)
         flownet.to(device)
         flownet.eval()
