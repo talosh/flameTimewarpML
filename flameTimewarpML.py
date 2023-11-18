@@ -6436,6 +6436,8 @@ class flameTimewarpML(flameMenuApp):
                     padding = (0, new_pw - new_w, 0, new_ph - new_h)
                     x = F.pad(x, padding)
 
+                n, c, h, w = x.shape
+
                 info_text = self.progress.ui.info_label.text()
 
                 if (self.progress.parent_app.current_mode == 3) or (self.progress.parent_app.current_mode == 6):
@@ -6483,6 +6485,13 @@ class flameTimewarpML(flameMenuApp):
                     
                     warped_img0 = warp(x[:, :3], FR_large[:, :2])
                     warped_img1 = warp(x[:, 3:], FR_large[:, 2:4])
+
+                    result_img = ( warped_img0 + warped_img1 ) / 2
+                    self.update_interface_image(
+                        res_img.permute(1, 2, 0)[:h, :w],
+                        self.ui.image_res_label,
+                        text = 'Frame: ' + str(self.current_frame)
+                    )
 
                     del raft_img0
                     del raft_img1
