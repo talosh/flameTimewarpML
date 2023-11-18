@@ -6373,8 +6373,13 @@ class flameTimewarpML(flameMenuApp):
                 mask = None
                 block = [self.block0, self.block1, self.block2, self.block3]
 
+                raft_img0 = F.interpolate(img0 * 2 - 1, scale_factor = 1 / 4, mode="bilinear", align_corners=False)
+                raft_img1 = F.interpolate(img1 * 2 - 1, scale_factor = 1 / 4, mode="bilinear", align_corners=False)
+
                 # self.empty_torch_cache()
                 info_text = self.progress.ui.info_label.text()
+
+
 
                 for i in range(4):
                     self.progress.info(f'{info_text} - flow iteration {i + 1} of 4')
