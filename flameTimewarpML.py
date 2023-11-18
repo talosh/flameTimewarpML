@@ -6382,7 +6382,6 @@ class flameTimewarpML(flameMenuApp):
                 except Exception as e:
                     print (e)
                     self.progress.info(f'{info_text} - pre-building forward flow - CPU (slow - low GPU memory?)')
-                    cpu_device = torch.device('cpu')
                     raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0.cpu(), raft_img1.cpu()) / 4)
                 raft_flow_f = raft_flow_f.to(current_device)
                 
@@ -6399,7 +6398,6 @@ class flameTimewarpML(flameMenuApp):
                 except Exception as e:
                     print (e)
                     self.progress.info(f'{info_text} - pre-building backward flow - CPU (slow - low GPU memory?)')
-                    cpu_device = torch.device('cpu')
                     raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1.cpu(), raft_img0.cpu()) / 4)
                 raft_flow_b = raft_flow_b.to(current_device)
 
