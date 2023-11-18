@@ -6439,8 +6439,8 @@ class flameTimewarpML(flameMenuApp):
                 info_text = self.progress.ui.info_label.text()
 
                 if (self.progress.parent_app.current_mode == 3) or (self.progress.parent_app.current_mode == 6):
-                    raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor= 1 / 8 * flow_scale, mode="bilinear", align_corners=False)
-                    raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor= 1 / 8 * flow_scale, mode="bilinear", align_corners=False)
+                    raft_img0 = F.interpolate(x[:, :3]*2 - 1, scale_factor= 1 / ( 8 * flow_scale ) , mode="bilinear", align_corners=False)
+                    raft_img1 = F.interpolate(x[:, 3:]*2 - 1, scale_factor= 1 / ( 8 * flow_scale ), mode="bilinear", align_corners=False)
 
                     current_device = torch.device(img0.device)
                     try:
