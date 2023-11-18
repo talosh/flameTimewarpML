@@ -6360,6 +6360,7 @@ class flameTimewarpML(flameMenuApp):
             def forward(self, img0, img1, timestep=0.5, scale_list=[8, 4, 2, 1], training=False, fastmode=True, ensemble=True):
                 info_text = self.progress.ui.info_label.text()
 
+                ratio = timestep
                 if not torch.is_tensor(timestep):
                     timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 else:
@@ -6409,8 +6410,8 @@ class flameTimewarpML(flameMenuApp):
                     text = f'Flow BKW'
                     )
                 
-                raft_flow_f = F.interpolate(raft_flow_f, scale_factor = 4, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 4 * timestep
-                raft_flow_b = F.interpolate(raft_flow_f, scale_factor = 4, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 4 * (1 - timestep)
+                raft_flow_f = F.interpolate(raft_flow_f, scale_factor = 4, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 4 * ratio
+                raft_flow_b = F.interpolate(raft_flow_f, scale_factor = 4, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 4 * (1 - ratio)
 
                 # self.empty_torch_cache()
 
