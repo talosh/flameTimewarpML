@@ -6419,7 +6419,7 @@ class flameTimewarpML(flameMenuApp):
                 '''
 
                 # self.empty_torch_cache()
-                block = [self.block1, self.block1, self.block2, self.block3]
+                block = [self.block0, self.block1, self.block2, self.block3]
 
                 for i in range(4):
                     self.progress.info(f'{info_text} - flow iteration {i + 1} of 4')
