@@ -6412,6 +6412,8 @@ class flameTimewarpML(flameMenuApp):
                         del wf0
                         del wf1
                     
+                    display_flow = F.interpolate(flow[:, :, :h, :w], scale_factor=0.25, mode='nearest')
+
                     self.empty_torch_cache()
                     # mask_list.append(mask)
                     # flow_list.append(flow)
