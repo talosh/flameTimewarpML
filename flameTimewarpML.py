@@ -6487,7 +6487,7 @@ class flameTimewarpML(flameMenuApp):
                     preview_img = F.interpolate(preview_img, scale_factor= 1 / flow_scale, mode="bilinear", align_corners=False)
 
                     self.progress.update_interface_image(
-                        preview_img.squeeze(0).permute(1, 2, 0)[:h, :w],
+                        preview_img.squeeze(0).permute(1, 2, 0).flip(-1)[:h, :w],
                         self.progress.ui.image_res_label,
                         text = 'Frame: ' + str(self.progress.current_frame)
                     )
