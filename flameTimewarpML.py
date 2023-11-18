@@ -6601,6 +6601,7 @@ class flameTimewarpML(flameMenuApp):
                 warped_img0 = warp(x[:, :3], F3_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
 
+                '''
                 preview_img = ( warped_img0 + warped_img1 ) / 2
                 preview_img = F.interpolate(preview_img, scale_factor= 1 / flow_scale, mode="bilinear", align_corners=False)
                 self.progress.update_interface_image(
@@ -6608,6 +6609,7 @@ class flameTimewarpML(flameMenuApp):
                     self.progress.ui.image_res_label,
                     text = 'Frame: ' + str(self.progress.current_frame)
                 )
+                '''
 
                 self.progress.info(f'{info_text} - flow iteration 4 of 4')
                 
