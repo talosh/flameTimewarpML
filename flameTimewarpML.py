@@ -6455,7 +6455,6 @@ class flameTimewarpML(flameMenuApp):
                         raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0.cpu(), raft_img1.cpu()) / 4)
                     raft_flow_f = raft_flow_f.to(current_device)
                     
-
                     self.progress.update_optical_flow(
                         raft_flow_f[:, :, :h//2, :w//2].cpu().detach().numpy(),
                         self.progress.ui.flow2_label,
@@ -6486,9 +6485,12 @@ class flameTimewarpML(flameMenuApp):
                     warped_img0 = warp(x[:, :3], FR_large[:, :2])
                     warped_img1 = warp(x[:, 3:], FR_large[:, 2:4])
 
-                    result_img = ( warped_img0 + warped_img1 ) / 2
+                    preview_img = ( warped_img0 + warped_img1 ) / 2
+
+                    print (f'preview img {preview_img.shape}')
+
                     self.progress.update_interface_image(
-                        result_img.permute(1, 2, 0)[:h, :w],
+                        preview_img.permute(1, 2, 0)[:h, :w],
                         self.ui.image_res_label,
                         text = 'Frame: ' + str(self.progress.current_frame)
                     )
