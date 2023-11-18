@@ -6375,6 +6375,7 @@ class flameTimewarpML(flameMenuApp):
                 flow = None
                 mask = None
 
+                '''
                 raft_img0 = F.interpolate(img0 * 2 - 1, scale_factor = 1 / 4, mode="bilinear", align_corners=False)
                 raft_img1 = F.interpolate(img1 * 2 - 1, scale_factor = 1 / 4, mode="bilinear", align_corners=False)
                 current_device = torch.device(img0.device)
@@ -6415,6 +6416,7 @@ class flameTimewarpML(flameMenuApp):
                 flow = torch.cat((raft_flow_f, raft_flow_b), 1)
                 warped_img0 = warp(img0, flow[:, :2])
                 warped_img1 = warp(img1, flow[:, 2:4])
+                '''
 
                 # self.empty_torch_cache()
                 block = [self.block1, self.block1, self.block2, self.block3]
@@ -6453,6 +6455,8 @@ class flameTimewarpML(flameMenuApp):
                         del m0
                         del wf0
                         del wf1
+
+                    print (f'mask shape: {mask.shape}')
                     
                     self.progress.info(f'{info_text} - flow iteration {i + 1} of 4')
                     display_flow = F.interpolate(flow[:, :, :h, :w], scale_factor=0.25, mode='nearest')
