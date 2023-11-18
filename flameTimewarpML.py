@@ -6652,7 +6652,6 @@ class flameTimewarpML(flameMenuApp):
                 self.progress.info(info_text)
 
                 # return F4, [F1, F2, F3, F4]
-                del preview_img
                 return F4, [F4, F4, F4, F4]
 
         class Conv2(nn.Module):
