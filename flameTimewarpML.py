@@ -6358,6 +6358,8 @@ class flameTimewarpML(flameMenuApp):
                 # self.unet = Unet()
 
             def forward(self, img0, img1, timestep=0.5, scale_list=[8, 4, 2, 1], training=False, fastmode=True, ensemble=True):
+                info_text = self.progress.ui.info_label.text()
+
                 if not torch.is_tensor(timestep):
                     timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 else:
@@ -6408,9 +6410,6 @@ class flameTimewarpML(flameMenuApp):
                     )
 
                 # self.empty_torch_cache()
-                info_text = self.progress.ui.info_label.text()
-
-
 
                 for i in range(4):
                     self.progress.info(f'{info_text} - flow iteration {i + 1} of 4')
