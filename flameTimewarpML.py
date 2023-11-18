@@ -6489,7 +6489,7 @@ class flameTimewarpML(flameMenuApp):
 
                     self.progress.update_interface_image(
                         preview_img.squeeze(0).permute(1, 2, 0)[:h, :w],
-                        self.ui.image_res_label,
+                        self.progress.ui.image_res_label,
                         text = 'Frame: ' + str(self.progress.current_frame)
                     )
 
