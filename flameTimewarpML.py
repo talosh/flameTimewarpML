@@ -6432,11 +6432,11 @@ class flameTimewarpML(flameMenuApp):
 
         scale_list = [8/scale, 4/scale, 2/scale, 1/scale]
 
-        del flownet
-
         res_img = flownet(torch.cat((img0, img1), 1), timestep, scale_list)[0]
         res_img = res_img.permute(1, 2, 0)[:h, :w]
         res_img = res_img.flip(-1)
+
+        del flownet
 
         return res_img
 
