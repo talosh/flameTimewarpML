@@ -6421,6 +6421,8 @@ class flameTimewarpML(flameMenuApp):
         flownet.to(device)
         flownet.eval()
 
+        print (f'after flownet init: {torch.cuda.memory_allocated(torch.cuda.current_device()) / 1024 ** 2}')
+
         model_path = os.path.join(
             self.trained_models_path,
             'v4.12.model',
@@ -6430,8 +6432,9 @@ class flameTimewarpML(flameMenuApp):
         flownet.load_state_dict(convert(torch.load(model_path)), False)
         scale = self.flow_scale
         timestep = ratio
-
         scale_list = [8/scale, 4/scale, 2/scale, 1/scale]
+
+        print (f'after flownet statedict: {torch.cuda.memory_allocated(torch.cuda.current_device()) / 1024 ** 2}')
 
         res_img = flownet(img0, img1, timestep, scale_list)[0]
         res_img = res_img.permute(1, 2, 0)[:h, :w]
