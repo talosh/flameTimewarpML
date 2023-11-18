@@ -6415,7 +6415,7 @@ class flameTimewarpML(flameMenuApp):
                 raft_flow_f = F.interpolate(raft_flow_f, scale_factor = 2, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2
                 raft_flow_b = F.interpolate(raft_flow_b, scale_factor = 2, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2
                 raft_flow_f = raft_flow_f * timestep
-                raft_flow_b = -1 * raft_flow_f * (1-timestep)
+                raft_flow_b = raft_flow_b * (1-timestep)
 
                 raft_flow = torch.cat((raft_flow_f, raft_flow_b), 1)
                 # warped_img0 = warp(img0, raft_flow_f)
@@ -6438,7 +6438,7 @@ class flameTimewarpML(flameMenuApp):
                             mask = (mask + (-m_)) / 2
                             del m_
 
-                    flow = 0.1 * flow + 0.9 * raft_flow 
+                    flow = 0.01 * flow + 0.99 * raft_flow 
 
                     else:
                         wf0 = warp(f0, flow[:, :2])
