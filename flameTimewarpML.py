@@ -6414,6 +6414,8 @@ class flameTimewarpML(flameMenuApp):
                 raft_flow_b = F.interpolate(raft_flow_b, scale_factor = 4, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 4 * (1 - ratio)
 
                 flow = torch.cat((raft_flow_f, raft_flow_b), 1)
+                warped_img0 = warp(img0, flow[:, :2])
+                warped_img1 = warp(img1, flow[:, 2:4])
 
                 # self.empty_torch_cache()
 
@@ -6430,6 +6432,27 @@ class flameTimewarpML(flameMenuApp):
 
                             mask = (mask + (-m_)) / 2
                             del m_
+                    elif mask is None:
+                        wf0 = warp(f0, flow[:, :2])
+                        wf1 = warp(f1, flow[:, 2:4])
+                        fd, m0 = block[i](torch.cat((warped_img0[:, :3], warped_img1[:, :3], wf0, wf1, timestep), 1), flow, scale=scale_list[i])
+
+                        if ensemble:
+                            f_, m_ = block[i](torch.cat((warped_img1[:, :3], warped_img0[:, :3], wf1, wf0, 1-timestep), 1), torch.cat((flow[:, 2:4], flow[:, :2]), 1), scale=scale_list[i])
+
+                            fd = (fd + torch.cat((f_[:, 2:4], f_[:, :2]), 1)) / 2
+                            del f_
+
+                            mask = (m0 + (-m_)) / 2
+                            del m_
+                        else:
+                            mask = m0
+                        flow = flow + fd
+                        del fd
+                        del m0
+                        del wf0
+                        del wf1
+     
                     else:
                         wf0 = warp(f0, flow[:, :2])
                         wf1 = warp(f1, flow[:, 2:4])
