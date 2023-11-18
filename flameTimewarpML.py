@@ -6353,15 +6353,9 @@ class flameTimewarpML(flameMenuApp):
                 # self.contextnet = Contextnet()
                 # self.unet = Unet()
 
-            def forward(self, x, timestep=0.5, scale_list=[8, 4, 2, 1], training=False, fastmode=True, ensemble=True):
-                print (f'x shape: {x.shape}')
-                
-                if training == False:
-                    channel = x.shape[1] // 2
-                    img0 = x[:, :channel]
-                    img1 = x[:, channel:]
+            def forward(self, img0, img1, timestep=0.5, scale_list=[8, 4, 2, 1], training=False, fastmode=True, ensemble=True):
                 if not torch.is_tensor(timestep):
-                    timestep = (x[:, :1].clone() * 0 + 1) * timestep
+                    timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 else:
                     timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
                 del x
@@ -6436,7 +6430,7 @@ class flameTimewarpML(flameMenuApp):
 
         scale_list = [8/scale, 4/scale, 2/scale, 1/scale]
 
-        res_img = flownet(torch.cat((img0, img1), 1), timestep, scale_list)[0]
+        res_img = flownet(img0, img1, timestep, scale_list)[0]
         res_img = res_img.permute(1, 2, 0)[:h, :w]
         res_img = res_img.flip(-1)
 
