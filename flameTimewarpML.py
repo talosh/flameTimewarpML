@@ -6326,11 +6326,14 @@ class flameTimewarpML(flameMenuApp):
                     flow = F.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
                 feat = self.conv0(x)
+                del x
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
+                del feat
                 tmp = F.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
                 flow = tmp[:, :4] * scale
                 mask = tmp[:, 4:5]
+                del tmp
                 return flow, mask
                 
         class IFNet(nn.Module):
