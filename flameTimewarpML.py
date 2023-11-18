@@ -6432,13 +6432,14 @@ class flameTimewarpML(flameMenuApp):
 
                             mask = (mask + (-m_)) / 2
                             del m_
+
                     elif mask is None:
                         wf0 = warp(f0, flow[:, :2])
                         wf1 = warp(f1, flow[:, 2:4])
-                        fd, m0 = block[i](torch.cat((warped_img0[:, :3], warped_img1[:, :3], wf0, wf1, timestep), 1), flow, scale=scale_list[i])
+                        fd, m0 = block[i](torch.cat((warped_img0[:, :3], warped_img1[:, :3], wf0, wf1, timestep), 1), None, scale=scale_list[i])
 
                         if ensemble:
-                            f_, m_ = block[i](torch.cat((warped_img1[:, :3], warped_img0[:, :3], wf1, wf0, 1-timestep), 1), torch.cat((flow[:, 2:4], flow[:, :2]), 1), scale=scale_list[i])
+                            f_, m_ = block[i](torch.cat((warped_img1[:, :3], warped_img0[:, :3], wf1, wf0, 1-timestep), 1), None, scale=scale_list[i])
 
                             fd = (fd + torch.cat((f_[:, 2:4], f_[:, :2]), 1)) / 2
                             del f_
