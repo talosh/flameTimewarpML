@@ -7962,6 +7962,8 @@ class flameTimewarpML(flameMenuApp):
         return reassembled_img
 
     def raft(self, img0, img1):
+        print ('raft called')
+
         from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
 
         import collections
@@ -8787,8 +8789,6 @@ class flameTimewarpML(flameMenuApp):
         del feature_encoder
 
         self.empty_torch_cache()
-
-        print (f'raft flow shape: {flow.shape}')
         return flow
 
     def raft_unofficial(self, img0, img1):
@@ -9284,7 +9284,6 @@ class flameTimewarpML(flameMenuApp):
         model.eval()
         flow = model(img0, img1, iters=4)
         del model
-        print (f'raft flow shape: {flow.shape}')
         return flow
 
     def raft_alt_corr(self, img0, img1):
