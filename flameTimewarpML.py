@@ -6436,7 +6436,7 @@ class flameTimewarpML(flameMenuApp):
                             mask = (mask + (-m_)) / 2
                             del m_
 
-                    flow = 0.95 * flow + 0.05 * raft_flow 
+                    flow = 0.9 * flow + 0.1 * raft_flow 
 
                     else:
                         wf0 = warp(f0, flow[:, :2])
