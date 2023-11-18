@@ -6411,7 +6411,7 @@ class flameTimewarpML(flameMenuApp):
                     )
                 
                 raft_flow_f = F.interpolate(raft_flow_f, scale_factor = 4, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 4 * ratio
-                raft_flow_b = F.interpolate(raft_flow_f, scale_factor = 4, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 4 * (1 - ratio)
+                raft_flow_b = F.interpolate(raft_flow_b, scale_factor = 4, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 4 * (1 - ratio)
 
                 flow = torch.cat((raft_flow_f, raft_flow_b), 1)
 
