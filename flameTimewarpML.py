@@ -6371,6 +6371,9 @@ class flameTimewarpML(flameMenuApp):
                 flow = None
                 mask = None
                 block = [self.block0, self.block1, self.block2, self.block3]
+
+                print (f'before flownet blocks: {torch.cuda.memory_allocated(torch.cuda.current_device()) / 1024 ** 2}')
+
                 for i in range(4):
                     if flow is None:
                         flow, mask = block[i](torch.cat((img0[:, :3], img1[:, :3], f0, f1, timestep), 1), None, scale=scale_list[i])
@@ -6394,6 +6397,8 @@ class flameTimewarpML(flameMenuApp):
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
                     # merged.append((warped_img0, warped_img1))
+                    print (f'after flownet block {i}: {torch.cuda.memory_allocated(torch.cuda.current_device()) / 1024 ** 2}')
+
                 mask = torch.sigmoid(mask)
                 merged = (warped_img0 * mask + warped_img1 * (1 - mask))
                 if not fastmode:
