@@ -6488,7 +6488,7 @@ class flameTimewarpML(flameMenuApp):
 
                     result_img = ( warped_img0 + warped_img1 ) / 2
                     self.progress.update_interface_image(
-                        res_img.permute(1, 2, 0)[:h, :w],
+                        result_img.permute(1, 2, 0)[:h, :w],
                         self.ui.image_res_label,
                         text = 'Frame: ' + str(self.progress.current_frame)
                     )
