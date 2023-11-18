@@ -2058,8 +2058,6 @@ class flameTimewarpML(flameMenuApp):
                     del outgoing_image_data
                     return
 
-                print (f'resule shape: {result_image_data.shape}')
-
                 self.update_interface_image(
                     result_image_data,
                     self.ui.image_res_label,
@@ -6489,10 +6487,8 @@ class flameTimewarpML(flameMenuApp):
 
                     preview_img = ( warped_img0 + warped_img1 ) / 2
 
-                    print (f'preview img {preview_img.shape}')
-
                     self.progress.update_interface_image(
-                        preview_img.permute(1, 2, 0)[:h, :w],
+                        preview_img.squeeze(0).permute(1, 2, 0)[:h, :w],
                         self.ui.image_res_label,
                         text = 'Frame: ' + str(self.progress.current_frame)
                     )
