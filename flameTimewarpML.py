@@ -6383,7 +6383,7 @@ class flameTimewarpML(flameMenuApp):
                 current_device = torch.device(img0.device)
                 try:
                     self.progress.info(f'{info_text} - pre-building forward flow')
-                    raft_flow_f = (self.progress.parent_app.raft(raft_img0, raft_img1) / 4)
+                    raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0, raft_img1) / 4)
                 except Exception as e:
                     print (e)
                     self.progress.info(f'{info_text} - pre-building forward flow - CPU (slow - low GPU memory?)')
@@ -6399,7 +6399,7 @@ class flameTimewarpML(flameMenuApp):
                 current_device = torch.device(img0.device)
                 try:
                     self.progress.info(f'{info_text} - pre-building backward flow')
-                    raft_flow_b = (self.progress.parent_app.raft(raft_img1, raft_img0) / 4)
+                    raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1, raft_img0) / 4)
                 except Exception as e:
                     print (e)
                     self.progress.info(f'{info_text} - pre-building backward flow - CPU (slow - low GPU memory?)')
@@ -6412,14 +6412,14 @@ class flameTimewarpML(flameMenuApp):
                     text = f'Flow BKW'
                     )
                 
-                raft_flow_f = F.interpolate(raft_flow_f, scale_factor = 4, mode="bilinear", align_corners=False, recompute_scale_factor=False) * timestep
-                raft_flow_b = F.interpolate(raft_flow_b, scale_factor = 4, mode="bilinear", align_corners=False, recompute_scale_factor=False) * (1 - timestep)
+                raft_flow_f = F.interpolate(raft_flow_f, scale_factor = 4, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 4 * timestep
+                raft_flow_b = F.interpolate(raft_flow_b, scale_factor = 4, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 4 * (1 - timestep)
 
                 flow = torch.cat((raft_flow_f, raft_flow_b), 1)
                 warped_img0 = warp(img0, raft_flow_f)
                 warped_img1 = warp(img1, raft_flow_b)
                 mask = img0[:, :1].clone() * 0 + 0.5
-                block = [self.block1, self.block1, self.block2, self.block3]
+                block = [self.block1, self.block2, self.block3]
                 # '''
 
                 # self.empty_torch_cache()
