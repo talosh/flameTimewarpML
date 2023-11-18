@@ -6378,8 +6378,8 @@ class flameTimewarpML(flameMenuApp):
 
 
                 # '''
-                raft_img0 = F.interpolate(img0 * 2 - 1, scale_factor = 1 / 16, mode="bilinear", align_corners=False)
-                raft_img1 = F.interpolate(img1 * 2 - 1, scale_factor = 1 / 16, mode="bilinear", align_corners=False)
+                raft_img0 = F.interpolate(img0 * 2 - 1, scale_factor = 1 / 4, mode="bilinear", align_corners=False)
+                raft_img1 = F.interpolate(img1 * 2 - 1, scale_factor = 1 / 4, mode="bilinear", align_corners=False)
                 current_device = torch.device(img0.device)
                 try:
                     self.progress.info(f'{info_text} - pre-building forward flow')
@@ -6412,8 +6412,8 @@ class flameTimewarpML(flameMenuApp):
                     text = f'Flow BKW'
                     )
                 
-                raft_flow_f = F.interpolate(raft_flow_f, scale_factor = 16, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 16
-                raft_flow_b = F.interpolate(raft_flow_b, scale_factor = 16, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 16
+                raft_flow_f = F.interpolate(raft_flow_f, scale_factor = 4, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 4
+                raft_flow_b = F.interpolate(raft_flow_b, scale_factor = 4, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 4
 
                 raft_flow = torch.cat((raft_flow_f, raft_flow_b), 1)
                 # warped_img0 = warp(img0, raft_flow_f)
