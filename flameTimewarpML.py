@@ -6355,7 +6355,7 @@ class flameTimewarpML(flameMenuApp):
 
             def forward(self, x, timestep=0.5, scale_list=[8, 4, 2, 1], training=False, fastmode=True, ensemble=True):
                 print (f'x shape: {x.shape}')
-                print (f'x[:, :1] shape {x[:, :1].clone().shape}')
+                
                 if training == False:
                     channel = x.shape[1] // 2
                     img0 = x[:, :channel]
@@ -6365,6 +6365,7 @@ class flameTimewarpML(flameMenuApp):
                 else:
                     timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
                 del x
+                print (f'timestep shape {timestep.shape}')
                 f0 = self.encode(img0[:, :3])
                 f1 = self.encode(img1[:, :3])
                 # flow_list = []
