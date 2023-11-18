@@ -6412,8 +6412,8 @@ class flameTimewarpML(flameMenuApp):
                     text = f'Flow BKW'
                     )
                 
-                raft_flow_f = F.interpolate(raft_flow_f, scale_factor = 8, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 8 * ratio
-                raft_flow_b = F.interpolate(raft_flow_b, scale_factor = 8, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 8 * (1 - ratio)
+                raft_flow_f = F.interpolate(raft_flow_f, scale_factor = 8, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 8 * timestep
+                raft_flow_b = F.interpolate(raft_flow_b, scale_factor = 8, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 8 * (1 - timestep)
 
                 flow = torch.cat((raft_flow_f, raft_flow_b), 1)
                 warped_img0 = warp(img0, flow[:, :2])
