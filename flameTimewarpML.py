@@ -6412,16 +6412,14 @@ class flameTimewarpML(flameMenuApp):
                     text = f'Flow BKW'
                     )
                 
-                raft_flow_f = F.interpolate(raft_flow_f, scale_factor = 2, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2
+                raft_flow_f = F.interpolate(raft_flow_f, scale_factor = 2, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2 * timestep
                 raft_flow_b = F.interpolate(raft_flow_b, scale_factor = 2, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2 * (1 - timestep)
 
                 flow = torch.cat((raft_flow_f, raft_flow_b), 1)
                 warped_img0 = warp(img0, raft_flow_f)
                 warped_img1 = warp(img1, raft_flow_b)
                 mask = img0[:, :1].clone() * 0
-                block = [self.block1, self.block1, self.block2, self.block3]
-                return warped_img1
-
+                block = [self.block1, self.block1, self.block1, self.block1, self.block1, self.block2, self.block3]
                 # '''
 
                 # self.empty_torch_cache()
