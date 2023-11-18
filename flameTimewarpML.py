@@ -6340,6 +6340,7 @@ class flameTimewarpML(flameMenuApp):
             def __init__(self, progress):
                 super(IFNet, self).__init__()
                 self.progress = progress
+                self.empty_torch_cache = self.progress.parent_app.empty_torch_cache
                 self.block0 = IFBlock(7+16, c=192)
                 self.block1 = IFBlock(8+4+16, c=128)
                 self.block2 = IFBlock(8+4+16, c=96)
@@ -6372,6 +6373,8 @@ class flameTimewarpML(flameMenuApp):
                 mask = None
                 block = [self.block0, self.block1, self.block2, self.block3]
 
+                self.empty_torch_cache()
+
                 print (f'before flownet blocks: {torch.cuda.memory_allocated(torch.cuda.current_device()) / 1024 ** 2}')
 
                 for i in range(4):
@@ -6392,6 +6395,8 @@ class flameTimewarpML(flameMenuApp):
                         else:
                             mask = m0
                         flow = flow + fd
+                    
+                    self.empty_torch_cache()
                     # mask_list.append(mask)
                     # flow_list.append(flow)
                     warped_img0 = warp(img0, flow[:, :2])
