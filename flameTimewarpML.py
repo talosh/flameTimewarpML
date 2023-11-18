@@ -6418,7 +6418,7 @@ class flameTimewarpML(flameMenuApp):
                 flow = torch.cat((raft_flow_f, raft_flow_b), 1)
                 warped_img0 = warp(img0, raft_flow_f)
                 warped_img1 = warp(img1, raft_flow_b)
-                mask = img0[:, :1].clone() * 0
+                mask = img0[:, :1].clone() * 0.5
                 block = [self.block1, self.block1, self.block2, self.block3]
                 # '''
 
