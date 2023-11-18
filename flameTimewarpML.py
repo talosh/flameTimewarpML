@@ -2476,7 +2476,8 @@ class flameTimewarpML(flameMenuApp):
         def update_interface_image(self, array, image_label, text = None):
             if self.message_queue.qsize() > 32:
                 if image_label != self.ui.image_res_label:
-                    return
+                    pass
+                    # return
             
             item = {
                 'type': 'image',
