@@ -6292,7 +6292,7 @@ class flameTimewarpML(flameMenuApp):
                 super(ResConv, self).__init__()
                 self.conv = nn.Conv2d(c, c, 3, 1, dilation, dilation=dilation, groups=1\
         )
-                self.beta = nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.beta = nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=False)
                 self.relu = nn.LeakyReLU(0.2, True)
 
             def forward(self, x):
