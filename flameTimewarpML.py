@@ -6364,14 +6364,13 @@ class flameTimewarpML(flameMenuApp):
                     timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
                 f0 = self.encode(img0[:, :3])
                 f1 = self.encode(img1[:, :3])
-                flow_list = []
-                merged = []
-                mask_list = []
+                # flow_list = []
+                # merged = []
+                # mask_list = []
                 warped_img0 = img0
                 warped_img1 = img1
                 flow = None
                 mask = None
-                loss_cons = 0
                 block = [self.block0, self.block1, self.block2, self.block3]
                 for i in range(4):
                     if flow is None:
@@ -6391,13 +6390,13 @@ class flameTimewarpML(flameMenuApp):
                         else:
                             mask = m0
                         flow = flow + fd
-                    mask_list.append(mask)
-                    flow_list.append(flow)
+                    # mask_list.append(mask)
+                    # flow_list.append(flow)
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
-                    merged.append((warped_img0, warped_img1))
+                    # merged.append((warped_img0, warped_img1))
                 mask = torch.sigmoid(mask)
-                merged[3] = (warped_img0 * mask + warped_img1 * (1 - mask))
+                merged = (warped_img0 * mask + warped_img1 * (1 - mask))
                 if not fastmode:
                     print('contextnet is removed')
                     '''
@@ -6407,7 +6406,8 @@ class flameTimewarpML(flameMenuApp):
                     res = tmp[:, :3] * 2 - 1
                     merged[3] = torch.clamp(merged[3] + res, 0, 1)
                     '''
-                return flow_list, mask_list[3], merged
+                # return flow_list, mask_list[3], merged
+                return merged
 
         def convert(param):
             return {
