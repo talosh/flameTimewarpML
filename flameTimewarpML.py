@@ -6424,7 +6424,7 @@ class flameTimewarpML(flameMenuApp):
 
                 # self.empty_torch_cache()
 
-                for i in range(4):
+                for i in range(3):
                     self.progress.info(f'{info_text} - flow iteration {i + 1} of 4')
                     if flow is None:
                         flow, mask = block[i](torch.cat((img0[:, :3], img1[:, :3], f0, f1, timestep), 1), None, scale=scale_list[i])
