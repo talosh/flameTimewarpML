@@ -6374,8 +6374,10 @@ class flameTimewarpML(flameMenuApp):
                 block = [self.block0, self.block1, self.block2, self.block3]
 
                 self.empty_torch_cache()
+                info_text = self.progress.ui.info_label.text()
 
                 for i in range(4):
+                    self.progress.info(f'{info_text} - flow iteration {i} of 4')
                     if flow is None:
                         flow, mask = block[i](torch.cat((img0[:, :3], img1[:, :3], f0, f1, timestep), 1), None, scale=scale_list[i])
                         self.empty_torch_cache()
@@ -6413,6 +6415,19 @@ class flameTimewarpML(flameMenuApp):
                         del wf1
                     
                     display_flow = F.interpolate(flow[:, :, :h, :w], scale_factor=0.25, mode='nearest')
+                    self.progress.update_optical_flow(
+                        display_flow[:, :2].cpu().detach().numpy(),
+                        self.progress.ui.flow2_label,
+                        text = f'Flow FWD'
+                        )
+
+                    self.progress.update_optical_flow(
+                        display_flow[:, 2:].cpu().detach().numpy(),
+                        # raft_flow_f.cpu().detach().numpy(),
+                        self.progress.ui.flow3_label,
+                        text = f'Flow BKW'
+                        )
+
 
                     self.empty_torch_cache()
                     # mask_list.append(mask)
