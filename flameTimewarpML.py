@@ -6492,6 +6492,8 @@ class flameTimewarpML(flameMenuApp):
                     self.progress.info(f'{info_text} - flow iteration 1 of 4')
                     flow0 = self.block0(torch.cat((warped_img0, warped_img1), 1))
                     F1 = FR + flow0
+                    del warped_img0
+                    del warped_img1
                     del flow0
                 else:
                     self.progress.info(f'{info_text} - flow iteration 1 of 4')
