@@ -6358,7 +6358,6 @@ class flameTimewarpML(flameMenuApp):
                     timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 else:
                     timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
-                del x
                 print (f'timestep shape {timestep.shape}')
                 f0 = self.encode(img0[:, :3])
                 f1 = self.encode(img1[:, :3])
