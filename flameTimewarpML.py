@@ -6375,8 +6375,6 @@ class flameTimewarpML(flameMenuApp):
 
                 self.empty_torch_cache()
 
-                print (f'before flownet blocks: {torch.cuda.memory_allocated(torch.cuda.current_device()) / 1024 ** 2}')
-
                 for i in range(4):
                     if flow is None:
                         flow, mask = block[i](torch.cat((img0[:, :3], img1[:, :3], f0, f1, timestep), 1), None, scale=scale_list[i])
@@ -6384,9 +6382,12 @@ class flameTimewarpML(flameMenuApp):
 
                         if ensemble:
                             f_, m_ = block[i](torch.cat((img1[:, :3], img0[:, :3], f1, f0, 1-timestep), 1), None, scale=scale_list[i])
+                            self.empty_torch_cache()
+
                             flow = (flow + torch.cat((f_[:, 2:4], f_[:, :2]), 1)) / 2
-                            mask = (mask + (-m_)) / 2
                             del f_
+
+                            mask = (mask + (-m_)) / 2
                             del m_
                     else:
                         wf0 = warp(f0, flow[:, :2])
@@ -6396,9 +6397,12 @@ class flameTimewarpML(flameMenuApp):
 
                         if ensemble:
                             f_, m_ = block[i](torch.cat((warped_img1[:, :3], warped_img0[:, :3], wf1, wf0, 1-timestep, -mask), 1), torch.cat((flow[:, 2:4], flow[:, :2]), 1), scale=scale_list[i])
+                            self.empty_torch_cache()
+
                             fd = (fd + torch.cat((f_[:, 2:4], f_[:, :2]), 1)) / 2
-                            mask = (m0 + (-m_)) / 2
                             del f_
+
+                            mask = (m0 + (-m_)) / 2
                             del m_
                         else:
                             mask = m0
@@ -6414,7 +6418,6 @@ class flameTimewarpML(flameMenuApp):
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
                     # merged.append((warped_img0, warped_img1))
-                    print (f'after flownet block {i}: {torch.cuda.memory_allocated(torch.cuda.current_device()) / 1024 ** 2}')
 
                 mask = torch.sigmoid(mask)
                 merged = (warped_img0 * mask + warped_img1 * (1 - mask))
@@ -6437,13 +6440,9 @@ class flameTimewarpML(flameMenuApp):
                 if "module." in k
             }
 
-        print (f'before flownet: {torch.cuda.memory_allocated(torch.cuda.current_device()) / 1024 ** 2}')
-
         flownet = IFNet(self.progress)
         flownet.to(device)
         flownet.eval()
-
-        print (f'after flownet init: {torch.cuda.memory_allocated(torch.cuda.current_device()) / 1024 ** 2}')
 
         model_path = os.path.join(
             self.trained_models_path,
@@ -6456,7 +6455,7 @@ class flameTimewarpML(flameMenuApp):
         timestep = ratio
         scale_list = [8/scale, 4/scale, 2/scale, 1/scale]
 
-        print (f'after flownet statedict: {torch.cuda.memory_allocated(torch.cuda.current_device()) / 1024 ** 2}')
+        # print (f'after flownet statedict: {torch.cuda.memory_allocated(torch.cuda.current_device()) / 1024 ** 2}')
 
         res_img = flownet(img0, img1, timestep, scale_list)[0]
         res_img = res_img.permute(1, 2, 0)[:h, :w]
