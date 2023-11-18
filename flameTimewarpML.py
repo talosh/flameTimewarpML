@@ -6375,6 +6375,39 @@ class flameTimewarpML(flameMenuApp):
 
                 raft_img0 = F.interpolate(img0 * 2 - 1, scale_factor = 1 / 4, mode="bilinear", align_corners=False)
                 raft_img1 = F.interpolate(img1 * 2 - 1, scale_factor = 1 / 4, mode="bilinear", align_corners=False)
+                current_device = torch.device(img0.device)
+                try:
+                    self.progress.info(f'{info_text} - pre-building forward flow')
+                    raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0, raft_img1) / 4)
+                except Exception as e:
+                    print (e)
+                    self.progress.info(f'{info_text} - pre-building forward flow - CPU (slow - low GPU memory?)')
+                    cpu_device = torch.device('cpu')
+                    raft_flow_f = -1 * (self.progress.parent_app.raft(raft_img0.cpu(), raft_img1.cpu()) / 4)
+                raft_flow_f = raft_flow_f.to(current_device)
+                
+                self.progress.update_optical_flow(
+                    raft_flow_f[:, :, :h//2, :w//2].cpu().detach().numpy(),
+                    self.progress.ui.flow2_label,
+                    text = f'Flow FWD'
+                    )
+
+                current_device = torch.device(img0.device)
+                try:
+                    self.progress.info(f'{info_text} - pre-building backward flow')
+                    raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1, raft_img0) / 4)
+                except Exception as e:
+                    print (e)
+                    self.progress.info(f'{info_text} - pre-building backward flow - CPU (slow - low GPU memory?)')
+                    cpu_device = torch.device('cpu')
+                    raft_flow_b = -1 * (self.progress.parent_app.raft(raft_img1.cpu(), raft_img0.cpu()) / 4)
+                raft_flow_b = raft_flow_b.to(current_device)
+
+                self.progress.update_optical_flow(
+                    raft_flow_b[:, :, :h//2, :w//2].cpu().detach().numpy(),
+                    self.progress.ui.flow3_label,
+                    text = f'Flow BKW'
+                    )
 
                 # self.empty_torch_cache()
                 info_text = self.progress.ui.info_label.text()
