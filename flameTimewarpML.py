@@ -6230,6 +6230,7 @@ class flameTimewarpML(flameMenuApp):
         return res_img
 
     def flownet412(self, img0, img1, ratio, model_path):
+        print ('flownet 412 called')
         import torch
         import torch.nn as nn
         import torch.nn.functional as F
