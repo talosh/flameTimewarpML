@@ -6416,7 +6416,7 @@ class flameTimewarpML(flameMenuApp):
                 if "module." in k
             }
 
-        flownet = IFNet()
+        flownet = IFNet(self.progress)
         flownet.to(device)
         flownet.eval()
 
@@ -6430,10 +6430,13 @@ class flameTimewarpML(flameMenuApp):
         scale = self.flow_scale
         timestep = ratio
 
-        imgs = torch.cat((img0, img1), 1)
         scale_list = [8/scale, 4/scale, 2/scale, 1/scale]
 
-        flow, mask, merged = flownet(imgs, timestep, scale_list)
+        flow, mask, merged = flownet(torch.cat((img0, img1), 1), timestep, scale_list)
+
+        del flow
+        del mask
+        del flownet
 
         res_img = merged[3][0]
         res_img = res_img.permute(1, 2, 0)[:h, :w]
