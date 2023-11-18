@@ -2058,6 +2058,8 @@ class flameTimewarpML(flameMenuApp):
                     del outgoing_image_data
                     return
 
+                print (f'resule shape: {result_image_data.shape}')
+
                 self.update_interface_image(
                     result_image_data,
                     self.ui.image_res_label,
