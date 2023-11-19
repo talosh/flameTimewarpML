@@ -1841,6 +1841,7 @@ class flameTimewarpML(flameMenuApp):
 
         def process_current_frame(self):
             timestamp = time.time()
+            print (f'frame: {self.current_frame}')
             self.frame_thread = threading.Thread(target=self._process_current_frame)
             self.frame_thread.daemon = True
             self.frame_thread.start()
@@ -1850,6 +1851,8 @@ class flameTimewarpML(flameMenuApp):
         def _process_current_frame(self, single_frame=False):
             import numpy as np
             import torch
+
+            timestamp = time.time()
 
             self.rendering = True
 
@@ -2041,6 +2044,8 @@ class flameTimewarpML(flameMenuApp):
                     'message': f'Frame {self.current_frame}: Processing...'}
                     )
                 self.processEvents()
+
+                print (f'reading time: {(time.time()-timestamp):.2f}')
 
                 if self.parent_app.current_mode == 1:
                     result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
