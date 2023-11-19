@@ -2166,7 +2166,6 @@ class flameTimewarpML(flameMenuApp):
             self.info('Frame ' + str(self.current_frame))         
             return
 
-
         def read_image_data_torch(self, clip, frame_number):
             import flame
             import numpy as np
@@ -3235,7 +3234,6 @@ class flameTimewarpML(flameMenuApp):
         }
 
         self.current_mode = self.prefs.get('current_mode', 1)
-        print (f'current mode: {self.current_mode}')
 
         self.trained_models_path = os.path.join(
             self.framework.bundle_folder,
@@ -3253,6 +3251,8 @@ class flameTimewarpML(flameMenuApp):
             'v2.4.model',
             'flownet.pkl'
         )
+
+        self.current_models = {}
 
         self.progress = None
         self.torch = None
@@ -4613,6 +4613,15 @@ class flameTimewarpML(flameMenuApp):
 
         self.prefs['current_mode'] = self.current_mode
         self.framework.save_prefs()
+
+        try:
+            for key in self.current_models.keys():
+                del self.current_models[key]
+        except Exception as e:
+            print (f'select mode exception: {e}')
+        self.empty_torch_cache()
+        
+        self.current_models = {}
 
     def flownet_hzsho(self, img0, img1, ratio, model_path):
         import torch
@@ -6472,17 +6481,21 @@ class flameTimewarpML(flameMenuApp):
 
         timestamp = time.time()
 
-        flownet = IFNet(self.progress)
-        flownet.to(device)
-        flownet.eval()
+        if not self.current_models.get('flownet412'):
+            flownet = IFNet(self.progress)
+            flownet.to(device)
+            flownet.eval()
 
-        model_path = os.path.join(
-            self.trained_models_path,
-            'v4.12.model',
-            'flownet.pkl'
-        )
+            model_path = os.path.join(
+                self.trained_models_path,
+                'v4.12.model',
+                'flownet.pkl'
+            )
 
-        flownet.load_state_dict(convert(torch.load(model_path)), False)
+            flownet.load_state_dict(convert(torch.load(model_path)), False)
+            self.current_models['flownet412'] = flownet
+        else:
+            flownet = self.current_models.get('flownet412')
         scale = self.flow_scale
         timestep = ratio
         scale_list = [8/scale, 4/scale, 2/scale, 1/scale]
