@@ -2070,6 +2070,9 @@ class flameTimewarpML(flameMenuApp):
                 elif self.parent_app.current_mode == 6:
                     result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
 
+                print (f'model time: {(time.time()-timestamp):.2f}')
+                timestamp = time.time()
+
                 if result_image_data is None:
                     del incoming_image_data
                     del outgoing_image_data
@@ -2112,6 +2115,9 @@ class flameTimewarpML(flameMenuApp):
                     'widget': 'render_button',
                     'text': 'Render'}
                 )
+
+            print (f'save time: {(time.time()-timestamp):.2f}')
+            timestamp = time.time()
 
             self.info('Frame ' + str(self.current_frame))         
             return
