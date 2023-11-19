@@ -6461,9 +6461,9 @@ class flameTimewarpML(flameMenuApp):
                         flow = flow + fd
                         
                         if i == 2:
-                            flow = 0.8 * flow + 0.2 * raft_flow
-                        elif i == 3:
                             flow = 0.9 * flow + 0.1 * raft_flow
+                        elif i == 3:
+                            flow = 0.95 * flow + 0.05 * raft_flow
 
                         del fd
                         del m0
