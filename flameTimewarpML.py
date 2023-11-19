@@ -2232,7 +2232,8 @@ class flameTimewarpML(flameMenuApp):
                     del np_image_array
                     image_array = image_array.to(
                         device = self.parent_app.torch_device,
-                        dtype = torch.float32
+                        dtype = torch.float32,
+                        non_blocking=True
                         )
                     image_array = image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
                     image_array = torch.flip(image_array, [0])
@@ -2250,7 +2251,8 @@ class flameTimewarpML(flameMenuApp):
                     image_array = image_array[:fmt.height() * fmt.width() * fmt.numChannels()]
                     image_array = image_array.to(
                         device = self.parent_app.torch_device,
-                        dtype = torch.float32
+                        dtype = torch.float32,
+                        non_blocking=True
                         )
                     image_array = image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
                     image_array = torch.flip(image_array, [0])
@@ -2263,7 +2265,8 @@ class flameTimewarpML(flameMenuApp):
                     image_array = torch.from_numpy(image_array.astype(np.float32))
                     image_array = image_array.to(
                         device = self.parent_app.torch_device,
-                        dtype = torch.float32
+                        dtype = torch.float32,
+                        non_blocking=True
                         )
                     image_array = image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
                     image_array = torch.flip(image_array, [0])
@@ -2276,7 +2279,8 @@ class flameTimewarpML(flameMenuApp):
                     del np_image_array
                     image_array = image_array.to(
                         device = self.parent_app.torch_device,
-                        dtype = torch.float32
+                        dtype = torch.float32,
+                        non_blocking=True
                         )
                     image_array = image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
                     image_array = torch.flip(image_array, [0])
@@ -2289,7 +2293,8 @@ class flameTimewarpML(flameMenuApp):
                     del np_image_array
                     image_array = image_array.to(
                         device = self.parent_app.torch_device,
-                        dtype = torch.float32
+                        dtype = torch.float32,
+                        non_blocking=True
                         )
                     image_array = image_array.reshape((fmt.height(), fmt.width(),  fmt.numChannels()))
                     image_array = torch.flip(image_array, [0])
