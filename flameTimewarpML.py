@@ -6534,6 +6534,8 @@ class flameTimewarpML(flameMenuApp):
                 if "module." in k
             }
 
+        timestamp = time.time()
+
         flownet = IFNet(self.progress)
         flownet.to(device)
         flownet.eval()
@@ -6549,9 +6551,16 @@ class flameTimewarpML(flameMenuApp):
         timestep = ratio
         scale_list = [8/scale, 4/scale, 2/scale, 1/scale]
 
+        print (f'model init time: {(time.time()-timestamp):.2f}')
+        timestamp = time.time()
+
         # print (f'after flownet statedict: {torch.cuda.memory_allocated(torch.cuda.current_device()) / 1024 ** 2}')
 
         res_img = flownet(img0, img1, timestep, scale_list)[0]
+
+        print (f'model inference time: {(time.time()-timestamp):.2f}')
+        timestamp = time.time()
+
         res_img = res_img.permute(1, 2, 0)[:h, :w]
         res_img = res_img.flip(-1)
 
