@@ -1877,7 +1877,7 @@ class flameTimewarpML(flameMenuApp):
             self.prefetch_thread.join()
 
             print (f'frame time: {(time.time()-timestamp):.2f}')
-            print (f'size of self.frames_map: {sys.getsizeof((self.frames_map) / (1024 ** 2)):.2f}Mb')
+            print (f'size of self.frames_map: {(sys.getsizeof(self.frames_map) / (1024 ** 2)):.2f}Mb')
 
         def _process_current_frame(self, single_frame=False):
             import numpy as np
