@@ -1844,19 +1844,17 @@ class flameTimewarpML(flameMenuApp):
             if not frame_data:
                 return
             
-            return
-
             try:
                 inc_frame_number = frame_data['incoming']['frame_number'] - 1
                 outg_frame_number = frame_data['outgoing']['frame_number'] - 1
 
-                frame_data['incoming']['image_data'] = self.read_image_data_torch(
+                frame_data['incoming']['image_data'] = self.read_image_data(
                         frame_data['incoming']['clip'], 
                         inc_frame_number
                         )
                 self.frames_map[frame_number] = frame_data
 
-                frame_data['outgoing']['image_data'] = self.read_image_data_torch(
+                frame_data['outgoing']['image_data'] = self.read_image_data(
                         frame_data['outgoing']['clip'], 
                         outg_frame_number
                         )
@@ -1881,6 +1879,8 @@ class flameTimewarpML(flameMenuApp):
 
             print (f'frame time: {(time.time()-timestamp):.2f}')
 
+            print (f'size of self.frames_map: {sys.getsizeof(self.frames_map) / (1024 ** 3):.2f}Gb')
+
         def _process_current_frame(self, single_frame=False):
             import numpy as np
             import torch
@@ -1903,14 +1903,17 @@ class flameTimewarpML(flameMenuApp):
                     'message': f'Frame {self.current_frame}: reading incoming source image data...'}
                     )
 
-                result_image_data = self.current_frame_data['incoming'].get('image_data')
-                if result_image_data is None:
+                cached_image_data = self.current_frame_data['incoming'].get('image_data')
+                if cached_image_data is None:
                     result_image_data = self.read_image_data_torch(
                         self.current_frame_data['incoming']['clip'], 
                         inc_frame_number
                         )
-                self.current_frame_data['incoming']['image_data'] = None
-                self.current_frame_data['outgoing']['image_data'] = None
+                else:
+                    result_image_data = torch.from_numpy(cached_image_data.copy())
+                    del cached_image_data
+                    del self.current_frame_data['incoming']['image_data']
+                    del self.current_frame_data['outgoing']['image_data']
                                 
                 if not self.rendering:
                     del result_image_data
@@ -1971,14 +1974,17 @@ class flameTimewarpML(flameMenuApp):
                     'message': f'Frame {self.current_frame}: reading outgoing source image data...'}
                     )
                 
-                result_image_data = self.current_frame_data['outgoing'].get('image_data')
-                if result_image_data is None:
+                cached_image_data = self.current_frame_data['outgoing'].get('image_data')
+                if cached_image_data is None:
                     result_image_data = self.read_image_data_torch(
                         self.current_frame_data['outgoing']['clip'], 
                         outg_frame_number
                         )
-                self.current_frame_data['incoming']['image_data'] = None
-                self.current_frame_data['outgoing']['image_data'] = None
+                else:
+                    result_image_data = torch.from_numpy(cached_image_data.copy())
+                    del cached_image_data
+                    del self.current_frame_data['incoming']['image_data']
+                    del self.current_frame_data['outgoing']['image_data']
                 
                 if not self.rendering:
                     del result_image_data
@@ -2039,13 +2045,16 @@ class flameTimewarpML(flameMenuApp):
                     'message': f'Frame {self.current_frame}: reading incoming source image data...'}
                     )
 
-                incoming_image_data = self.current_frame_data['incoming'].get('image_data')
-                if incoming_image_data is None:
+                cached_image_data = self.current_frame_data['incoming'].get('image_data')
+                if cached_image_data is None:
                     incoming_image_data = self.read_image_data_torch(
                         self.current_frame_data['incoming']['clip'], 
                         inc_frame_number
                         )
-                self.current_frame_data['incoming']['image_data'] = None
+                else:
+                    incoming_image_data = torch.from_numpy(cached_image_data.copy())
+                    del cached_image_data
+                    del self.current_frame_data['incoming']['image_data']
                 
                 print (f'reading 1 time: {(time.time()-timestamp):.2f}')
                 timestamp = time.time()
@@ -2071,13 +2080,16 @@ class flameTimewarpML(flameMenuApp):
                 print (f'normalize and interface 1 time: {(time.time()-timestamp):.2f}')
                 timestamp = time.time()
 
-                outgoing_image_data = self.current_frame_data['outgoing'].get('image_data')
-                if outgoing_image_data is None:
+                cached_image_data = self.current_frame_data['outgoing'].get('image_data')
+                if cached_image_data is None:
                     outgoing_image_data = self.read_image_data_torch(
                         self.current_frame_data['outgoing']['clip'], 
                         outg_frame_number
                         )
-                self.current_frame_data['outgoing']['image_data'] = None
+                else:
+                    outgoing_image_data = torch.from_numpy(cached_image_data.copy())
+                    del cached_image_data
+                    del self.current_frame_data['outgoing']['image_data']
 
                 print (f'reading 2 time: {(time.time()-timestamp):.2f}')
                 timestamp = time.time()
@@ -2166,7 +2178,18 @@ class flameTimewarpML(flameMenuApp):
             print (f'save time: {(time.time()-timestamp):.2f}')
             timestamp = time.time()
 
-            self.info('Frame ' + str(self.current_frame))         
+            self.info('Frame ' + str(self.current_frame))
+
+            try:
+                del self.frames_map[self.current_frame]['incoming']['image_data']
+            except:
+                pass
+
+            try:
+                del self.frames_map[self.current_frame]['outgoing']['image_data']
+            except:
+                pass
+
             return
 
         def read_image_data_torch(self, clip, frame_number):
