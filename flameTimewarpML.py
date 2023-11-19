@@ -1842,20 +1842,18 @@ class flameTimewarpML(flameMenuApp):
         def prefetch_frame(self, frame_number):
             frame_data = self.frames_map.get(frame_number)
             if not frame_data:
-                return
-            return
-        
+                return        
             try:
                 inc_frame_number = frame_data['incoming']['frame_number'] - 1
                 outg_frame_number = frame_data['outgoing']['frame_number'] - 1
 
-                frame_data['incoming']['image_data'] = self.read_image_data(
+                frame_data['incoming']['image_data'] = self.read_image_data_torch(
                         frame_data['incoming']['clip'], 
                         inc_frame_number
                         )
                 self.frames_map[frame_number] = frame_data
 
-                frame_data['outgoing']['image_data'] = self.read_image_data(
+                frame_data['outgoing']['image_data'] = self.read_image_data_torch(
                         frame_data['outgoing']['clip'], 
                         outg_frame_number
                         )
@@ -1879,7 +1877,7 @@ class flameTimewarpML(flameMenuApp):
             self.prefetch_thread.join()
 
             print (f'frame time: {(time.time()-timestamp):.2f}')
-            print (f'size of self.frames_map: {sys.getsizeof(self.frames_map):.2f}')
+            print (f'size of self.frames_map: {sys.getsizeof((self.frames_map) / (1024 ** 2)):.2f}Mb')
 
         def _process_current_frame(self, single_frame=False):
             import numpy as np
@@ -1911,10 +1909,6 @@ class flameTimewarpML(flameMenuApp):
                         )
                 else:
                     result_image_data = torch.from_numpy(cached_image_data.copy())
-                    result_image_data = result_image_data.to(
-                        device = self.parent_app.torch_device,
-                        dtype = torch.float32
-                        )
                     del cached_image_data
                     del self.current_frame_data['incoming']['image_data']
                     del self.current_frame_data['outgoing']['image_data']
@@ -1986,10 +1980,6 @@ class flameTimewarpML(flameMenuApp):
                         )
                 else:
                     result_image_data = torch.from_numpy(cached_image_data.copy())
-                    result_image_data = result_image_data.to(
-                        device = self.parent_app.torch_device,
-                        dtype = torch.float32
-                        )
                     del cached_image_data
                     del self.current_frame_data['incoming']['image_data']
                     del self.current_frame_data['outgoing']['image_data']
@@ -2061,10 +2051,6 @@ class flameTimewarpML(flameMenuApp):
                         )
                 else:
                     incoming_image_data = torch.from_numpy(cached_image_data.copy())
-                    incoming_image_data = incoming_image_data.to(
-                        device = self.parent_app.torch_device,
-                        dtype = torch.float32
-                        )
                     del cached_image_data
                     del self.current_frame_data['incoming']['image_data']
                 
@@ -2072,7 +2058,6 @@ class flameTimewarpML(flameMenuApp):
                 timestamp = time.time()
                 
                 incoming_image_data = self.normalize_values(incoming_image_data)
-
 
                 if not self.rendering:
                     del incoming_image_data
@@ -2100,10 +2085,6 @@ class flameTimewarpML(flameMenuApp):
                         )
                 else:
                     outgoing_image_data = torch.from_numpy(cached_image_data.copy())
-                    outgoing_image_data = outgoing_image_data.to(
-                        device = self.parent_app.torch_device,
-                        dtype = torch.float32
-                        )
                     del cached_image_data
                     del self.current_frame_data['outgoing']['image_data']
 
