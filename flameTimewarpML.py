@@ -6440,7 +6440,7 @@ class flameTimewarpML(flameMenuApp):
                             mask = (mask + (-m_)) / 2
                             del m_
 
-                        flow = 0.8 * flow + 0.2 * raft_flow
+                        flow = 0.69 * flow + 0.31 * raft_flow
                         print ('flow = 0.8 * flow + 0.2 * raft_flow')
 
                     else:
@@ -6460,7 +6460,7 @@ class flameTimewarpML(flameMenuApp):
                             mask = m0
                         
                         flow = flow + fd
-                        flow = 0.8 * flow + 0.2 * raft_flow 
+                        flow = 0.9 * flow + 0.1 * raft_flow 
 
                         del fd
                         del m0
