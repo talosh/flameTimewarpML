@@ -2003,13 +2003,11 @@ class flameTimewarpML(flameMenuApp):
                     inc_frame_number
                     )
                 
-                print (f'reading time: {(time.time()-timestamp):.2f}')
+                print (f'reading 1 time: {(time.time()-timestamp):.2f}')
                 timestamp = time.time()
                 
                 incoming_image_data = self.normalize_values(incoming_image_data)
 
-                print (f'normalize time: {(time.time()-timestamp):.2f}')
-                timestamp = time.time()
 
                 if not self.rendering:
                     del incoming_image_data
@@ -2026,11 +2024,17 @@ class flameTimewarpML(flameMenuApp):
                     'message': f'Frame {self.current_frame}: reading outgoing source image data...'}
                     )
 
+                print (f'normalize and interface 1 time: {(time.time()-timestamp):.2f}')
+                timestamp = time.time()
+
                 outgoing_image_data = self.read_image_data_torch(
                     self.current_frame_data['outgoing']['clip'], 
                     outg_frame_number
                     )
                 
+                print (f'reading 2 time: {(time.time()-timestamp):.2f}')
+                timestamp = time.time()
+
                 outgoing_image_data = self.normalize_values(outgoing_image_data)
 
                 if not self.rendering:
@@ -2050,7 +2054,7 @@ class flameTimewarpML(flameMenuApp):
                     )
                 self.processEvents()
 
-                print (f'update interfaces time: {(time.time()-timestamp):.2f}')
+                print (f'normalize and interface 2 time: {(time.time()-timestamp):.2f}')
                 timestamp = time.time()
 
                 if self.parent_app.current_mode == 1:
