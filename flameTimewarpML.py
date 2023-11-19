@@ -2050,6 +2050,8 @@ class flameTimewarpML(flameMenuApp):
                     )
                 self.processEvents()
 
+                print (f'update interfaces time: {(time.time()-timestamp):.2f}')
+                timestamp = time.time()
 
                 if self.parent_app.current_mode == 1:
                     result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
