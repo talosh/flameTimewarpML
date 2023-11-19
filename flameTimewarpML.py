@@ -1843,7 +1843,8 @@ class flameTimewarpML(flameMenuApp):
             frame_data = self.frames_map.get(frame_number)
             if not frame_data:
                 return
-            
+            return
+        
             try:
                 inc_frame_number = frame_data['incoming']['frame_number'] - 1
                 outg_frame_number = frame_data['outgoing']['frame_number'] - 1
@@ -1878,8 +1879,7 @@ class flameTimewarpML(flameMenuApp):
             self.prefetch_thread.join()
 
             print (f'frame time: {(time.time()-timestamp):.2f}')
-
-            print (f'size of self.frames_map: {sys.getsizeof(self.frames_map) / (1024 ** 3):.2f}Gb')
+            print (f'size of self.frames_map: {sys.getsizeof(self.frames_map):.2f}')
 
         def _process_current_frame(self, single_frame=False):
             import numpy as np
