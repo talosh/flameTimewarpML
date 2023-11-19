@@ -1845,9 +1845,11 @@ class flameTimewarpML(flameMenuApp):
                 return
 
             # TODO: figure out why
-            # this does work but somehow frame time increases with
+            # this does work but sometimes frame time increases with
             # frames prefetch
-            # '''
+            # also seem to be leaking memory
+
+            '''
             try:
                 inc_frame_number = frame_data['incoming']['frame_number'] - 1
                 outg_frame_number = frame_data['outgoing']['frame_number'] - 1
@@ -1865,7 +1867,7 @@ class flameTimewarpML(flameMenuApp):
                 self.frames_map[frame_number] = frame_data
             except Exception as e:
                 print (f'prefetch frame exception: {e}')
-            # '''
+            '''
             return
 
         def process_current_frame(self):
