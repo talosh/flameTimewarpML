@@ -1843,6 +1843,9 @@ class flameTimewarpML(flameMenuApp):
             frame_data = self.frames_map.get(frame_number)
             if not frame_data:
                 return
+            
+            return
+
             try:
                 inc_frame_number = frame_data['incoming']['frame_number'] - 1
                 outg_frame_number = frame_data['outgoing']['frame_number'] - 1
