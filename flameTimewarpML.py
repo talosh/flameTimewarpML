@@ -1840,10 +1840,12 @@ class flameTimewarpML(flameMenuApp):
             return image_array
 
         def process_current_frame(self):
+            timestamp = time.time()
             self.frame_thread = threading.Thread(target=self._process_current_frame)
             self.frame_thread.daemon = True
             self.frame_thread.start()
             self.frame_thread.join()
+            print (f'frame time: {(timestamp - time.time()):2f}')
 
         def _process_current_frame(self, single_frame=False):
             import numpy as np
