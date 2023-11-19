@@ -6357,7 +6357,7 @@ class flameTimewarpML(flameMenuApp):
                 # self.contextnet = Contextnet()
                 # self.unet = Unet()
 
-            def forward(self, img0, img1, timestep=0.5, scale_list=[8, 4, 2, 1], training=False, fastmode=True, ensemble=True):
+            def forward(self, img0, img1, timestep=0.5, scale_list=[8, 4, 2, 1], training=False, fastmode=True, ensemble=False):
                 info_text = self.progress.ui.info_label.text()
 
                 ratio = timestep
@@ -6377,7 +6377,7 @@ class flameTimewarpML(flameMenuApp):
                 block = [self.block0, self.block1, self.block2, self.block3]
 
 
-                # '''
+                '''
                 raft_img0 = F.interpolate(img0 * 2 - 1, scale_factor = 1 / 4, mode="bilinear", align_corners=False)
                 raft_img1 = F.interpolate(img1 * 2 - 1, scale_factor = 1 / 4, mode="bilinear", align_corners=False)
                 current_device = torch.device(img0.device)
@@ -6422,7 +6422,7 @@ class flameTimewarpML(flameMenuApp):
             
                 # warped_img0 = warp(img0, raft_flow_f)
                 # warped_img1 = warp(img1, raft_flow_b)
-                # '''
+                '''
 
                 # self.empty_torch_cache()
 
@@ -6440,7 +6440,7 @@ class flameTimewarpML(flameMenuApp):
                             mask = (mask + (-m_)) / 2
                             del m_
 
-                        flow = 0.75 * flow + 0.25 * raft_flow
+                        # flow = 0.75 * flow + 0.25 * raft_flow
 
                     else:
                         wf0 = warp(f0, flow[:, :2])
@@ -6460,10 +6460,10 @@ class flameTimewarpML(flameMenuApp):
                         
                         flow = flow + fd
                         
-                        if i == 2:
-                            flow = 0.8 * flow + 0.2 * raft_flow
-                        elif i == 3:
-                            flow = 0.9 * flow + 0.1 * raft_flow
+                        # if i == 2:
+                        #    flow = 0.8 * flow + 0.2 * raft_flow
+                        # elif i == 3:
+                        #    flow = 0.9 * flow + 0.1 * raft_flow
 
                         del fd
                         del m0
