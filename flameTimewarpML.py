@@ -6350,7 +6350,10 @@ class flameTimewarpML(flameMenuApp):
                 # self.unet = Unet()
 
             def forward(self, img0, img1, timestep=0.5, scale_list=[8, 4, 2, 1], training=False, fastmode=True, ensemble=False):
-                info_text = self.progress.ui.info_label.text()
+                try:
+                    info_text = self.progress.ui.info_label.text()
+                except:
+                    info_text = ''
 
                 ratio = timestep
                 if not torch.is_tensor(timestep):
