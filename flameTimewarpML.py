@@ -1908,7 +1908,7 @@ class flameTimewarpML(flameMenuApp):
                         inc_frame_number
                         )
                 else:
-                    result_image_data = torch.from_numpy(cached_image_data.copy())
+                    result_image_data = cached_image_data
                     del cached_image_data
                     del self.current_frame_data['incoming']['image_data']
                     del self.current_frame_data['outgoing']['image_data']
@@ -1979,7 +1979,7 @@ class flameTimewarpML(flameMenuApp):
                         outg_frame_number
                         )
                 else:
-                    result_image_data = torch.from_numpy(cached_image_data.copy())
+                    result_image_data = cached_image_data
                     del cached_image_data
                     del self.current_frame_data['incoming']['image_data']
                     del self.current_frame_data['outgoing']['image_data']
@@ -2050,7 +2050,7 @@ class flameTimewarpML(flameMenuApp):
                         inc_frame_number
                         )
                 else:
-                    incoming_image_data = torch.from_numpy(cached_image_data.copy())
+                    incoming_image_data = cached_image_data
                     del cached_image_data
                     del self.current_frame_data['incoming']['image_data']
                 
@@ -2084,7 +2084,7 @@ class flameTimewarpML(flameMenuApp):
                         outg_frame_number
                         )
                 else:
-                    outgoing_image_data = torch.from_numpy(cached_image_data.copy())
+                    outgoing_image_data = cached_image_data
                     del cached_image_data
                     del self.current_frame_data['outgoing']['image_data']
 
