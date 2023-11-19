@@ -1901,7 +1901,7 @@ class flameTimewarpML(flameMenuApp):
                     )
 
                 result_image_data = self.current_frame_data['incoming'].get('image_data')
-                if not result_image_data:
+                if result_image_data is None:
                     result_image_data = self.read_image_data_torch(
                         self.current_frame_data['incoming']['clip'], 
                         inc_frame_number
@@ -1969,7 +1969,7 @@ class flameTimewarpML(flameMenuApp):
                     )
                 
                 result_image_data = self.current_frame_data['outgoing'].get('image_data')
-                if not result_image_data:
+                if result_image_data is None:
                     result_image_data = self.read_image_data_torch(
                         self.current_frame_data['outgoing']['clip'], 
                         outg_frame_number
@@ -2037,7 +2037,7 @@ class flameTimewarpML(flameMenuApp):
                     )
 
                 incoming_image_data = self.current_frame_data['incoming'].get('image_data')
-                if not incoming_image_data:
+                if incoming_image_data is None:
                     incoming_image_data = self.read_image_data_torch(
                         self.current_frame_data['incoming']['clip'], 
                         inc_frame_number
@@ -2069,7 +2069,7 @@ class flameTimewarpML(flameMenuApp):
                 timestamp = time.time()
 
                 outgoing_image_data = self.current_frame_data['outgoing'].get('image_data')
-                if not outgoing_image_data:
+                if outgoing_image_data is None:
                     outgoing_image_data = self.read_image_data_torch(
                         self.current_frame_data['outgoing']['clip'], 
                         outg_frame_number
