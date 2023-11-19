@@ -6412,8 +6412,8 @@ class flameTimewarpML(flameMenuApp):
                     text = f'Flow BKW'
                     )
                 
-                raft_flow_f = F.interpolate(raft_flow_f, scale_factor = 2, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2
-                raft_flow_b = F.interpolate(raft_flow_b, scale_factor = 2, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2
+                raft_flow_f = F.interpolate(raft_flow_f, scale_factor = 8, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 8
+                raft_flow_b = F.interpolate(raft_flow_b, scale_factor = 8, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 8
                 raft_flow_f = raft_flow_f * timestep
                 raft_flow_b = raft_flow_b * (1-timestep)
 
@@ -6464,8 +6464,6 @@ class flameTimewarpML(flameMenuApp):
                         del m0
                         del wf0
                         del wf1
-
-                    print (f'mask shape: {mask.shape}')
                     
                     self.progress.info(f'{info_text} - flow iteration {i + 1} of 4')
                     display_flow = F.interpolate(flow[:, :, :h, :w], scale_factor=0.25, mode='nearest')
