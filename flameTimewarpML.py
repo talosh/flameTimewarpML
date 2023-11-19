@@ -3119,13 +3119,7 @@ class flameTimewarpML(flameMenuApp):
             print_all_tensors()
             '''
 
-            if sys.platform == 'darwin':
-                self.torch_device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-            else:
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-                # self.torch_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+            self.parent_app.empty_torch_cache()
 
             while not self.frames_to_save_queue.empty():
                 qsize = self.frames_to_save_queue.qsize()
