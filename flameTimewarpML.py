@@ -6460,7 +6460,7 @@ class flameTimewarpML(flameMenuApp):
                             mask = m0
                         
                         flow = flow + fd
-                        # flow = 0.8 * flow + 0.2 * raft_flow 
+                        flow = 0.8 * flow + 0.2 * raft_flow 
 
                         del fd
                         del m0
@@ -8046,7 +8046,6 @@ class flameTimewarpML(flameMenuApp):
         return reassembled_img
 
     def raft(self, img0, img1):
-        print ('raft called')
 
         from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
 
