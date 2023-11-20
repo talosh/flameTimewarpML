@@ -34,7 +34,7 @@ from adsk.libwiretapPythonClientAPI import (
 
 from pprint import pprint
 from pprint import pformat
-3
+
 # Configurable settings
 menu_group_name = 'Timewarp ML'
 DEBUG = False
