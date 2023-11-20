@@ -6586,6 +6586,7 @@ class flameTimewarpML(flameMenuApp):
             self.current_models['flownet412'] = flownet
         else:
             flownet = self.current_models.get('flownet412')
+            flownet.eval()
         # '''
 
         '''
