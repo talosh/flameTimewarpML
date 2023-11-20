@@ -1893,8 +1893,6 @@ class flameTimewarpML(flameMenuApp):
 
         def _process_current_frame(self, single_frame=False):
             
-            print (f'_process_current_frame {self.current_frame}')
-
             import numpy as np
             import torch
 
