@@ -6528,7 +6528,18 @@ class flameTimewarpML(flameMenuApp):
 
                 mask = torch.sigmoid(mask)
                 merged = (warped_img0 * mask + warped_img1 * (1 - mask))
+
+                del warped_img0
+                del warped_img1
+                del img0
+                del img1
+                del f0
+                del f1
+                del flow
                 del mask
+
+                self.empty_torch_cache()
+                
                 # merged = warped_img0
 
                 if not fastmode:
@@ -6597,7 +6608,6 @@ class flameTimewarpML(flameMenuApp):
         res_img = flownet(img0, img1, timestep, scale_list)[0]
         del img0
         del img1
-        self.empty_torch_cache()
 
         self.log_debug(f'model inference time: {(time.time()-timestamp):.2f}')
         timestamp = time.time()
