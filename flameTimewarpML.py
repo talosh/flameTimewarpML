@@ -1888,7 +1888,7 @@ class flameTimewarpML(flameMenuApp):
             
             # self.prefetch_thread.join()
 
-            self.log_debug(f'frame time: {(time.time()-timestamp):.2f}')
+            self.log_debug(f'frame: {self.current_frame} processing time: {(time.time()-timestamp):.2f}')
             # print (f'size of self.frames_map: {(sys.getsizeof(self.frames_map) / (1024 ** 2)):.2f}Mb')
 
         def _process_current_frame(self, single_frame=False):
@@ -2088,7 +2088,7 @@ class flameTimewarpML(flameMenuApp):
                     del self.current_frame_data['incoming']['image_data']
                 '''
                 
-                print (f'reading 1 time: {(time.time()-timestamp):.2f}')
+                self.log_debug(f'reading 1 time: {(time.time()-timestamp):.2f}')
                 timestamp = time.time()
                 
                 incoming_image_data = self.normalize_values(incoming_image_data)
@@ -2108,7 +2108,7 @@ class flameTimewarpML(flameMenuApp):
                     'message': f'Frame {self.current_frame}: reading outgoing source image data...'}
                     )
 
-                print (f'normalize and interface 1 time: {(time.time()-timestamp):.2f}')
+                self.log_debug(f'normalize and interface 1 time: {(time.time()-timestamp):.2f}')
                 timestamp = time.time()
 
                 outgoing_image_data = self.read_image_data_torch(
@@ -2129,7 +2129,7 @@ class flameTimewarpML(flameMenuApp):
                     del self.current_frame_data['outgoing']['image_data']
                 '''
 
-                print (f'reading 2 time: {(time.time()-timestamp):.2f}')
+                self.log_debug(f'reading 2 time: {(time.time()-timestamp):.2f}')
                 timestamp = time.time()
 
                 outgoing_image_data = self.normalize_values(outgoing_image_data)
@@ -2151,7 +2151,7 @@ class flameTimewarpML(flameMenuApp):
                     )
                 self.processEvents()
 
-                print (f'normalize and interface 2 time: {(time.time()-timestamp):.2f}')
+                self.log_debug(f'normalize and interface 2 time: {(time.time()-timestamp):.2f}')
                 timestamp = time.time()
 
                 if self.parent_app.current_mode == 1:
@@ -2167,7 +2167,7 @@ class flameTimewarpML(flameMenuApp):
                 elif self.parent_app.current_mode == 6:
                     result_image_data = self.parent_app.flownet24(incoming_image_data, outgoing_image_data, ratio, self.parent_app.flownet_model_path)
 
-                print (f'model time: {(time.time()-timestamp):.2f}')
+                self.log_debug(f'model time: {(time.time()-timestamp):.2f}')
                 timestamp = time.time()
 
                 if result_image_data is None:
@@ -2213,7 +2213,7 @@ class flameTimewarpML(flameMenuApp):
                     'text': 'Render'}
                 )
 
-            print (f'save time: {(time.time()-timestamp):.2f}')
+            self.log_debug(f'save time: {(time.time()-timestamp):.2f}')
             timestamp = time.time()
 
             self.info('Frame ' + str(self.current_frame))
