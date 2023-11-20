@@ -1876,15 +1876,16 @@ class flameTimewarpML(flameMenuApp):
             timestamp = time.time()
             # print (f'frame: {self.current_frame}')
 
-            # self.frame_thread = threading.Thread(target=self._process_current_frame)
-            # self.frame_thread.daemon = True
-            # self.frame_thread.start()
+            self.frame_thread = threading.Thread(target=self._process_current_frame)
+            self.frame_thread.daemon = True
+            self.frame_thread.start()
 
-            self.prefetch_thread = threading.Thread(target=self.prefetch_frame(self.current_frame + 1))
-            self.prefetch_thread.daemon = True
-            self.prefetch_thread.start()
+            # self.prefetch_thread = threading.Thread(target=self.prefetch_frame(self.current_frame + 1))
+            # self.prefetch_thread.daemon = True
+            # self.prefetch_thread.start()
 
             self.frame_thread.join()
+            
             # self.prefetch_thread.join()
 
             # print (f'frame time: {(time.time()-timestamp):.2f}')
