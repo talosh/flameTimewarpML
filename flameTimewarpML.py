@@ -3162,6 +3162,13 @@ class flameTimewarpML(flameMenuApp):
             print_all_tensors()
             '''
 
+            try:
+                for key in self.parent_app.current_models.keys():
+                    del self.self.parent_app.current_models[key]
+                self.parent_app.current_models = {}
+            except Exception as e:
+                print (f'close_application exception {e}')
+
             self.parent_app.empty_torch_cache()
 
             while not self.frames_to_save_queue.empty():
@@ -6539,7 +6546,7 @@ class flameTimewarpML(flameMenuApp):
                 del mask
 
                 self.empty_torch_cache()
-                
+
                 # merged = warped_img0
 
                 if not fastmode:
@@ -6616,7 +6623,6 @@ class flameTimewarpML(flameMenuApp):
         res_img = res_img.flip(-1)
 
         del flownet
-        self.empty_torch_cache()
         return res_img
 
     def flownet24(self, img0, img1, ratio, model_path):
