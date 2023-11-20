@@ -4,6 +4,10 @@ flameTimewarpML
 Flame 2020 and higher
 written by Andrii Toloshnyy
 andriy.toloshnyy@gmail.com
+
+flame slider and calculator interfaces:
+Written by: Michael Vaglienty
+With contributions from: Kieran Hanrahan
 '''
 
 import os
@@ -30,7 +34,7 @@ from adsk.libwiretapPythonClientAPI import (
 
 from pprint import pprint
 from pprint import pformat
-
+3
 # Configurable settings
 menu_group_name = 'Timewarp ML'
 DEBUG = False
