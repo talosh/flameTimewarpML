@@ -1674,7 +1674,7 @@ class flameTimewarpML(flameMenuApp):
             self.processEvents()
             self.frames_map = self.parent_app.compose_frames_map(self.selection, self.mode)
 
-            print (f'frames map: {pformat(self.frames_map)}')
+            # print (f'frames map: {pformat(self.frames_map)}')
 
             self.min_frame = min(self.frames_map.keys())
             self.max_frame = max(self.frames_map.keys())
@@ -1776,6 +1776,7 @@ class flameTimewarpML(flameMenuApp):
             render_loop_thread.start()
 
         def _render_loop(self):
+            print (f'hello from _render_loop')
             render_loop_start = time.time()
 
             for frame in self.frames_map.keys():
