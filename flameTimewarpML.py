@@ -6570,7 +6570,7 @@ class flameTimewarpML(flameMenuApp):
 
         timestamp = time.time()
 
-        # '''
+        '''
         if not self.current_models.get('flownet412'):
             flownet = IFNet(self.progress)
             flownet.to(device)
@@ -6587,9 +6587,9 @@ class flameTimewarpML(flameMenuApp):
         else:
             flownet = self.current_models.get('flownet412')
             flownet.eval()
-        # '''
-
         '''
+
+        # '''
         flownet = IFNet(self.progress)
         flownet.to(device)
         flownet.eval()
@@ -6601,8 +6601,7 @@ class flameTimewarpML(flameMenuApp):
         )
 
         flownet.load_state_dict(convert(torch.load(model_path)), False)
-        self.current_models['flownet412'] = flownet
-        '''
+        # '''
 
         scale = self.flow_scale
         timestep = ratio
