@@ -6587,7 +6587,7 @@ class flameTimewarpML(flameMenuApp):
         timestep = ratio
         scale_list = [8/scale, 4/scale, 2/scale, 1/scale]
 
-        print (f'model init time: {(time.time()-timestamp):.2f}')
+        self.log_debug(f'model init time: {(time.time()-timestamp):.2f}')
         timestamp = time.time()
 
         # print (f'after flownet statedict: {torch.cuda.memory_allocated(torch.cuda.current_device()) / 1024 ** 2}')
@@ -6597,7 +6597,7 @@ class flameTimewarpML(flameMenuApp):
         del img1
         self.empty_torch_cache()
 
-        print (f'model inference time: {(time.time()-timestamp):.2f}')
+        self.log_debug(f'model inference time: {(time.time()-timestamp):.2f}')
         timestamp = time.time()
 
         res_img = res_img.permute(1, 2, 0)[:h, :w]
