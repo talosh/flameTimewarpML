@@ -33,7 +33,7 @@ from pprint import pformat
 
 # Configurable settings
 menu_group_name = 'Timewarp ML'
-DEBUG = False
+DEBUG = True
 app_name = 'flameTimewarpML'
 prefs_folder = os.getenv('FLAMETWML_PREFS')
 bundle_folder = os.getenv('FLAMETWML_BUNDLE')
@@ -1874,7 +1874,7 @@ class flameTimewarpML(flameMenuApp):
 
         def process_current_frame(self):
             timestamp = time.time()
-            # print (f'frame: {self.current_frame}')
+            self.log_debug(f'frame: {self.current_frame}')
 
             self.frame_thread = threading.Thread(target=self._process_current_frame)
             self.frame_thread.daemon = True
@@ -1888,7 +1888,7 @@ class flameTimewarpML(flameMenuApp):
             
             # self.prefetch_thread.join()
 
-            # print (f'frame time: {(time.time()-timestamp):.2f}')
+            self.log_debug(f'frame time: {(time.time()-timestamp):.2f}')
             # print (f'size of self.frames_map: {(sys.getsizeof(self.frames_map) / (1024 ** 2)):.2f}Mb')
 
         def _process_current_frame(self, single_frame=False):
