@@ -1776,7 +1776,6 @@ class flameTimewarpML(flameMenuApp):
             render_loop_thread.start()
 
         def _render_loop(self):
-            print (f'hello from _render_loop')
             render_loop_start = time.time()
 
             for frame in self.frames_map.keys():
@@ -2229,7 +2228,7 @@ class flameTimewarpML(flameMenuApp):
                 pass
             '''
 
-            self.parent_app.empty_torch_cache()
+            # self.parent_app.empty_torch_cache()
 
             return
 
