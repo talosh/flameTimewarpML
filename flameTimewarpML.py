@@ -1872,21 +1872,21 @@ class flameTimewarpML(flameMenuApp):
 
         def process_current_frame(self):
             timestamp = time.time()
-            print (f'frame: {self.current_frame}')
+            # print (f'frame: {self.current_frame}')
 
-            self.frame_thread = threading.Thread(target=self._process_current_frame)
-            self.frame_thread.daemon = True
-            self.frame_thread.start()
+            # self.frame_thread = threading.Thread(target=self._process_current_frame)
+            # self.frame_thread.daemon = True
+            # self.frame_thread.start()
 
             self.prefetch_thread = threading.Thread(target=self.prefetch_frame(self.current_frame + 1))
             self.prefetch_thread.daemon = True
             self.prefetch_thread.start()
 
             self.frame_thread.join()
-            self.prefetch_thread.join()
+            # self.prefetch_thread.join()
 
-            print (f'frame time: {(time.time()-timestamp):.2f}')
-            print (f'size of self.frames_map: {(sys.getsizeof(self.frames_map) / (1024 ** 2)):.2f}Mb')
+            # print (f'frame time: {(time.time()-timestamp):.2f}')
+            # print (f'size of self.frames_map: {(sys.getsizeof(self.frames_map) / (1024 ** 2)):.2f}Mb')
 
         def _process_current_frame(self, single_frame=False):
             import numpy as np
@@ -1910,6 +1910,12 @@ class flameTimewarpML(flameMenuApp):
                     'message': f'Frame {self.current_frame}: reading incoming source image data...'}
                     )
 
+                result_image_data = self.read_image_data_torch(
+                    self.current_frame_data['incoming']['clip'], 
+                    inc_frame_number
+                    )
+
+                '''
                 cached_image_data = self.current_frame_data['incoming'].get('image_data')
                 if cached_image_data is None:
                     result_image_data = self.read_image_data_torch(
@@ -1921,6 +1927,7 @@ class flameTimewarpML(flameMenuApp):
                     del cached_image_data
                     del self.current_frame_data['incoming']['image_data']
                     del self.current_frame_data['outgoing']['image_data']
+                '''
                                 
                 if not self.rendering:
                     del result_image_data
@@ -1981,6 +1988,12 @@ class flameTimewarpML(flameMenuApp):
                     'message': f'Frame {self.current_frame}: reading outgoing source image data...'}
                     )
                 
+                result_image_data = self.read_image_data_torch(
+                    self.current_frame_data['outgoing']['clip'], 
+                    outg_frame_number
+                    )
+                
+                '''
                 cached_image_data = self.current_frame_data['outgoing'].get('image_data')
                 if cached_image_data is None:
                     result_image_data = self.read_image_data_torch(
@@ -1992,6 +2005,7 @@ class flameTimewarpML(flameMenuApp):
                     del cached_image_data
                     del self.current_frame_data['incoming']['image_data']
                     del self.current_frame_data['outgoing']['image_data']
+                '''
                 
                 if not self.rendering:
                     del result_image_data
@@ -2052,6 +2066,12 @@ class flameTimewarpML(flameMenuApp):
                     'message': f'Frame {self.current_frame}: reading incoming source image data...'}
                     )
 
+                incoming_image_data = self.read_image_data_torch(
+                    self.current_frame_data['incoming']['clip'], 
+                    inc_frame_number
+                    )
+
+                '''
                 cached_image_data = self.current_frame_data['incoming'].get('image_data')
                 if cached_image_data is None:
                     incoming_image_data = self.read_image_data_torch(
@@ -2062,6 +2082,7 @@ class flameTimewarpML(flameMenuApp):
                     incoming_image_data = cached_image_data
                     del cached_image_data
                     del self.current_frame_data['incoming']['image_data']
+                '''
                 
                 print (f'reading 1 time: {(time.time()-timestamp):.2f}')
                 timestamp = time.time()
@@ -2086,6 +2107,12 @@ class flameTimewarpML(flameMenuApp):
                 print (f'normalize and interface 1 time: {(time.time()-timestamp):.2f}')
                 timestamp = time.time()
 
+                outgoing_image_data = self.read_image_data_torch(
+                    self.current_frame_data['outgoing']['clip'], 
+                    outg_frame_number
+                    )
+
+                '''
                 cached_image_data = self.current_frame_data['outgoing'].get('image_data')
                 if cached_image_data is None:
                     outgoing_image_data = self.read_image_data_torch(
@@ -2096,6 +2123,7 @@ class flameTimewarpML(flameMenuApp):
                     outgoing_image_data = cached_image_data
                     del cached_image_data
                     del self.current_frame_data['outgoing']['image_data']
+                '''
 
                 print (f'reading 2 time: {(time.time()-timestamp):.2f}')
                 timestamp = time.time()
@@ -2186,6 +2214,7 @@ class flameTimewarpML(flameMenuApp):
 
             self.info('Frame ' + str(self.current_frame))
 
+            '''
             try:
                 del self.frames_map[self.current_frame]['incoming']['image_data']
             except:
@@ -2195,6 +2224,9 @@ class flameTimewarpML(flameMenuApp):
                 del self.frames_map[self.current_frame]['outgoing']['image_data']
             except:
                 pass
+            '''
+
+            self.parent_app.empty_torch_cache()
 
             return
 
@@ -6492,6 +6524,7 @@ class flameTimewarpML(flameMenuApp):
 
                 mask = torch.sigmoid(mask)
                 merged = (warped_img0 * mask + warped_img1 * (1 - mask))
+                del mask
                 # merged = warped_img0
 
                 if not fastmode:
