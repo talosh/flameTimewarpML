@@ -1463,9 +1463,9 @@ class flameTimewarpML(flameMenuApp):
             self.message_thread.start()
 
             # set up save thread
-            self.message_thread = threading.Thread(target=self.process_frames_to_save)
-            self.message_thread.daemon = True
-            self.message_thread.start()
+            self.save_thread = threading.Thread(target=self.process_frames_to_save)
+            self.save_thread.daemon = True
+            self.save_thread.start()
 
             # set window flags
             self.setWindowFlags(
