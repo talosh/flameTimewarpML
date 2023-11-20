@@ -3701,6 +3701,8 @@ class flameTimewarpML(flameMenuApp):
         elif len (clip.versions[0].tracks[0].segments) != 1:
             return None
 
+        pprint (f'check_timewarp_effect: {effect}')
+
         for effect in effects:
             if effect.type == 'Timewarp':
                 return effect
