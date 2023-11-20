@@ -2230,7 +2230,7 @@ class flameTimewarpML(flameMenuApp):
                 pass
             '''
 
-            # self.parent_app.empty_torch_cache()
+            self.parent_app.empty_torch_cache()
 
             return
 
