@@ -2533,6 +2533,9 @@ class flameTimewarpML(flameMenuApp):
             return
 
         def update_interface_image_torch(self, array, image_label, text = None):
+            import torch
+            import torch.nn.functional as F
+
             if self.message_queue.qsize() > 32:
                 return
             
@@ -2540,7 +2543,8 @@ class flameTimewarpML(flameMenuApp):
             print (label_size)
             h, w, d = array.shape
             scale_factor = min(label_size.height()/h, label_size.width()/w)
-            print (f'scale factor: {scale_factor}')
+            array = F.interpolate(array, scale_factor=scale_factor, mode="bilinear", align_corners=False)
+            print (array.shape)
 
             item = {
                 'type': 'image',
