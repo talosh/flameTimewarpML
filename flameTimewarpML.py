@@ -1466,9 +1466,9 @@ class flameTimewarpML(flameMenuApp):
 
             # set up ui images queue and processing thread
             self.ui_images_queue = queue.Queue()
-            self.ui_images_queue = threading.Thread(target=self.process_ui_images)
-            self.ui_images_queue.daemon = True
-            self.ui_images_queue.start()
+            self.ui_images_thread = threading.Thread(target=self.process_ui_images)
+            self.ui_images_thread.daemon = True
+            self.ui_images_thread.start()
 
             # set up save queue and processing thread
             self.frames_to_save_queue = queue.Queue(maxsize=8)
