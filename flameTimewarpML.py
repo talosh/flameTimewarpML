@@ -2765,6 +2765,9 @@ class flameTimewarpML(flameMenuApp):
             label_size = image_label.size()
             h, w, d = array.shape
             scale_factor = min((0.99 * label_size.height())/h, (0.99 * label_size.width())/w)
+            print (f'array: {array.shape}')
+
+            '''
             array = array.permute(2, 0, 1).unsqueeze(0)
             array = F.interpolate(array, scale_factor=scale_factor, mode="bilinear", align_corners=False)
             array = array.squeeze(0).permute(1, 2, 0)
@@ -2777,6 +2780,7 @@ class flameTimewarpML(flameMenuApp):
             }
 
             self.ui_images_queue.put(item)
+            '''
 
         def update_optical_flow(self, array, image_label, text = None):
             if self.message_queue.qsize() > 9:
