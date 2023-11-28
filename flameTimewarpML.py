@@ -2663,6 +2663,8 @@ class flameTimewarpML(flameMenuApp):
             del qt_pixmap
 
         def _update_interface_image(self, array, image_label, text = None):
+            return
+        
             import numpy as np
             import torch
 
