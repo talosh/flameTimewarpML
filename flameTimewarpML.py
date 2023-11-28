@@ -2500,6 +2500,23 @@ class flameTimewarpML(flameMenuApp):
                     self.ui_images_queue.task_done()
                     time.sleep(timeout)
                     continue
+                
+                item_type = item.get('type')
+
+                if not item_type:
+                    self.message_queue.task_done()
+                    time.sleep(timeout)
+                    continue
+                elif item_type == 'image':
+                    self.updateInterfaceImage.emit(item)
+                elif item_type == 'flow':
+                    self.updateFlowImage.emit(item)
+                else:
+                    self.message_queue.task_done()
+                    time.sleep(timeout)
+                    continue
+                time.sleep(timeout)
+            return
 
         def process_frames_to_save(self):
             timeout = 0.0001
@@ -2540,13 +2557,11 @@ class flameTimewarpML(flameMenuApp):
                 return
             
             label_size = image_label.size()
-            print (label_size)
             h, w, d = array.shape
             scale_factor = min(label_size.height()/h, label_size.width()/w)
             array = array.permute(2, 0, 1).unsqueeze(0)
             array = F.interpolate(array, scale_factor=scale_factor, mode="bilinear", align_corners=False)
             array = array.squeeze(0).permute(1, 2, 0)
-            print (array.shape)
 
             item = {
                 'type': 'image',
@@ -2554,7 +2569,7 @@ class flameTimewarpML(flameMenuApp):
                 'image_label': image_label,
                 'text': text
             }
-            self.message_queue.put(item)
+            self.ui_images_queue.put(item)
 
         def update_interface_image(self, array, image_label, text = None):
             if self.message_queue.qsize() > 32:
