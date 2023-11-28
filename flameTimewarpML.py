@@ -2543,7 +2543,9 @@ class flameTimewarpML(flameMenuApp):
             print (label_size)
             h, w, d = array.shape
             scale_factor = min(label_size.height()/h, label_size.width()/w)
+            array = array.permute(2, 0, 1).unsqueeze(0)
             array = F.interpolate(array, scale_factor=scale_factor, mode="bilinear", align_corners=False)
+            array = array.squeeze(0).permute(1, 2, 0)
             print (array.shape)
 
             item = {
