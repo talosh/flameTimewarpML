@@ -1948,7 +1948,7 @@ class flameTimewarpML(flameMenuApp):
                 
                 display_image_data = self.normalize_values(result_image_data)
                 
-                self.update_interface_image(
+                self.update_interface_image_torch(
                     display_image_data[::4, ::4, :],
                     self.ui.flow1_label,
                     text = 'From Frame: ' + str(inc_frame_number + 1)
@@ -1959,6 +1959,7 @@ class flameTimewarpML(flameMenuApp):
                     self.ui.flow2_label,
                     text = 'Frame: ' + str(inc_frame_number + 1)
                     )
+                
                 self.update_interface_image(
                     None, 
                     self.ui.flow3_label,
@@ -2500,9 +2501,6 @@ class flameTimewarpML(flameMenuApp):
                     time.sleep(timeout)
                     continue
 
-
-
-
         def process_frames_to_save(self):
             timeout = 0.0001
 
@@ -2533,6 +2531,22 @@ class flameTimewarpML(flameMenuApp):
                 
                 time.sleep(timeout)
             return
+
+        def update_interface_image_torch(self, array, image_label, text = None):
+            if self.message_queue.qsize() > 32:
+                return
+            
+            label_size = image_label.size()
+            print (label_size)
+            print (array.shape)
+
+            item = {
+                'type': 'image',
+                'image': array,
+                'image_label': image_label,
+                'text': text
+            }
+            self.message_queue.put(item)
 
         def update_interface_image(self, array, image_label, text = None):
             if self.message_queue.qsize() > 32:
