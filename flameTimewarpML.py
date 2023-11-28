@@ -1394,9 +1394,6 @@ class flameTimewarpML(flameMenuApp):
             self.app_name = self.parent_app.app_name
             self.version = self.parent_app.version
             self.temp_folder = self.parent_app.framework.temp_folder
-
-            self.message_queue = queue.Queue()
-            self.frames_to_save_queue = queue.Queue(maxsize=8)
             self.parent_app.progress = self
 
             self.log_debug = self.parent_app.framework.log_debug
@@ -1461,12 +1458,20 @@ class flameTimewarpML(flameMenuApp):
 
             self.threads = True
 
-            # set up message thread
+            # set up message queue and processing thread
+            self.message_queue = queue.Queue()
             self.message_thread = threading.Thread(target=self.process_messages)
             self.message_thread.daemon = True
             self.message_thread.start()
 
-            # set up save thread
+            # set up ui images queue and processing thread
+            self.ui_images_queue = queue.Queue()
+            self.ui_images_queue = threading.Thread(target=self.process_ui_images)
+            self.ui_images_queue.daemon = True
+            self.ui_images_queue.start()
+
+            # set up save queue and processing thread
+            self.frames_to_save_queue = queue.Queue(maxsize=8)
             self.save_thread = threading.Thread(target=self.process_frames_to_save)
             self.save_thread.daemon = True
             self.save_thread.start()
