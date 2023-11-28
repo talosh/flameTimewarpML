@@ -2764,8 +2764,8 @@ class flameTimewarpML(flameMenuApp):
             
             label_size = image_label.size()
             print (f'array: {array.shape}')
-            # h, w, d = array.shape
-            # scale_factor = min((0.99 * label_size.height())/h, (0.99 * label_size.width())/w)
+            n, d, h, w = array.shape
+            scale_factor = min((0.99 * label_size.height())/h, (0.99 * label_size.width())/w)
 
             '''
             array = array.permute(2, 0, 1).unsqueeze(0)
