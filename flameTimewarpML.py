@@ -2027,30 +2027,30 @@ class flameTimewarpML(flameMenuApp):
 
                 display_image_data = self.normalize_values(result_image_data)
                 
-                self.update_interface_image(
+                self.update_interface_image_torch(
                     None,
                     self.ui.flow1_label,
                     text = 'From Frame: ' + str(inc_frame_number + 1)
                     )
 
-                self.update_interface_image(
+                self.update_interface_image_torch(
                     None,
                     self.ui.flow2_label,
                     text = 'Frame: ' + str(inc_frame_number + 1)
                     )
-                self.update_interface_image(
+                self.update_interface_image_torch(
                     None, 
                     self.ui.flow3_label,
                     text = 'Frame: ' + str(inc_frame_number + 1)
                     )
                     
-                self.update_interface_image(
-                    display_image_data[::4, ::4, :], 
+                self.update_interface_image_torch(
+                    display_image_data, 
                     self.ui.flow4_label,
                     text = 'To Frame: ' + str(outg_frame_number + 1)
                     )
                 
-                self.update_interface_image(
+                self.update_interface_image_torch(
                     display_image_data,
                     self.ui.image_res_label,
                     text = 'Frame: ' + str(self.current_frame)
@@ -2107,8 +2107,8 @@ class flameTimewarpML(flameMenuApp):
                     del incoming_image_data
                     return
 
-                self.update_interface_image(
-                    incoming_image_data[::4, ::4, :],
+                self.update_interface_image_torch(
+                    incoming_image_data,
                     self.ui.flow1_label,
                     text = 'From Frame: ' + str(inc_frame_number + 1)
                     )
@@ -2149,8 +2149,8 @@ class flameTimewarpML(flameMenuApp):
                     del outgoing_image_data
                     return
 
-                self.update_interface_image(
-                    outgoing_image_data[::4, ::4, :], 
+                self.update_interface_image_torch(
+                    outgoing_image_data, 
                     self.ui.flow4_label,
                     text = 'To Frame: ' + str(outg_frame_number + 1)
                     )
@@ -2185,7 +2185,7 @@ class flameTimewarpML(flameMenuApp):
                     del outgoing_image_data
                     return
 
-                self.update_interface_image(
+                self.update_interface_image_torch(
                     result_image_data,
                     self.ui.image_res_label,
                     text = 'Frame: ' + str(self.current_frame)
