@@ -47,7 +47,7 @@ requirements = [
     'numpy>=1.16',
     'torch>=1.3.0'
 ]
-__version__ = 'v0.5.0.dev.005'
+__version__ = 'v0.5.0.dev.006'
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
