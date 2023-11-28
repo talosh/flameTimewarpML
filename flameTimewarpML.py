@@ -2436,7 +2436,7 @@ class flameTimewarpML(flameMenuApp):
                 clip_node_handle = None
 
         def process_messages(self):
-            timeout = 0.0001
+            timeout = 0.00001
 
             while self.threads:
                 try:
@@ -2481,6 +2481,27 @@ class flameTimewarpML(flameMenuApp):
                 
                 time.sleep(timeout)
             return
+
+        def process_ui_images(self):
+            timeout = 0.00001
+            while self.threads:         
+                try:
+                    item = self.ui_images_queue.get_nowait()
+                except queue.Empty:
+                    if not self.threads:
+                        break
+                    time.sleep(timeout)
+                    continue
+                if item is None:
+                    time.sleep(timeout)
+                    continue
+                if not isinstance(item, dict):
+                    self.ui_images_queue.task_done()
+                    time.sleep(timeout)
+                    continue
+
+
+
 
         def process_frames_to_save(self):
             timeout = 0.0001
