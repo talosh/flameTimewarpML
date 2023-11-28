@@ -2555,7 +2555,11 @@ class flameTimewarpML(flameMenuApp):
 
             if self.message_queue.qsize() > 32:
                 return
-            
+
+            if array is None:
+                image_label.clear()
+                return
+
             label_size = image_label.size()
             h, w, d = array.shape
             scale_factor = min((0.9 * label_size.height())/h, (0.9 * label_size.width())/w)
@@ -2569,6 +2573,7 @@ class flameTimewarpML(flameMenuApp):
                 'image_label': image_label,
                 'text': text
             }
+            
             self.ui_images_queue.put(item)
 
         def update_interface_image(self, array, image_label, text = None):
