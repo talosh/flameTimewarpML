@@ -2601,10 +2601,66 @@ class flameTimewarpML(flameMenuApp):
                 )
 
         def _update_interface_image_torch(self, array, image_label, text = None):
+            import torch
+            import numpy as np
+
             if array is None:
                 image_label.clear()
                 return
+            
+            if (array.dtype == torch.float16) or (array.dtype == torch.float32):
+                img_torch = torch.clip(array, 0, 1) * 255
+                img_torch = img_torch.byte()
+                img = img_torch.cpu().detach().numpy()
+                del img_torch
+            else:
+                img_torch = array.byte()
+                img = img_torch.cpu().detach().numpy()
+                del img_torch
 
+            img_contiguous = np.ascontiguousarray(img, dtype=np.uint8)
+            del img
+            height, width, _ = img_contiguous.shape
+            bytes_per_line = 3 * width
+            qt_image = QtGui.QImage(img_contiguous.data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
+            qt_pixmap = QtGui.QPixmap.fromImage(qt_image)
+            del img_contiguous
+            del qt_image
+
+            if text:
+                margin = 4
+                origin_x = 2
+                origin_y = 2
+
+                painter = QtGui.QPainter(scaled_pixmap)
+                font = QtGui.QFont("Discreet", 12)
+                painter.setFont(font)
+                
+                '''
+                metrics = QtGui.QFontMetrics(font)
+                text_width = metrics.horizontalAdvance(text)
+                text_height = metrics.height()
+                rect_x = origin_x
+                rect_y = scaled_pixmap.height() - text_height - margin * 2 - origin_y
+                rect_width = text_width + margin * 2 + 2
+                rect_height = text_height + margin * 2
+                color = QtGui.QColor(0, 0, 0)
+                radius = 2
+                painter.setBrush(color)
+                painter.setOpacity(0.2)
+                painter.drawRoundedRect(rect_x, rect_y, rect_width, rect_height, radius, radius)
+                '''
+
+                painter.setOpacity(1.0)
+                painter.setPen(QtGui.QColor(255, 255, 255))
+                text_x = margin + origin_x
+                text_y = scaled_pixmap.height() - margin -origin_y
+                painter.drawText(text_x, text_y, text)
+                painter.end()
+
+            image_label.setPixmap(scaled_pixmap)
+            self.processEvents()
+            del qt_pixmap
 
         def _update_interface_image(self, array, image_label, text = None):
             import numpy as np
