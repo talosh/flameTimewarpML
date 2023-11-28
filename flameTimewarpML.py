@@ -2667,9 +2667,7 @@ class flameTimewarpML(flameMenuApp):
             self.processEvents()
             del qt_pixmap
 
-        def _update_interface_image(self, array, image_label, text = None):
-            return
-        
+        def _update_interface_image(self, array, image_label, text = None):        
             import numpy as np
             import torch
 
@@ -2752,6 +2750,33 @@ class flameTimewarpML(flameMenuApp):
             image_label.setPixmap(scaled_pixmap)
             QtWidgets.QApplication.instance().processEvents()
             '''
+
+        def update_optical_flow_torch(self, array, image_label, text = None):
+            import torch
+            import torch.nn.functional as F
+
+            if self.message_queue.qsize() > 32:
+                return
+
+            if array is None:
+                image_label.clear()
+                return
+            
+            label_size = image_label.size()
+            h, w, d = array.shape
+            scale_factor = min((0.99 * label_size.height())/h, (0.99 * label_size.width())/w)
+            array = array.permute(2, 0, 1).unsqueeze(0)
+            array = F.interpolate(array, scale_factor=scale_factor, mode="bilinear", align_corners=False)
+            array = array.squeeze(0).permute(1, 2, 0)
+
+            item = {
+                'type': 'flow',
+                'image': array,
+                'image_label': image_label,
+                'text': text
+            }
+
+            self.ui_images_queue.put(item)
 
         def update_optical_flow(self, array, image_label, text = None):
             if self.message_queue.qsize() > 9:
@@ -6661,16 +6686,15 @@ class flameTimewarpML(flameMenuApp):
                         del wf1
                     
                     self.progress.info(f'{info_text} - flow iteration {i + 1} of 4')
-                    display_flow = F.interpolate(flow[:, :, :h, :w], scale_factor=0.25, mode='nearest')
-                    self.progress.update_optical_flow(
-                        display_flow[:, :2].cpu().detach().numpy(),
+                    # display_flow = F.interpolate(flow[:, :, :h, :w], scale_factor=0.25, mode='nearest')
+                    self.progress.update_optical_flow_torch(
+                        flow[:, :, :h, :w][:, :2].cpu().detach().numpy(),
                         self.progress.ui.flow2_label,
                         text = f'Flow FWD'
                         )
 
-                    self.progress.update_optical_flow(
-                        display_flow[:, 2:].cpu().detach().numpy(),
-                        # raft_flow_f.cpu().detach().numpy(),
+                    self.progress.update_optical_flow_torch(
+                        flow[:, :, :h, :w][:, 2:].cpu().detach().numpy(),
                         self.progress.ui.flow3_label,
                         text = f'Flow BKW'
                         )
