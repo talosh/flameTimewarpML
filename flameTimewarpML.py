@@ -1972,7 +1972,7 @@ class flameTimewarpML(flameMenuApp):
                     text = 'Frame: ' + str(inc_frame_number + 1)
                     )
                 
-                self.update_interface_image(
+                self.update_interface_image_torch(
                     display_image_data,
                     self.ui.image_res_label,
                     text = 'Frame: ' + str(self.current_frame)
