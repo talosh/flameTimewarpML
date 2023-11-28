@@ -2632,7 +2632,7 @@ class flameTimewarpML(flameMenuApp):
                 origin_x = 2
                 origin_y = 2
 
-                painter = QtGui.QPainter(scaled_pixmap)
+                painter = QtGui.QPainter(qt_pixmap)
                 font = QtGui.QFont("Discreet", 12)
                 painter.setFont(font)
                 
@@ -2654,11 +2654,11 @@ class flameTimewarpML(flameMenuApp):
                 painter.setOpacity(1.0)
                 painter.setPen(QtGui.QColor(255, 255, 255))
                 text_x = margin + origin_x
-                text_y = scaled_pixmap.height() - margin -origin_y
+                text_y = qt_pixmap.height() - margin -origin_y
                 painter.drawText(text_x, text_y, text)
                 painter.end()
 
-            image_label.setPixmap(scaled_pixmap)
+            image_label.setPixmap(qt_pixmap)
             self.processEvents()
             del qt_pixmap
 
