@@ -2548,11 +2548,23 @@ class flameTimewarpML(flameMenuApp):
             self.message_queue.put(item)
 
         def on_UpdateInterfaceImage(self, item):
-            self._update_interface_image(
-                item.get('image'),
-                item.get('image_label'),
-                item.get('text')
-            )
+            import torch
+
+            if torch.is_tensor(item.get('image')):
+                self._update_interface_image_torch(
+                    item.get('image'),
+                    item.get('image_label'),
+                    item.get('text')
+                )
+            else:
+                self._update_interface_image(
+                    item.get('image'),
+                    item.get('image_label'),
+                    item.get('text')
+                )
+
+        def _update_interface_image_torch(self, array, image_label, text = None):
+            pass
 
         def _update_interface_image(self, array, image_label, text = None):
             import numpy as np
