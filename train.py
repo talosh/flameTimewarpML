@@ -210,19 +210,28 @@ class Yogi(Optimizer):
         return loss
 
 class TimewarpMLDataset(torch.utils.data.Dataset):
-    def __init__(self, data_root):
+    def __init__(self, data_root, rescan = False):
         self.fw = flameAppFramework()
         self.data_root = data_root
         
         print (f'scanning for exr files in {self.data_root}...')
         self.folders_with_exr = self.find_folders_with_exr(data_root)
         print (f'found {len(self.folders_with_exr)} folders.')
-        print (f'scanning dataset description files...')
-        folders_with_descriptions, folders_to_scan = self.scan_dataset_descriptions(
-            self.folders_with_exr,
-            file_name='dataset_folder.json'
-            )
-        print (f'found {len(folders_with_descriptions)} pre-processed folders, {len(folders_to_scan)} folders to scan.')
+        folders_with_descriptions = set()
+        folders_to_scan = set()
+        if not rescan:
+            print (f'scanning dataset description files...')
+            folders_with_descriptions, folders_to_scan = self.scan_dataset_descriptions(
+                self.folders_with_exr,
+                file_name='dataset_folder.json'
+                )
+            print (f'found {len(folders_with_descriptions)} pre-processed folders, {len(folders_to_scan)} folders to scan.')
+        else:
+            folders_to_scan = self.folders_with_exr
+
+        for folder_index, folder_path in enumerate(sorted(folders_to_scan)):
+            print (f'\rScanning folder {folder_index} of {len(folders_to_scan)}', end='')
+            self.create_dataset_description(folder_path)
 
         sys.exit()
 
@@ -335,6 +344,13 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 folders_without_file.add(folder)
 
         return folders_with_file, folders_without_file
+
+    def create_dataset_description(self, folder_path):
+        exr_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.exr')]
+        exr_files.sort()
+        first_exr_file_header = self.fw.read_openexr_file(exr_files[0], header_only = True)
+        pprint (exr_files)
+        pprint (first_exr_file_header)
 
 
     def read_frames_thread(self):
@@ -700,7 +716,7 @@ def main():
     args = parser.parse_args()
 
     read_image_queue = queue.Queue(maxsize=12)
-    dataset = TimewarpMLDataset(args.dataset_path)
+    dataset = TimewarpMLDataset(args.dataset_path, rescan = args.rescan)
 
     sys.exit()
 
