@@ -354,6 +354,13 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         exr_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.exr')]
         exr_files.sort()
+
+        if len(exr_files) < max_window:
+            max_window = len(exr_files)
+        if max_window < 3:
+            print(f'\nminimum clip length is 3 frames, {folder_path} has {len(exr_files)}')
+            return
+        
         try:
             first_exr_file_header = self.fw.read_openexr_file(exr_files[0], header_only = True)
             h = first_exr_file_header['shape'][0]
