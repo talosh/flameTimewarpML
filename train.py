@@ -217,6 +217,10 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         print (data_root)
 
+        folders_with_exr = self.find_folders_with_exr(data_root)
+
+        pprint (folders_with_exr)
+
         sys.exit()
 
         def exr_files_in_folder(folder_path):
@@ -281,6 +285,27 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         self.last_shuffled_index = -1
         self.last_source_image_data = None
         self.last_target_image_data = None
+
+    def find_folders_with_exr(self, path):
+        """
+        Find all folders under the given path that contain .exr files.
+
+        Parameters:
+        path (str): The root directory to start the search from.
+
+        Returns:
+        list: A list of directories containing .exr files.
+        """
+        directories_with_exr = set()
+
+        # Walk through all directories and files in the given path
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                if file.endswith('.exr'):
+                    directories_with_exr.add(root)
+                    break  # No need to check other files in the same directory
+
+        return directories_with_exr
 
     def read_frames_thread(self):
         timeout = 1e-8
