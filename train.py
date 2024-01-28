@@ -16,9 +16,6 @@ import flameSimpleML_framework
 importlib.reload(flameSimpleML_framework)
 from flameSimpleML_framework import flameAppFramework
 
-from models.multires_v001 import Model as Model_01
-from models.multires4_v001 import Model as Model_02
-
 settings = {
     'menu_group_name': 'Simple ML',
     'debug': False,
