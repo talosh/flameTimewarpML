@@ -230,7 +230,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             folders_to_scan = self.folders_with_exr
 
         for folder_index, folder_path in enumerate(sorted(folders_to_scan)):
-            print (f'\rScanning folder {folder_index} of {len(folders_to_scan)}', end='')
+            print (f'\rScanning folder {folder_index + 1} of {len(folders_to_scan)}', end='')
             self.create_dataset_description(folder_path)
 
         sys.exit()
