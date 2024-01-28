@@ -347,12 +347,21 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         return folders_with_file, folders_without_file
 
     def create_dataset_description(self, folder_path, max_window=5):
+
+        def sliding_window(lst, n):
+            for i in range(len(lst) - n + 1):
+                yield lst[i:i + n]
+
         exr_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.exr')]
         exr_files.sort()
         try:
             first_exr_file_header = self.fw.read_openexr_file(exr_files[0], header_only = True)
             h = first_exr_file_header['shape'][0]
             w = first_exr_file_header['shape'][1]
+
+            window_size = 3
+            for window in sliding_window(exr_files, window_size):
+                print(window)
 
         except Exception as e:
             print (f'\nError scanning {folder_path}: {e}')
