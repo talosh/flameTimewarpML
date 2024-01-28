@@ -35,11 +35,13 @@ settings = {
 }
 
 fw = flameAppFramework(settings = settings)
+importlib.invalidate_caches()
 try:
     import numpy as np
     import torch
 except:
     if fw.site_packages_folder in sys.path:
+
         print ('unable to import numpy and pytorch')
         sys.exit()
     else:
