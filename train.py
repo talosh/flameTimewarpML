@@ -213,12 +213,15 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
     def __init__(self, data_root):
         self.fw = flameAppFramework()
         self.data_root = data_root
-
-        print (data_root)
-
-        folders_with_exr = self.find_folders_with_exr(data_root)
-
-        pprint (folders_with_exr)
+        
+        print (f'scanning for exr files in {self.data_root}')
+        self.folders_with_exr = self.find_folders_with_exr(data_root)
+        print (f'found {len(self.folders_with_exr)} folders')
+        print (f'scanning dataset description files...')
+        folders_with_descriptions, folders_to_scan = self.check_dataset_descriptions(
+            self.folders_with_exr
+            file_name='dataset_folder.json'
+            )
 
         sys.exit()
 
@@ -305,6 +308,33 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                     break  # No need to check other files in the same directory
 
         return directories_with_exr
+
+    def scan_dataset_descriptions(self, folders, file_name='dataset_folder.json'):
+        """
+        Scan folders for the presence of a specific file and categorize them.
+
+        Parameters:
+        folders (set): A set of folder paths to check.
+        file_name (str, optional): The name of the file to look for in each folder. Defaults to 'twml_dataset_folder.json'.
+
+        Returns:
+        tuple of (set, set): Two sets, the first contains folders where the file exists, the second contains folders where it does not.
+        """
+        folders_with_file = set()
+        folders_without_file = set()
+
+        for folder in folders:
+            # Construct the full path to the file
+            file_path = os.path.join(folder, file_name)
+
+            # Check if the file exists in the folder
+            if os.path.exists(file_path):
+                folders_with_file.add(folder)
+            else:
+                folders_without_file.add(folder)
+
+        return folders_with_file, folders_without_file
+
 
     def read_frames_thread(self):
         timeout = 1e-8
