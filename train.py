@@ -214,15 +214,15 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         self.fw = flameAppFramework()
         self.data_root = data_root
         
-        print (f'scanning for exr files in {self.data_root}')
+        print (f'scanning for exr files in {self.data_root}...')
         self.folders_with_exr = self.find_folders_with_exr(data_root)
-        print (f'found {len(self.folders_with_exr)} folders')
+        print (f'found {len(self.folders_with_exr)} folders.')
         print (f'scanning dataset description files...')
         folders_with_descriptions, folders_to_scan = self.scan_dataset_descriptions(
             self.folders_with_exr,
             file_name='dataset_folder.json'
             )
-        print (f'found {len(folders_with_descriptions)} pre-processed folders, {len(folders_to_scan)} folders to scan')
+        print (f'found {len(folders_with_descriptions)} pre-processed folders, {len(folders_to_scan)} folders to scan.')
 
         sys.exit()
 
@@ -687,13 +687,15 @@ def main():
     parser.add_argument('dataset_path', type=str, help='Path to the dataset')
 
     # Optional arguments
-    parser.add_argument('--lr', type=float, default=0.0034, help='Learning rate (default: 0.0034)')
+    parser.add_argument('--lr', type=float, default=0.00009, help='Learning rate (default: 9e-5)')
     parser.add_argument('--type', type=int, default=1, help='Model type (int): 1 - MultiresNet, 2 - MultiresNet 4 (default: 1)')
     parser.add_argument('--warmup', type=float, default=9, help='Warmup epochs (float) (default: 1)')
     parser.add_argument('--pulse', type=float, default=9, help='Period in number of epochs to pulse learning rate (float) (default: 9)')
     parser.add_argument('--pulse_amplitude', type=float, default=10, help='Learning rate pulse amplitude (percentage) (default: 10)')
     parser.add_argument('--model_path', type=str, default=None, help='Path to the pre-trained model (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
+
+    parser.add_argument('--rescan', action='store_true', help='Rescan the dataset (default: False)')
 
     args = parser.parse_args()
 
