@@ -19,7 +19,22 @@ from flameSimpleML_framework import flameAppFramework
 from models.multires_v001 import Model as Model_01
 from models.multires4_v001 import Model as Model_02
 
-fw = flameAppFramework()
+settings = {
+    'menu_group_name': 'Simple ML',
+    'debug': False,
+    'app_name': 'flameSimpleML',
+    'prefs_folder': os.getenv('FLAMESMPLMsL_PREFS'),
+    'bundle_folder': os.getenv('FLAMESMPLML_BUNDLE'),
+    'packages_folder': os.getenv('FLAMESMPLML_PACKAGES'),
+    'temp_folder': os.getenv('FLAMESMPLML_TEMP'),
+    'requirements': [
+        'numpy>=1.16',
+        'torch>=1.12.0'
+    ],
+    'version': 'v0.0.3',
+}
+
+fw = flameAppFramework(settings = settings)
 try:
     import numpy as np
     import torch
@@ -195,10 +210,14 @@ class Yogi(Optimizer):
 
         return loss
 
-class myDataset(torch.utils.data.Dataset):
+class TimewarpMLDataset(torch.utils.data.Dataset):
     def __init__(self, data_root):
         self.fw = flameAppFramework()
         self.data_root = data_root
+
+        print (data_root)
+
+        sys.exit()
 
         def exr_files_in_folder(folder_path):
             """
@@ -623,6 +642,11 @@ def main():
 
     args = parser.parse_args()
 
+    read_image_queue = queue.Queue(maxsize=12)
+    dataset = TimewarpMLDataset(args.dataset_path)
+
+    sys.exit()
+
     if not os.path.isdir(os.path.join(args.dataset_path, 'source')):
         print (f'dataset {args.dataset_path} must have "source" and "target" folders')
         sys.exit()
@@ -632,8 +656,6 @@ def main():
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
-    read_image_queue = queue.Queue(maxsize=12)
-    dataset = myDataset(args.dataset_path)
 
     def read_images(read_image_queue, dataset):
         while True:
