@@ -219,7 +219,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         print (f'found {len(self.folders_with_exr)} folders')
         print (f'scanning dataset description files...')
         folders_with_descriptions, folders_to_scan = self.check_dataset_descriptions(
-            self.folders_with_exr
+            self.folders_with_exr,
             file_name='dataset_folder.json'
             )
         print (f'found {folders_with_descriptions} folders, {folders_to_scan} folders to scan')
