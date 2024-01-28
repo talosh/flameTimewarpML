@@ -351,8 +351,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         exr_files.sort()
         try:
             first_exr_file_header = self.fw.read_openexr_file(exr_files[0], header_only = True)
-            h = first_exr_file_header[shape][0]
-            w = first_exr_file_header[shape][1]
+            h = first_exr_file_header['shape'][0]
+            w = first_exr_file_header['shape'][1]
             print (f'\nshape: {h}:{w}')
         except Exception as e:
             print (f'\nError scanning {folder_path}: {e}')
