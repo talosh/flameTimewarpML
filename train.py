@@ -734,6 +734,7 @@ def main():
     read_image_queue = queue.Queue(maxsize=12)
     dataset = TimewarpMLDataset(args.dataset_path)
 
+    time.sleep(2)
     sys.exit()
 
     if not os.path.isdir(os.path.join(args.dataset_path, 'source')):
