@@ -216,7 +216,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         
         print (f'scanning for exr files in {self.data_root}...')
         self.folders_with_exr = self.find_folders_with_exr(data_root)
-        print (f'found {len(self.folders_with_exr)} folders.')
+        print (f'found {len(self.folders_with_exr)} clip folders.')
         
         '''
         folders_with_descriptions = set()
@@ -231,63 +231,15 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         else:
             folders_to_scan = self.folders_with_exr
         '''
-        folders_to_scan = self.folders_with_exr
-        for folder_index, folder_path in enumerate(sorted(folders_to_scan)):
-            print (f'\rBuilding train data from clip {folder_index + 1} of {len(folders_to_scan)}', end='')
-            self.create_dataset_descriptions(folder_path)
+
+        self.train_descriptions = []
+
+        for folder_index, folder_path in enumerate(sorted(self.folders_with_exr)):
+            print (f'\rBuilding train data from clip {folder_index + 1} of {len(self.folders_with_exr)}', end='')
+            self.train_descriptions.extend(self.create_dataset_descriptions(folder_path))
         print ('')
 
-        sys.exit()
-
-        def exr_files_in_folder(folder_path):
-            """
-            Check if there are any .exr files in the specified folder.
-
-            Parameters:
-            folder_path (str): Path to the folder to be checked.
-
-            Returns:
-            bool: True if there are .exr files in the folder, False otherwise.
-            """
-            for file in os.listdir(folder_path):
-                if file.endswith('.exr'):
-                    return True
-            return False
-
-
-        self.source_root = os.path.join(self.data_root, 'source')
-        self.target_root = os.path.join(self.data_root, 'target')
-
-        if exr_files_in_folder(self.source_root):
-            self.source_files = [[os.path.join(self.source_root, file)] for file in sorted(os.listdir(self.source_root))]
-        else:
-            self.source_files = []
-            source_files_map = self.create_source_files_map(self.source_root)
-            for key in sorted(source_files_map.keys()):
-                self.source_files.append(source_files_map[key])
-
-        self.target_files = [os.path.join(self.target_root, file) for file in sorted(os.listdir(self.target_root))]
-        self.indices = list(range(len(self.source_files)))
-
-        try:
-            src_header = self.fw.read_openexr_file(self.source_files[0][0], header_only=True)
-        except Exception as e:
-            print (f'Unable to read {self.source_files[0]}: {e}')
-            sys.exit()
-        
-        self.src_h = src_header['shape'][0]
-        self.src_w = src_header['shape'][1]
-        self.in_channles = self.get_input_channels_number(self.source_files[0])
-        print (f'source channels: {self.in_channles}')
-
-        try:
-            target_header = self.fw.read_openexr_file(self.target_files[0], header_only=True)
-        except Exception as e:
-            print (f'Unable to read {self.source_files[0]}: {e}')
-            sys.exit()
-
-        self.out_channels = target_header['shape'][2]
-        print (f'target channels: {self.out_channels}')
+        pprint (self.train_descriptions)
 
         self.h = 256
         self.w = 256
@@ -408,6 +360,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         except Exception as e:
             print (f'\nError scanning {folder_path}: {e}')
+
+        return descriptions
         
     def read_frames_thread(self):
         timeout = 1e-8
