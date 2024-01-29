@@ -217,6 +217,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         print (f'scanning for exr files in {self.data_root}...')
         self.folders_with_exr = self.find_folders_with_exr(data_root)
         print (f'found {len(self.folders_with_exr)} folders.')
+        
+        '''
         folders_with_descriptions = set()
         folders_to_scan = set()
         if not rescan:
@@ -228,7 +230,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             print (f'found {len(folders_with_descriptions)} pre-processed folders, {len(folders_to_scan)} folders to scan.')
         else:
             folders_to_scan = self.folders_with_exr
-
+        '''
+        folders_to_scan = self.folders_with_exr
         for folder_index, folder_path in enumerate(sorted(folders_to_scan)):
             print (f'\rScanning folder {folder_index + 1} of {len(folders_to_scan)}', end='')
             self.create_dataset_description(folder_path)
@@ -366,9 +369,9 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             h = first_exr_file_header['shape'][0]
             w = first_exr_file_header['shape'][1]
 
-            window_size = 3
-            for window in sliding_window(exr_files, window_size):
-                print(window)
+            for window_size in range(3, max_window + 1):
+                for window in sliding_window(exr_files, window_size):
+                    print(window)
 
         except Exception as e:
             print (f'\nError scanning {folder_path}: {e}')
@@ -732,12 +735,12 @@ def main():
     parser.add_argument('--model_path', type=str, default=None, help='Path to the pre-trained model (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
 
-    parser.add_argument('--rescan', action='store_true', help='Rescan the dataset (default: False)')
+    # parser.add_argument('--rescan', action='store_true', help='Rescan the dataset (default: False)')
 
     args = parser.parse_args()
 
     read_image_queue = queue.Queue(maxsize=12)
-    dataset = TimewarpMLDataset(args.dataset_path, rescan = args.rescan)
+    dataset = TimewarpMLDataset(args.dataset_path)
 
     sys.exit()
 
