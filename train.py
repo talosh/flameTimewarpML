@@ -210,9 +210,10 @@ class Yogi(Optimizer):
         return loss
 
 class TimewarpMLDataset(torch.utils.data.Dataset):
-    def __init__(self, data_root, rescan = False):
+    def __init__(self, data_root, batch_size = 8):
         self.fw = flameAppFramework()
         self.data_root = data_root
+        self.batch_size = batch_size
         
         print (f'scanning for exr files in {self.data_root}...')
         self.folders_with_exr = self.find_folders_with_exr(data_root)
@@ -237,13 +238,13 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         for folder_index, folder_path in enumerate(sorted(self.folders_with_exr)):
             print (f'\rBuilding train data from clip {folder_index + 1} of {len(self.folders_with_exr)}', end='')
             self.train_descriptions.extend(self.create_dataset_descriptions(folder_path))
-        print ('')
+        print ('\nReshuffling train data...')
 
-        pprint (len(self.train_descriptions))
+        random.shuffle(self.train_descriptions)
 
         self.h = 256
         self.w = 256
-        self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
+        # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
         self.frames_queue = queue.Queue(maxsize=4)
         self.frame_read_thread = threading.Thread(target=self.read_frames_thread)
@@ -399,7 +400,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             time.sleep(timeout)
 
     def __len__(self):
-        return len(self.source_files) * self.frame_multiplier
+        return len(self.train_descriptions)
     
     def crop(self, img0, img1, h, w):
         np.random.seed(None)
