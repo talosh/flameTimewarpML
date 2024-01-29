@@ -409,8 +409,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         except Exception as e:
             print (f'\nError scanning {folder_path}: {e}')
         
-        pprint (descriptions)
-
     def read_frames_thread(self):
         timeout = 1e-8
         while True:
