@@ -234,7 +234,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         folders_to_scan = self.folders_with_exr
         for folder_index, folder_path in enumerate(sorted(folders_to_scan)):
             print (f'\rScanning folder {folder_index + 1} of {len(folders_to_scan)}', end='')
-            self.create_dataset_description(folder_path)
+            self.create_dataset_descriptions(folder_path)
         print ('')
 
         sys.exit()
@@ -349,7 +349,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         return folders_with_file, folders_without_file
 
-    def create_dataset_description(self, folder_path, max_window=9):
+    def create_dataset_descriptions(self, folder_path, max_window=9):
 
         def sliding_window(lst, n):
             for i in range(len(lst) - n + 1):
@@ -364,6 +364,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             print(f'\nminimum clip length is 3 frames, {folder_path} has {len(exr_files)}')
             return
         
+        descriptions = []
+        
         try:
             first_exr_file_header = self.fw.read_openexr_file(exr_files[0], header_only = True)
             h = first_exr_file_header['shape'][0]
@@ -371,7 +373,9 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
             for window_size in range(3, max_window + 1):
                 for window in sliding_window(exr_files, window_size):
-                    print(window)
+                    start_frame_index = exr_files.index(window[0])
+                    end_frame_index = exr_files.index(window[-1])
+                    print ((start_frame_index, end_frame_index))
 
         except Exception as e:
             print (f'\nError scanning {folder_path}: {e}')
