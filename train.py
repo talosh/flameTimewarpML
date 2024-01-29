@@ -239,7 +239,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             self.train_descriptions.extend(self.create_dataset_descriptions(folder_path))
         print ('')
 
-        pprint (self.train_descriptions)
+        pprint (len(self.train_descriptions))
 
         self.h = 256
         self.w = 256
