@@ -387,7 +387,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                             'ratio': 1 / (len(window) - 1) * (gt_frame_index + 1)
                         }
 
-                        rev_item = {
+                        bw_item = {
                             'pre_start': exr_files[min(end_frame_index + 1, len(exr_files) - 1)],
                             'start': end_frame,
                             'gt': gt_frame,
@@ -396,7 +396,10 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                             'ratio': 1 - (1 / (len(window) - 1) * (gt_frame_index + 1))
                         }
 
+                        print ('fw:')
                         pprint (fw_item)
+                        print ('bw:')
+                        pprint (bw_item)
 
 
             print (len(exr_files) - 1)
