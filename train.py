@@ -377,6 +377,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                     end_frame_index = exr_files.index(window[-1])
                     print ((start_frame_index, end_frame_index))
 
+        print (len(exr_files))
+
         except Exception as e:
             print (f'\nError scanning {folder_path}: {e}')
         # pprint (first_exr_file_header)
