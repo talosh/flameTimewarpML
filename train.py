@@ -349,7 +349,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         return folders_with_file, folders_without_file
 
-    def create_dataset_descriptions(self, folder_path, max_window=3):
+    def create_dataset_descriptions(self, folder_path, max_window=4):
 
         def sliding_window(lst, n):
             for i in range(len(lst) - n + 1):
@@ -383,7 +383,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                             'start': start_frame,
                             'gt': gt_frame,
                             'end': end_frame,
-                            'after_end': exr_files[min(end_frame_index + 1, len(exr_files) - 1)]
+                            'after_end': exr_files[min(end_frame_index + 1, len(exr_files) - 1)],
+                            'ratio': 1 / (len(window) - 1) * gt_frame_index
                         }
 
                         pprint (fw_item)
