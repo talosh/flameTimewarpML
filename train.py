@@ -403,17 +403,13 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                             'ratio': 1 - (1 / (len(window) - 1) * (gt_frame_index + 1))
                         }
 
-                        print ('fw:')
-                        pprint (fw_item)
-                        print ('bw:')
-                        pprint (bw_item)
-
-
-            print (len(exr_files) - 1)
+                        descriptions.append(fw_item)
+                        descriptions.append(bw_item)
 
         except Exception as e:
             print (f'\nError scanning {folder_path}: {e}')
-        # pprint (first_exr_file_header)
+        
+        pprint (descriptions)
 
     def read_frames_thread(self):
         timeout = 1e-8
