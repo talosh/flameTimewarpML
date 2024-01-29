@@ -367,7 +367,11 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
     def read_frames_thread(self):
         timeout = 1e-8
         while True:
-            for index in range(len(self.source_files)):
+            for index in range(len(self.train_descriptions)):
+                description = self.train_descriptions[index]
+                pprint (description)
+
+                '''
                 source_file_paths_list = self.source_files[index]
                 target_file_path = self.target_files[index]
                 source_image_data = None
@@ -396,6 +400,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                     source_image_data,
                     target_image_data
                 ])
+                '''
 
             time.sleep(timeout)
 
