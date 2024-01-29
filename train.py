@@ -383,7 +383,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                             'start': start_frame,
                             'gt': gt_frame,
                             'end': end_frame,
-                            'after_end': exr_files[min(start_frame_index + 1, len(exr_files) - 1)]
+                            'after_end': exr_files[min(end_frame_index + 1, len(exr_files) - 1)]
                         }
 
                         pprint (fw_item)
