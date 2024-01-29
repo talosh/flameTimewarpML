@@ -373,9 +373,21 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
             for window_size in range(3, max_window + 1):
                 for window in sliding_window(exr_files, window_size):
+                    start_frame = window[0]
                     start_frame_index = exr_files.index(window[0])
+                    end_frame = window[-1]
                     end_frame_index = exr_files.index(window[-1])
-                    print ((start_frame_index, end_frame_index))
+                    for gt_frame_index, gt_frame in enumerate(window[1:-1]):
+                        fw_item = {
+                            'pre_start': exr_files[max(start_frame_index - 1, 0)],
+                            'start': start_frame,
+                            'gt': gt_frame,
+                            'end': end_frame,
+                            'after_end': exr_files[min(start_frame_index + 1, len(exr_files) - 1)]
+                        }
+
+                        pprint (fw_item)
+
 
             print (len(exr_files) - 1)
 
