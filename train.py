@@ -953,9 +953,6 @@ def main():
             flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
             output = merged[3]
 
-            flow = flow_list[3]
-            fusion_input = torch.cat((img1*2 - 1, flow[:, :2], mask*2 - 1, merged[3]*2 - 1, flow[:, 2:4], img3*2 - 1), dim=1)
-
             loss = criterion_mse(output, img2)
             loss_l1 = criterion_l1(output, img2)
             loss_l1_str = str(f'{loss_l1.item():.6f}')
@@ -967,6 +964,8 @@ def main():
             optimizer.step()
 
             optimizer_fusion.zero_grad(set_to_none=True)
+            flow = flow_list[3]
+            fusion_input = torch.cat((img1*2 - 1, flow[:, :2], mask*2 - 1, merged[3]*2 - 1, flow[:, 2:4], img3*2 - 1), dim=1)
             output_fusion = fusion_model(fusion_input)
             output_fusion = ( output_fusion + 1 ) / 2
             loss_fusion = criterion_mse_fusion(output_fusion, img2)
