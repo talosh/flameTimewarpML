@@ -419,8 +419,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         img2 = train_data['gt']
         img3 = train_data['end']
         img4 = train_data['after_end']
-        h = train_data['h']
-        w = train_data['w']
+        imgh = train_data['h']
+        imgw = train_data['w']
         ratio = train_data['ratio']
 
         device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda')
@@ -434,7 +434,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         for index in range(self.batch_size):
             q = random.uniform(0, 1)
             if q < 0.5:
-                img0, img1, img2, img3, img4 = self.crop(img0, img1, img2, img3, img4, h, w)
+                img0, img1, img2, img3, img4 = self.crop(img0, img1, img2, img3, img4, self.h, self.w)
                 img0 = torch.from_numpy(img0.copy()).permute(2, 0, 1)
                 img1 = torch.from_numpy(img1.copy()).permute(2, 0, 1)
                 img2 = torch.from_numpy(img2.copy()).permute(2, 0, 1)
@@ -446,7 +446,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img3 = img3.to(device)
                 img4 = img4.to(device)
             elif q < 0.75:
-                img0, img1, img2, img3, img4 = self.crop(img0, img1, img2, img3, img4, h // 2, w // 2)
+                img0, img1, img2, img3, img4 = self.crop(img0, img1, img2, img3, img4, self.h // 2, self.w // 2)
                 img0 = torch.from_numpy(img0.copy()).permute(2, 0, 1)
                 img1 = torch.from_numpy(img1.copy()).permute(2, 0, 1)
                 img2 = torch.from_numpy(img2.copy()).permute(2, 0, 1)
@@ -463,7 +463,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img3 = torch.nn.functional.interpolate(img3.unsqueeze(0), scale_factor=2, mode='bilinear', align_corners=False)[0]
                 img4 = torch.nn.functional.interpolate(img4.unsqueeze(0), scale_factor=2, mode='bilinear', align_corners=False)[0]
             else:
-                img0, img1, img2, img3, img4 = self.crop(img0, img1, img2, img3, img4, int(h * 2), int(w * 2))
+                img0, img1, img2, img3, img4 = self.crop(img0, img1, img2, img3, img4, int(self.h * 2), int(self.w * 2))
                 img0 = torch.from_numpy(img0.copy()).permute(2, 0, 1)
                 img1 = torch.from_numpy(img1.copy()).permute(2, 0, 1)
                 img2 = torch.from_numpy(img2.copy()).permute(2, 0, 1)
