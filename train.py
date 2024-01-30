@@ -699,6 +699,7 @@ def main():
     parser.add_argument('--pulse_amplitude', type=float, default=10, help='Learning rate pulse amplitude (percentage) (default: 10)')
     parser.add_argument('--model_path', type=str, default=None, help='Path to the pre-trained model (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
+    parser.add_argument('--batch_size', type=int, default=8, help='Batch size (int) (default: 8)')
 
     # parser.add_argument('--rescan', action='store_true', help='Rescan the dataset (default: False)')
 
