@@ -907,8 +907,6 @@ def main():
     model.load_state_dict(convert(state_dict))
     '''
 
-    model.eval()
-
     while True:
         for batch_idx in range(len(dataset)):
             data_time = time.time() - time_stamp
@@ -951,19 +949,17 @@ def main():
             optimizer.zero_grad(set_to_none=True)
 
             x = torch.cat((img1, img3, img2), dim=1)
-            # flow, mask, merged, teacher_res, loss_cons = model(x * 2 - 1, timestep = ratio)
-            with torch.no_grad():
-                flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
-                output = merged[3]
+            flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
+            output = merged[3]
 
-                loss = criterion_mse(output, img2)
-                loss_l1 = criterion_l1(output, img2)
-                loss_l1_str = str(f'{loss_l1.item():.6f}')
+            loss = criterion_mse(output, img2)
+            loss_l1 = criterion_l1(output, img2)
+            loss_l1_str = str(f'{loss_l1.item():.6f}')
 
             epoch_loss.append(float(loss_l1))
             steps_loss.append(float(loss_l1))
 
-            # loss.backward()
+            loss.backward()
             optimizer.step()
 
             optimizer_fusion.zero_grad(set_to_none=True)
