@@ -808,7 +808,7 @@ def main():
     model_name = FlownetCas
 
     fusion_model_name = Model_01.get_name()
-    fusion_model = Model_01().get_training_model()(14, 3).to(device)
+    fusion_model = Model_01().get_training_model()(15, 3).to(device)
 
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
@@ -974,8 +974,9 @@ def main():
             mask_f = mask.detach().clone()
             img2_f = img2.detach().clone()
             img3_f = img3.detach().clone()
+            timestep = (img1_f[:, :1].clone() * 0 + 1) * ratio
 
-            fusion_input = torch.cat((img1_f*2 - 1, flow[:, :2], mask_f*2 - 1, output_f*2 - 1, flow[:, 2:4], img3_f*2 - 1), dim=1)
+            fusion_input = torch.cat((img1_f*2 - 1, flow[:, :2], mask_f*2 - 1, timestep, output_f*2 - 1, flow[:, 2:4], img3_f*2 - 1), dim=1)
             output_fusion = fusion_model(fusion_input)
             output_fusion = ( output_fusion + 1 ) / 2
             loss_fusion = criterion_mse_fusion(output_fusion, img2_f)
