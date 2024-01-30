@@ -805,6 +805,8 @@ def main():
     model_name = FlownetCas
 
     def load_model(path, rank=0):
+        print (f'load model')
+        print ('{}/flownet_v412.pkl'.format(path))
         def convert(param):
             if rank == -1:
                 return {
