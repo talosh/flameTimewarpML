@@ -709,7 +709,7 @@ def main():
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
     read_image_queue = queue.Queue(maxsize=12)
-    dataset = TimewarpMLDataset(args.dataset_path)
+    dataset = TimewarpMLDataset(args.dataset_path, batch_size=args.batch_size)
 
     def read_images(read_image_queue, dataset):
         while True:
