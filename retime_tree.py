@@ -229,7 +229,7 @@ def main():
 
         flow_list, mask, merged, teacher_res, loss_cons = model(torch.cat((img0, img1), dim=1), timestep = frame_data['ratio'])    
 
-        result = merged[3][:, :3, :h, :w]
+        result = merged[3][:, :3, :h, :w][0]
 
         print (f'res shape: {result.shape}')
 
