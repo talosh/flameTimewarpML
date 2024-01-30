@@ -96,7 +96,8 @@ def main():
     args = parser.parse_args()
 
     folders_with_exr = find_folders_with_exr(args.src_path)
-    pprint (folders_with_exr)
+    common_path = os.path.commonpath(folders_with_exr)
+    print (common_path)
 
 if __name__ == "__main__":
     main()
