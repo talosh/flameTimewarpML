@@ -856,16 +856,20 @@ def main():
             print('loaded previously saved model')
         except Exception as e:
             print (f'unable to load saved model: {e}')
+
+        try:
+            fusion_model.load_state_dict(checkpoint['fusion_state_dict'])
+            print('loaded previously saved fusion model')
+        except Exception as e:
+            print (f'unable to load saved fusion model: {e}')
+
         try:
             step = checkpoint['step']
             print (f'step: {step}')
             current_epoch = checkpoint['epoch']
             print (f'epoch: {current_epoch + 1}')
-            # saved_batch_idx = checkpoint['batch_idx']
-            # print (f'saved batch index: {saved_batch_idx}')
         except Exception as e:
             print (f'unable to set step and epoch: {e}')
-
         try:
             steps_loss = checkpoint['steps_loss']
             print (f'loaded loss statistics for step: {step}')
@@ -981,7 +985,6 @@ def main():
             optimizer_fusion.step()
 
             scheduler.step()
-
 
 
             train_time = time.time() - time_stamp
