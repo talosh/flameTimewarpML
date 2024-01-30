@@ -321,7 +321,7 @@ def main():
         output_path = frame_data['destination']
         if not os.path.isdir(os.path.dirname(output_path)):
             os.makedirs(os.path.dirname(output_path))
-        write_exr(result, output_path)
+        write_exr(result, output_path, half_float = True)
 
         del img0, img1, frame_data, flow_list, mask, merged, teacher_res, loss_cons, result
 
