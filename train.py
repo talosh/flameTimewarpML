@@ -707,46 +707,13 @@ def main():
     read_image_queue = queue.Queue(maxsize=12)
     dataset = TimewarpMLDataset(args.dataset_path)
 
-    time.sleep(2)
-    sys.exit()
-
-    if not os.path.isdir(os.path.join(args.dataset_path, 'source')):
-        print (f'dataset {args.dataset_path} must have "source" and "target" folders')
-        sys.exit()
-    if not os.path.isdir(os.path.join(args.dataset_path, 'target')):
-        print (f'dataset {args.dataset_path} must have "source" and "target" folders')
-        sys.exit()
-    if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
-        os.makedirs(os.path.join(args.dataset_path, 'preview'))
-
-
-    def read_images(read_image_queue, dataset):
-        while True:
-            for batch_idx in range(len(dataset)):
-                before, after = dataset[batch_idx]
-                read_image_queue.put([before, after])
-
-    read_thread = threading.Thread(target=read_images, args=(read_image_queue, dataset))
-    read_thread.daemon = True
-    read_thread.start()
-
     steps_per_epoch = len(dataset)
     
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
-    '''
-    device = torch.device(f'cuda:{args.device}')
-    device = torch.device("mps")
-    '''
     
-    if args.type == 1:
-        model_name = Model_01.get_name()
-        model = Model_01().get_training_model()(dataset.in_channles, dataset.out_channels).to(device)
-    elif args.type == 2:
-        model_name = Model_02.get_name()
-        model = Model_02().get_training_model()(dataset.in_channles, dataset.out_channels).to(device)
-    else:
-        print (f'Model type {args.type} is not yet implemented')
-        sys.exit()
+    model = FlownetCas()
+
+    sys.exit()
 
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
