@@ -219,7 +219,7 @@ def main():
         img1 = img1.permute(2, 0, 1).unsqueeze(0)
         img1 = normalize(img1)
 
-        
+        flow_list, mask, merged, teacher_res, loss_cons = model(torch.cat((img0, img1), dim=1), timestep = frame_data['ratio'])    
 
         del img0, img1, frame_data
 
