@@ -149,11 +149,13 @@ def main():
             all_frame_descriptions.append(folder_frames_map[key])
     print ('')
 
+    print ('starting frame read therad...')
     frames_queue = queue.Queue(maxsize=4)
     frame_read_thread = threading.Thread(target=read_frames, args=(all_frame_descriptions, frames_queue))
     frame_read_thread.daemon = True
     frame_read_thread.start()
 
+    print ('loading model...')
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
     model = FlownetCas().to(device)
 
@@ -169,6 +171,8 @@ def main():
     model.eval()
 
     for frame_idx in range(len(all_frame_descriptions)):
+        print (f'\rProcessing frame {frame_idx + 1} of {len(all_frame_descriptions)}', end='')
+
         frame_data = frames_queue.get()
 
         img0 = torch.from_numpy(frame_data['incoming_data'].copy())
