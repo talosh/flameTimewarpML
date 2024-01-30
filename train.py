@@ -807,24 +807,6 @@ def main():
     model = FlownetCas().to(device)
     model_name = FlownetCas
 
-    '''
-    def load_model(path, rank=0):
-        print (f'load model')
-        print ('{}/flownet_v412.pkl'.format(path))
-        def convert(param):
-            if rank == -1:
-                return {
-                    k.replace("module.", ""): v
-                    for k, v in param.items()
-                    if "module." in k
-                }
-            else:
-                return param
-            state_dict = torch.load('{}/flownet_v412.pkl'.format(path))
-
-                model.load_state_dict(convert(torch.load('{}/flownet_v412.pkl'.format(path))), False)
-    '''
-
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
