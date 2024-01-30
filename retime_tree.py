@@ -61,6 +61,29 @@ from torch.optim.optimizer import Optimizer
 from models.flownet import FlownetCas
 from models.multires_v001 import Model as Model_01
 
+def find_folders_with_exr(path):
+    """
+    Find all folders under the given path that contain .exr files.
+
+    Parameters:
+    path (str): The root directory to start the search from.
+
+    Returns:
+    list: A list of directories containing .exr files.
+    """
+    directories_with_exr = set()
+
+    # Walk through all directories and files in the given path
+    for root, dirs, files in os.walk(path):
+        if root.endswith('preview'):
+            continue
+        for file in files:
+            if file.endswith('.exr'):
+                directories_with_exr.add(root)
+                break  # No need to check other files in the same directory
+
+    return directories_with_exr
+
 def main():
     parser = argparse.ArgumentParser(description='Retime script.')
     # Required argument
@@ -72,6 +95,8 @@ def main():
 
     args = parser.parse_args()
 
+    folders_with_exr = find_folders_with_exr(args.src_path)
+    pprint (folders_with_exr)
 
 if __name__ == "__main__":
     main()
