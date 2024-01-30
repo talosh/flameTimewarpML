@@ -121,10 +121,14 @@ def main():
 
     folders_with_exr = find_folders_with_exr(args.src_path)
     common_path = os.path.commonpath(folders_with_exr)
-    for folder_path in folders_with_exr:
-        folder_frames_map = compose_frames_map_speed(folder_path, common_path, args.dst_path, args.speed)
-        pprint (folder_frames_map)
+    
+    all_frame_descriptions = []
 
+    for folder_index, folder_path in enumerate(folders_with_exr):
+        print (f'\rScanning folder {folder_index + 1} of {len(folders_with_exr)}', end='')
+        folder_frames_map = compose_frames_map_speed(folder_path, common_path, args.dst_path, args.speed)
+        for key in sorted(folder_frames_map.keys()):
+            all_frame_descriptions.append(folder_frames_map[key])
 
 if __name__ == "__main__":
     main()
