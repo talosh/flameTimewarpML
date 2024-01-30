@@ -392,7 +392,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
     def crop(self, img0, img1, img2, img3, img4, h, w):
         np.random.seed(None)
         ih, iw, _ = img0.shape
-        print (f'crop: {h}, {w}, {ih}, {iw}')
         x = np.random.randint(0, ih - h + 1)
         y = np.random.randint(0, iw - w + 1)
         img0 = img0[x:x+h, y:y+w, :]
@@ -441,11 +440,11 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img2 = torch.from_numpy(img2.copy()).permute(2, 0, 1)
                 img3 = torch.from_numpy(img3.copy()).permute(2, 0, 1)
                 img4 = torch.from_numpy(img4.copy()).permute(2, 0, 1)
-                img0 = img0.to(device)
-                img1 = img1.to(device)
-                img2 = img2.to(device)
-                img3 = img3.to(device)
-                img4 = img4.to(device)
+                img0 = img0.to(device = device, dtype = torch.float32)
+                img1 = img1.to(device = device, dtype = torch.float32)
+                img2 = img2.to(device = device, dtype = torch.float32)
+                img3 = img3.to(device = device, dtype = torch.float32)
+                img4 = img4.to(device = device, dtype = torch.float32)
             elif q < 0.75:
                 img0, img1, img2, img3, img4 = self.crop(src_img0, src_img1, src_img2, src_img3, src_img4, self.h // 2, self.w // 2)
                 img0 = torch.from_numpy(img0.copy()).permute(2, 0, 1)
@@ -453,11 +452,11 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img2 = torch.from_numpy(img2.copy()).permute(2, 0, 1)
                 img3 = torch.from_numpy(img3.copy()).permute(2, 0, 1)
                 img4 = torch.from_numpy(img4.copy()).permute(2, 0, 1)
-                img0 = img0.to(device)
-                img1 = img1.to(device)
-                img2 = img2.to(device)
-                img3 = img3.to(device)
-                img4 = img4.to(device)
+                img0 = img0.to(device = device, dtype = torch.float32)
+                img1 = img1.to(device = device, dtype = torch.float32)
+                img2 = img2.to(device = device, dtype = torch.float32)
+                img3 = img3.to(device = device, dtype = torch.float32)
+                img4 = img4.to(device = device, dtype = torch.float32)
                 img0 = torch.nn.functional.interpolate(img0.unsqueeze(0), scale_factor=2, mode='bilinear', align_corners=False)[0]
                 img1 = torch.nn.functional.interpolate(img1.unsqueeze(0), scale_factor=2, mode='bilinear', align_corners=False)[0]
                 img2 = torch.nn.functional.interpolate(img2.unsqueeze(0), scale_factor=2, mode='bilinear', align_corners=False)[0]
@@ -470,11 +469,11 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img2 = torch.from_numpy(img2.copy()).permute(2, 0, 1)
                 img3 = torch.from_numpy(img3.copy()).permute(2, 0, 1)
                 img4 = torch.from_numpy(img4.copy()).permute(2, 0, 1)
-                img0 = img0.to(device)
-                img1 = img1.to(device)
-                img2 = img2.to(device)
-                img3 = img3.to(device)
-                img4 = img4.to(device)
+                img0 = img0.to(device = device, dtype = torch.float32)
+                img1 = img1.to(device = device, dtype = torch.float32)
+                img2 = img2.to(device = device, dtype = torch.float32)
+                img3 = img3.to(device = device, dtype = torch.float32)
+                img4 = img4.to(device = device, dtype = torch.float32)
                 img0 = torch.nn.functional.interpolate(img0.unsqueeze(0), scale_factor=0.5, mode='bilinear', align_corners=False)[0]
                 img1 = torch.nn.functional.interpolate(img1.unsqueeze(0), scale_factor=0.5, mode='bilinear', align_corners=False)[0]
                 img2 = torch.nn.functional.interpolate(img2.unsqueeze(0), scale_factor=0.5, mode='bilinear', align_corners=False)[0]
