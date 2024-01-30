@@ -804,6 +804,7 @@ def main():
     model = FlownetCas().to(device)
     model_name = FlownetCas
 
+    '''
     def load_model(path, rank=0):
         print (f'load model')
         print ('{}/flownet_v412.pkl'.format(path))
@@ -816,9 +817,10 @@ def main():
                 }
             else:
                 return param
-        if rank <= 0:
-            if torch.cuda.is_available():
+            state_dict = torch.load('{}/flownet_v412.pkl'.format(path))
+
                 model.load_state_dict(convert(torch.load('{}/flownet_v412.pkl'.format(path))), False)
+    '''
 
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
@@ -901,7 +903,9 @@ def main():
     time_stamp = time.time()
     epoch = current_epoch
 
-    load_model('train_log')
+    state_dict = torch.load('/home/flame/Documents/dev/flameTimewarpML/train_log/flownet_v412.pkl')
+
+    pprint (state_dict)
 
     while True:
         for batch_idx in range(len(dataset)):
