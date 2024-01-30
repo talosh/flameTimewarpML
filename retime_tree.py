@@ -231,8 +231,7 @@ def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
 def read_frames(all_frame_descriptions, frames_queue):
     timeout = 1e-8
     while True:
-        for index in range(len(all_frame_descriptions)):
-            description = all_frame_descriptions[index]
+        for description in all_frame_descriptions:
             try:
                 description['incoming_data'] = fw.read_openexr_file(description['incoming'])['image_data']
                 description['outgoing_data'] = fw.read_openexr_file(description['outgoing'])['image_data']
