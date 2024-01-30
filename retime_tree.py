@@ -107,6 +107,18 @@ def compose_frames_map_speed(folder_path, common_path, dst_path, speed):
         frame_value = frame_value + speed_multiplier
     return frames_map
 
+def read_frames(all_frame_descriptions, frames_queue):
+    timeout = 1e-8
+    while True:
+        for index in range(len(all_frame_descriptions)):
+            description = all_frame_descriptions[index]
+            try:
+                description['incoming_data'] = fw.read_openexr_file(description['incoming'])['image_data']
+                description['outgoing_data'] = fw.read_openexr_file(description['outgoing'])['image_data']
+                frames_queue.put(description)
+            except Exception as e:
+                print (e)                
+        time.sleep(timeout)
 
 def main():
     parser = argparse.ArgumentParser(description='Retime script.')
@@ -131,7 +143,10 @@ def main():
             all_frame_descriptions.append(folder_frames_map[key])
     print ('')
 
-    for all_frame_description in all_frame_descriptions:
+    frames_queue = queue.Queue(maxsize=4)
+    frame_read_thread = threading.Thread(target=read_frames)
+    frame_read_thread.daemon = True
+    frame_read_thread.start()
         
 
 if __name__ == "__main__":
