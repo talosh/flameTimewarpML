@@ -904,8 +904,7 @@ def main():
     epoch = current_epoch
 
     state_dict = torch.load('/home/flame/Documents/dev/flameTimewarpML/train_log/flownet_v412.pkl')
-
-    pprint (state_dict)
+    model.load_state_dict(state_dict)
 
     while True:
         for batch_idx in range(len(dataset)):
