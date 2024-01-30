@@ -805,16 +805,16 @@ def main():
         except Exception as e:
             print (f'unable to load step and epoch loss statistics: {e}')
     else:
-        traned_model_name = 'flameSimpleML_model_' + fw.create_timestamp_uid() + '.pth'
+        traned_model_name = 'flameTWML_model_' + fw.create_timestamp_uid() + '.pth'
         if platform.system() == 'Darwin':
             trained_model_dir = os.path.join(
                 os.path.expanduser('~'),
                 'Documents',
-                'flameSimpleML_models')
+                'flameTWML_models')
         else:
             trained_model_dir = os.path.join(
                 os.path.expanduser('~'),
-                'flameSimpleML_models')
+                'flameTWML_models')
         if not os.path.isdir(trained_model_dir):
             os.makedirs(trained_model_dir)
         trained_model_path = os.path.join(trained_model_dir, traned_model_name)
