@@ -174,8 +174,7 @@ def main():
         img0 = torch.from_numpy(frame_data['incoming_data'].copy())
         img1 = torch.from_numpy(frame_data['outgoing_data'].copy())
 
-
-        img0 = normalize(img0)
+        # img0 = normalize(img0)
 
 
 if __name__ == "__main__":
