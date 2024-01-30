@@ -22,7 +22,7 @@ def warp(tenInput, tenFlow):
 def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
     return nn.Sequential(
         nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
-                  padding=padding, dilation=dilation, bias=True),
+                  padding=padding, dilation=dilation, bias=True, padding_mode = 'reflect'),
         nn.LeakyReLU(0.2, True)
     )
 
