@@ -966,8 +966,7 @@ def main():
             optimizer_fusion.zero_grad(set_to_none=True)
             
             flow = flow_list[3].detach().clone()
-            img1 = img1.detach().clone() * 2 - 1
-            mask = mask.detach().clone()
+            img1 = img1.detach().clone()
             output = output.detach().clone()
             img3 = img3.detach().clone()
             img2 = img2.detach().clone()
