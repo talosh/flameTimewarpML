@@ -107,19 +107,6 @@ def compose_frames_map_speed(folder_path, common_path, dst_path, speed):
         frame_value = frame_value + speed_multiplier
     return frames_map
 
-def read_frames(all_frame_descriptions, frames_queue):
-    timeout = 1e-8
-    while True:
-        for index in range(len(all_frame_descriptions)):
-            description = all_frame_descriptions[index]
-            try:
-                description['incoming_data'] = fw.read_openexr_file(description['incoming'])['image_data']
-                description['outgoing_data'] = fw.read_openexr_file(description['outgoing'])['image_data']
-                frames_queue.put(description)
-            except Exception as e:
-                print (e)                
-        time.sleep(timeout)
-
 def normalize(image_array) :
     def custom_bend(x):
         linear_part = x
@@ -241,6 +228,40 @@ def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
                 f.write(channel_data[channel][y].tobytes())
         f.close
 
+def read_frames(all_frame_descriptions, frames_queue):
+    timeout = 1e-8
+    while True:
+        for index in range(len(all_frame_descriptions)):
+            description = all_frame_descriptions[index]
+            try:
+                description['incoming_data'] = fw.read_openexr_file(description['incoming'])['image_data']
+                description['outgoing_data'] = fw.read_openexr_file(description['outgoing'])['image_data']
+                frames_queue.put(description)
+            except Exception as e:
+                print (e)                
+        time.sleep(timeout)
+
+def save_frames(save_queue):
+    timeout = 1e-8
+    while True:
+        try:
+            item = save_queue.get_nowait()
+        except queue.Empty:
+            time.sleep(timeout)
+            continue
+        if item is None:
+            time.sleep(timeout)
+            continue
+        try:
+            result = item[0]
+            output_path = item[1]
+            write_exr(result, output_path, half_float = True)
+        except Exception as e:
+            print (f'unable to save frame {output_path}: {e}')
+            time.sleep(timeout)
+
+        time.sleep(timeout)
+
 def main():
     parser = argparse.ArgumentParser(description='Retime script.')
     # Required argument
@@ -271,10 +292,16 @@ def main():
     print ('')
 
     print ('starting frame read therad...')
-    frames_queue = queue.Queue(maxsize=4)
+    frames_queue = queue.Queue(maxsize=8)
     frame_read_thread = threading.Thread(target=read_frames, args=(all_frame_descriptions, frames_queue))
     frame_read_thread.daemon = True
     frame_read_thread.start()
+
+    print ('starting frame save therad...')
+    save_queue = queue.Queue(maxsize=8)
+    frame_save_thread = threading.Thread(target=save_frames, args=(save_queue, ))
+    frame_save_thread.daemon = True
+    frame_save_thread.start()
 
     print ('loading model...')
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
@@ -321,7 +348,7 @@ def main():
         output_path = frame_data['destination']
         if not os.path.isdir(os.path.dirname(output_path)):
             os.makedirs(os.path.dirname(output_path))
-        write_exr(result, output_path, half_float = True)
+        save_queue.put((result, output_path))
 
         del img0, img1, frame_data, flow_list, mask, merged, teacher_res, loss_cons, result
 
