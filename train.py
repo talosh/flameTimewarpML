@@ -519,7 +519,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img4 = img4.flip(-2)
 
             # Depth-wise flip (reverse channels)
-            if random.uniform(0, 1) < 0.5:
+            if random.uniform(0, 1) < 0.4:
                 img0 = img0.flip(0)
                 img1 = img1.flip(0)
                 img2 = img2.flip(0)
