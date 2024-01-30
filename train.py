@@ -459,6 +459,17 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda')
 
+        src_img0 = torch.from_numpy(src_img0.copy())
+        src_img1 = torch.from_numpy(src_img1.copy())
+        src_img2 = torch.from_numpy(src_img2.copy())
+        src_img3 = torch.from_numpy(src_img3.copy())
+        src_img4 = torch.from_numpy(src_img4.copy())
+        src_img0 = src_img0.to(device = device, dtype = torch.float32)
+        src_img1 = src_img1.to(device = device, dtype = torch.float32)
+        src_img2 = src_img2.to(device = device, dtype = torch.float32)
+        src_img3 = src_img3.to(device = device, dtype = torch.float32)
+        src_img4 = src_img4.to(device = device, dtype = torch.float32)
+
         batch_img0 = []
         batch_img1 = []
         batch_img2 = []
@@ -468,16 +479,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         for index in range(self.batch_size):
             q = random.uniform(0, 1)
             if q < 0.5:
-                img0 = torch.from_numpy(img0.copy())
-                img1 = torch.from_numpy(img1.copy())
-                img2 = torch.from_numpy(img2.copy())
-                img3 = torch.from_numpy(img3.copy())
-                img4 = torch.from_numpy(img4.copy())
-                img0 = img0.to(device = device, dtype = torch.float32)
-                img1 = img1.to(device = device, dtype = torch.float32)
-                img2 = img2.to(device = device, dtype = torch.float32)
-                img3 = img3.to(device = device, dtype = torch.float32)
-                img4 = img4.to(device = device, dtype = torch.float32)
                 rsz_img0 = self.resize_image(src_img0, self.h)
                 rsz_img1 = self.resize_image(src_img1, self.h)
                 rsz_img2 = self.resize_image(src_img2, self.h)
@@ -490,17 +491,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img3 = img3.permute(2, 0, 1)
                 img4 = img4.permute(2, 0, 1)
             elif q < 0.75:
-                img0, img1, img2, img3, img4 = self.crop(src_img0, src_img1, src_img2, src_img3, src_img4, self.h // 2, self.w // 2)
-                img0 = torch.from_numpy(img0.copy())
-                img1 = torch.from_numpy(img1.copy())
-                img2 = torch.from_numpy(img2.copy())
-                img3 = torch.from_numpy(img3.copy())
-                img4 = torch.from_numpy(img4.copy())
-                img0 = img0.to(device = device, dtype = torch.float32)
-                img1 = img1.to(device = device, dtype = torch.float32)
-                img2 = img2.to(device = device, dtype = torch.float32)
-                img3 = img3.to(device = device, dtype = torch.float32)
-                img4 = img4.to(device = device, dtype = torch.float32)
                 rsz_img0 = self.resize_image(src_img0, self.h * 2)
                 rsz_img1 = self.resize_image(src_img1, self.h * 2)
                 rsz_img2 = self.resize_image(src_img2, self.h * 2)
@@ -513,17 +503,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img3 = img3.permute(2, 0, 1)
                 img4 = img4.permute(2, 0, 1)
             else:
-                img0, img1, img2, img3, img4 = self.crop(src_img0, src_img1, src_img2, src_img3, src_img4, self.h // 2, self.w // 2)
-                img0 = torch.from_numpy(img0.copy())
-                img1 = torch.from_numpy(img1.copy())
-                img2 = torch.from_numpy(img2.copy())
-                img3 = torch.from_numpy(img3.copy())
-                img4 = torch.from_numpy(img4.copy())
-                img0 = img0.to(device = device, dtype = torch.float32)
-                img1 = img1.to(device = device, dtype = torch.float32)
-                img2 = img2.to(device = device, dtype = torch.float32)
-                img3 = img3.to(device = device, dtype = torch.float32)
-                img4 = img4.to(device = device, dtype = torch.float32)
                 rsz_img0 = self.resize_image(src_img0, self.h * 3)
                 rsz_img1 = self.resize_image(src_img1, self.h * 3)
                 rsz_img2 = self.resize_image(src_img2, self.h * 3)
