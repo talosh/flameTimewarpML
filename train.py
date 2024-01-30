@@ -818,8 +818,6 @@ def main():
             if torch.cuda.is_available():
                 model.load_state_dict(convert(torch.load('{}/flownet_v412.pkl'.format(path))), False)
 
-    load_model('train_log')
-
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
@@ -900,6 +898,8 @@ def main():
 
     time_stamp = time.time()
     epoch = current_epoch
+
+    load_model('train_log')
 
     while True:
         for batch_idx in range(len(dataset)):
