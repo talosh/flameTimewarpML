@@ -505,7 +505,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             # img1 = torch.from_numpy(img1.copy()).permute(2, 0, 1)
             batch_img0.append(img0)
             batch_img1.append(img1)
-            batch_img2.append[img2]
+            batch_img2.append(img2)
             batch_img3.append(img3)
             batch_img4.append(img4)
 
