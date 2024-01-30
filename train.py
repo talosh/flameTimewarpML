@@ -707,20 +707,39 @@ def main():
     read_image_queue = queue.Queue(maxsize=12)
     dataset = TimewarpMLDataset(args.dataset_path)
 
+    def read_images(read_image_queue, dataset):
+        while True:
+            for batch_idx in range(len(dataset)):
+                img0, img1, img2, img3, img4, ratio = dataset[batch_idx]
+                read_image_queue.put((img0, img1, img2, img3, img4, ratio))
+
+    read_thread = threading.Thread(target=read_images, args=(read_image_queue, dataset))
+    read_thread.daemon = True
+    read_thread.start()
+
     steps_per_epoch = len(dataset)
     
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
+    '''
+    device = torch.device(f'cuda:{args.device}')
+    device = torch.device("mps")
+    '''
     
-    model = FlownetCas()
-
-    sys.exit()
+    if args.type == 1:
+        model_name = Model_01.get_name()
+        model = Model_01().get_training_model()(dataset.in_channles, dataset.out_channels).to(device)
+    elif args.type == 2:
+        model_name = Model_02.get_name()
+        model = Model_02().get_training_model()(dataset.in_channles, dataset.out_channels).to(device)
+    else:
+        print (f'Model type {args.type} is not yet implemented')
+        sys.exit()
 
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
     lr = args.lr
     number_warmup_steps = steps_per_epoch * warmup_epochs
-    batch_size = 1
 
     criterion_mse = torch.nn.MSELoss()
     criterion_l1 = torch.nn.L1Loss()
@@ -802,19 +821,30 @@ def main():
             data_time = time.time() - time_stamp
             time_stamp = time.time()
 
-            source, target = read_image_queue.get()
+            img0, img1, img2, img3, img4, ratio = read_image_queue.get()
 
             if platform.system() == 'Darwin':
-                source = normalize_numpy(source).unsqueeze(0)
-                target = normalize_numpy(target).unsqueeze(0)
-                source = source.to(device, non_blocking = True)
-                target = target.to(device, non_blocking = True)
+                img0 = normalize_numpy(img0)
+                img1 = normalize_numpy(img1)
+                img2 = normalize_numpy(img2)
+                img3 = normalize_numpy(img3)
+                img4 = normalize_numpy(img4)
+                img0 = img0.to(device, non_blocking = True)
+                img1 = img1.to(device, non_blocking = True)
+                img2 = img2.to(device, non_blocking = True)
+                img3 = img3.to(device, non_blocking = True)
+                img4 = img4.to(device, non_blocking = True)
             else:
-                source = source.to(device, non_blocking = True)
-                target = target.to(device, non_blocking = True)
-                source = normalize(source).unsqueeze(0)
-                target = normalize(target).unsqueeze(0)
-
+                img0 = img0.to(device, non_blocking = True)
+                img1 = img1.to(device, non_blocking = True)
+                img2 = img2.to(device, non_blocking = True)
+                img3 = img3.to(device, non_blocking = True)
+                img4 = img4.to(device, non_blocking = True)
+                img0 = normalize(img0)
+                img1 = normalize(img1)
+                img2 = normalize(img2)
+                img3 = normalize(img3)
+                img4 = normalize(img4)
 
             if step < number_warmup_steps:
                 current_lr = warmup(step, lr=lr, number_warmup_steps=number_warmup_steps)
@@ -826,6 +856,7 @@ def main():
             current_lr_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
 
             optimizer.zero_grad(set_to_none=True)
+            
             output = model(source * 2 - 1)
             output = ( output + 1 ) / 2
 
