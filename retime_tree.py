@@ -157,14 +157,14 @@ def main():
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
     model = FlownetCas().to(device)
 
-    state_dict = torch.load(args.model_path)
+    state_dict = torch.load(args.model_path, map_location=device)
     def convert(param):
         return {
             k.replace("module.", ""): v
             for k, v in param.items()
             if "module." in k
         }
-    model.load_state_dict(convert(state_dict), map_location=device)
+    model.load_state_dict(convert(state_dict))
     model.half()
     model.eval()
 
