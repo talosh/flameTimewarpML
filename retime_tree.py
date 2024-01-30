@@ -219,6 +219,14 @@ def main():
         img1 = img1.permute(2, 0, 1).unsqueeze(0)
         img1 = normalize(img1)
 
+        n, c, h, w = img0.shape
+        ph = ((h - 1) // 64 + 1) * 64
+        pw = ((w - 1) // 64 + 1) * 64
+        padding = (0, pw - w, 0, ph - h)
+        
+        img0 = torch.nn.functional.pad(img0, padding)
+        img1 = torch.nn.functional.pad(img1, padding)
+
         flow_list, mask, merged, teacher_res, loss_cons = model(torch.cat((img0, img1), dim=1), timestep = frame_data['ratio'])    
 
         del img0, img1, frame_data
