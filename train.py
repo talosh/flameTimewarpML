@@ -251,9 +251,9 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         self.frame_read_thread.daemon = True
         self.frame_read_thread.start()
 
-        self.last_shuffled_index = -1
-        self.last_source_image_data = None
-        self.last_target_image_data = None
+        # self.last_shuffled_index = -1
+        # self.last_source_image_data = None
+        # self.last_target_image_data = None
 
     def find_folders_with_exr(self, path):
         """
@@ -372,6 +372,13 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 try:
                     train_data = {}
                     train_data['pre_start'] = self.fw.read_openexr_file(description['pre_start'])['image_data']
+                    train_data['start'] = self.fw.read_openexr_file(description['start'])['image_data']
+                    train_data['gt'] = self.fw.read_openexr_file(description['gt'])['image_data']
+                    train_data['end'] = self.fw.read_openexr_file(description['end'])['image_data']
+                    train_data['after_end'] = self.fw.read_openexr_file(description['after_end'])['image_data']
+                    train_data['ratio'] = description['ratio']
+                    train_data['h'] = description['h']
+                    train_data['w'] = description['w']
                     self.frames_queue.put(train_data)
                     pprint (description)
                 except Exception as e:
