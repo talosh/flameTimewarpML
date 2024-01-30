@@ -942,6 +942,8 @@ def main():
             # flow, mask, merged, teacher_res, loss_cons = model(x * 2 - 1, timestep = ratio)
             flow, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
 
+            print (f'flow shape: {flow.shape}, mask_shape: {mask.shape}')
+
             output = merged[3]
 
             loss = criterion_mse(output, img2)
