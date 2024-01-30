@@ -129,6 +129,10 @@ def main():
         folder_frames_map = compose_frames_map_speed(folder_path, common_path, args.dst_path, args.speed)
         for key in sorted(folder_frames_map.keys()):
             all_frame_descriptions.append(folder_frames_map[key])
+    print ('')
+
+    for all_frame_description in all_frame_descriptions:
+        
 
 if __name__ == "__main__":
     main()
