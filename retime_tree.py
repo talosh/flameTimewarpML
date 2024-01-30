@@ -284,7 +284,7 @@ def main():
     
     all_frame_descriptions = []
 
-    for folder_index, folder_path in enumerate(folders_with_exr):
+    for folder_index, folder_path in enumerate(sorted(folders_with_exr)):
         print (f'\rScanning folder {folder_index + 1} of {len(folders_with_exr)}', end='')
         folder_frames_map = compose_frames_map_speed(folder_path, common_path, args.dst_path, args.speed)
         for key in sorted(folder_frames_map.keys()):
