@@ -737,7 +737,7 @@ def main():
         sys.exit()
     '''
 
-    model = FlownetCas()
+    model = FlownetCas().to(device)
     model_name = FlownetCas
 
     warmup_epochs = args.warmup
