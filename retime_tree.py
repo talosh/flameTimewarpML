@@ -219,6 +219,7 @@ def main():
         img1 = img1.permute(2, 0, 1).unsqueeze(0)
         img1 = normalize(img1)
 
+        del img0, img1, frame_data
 
 
 if __name__ == "__main__":
