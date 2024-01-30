@@ -133,6 +133,7 @@ def main():
         'flownet_v412.pkl'
     )
     parser.add_argument('--model_path', type=str, default=default_model_path, help='Path to the pre-trained model (optional)')
+    parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
 
     args = parser.parse_args()
 
