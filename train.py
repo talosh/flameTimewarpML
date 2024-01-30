@@ -403,6 +403,38 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         img4 = img4[x:x+h, y:y+w, :]
         return img0, img1, img2, img3, img4
 
+    def resize_image(self, tensor, x):
+        """
+        Resize the tensor of shape [h, w, c] so that the smallest dimension becomes x,
+        while retaining aspect ratio.
+
+        Parameters:
+        tensor (torch.Tensor): The input tensor with shape [h, w, c].
+        x (int): The target size for the smallest dimension.
+
+        Returns:
+        torch.Tensor: The resized tensor.
+        """
+        # Adjust tensor shape to [n, c, h, w]
+        tensor = tensor.permute(2, 0, 1).unsqueeze(0)
+
+        # Calculate new size
+        h, w = tensor.shape[2], tensor.shape[3]
+        if h > w:
+            new_w = x
+            new_h = int(x * h / w)
+        else:
+            new_h = x
+            new_w = int(x * w / h)
+
+        # Resize
+        resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bilinear', align_corners=False)
+
+        # Adjust tensor shape back to [h, w, c]
+        resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
+
+        return resized_tensor
+
     def getimg(self, index):
         '''
         shuffled_index = self.indices[index // self.frame_multiplier]
@@ -436,17 +468,27 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         for index in range(self.batch_size):
             q = random.uniform(0, 1)
             if q < 0.5:
-                img0, img1, img2, img3, img4 = self.crop(src_img0, src_img1, src_img2, src_img3, src_img4, self.h, self.w)
-                img0 = torch.from_numpy(img0.copy()).permute(2, 0, 1)
-                img1 = torch.from_numpy(img1.copy()).permute(2, 0, 1)
-                img2 = torch.from_numpy(img2.copy()).permute(2, 0, 1)
-                img3 = torch.from_numpy(img3.copy()).permute(2, 0, 1)
-                img4 = torch.from_numpy(img4.copy()).permute(2, 0, 1)
+                img0 = torch.from_numpy(img0.copy())
+                img1 = torch.from_numpy(img1.copy())
+                img2 = torch.from_numpy(img2.copy())
+                img3 = torch.from_numpy(img3.copy())
+                img4 = torch.from_numpy(img4.copy())
                 img0 = img0.to(device = device, dtype = torch.float32)
                 img1 = img1.to(device = device, dtype = torch.float32)
                 img2 = img2.to(device = device, dtype = torch.float32)
                 img3 = img3.to(device = device, dtype = torch.float32)
                 img4 = img4.to(device = device, dtype = torch.float32)
+                rsz_img0 = self.resize_image(src_img0, self.h)
+                rsz_img1 = self.resize_image(src_img1, self.h)
+                rsz_img2 = self.resize_image(src_img2, self.h)
+                rsz_img3 = self.resize_image(src_img3, self.h)
+                rsz_img4 = self.resize_image(src_img4, self.h)
+                img0, img1, img2, img3, img4 = self.crop(rsz_img0, rsz_img1, rsz_img2, rsz_img3, rsz_img4, self.h, self.w)
+                img0 = img0.permute(2, 0, 1)
+                img1 = img1.permute(2, 0, 1)
+                img2 = img2.permute(2, 0, 1)
+                img3 = img3.permute(2, 0, 1)
+                img4 = img4.permute(2, 0, 1)
             elif q < 0.75:
                 img0, img1, img2, img3, img4 = self.crop(src_img0, src_img1, src_img2, src_img3, src_img4, self.h // 2, self.w // 2)
                 img0 = torch.from_numpy(img0.copy()).permute(2, 0, 1)
