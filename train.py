@@ -901,7 +901,7 @@ def main():
     epoch = current_epoch
     
     '''
-    state_dict = torch.load('/home/flame/Documents/dev/flameTimewarpML/train_log/flownet_v412.pkl')
+    state_dict = torch.load('/home/flame/Documents/dev/flameTimewarpML/models_data/flownet_v412.pkl')
     def convert(param):
         return {
             k.replace("module.", ""): v

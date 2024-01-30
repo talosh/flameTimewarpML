@@ -127,7 +127,12 @@ def main():
     parser.add_argument('dst_path', type=str, help='Path to the destination folder')
     parser.add_argument('--speed', type=float, required=True, help='Speed factor for retime in percents')
     # Optional arguments
-    parser.add_argument('--model_path', type=str, default=None, help='Path to the pre-trained model (optional)')
+    default_model_path = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)),
+        'models_data',
+        'flownet_v412.pkl'
+    )
+    parser.add_argument('--model_path', type=str, default=default_model_path, help='Path to the pre-trained model (optional)')
 
     args = parser.parse_args()
 
@@ -144,10 +149,33 @@ def main():
     print ('')
 
     frames_queue = queue.Queue(maxsize=4)
-    frame_read_thread = threading.Thread(target=read_frames)
+    frame_read_thread = threading.Thread(target=read_frames, args=(all_frame_descriptions, frames_queue))
     frame_read_thread.daemon = True
     frame_read_thread.start()
-        
+
+    device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
+    model = FlownetCas().to(device)
+
+    state_dict = torch.load(args.model_path)
+    def convert(param):
+        return {
+            k.replace("module.", ""): v
+            for k, v in param.items()
+            if "module." in k
+        }
+    model.load_state_dict(convert(state_dict), map_location=device)
+    model.half()
+    model.eval()
+
+    for frame_idx in range(len(all_frame_descriptions)):
+        frame_data = frames_queue.get()
+
+        img0 = torch.from_numpy(frame_data['incoming_data'].copy())
+        img1 = torch.from_numpy(frame_data['outgoing_data'].copy())
+
+
+        img0 = normalize(img0)
+
 
 if __name__ == "__main__":
     main()
