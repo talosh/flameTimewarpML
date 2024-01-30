@@ -807,6 +807,9 @@ def main():
     model = FlownetCas().to(device)
     model_name = FlownetCas
 
+    fusion_model_name = Model_01.get_name()
+    fusion_model = Model_01().get_training_model()(11, 3).to(device)
+
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
@@ -944,7 +947,9 @@ def main():
             # flow, mask, merged, teacher_res, loss_cons = model(x * 2 - 1, timestep = ratio)
             flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
 
-            print (f'flow shape: {flow_list[3].shape}, mask_shape: {mask.shape}, merged shape {merged[3].shape}')
+            flow = flow_list[3]
+            fusion_input = torch.cat((img1, flow[:, :2], mask, merged[3], flow[:, 2:4], img3), dim=1)
+            print (f'fusion_input shape: {fusion_input.shape}')
 
             output = merged[3]
 
