@@ -967,7 +967,7 @@ def main():
             optimizer.step()
 
             optimizer_fusion.zero_grad(set_to_none=True)
-            output_fusion = model(fusion_input)
+            output_fusion = fusion_model(fusion_input)
             output_fusion = ( output_fusion + 1 ) / 2
             loss_fusion = criterion_mse_fusion(output_fusion, img2)
             loss_l1_fusion = criterion_l1_fusion(output_fusion, img2)
