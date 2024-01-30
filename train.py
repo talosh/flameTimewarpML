@@ -449,6 +449,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         train_data = self.getimg(index)
+        print ('\n')
+        pprint (train_data['description'])
         src_img0 = train_data['pre_start']
         src_img1 = train_data['start']
         src_img2 = train_data['gt']
