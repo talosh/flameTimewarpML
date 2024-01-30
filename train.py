@@ -725,6 +725,7 @@ def main():
     device = torch.device("mps")
     '''
     
+    '''
     if args.type == 1:
         model_name = Model_01.get_name()
         model = Model_01().get_training_model()(dataset.in_channles, dataset.out_channels).to(device)
@@ -734,6 +735,10 @@ def main():
     else:
         print (f'Model type {args.type} is not yet implemented')
         sys.exit()
+    '''
+
+    model = FlownetCas()
+    model_name = FlownetCas
 
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
