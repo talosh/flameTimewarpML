@@ -865,9 +865,7 @@ def main():
             x = torch.cat((img1, img3, img2), dim=1)
             flow, mask, merged, teacher_res, loss_cons = model(x * 2 - 1, timestep = ratio)
 
-            print (type(merged))
-
-            output = ( merged + 1 ) / 2
+            output = ( merged[3] + 1 ) / 2
 
             loss = criterion_mse(output, img2)
             loss_l1 = criterion_l1(output, img2)
