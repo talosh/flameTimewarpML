@@ -940,9 +940,9 @@ def main():
 
             x = torch.cat((img1, img3, img2), dim=1)
             # flow, mask, merged, teacher_res, loss_cons = model(x * 2 - 1, timestep = ratio)
-            flow, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
+            flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
 
-            print (f'flow shape: {flow.shape}, mask_shape: {mask.shape}')
+            print (f'flow shape: {flow_list[3].shape}, mask_shape: {mask.shape}')
 
             output = merged[3]
 
