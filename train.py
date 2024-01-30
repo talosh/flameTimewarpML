@@ -306,7 +306,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         return folders_with_file, folders_without_file
 
-    def create_dataset_descriptions(self, folder_path, max_window=9):
+    def create_dataset_descriptions(self, folder_path, max_window=5):
 
         def sliding_window(lst, n):
             for i in range(len(lst) - n + 1):
