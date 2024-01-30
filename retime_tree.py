@@ -120,6 +120,41 @@ def read_frames(all_frame_descriptions, frames_queue):
                 print (e)                
         time.sleep(timeout)
 
+def normalize(image_array) :
+    def custom_bend(x):
+        linear_part = x
+        exp_bend = torch.sign(x) * torch.pow(torch.abs(x), 1 / 4 )
+        return torch.where(x > 1, exp_bend, torch.where(x < -1, exp_bend, linear_part))
+
+    # transfer (0.0 - 1.0) onto (-1.0 - 1.0) for tanh
+    image_array = (image_array * 2) - 1
+    # bend values below -1.0 and above 1.0 exponentially so they are not larger then (-4.0 - 4.0)
+    image_array = custom_bend(image_array)
+    # bend everything to fit -1.0 - 1.0 with hyperbolic tanhent
+    image_array = torch.tanh(image_array)
+    # move it to 0.0 - 1.0 range
+    image_array = (image_array + 1) / 2
+
+    return image_array
+
+def restore_normalized_values(image_array):
+    def custom_de_bend(x):
+        linear_part = x
+        exp_deband = torch.sign(x) * torch.pow(torch.abs(x), 4 )
+        return torch.where(x > 1, exp_deband, torch.where(x < -1, exp_deband, linear_part))
+
+    epsilon = torch.tensor(4e-8, dtype=torch.float32).to(image_array.device)
+    # clamp image befor arctanh
+    image_array = torch.clamp((image_array * 2) - 1, -1.0 + epsilon, 1.0 - epsilon)
+    # restore values from tanh  s-curve
+    image_array = torch.arctanh(image_array)
+    # restore custom bended values
+    image_array = custom_de_bend(image_array)
+    # move it to 0.0 - 1.0 range
+    image_array = ( image_array + 1.0) / 2.0
+
+    return image_array
+
 def main():
     parser = argparse.ArgumentParser(description='Retime script.')
     # Required argument
@@ -174,11 +209,16 @@ def main():
         print (f'\rProcessing frame {frame_idx + 1} of {len(all_frame_descriptions)}', end='')
 
         frame_data = frames_queue.get()
-
         img0 = torch.from_numpy(frame_data['incoming_data'].copy())
-        img1 = torch.from_numpy(frame_data['outgoing_data'].copy())
+        img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
+        img0 = img0.permute(2, 0, 1).unsqueeze(0)
+        img0 = normalize(img0)
 
-        # img0 = normalize(img0)
+        img1 = torch.from_numpy(frame_data['outgoing_data'].copy())
+        img1 = img1.to(device = device, dtype = torch.float16, non_blocking = True)
+        img1 = img1.permute(2, 0, 1).unsqueeze(0)
+        img1 = normalize(img1)
+
 
 
 if __name__ == "__main__":
