@@ -856,12 +856,13 @@ def main():
             current_lr_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
 
             optimizer.zero_grad(set_to_none=True)
-            
-            output = model(source * 2 - 1)
-            output = ( output + 1 ) / 2
 
-            loss = criterion_mse(output, target)
-            loss_l1 = criterion_l1(output, target)
+            x = torch.cat((img1, img3, img2), dim=1)
+            flow, mask, merged, teacher_res, loss_cons = model(x * 2 - 1, timestep = ratio)
+            output = ( merged + 1 ) / 2
+
+            loss = criterion_mse(output, img2)
+            loss_l1 = criterion_l1(output, img2)
             loss_l1_str = str(f'{loss_l1.item():.6f}')
 
             epoch_loss.append(float(loss_l1))
@@ -876,12 +877,12 @@ def main():
 
             if step % 40 == 1:
                 if platform.system() == 'Darwin':
-                    rgb_source = restore_normalized_values_numpy(source)
-                    rgb_target = restore_normalized_values_numpy(target)
+                    rgb_source = restore_normalized_values_numpy(img1)
+                    rgb_target = restore_normalized_values_numpy(img2)
                     rgb_output = restore_normalized_values_numpy(output)
                 else:
-                    rgb_source = restore_normalized_values(source)
-                    rgb_target = restore_normalized_values(target)
+                    rgb_source = restore_normalized_values(img1)
+                    rgb_target = restore_normalized_values(img2)
                     rgb_output = restore_normalized_values(output)
 
                 preview_folder = os.path.join(args.dataset_path, 'preview')
