@@ -945,9 +945,10 @@ def main():
             optimizer.zero_grad(set_to_none=True)
 
             x = torch.cat((img1, img3, img2), dim=1)
-            flow, mask, merged, teacher_res, loss_cons = model(x * 2 - 1, timestep = ratio)
+            # flow, mask, merged, teacher_res, loss_cons = model(x * 2 - 1, timestep = ratio)
+            flow, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
 
-            output = ( merged[3] + 1 ) / 2
+            output = merged[3]
 
             loss = criterion_mse(output, img2)
             loss_l1 = criterion_l1(output, img2)
