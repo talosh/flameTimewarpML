@@ -315,7 +315,7 @@ def main():
 
         flow_list, mask, merged, teacher_res, loss_cons = model(torch.cat((img0, img1), dim=1), timestep = frame_data['ratio'])    
 
-        result = img0[:, :3, :h, :w]
+        result = merged[3][:, :3, :h, :w]
         result = restore_normalized_values(result)
         result = result[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
         output_path = frame_data['destination']
