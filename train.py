@@ -72,6 +72,8 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
 from models.flownet import FlownetCas
+from models.multires_v001 import Model as Model_01
+
 
 class Yogi(Optimizer):
     r"""Implements Yogi Optimizer Algorithm.
