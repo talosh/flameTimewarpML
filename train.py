@@ -1021,7 +1021,7 @@ def main():
 
                 # sample_current = rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
 
-            if step % 1000 == 1:
+            if step % 100 == 1:
                 torch.save({
                     'step': step,
                     'steps_loss': steps_loss,
@@ -1031,8 +1031,11 @@ def main():
                     # 'batch_idx': batch_idx,
                     'lr': optimizer.param_groups[0]['lr'],
                     'model_state_dict': model.state_dict(),
+                    'fusion_state_dict': fusion_model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
+                    'optimizer_fusion_state_dict': optimizer_fusion.state_dict(),
                     'model_name': model_name,
+                    'fusion_model_name': fusion_model_name,
                 }, trained_model_path)
 
             data_time += time.time() - time_stamp
