@@ -229,7 +229,11 @@ def main():
 
         flow_list, mask, merged, teacher_res, loss_cons = model(torch.cat((img0, img1), dim=1), timestep = frame_data['ratio'])    
 
-        del img0, img1, frame_data
+        result = merged[3]
+
+        
+
+        del img0, img1, frame_data, flow_list, mask, merged, teacher_res, loss_cons
 
 
 if __name__ == "__main__":
