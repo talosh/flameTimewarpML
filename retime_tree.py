@@ -290,13 +290,13 @@ def main():
             all_frame_descriptions.append(folder_frames_map[key])
     print ('')
 
-    print ('starting frame read therad...')
+    print ('starting frame read thread...')
     frames_queue = queue.Queue(maxsize=8)
     frame_read_thread = threading.Thread(target=read_frames, args=(all_frame_descriptions, frames_queue))
     frame_read_thread.daemon = True
     frame_read_thread.start()
 
-    print ('starting frame save therad...')
+    print ('starting frame save thread...')
     save_queue = queue.Queue(maxsize=8)
     frame_save_thread = threading.Thread(target=save_frames, args=(save_queue, ))
     frame_save_thread.daemon = True
