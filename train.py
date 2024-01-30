@@ -994,8 +994,8 @@ def main():
                 sample_source2 = rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
                 sample_target = rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
                 sample_output = rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
-                write_exr(sample_source1, os.path.join(preview_folder, f'{preview_index:02}_source1.exr'))
-                write_exr(sample_source1, os.path.join(preview_folder, f'{preview_index:02}_source2.exr'))
+                write_exr(sample_source1, os.path.join(preview_folder, f'{preview_index:02}_incomng.exr'))
+                write_exr(sample_source2, os.path.join(preview_folder, f'{preview_index:02}_outgoing.exr'))
                 write_exr(sample_target, os.path.join(preview_folder, f'{preview_index:02}_target.exr'))
                 write_exr(sample_output, os.path.join(preview_folder, f'{preview_index:02}_output.exr'))
                 preview_index = preview_index + 1 if preview_index < 9 else 0
