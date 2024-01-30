@@ -71,6 +71,8 @@ import torch
 import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
+from models.flownet import FlownetCas
+
 class Yogi(Optimizer):
     r"""Implements Yogi Optimizer Algorithm.
     It has been proposed in `Adaptive methods for Nonconvex Optimization`__.
@@ -507,7 +509,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             batch_img3.append(img3)
             batch_img4.append(img4)
 
-        return img0, img1, img2, img3, img4, ratio
+        return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), torch.stack(batch_img3), torch.stack(batch_img4), ratio
 
     def get_input_channels_number(self, source_frames_paths_list):
         total_num_channels = 0
