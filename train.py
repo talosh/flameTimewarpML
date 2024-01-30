@@ -369,38 +369,13 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         while True:
             for index in range(len(self.train_descriptions)):
                 description = self.train_descriptions[index]
-                pprint (description)
-
-                '''
-                source_file_paths_list = self.source_files[index]
-                target_file_path = self.target_files[index]
-                source_image_data = None
-                target_image_data = None
-
                 try:
-                    tensors = []
-                    for src_path in source_file_paths_list:
-                        src_image_dict = self.fw.read_openexr_file(src_path)
-                        tensors.append(src_image_dict.get('image_data').astype(np.float32))
-                    source_image_data = np.concatenate(tensors, axis=2)
+                    train_data = {}
+                    train_data['pre_start'] = self.fw.read_openexr_file(description['pre_start'])['image_data']
+                    self.frames_queue.put(train_data)
+                    pprint (description)
                 except Exception as e:
-                    print (e)
-
-                try:
-                    target_image_dict = self.fw.read_openexr_file(target_file_path)
-                    target_image_data = target_image_dict['image_data'].astype(np.float32)
-                except Exception as e:
-                    print (e)
-
-                if source_image_data is None or target_image_data is None:
-                    time.sleep(timeout)
-                    continue
-                
-                self.frames_queue.put([
-                    source_image_data,
-                    target_image_data
-                ])
-                '''
+                    print (e)                
 
             time.sleep(timeout)
 
@@ -477,73 +452,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             file_header = self.fw.read_openexr_file(src_path, header_only=True)
             total_num_channels += file_header['shape'][2]
         return total_num_channels
-
-    def create_source_files_map(self, folder_path):
-        '''
-        Creates a dictionary of .exr files from sorted subfolders of a given folder.
-
-        Each key in the dictionary corresponds to an index starting from 1, representing the .exr file's 
-        index in the first subfolder. The value is a list containing paths to .exr files from each subfolder,
-        where the file's index matches the key. If a subfolder has fewer .exr files than the first one, 
-        the last file path in that subfolder is repeated to match the count of the first subfolder.
-
-        Parameters:
-        folder_path (str): The path to the main folder containing subfolders.
-
-        Returns:
-        dict: A dictionary where each key is an integer starting from 1, and the value is a list of file paths.
-            Returns a message string if the folder does not exist or if no subfolders are found.
-
-        Example:
-            {1: ['/preview/render1_ML_2024JAN20_1819_HIDH/src/01/render1.00000000.exr',
-                '/preview/render1_ML_2024JAN20_1819_HIDH/src/02/render2.00000000.exr',
-                '/preview/render1_ML_2024JAN20_1819_HIDH/src/03/004_Subclip_001-RSZ_Result.00100853.exr'],
-            2: ['/preview/render1_ML_2024JAN20_1819_HIDH/src/01/render1.00000001.exr',
-                '/preview/render1_ML_2024JAN20_1819_HIDH/src/02/render2.00000001.exr',
-                '/preview/render1_ML_2024JAN20_1819_HIDH/src/03/004_Subclip_001-RSZ_Result.00100854.exr']}
-        '''
-
-        exr_dict = {}
-
-        # Ensure the folder exists
-        if not os.path.exists(folder_path):
-            message_string = f'Folder {folder_path} does not exist'
-            self.message_queue.put(
-                {'type': 'mbox',
-                'message': message_string,
-                'action': None}
-            )
-
-        # List and sort all subfolders
-        subfolders = sorted([f.path for f in os.scandir(folder_path) if f.is_dir()])
-
-        # Check if there are any subfolders
-        if not subfolders:
-            message_string = f'No clip folders found in {folder_path}'
-            self.message_queue.put(
-                {'type': 'mbox',
-                'message': message_string,
-                'action': None}
-            )
-
-        # Process the first subfolder separately
-        first_subfolder = subfolders[0]
-        first_subfolder_files = sorted([f for f in os.listdir(first_subfolder) if f.endswith('.exr')])
-
-        # Initialize the dictionary with files from the first subfolder
-        for i, file in enumerate(first_subfolder_files, start=1):
-            exr_dict[i] = [os.path.join(first_subfolder, file)]
-
-        # Process the remaining subfolders
-        for subfolder in subfolders[1:]:
-            subfolder_files = sorted([f for f in os.listdir(subfolder) if f.endswith('.exr')])
-            for i, file in enumerate(subfolder_files, start=1):
-                if i <= len(first_subfolder_files):
-                    exr_dict[i].append(os.path.join(subfolder, file))
-                else:
-                    exr_dict[i].append(os.path.join(subfolder, subfolder_files[-1]))
-
-        return exr_dict
 
 def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
     height, width, depth = image_data.shape
