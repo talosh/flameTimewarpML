@@ -964,15 +964,15 @@ def main():
             optimizer.step()
 
             optimizer_fusion.zero_grad(set_to_none=True)
+            
+            flow = flow_list[3].detach().clone()
+            img1 = img1.detach().clone()
+            mask = mask.detach().clone()
+            merged = merged[3].detach().clone()
+            img3 = img3.detach().clone()
+            img2 = img2.detach().clone()
 
-            flow = flow_list[3]
-            img1 = img1.detach.clone()
-            mask = mask.detach.clone()
-            merged = merged[3].detach.clone()
-            img3 = img3.detach.clone()
-            img2 = img2.detach.clone()
-
-            fusion_input = torch.cat((img1*2 - 1, flow[:, :2].detach.clone(), mask*2 - 1, merged[3]*2 - 1, flow[:, 2:4].detach.clone(), img3*2 - 1), dim=1)
+            fusion_input = torch.cat((img1*2 - 1, flow[:, :2], mask*2 - 1, merged[3]*2 - 1, flow[:, 2:4], img3*2 - 1), dim=1)
             output_fusion = fusion_model(fusion_input)
             output_fusion = ( output_fusion + 1 ) / 2
             loss_fusion = criterion_mse_fusion(output_fusion, img2)
