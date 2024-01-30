@@ -273,6 +273,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         for root, dirs, files in os.walk(path):
             for file in files:
                 if file.endswith('.exr'):
+                    if root == 'preview':
+                        continue
                     directories_with_exr.add(root)
                     break  # No need to check other files in the same directory
 
