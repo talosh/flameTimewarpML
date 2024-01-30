@@ -502,6 +502,30 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img3 = torch.flip(img3.transpose(1, 2), [1])
                 img4 = torch.flip(img4.transpose(1, 2), [1])
 
+            # Horizontal flip (reverse width)
+            if random.uniform(0, 1) < 0.5:
+                img0 = img0.flip(-1)
+                img1 = img1.flip(-1)
+                img2 = img2.flip(-1)
+                img3 = img3.flip(-1)
+                img4 = img4.flip(-1)
+
+            # Vertical flip (reverse height)
+            if random.uniform(0, 1) < 0.5:
+                img0 = img0.flip(-2)
+                img1 = img1.flip(-2)
+                img2 = img2.flip(-2)
+                img3 = img3.flip(-2)
+                img4 = img4.flip(-2)
+
+            # Depth-wise flip (reverse channels)
+            if random.uniform(0, 1) < 0.5:
+                img0 = img0.flip(1)
+                img1 = img1.flip(1)
+                img2 = img2.flip(1)
+                img3 = img3.flip(1)
+                img4 = img4.flip(1)
+
             # img0, img1 = self.crop(img0, img1, self.h, self.w)
             # img0 = torch.from_numpy(img0.copy()).permute(2, 0, 1)
             # img1 = torch.from_numpy(img1.copy()).permute(2, 0, 1)
