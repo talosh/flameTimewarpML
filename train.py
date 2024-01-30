@@ -913,7 +913,6 @@ def main():
             for k, v in param.items()
             if "module." in k
         }
-
     model.load_state_dict(convert(state_dict))
 
     while True:
