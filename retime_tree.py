@@ -67,6 +67,7 @@ def main():
     # Required argument
     parser.add_argument('src_path', type=str, help='Path to the source tree')
     parser.add_argument('dst_path', type=str, help='Path to the destination folder')
+    parser.add_argument('--speed', type=float, required=True, help='Speed factor for retime')
 
     # Optional arguments
     parser.add_argument('--model_path', type=str, default=None, help='Path to the pre-trained model (optional)')
