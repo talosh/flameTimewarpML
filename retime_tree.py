@@ -84,6 +84,30 @@ def find_folders_with_exr(path):
 
     return directories_with_exr
 
+def compose_frames_map_speed(folder_path, common_path, dst_path, speed):
+    exr_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.exr')]
+    exr_files.sort()
+
+    duration = len(exr_files)
+    relative_start_frame = 0
+    max_frame_value = relative_start_frame + duration - 1
+
+    speed_multiplier = speed / 100
+    new_duration = int(duration / speed_multiplier)
+
+    frames_map = {}
+    frame_value = relative_start_frame
+    for frame in range(relative_start_frame, new_duration + 1):
+        frames_map[frame] = {
+            'ratio': frame_value - int(frame_value),
+            'incoming': exr_files[int(frame_value) if int(frame_value) < max_frame_value else max_frame_value],
+            'outgoing': exr_files[int(frame_value) + 1 if int(frame_value) + 1 < max_frame_value else max_frame_value],
+            'destination': os.path.join(dst_path, os.path.relpath(folder_path, common_path), f'{frame:08d}.exr')
+        }
+        frame_value = frame_value + speed_multiplier
+    return frames_map
+
+
 def main():
     parser = argparse.ArgumentParser(description='Retime script.')
     # Required argument
@@ -97,7 +121,10 @@ def main():
 
     folders_with_exr = find_folders_with_exr(args.src_path)
     common_path = os.path.commonpath(folders_with_exr)
-    print (common_path)
+    for folder_path in folders_with_exr:
+        folder_frames_map = compose_frames_map_speed(folder_path, common_path, args.dst_path, args.speed)
+        pprint (folder_frames_map)
+
 
 if __name__ == "__main__":
     main()
