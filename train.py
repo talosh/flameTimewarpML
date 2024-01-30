@@ -390,9 +390,9 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         return len(self.train_descriptions)
     
     def crop(self, img0, img1, img2, img3, img4, h, w):
-        print (f'crop: {h}, {w}')
         np.random.seed(None)
         ih, iw, _ = img0.shape
+        print (f'crop: {h}, {w}, {ih}, {iw}')
         x = np.random.randint(0, ih - h + 1)
         y = np.random.randint(0, iw - w + 1)
         img0 = img0[x:x+h, y:y+w, :]
