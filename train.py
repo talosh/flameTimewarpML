@@ -696,7 +696,7 @@ def main():
     # Optional arguments
     parser.add_argument('--lr', type=float, default=0.00009, help='Learning rate (default: 9e-5)')
     parser.add_argument('--type', type=int, default=1, help='Model type (int): 1 - MultiresNet, 2 - MultiresNet 4 (default: 1)')
-    parser.add_argument('--warmup', type=float, default=9, help='Warmup epochs (float) (default: 1)')
+    parser.add_argument('--warmup', type=float, default=0.1, help='Warmup epochs (float) (default: 1)')
     parser.add_argument('--pulse', type=float, default=9, help='Period in number of epochs to pulse learning rate (float) (default: 9)')
     parser.add_argument('--pulse_amplitude', type=float, default=10, help='Learning rate pulse amplitude (percentage) (default: 10)')
     parser.add_argument('--model_path', type=str, default=None, help='Path to the pre-trained model (optional)')
