@@ -800,8 +800,25 @@ def main():
         sys.exit()
     '''
 
+
     model = FlownetCas().to(device)
     model_name = FlownetCas
+
+    def load_model(path, rank=0):
+        def convert(param):
+            if rank == -1:
+                return {
+                    k.replace("module.", ""): v
+                    for k, v in param.items()
+                    if "module." in k
+                }
+            else:
+                return param
+        if rank <= 0:
+            if torch.cuda.is_available():
+                model.load_state_dict(convert(torch.load('{}/flownet_v412.pkl'.format(path))), False)
+
+    load_model('train_log')
 
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
