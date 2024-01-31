@@ -752,6 +752,14 @@ def restore_normalized_values_numpy(image_array_torch):
 def moving_average(data, window_size):
     return np.convolve(data, np.ones(window_size)/window_size, mode='valid')
 
+def clear_lines(n=2):
+    """Clears a specified number of lines in the terminal."""
+    CURSOR_UP_ONE = '\x1b[1A'
+    ERASE_LINE = '\x1b[2K'
+    for _ in range(n):
+        sys.stdout.write(CURSOR_UP_ONE)
+        sys.stdout.write(ERASE_LINE)
+
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
@@ -1106,8 +1114,9 @@ def main():
                 window_min = min(epoch_loss[-999:])
                 window_max = max(epoch_loss[-999:])
 
-            print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx + 1} / {len(dataset)}], Lr: {current_lr_str}, Lr RIFE: {current_lr_rife_str}, Loss L1: {loss_l1_str}', end='\n')
-            print(f'\rMin: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f}', end='\r')
+            clear_lines(2)
+            print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx + 1} / {len(dataset)}], Lr: {current_lr_str}, Lr RIFE: {current_lr_rife_str}, Loss L1: {loss_l1_str}', end='')
+            print(f'\rMin: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f}', end='')
 
             step = step + 1
 
