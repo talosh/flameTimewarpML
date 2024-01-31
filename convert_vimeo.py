@@ -27,7 +27,7 @@ def find_folders_with_png(path):
     Returns:
     list: A list of directories containing .exr files.
     """
-    directories_with_exr = set()
+    directories_with_png = set()
 
     # Walk through all directories and files in the given path
     for root, dirs, files in os.walk(path):
@@ -36,8 +36,10 @@ def find_folders_with_png(path):
         print (root)
         for file in files:
             if file.endswith('.png'):
-                directories_with_exr.add(root)
+                directories_with_png.add(root)
                 break  # No need to check other files in the same directory
+
+    return directories_with_png    
 
 def main():
     parser = argparse.ArgumentParser(description='Convert vimeo 90k pngs to uncompreesed exrs.')
@@ -46,9 +48,9 @@ def main():
     parser.add_argument('dst_path', type=str, help='Path to the destination folder')
     args = parser.parse_args()
 
-    folders_with_exr = find_folders_with_png(args.src_path)
+    folders_with_png = find_folders_with_png(args.src_path)
 
-    pprint (folders_with_exr)
+    pprint (folders_with_png)
 
 
 if __name__ == "__main__":
