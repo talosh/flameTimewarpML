@@ -814,7 +814,8 @@ def main():
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
     lr = args.lr
-    number_warmup_steps = steps_per_epoch * warmup_epochs
+    # number_warmup_steps = steps_per_epoch * warmup_epochs
+    number_warmup_steps = 100
 
     criterion_mse = torch.nn.MSELoss()
     criterion_l1 = torch.nn.L1Loss()
