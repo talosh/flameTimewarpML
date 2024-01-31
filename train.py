@@ -882,7 +882,7 @@ def main():
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
     lr = args.lr
-    lr_rife = args.lr / 1000
+    lr_rife = args.lr / 100000
     # number_warmup_steps = steps_per_epoch * warmup_epochs
     number_warmup_steps = 100
 
@@ -993,14 +993,14 @@ def main():
         'models_data',
         'flownet_v412.pkl'
     )
-    state_dict = torch.load(default_model_path)
+    rife_state_dict = torch.load(default_model_path)
     def convert(param):
         return {
             k.replace("module.", ""): v
             for k, v in param.items()
             if "module." in k
         }
-    model.load_state_dict(convert(state_dict))
+    model.load_state_dict(convert(rife_state_dict))
     # '''
 
     while True:
@@ -1133,6 +1133,7 @@ def main():
                     'model_name': model_name,
                     'fusion_model_name': fusion_model_name,
                 }, trained_model_path)
+                model.load_state_dict(convert(rife_state_dict))
 
             data_time += time.time() - time_stamp
             data_time_str = str(f'{data_time:.2f}')
