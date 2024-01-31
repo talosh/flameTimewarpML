@@ -1052,7 +1052,7 @@ def main():
             x = torch.cat((img1, img3, img2), dim=1)
             with torch.no_grad():
                 flow_list, mask, merged, teacher_res, loss_cons, warped_src0, warped_src1 = model(x, timestep = ratio)
-            # output = merged[3]
+            output_rife = merged[3]
 
             timestep = (img1[:, :1].clone() * 0 + 1) * ratio
             flow = flow_list[-1]
@@ -1107,26 +1107,26 @@ def main():
                     rgb_source2 = restore_normalized_values_numpy(img3)
                     rgb_target = restore_normalized_values_numpy(img2)
                     rgb_output = restore_normalized_values_numpy(output)
-                    # rgb_output_fusion = restore_normalized_values_numpy(output_fusion)
+                    rgb_output_rife = restore_normalized_values_numpy(output_rife)
                 else:
                     rgb_source1 = restore_normalized_values(img1)
                     rgb_source2 = restore_normalized_values(img3)
                     rgb_target = restore_normalized_values(img2)
                     rgb_output = restore_normalized_values(output)
-                    # rgb_output_fusion = restore_normalized_values(output_fusion)
+                    rgb_output_rife = restore_normalized_values(output_rife)
 
                 preview_folder = os.path.join(args.dataset_path, 'preview')
                 sample_source1 = rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
                 sample_source2 = rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
                 sample_target = rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
                 sample_output = rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
-                # sample_output_fusion = rgb_output_fusion[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+                sample_output_rife = rgb_output_rife[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
 
                 write_exr(sample_source1, os.path.join(preview_folder, f'{preview_index:02}_incomng.exr'))
                 write_exr(sample_source2, os.path.join(preview_folder, f'{preview_index:02}_outgoing.exr'))
                 write_exr(sample_target, os.path.join(preview_folder, f'{preview_index:02}_target.exr'))
                 write_exr(sample_output, os.path.join(preview_folder, f'{preview_index:02}_output.exr'))
-                # write_exr(sample_output_fusion, os.path.join(preview_folder, f'{preview_index:02}_output_fusion.exr'))
+                write_exr(sample_output_rife, os.path.join(preview_folder, f'{preview_index:02}_output_rife.exr'))
 
                 preview_index = preview_index + 1 if preview_index < 9 else 0
 
