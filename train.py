@@ -1099,8 +1099,12 @@ def main():
 
             if len(epoch_loss) < 999:
                 smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
+                window_min = min(epoch_loss)
+                window_max = max(epoch_loss)
             else:
-                smoothed_window_loss = np.mean(moving_average(epoch_loss[-1000:], 9))
+                smoothed_window_loss = np.mean(moving_average(epoch_loss[-999:], 9))
+                window_min = min(epoch_loss[-999:])
+                window_max = max(epoch_loss[-999:])
 
             print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx + 1} / {len(dataset)}], Lr: {current_lr_str}, Lr RIFE: {current_lr_rife_str}, Loss L1: {loss_l1_str}', end='\n')
             print(f'\rMin: {min(smoothed_window_loss):.6f} Avg: {smoothed_window_loss:.6f}, Max: {max(smoothed_window_loss):.6f}', end='\n')
