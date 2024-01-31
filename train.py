@@ -956,6 +956,12 @@ def main():
             flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
             output = merged[3]
 
+            timestep = (img1[:, :1].clone() * 0 + 1) * ratio
+            flow = flow_list[3]
+            fusion_input = torch.cat((img1*2 - 1, flow[:, :2], mask*2 - 1, timestep, output*2 - 1, flow[:, 2:4], img3*2 - 1), dim=1)
+            output = fusion_model(fusion_input)  
+            output = ( output + 1 ) / 2
+            
             loss = criterion_mse(output, img2)
             loss_l1 = criterion_l1(output, img2)
             loss_l1_str = str(f'{loss_l1.item():.6f}')
@@ -966,6 +972,7 @@ def main():
             loss.backward()
             optimizer.step()
 
+            '''
             optimizer_fusion.zero_grad(set_to_none=True)
             
             flow = flow_list[3].detach().clone()
@@ -984,6 +991,7 @@ def main():
             loss_l1_str_fusion = str(f'{loss_l1_fusion.item():.6f}')
             loss_fusion.backward()
             optimizer_fusion.step()
+            '''
 
             scheduler.step()
 
@@ -1052,7 +1060,7 @@ def main():
 
             smoothed_loss = np.mean(moving_average(epoch_loss, 9))
 
-            print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx + 1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}, Loss Fusion: {loss_l1_str_fusion}', end='')
+            print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx + 1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}', end='')
             step = step + 1
 
         torch.save({
