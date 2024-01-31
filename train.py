@@ -902,7 +902,7 @@ def main():
     time_stamp = time.time()
     epoch = current_epoch
     
-    '''
+    # '''
     state_dict = torch.load('/home/flame/Documents/dev/flameTimewarpML/models_data/flownet_v412.pkl')
     def convert(param):
         return {
@@ -911,7 +911,7 @@ def main():
             if "module." in k
         }
     model.load_state_dict(convert(state_dict))
-    '''
+    # '''
 
     while True:
         for batch_idx in range(len(dataset)):
