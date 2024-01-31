@@ -987,7 +987,7 @@ def main():
     time_stamp = time.time()
     epoch = current_epoch
     
-    # '''
+    '''
     default_model_path = os.path.join(
         os.path.abspath(os.path.dirname(__file__)),
         'models_data',
@@ -1001,7 +1001,7 @@ def main():
             if "module." in k
         }
     model.load_state_dict(convert(rife_state_dict))
-    # '''
+    '''
 
     while True:
         for batch_idx in range(len(dataset)):
@@ -1040,10 +1040,10 @@ def main():
                 current_lr = scheduler.get_last_lr()[0]
             '''
 
-            with torch.no_grad():
-                x = torch.cat((img1, img3, img2), dim=1)
-                flow_list, mask, merged, teacher_res, loss_cons, warped_src0, warped_src1 = model(x, timestep = ratio)
-                output_rife = merged[3]
+            # with torch.no_grad():
+            x = torch.cat((img1, img3, img2), dim=1)
+            flow_list, mask, merged, teacher_res, loss_cons, warped_src0, warped_src1 = model(x, timestep = ratio)
+            output_rife = merged[3]
 
             current_lr = scheduler_fusion.get_last_lr()[0]
             for param_group in optimizer_fusion.param_groups:
@@ -1052,7 +1052,7 @@ def main():
             current_lr_str = str(f'{optimizer_fusion.param_groups[0]["lr"]:.4e}')
             current_lr_rife_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
 
-            # optimizer.zero_grad(set_to_none=True)
+            optimizer.zero_grad(set_to_none=True)
             optimizer_fusion.zero_grad(set_to_none=True)
 
             with torch.no_grad():
@@ -1077,10 +1077,9 @@ def main():
             steps_loss.append(float(loss_l1))
 
             loss.backward()
-            # optimizer.step()
+            optimizer.step()
+            scheduler.step()
             optimizer_fusion.step()
-
-            # scheduler.step()
             scheduler_fusion.step()
 
             train_time = time.time() - time_stamp
@@ -1133,7 +1132,7 @@ def main():
                     'model_name': model_name,
                     'fusion_model_name': fusion_model_name,
                 }, trained_model_path)
-                model.load_state_dict(convert(rife_state_dict))
+                # model.load_state_dict(convert(rife_state_dict))
 
             data_time += time.time() - time_stamp
             data_time_str = str(f'{data_time:.2f}')
