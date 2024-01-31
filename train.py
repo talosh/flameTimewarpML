@@ -882,7 +882,7 @@ def main():
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
     lr = args.lr
-    lr_rife = args.lr / 100000
+    lr_rife = args.lr * 1e-5
     # number_warmup_steps = steps_per_epoch * warmup_epochs
     number_warmup_steps = 100
 
