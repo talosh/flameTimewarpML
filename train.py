@@ -451,6 +451,37 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         '''
         return self.frames_queue.get()
 
+    def srgb_to_linear(self, srgb_image):
+        # Apply the inverse sRGB gamma curve
+        mask = srgb_image <= 0.04045
+        srgb_image[mask] = srgb_image[mask] / 12.92
+        srgb_image[~mask] = ((srgb_image[~mask] + 0.055) / 1.055) ** 2.4
+
+        return srgb_image
+
+    def apply_aces_logc(self, linear_image, middle_grey=0.18, min_exposure=-6.5, max_exposure=6.5):
+        """
+        Apply the ACES LogC curve to a linear image.
+
+        Parameters:
+        linear_image (torch.Tensor): The linear image tensor.
+        middle_grey (float): The middle grey value. Default is 0.18.
+        min_exposure (float): The minimum exposure value. Default is -6.5.
+        max_exposure (float): The maximum exposure value. Default is 6.5.
+
+        Returns:
+        torch.Tensor: The image with the ACES LogC curve applied.
+        """
+        # Constants for the ACES LogC curve
+        A = (max_exposure - min_exposure) * 0.18 / middle_grey
+        B = min_exposure
+        C = math.log2(middle_grey) / 0.18
+
+        # Apply the ACES LogC curve
+        logc_image = (torch.log2(linear_image * A + B) + C) / (max_exposure - min_exposure)
+
+        return logc_image
+
     def __getitem__(self, index):
         train_data = self.getimg(index)
         src_img0 = train_data['pre_start']
@@ -566,6 +597,28 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img2 = img2.flip(0)
                 img3 = img3.flip(0)
                 img4 = img4.flip(0)
+
+            # remove srgb encoding
+            cc = random.uniform(0, 1)
+            if cc < 0.2:
+                img0 = self.srgb_to_linear(img0)
+                img1 = self.srgb_to_linear(img1)
+                img2 = self.srgb_to_linear(img2)
+                img3 = self.srgb_to_linear(img3)
+                img4 = self.srgb_to_linear(img4)
+            elif cc < 0.4:
+                img0 = self.srgb_to_linear(img0)
+                img1 = self.srgb_to_linear(img1)
+                img2 = self.srgb_to_linear(img2)
+                img3 = self.srgb_to_linear(img3)
+                img4 = self.srgb_to_linear(img4)
+                img0 = self.apply_aces_logc(img0)
+                img1 = self.apply_aces_logc(img1)
+                img2 = self.apply_aces_logc(img2)
+                img3 = self.apply_aces_logc(img3)
+                img4 = self.apply_aces_logc(img4)
+            elif cc < 0.5:
+                pass
 
             # img0, img1 = self.crop(img0, img1, self.h, self.w)
             # img0 = torch.from_numpy(img0.copy()).permute(2, 0, 1)
