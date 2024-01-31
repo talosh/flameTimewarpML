@@ -598,6 +598,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img3 = img3.flip(0)
                 img4 = img4.flip(0)
 
+            '''
             # remove srgb encoding
             cc = random.uniform(0, 1)
             if cc < 0.2:
@@ -619,6 +620,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img4 = self.apply_aces_logc(img4)
             elif cc < 0.5:
                 pass
+            '''
 
             # img0, img1 = self.crop(img0, img1, self.h, self.w)
             # img0 = torch.from_numpy(img0.copy()).permute(2, 0, 1)
