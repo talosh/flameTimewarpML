@@ -58,6 +58,8 @@ def main():
         png_files.sort()
         for png_file_path in png_files:
             image_bgr = cv2.imread(png_file_path, cv2.IMREAD_COLOR)
+            image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+            print (f'\nimage_rgb shape: {image_rgb.shape}')
 
     print ('')
 
