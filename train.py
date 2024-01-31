@@ -473,6 +473,24 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         src_img3 = src_img3.to(device = device, dtype = torch.float32)
         src_img4 = src_img4.to(device = device, dtype = torch.float32)
 
+        rsz1_img0 = self.resize_image(src_img0, self.h)
+        rsz1_img1 = self.resize_image(src_img1, self.h)
+        rsz1_img2 = self.resize_image(src_img2, self.h)
+        rsz1_img3 = self.resize_image(src_img3, self.h)
+        rsz1_img4 = self.resize_image(src_img4, self.h)
+
+        rsz2_img0 = self.resize_image(src_img0, self.h * 2)
+        rsz2_img1 = self.resize_image(src_img1, self.h * 2)
+        rsz2_img2 = self.resize_image(src_img2, self.h * 2)
+        rsz2_img3 = self.resize_image(src_img3, self.h * 2)
+        rsz2_img4 = self.resize_image(src_img4, self.h * 2)
+
+        rsz3_img0 = self.resize_image(src_img0, self.h * 3)
+        rsz3_img1 = self.resize_image(src_img1, self.h * 3)
+        rsz3_img2 = self.resize_image(src_img2, self.h * 3)
+        rsz3_img3 = self.resize_image(src_img3, self.h * 3)
+        rsz3_img4 = self.resize_image(src_img4, self.h * 3)
+
         batch_img0 = []
         batch_img1 = []
         batch_img2 = []
@@ -482,36 +500,21 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         for index in range(self.batch_size):
             q = random.uniform(0, 1)
             if q < 0.5:
-                rsz_img0 = self.resize_image(src_img0, self.h)
-                rsz_img1 = self.resize_image(src_img1, self.h)
-                rsz_img2 = self.resize_image(src_img2, self.h)
-                rsz_img3 = self.resize_image(src_img3, self.h)
-                rsz_img4 = self.resize_image(src_img4, self.h)
-                img0, img1, img2, img3, img4 = self.crop(rsz_img0, rsz_img1, rsz_img2, rsz_img3, rsz_img4, self.h, self.w)
+                img0, img1, img2, img3, img4 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, rsz1_img3, rsz1_img4, self.h, self.w)
                 img0 = img0.permute(2, 0, 1)
                 img1 = img1.permute(2, 0, 1)
                 img2 = img2.permute(2, 0, 1)
                 img3 = img3.permute(2, 0, 1)
                 img4 = img4.permute(2, 0, 1)
             elif q < 0.75:
-                rsz_img0 = self.resize_image(src_img0, self.h * 2)
-                rsz_img1 = self.resize_image(src_img1, self.h * 2)
-                rsz_img2 = self.resize_image(src_img2, self.h * 2)
-                rsz_img3 = self.resize_image(src_img3, self.h * 2)
-                rsz_img4 = self.resize_image(src_img4, self.h * 2)
-                img0, img1, img2, img3, img4 = self.crop(rsz_img0, rsz_img1, rsz_img2, rsz_img3, rsz_img4, self.h, self.w)
+                img0, img1, img2, img3, img4 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, rsz2_img3, rsz2_img4, self.h, self.w)
                 img0 = img0.permute(2, 0, 1)
                 img1 = img1.permute(2, 0, 1)
                 img2 = img2.permute(2, 0, 1)
                 img3 = img3.permute(2, 0, 1)
                 img4 = img4.permute(2, 0, 1)
             else:
-                rsz_img0 = self.resize_image(src_img0, self.h * 3)
-                rsz_img1 = self.resize_image(src_img1, self.h * 3)
-                rsz_img2 = self.resize_image(src_img2, self.h * 3)
-                rsz_img3 = self.resize_image(src_img3, self.h * 3)
-                rsz_img4 = self.resize_image(src_img4, self.h * 3)
-                img0, img1, img2, img3, img4 = self.crop(rsz_img0, rsz_img1, rsz_img2, rsz_img3, rsz_img4, self.h, self.w)
+                img0, img1, img2, img3, img4 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, rsz3_img3, rsz3_img4, self.h, self.w)
                 img0 = img0.permute(2, 0, 1)
                 img1 = img1.permute(2, 0, 1)
                 img2 = img2.permute(2, 0, 1)
@@ -808,12 +811,13 @@ def main():
     model_name = FlownetCas
 
     fusion_model_name = Model_01.get_name()
-    fusion_model = Model_01().get_training_model()(15, 3).to(device)
+    fusion_model = Model_01().get_training_model()(12, 3).to(device)
 
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
     lr = args.lr
+    lr_rife = args.lr / 1000
     # number_warmup_steps = steps_per_epoch * warmup_epochs
     number_warmup_steps = 100
 
@@ -824,8 +828,8 @@ def main():
     criterion_l1_fusion = torch.nn.L1Loss()
 
     # optimizer_sgd = torch.optim.SGD(model.parameters(), lr=lr)
-    optimizer = Yogi(model.parameters(), lr=lr)
-    optimizer_fusion = Yogi(model.parameters(), lr=lr)
+    optimizer = Yogi(model.parameters(), lr=lr_rife)
+    optimizer_fusion = Yogi(fusion_model.parameters(), lr=lr)
 
     def warmup(current_step, lr = 4e-3, number_warmup_steps = 999):
         mul_lin = current_step / number_warmup_steps
@@ -836,10 +840,12 @@ def main():
     import warnings
     warnings.filterwarnings('ignore', category=UserWarning)
 
-    train_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=steps_per_epoch * pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+    train_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=steps_per_epoch * pulse_period, eta_min = lr_rife - (( lr_rife / 100 ) * pulse_dive) )
+    train_scheduler_fusion = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_fusion, T_max=steps_per_epoch * pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda step: warmup(step, lr=lr, number_warmup_steps=( steps_per_epoch * warmup_epochs )))
     scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, [warmup_scheduler, train_scheduler], [steps_per_epoch * warmup_epochs])
-    scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, [warmup_scheduler, train_scheduler], [100])
+    scheduler = train_scheduler
+    scheduler_fusion = train_scheduler_fusion
 
     # Rest of your training script...
 
@@ -880,6 +886,20 @@ def main():
         except Exception as e:
             print (f'unable to load step and epoch loss statistics: {e}')
     else:
+        default_model_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)),
+            'models_data',
+            'flownet_v412.pkl'
+        )
+        state_dict = torch.load(default_model_path)
+        def convert(param):
+            return {
+                k.replace("module.", ""): v
+                for k, v in param.items()
+                if "module." in k
+            }
+        model.load_state_dict(convert(state_dict))
+
         traned_model_name = 'flameTWML_model_' + fw.create_timestamp_uid() + '.pth'
         if platform.system() == 'Darwin':
             trained_model_dir = os.path.join(
@@ -902,8 +922,13 @@ def main():
     time_stamp = time.time()
     epoch = current_epoch
     
-    # '''
-    state_dict = torch.load('/home/flame/Documents/dev/flameTimewarpML/models_data/flownet_v412.pkl')
+    '''
+    default_model_path = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)),
+        'models_data',
+        'flownet_v412.pkl'
+    )
+    state_dict = torch.load(default_model_path)
     def convert(param):
         return {
             k.replace("module.", ""): v
@@ -911,7 +936,7 @@ def main():
             if "module." in k
         }
     model.load_state_dict(convert(state_dict))
-    # '''
+    '''
 
     while True:
         for batch_idx in range(len(dataset)):
@@ -943,33 +968,38 @@ def main():
                 img3 = normalize(img3)
                 img4 = normalize(img4)
 
+            '''
             if step < number_warmup_steps:
                 current_lr = warmup(step, lr=lr, number_warmup_steps=number_warmup_steps)
             else:
                 current_lr = scheduler.get_last_lr()[0]
-            for param_group in optimizer.param_groups:
+            '''
+            current_lr = scheduler_fusion.get_last_lr()[0]
+            for param_group in optimizer_fusion.param_groups:
                 param_group['lr'] = current_lr
 
-            current_lr_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
+            current_lr_str = str(f'{optimizer_fusion.param_groups[0]["lr"]:.4e}')
+            current_lr_rife_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
 
             optimizer.zero_grad(set_to_none=True)
+            optimizer_fusion.zero_grad(set_to_none=True)
 
             x = torch.cat((img1, img3, img2), dim=1)
             with torch.no_grad():
-                flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
-            output = merged[3]
+                flow_list, mask, merged, teacher_res, loss_cons, warped_src0, warped_src1 = model(x, timestep = ratio)
+            # output = merged[3]
 
             timestep = (img1[:, :1].clone() * 0 + 1) * ratio
-            flow = flow_list[3]
-            fusion_input = torch.cat((img1*2 - 1, flow[:, :2], mask*2 - 1, timestep, output*2 - 1, flow[:, 2:4], img3*2 - 1), dim=1)
-            output_fusion = fusion_model(fusion_input)  
-            output_fusion = ( output_fusion + 1 ) / 2
+            flow = flow_list[-1]
+            fusion_input = torch.cat((warped_src0*2 - 1, flow[:, :2], mask, timestep, flow[:, 2:4], warped_src1*2 - 1), dim=1)
+            output = fusion_model(fusion_input)  
+            output = ( output + 1 ) / 2
             
             # loss_tea = (teacher_res[0][0] - gt).abs().mean() + ((teacher_res[1][0] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
             # loss_cons += ((flow_list[-1] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
 
-            loss = criterion_mse(output_fusion, img2)
-            loss_l1 = criterion_l1(output_fusion, img2)
+            loss = criterion_mse(output, img2)
+            loss_l1 = criterion_l1(output, img2)
             loss_l1_str = str(f'{loss_l1.item():.6f}')
 
             epoch_loss.append(float(loss_l1))
@@ -977,6 +1007,7 @@ def main():
 
             loss.backward()
             optimizer.step()
+            optimizer_fusion.step()
 
             '''
             optimizer_fusion.zero_grad(set_to_none=True)
@@ -1000,7 +1031,7 @@ def main():
             '''
 
             scheduler.step()
-
+            scheduler_fusion.step()
 
             train_time = time.time() - time_stamp
             time_stamp = time.time()
@@ -1011,26 +1042,26 @@ def main():
                     rgb_source2 = restore_normalized_values_numpy(img3)
                     rgb_target = restore_normalized_values_numpy(img2)
                     rgb_output = restore_normalized_values_numpy(output)
-                    rgb_output_fusion = restore_normalized_values_numpy(output_fusion)
+                    # rgb_output_fusion = restore_normalized_values_numpy(output_fusion)
                 else:
                     rgb_source1 = restore_normalized_values(img1)
                     rgb_source2 = restore_normalized_values(img3)
                     rgb_target = restore_normalized_values(img2)
                     rgb_output = restore_normalized_values(output)
-                    rgb_output_fusion = restore_normalized_values(output_fusion)
+                    # rgb_output_fusion = restore_normalized_values(output_fusion)
 
                 preview_folder = os.path.join(args.dataset_path, 'preview')
                 sample_source1 = rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
                 sample_source2 = rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
                 sample_target = rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
                 sample_output = rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
-                sample_output_fusion = rgb_output_fusion[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+                # sample_output_fusion = rgb_output_fusion[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
 
                 write_exr(sample_source1, os.path.join(preview_folder, f'{preview_index:02}_incomng.exr'))
                 write_exr(sample_source2, os.path.join(preview_folder, f'{preview_index:02}_outgoing.exr'))
                 write_exr(sample_target, os.path.join(preview_folder, f'{preview_index:02}_target.exr'))
                 write_exr(sample_output, os.path.join(preview_folder, f'{preview_index:02}_output.exr'))
-                write_exr(sample_output_fusion, os.path.join(preview_folder, f'{preview_index:02}_output_fusion.exr'))
+                # write_exr(sample_output_fusion, os.path.join(preview_folder, f'{preview_index:02}_output_fusion.exr'))
 
                 preview_index = preview_index + 1 if preview_index < 9 else 0
 

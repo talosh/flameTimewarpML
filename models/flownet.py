@@ -148,4 +148,7 @@ class FlownetCas(nn.Module):
             if gt.shape[1] == 3:
                 loss_mask = ((merged[i] - gt).abs().mean(1, True) > (merged_teacher - gt).abs().mean(1, True) + 1e-2).float().detach()
                 loss_cons += (((flow_teacher.detach() - flow_list[i]) ** 2).sum(1, True) ** 0.5 * loss_mask).mean() * 0.001
-        return flow_list, mask_list[3], merged, [teacher_list, flow_list_teacher], loss_cons
+
+        warped_src0 = warp(img0, flow[:, :2])
+        warped_src1 = warp(img1, flow[:, 2:4])
+        return flow_list, mask_list[3], merged, [teacher_list, flow_list_teacher], loss_cons, warped_src0, warped_src1
