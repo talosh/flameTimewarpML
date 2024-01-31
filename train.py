@@ -825,7 +825,7 @@ def main():
     parser.add_argument('--lr', type=float, default=0.00009, help='Learning rate (default: 9e-5)')
     parser.add_argument('--type', type=int, default=1, help='Model type (int): 1 - MultiresNet, 2 - MultiresNet 4 (default: 1)')
     parser.add_argument('--warmup', type=float, default=0.001, help='Warmup epochs (float) (default: 1)')
-    parser.add_argument('--pulse', type=float, default=9, help='Period in number of epochs to pulse learning rate (float) (default: 9)')
+    parser.add_argument('--pulse', type=float, default=999, help='Period in steps to pulse learning rate (float) (default: 9)')
     parser.add_argument('--pulse_amplitude', type=float, default=25, help='Learning rate pulse amplitude (percentage) (default: 25)')
     parser.add_argument('--model_path', type=str, default=None, help='Path to the pre-trained model (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
@@ -905,8 +905,8 @@ def main():
     import warnings
     warnings.filterwarnings('ignore', category=UserWarning)
 
-    train_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=steps_per_epoch * pulse_period, eta_min = lr_rife - (( lr_rife / 100 ) * pulse_dive) )
-    train_scheduler_fusion = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_fusion, T_max=steps_per_epoch * pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+    train_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=pulse_period, eta_min = lr_rife - (( lr_rife / 100 ) * pulse_dive) )
+    train_scheduler_fusion = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_fusion, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda step: warmup(step, lr=lr, number_warmup_steps=( steps_per_epoch * warmup_epochs )))
     scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, [warmup_scheduler, train_scheduler], [steps_per_epoch * warmup_epochs])
     scheduler = train_scheduler
