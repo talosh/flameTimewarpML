@@ -53,7 +53,7 @@ def main():
         os.makedirs(args.dst_path)
 
     for folder_index, folder_path in enumerate(sorted(folders_with_png)):
-        print (f'\rScanning folder {folder_index + 1} of {len(folders_with_png)}', end='')
+        # print (f'\rScanning folder {folder_index + 1} of {len(folders_with_png)}', end='')
         png_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.exr')]
         png_files.sort()
         for png_file_path in png_files:
