@@ -33,7 +33,6 @@ def find_folders_with_png(path):
     for root, dirs, files in os.walk(path):
         if root.endswith('preview'):
             continue
-        print (root)
         for file in files:
             if file.endswith('.png'):
                 directories_with_png.add(root)
@@ -50,7 +49,17 @@ def main():
 
     folders_with_png = find_folders_with_png(args.src_path)
 
-    pprint (folders_with_png)
+    if not os.path.isdir(args.dst_path):
+        os.makedirs(args.dst_path)
+
+    for folder_index, folder_path in enumerate(sorted(folders_with_png)):
+        print (f'\rScanning folder {folder_index + 1} of {len(folders_with_png)}', end='')
+        png_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.exr')]
+        png_files.sort()
+        for png_file_path in png_files:
+            image_bgr = cv2.imread(png_file_path, cv2.IMREAD_COLOR)
+
+    print ('')
 
 
 if __name__ == "__main__":
