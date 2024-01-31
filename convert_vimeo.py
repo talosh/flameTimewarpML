@@ -148,7 +148,7 @@ def main():
             exr_path = os.path.join(
                 args.dst_path,
                 os.path.dirname(png_file_path),
-                f'{os.path.splitext(os.path.basename(png_file_path))}.exr'
+                f'{os.path.splitext(os.path.basename(png_file_path))[0]}.exr'
             )
             print (exr_path)
 
