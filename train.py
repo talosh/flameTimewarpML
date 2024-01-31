@@ -959,11 +959,11 @@ def main():
             timestep = (img1[:, :1].clone() * 0 + 1) * ratio
             flow = flow_list[3]
             fusion_input = torch.cat((img1*2 - 1, flow[:, :2], mask*2 - 1, timestep, output*2 - 1, flow[:, 2:4], img3*2 - 1), dim=1)
-            output = fusion_model(fusion_input)  
-            output = ( output + 1 ) / 2
+            output_fusion = fusion_model(fusion_input)  
+            output_fusion = ( output_fusion + 1 ) / 2
             
-            loss = criterion_mse(output, img2)
-            loss_l1 = criterion_l1(output, img2)
+            loss = criterion_mse(output_fusion, img2)
+            loss_l1 = criterion_l1(output_fusion, img2)
             loss_l1_str = str(f'{loss_l1.item():.6f}')
 
             epoch_loss.append(float(loss_l1))
