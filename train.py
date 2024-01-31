@@ -1097,9 +1097,14 @@ def main():
             hours = int((epoch_time % (24 * 3600)) // 3600)
             minutes = int((epoch_time % 3600) // 60)
 
-            smoothed_loss = np.mean(moving_average(epoch_loss, 9))
+            if len(epoch_loss) < 999:
+                smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
+            else:
+                smoothed_window_loss = np.mean(moving_average(epoch_loss[-1000:], 9))
 
-            print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx + 1} / {len(dataset)}], Lr: {current_lr_str}, Lr RIFE: {current_lr_rife_str}, Loss L1: {loss_l1_str}', end='')
+            print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx + 1} / {len(dataset)}], Lr: {current_lr_str}, Lr RIFE: {current_lr_rife_str}, Loss L1: {loss_l1_str}', end='\n')
+            print(f'\rMin: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}', end='\n')
+            
             step = step + 1
 
         torch.save({
