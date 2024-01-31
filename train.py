@@ -964,6 +964,9 @@ def main():
             output_fusion = fusion_model(fusion_input)  
             output_fusion = ( output_fusion + 1 ) / 2
             
+            # loss_tea = (teacher_res[0][0] - gt).abs().mean() + ((teacher_res[1][0] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
+            # loss_cons += ((flow_list[-1] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
+
             loss = criterion_mse(output_fusion, img2)
             loss_l1 = criterion_l1(output_fusion, img2)
             loss_l1_str = str(f'{loss_l1.item():.6f}')
