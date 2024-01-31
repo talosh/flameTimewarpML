@@ -864,8 +864,8 @@ def main():
             print (f'unable to load saved fusion model: {e}')
 
         try:
-            step = checkpoint['step']
-            print (f'step: {step}')
+            # step = checkpoint['step']
+            # print (f'step: {step}')
             current_epoch = checkpoint['epoch']
             print (f'epoch: {current_epoch + 1}')
         except Exception as e:
