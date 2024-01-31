@@ -152,6 +152,8 @@ def main():
                 os.path.dirname(png_file_path),
                 f'{os.path.splitext(os.path.basename(png_file_path))[0]}.exr'
             )
+            if not os.path.isdir(os.path.dirname(exr_path)):
+                os.makedirs(os.path.dirname(exr_path))
             write_exr((image_rgb / 255.).astype(np.half), exr_path, half_float = True)
 
 if __name__ == "__main__":
