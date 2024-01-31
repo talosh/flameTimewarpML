@@ -987,7 +987,7 @@ def main():
     time_stamp = time.time()
     epoch = current_epoch
     
-    '''
+    # '''
     default_model_path = os.path.join(
         os.path.abspath(os.path.dirname(__file__)),
         'models_data',
@@ -1001,7 +1001,7 @@ def main():
             if "module." in k
         }
     model.load_state_dict(convert(state_dict))
-    '''
+    # '''
 
     while True:
         for batch_idx in range(len(dataset)):
@@ -1039,6 +1039,12 @@ def main():
             else:
                 current_lr = scheduler.get_last_lr()[0]
             '''
+
+            with torch.no_grad():
+                x = torch.cat((img1, img3, img2), dim=1)
+                flow_list, mask, merged, teacher_res, loss_cons, warped_src0, warped_src1 = model(x, timestep = ratio)
+                output_rife = merged[3]
+
             current_lr = scheduler_fusion.get_last_lr()[0]
             for param_group in optimizer_fusion.param_groups:
                 param_group['lr'] = current_lr
@@ -1046,11 +1052,11 @@ def main():
             current_lr_str = str(f'{optimizer_fusion.param_groups[0]["lr"]:.4e}')
             current_lr_rife_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
 
-            optimizer.zero_grad(set_to_none=True)
+            # optimizer.zero_grad(set_to_none=True)
             optimizer_fusion.zero_grad(set_to_none=True)
 
-            x = torch.cat((img1, img3, img2), dim=1)
             with torch.no_grad():
+                x = torch.cat((img1, img3, img2), dim=1)
                 flow_list, mask, merged, teacher_res, loss_cons, warped_src0, warped_src1 = model(x, timestep = ratio)
             output_rife = merged[3]
 
@@ -1071,31 +1077,10 @@ def main():
             steps_loss.append(float(loss_l1))
 
             loss.backward()
-            optimizer.step()
+            # optimizer.step()
             optimizer_fusion.step()
 
-            '''
-            optimizer_fusion.zero_grad(set_to_none=True)
-            
-            flow = flow_list[3].detach().clone()
-            img1_f = img1.detach().clone()
-            output_f = output.detach().clone()
-            mask_f = mask.detach().clone()
-            img2_f = img2.detach().clone()
-            img3_f = img3.detach().clone()
-            timestep = (img1_f[:, :1].clone() * 0 + 1) * ratio
-
-            fusion_input = torch.cat((img1_f*2 - 1, flow[:, :2], mask_f*2 - 1, timestep, output_f*2 - 1, flow[:, 2:4], img3_f*2 - 1), dim=1)
-            output_fusion = fusion_model(fusion_input)
-            output_fusion = ( output_fusion + 1 ) / 2
-            loss_fusion = criterion_mse_fusion(output_fusion, img2_f)
-            loss_l1_fusion = criterion_l1_fusion(output_fusion, img2_f)
-            loss_l1_str_fusion = str(f'{loss_l1_fusion.item():.6f}')
-            loss_fusion.backward()
-            optimizer_fusion.step()
-            '''
-
-            scheduler.step()
+            # scheduler.step()
             scheduler_fusion.step()
 
             train_time = time.time() - time_stamp
