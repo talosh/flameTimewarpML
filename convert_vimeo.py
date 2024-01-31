@@ -33,6 +33,7 @@ def find_folders_with_png(path):
     for root, dirs, files in os.walk(path):
         if root.endswith('preview'):
             continue
+        print (root)
         for file in files:
             if file.endswith('.png'):
                 directories_with_exr.add(root)
