@@ -955,7 +955,8 @@ def main():
             optimizer.zero_grad(set_to_none=True)
 
             x = torch.cat((img1, img3, img2), dim=1)
-            flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
+            with torch.no_grad():
+                flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
             output = merged[3]
 
             timestep = (img1[:, :1].clone() * 0 + 1) * ratio
