@@ -889,8 +889,8 @@ def main():
     criterion_mse = torch.nn.MSELoss()
     criterion_l1 = torch.nn.L1Loss()
 
-    criterion_mse_fusion = torch.nn.MSELoss()
-    criterion_l1_fusion = torch.nn.L1Loss()
+    criterion_mse_rife = torch.nn.MSELoss()
+    criterion_l1_rife = torch.nn.L1Loss()
 
     # optimizer_sgd = torch.optim.SGD(model.parameters(), lr=lr)
     optimizer = Yogi(model.parameters(), lr=lr_rife)
@@ -1069,7 +1069,7 @@ def main():
             # loss_tea = (teacher_res[0][0] - gt).abs().mean() + ((teacher_res[1][0] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
             # loss_cons += ((flow_list[-1] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
 
-            loss = criterion_mse(output, img2)
+            loss = criterion_mse(output, img2) + criterion_l1_rife(output_rife, img2) * 1e-5
             loss_l1 = criterion_l1(output, img2)
             loss_l1_str = str(f'{loss_l1.item():.6f}')
 
