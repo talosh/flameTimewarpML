@@ -1115,7 +1115,7 @@ def main():
                 window_max = max(epoch_loss[-999:])
 
             clear_lines(2)
-            print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx + 1} / {len(dataset)}], Lr: {current_lr_str}, Lr RIFE: {current_lr_rife_str}, Loss L1: {loss_l1_str}', end='')
+            print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx + 1} / {len(dataset)}], Lr: {current_lr_str}, Lr RIFE: {current_lr_rife_str}, Loss L1: {loss_l1_str}')
             print(f'\rMin: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f}', end='')
 
             step = step + 1
