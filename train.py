@@ -813,7 +813,7 @@ def main():
     model_name = FlownetCas
 
     fusion_model_name = Model_01.get_name()
-    fusion_model = Model_01().get_training_model()(12, 3).to(device)
+    fusion_model = Model_01().get_training_model()(18, 3).to(device)
 
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
@@ -993,7 +993,7 @@ def main():
 
             timestep = (img1[:, :1].clone() * 0 + 1) * ratio
             flow = flow_list[-1]
-            fusion_input = torch.cat((warped_src0*2 - 1, flow[:, :2], mask, timestep, flow[:, 2:4], warped_src1*2 - 1), dim=1)
+            fusion_input = torch.cat((img1*2 - 1, warped_src0*2 - 1, flow[:, :2], mask, timestep, flow[:, 2:4], warped_src1*2 - 1, img3*2 - 1), dim=1)
             output = fusion_model(fusion_input)  
             output = ( output + 1 ) / 2
             
