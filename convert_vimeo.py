@@ -13,6 +13,8 @@ import platform
 import torch
 import torch.nn as nn
 
+import numpy as np
+
 import cv2
 
 from pprint import pprint
@@ -150,9 +152,7 @@ def main():
                 os.path.dirname(png_file_path),
                 f'{os.path.splitext(os.path.basename(png_file_path))[0]}.exr'
             )
-            print (exr_path)
-
-
+            write_exr((image_rgb / 255.).astype(np.half), exr_path, half_float = True)
 
 if __name__ == "__main__":
     main()
