@@ -739,6 +739,9 @@ class Model:
 				self.alpha = alpha
 				
 				# Encoder Path
+				self.flow_multiresblock1 = Multiresblock(input_channels,12)
+				self.cntx_multiresblock1 = Multiresblock(input_channels,12)
+
 				self.multiresblock1 = Multiresblock(input_channels,32)
 				self.in_filters1 = int(32*self.alpha*0.167)+int(32*self.alpha*0.333)+int(32*self.alpha* 0.5)
 				self.pool1 =  torch.nn.MaxPool2d(2)
@@ -813,7 +816,11 @@ class Model:
 				x_pool1 = self.pool1(x_multires1)
 				print (f'\nmultires1 shape: {x_multires1.shape}')
 				x_multires1 = self.respath1(x_multires1)
-				
+
+				enc_flow0 = self.flow_multiresblock1(flow0)
+				enc_flow1 = self.flow_multiresblock1(flow1)
+
+				print (f'\enc_flow0 shape: {enc_flow0.shape}')
 
 				x_multires2 = self.multiresblock2(x_pool1)
 				x_pool2 = self.pool2(x_multires2)
