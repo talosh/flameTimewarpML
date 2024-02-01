@@ -872,7 +872,7 @@ class Model:
 				self.pool1 =  Sliced_MaxPool(2)
 				self.respath1 = Respath4_MemOPT(self.in_filters1,32,respath_length=4)
 
-				self.multiresblock2 = Multiresblock_MemOpt(self.in_filters1,32*2)
+				self.multiresblock2 = Multiresblock_MemOpt(self.in_filters1*2,32*2)
 				self.in_filters2 = int(32*2*self.alpha*0.167)+int(32*2*self.alpha*0.333)+int(32*2*self.alpha* 0.5)
 				self.pool2 =  Sliced_MaxPool(2)
 				self.respath2 = Respath3_MemOPT(self.in_filters2,32*2,respath_length=3)
