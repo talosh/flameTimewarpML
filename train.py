@@ -72,7 +72,7 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
 from models.flownet import FlownetCas
-from models.multires_v001 import Model as Model_01
+from models.fusion_v001 import Model as Model_01
 
 
 class Yogi(Optimizer):
@@ -1040,11 +1040,6 @@ def main():
                 current_lr = scheduler.get_last_lr()[0]
             '''
 
-            # with torch.no_grad():
-            x = torch.cat((img1, img3, img2), dim=1)
-            flow_list, mask, merged, teacher_res, loss_cons, warped_src0, warped_src1 = model(x, timestep = ratio)
-            output_rife = merged[3]
-
             current_lr = scheduler_fusion.get_last_lr()[0]
             for param_group in optimizer_fusion.param_groups:
                 param_group['lr'] = current_lr
@@ -1055,15 +1050,15 @@ def main():
             optimizer.zero_grad(set_to_none=True)
             optimizer_fusion.zero_grad(set_to_none=True)
 
-            with torch.no_grad():
-                x = torch.cat((img1, img3, img2), dim=1)
-                flow_list, mask, merged, teacher_res, loss_cons, warped_src0, warped_src1 = model(x, timestep = ratio)
+            # with torch.no_grad():
+            x = torch.cat((img1, img3, img2), dim=1)
+            flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
             output_rife = merged[3]
 
             timestep = (img1[:, :1].clone() * 0 + 1) * ratio
-            flow = flow_list[-1]
-            fusion_input = torch.cat((img1*2 - 1, warped_src0*2 - 1, flow[:, :2], mask, timestep, flow[:, 2:4], warped_src1*2 - 1, img3*2 - 1), dim=1)
-            output = fusion_model(fusion_input)  
+            flow0 = flow_list[-1][:, :2]
+            flow1 = flow_list[-1][:, 2:4]
+            output = fusion_model(img0, img1, flow0, flow1, mask, timestep)  
             output = ( output + 1 ) / 2
             
             # loss_tea = (teacher_res[0][0] - gt).abs().mean() + ((teacher_res[1][0] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5

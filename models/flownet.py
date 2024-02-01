@@ -11,12 +11,12 @@ def warp(tenInput, tenFlow):
     if k not in backwarp_tenGrid:
         tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
         tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
-        backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device = device, dtype = tenInput.dtype)
+        backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
         # end
     tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
 
     g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-    return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+    return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bicubic', padding_mode='border', align_corners=True)
 
 def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
     return nn.Sequential(
@@ -149,6 +149,4 @@ class FlownetCas(nn.Module):
                 loss_mask = ((merged[i] - gt).abs().mean(1, True) > (merged_teacher - gt).abs().mean(1, True) + 1e-2).float().detach()
                 loss_cons += (((flow_teacher.detach() - flow_list[i]) ** 2).sum(1, True) ** 0.5 * loss_mask).mean() * 0.001
 
-        warped_src0 = warp(img0, flow[:, :2])
-        warped_src1 = warp(img1, flow[:, 2:4])
-        return flow_list, mask_list[3], merged, [teacher_list, flow_list_teacher], loss_cons, warped_src0, warped_src1
+        return flow_list, mask_list[3], merged, [teacher_list, flow_list_teacher], loss_cons
