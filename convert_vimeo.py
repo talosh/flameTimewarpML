@@ -145,8 +145,6 @@ def main():
         png_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.png')]
         png_files.sort()
         for png_file_path in png_files:
-            image_bgr = cv2.imread(png_file_path, cv2.IMREAD_COLOR)
-            image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
             exr_path = os.path.join(
                 args.dst_path,
                 os.path.dirname(png_file_path),
@@ -154,7 +152,13 @@ def main():
             )
             if not os.path.isdir(os.path.dirname(exr_path)):
                 os.makedirs(os.path.dirname(exr_path))
-            write_exr((image_rgb / 255.).astype(np.half), exr_path, half_float = True)
+            try:
+                image_bgr = cv2.imread(png_file_path, cv2.IMREAD_COLOR)
+                image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+                write_exr((image_rgb / 255.).astype(np.half), exr_path, half_float = True)
+            except:
+                os.system(f'rm -rf {os.path.dirname(exr_path)}')
+                break
 
 if __name__ == "__main__":
     main()
