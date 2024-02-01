@@ -748,6 +748,7 @@ class Model:
 				self.respath1 = Respath4(self.in_filters1,32,respath_length=4)
 
 				self.multiresblock2 = Multiresblock(self.in_filters1,32*2)
+				self.multiresblock2 = Multiresblock(126,32*2)
 				self.in_filters2 = int(32*2*self.alpha*0.167)+int(32*2*self.alpha*0.333)+int(32*2*self.alpha* 0.5)
 				self.pool2 =  torch.nn.MaxPool2d(2)
 				self.respath2 = Respath3(self.in_filters2,32*2,respath_length=3)
@@ -800,7 +801,7 @@ class Model:
 				tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
 
 				g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-				return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bicubic', padding_mode='border', align_corners=True)
+				return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
 
 			def forward(self, img0, img1, flow0, flow1, mask, timestep):
@@ -816,15 +817,10 @@ class Model:
 				x_pool1 = self.pool1(x_multires1)
 				x_multires1 = self.respath1(x_multires1)
 
-				print ('')
-				print (f'x_pool1 shape: {x_pool1.shape}')
-
 				enc_flow0 = self.flow_multiresblock1(flow0)
 				enc_flow0 = self.pool1(enc_flow0)
 				enc_flow1 = self.flow_multiresblock1(flow1)
 				enc_flow1 = self.pool1(enc_flow1)
-
-				print (f'enc_flow0 shape: {enc_flow0.shape}')
 
 				ctx_img0 = self.cntx_multiresblock1(img0)
 				ctx_img0 = self.warp(ctx_img0, flow0)
@@ -833,8 +829,7 @@ class Model:
 				ctx_img1 = self.warp(ctx_img1, flow1)
 				ctx_img1 = self.pool1(ctx_img1)
 
-				print (f'ctx_img0 shape: {ctx_img0.shape}')
-				
+				x_pool1 = torch.cat((ctx_img0, enc_flow0, x_pool1, enc_flow1, ctx_img1))
 
 				x_multires2 = self.multiresblock2(x_pool1)
 				x_pool2 = self.pool2(x_multires2)
