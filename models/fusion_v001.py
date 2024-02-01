@@ -740,7 +740,7 @@ class Model:
 				
 				# Encoder Path
 				self.flow_multiresblock1 = Multiresblock(2,8)
-				self.cntx_multiresblock1 = Multiresblock(3,15)
+				self.cntx_multiresblock1 = Multiresblock(3,12)
 
 				self.multiresblock1 = Multiresblock(input_channels,32)
 				self.in_filters1 = int(32*self.alpha*0.167)+int(32*self.alpha*0.333)+int(32*self.alpha* 0.5)
@@ -748,7 +748,7 @@ class Model:
 				self.respath1 = Respath4(self.in_filters1,32,respath_length=4)
 
 				self.multiresblock2 = Multiresblock(self.in_filters1,32*2)
-				self.multiresblock2 = Multiresblock(126,32*2)
+				
 				self.in_filters2 = int(32*2*self.alpha*0.167)+int(32*2*self.alpha*0.333)+int(32*2*self.alpha* 0.5)
 				self.pool2 =  torch.nn.MaxPool2d(2)
 				self.respath2 = Respath3(self.in_filters2,32*2,respath_length=3)
