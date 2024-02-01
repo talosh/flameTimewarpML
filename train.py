@@ -876,7 +876,7 @@ def main():
     model_name = FlownetCas
 
     fusion_model_name = Model_01.get_name()
-    fusion_model = Model_01().get_training_model()(8, 3).to(device)
+    fusion_model = Model_01().get_training_model()(18, 3).to(device)
 
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
@@ -987,21 +987,20 @@ def main():
     time_stamp = time.time()
     epoch = current_epoch
     
-    '''
-    default_model_path = os.path.join(
-        os.path.abspath(os.path.dirname(__file__)),
-        'models_data',
-        'flownet_v412.pkl'
-    )
-    rife_state_dict = torch.load(default_model_path)
-    def convert(param):
-        return {
-            k.replace("module.", ""): v
-            for k, v in param.items()
-            if "module." in k
-        }
-    model.load_state_dict(convert(rife_state_dict))
-    '''
+    if not args.model_path:
+        default_model_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)),
+            'models_data',
+            'flownet_v412.pkl'
+        )
+        rife_state_dict = torch.load(default_model_path)
+        def convert(param):
+            return {
+                k.replace("module.", ""): v
+                for k, v in param.items()
+                if "module." in k
+            }
+        model.load_state_dict(convert(rife_state_dict))
 
     while True:
         for batch_idx in range(len(dataset)):
