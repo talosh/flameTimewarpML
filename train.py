@@ -987,20 +987,19 @@ def main():
     time_stamp = time.time()
     epoch = current_epoch
     
-    if not args.model_path:
-        default_model_path = os.path.join(
-            os.path.abspath(os.path.dirname(__file__)),
-            'models_data',
-            'flownet_v412.pkl'
-        )
-        rife_state_dict = torch.load(default_model_path)
-        def convert(param):
-            return {
-                k.replace("module.", ""): v
-                for k, v in param.items()
-                if "module." in k
-            }
-        model.load_state_dict(convert(rife_state_dict))
+    default_model_path = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)),
+        'models_data',
+        'flownet_v412.pkl'
+    )
+    rife_state_dict = torch.load(default_model_path)
+    def convert(param):
+        return {
+            k.replace("module.", ""): v
+            for k, v in param.items()
+            if "module." in k
+        }
+    model.load_state_dict(convert(rife_state_dict))
 
     while True:
         for batch_idx in range(len(dataset)):
