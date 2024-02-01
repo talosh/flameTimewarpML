@@ -800,7 +800,7 @@ class Model:
 				tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
 
 				g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-				return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+				return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bileniar', padding_mode='border', align_corners=True)
 
 
 			def forward(self, img0, img1, flow0, flow1, mask, timestep):
@@ -826,8 +826,10 @@ class Model:
 				print (f'\enc_flow0 shape: {enc_flow0.shape}')
 
 				ctx_img0 = self.cntx_multiresblock1(img0)
+				ctx_img0 = self.warp(ctx_img0, flow0)
 				ctx_img0 = self.pool1(ctx_img0)
 				ctx_img1 = self.cntx_multiresblock1(img1)
+				ctx_img1 = self.warp(ctx_img1, flow1)
 				ctx_img1 = self.pool1(ctx_img1)
 
 				print (f'\ctx_img0 shape: {ctx_img0.shape}')
