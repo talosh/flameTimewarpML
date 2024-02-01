@@ -785,9 +785,29 @@ class Model:
 
 				self.conv_final = Conv2d(self.in_filters9, num_classes, kernel_size = (1,1))
 
+
+			def warp(self, tenInput, tenFlow):
+				backwarp_tenGrid = {}
+				k = (str(tenFlow.device), str(tenFlow.size()))
+				if k not in backwarp_tenGrid:
+					tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+					tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+					backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
+					# end
+				tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
+
+				g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+				return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bicubic', padding_mode='border', align_corners=True)
+
+
 			def forward(self, img0, img1, flow0, flow1, mask, timestep):
 				img0 = img0 * 2 - 1
 				img1 = img1 * 2 - 1
+
+				warped_img0 = self.warp(img0, flow0)
+				warped_img1 = self.warp(img1, flow1)
+
+				x = torch.cat((warped_img0, mask, timestep, warped_img1), dim=1)
 
 				x_multires1 = self.multiresblock1(x)
 				x_pool1 = self.pool1(x_multires1)
