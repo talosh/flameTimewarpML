@@ -740,7 +740,7 @@ class Model:
 				
 				# Encoder Path
 				self.flow_multiresblock1 = Multiresblock(2,9)
-				self.cntx_multiresblock1 = Multiresblock(2,18)
+				self.cntx_multiresblock1 = Multiresblock(3,24)
 
 				self.multiresblock1 = Multiresblock(input_channels,32)
 				self.in_filters1 = int(32*self.alpha*0.167)+int(32*self.alpha*0.333)+int(32*self.alpha* 0.5)
@@ -821,6 +821,12 @@ class Model:
 				enc_flow1 = self.flow_multiresblock1(flow1)
 
 				print (f'\enc_flow0 shape: {enc_flow0.shape}')
+
+				ctx_img0 = self.cntx_multiresblock1(img0)
+				ctx_img1 = self.cntx_multiresblock1(img1)
+
+				print (f'\ctx_img0 shape: {ctx_img0.shape}')
+
 
 				x_multires2 = self.multiresblock2(x_pool1)
 				x_pool2 = self.pool2(x_multires2)
