@@ -830,8 +830,7 @@ def main():
     parser.add_argument('--model_path', type=str, default=None, help='Path to the pre-trained model (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size (int) (default: 8)')
-
-    # parser.add_argument('--rescan', action='store_true', help='Rescan the dataset (default: False)')
+    parser.add_argument('--reset_rife', action='store_true', help='Reset rife model (default: False)')
 
     args = parser.parse_args()
 
@@ -876,7 +875,7 @@ def main():
     model_name = FlownetCas
 
     fusion_model_name = Model_01.get_name()
-    fusion_model = Model_01().get_training_model()(18, 3).to(device)
+    fusion_model = Model_01().get_training_model()(8, 3).to(device)
 
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
@@ -987,19 +986,21 @@ def main():
     time_stamp = time.time()
     epoch = current_epoch
     
-    default_model_path = os.path.join(
-        os.path.abspath(os.path.dirname(__file__)),
-        'models_data',
-        'flownet_v412.pkl'
-    )
-    rife_state_dict = torch.load(default_model_path)
-    def convert(param):
-        return {
-            k.replace("module.", ""): v
-            for k, v in param.items()
-            if "module." in k
-        }
-    model.load_state_dict(convert(rife_state_dict))
+    if args.reset_rife:
+        default_model_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)),
+            'models_data',
+            'flownet_v412.pkl'
+        )
+        print (f'loading pretrained RIFE model {default_model_path}')
+        rife_state_dict = torch.load(default_model_path)
+        def convert(param):
+            return {
+                k.replace("module.", ""): v
+                for k, v in param.items()
+                if "module." in k
+            }
+        model.load_state_dict(convert(rife_state_dict))
 
     while True:
         for batch_idx in range(len(dataset)):
