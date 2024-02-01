@@ -739,7 +739,7 @@ class Model:
 				self.alpha = alpha
 				
 				# Encoder Path
-				self.flow_multiresblock1 = Multiresblock(2,8)
+				self.flow_multiresblock1 = Multiresblock(2,6)
 				self.cntx_multiresblock1 = Multiresblock(3,12)
 
 				self.multiresblock1 = Multiresblock(input_channels,32)
