@@ -811,8 +811,10 @@ class Model:
 
 				x_multires1 = self.multiresblock1(x)
 				x_pool1 = self.pool1(x_multires1)
+				print (f'\nmultires1 shape: {x_multires1.shape}')
 				x_multires1 = self.respath1(x_multires1)
 				
+
 				x_multires2 = self.multiresblock2(x_pool1)
 				x_pool2 = self.pool2(x_multires2)
 				x_multires2 = self.respath2(x_multires2)
