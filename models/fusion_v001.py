@@ -816,14 +816,15 @@ class Model:
 				x_pool1 = self.pool1(x_multires1)
 				x_multires1 = self.respath1(x_multires1)
 
-				print (f'\x_pool1 shape: {x_pool1.shape}')
+				print ('')
+				print (f'x_pool1 shape: {x_pool1.shape}')
 
 				enc_flow0 = self.flow_multiresblock1(flow0)
 				enc_flow0 = self.pool1(enc_flow0)
 				enc_flow1 = self.flow_multiresblock1(flow1)
 				enc_flow1 = self.pool1(enc_flow1)
 
-				print (f'\enc_flow0 shape: {enc_flow0.shape}')
+				print (f'enc_flow0 shape: {enc_flow0.shape}')
 
 				ctx_img0 = self.cntx_multiresblock1(img0)
 				ctx_img0 = self.warp(ctx_img0, flow0)
@@ -832,7 +833,7 @@ class Model:
 				ctx_img1 = self.warp(ctx_img1, flow1)
 				ctx_img1 = self.pool1(ctx_img1)
 
-				print (f'\ctx_img0 shape: {ctx_img0.shape}')
+				print (f'ctx_img0 shape: {ctx_img0.shape}')
 				
 
 				x_multires2 = self.multiresblock2(x_pool1)
