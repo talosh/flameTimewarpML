@@ -829,7 +829,9 @@ class Model:
 				ctx_img1 = self.warp(ctx_img1, flow1)
 				ctx_img1 = self.pool1(ctx_img1)
 
-				x_pool1 = torch.cat((ctx_img0, enc_flow0, x_pool1, enc_flow1, ctx_img1))
+				x_pool11 = torch.cat((ctx_img0, enc_flow0, x_pool1, enc_flow1, ctx_img1))
+
+				print (f'xpool1 {x_pool11.shape}')
 
 				x_multires2 = self.multiresblock2(x_pool1)
 				x_pool2 = self.pool2(x_multires2)
