@@ -817,8 +817,10 @@ class Model:
 				x_multires1 = self.respath1(x_multires1)
 
 				enc_flow0 = self.flow_multiresblock1(flow0)
+				enc_flow0 = self.warp(enc_flow0, flow0)
 				enc_flow0 = self.pool1(enc_flow0)
 				enc_flow1 = self.flow_multiresblock1(flow1)
+				enc_flow1 = self.warp(enc_flow1, flow0)
 				enc_flow1 = self.pool1(enc_flow1)
 
 				ctx_img0 = self.cntx_multiresblock1(img0)
