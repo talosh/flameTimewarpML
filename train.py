@@ -1003,7 +1003,7 @@ def main():
         model.load_state_dict(convert(rife_state_dict))
 
     print('\n\n')
-    
+
     while True:
         for batch_idx in range(len(dataset)):
             data_time = time.time() - time_stamp
@@ -1112,7 +1112,7 @@ def main():
 
                 # sample_current = rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
 
-            if step % 100 == 1:
+            if step % 1000 == 1:
                 torch.save({
                     'step': step,
                     'steps_loss': steps_loss,
