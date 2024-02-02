@@ -875,7 +875,7 @@ def main():
     model_name = FlownetCas
 
     fusion_model_name = Model_01.get_name()
-    fusion_model = Model_01().get_training_model()(8, 3).to(device)
+    fusion_model = Model_01().get_training_model()(8, 11).to(device)
 
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
