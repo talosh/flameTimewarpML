@@ -859,8 +859,20 @@ class Model:
 				x_multires9 = self.multiresblock9(up9)
 
 				out =  self.conv_final(x_multires9)
-				
-				return out
+
+				img0 = out[:, :3]
+				img1 = out[:, 3:6]
+				grid0 = out[:, 6:8]
+				grid1 = out[:, 8:10]
+				mask = out[:, 10:11]
+				mask = torch.sigmoid(mask)
+				grid0 = torch.clamp(grid0, -1, 1).permute(0, 2, 3, 1)
+				grid1 = torch.clamp(grid1, -1, 1).permute(0, 2, 3, 1)
+				warped_img0 = torch.nn.functional.grid_sample(img0, grid0, mode='bilinear', padding_mode='border', align_corners=True)
+				warped_img1 = torch.nn.functional.grid_sample(img1, grid1, mode='bilinear', padding_mode='border', align_corners=True)
+				result = warped_img0 * mask + warped_img1 * (1 - mask)
+
+				return result
 
 		class MultiResUnet_MemOpt(Module):
 			def __init__(self, input_channels, num_classes, alpha=1.69):
