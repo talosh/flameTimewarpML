@@ -72,8 +72,7 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
 from models.flownet import FlownetCas
-from models.fusion_v001 import Model as Model_01
-
+from models.multires4_v001 import Model as Model_01
 
 class Yogi(Optimizer):
     r"""Implements Yogi Optimizer Algorithm.
@@ -815,6 +814,19 @@ def clear_lines(n=2):
         sys.stdout.write(CURSOR_UP_ONE)
         sys.stdout.write(ERASE_LINE)
 
+def warp(tenInput, tenFlow):
+    backwarp_tenGrid = {}
+    k = (str(tenFlow.device), str(tenFlow.size()))
+    if k not in backwarp_tenGrid:
+        tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+        tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+        backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
+        # end
+    tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
+
+    g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+    return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
@@ -875,7 +887,7 @@ def main():
     model_name = FlownetCas
 
     fusion_model_name = Model_01.get_name()
-    fusion_model = Model_01().get_training_model()(8, 11).to(device)
+    fusion_model = Model_01().get_training_model()(7, 3).to(device)
 
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
@@ -1059,7 +1071,8 @@ def main():
             timestep = (img1[:, :1].clone() * 0 + 1) * ratio
             flow0 = flow_list[3][:, :2]
             flow1 = flow_list[3][:, 2:4]
-            output = fusion_model(img1, img3, flow0, flow1, mask, timestep)  
+
+            output = fusion_model(torch.cat((warp(img1, flow0), mask, warp(img3, flow1)), dim=1) * 2 - 1)  
             output = ( output + 1 ) / 2
             
             # loss_tea = (teacher_res[0][0] - gt).abs().mean() + ((teacher_res[1][0] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
