@@ -810,7 +810,7 @@ class Model:
 				warped_img0 = self.warp(img0, flow0)
 				warped_img1 = self.warp(img1, flow1)
 
-				x = torch.cat((warped_img0, warped_img1, mask, timestep), dim=1)
+				x = torch.cat((warped_img0, mask, timestep, warped_img1), dim=1)
 
 				x_multires1 = self.multiresblock1(x)
 				x_pool1 = self.pool1(x_multires1)
@@ -830,7 +830,7 @@ class Model:
 				ctx_img1 = self.warp(ctx_img1, flow1)
 				ctx_img1 = self.pool1(ctx_img1)
 
-				x_pool1 = torch.cat((x_pool1, ctx_img0, ctx_img1, enc_flow0, enc_flow1), dim=1)
+				x_pool1 = torch.cat((ctx_img0, enc_flow0, x_pool1, enc_flow1, ctx_img1), dim=1)
 
 				x_multires2 = self.multiresblock2(x_pool1)
 				x_pool2 = self.pool2(x_multires2)
