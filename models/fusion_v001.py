@@ -872,7 +872,7 @@ class Model:
 				warped_img1 = torch.nn.functional.grid_sample(input=img1, grid=torch.rand(grid1.shape).to(grid0.device).permute(0, 2, 3, 1), mode='bilinear', padding_mode='border', align_corners=True)
 				result = warped_img0 * mask + warped_img1 * (1 - mask)
 
-				return result
+				return torch.rand(img1.shape).to(img1.device)
 
 		class MultiResUnet_MemOpt(Module):
 			def __init__(self, input_channels, num_classes, alpha=1.69):
