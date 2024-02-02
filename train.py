@@ -843,6 +843,8 @@ def main():
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size (int) (default: 8)')
     parser.add_argument('--reset_rife', action='store_true', help='Reset rife model (default: False)')
+    parser.add_argument('--freeze_rife', action='store_true', help='Reset rife model (default: False)')
+
 
     args = parser.parse_args()
 
@@ -1063,10 +1065,15 @@ def main():
             optimizer.zero_grad(set_to_none=True)
             optimizer_fusion.zero_grad(set_to_none=True)
 
-            # with torch.no_grad():
-            x = torch.cat((img1, img3, img2), dim=1)
-            flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
-            output_rife = merged[3]
+            if args.freeze_rife:
+                with torch.no_grad():
+                    x = torch.cat((img1, img3, img2), dim=1)
+                    flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
+                    output_rife = merged[3]
+            else:
+                x = torch.cat((img1, img3, img2), dim=1)
+                flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
+                output_rife = merged[3]
 
             timestep = (img1[:, :1].clone() * 0 + 1) * ratio
             flow0 = flow_list[3][:, :2]
