@@ -861,10 +861,10 @@ class Model:
 				out =  self.conv_final(x_multires9)
 
 				img0 = out[:, :3]
-				img1 = out[:, 3:6]
-				grid0 = out[:, 6:8]
-				grid1 = out[:, 8:10]
-				mask = out[:, 10:11]
+				grid0 = out[:, 3:5]
+				mask = out[:, 5:6]
+				grid1 = out[:, 6:8]
+				img1 = out[:, 8:11]
 				mask = torch.sigmoid(mask)
 				grid0 = torch.clamp(grid0, -1, 1).permute(0, 2, 3, 1)
 				grid1 = torch.clamp(grid1, -1, 1).permute(0, 2, 3, 1)
