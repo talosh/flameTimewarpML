@@ -868,8 +868,8 @@ class Model:
 				mask = torch.sigmoid(mask)
 				# grid0 = torch.clamp(grid0, -1, 1).permute(0, 2, 3, 1)
 				# grid1 = torch.clamp(grid1, -1, 1).permute(0, 2, 3, 1)
-				warped_img0 = torch.nn.functional.grid_sample(input=img0, grid=torch.rand(grid0.shape).to(grid0.device), mode='bilinear', padding_mode='border', align_corners=True)
-				warped_img1 = torch.nn.functional.grid_sample(input=img1, grid=torch.rand(grid1.shape).to(grid0.device), mode='bilinear', padding_mode='border', align_corners=True)
+				warped_img0 = torch.nn.functional.grid_sample(input=img0, grid=torch.rand(grid0.shape).to(grid0.device).permute(0, 2, 3, 1), mode='bilinear', padding_mode='border', align_corners=True)
+				warped_img1 = torch.nn.functional.grid_sample(input=img1, grid=torch.rand(grid1.shape).to(grid0.device).permute(0, 2, 3, 1), mode='bilinear', padding_mode='border', align_corners=True)
 				result = warped_img0 * mask + warped_img1 * (1 - mask)
 
 				return result
