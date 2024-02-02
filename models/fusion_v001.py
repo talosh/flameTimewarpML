@@ -861,18 +861,15 @@ class Model:
 				out =  self.conv_final(x_multires9)
 
 				img0 = out[:, :3]
-				grid0 = out[:, 3:5]
+				flow0 = out[:, 3:5]
 				mask = out[:, 5:6]
-				grid1 = out[:, 6:8]
+				flow1 = out[:, 6:8]
 				img1 = out[:, 8:11]
 				mask = torch.sigmoid(mask)
-				# grid0 = torch.clamp(grid0, -1, 1).permute(0, 2, 3, 1)
-				# grid1 = torch.clamp(grid1, -1, 1).permute(0, 2, 3, 1)
-				warped_img0 = torch.nn.functional.grid_sample(input=img0, grid=torch.rand(grid0.shape).to(grid0.device).permute(0, 2, 3, 1), mode='bilinear', padding_mode='border', align_corners=True)
-				warped_img1 = torch.nn.functional.grid_sample(input=img1, grid=torch.rand(grid1.shape).to(grid0.device).permute(0, 2, 3, 1), mode='bilinear', padding_mode='border', align_corners=True)
+				warped_img0 = self.warp(img0, flow0)
+				warped_img1 = self.warp(img1, flow1)
 				result = warped_img0 * mask + warped_img1 * (1 - mask)
-
-				return torch.rand(img1.shape).to(img1.device)
+				return result
 
 		class MultiResUnet_MemOpt(Module):
 			def __init__(self, input_channels, num_classes, alpha=1.69):
