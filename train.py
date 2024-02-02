@@ -1057,8 +1057,8 @@ def main():
             output_rife = merged[3]
 
             timestep = (img1[:, :1].clone() * 0 + 1) * ratio
-            flow0 = flow_list[-1][:, :2]
-            flow1 = flow_list[-1][:, 2:4]
+            flow0 = flow_list[3][:, :2]
+            flow1 = flow_list[3][:, 2:4]
             output = fusion_model(img0, img1, flow0, flow1, mask, timestep)  
             output = ( output + 1 ) / 2
             
