@@ -1083,6 +1083,7 @@ def main():
 
             if step % 40 == 1:
 
+                '''
                 def warp(tenInput, tenFlow):
                     backwarp_tenGrid = {}
                     k = (str(tenFlow.device), str(tenFlow.size()))
@@ -1097,6 +1098,7 @@ def main():
                     return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
                 
                 output = ( warp(img1, flow0) + warp(img3, flow1) ) / 2
+                '''
 
                 if platform.system() == 'Darwin':
                     rgb_source1 = restore_normalized_values_numpy(img1)
