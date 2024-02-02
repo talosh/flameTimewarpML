@@ -860,16 +860,14 @@ class Model:
 
 				out =  self.conv_final(x_multires9)
 
-				img0 = out[:, :3]
-				flow0 = out[:, 3:5]
-				mask = out[:, 5:6]
-				flow1 = out[:, 6:8]
-				img1 = out[:, 8:11]
-				mask = torch.sigmoid(mask)
-				warped_img0 = self.warp(img0, flow0)
-				warped_img1 = self.warp(img1, flow1)
-				result = warped_img0 * mask + warped_img1 * (1 - mask)
-				return result
+				res_img0 = out[:, :3]
+				res_flow0 = out[:, 3:5]
+				res_mask = out[:, 5:6]
+				res_flow1 = out[:, 6:8]
+				res_img1 = out[:, 8:11]
+				res_mask = torch.sigmoid(res_mask)
+				return self.warp(res_img0, res_flow0) * res_mask + self.warp(res_img1, res_flow1) * (1 - mask)
+			 
 
 		class MultiResUnet_MemOpt(Module):
 			def __init__(self, input_channels, num_classes, alpha=1.69):
