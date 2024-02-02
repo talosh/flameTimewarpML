@@ -1095,6 +1095,8 @@ def main():
 
                     g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
                     return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+                
+                output = ( warp(img1, flow0) + warp(img3, flow1) ) / 2
 
                 if platform.system() == 'Darwin':
                     rgb_source1 = restore_normalized_values_numpy(img1)
