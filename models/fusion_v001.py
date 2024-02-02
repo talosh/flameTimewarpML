@@ -866,6 +866,8 @@ class Model:
 				grid1 = out[:, 6:8]
 				img1 = out[:, 8:11]
 				mask = torch.sigmoid(mask)
+				grid0 = torch.rand(grid0.shape)
+				grid1 = torch.rand(grid1.shape)
 				grid0 = torch.clamp(grid0, -1, 1).permute(0, 2, 3, 1)
 				grid1 = torch.clamp(grid1, -1, 1).permute(0, 2, 3, 1)
 				warped_img0 = torch.nn.functional.grid_sample(img0, grid0, mode='bilinear', padding_mode='border', align_corners=True)
