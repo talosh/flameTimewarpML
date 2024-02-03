@@ -1149,7 +1149,7 @@ def main():
 
             # loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
-            loss_l1 = criterion_l1(output_yuv_gamma, target_yuv_gamma)
+            loss_l1 = criterion_l1(output, target)
             loss_l1_str = str(f'{loss_l1.item():.6f}')
 
             epoch_loss.append(float(loss_l1))
