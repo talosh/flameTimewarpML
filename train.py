@@ -846,7 +846,7 @@ def split_to_yuv(rgb_tensor):
 
 def blur(img, ratio = 8, interations = 4):
     blurred_img = img
-    for _ in range(interations)
+    for _ in range(interations):
         blurred_img = torch.nn.functional.interpolate(blurred_img, scale_factor= 1. / ratio, mode="bilinear", align_corners=True)
         blurred_img = torch.nn.functional.interpolate(blurred_img, scale_factor= ratio, mode="bilinear", align_corners=True)
     return blurred_img
