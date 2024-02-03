@@ -961,7 +961,7 @@ def main():
     import warnings
     warnings.filterwarnings('ignore', category=UserWarning)
 
-    train_scheduler_rife = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=pulse_period, eta_min = lr_rife - (( lr_rife / 100 ) * pulse_dive) )
+    train_scheduler_rife = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_rife, T_max=pulse_period, eta_min = lr_rife - (( lr_rife / 100 ) * pulse_dive) )
     # train_scheduler_refine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_refine, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     train_scheduler_fusion = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_fusion, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     # warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda step: warmup(step, lr=lr, number_warmup_steps=( steps_per_epoch * warmup_epochs )))
