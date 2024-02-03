@@ -844,7 +844,7 @@ def split_to_yuv(rgb_tensor):
 
     return y_tensor, u_tensor, v_tensor
 
-def blur(img, interations = 4):
+def blur(img, interations = 16):
     def gaussian_kernel(size, sigma):
         """Creates a 2D Gaussian kernel using the specified size and sigma."""
         ax = np.arange(-size // 2 + 1., size // 2 + 1.)
