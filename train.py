@@ -931,7 +931,7 @@ def main():
     # fusion_model = Model_01().get_training_model()(7, 3).to(device)
 
     model_fusion_name = ModelFusion.get_name()
-    model_fusion = ModelFusion.get_training_model()(7, 3).to(device)
+    model_fusion = ModelFusion().get_training_model()(7, 3).to(device)
 
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
