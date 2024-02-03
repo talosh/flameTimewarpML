@@ -1133,7 +1133,9 @@ def main():
 
             # with torch.no_grad():
             r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, mask, timestep)
-            output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
+            output = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
+
+            # output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
 
             # output = ( output + 1 ) / 2
             
@@ -1177,11 +1179,11 @@ def main():
 
             optimizer_rife.step()
             optimizer_refine.step()
-            optimizer_fusion.step()
+            # optimizer_fusion.step()
 
             scheduler_rife.step()
             scheduler_refine.step()
-            scheduler_fusion.step()
+            # scheduler_fusion.step()
 
             train_time = time.time() - time_stamp
             time_stamp = time.time()
