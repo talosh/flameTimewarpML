@@ -1157,9 +1157,11 @@ def main():
             steps_loss.append(float(loss_l1))
 
             loss.backward()
+            
             optimizer_rife.step()
-            scheduler_rife.step()
             optimizer_fusion.step()
+
+            scheduler_rife.step()
             scheduler_fusion.step()
 
             train_time = time.time() - time_stamp
