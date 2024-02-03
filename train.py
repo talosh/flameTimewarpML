@@ -327,7 +327,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         
         if 'fast' in folder_path:
             max_window = 3
-        if 'medium' in fol der_path:
+        if 'medium' in folder_path:
             max_window = 5
         
         try:
