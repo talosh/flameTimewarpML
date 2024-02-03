@@ -242,8 +242,7 @@ class Model:
 
 				x_multires1 = self.multiresblock1(x)
 				x_pool1 = self.pool1(x_multires1)
-				x_enc_pool1 = self.pool1(encoded_mix)
-				x_multires1 = self.respath1(x_enc_pool1)
+				x_multires1 = self.respath1(encoded_mix)
 				
 				x_multires2 = self.multiresblock2(x_pool1)
 				x_pool2 = self.pool2(x_multires2)
