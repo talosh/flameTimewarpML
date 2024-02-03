@@ -1228,6 +1228,7 @@ def main():
         clear_lines(2)
         # print (f'\r {" "*120}', end='')
         print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}')
+        print ('\n\n')
         steps_loss = []
         epoch_loss = []
         epoch = epoch + 1
