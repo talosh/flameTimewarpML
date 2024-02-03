@@ -226,11 +226,17 @@ class Model:
 				self.multiresblock9 = Multiresblock(self.concat_filters4,32)
 				self.in_filters9 = int(32*self.alpha*0.167)+int(32*self.alpha*0.333)+int(32*self.alpha* 0.5)+int(32*self.alpha*0.69)
 
-				self.conv_final = Conv2d_batchnorm(self.in_filters9, num_classes, kernel_size = (1,1), activation='None')
+				self.mix_encoder = Multiresblock(3,32)
+
+				self.conv_final = Conv2d_batchnorm(self.in_filters9*2, num_classes, kernel_size = (1,1), activation='None')
 
 			def forward(self, w_img0, w_img1, mask):
 				
-				x = torch.cat((w_img0, mask, w_img1), dim=1)
+				mix = w_img0 * mask + w_img1 * (1 - mask)
+
+				encoded_mix = self.mix_encoder(mix)
+				
+				x = torch.cat((w_img0, mask, w_img1), dim=1) * 2 - 1
 
 				x_multires1 = self.multiresblock1(x)
 				x_pool1 = self.pool1(x_multires1)
@@ -282,7 +288,7 @@ class Model:
 				del up9
 				'''
 
-				out =  self.conv_final(x_multires9)
+				out =  self.conv_final(torch.cat((x_multires9, encoded_mix), dim=1))
 
 				# print (f'\nmax: {torch.max(out):.4f}')
 				# print (f'min: {torch.min(out):.4f}')
