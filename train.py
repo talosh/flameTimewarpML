@@ -836,6 +836,14 @@ def warp(tenInput, tenFlow):
     g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
     return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
+def split_to_yuv(rgb_tensor):
+    r_tensor, g_tensor, b_tensor = rgb_tensor[:, 0, :, :], rgb_tensor[:, 1, :, :], rgb_tensor[:, 2, :, :]
+    y_tensor = 0.299 * r_tensor + 0.587 * g_tensor + 0.114 * b_tensor
+    u_tensor = -0.147 * r_tensor - 0.289 * g_tensor + 0.436 * b_tensor
+    v_tensor = 0.615 * r_tensor - 0.515 * g_tensor - 0.100 * b_tensor
+
+    return y_tensor, u_tensor, v_tensor
+
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
@@ -1228,7 +1236,7 @@ def main():
         clear_lines(2)
         # print (f'\r {" "*120}', end='')
         print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}')
-        print ('\n\n')
+        print ('\n')
         steps_loss = []
         epoch_loss = []
         epoch = epoch + 1
