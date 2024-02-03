@@ -177,7 +177,7 @@ class Model:
 				super().__init__()
 				
 				self.alpha = alpha
-				num_classes = 28
+				num_classes = 32
 				
 				# Encoder Path
 				self.multiresblock1 = Multiresblock(input_channels,num_classes)
@@ -212,23 +212,23 @@ class Model:
 				self.multiresblock6 = Multiresblock(self.concat_filters1,num_classes*8)
 				self.in_filters6 = int(num_classes*8*self.alpha*0.167)+int(num_classes*8*self.alpha*0.333)+int(num_classes*8*self.alpha* 0.5)+int(num_classes*8*self.alpha*0.69)
 
-				self.upsample7 = torch.nn.ConvTranspose2d(self.in_filters6,32*4,kernel_size=(2,2),stride=(2,2))  
-				self.concat_filters2 = 32*4*2
-				self.multiresblock7 = Multiresblock(self.concat_filters2,32*4)
-				self.in_filters7 = int(32*4*self.alpha*0.167)+int(32*4*self.alpha*0.333)+int(32*4*self.alpha* 0.5)+int(32*4*self.alpha*0.69)
+				self.upsample7 = torch.nn.ConvTranspose2d(self.in_filters6,num_classes*4,kernel_size=(2,2),stride=(2,2))  
+				self.concat_filters2 = num_classes*4*2
+				self.multiresblock7 = Multiresblock(self.concat_filters2,num_classes*4)
+				self.in_filters7 = int(num_classes*4*self.alpha*0.167)+int(num_classes*4*self.alpha*0.333)+int(num_classes*4*self.alpha* 0.5)+int(num_classes*4*self.alpha*0.69)
 			
-				self.upsample8 = torch.nn.ConvTranspose2d(self.in_filters7,32*2,kernel_size=(2,2),stride=(2,2))
-				self.concat_filters3 = 32*2 *2
-				self.multiresblock8 = Multiresblock(self.concat_filters3,32*2)
-				self.in_filters8 = int(32*2*self.alpha*0.167)+int(32*2*self.alpha*0.333)+int(32*2*self.alpha* 0.5)+int(32*2*self.alpha*0.69)
+				self.upsample8 = torch.nn.ConvTranspose2d(self.in_filters7,num_classes*2,kernel_size=(2,2),stride=(2,2))
+				self.concat_filters3 = num_classes*2*2
+				self.multiresblock8 = Multiresblock(self.concat_filters3,num_classes*2)
+				self.in_filters8 = int(num_classes*2*self.alpha*0.167)+int(num_classes*2*self.alpha*0.333)+int(num_classes*2*self.alpha* 0.5)+int(num_classes*2*self.alpha*0.69)
 
 				self.mix_encoder = Multiresblock(3,11)
 				self.mix_encoder_filters = int(11*self.alpha*0.167)+int(11*self.alpha*0.333)+int(11*self.alpha* 0.5)+int(11*self.alpha*0.69)
 
 				self.upsample9 = torch.nn.ConvTranspose2d(self.in_filters8,32,kernel_size=(2,2),stride=(2,2))
-				self.concat_filters4 = 32*2 + self.mix_encoder_filters
+				self.concat_filters4 = num_classes*2 + self.mix_encoder_filters
 				self.multiresblock9 = Multiresblock(self.concat_filters4,32)
-				self.in_filters9 = int(32*self.alpha*0.167)+int(32*self.alpha*0.333)+int(32*self.alpha* 0.5)+int(32*self.alpha*0.69)
+				self.in_filters9 = int(num_classes*self.alpha*0.167)+int(num_classes*self.alpha*0.333)+int(num_classes*self.alpha* 0.5)+int(num_classes*self.alpha*0.69)
 
 				self.conv_final = Conv2d_batchnorm(self.in_filters9, output_channels, kernel_size = (1,1), activation='None')
 
