@@ -950,7 +950,7 @@ def main():
 
     # optimizer_sgd = torch.optim.SGD(model.parameters(), lr=lr)
     optimizer_rife = Yogi(model.parameters(), lr=lr_rife)
-    # optimizer_refine = Yogi(model_refine.parameters(), lr=lr)
+    optimizer_refine = Yogi(model_refine.parameters(), lr=lr)
     optimizer_fusion = Yogi(model_fusion.parameters(), lr=lr)
 
     def warmup(current_step, lr = 4e-3, number_warmup_steps = 999):
@@ -963,12 +963,12 @@ def main():
     warnings.filterwarnings('ignore', category=UserWarning)
 
     train_scheduler_rife = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_rife, T_max=pulse_period, eta_min = lr_rife - (( lr_rife / 100 ) * pulse_dive) )
-    # train_scheduler_refine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_refine, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+    train_scheduler_refine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_refine, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     train_scheduler_fusion = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_fusion, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     # warmup_scheduler_fusion = torch.optim.lr_scheduler.LambdaLR(optimizer_fusion, lr_lambda=lambda step: warmup(step, lr=lr, number_warmup_steps=number_warmup_steps))
     # scheduler_fusion = torch.optim.lr_scheduler.SequentialLR(optimizer_fusion, [warmup_scheduler_fusion, train_scheduler_fusion], [number_warmup_steps])
     scheduler_rife = train_scheduler_rife
-    # scheduler_refine = train_scheduler_refine
+    scheduler_refine = train_scheduler_refine
     scheduler_fusion = train_scheduler_fusion
 
     # Rest of your training script...
@@ -989,13 +989,11 @@ def main():
         except Exception as e:
             print (f'unable to load saved model: {e}')
 
-        '''
         try:
             model_refine.load_state_dict(checkpoint['refine_state_dict'])
             print('loaded previously saved fusion model')
         except Exception as e:
             print (f'unable to load saved fusion model: {e}')
-        '''
             
         try:
             model_fusion.load_state_dict(checkpoint['fusion_state_dict'], strict=False)
@@ -1115,8 +1113,9 @@ def main():
             current_lr_str = str(f'{optimizer_fusion.param_groups[0]["lr"]:.4e}')
             current_lr_rife_str = str(f'{optimizer_rife.param_groups[0]["lr"]:.4e}')
 
-            optimizer_rife.zero_grad(set_to_none=True)
-            optimizer_fusion.zero_grad(set_to_none=True)
+            optimizer_rife.zero_grad(set_to_none=False)
+            optimizer_refine.zero_grad(set_to_none=False)
+            optimizer_fusion.zero_grad(set_to_none=False)
 
             if args.freeze_rife:
                 with torch.no_grad():
@@ -1131,6 +1130,8 @@ def main():
             timestep = (img1[:, :1].clone() * 0 + 1) * ratio
             flow0 = flow_list[3][:, :2]
             flow1 = flow_list[3][:, 2:4]
+
+            r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, mask, timestep)
 
             output = model_fusion(warp(img1, flow0), warp(img3, flow1), mask)
 
@@ -1239,9 +1240,9 @@ def main():
                     'epoch': epoch,
                     'epoch_loss': epoch_loss,
                     'start_timestamp': start_timestamp,
-                    # 'batch_idx': batch_idx,
                     'lr': optimizer_fusion.param_groups[0]['lr'],
                     'model_state_dict': model.state_dict(),
+                    'refine_state_dict': model_refine.state_dict(),
                     'fusion_state_dict': model_fusion.state_dict(),
                     'optimizer_rife_state_dict': optimizer_rife.state_dict(),
                     'optimizer_fusion_state_dict': optimizer_fusion.state_dict(),
@@ -1274,9 +1275,9 @@ def main():
             'epoch': epoch,
             'epoch_loss': epoch_loss,
             'start_timestamp': start_timestamp,
-            # 'batch_idx': batch_idx,
             'lr': optimizer_fusion.param_groups[0]['lr'],
             'model_state_dict': model.state_dict(),
+            'refine_state_dict': model_refine.state_dict(),
             'fusion_state_dict': model_fusion.state_dict(),
             'optimizer_state_dict': optimizer_rife.state_dict(),
             'optimizer_fusion_state_dict': optimizer_fusion.state_dict(),
