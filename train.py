@@ -844,7 +844,7 @@ def split_to_yuv(rgb_tensor):
 
     return y_tensor, u_tensor, v_tensor
 
-def conver_to_log(img):
+def gamma_up(img):
     return torch.sign(img) * torch.pow(torch.abs(img), 1 / 1.8 )
 
 def blur(img, interations = 16):
@@ -1191,7 +1191,7 @@ def main():
                     rgb_output_rife = restore_normalized_values(output_rife)
 
                 rgb_target = blur(rgb_target)
-                rgb_target = conver_to_log(rgb_target)
+                rgb_target = gamma_up(rgb_target)
 
                 preview_folder = os.path.join(args.dataset_path, 'preview')
                 sample_source1 = rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
