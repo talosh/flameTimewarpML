@@ -1131,8 +1131,8 @@ def main():
             flow0 = flow_list[3][:, :2]
             flow1 = flow_list[3][:, 2:4]
 
-            with torch.no_grad():
-                r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, mask, timestep)
+            # with torch.no_grad():
+            r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, mask, timestep)
             output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
 
             # output = ( output + 1 ) / 2
@@ -1142,7 +1142,7 @@ def main():
 
             # loss = criterion_mse(output, img2) + criterion_l1_rife(output_rife, img2) * 1e-4
 
-            target = output_rife
+            target = img2
 
             output_gamma = normalize(gamma_up(restore_normalized_values(output)))
             # output_yuv_gamma = normalize(torch.cat(split_to_yuv(output_gamma), dim=1))
