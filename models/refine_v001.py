@@ -177,7 +177,7 @@ class Model:
 				super().__init__()
 				
 				self.alpha = alpha
-				input_channels = 8
+				input_channels = 12
 				output_channels = 5
 				num_classes = 28
 				img_classes = 11
