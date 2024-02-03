@@ -1158,7 +1158,13 @@ def main():
             loss_l1_disp = criterion_l1(output.detach(), target.detach())
             loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
 
-            loss = loss_mse if float(loss_l1.item()) < .8 else loss_l1
+            loss = loss_mse
+
+            if float(loss.item()) > .4:
+                current_lr = scheduler_fusion.get_last_lr()[0]
+                current_lr = current_lr / 8
+                for param_group in optimizer_fusion.param_groups:
+                    param_group['lr'] = current_lr
 
             epoch_loss.append(float(loss_l1_disp.item()))
             steps_loss.append(float(loss_l1_disp.item()))
