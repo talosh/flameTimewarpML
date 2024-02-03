@@ -1153,7 +1153,7 @@ def main():
             target_gamma = gamma_up(target_blurred)
             target_y, target_u, target_v = split_to_yuv(target_gamma)
 
-            loss = criterion_mse(output, output_rife) * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
+            loss = criterion_mse(output, output_rife) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             loss_l1 = criterion_l1(output, output_rife)
             loss_l1_str = str(f'{loss_l1.item():.6f}')
 
