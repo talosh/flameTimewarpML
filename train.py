@@ -72,7 +72,7 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
 from models.flownet import FlownetCas
-from models.multires4_v001 import Model as ModelFusion
+from models.multires4_v002 import Model as ModelFusion
 
 class Yogi(Optimizer):
     r"""Implements Yogi Optimizer Algorithm.
@@ -997,7 +997,7 @@ def main():
         '''
             
         try:
-            model_fusion.load_state_dict(checkpoint['fusion_state_dict'])
+            model_fusion.load_state_dict(checkpoint['fusion_state_dict'], strict=False)
             print('loaded previously saved fusion model')
         except Exception as e:
             print (f'unable to load saved fusion model: {e}')
