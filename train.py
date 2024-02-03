@@ -1133,8 +1133,7 @@ def main():
 
             with torch.no_grad():
                 r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, mask, timestep)
-
-            output = model_fusion(warp(img1, flow0), warp(img3, flow1), mask)
+            output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
 
             # output = ( output + 1 ) / 2
             

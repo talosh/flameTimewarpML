@@ -253,14 +253,14 @@ class Model:
 
 			def forward(self, img0, img1, flow0, flow1, mask, timestep):
 
-				w_img0 = self.warp(img0, flow0)
-				w_img1 = self.warp(img1, flow0)
+				w_img0 = self.warp(img0, flow0) * 2 - 1
+				w_img1 = self.warp(img1, flow0) * 2 - 1
 
 				x = torch.cat((w_img0, flow0, mask, timestep, flow1, w_img1), dim=1)
 
 				x_multires1 = self.multiresblock1(x)
-				x_multires1_img0 = self.multiresblock1_img(img0)
-				x_multires1_img1 = self.multiresblock1_img(img1)
+				x_multires1_img0 = self.multiresblock1_img(img0 * 2 - 1)
+				x_multires1_img1 = self.multiresblock1_img(img1 * 2 - 1)
 				x_multires1 = torch.cat((
 						self.warp(x_multires1_img0, flow0),
 						x_multires1,
