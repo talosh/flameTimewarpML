@@ -1160,14 +1160,23 @@ def main():
 
             loss = loss_mse
 
-            if float(loss+loss_l1_disp.item()) > .4:
+            epoch_loss.append(float(loss_l1_disp.item()))
+            steps_loss.append(float(loss_l1_disp.item()))
+
+            if len(epoch_loss) < 999:
+                smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
+                window_min = min(epoch_loss)
+                window_max = max(epoch_loss)
+            else:
+                smoothed_window_loss = np.mean(moving_average(epoch_loss[-999:], 9))
+                window_min = min(epoch_loss[-999:])
+                window_max = max(epoch_loss[-999:])
+
+            if smoothed_window_loss > .4:
                 current_lr = scheduler_fusion.get_last_lr()[0]
                 current_lr = current_lr / 8
                 for param_group in optimizer_fusion.param_groups:
                     param_group['lr'] = current_lr
-
-            epoch_loss.append(float(loss_l1_disp.item()))
-            steps_loss.append(float(loss_l1_disp.item()))
 
             loss.backward()
 
@@ -1258,14 +1267,6 @@ def main():
             hours = int((epoch_time % (24 * 3600)) // 3600)
             minutes = int((epoch_time % 3600) // 60)
 
-            if len(epoch_loss) < 999:
-                smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
-                window_min = min(epoch_loss)
-                window_max = max(epoch_loss)
-            else:
-                smoothed_window_loss = np.mean(moving_average(epoch_loss[-999:], 9))
-                window_min = min(epoch_loss[-999:])
-                window_max = max(epoch_loss[-999:])
 
             clear_lines(2)
             print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx + 1} / {len(dataset)}], Lr: {current_lr_str}, Lr RIFE: {current_lr_rife_str}, Loss L1: {loss_l1_str}')
