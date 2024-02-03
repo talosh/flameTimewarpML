@@ -844,7 +844,7 @@ def split_to_yuv(rgb_tensor):
 
     return y_tensor, u_tensor, v_tensor
 
-def gamma_up(img, gamma = 1.1):
+def gamma_up(img, gamma = 1.4):
     return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
 
 def blur(img, interations = 16):
