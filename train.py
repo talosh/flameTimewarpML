@@ -872,11 +872,8 @@ def blur(img, interations = 4):
     
     gaussian_blur = GaussianBlur(5, 1.0).to(device = img.device, dtype = img.dtype)
     blurred_img = img
-    print (f'{blurred_img.shape}')
-    r_tensor = blurred_img[:, 0:1, :, :]
-    print (f'{r_tensor.shape}')
     for _ in range(interations):
-        r_tensor, g_tensor, b_tensor = blurred_img[:, 0, :, :], blurred_img[:, 1, :, :], blurred_img[:, 2, :, :]
+        r_tensor, g_tensor, b_tensor = blurred_img[:, 0:1, :, :], blurred_img[:, 1:2, :, :], blurred_img[:, 2:3, :, :]
         r_blurred = gaussian_blur(r_tensor)
         g_blurred = gaussian_blur(g_tensor)
         b_blurred = gaussian_blur(b_tensor)
