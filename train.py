@@ -1150,14 +1150,14 @@ def main():
             target_blurred = blur(output)
 
             # loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
-            loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.6 + criterion_mse(output_blurred, target_blurred) * 0.4 # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
+            loss_mse = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.6 + criterion_mse(output_blurred, target_blurred) * 0.4 # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             loss_l1 = criterion_l1(output.detach().copy(), target.detach().copy())
             loss_l1_str = str(f'{loss_l1.item():.6f}')
 
             epoch_loss.append(float(loss_l1))
             steps_loss.append(float(loss_l1))
 
-            loss.backward()
+            loss_mse.backward()
 
             optimizer_rife.step()
             optimizer_fusion.step()
