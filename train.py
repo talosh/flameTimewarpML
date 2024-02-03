@@ -1143,12 +1143,14 @@ def main():
 
             output_gamma = gamma_up(restore_normalized_values(output))
             output_yuv_gamma = normalize(torch.cat(split_to_yuv(output_gamma), dim=1))
+            output_blurred = blur(output)
 
             target_gamma = gamma_up(target)
             target_yuv_gamma = normalize(torch.cat(split_to_yuv(target_gamma), dim=1))
+            target_blurred = blur(output)
 
             # loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
-            loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
+            loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) * 0.6 + criterion_mse(output_blurred, target_blurred) * 0.4 # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             loss_l1 = criterion_l1(output, target)
             loss_l1_str = str(f'{loss_l1.item():.6f}')
 
