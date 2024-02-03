@@ -226,10 +226,10 @@ class Model:
 
 				self.upsample9 = torch.nn.ConvTranspose2d(self.in_filters8,32,kernel_size=(2,2),stride=(2,2))
 				self.concat_filters4 = 32*2 + self.mix_encoder_filters
-				self.multiresblock9a = Multiresblock(self.concat_filters4,32)
+				self.multiresblock9 = Multiresblock(self.concat_filters4,32)
 				self.in_filters9 = int(32*self.alpha*0.167)+int(32*self.alpha*0.333)+int(32*self.alpha* 0.5)+int(32*self.alpha*0.69)
 
-				self.conv_final_a = Conv2d_batchnorm(self.in_filters9, num_classes, kernel_size = (1,1), activation='None')
+				self.conv_final = Conv2d_batchnorm(self.in_filters9, num_classes, kernel_size = (1,1), activation='None')
 
 			def forward(self, w_img0, w_img1, mask):
 				
@@ -282,14 +282,14 @@ class Model:
 				'''
 
 				up9 = torch.cat([self.upsample9(x_multires8),x_multires1, encoded_mix],axis=1)
-				x_multires9 = self.multiresblock9a(up9)
+				x_multires9 = self.multiresblock9(up9)
 				'''
 				del x_multires8
 				del x_multires1
 				del up9
 				'''
 
-				out =  self.conv_final_a(x_multires9)
+				out =  self.conv_final(x_multires9)
 
 				# print (f'\nmax: {torch.max(out):.4f}')
 				# print (f'min: {torch.min(out):.4f}')
