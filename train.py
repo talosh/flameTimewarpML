@@ -72,6 +72,7 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
 from models.flownet import FlownetCas
+from models.refine_v001 import Model as ModelRefine
 from models.fusion_v001 import Model as ModelFusion
 
 class Yogi(Optimizer):
@@ -925,10 +926,10 @@ def main():
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
 
     model = FlownetCas().to(device)
-    model_name = FlownetCas
+    model_name = 'FlownetCas'
 
-    # fusion_model_name = Model_01.get_name()
-    # fusion_model = Model_01().get_training_model()(7, 3).to(device)
+    model_refine_name = ModelRefine.get_name()
+    model_refine = ModelRefine().get_training_model()().to(device)
 
     model_fusion_name = ModelFusion.get_name()
     model_fusion = ModelFusion().get_training_model()(7, 3).to(device)
