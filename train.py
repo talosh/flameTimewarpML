@@ -72,7 +72,7 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
 from models.flownet import FlownetCas
-from models.multires4_v001 import Model as Model_01
+from models.multires4_v001 import Model as ModelFusion
 
 class Yogi(Optimizer):
     r"""Implements Yogi Optimizer Algorithm.
@@ -923,29 +923,15 @@ def main():
     steps_per_epoch = len(dataset)
     
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
-    '''
-    device = torch.device(f'cuda:{args.device}')
-    device = torch.device("mps")
-    '''
-    
-    '''
-    if args.type == 1:
-        model_name = Model_01.get_name()
-        model = Model_01().get_training_model()(dataset.in_channles, dataset.out_channels).to(device)
-    elif args.type == 2:
-        model_name = Model_02.get_name()
-        model = Model_02().get_training_model()(dataset.in_channles, dataset.out_channels).to(device)
-    else:
-        print (f'Model type {args.type} is not yet implemented')
-        sys.exit()
-    '''
-
 
     model = FlownetCas().to(device)
     model_name = FlownetCas
 
-    fusion_model_name = Model_01.get_name()
-    fusion_model = Model_01().get_training_model()(7, 3).to(device)
+    # fusion_model_name = Model_01.get_name()
+    # fusion_model = Model_01().get_training_model()(7, 3).to(device)
+
+    model_fusion_name = ModelFusion.get_name()
+    model_fusion = ModelFusion.get_training_model()(7, 3).to(device)
 
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
@@ -962,8 +948,9 @@ def main():
     criterion_l1_rife = torch.nn.L1Loss()
 
     # optimizer_sgd = torch.optim.SGD(model.parameters(), lr=lr)
-    optimizer = Yogi(model.parameters(), lr=lr_rife)
-    optimizer_fusion = Yogi(fusion_model.parameters(), lr=lr)
+    optimizer_rife = Yogi(model.parameters(), lr=lr_rife)
+    # optimizer_refine = Yogi(model_refine.parameters(), lr=lr)
+    optimizer_fusion = Yogi(model_fusion.parameters(), lr=lr)
 
     def warmup(current_step, lr = 4e-3, number_warmup_steps = 999):
         mul_lin = current_step / number_warmup_steps
@@ -974,11 +961,13 @@ def main():
     import warnings
     warnings.filterwarnings('ignore', category=UserWarning)
 
-    train_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=pulse_period, eta_min = lr_rife - (( lr_rife / 100 ) * pulse_dive) )
+    train_scheduler_rife = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=pulse_period, eta_min = lr_rife - (( lr_rife / 100 ) * pulse_dive) )
+    # train_scheduler_refine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_refine, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     train_scheduler_fusion = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_fusion, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
-    warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda step: warmup(step, lr=lr, number_warmup_steps=( steps_per_epoch * warmup_epochs )))
-    scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, [warmup_scheduler, train_scheduler], [steps_per_epoch * warmup_epochs])
-    scheduler = train_scheduler
+    # warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda step: warmup(step, lr=lr, number_warmup_steps=( steps_per_epoch * warmup_epochs )))
+    # scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, [warmup_scheduler, train_scheduler], [steps_per_epoch * warmup_epochs])
+    scheduler_rife = train_scheduler_rife
+    # scheduler_refine = train_scheduler_refine
     scheduler_fusion = train_scheduler_fusion
 
     # Rest of your training script...
@@ -999,11 +988,25 @@ def main():
         except Exception as e:
             print (f'unable to load saved model: {e}')
 
+        '''
         try:
-            fusion_model.load_state_dict(checkpoint['fusion_state_dict'])
+            model_refine.load_state_dict(checkpoint['refine_state_dict'])
             print('loaded previously saved fusion model')
         except Exception as e:
             print (f'unable to load saved fusion model: {e}')
+        '''
+            
+        try:
+            model_fusion.load_state_dict(checkpoint['fusion_state_dict'])
+            print('loaded previously saved fusion model')
+        except Exception as e:
+            print (f'unable to load saved fusion model: {e}')
+
+        try:
+            optimizer_fusion.load_state_dict(checkpoint['optimizer_fusion_state_dict'])
+            print('loaded previously saved fusion optmizer')
+        except Exception as e:
+            print (f'unable to load saved fusion optimizer: {e}')
 
         try:
             # step = checkpoint['step']
@@ -1072,7 +1075,7 @@ def main():
             }
         model.load_state_dict(convert(rife_state_dict))
 
-    print('\n\n')
+    print('\n')
 
     while True:
         for batch_idx in range(len(dataset)):
@@ -1104,21 +1107,14 @@ def main():
                 img3 = normalize(img3)
                 img4 = normalize(img4)
 
-            '''
-            if step < number_warmup_steps:
-                current_lr = warmup(step, lr=lr, number_warmup_steps=number_warmup_steps)
-            else:
-                current_lr = scheduler.get_last_lr()[0]
-            '''
-
             # current_lr = scheduler_fusion.get_last_lr()[0]
             # for param_group in optimizer_fusion.param_groups:
             #     param_group['lr'] = current_lr
 
             current_lr_str = str(f'{optimizer_fusion.param_groups[0]["lr"]:.4e}')
-            current_lr_rife_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
+            current_lr_rife_str = str(f'{optimizer_rife.param_groups[0]["lr"]:.4e}')
 
-            optimizer.zero_grad(set_to_none=True)
+            optimizer_rife.zero_grad(set_to_none=True)
             optimizer_fusion.zero_grad(set_to_none=True)
 
             if args.freeze_rife:
@@ -1135,7 +1131,7 @@ def main():
             flow0 = flow_list[3][:, :2]
             flow1 = flow_list[3][:, 2:4]
 
-            output = fusion_model(torch.cat((warp(img1, flow0), mask, warp(img3, flow1)), dim=1) * 2 - 1)  
+            output = model_fusion(torch.cat((warp(img1, flow0), mask, warp(img3, flow1)), dim=1) * 2 - 1)  
             output = ( output + 1 ) / 2
             
             # loss_tea = (teacher_res[0][0] - gt).abs().mean() + ((teacher_res[1][0] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
@@ -1161,8 +1157,8 @@ def main():
             steps_loss.append(float(loss_l1))
 
             loss.backward()
-            optimizer.step()
-            scheduler.step()
+            optimizer_rife.step()
+            scheduler_rife.step()
             optimizer_fusion.step()
             scheduler_fusion.step()
 
@@ -1226,13 +1222,13 @@ def main():
                     'epoch_loss': epoch_loss,
                     'start_timestamp': start_timestamp,
                     # 'batch_idx': batch_idx,
-                    'lr': optimizer.param_groups[0]['lr'],
+                    'lr': optimizer_fusion.param_groups[0]['lr'],
                     'model_state_dict': model.state_dict(),
-                    'fusion_state_dict': fusion_model.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
+                    'fusion_state_dict': model_fusion.state_dict(),
+                    'optimizer_rife_state_dict': optimizer_rife.state_dict(),
                     'optimizer_fusion_state_dict': optimizer_fusion.state_dict(),
                     'model_name': model_name,
-                    'fusion_model_name': fusion_model_name,
+                    'fusion_model_name': model_fusion_name,
                 }, trained_model_path)
                 # model.load_state_dict(convert(rife_state_dict))
 
@@ -1269,13 +1265,13 @@ def main():
             'epoch_loss': epoch_loss,
             'start_timestamp': start_timestamp,
             # 'batch_idx': batch_idx,
-            'lr': optimizer.param_groups[0]['lr'],
+            'lr': optimizer_fusion.param_groups[0]['lr'],
             'model_state_dict': model.state_dict(),
-            'fusion_state_dict': fusion_model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
+            'fusion_state_dict': model_fusion.state_dict(),
+            'optimizer_state_dict': optimizer_rife.state_dict(),
             'optimizer_fusion_state_dict': optimizer_fusion.state_dict(),
             'model_name': model_name,
-            'fusion_model_name': fusion_model_name,
+            'fusion_model_name': model_fusion_name,
         }, trained_model_path)
         
         smoothed_loss = np.mean(moving_average(epoch_loss, 9))
