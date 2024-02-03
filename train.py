@@ -1142,7 +1142,18 @@ def main():
             # loss_cons += ((flow_list[-1] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
 
             # loss = criterion_mse(output, img2) + criterion_l1_rife(output_rife, img2) * 1e-4
-            loss = criterion_mse(output, output_rife)
+
+            target = output_rife
+
+            output_blurred = blur(restore_normalized_values(output))
+            output_gamma = gamma_up(output_blurred)
+            output_y, output_u, output_v = split_to_yuv(output_gamma)
+
+            target_blurred = blur(restore_normalized_values(target))
+            target_gamma = gamma_up(target_blurred)
+            target_y, target_u, target_v = split_to_yuv(target_gamma)
+
+            loss = criterion_mse(output, output_rife) * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             loss_l1 = criterion_l1(output, output_rife)
             loss_l1_str = str(f'{loss_l1.item():.6f}')
 
