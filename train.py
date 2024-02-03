@@ -72,7 +72,7 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
 from models.flownet import FlownetCas
-from models.multires4_v001 import Model as ModelFusion
+from models.fusion_v001 import Model as ModelFusion
 
 class Yogi(Optimizer):
     r"""Implements Yogi Optimizer Algorithm.
@@ -1131,8 +1131,9 @@ def main():
             flow0 = flow_list[3][:, :2]
             flow1 = flow_list[3][:, 2:4]
 
-            output = model_fusion(torch.cat((warp(img1, flow0), mask, warp(img3, flow1)), dim=1) * 2 - 1)  
-            output = ( output + 1 ) / 2
+            output = model_fusion(warp(img1, flow0), warp(img3, flow1), mask)
+
+            # output = ( output + 1 ) / 2
             
             # loss_tea = (teacher_res[0][0] - gt).abs().mean() + ((teacher_res[1][0] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
             # loss_cons += ((flow_list[-1] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
