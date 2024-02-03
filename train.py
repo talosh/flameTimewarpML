@@ -860,7 +860,7 @@ def blur(img, interations = 16):
             self.kernel = self.kernel.view(1, 1, kernel_size, kernel_size)
             
             # Set up the convolutional layer, without changing the number of channels
-            self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=kernel_size, padding=kernel_size // 2, groups=1, bias=False)
+            self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=kernel_size, padding=kernel_size // 2, groups=1, bias=False, padding_mode='reflect')
             
             # Initialize the convolutional layer with the Gaussian kernel
             self.conv.weight.data = self.kernel
