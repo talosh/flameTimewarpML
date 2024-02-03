@@ -282,14 +282,14 @@ class Model:
 				'''
 
 				up9 = torch.cat([self.upsample9(x_multires8),x_multires1, encoded_mix],axis=1)
-				x_multires9 = self.multiresblock9(up9)
+				x_multires9 = self.multiresblock9_a(up9)
 				'''
 				del x_multires8
 				del x_multires1
 				del up9
 				'''
 
-				out =  self.conv_final(x_multires9)
+				out =  self.conv_final_a(x_multires9)
 
 				# print (f'\nmax: {torch.max(out):.4f}')
 				# print (f'min: {torch.min(out):.4f}')
