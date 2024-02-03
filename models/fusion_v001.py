@@ -173,43 +173,44 @@ class Model:
 			Returns:
 				[keras model] -- MultiResUNet model
 			'''
-			def __init__(self, input_channels, num_classes, alpha=1.69):
+			def __init__(self, input_channels, output_channels, alpha=1.69):
 				super().__init__()
 				
 				self.alpha = alpha
+				num_classes = 28
 				
 				# Encoder Path
-				self.multiresblock1 = Multiresblock(input_channels,32)
-				self.in_filters1 = int(32*self.alpha*0.167)+int(32*self.alpha*0.333)+int(32*self.alpha*0.5)+int(32*self.alpha*0.69)
+				self.multiresblock1 = Multiresblock(input_channels,num_classes)
+				self.in_filters1 = int(num_classes*self.alpha*0.167)+int(num_classes*self.alpha*0.333)+int(num_classes*self.alpha*0.5)+int(num_classes*self.alpha*0.69)
 				self.pool1 =  torch.nn.MaxPool2d(2)
-				self.respath1 = Respath(self.in_filters1,32,respath_length=4)
+				self.respath1 = Respath(self.in_filters1,num_classes,respath_length=4)
 
-				self.multiresblock2 = Multiresblock(self.in_filters1,32*2)
-				self.in_filters2 = int(32*2*self.alpha*0.167)+int(32*2*self.alpha*0.333)+int(32*2*self.alpha* 0.5)+int(32*2*self.alpha*0.69)
+				self.multiresblock2 = Multiresblock(self.in_filters1,num_classes*2)
+				self.in_filters2 = int(num_classes*2*self.alpha*0.167)+int(num_classes*2*self.alpha*0.333)+int(num_classes*2*self.alpha* 0.5)+int(num_classes*2*self.alpha*0.69)
 				self.pool2 =  torch.nn.MaxPool2d(2)
-				self.respath2 = Respath(self.in_filters2,32*2,respath_length=3)
+				self.respath2 = Respath(self.in_filters2,num_classes*2,respath_length=3)
 			
 			
-				self.multiresblock3 =  Multiresblock(self.in_filters2,32*4)
-				self.in_filters3 = int(32*4*self.alpha*0.167)+int(32*4*self.alpha*0.333)+int(32*4*self.alpha* 0.5)+int(32*4*self.alpha*0.69)
+				self.multiresblock3 =  Multiresblock(self.in_filters2,num_classes*4)
+				self.in_filters3 = int(num_classes*4*self.alpha*0.167)+int(num_classes*4*self.alpha*0.333)+int(num_classes*4*self.alpha* 0.5)+int(num_classes*4*self.alpha*0.69)
 				self.pool3 =  torch.nn.MaxPool2d(2)
-				self.respath3 = Respath(self.in_filters3,32*4,respath_length=2)
+				self.respath3 = Respath(self.in_filters3,num_classes*4,respath_length=2)
 			
 			
-				self.multiresblock4 = Multiresblock(self.in_filters3,32*8)
-				self.in_filters4 = int(32*8*self.alpha*0.167)+int(32*8*self.alpha*0.333)+int(32*8*self.alpha* 0.5)+int(32*8*self.alpha*0.69)
+				self.multiresblock4 = Multiresblock(self.in_filters3,num_classes*8)
+				self.in_filters4 = int(num_classes*8*self.alpha*0.167)+int(num_classes*8*self.alpha*0.333)+int(num_classes*8*self.alpha* 0.5)+int(num_classes*8*self.alpha*0.69)
 				self.pool4 =  torch.nn.MaxPool2d(2)
-				self.respath4 = Respath(self.in_filters4,32*8,respath_length=1)
+				self.respath4 = Respath(self.in_filters4,num_classes*8,respath_length=1)
 			
 			
-				self.multiresblock5 = Multiresblock(self.in_filters4,32*16)
-				self.in_filters5 = int(32*16*self.alpha*0.167)+int(32*16*self.alpha*0.333)+int(32*16*self.alpha* 0.5)+int(32*16*self.alpha*0.69)
+				self.multiresblock5 = Multiresblock(self.in_filters4,num_classes*16)
+				self.in_filters5 = int(num_classes*16*self.alpha*0.167)+int(num_classes*16*self.alpha*0.333)+int(num_classes*16*self.alpha* 0.5)+int(num_classes*16*self.alpha*0.69)
 			
 				# Decoder path
-				self.upsample6 = torch.nn.ConvTranspose2d(self.in_filters5,32*8,kernel_size=(2,2),stride=(2,2))  
-				self.concat_filters1 = 32*8*2
-				self.multiresblock6 = Multiresblock(self.concat_filters1,32*8)
-				self.in_filters6 = int(32*8*self.alpha*0.167)+int(32*8*self.alpha*0.333)+int(32*8*self.alpha* 0.5)+int(32*8*self.alpha*0.69)
+				self.upsample6 = torch.nn.ConvTranspose2d(self.in_filters5,num_classes*8,kernel_size=(2,2),stride=(2,2))
+				self.concat_filters1 = num_classes*8*2
+				self.multiresblock6 = Multiresblock(self.concat_filters1,num_classes*8)
+				self.in_filters6 = int(num_classes*8*self.alpha*0.167)+int(num_classes*8*self.alpha*0.333)+int(num_classes*8*self.alpha* 0.5)+int(num_classes*8*self.alpha*0.69)
 
 				self.upsample7 = torch.nn.ConvTranspose2d(self.in_filters6,32*4,kernel_size=(2,2),stride=(2,2))  
 				self.concat_filters2 = 32*4*2
@@ -229,7 +230,7 @@ class Model:
 				self.multiresblock9 = Multiresblock(self.concat_filters4,32)
 				self.in_filters9 = int(32*self.alpha*0.167)+int(32*self.alpha*0.333)+int(32*self.alpha* 0.5)+int(32*self.alpha*0.69)
 
-				self.conv_final = Conv2d_batchnorm(self.in_filters9, num_classes, kernel_size = (1,1), activation='None')
+				self.conv_final = Conv2d_batchnorm(self.in_filters9, output_channels, kernel_size = (1,1), activation='None')
 
 			def forward(self, w_img0, w_img1, mask):
 				
