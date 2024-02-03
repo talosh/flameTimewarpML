@@ -191,6 +191,7 @@ class Model:
 				self.respath1 = Respath(self.in_filters1 + 2 * self.in_img_filters1,num_classes,respath_length=4)
 
 				self.multiresblock2 = Multiresblock(self.in_filters1 + 2 * self.in_img_filters1, num_classes*2)
+				self.multiresblock2_img = Multiresblock(self.in_img_filters1,img_classes*2)
 				self.in_filters2 = int(num_classes*2*self.alpha*0.167)+int(num_classes*2*self.alpha*0.333)+int(num_classes*2*self.alpha* 0.5)+int(num_classes*2*self.alpha*0.69)
 				self.pool2 =  torch.nn.MaxPool2d(2)
 				self.respath2 = Respath(self.in_filters2,num_classes*2,respath_length=3)
@@ -263,10 +264,16 @@ class Model:
 	  				),
 					dim = 1)
 				x_pool1 = self.pool1(x_multires1)
+				x_pool1_img0 = self.pool1(x_multires1_img0)
+				x_pool1_img1 = self.pool1(x_multires1_img1)
 				x_multires1 = self.respath1(x_multires1)
 
-				
+				flow0 = torch.nn.functional.interpolate(flow0, scale_factor= 1 / 2, mode='bilinear', align_corners=False) * 1 / 2
+				flow1 = torch.nn.functional.interpolate(flow1, scale_factor= 1 / 2, mode='bilinear', align_corners=False) * 1 / 2
+
 				x_multires2 = self.multiresblock2(x_pool1)
+				x_multires1_img0 = self.multiresblock2_img(x_pool1_img0)
+				x_multires1_img1 = self.multiresblock2_img(x_pool1_img1)
 				x_pool2 = self.pool2(x_multires2)
 				x_multires2 = self.respath2(x_multires2)
 
