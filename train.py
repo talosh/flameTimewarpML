@@ -837,12 +837,15 @@ def warp(tenInput, tenFlow):
     return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
 def split_to_yuv(rgb_tensor):
-    r_tensor, g_tensor, b_tensor = rgb_tensor[:, 0, :, :], rgb_tensor[:, 1, :, :], rgb_tensor[:, 2, :, :]
+    r_tensor, g_tensor, b_tensor = rgb_tensor[:, 0:1, :, :], rgb_tensor[:, 1:2, :, :], rgb_tensor[:, 2:3, :, :]
     y_tensor = 0.299 * r_tensor + 0.587 * g_tensor + 0.114 * b_tensor
     u_tensor = -0.147 * r_tensor - 0.289 * g_tensor + 0.436 * b_tensor
     v_tensor = 0.615 * r_tensor - 0.515 * g_tensor - 0.100 * b_tensor
 
     return y_tensor, u_tensor, v_tensor
+
+def conver_to_log(img):
+    return torch.log(torch.clamp(img, min=1e-8))
 
 def blur(img, interations = 16):
     def gaussian_kernel(size, sigma):
