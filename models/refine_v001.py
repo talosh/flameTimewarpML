@@ -217,7 +217,7 @@ class Model:
 				self.multiresblock6 = Multiresblock(self.concat_filters1,num_classes*8)
 				self.in_filters6 = int(num_classes*8*self.alpha*0.167)+int(num_classes*8*self.alpha*0.333)+int(num_classes*8*self.alpha* 0.5)+int(num_classes*8*self.alpha*0.69)
 
-				self.upsample7 = torch.nn.ConvTranspose2d(self.in_filters6,32*4,kernel_size=(2,2),stride=(2,2))  
+				self.upsample7 = torch.nn.ConvTranspose2d(self.in_filters6,num_classes*4,kernel_size=(2,2),stride=(2,2))  
 				self.concat_filters2 = num_classes*4*2
 				self.multiresblock7 = Multiresblock(self.concat_filters2,num_classes*4)
 				self.in_filters7 = int(num_classes*4*self.alpha*0.167)+int(num_classes*4*self.alpha*0.333)+int(num_classes*4*self.alpha* 0.5)+int(num_classes*4*self.alpha*0.69)
