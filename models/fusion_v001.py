@@ -282,7 +282,7 @@ class Model:
 				'''
 
 				up9 = torch.cat([self.upsample9(x_multires8),x_multires1, encoded_mix],axis=1)
-				x_multires9 = self.multiresblock9_a(up9)
+				x_multires9 = self.multiresblock9a(up9)
 				'''
 				del x_multires8
 				del x_multires1
