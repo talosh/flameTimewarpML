@@ -845,7 +845,7 @@ def split_to_yuv(rgb_tensor):
     return y_tensor, u_tensor, v_tensor
 
 def conver_to_log(img):
-    return torch.log(torch.clamp(img, min=1e-9))
+    return torch.clamp(img, min=1e-9)
 
 def blur(img, interations = 16):
     def gaussian_kernel(size, sigma):
