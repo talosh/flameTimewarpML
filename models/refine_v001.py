@@ -253,6 +253,8 @@ class Model:
 
 			def forward(self, img0, img1, flow0, flow1, mask, timestep):
 
+				return flow0, flow1, mask
+
 				w_img0 = self.warp(img0, flow0) * 2 - 1
 				w_img1 = self.warp(img1, flow0) * 2 - 1
 
