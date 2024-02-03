@@ -306,10 +306,11 @@ class Model:
 
 				out =  self.conv_final(x_multires9)
 
-				# print (f'\nmax: {torch.max(out):.4f}')
-				# print (f'min: {torch.min(out):.4f}')
+				res_flow0 = out[: , :2]
+				res_flow1 = out[: , 2:4]
+				res_mask = torch.sigmoid(out[: , 4:5])
 				
-				return out
+				return res_flow0, res_flow1, res_mask
 		
 		self.model = MultiResUnet
 		self.training_model = MultiResUnet
