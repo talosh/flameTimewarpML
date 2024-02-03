@@ -1190,6 +1190,8 @@ def main():
                     rgb_output = restore_normalized_values(output)
                     rgb_output_rife = restore_normalized_values(output_rife)
 
+                y, u, v = split_to_yuv(rgb_target)
+                rgb_target = torch.cat((y, u, v), dim=1)
                 rgb_target = blur(rgb_target)
                 rgb_target = gamma_up(rgb_target)
 
