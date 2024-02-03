@@ -844,6 +844,11 @@ def split_to_yuv(rgb_tensor):
 
     return y_tensor, u_tensor, v_tensor
 
+def blur(img, ratio = 4):
+    blurred_img = torch.nn.functional.interpolate(img, scale_factor= 1. / ratio, mode="bicubic", align_corners=True)
+    blurred_img = torch.nn.functional.interpolate(img, scale_factor= ratio, mode="bicubic", align_corners=True)
+    return blurred_img
+
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
@@ -1150,6 +1155,8 @@ def main():
                     rgb_target = restore_normalized_values(img2)
                     rgb_output = restore_normalized_values(output)
                     rgb_output_rife = restore_normalized_values(output_rife)
+
+                rgb_target = blur(rgb_target)
 
                 preview_folder = os.path.join(args.dataset_path, 'preview')
                 sample_source1 = rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
