@@ -179,7 +179,7 @@ class Model:
 				self.alpha = alpha
 				input_channels = 8
 				output_channels = 5
-				num_classes = 48
+				num_classes = 28
 				img_classes = 11
 				
 				# Encoder Path
