@@ -1111,7 +1111,7 @@ def main():
                 current_lr = scheduler.get_last_lr()[0]
             '''
 
-            current_lr = scheduler_fusion.get_last_lr()[0]
+            # current_lr = scheduler_fusion.get_last_lr()[0]
             # for param_group in optimizer_fusion.param_groups:
             #     param_group['lr'] = current_lr
 
