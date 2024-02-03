@@ -844,11 +844,35 @@ def split_to_yuv(rgb_tensor):
 
     return y_tensor, u_tensor, v_tensor
 
-def blur(img, ratio = 8, interations = 16):
+def blur(img, interations = 4):
+    def gaussian_kernel(size, sigma):
+        """Creates a 2D Gaussian kernel using the specified size and sigma."""
+        ax = np.arange(-size // 2 + 1., size // 2 + 1.)
+        xx, yy = np.meshgrid(ax, ax)
+        kernel = np.exp(-0.5 * (np.square(xx) + np.square(yy)) / np.square(sigma))
+        return torch.tensor(kernel / np.sum(kernel))
+
+    class GaussianBlur(nn.Module):
+        def __init__(self, kernel_size, sigma):
+            super(GaussianBlur, self).__init__()
+            # Create a Gaussian kernel
+            self.kernel = gaussian_kernel(kernel_size, sigma)
+            self.kernel = self.kernel.view(1, 1, kernel_size, kernel_size)
+            
+            # Set up the convolutional layer, without changing the number of channels
+            self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=kernel_size, padding=kernel_size // 2, groups=1, bias=False)
+            
+            # Initialize the convolutional layer with the Gaussian kernel
+            self.conv.weight.data = self.kernel
+            self.conv.weight.requires_grad = False  # Freeze the weights
+
+        def forward(self, x):
+            return self.conv(x)
+    
+    gaussian_blur = GaussianBlur(5, 1.0)
     blurred_img = img
     for _ in range(interations):
-        blurred_img = torch.nn.functional.interpolate(blurred_img, scale_factor= 1. / ratio, mode="bicubic", align_corners=True)
-        blurred_img = torch.nn.functional.interpolate(blurred_img, scale_factor= ratio, mode="bicubic", align_corners=True)
+        blurred_img = gaussian_blur(blurred_img)
     return blurred_img
 
 def main():
