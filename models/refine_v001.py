@@ -205,12 +205,14 @@ class Model:
 				self.respath3 = Respath(self.in_filters3 + 2 * self.in_img_filters3,num_classes*4,respath_length=2)
 			
 				self.multiresblock4 = Multiresblock(self.in_filters3,num_classes*8)
+				self.multiresblock4_img = Multiresblock(self.in_img_filters3,img_classes*8)
+				self.in_img_filters4 = int(img_classes*8*self.alpha*0.167)+int(img_classes*8*self.alpha*0.333)+int(img_classes*8*self.alpha*0.5)+int(img_classes*8*self.alpha*0.69)
 				self.in_filters4 = int(num_classes*8*self.alpha*0.167)+int(num_classes*8*self.alpha*0.333)+int(num_classes*8*self.alpha* 0.5)+int(num_classes*8*self.alpha*0.69)
 				self.pool4 =  torch.nn.MaxPool2d(2)
-				self.respath4 = Respath(self.in_filters4,num_classes*8,respath_length=1)
+				self.respath4 = Respath(self.in_filters4 + 2 * self.in_img_filters4,num_classes*8,respath_length=1)
 			
 			
-				self.multiresblock5 = Multiresblock(self.in_filters4,num_classes*16)
+				self.multiresblock5 = Multiresblock(self.in_filters4 + 2 * self.in_img_filters4,num_classes*16)
 				self.in_filters5 = int(num_classes*16*self.alpha*0.167)+int(num_classes*16*self.alpha*0.333)+int(num_classes*16*self.alpha* 0.5)+int(num_classes*16*self.alpha*0.69)
 			
 				# Decoder path
@@ -300,9 +302,22 @@ class Model:
 	  				),
 					dim = 1)
 				x_pool3 = self.pool3(x_multires3)
+				x_pool3_img0 = self.pool2(x_multires3_img0)
+				x_pool3_img1 = self.pool2(x_multires3_img1)
 				x_multires3 = self.respath3(x_multires3)
 
+				flow0 = torch.nn.functional.interpolate(flow0, scale_factor= 1 / 2, mode='bilinear', align_corners=False) * 1 / 2
+				flow1 = torch.nn.functional.interpolate(flow1, scale_factor= 1 / 2, mode='bilinear', align_corners=False) * 1 / 2
+
 				x_multires4 = self.multiresblock4(x_pool3)
+				x_multires4_img0 = self.multiresblock4_img(x_pool3_img0)
+				x_multires4_img1 = self.multiresblock4_img(x_pool3_img1)
+				x_multires4 = torch.cat((
+						self.warp(x_multires4_img0, flow0),
+						x_multires4,
+	 					self.warp(x_multires4_img1, flow1)
+	  				),
+					dim = 1)
 				x_pool4 = self.pool4(x_multires4)
 				x_multires4 = self.respath4(x_multires4)
 
