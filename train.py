@@ -1075,7 +1075,7 @@ def main():
             }
         model.load_state_dict(convert(rife_state_dict))
 
-    print('\n')
+    print('\n\n')
 
     while True:
         for batch_idx in range(len(dataset)):
