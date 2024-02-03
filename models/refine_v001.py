@@ -190,7 +190,7 @@ class Model:
 				self.pool1 =  torch.nn.MaxPool2d(2)
 				self.respath1 = Respath(self.in_filters1 + 2 * self.in_img_filters1,num_classes,respath_length=4)
 
-				self.multiresblock2 = Multiresblock(self.in_filters1,num_classes*2)
+				self.multiresblock2 = Multiresblock(self.self.in_filters1 + 2 * self.in_img_filters1, num_classes*2)
 				self.in_filters2 = int(num_classes*2*self.alpha*0.167)+int(num_classes*2*self.alpha*0.333)+int(num_classes*2*self.alpha* 0.5)+int(num_classes*2*self.alpha*0.69)
 				self.pool2 =  torch.nn.MaxPool2d(2)
 				self.respath2 = Respath(self.in_filters2,num_classes*2,respath_length=3)
