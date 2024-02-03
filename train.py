@@ -867,9 +867,10 @@ def blur(img, interations = 4):
             self.conv.weight.requires_grad = False  # Freeze the weights
 
         def forward(self, x):
+            self.kernel.to(device = x.device, dtype = x.dtype)
             return self.conv(x)
     
-    gaussian_blur = GaussianBlur(5, 1.0)
+    gaussian_blur = GaussianBlur(5, 1.0).to(device = img.device, dtype = img.dtype)
     blurred_img = img
     for _ in range(interations):
         r_tensor, g_tensor, b_tensor = blurred_img[:, 0, :, :], blurred_img[:, 1, :, :], blurred_img[:, 2, :, :]
