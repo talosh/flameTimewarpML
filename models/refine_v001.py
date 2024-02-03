@@ -192,15 +192,15 @@ class Model:
 
 				self.multiresblock2 = Multiresblock(self.in_filters1 + 2 * self.in_img_filters1, num_classes*2)
 				self.multiresblock2_img = Multiresblock(self.in_img_filters1,img_classes*2)
+				self.in_img_filters2 = int(img_classes*2*self.alpha*0.167)+int(img_classes*2*self.alpha*0.333)+int(img_classes*2*self.alpha*0.5)+int(img_classes*2*self.alpha*0.69)
 				self.in_filters2 = int(num_classes*2*self.alpha*0.167)+int(num_classes*2*self.alpha*0.333)+int(num_classes*2*self.alpha* 0.5)+int(num_classes*2*self.alpha*0.69)
 				self.pool2 =  torch.nn.MaxPool2d(2)
-				self.respath2 = Respath(self.in_filters2,num_classes*2,respath_length=3)
+				self.respath2 = Respath(self.in_filters2 + 2 * self.in_img_filters2,num_classes*2,respath_length=3)
 			
 				self.multiresblock3 =  Multiresblock(self.in_filters2,num_classes*4)
 				self.in_filters3 = int(num_classes*4*self.alpha*0.167)+int(num_classes*4*self.alpha*0.333)+int(num_classes*4*self.alpha* 0.5)+int(num_classes*4*self.alpha*0.69)
 				self.pool3 =  torch.nn.MaxPool2d(2)
 				self.respath3 = Respath(self.in_filters3,num_classes*4,respath_length=2)
-			
 			
 				self.multiresblock4 = Multiresblock(self.in_filters3,num_classes*8)
 				self.in_filters4 = int(num_classes*8*self.alpha*0.167)+int(num_classes*8*self.alpha*0.333)+int(num_classes*8*self.alpha* 0.5)+int(num_classes*8*self.alpha*0.69)
@@ -272,9 +272,17 @@ class Model:
 				flow1 = torch.nn.functional.interpolate(flow1, scale_factor= 1 / 2, mode='bilinear', align_corners=False) * 1 / 2
 
 				x_multires2 = self.multiresblock2(x_pool1)
-				x_multires1_img0 = self.multiresblock2_img(x_pool1_img0)
-				x_multires1_img1 = self.multiresblock2_img(x_pool1_img1)
+				x_multires2_img0 = self.multiresblock2_img(x_pool1_img0)
+				x_multires2_img1 = self.multiresblock2_img(x_pool1_img1)
+				x_multires2 = torch.cat((
+						self.warp(x_multires2_img0, flow0),
+						x_multires2,
+	 					self.warp(x_multires2_img1, flow1)
+	  				),
+					dim = 1)
 				x_pool2 = self.pool2(x_multires2)
+				x_pool2_img0 = self.pool2(x_multires2_img0)
+				x_pool2_img1 = self.pool2(x_multires2_img1)
 				x_multires2 = self.respath2(x_multires2)
 
 				x_multires3 = self.multiresblock3(x_pool2)
