@@ -197,14 +197,14 @@ class Model:
 				self.pool2 =  torch.nn.MaxPool2d(2)
 				self.respath2 = Respath(self.in_filters2 + 2 * self.in_img_filters2,num_classes*2,respath_length=3)
 			
-				self.multiresblock3 =  Multiresblock(self.in_filters2,num_classes*4)
+				self.multiresblock3 =  Multiresblock(self.in_filters2 + 2 * self.in_img_filters2,num_classes*4)
 				self.multiresblock3_img = Multiresblock(self.in_img_filters2,img_classes*4)
 				self.in_img_filters3 = int(img_classes*4*self.alpha*0.167)+int(img_classes*4*self.alpha*0.333)+int(img_classes*4*self.alpha*0.5)+int(img_classes*4*self.alpha*0.69)
 				self.in_filters3 = int(num_classes*4*self.alpha*0.167)+int(num_classes*4*self.alpha*0.333)+int(num_classes*4*self.alpha* 0.5)+int(num_classes*4*self.alpha*0.69)
 				self.pool3 =  torch.nn.MaxPool2d(2)
 				self.respath3 = Respath(self.in_filters3 + 2 * self.in_img_filters3,num_classes*4,respath_length=2)
 			
-				self.multiresblock4 = Multiresblock(self.in_filters3,num_classes*8)
+				self.multiresblock4 = Multiresblock(self.in_filters3 + 2 * self.in_img_filters3,num_classes*8)
 				self.multiresblock4_img = Multiresblock(self.in_img_filters3,img_classes*8)
 				self.in_img_filters4 = int(img_classes*8*self.alpha*0.167)+int(img_classes*8*self.alpha*0.333)+int(img_classes*8*self.alpha*0.5)+int(img_classes*8*self.alpha*0.69)
 				self.in_filters4 = int(num_classes*8*self.alpha*0.167)+int(num_classes*8*self.alpha*0.333)+int(num_classes*8*self.alpha* 0.5)+int(num_classes*8*self.alpha*0.69)
