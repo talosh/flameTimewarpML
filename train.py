@@ -1149,7 +1149,8 @@ def main():
             target_blurred = blur(restore_normalized_values(target))
             target_yuv_gamma = torch.cat(split_to_yuv(target_gamma), dim=1)
 
-            loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
+            # loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
+            loss = criterion_mse(output, target) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             loss_l1 = criterion_l1(output, output_rife)
             loss_l1_str = str(f'{loss_l1.item():.6f}')
 
@@ -1157,7 +1158,7 @@ def main():
             steps_loss.append(float(loss_l1))
 
             loss.backward()
-            
+
             optimizer_rife.step()
             optimizer_fusion.step()
 
