@@ -225,9 +225,9 @@ class Model:
 				self.mix_encoder = Multiresblock(3,11)
 				self.mix_encoder_filters = int(11*self.alpha*0.167)+int(11*self.alpha*0.333)+int(11*self.alpha* 0.5)+int(11*self.alpha*0.69)
 
-				self.upsample9 = torch.nn.ConvTranspose2d(self.in_filters8,32,kernel_size=(2,2),stride=(2,2))
+				self.upsample9 = torch.nn.ConvTranspose2d(self.in_filters8,num_classes,kernel_size=(2,2),stride=(2,2))
 				self.concat_filters4 = num_classes*2 + self.mix_encoder_filters
-				self.multiresblock9 = Multiresblock(self.concat_filters4,32)
+				self.multiresblock9 = Multiresblock(self.concat_filters4,num_classes)
 				self.in_filters9 = int(num_classes*self.alpha*0.167)+int(num_classes*self.alpha*0.333)+int(num_classes*self.alpha* 0.5)+int(num_classes*self.alpha*0.69)
 
 				self.conv_final = Conv2d_batchnorm(self.in_filters9, output_channels, kernel_size = (1,1), activation='None')
