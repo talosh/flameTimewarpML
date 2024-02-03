@@ -872,7 +872,11 @@ def blur(img, interations = 4):
     gaussian_blur = GaussianBlur(5, 1.0)
     blurred_img = img
     for _ in range(interations):
-        blurred_img = gaussian_blur(blurred_img)
+        r_tensor, g_tensor, b_tensor = blurred_img[:, 0, :, :], blurred_img[:, 1, :, :], blurred_img[:, 2, :, :]
+        r_blurred = gaussian_blur(r_tensor)
+        g_blurred = gaussian_blur(g_tensor)
+        b_blurred = gaussian_blur(b_tensor)
+        blurred_img = torch.cat((r_blurred, g_blurred, b_blurred), dim=1)
     return blurred_img
 
 def main():
