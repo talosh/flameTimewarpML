@@ -1145,7 +1145,7 @@ def main():
             output_yuv_gamma = normalize(torch.cat(split_to_yuv(output_gamma), dim=1))
             output_blurred = blur(output)
 
-            target_gamma = gamma_up(target)
+            target_gamma = gamma_up(restore_normalized_values(target))
             target_yuv_gamma = normalize(torch.cat(split_to_yuv(target_gamma), dim=1))
             target_blurred = blur(output)
 
