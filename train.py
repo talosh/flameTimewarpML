@@ -1172,12 +1172,6 @@ def main():
                 window_min = min(epoch_loss[-999:])
                 window_max = max(epoch_loss[-999:])
 
-            if smoothed_window_loss > .4:
-                current_lr = scheduler_fusion.get_last_lr()[0]
-                current_lr = current_lr / 8
-                for param_group in optimizer_fusion.param_groups:
-                    param_group['lr'] = current_lr
-
             loss.backward()
 
             optimizer_rife.step()

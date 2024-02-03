@@ -177,7 +177,7 @@ class Model:
 				super().__init__()
 				
 				self.alpha = alpha
-				num_classes = 32
+				num_classes = 24
 				
 				# Encoder Path
 				self.multiresblock1 = Multiresblock(input_channels,num_classes)
