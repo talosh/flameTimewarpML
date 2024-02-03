@@ -1151,7 +1151,7 @@ def main():
 
             # loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             # loss_mse = criterion_mse(output, target) # * 0.6 + criterion_mse(output_blurred, target_blurred) * 0.4 # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
-            loss_mse = criterion_mse(output_gamma, target_gamma) + criterion_mse(torch.clamp(output, min=0.1, max = 0.25), torch.clamp(target, min=0.1, max = 0.25))
+            loss_mse = criterion_mse(output_gamma, target_gamma) # + criterion_mse(torch.clamp(output, min=0.1, max = 0.25), torch.clamp(target, min=0.1, max = 0.25))
             loss_l1 = criterion_l1(output_gamma, target_gamma)
             loss_l1_disp = criterion_l1(output.detach(), target.detach())
             loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
