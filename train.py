@@ -1225,6 +1225,7 @@ def main():
         days = int(epoch_time // (24 * 3600))
         hours = int((epoch_time % (24 * 3600)) // 3600)
         minutes = int((epoch_time % 3600) // 60)
+        clear_lines(2)
         print (f'\r {" "*120}', end='')
         print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}')
         steps_loss = []
