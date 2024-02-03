@@ -1155,8 +1155,8 @@ def main():
             loss_l1_disp = criterion_l1(output.detach(), target.detach())
             loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
 
-            epoch_loss.append(float(loss_l1_disp))
-            steps_loss.append(float(loss_l1_disp))
+            epoch_loss.append(float(loss_l1_disp.item()))
+            steps_loss.append(float(loss_l1_disp.item()))
 
             loss_mse.backward()
 
