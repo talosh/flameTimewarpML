@@ -185,10 +185,10 @@ class Model:
 				# Encoder Path
 				self.multiresblock1 = Multiresblock(input_channels,num_classes)
 				self.in_filters1 = int(num_classes*self.alpha*0.167)+int(num_classes*self.alpha*0.333)+int(num_classes*self.alpha*0.5)+int(num_classes*self.alpha*0.69)
-				self.pool1 =  torch.nn.MaxPool2d(2)
-				self.respath1 = Respath(self.in_filters1,num_classes,respath_length=4)
 				self.multiresblock1_img = Multiresblock(3,img_classes)
 				self.in_img_filters1 = int(img_classes*self.alpha*0.167)+int(img_classes*self.alpha*0.333)+int(img_classes*self.alpha*0.5)+int(img_classes*self.alpha*0.69)
+				self.pool1 =  torch.nn.MaxPool2d(2)
+				self.respath1 = Respath(self.in_filters1 + 2 * self.in_img_filters1,num_classes,respath_length=4)
 
 				self.multiresblock2 = Multiresblock(self.in_filters1,num_classes*2)
 				self.in_filters2 = int(num_classes*2*self.alpha*0.167)+int(num_classes*2*self.alpha*0.333)+int(num_classes*2*self.alpha* 0.5)+int(num_classes*2*self.alpha*0.69)
@@ -255,8 +255,17 @@ class Model:
 				x = torch.cat((w_img0, flow0, mask, timestep, flow1, w_img1), dim=1)
 
 				x_multires1 = self.multiresblock1(x)
+				x_multires1_img0 = self.multiresblock1_img(img0)
+				x_multires1_img1 = self.multiresblock1_img(img1)
+				x_multires1 = torch.cat((
+						self.warp(x_multires1_img0, flow0),
+						x_multires1,
+	 					self.warp(x_multires1_img1, flow1)
+	  				),
+					dim = 1)
 				x_pool1 = self.pool1(x_multires1)
 				x_multires1 = self.respath1(x_multires1)
+
 				
 				x_multires2 = self.multiresblock2(x_pool1)
 				x_pool2 = self.pool2(x_multires2)
