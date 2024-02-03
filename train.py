@@ -1112,8 +1112,8 @@ def main():
             '''
 
             current_lr = scheduler_fusion.get_last_lr()[0]
-            for param_group in optimizer_fusion.param_groups:
-                param_group['lr'] = current_lr
+            # for param_group in optimizer_fusion.param_groups:
+            #     param_group['lr'] = current_lr
 
             current_lr_str = str(f'{optimizer_fusion.param_groups[0]["lr"]:.4e}')
             current_lr_rife_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
