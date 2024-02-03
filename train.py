@@ -598,7 +598,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img4 = img4.flip(0)
 
             # Exposure agumentation
-            exp = random.uniform(1 / 4, 4)
+            exp = random.uniform(1 / 8, 2)
             if random.uniform(0, 1) < 0.4:
                 img0 = img0 * exp
                 img1 = img1 * exp
