@@ -250,7 +250,7 @@ class Model:
 			def forward(self, img0, img1, flow0, flow1, mask, timestep):
 
 				w_img0 = self.warp(img0, flow0)
-				w_img1 = self.warp(img0, flow0)
+				w_img1 = self.warp(img1, flow0)
 
 				x = torch.cat((w_img0, flow0, mask, timestep, flow1, w_img1), dim=1)
 
