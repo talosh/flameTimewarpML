@@ -990,7 +990,7 @@ def main():
             print (f'unable to load saved model: {e}')
 
         try:
-            model_refine.load_state_dict(checkpoint['refine_state_dict'])
+            model_refine.load_state_dict(checkpoint['refine_state_dict'], strict=False)
             print('loaded previously saved fusion model')
         except Exception as e:
             print (f'unable to load saved fusion model: {e}')
