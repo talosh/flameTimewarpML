@@ -1160,7 +1160,7 @@ def main():
 
             loss = loss_mse
 
-            if float(loss.item()) > .4:
+            if float(loss+loss_l1_disp.item()) > .4:
                 current_lr = scheduler_fusion.get_last_lr()[0]
                 current_lr = current_lr / 8
                 for param_group in optimizer_fusion.param_groups:
