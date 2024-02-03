@@ -1192,8 +1192,8 @@ def main():
 
                 y, u, v = split_to_yuv(rgb_target)
                 rgb_target = torch.cat((y, u, v), dim=1)
-                rgb_target = blur(rgb_target)
-                rgb_target = gamma_up(rgb_target)
+                # rgb_target = blur(rgb_target)
+                # rgb_target = gamma_up(rgb_target)
 
                 preview_folder = os.path.join(args.dataset_path, 'preview')
                 sample_source1 = rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
