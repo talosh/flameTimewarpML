@@ -301,7 +301,7 @@ class Model:
 
 	@staticmethod
 	def get_name():
-		return 'MultiRes4_v001'
+		return 'TWFusion_v001'
 
 	@staticmethod
 	def input_channels(model_state_dict):

@@ -173,62 +173,86 @@ class Model:
 			Returns:
 				[keras model] -- MultiResUNet model
 			'''
-			def __init__(self, input_channels, num_classes, alpha=1.69):
+			def __init__(self, alpha=1.69):
 				super().__init__()
 				
 				self.alpha = alpha
+				input_channels = 8
+				output_channels = 5
+				num_classes = 48
+				img_classes = 11
 				
 				# Encoder Path
-				self.multiresblock1 = Multiresblock(input_channels,32)
-				self.in_filters1 = int(32*self.alpha*0.167)+int(32*self.alpha*0.333)+int(32*self.alpha*0.5)+int(32*self.alpha*0.69)
+				self.multiresblock1 = Multiresblock(input_channels,num_classes)
+				self.in_filters1 = int(num_classes*self.alpha*0.167)+int(num_classes*self.alpha*0.333)+int(num_classes*self.alpha*0.5)+int(num_classes*self.alpha*0.69)
 				self.pool1 =  torch.nn.MaxPool2d(2)
-				self.respath1 = Respath(self.in_filters1,32,respath_length=4)
+				self.respath1 = Respath(self.in_filters1,num_classes,respath_length=4)
+				self.multiresblock1_img = Multiresblock(3,img_classes)
+				self.in_img_filters1 = int(img_classes*self.alpha*0.167)+int(img_classes*self.alpha*0.333)+int(img_classes*self.alpha*0.5)+int(img_classes*self.alpha*0.69)
 
-				self.multiresblock2 = Multiresblock(self.in_filters1,32*2)
-				self.in_filters2 = int(32*2*self.alpha*0.167)+int(32*2*self.alpha*0.333)+int(32*2*self.alpha* 0.5)+int(32*2*self.alpha*0.69)
+				self.multiresblock2 = Multiresblock(self.in_filters1,num_classes*2)
+				self.in_filters2 = int(num_classes*2*self.alpha*0.167)+int(num_classes*2*self.alpha*0.333)+int(num_classes*2*self.alpha* 0.5)+int(num_classes*2*self.alpha*0.69)
 				self.pool2 =  torch.nn.MaxPool2d(2)
-				self.respath2 = Respath(self.in_filters2,32*2,respath_length=3)
+				self.respath2 = Respath(self.in_filters2,num_classes*2,respath_length=3)
 			
 			
-				self.multiresblock3 =  Multiresblock(self.in_filters2,32*4)
-				self.in_filters3 = int(32*4*self.alpha*0.167)+int(32*4*self.alpha*0.333)+int(32*4*self.alpha* 0.5)+int(32*4*self.alpha*0.69)
+				self.multiresblock3 =  Multiresblock(self.in_filters2,num_classes*4)
+				self.in_filters3 = int(num_classes*4*self.alpha*0.167)+int(num_classes*4*self.alpha*0.333)+int(num_classes*4*self.alpha* 0.5)+int(num_classes*4*self.alpha*0.69)
 				self.pool3 =  torch.nn.MaxPool2d(2)
-				self.respath3 = Respath(self.in_filters3,32*4,respath_length=2)
+				self.respath3 = Respath(self.in_filters3,num_classes*4,respath_length=2)
 			
 			
-				self.multiresblock4 = Multiresblock(self.in_filters3,32*8)
-				self.in_filters4 = int(32*8*self.alpha*0.167)+int(32*8*self.alpha*0.333)+int(32*8*self.alpha* 0.5)+int(32*8*self.alpha*0.69)
+				self.multiresblock4 = Multiresblock(self.in_filters3,num_classes*8)
+				self.in_filters4 = int(num_classes*8*self.alpha*0.167)+int(num_classes*8*self.alpha*0.333)+int(num_classes*8*self.alpha* 0.5)+int(num_classes*8*self.alpha*0.69)
 				self.pool4 =  torch.nn.MaxPool2d(2)
-				self.respath4 = Respath(self.in_filters4,32*8,respath_length=1)
+				self.respath4 = Respath(self.in_filters4,num_classes*8,respath_length=1)
 			
 			
-				self.multiresblock5 = Multiresblock(self.in_filters4,32*16)
-				self.in_filters5 = int(32*16*self.alpha*0.167)+int(32*16*self.alpha*0.333)+int(32*16*self.alpha* 0.5)+int(32*16*self.alpha*0.69)
+				self.multiresblock5 = Multiresblock(self.in_filters4,num_classes*16)
+				self.in_filters5 = int(num_classes*16*self.alpha*0.167)+int(num_classes*16*self.alpha*0.333)+int(num_classes*16*self.alpha* 0.5)+int(num_classes*16*self.alpha*0.69)
 			
 				# Decoder path
-				self.upsample6 = torch.nn.ConvTranspose2d(self.in_filters5,32*8,kernel_size=(2,2),stride=(2,2))  
-				self.concat_filters1 = 32*8*2
-				self.multiresblock6 = Multiresblock(self.concat_filters1,32*8)
-				self.in_filters6 = int(32*8*self.alpha*0.167)+int(32*8*self.alpha*0.333)+int(32*8*self.alpha* 0.5)+int(32*8*self.alpha*0.69)
+				self.upsample6 = torch.nn.ConvTranspose2d(self.in_filters5,num_classes*8,kernel_size=(2,2),stride=(2,2))  
+				self.concat_filters1 = num_classes*8*2
+				self.multiresblock6 = Multiresblock(self.concat_filters1,num_classes*8)
+				self.in_filters6 = int(num_classes*8*self.alpha*0.167)+int(num_classes*8*self.alpha*0.333)+int(num_classes*8*self.alpha* 0.5)+int(num_classes*8*self.alpha*0.69)
 
 				self.upsample7 = torch.nn.ConvTranspose2d(self.in_filters6,32*4,kernel_size=(2,2),stride=(2,2))  
-				self.concat_filters2 = 32*4*2
-				self.multiresblock7 = Multiresblock(self.concat_filters2,32*4)
-				self.in_filters7 = int(32*4*self.alpha*0.167)+int(32*4*self.alpha*0.333)+int(32*4*self.alpha* 0.5)+int(32*4*self.alpha*0.69)
+				self.concat_filters2 = num_classes*4*2
+				self.multiresblock7 = Multiresblock(self.concat_filters2,num_classes*4)
+				self.in_filters7 = int(num_classes*4*self.alpha*0.167)+int(num_classes*4*self.alpha*0.333)+int(num_classes*4*self.alpha* 0.5)+int(num_classes*4*self.alpha*0.69)
 			
-				self.upsample8 = torch.nn.ConvTranspose2d(self.in_filters7,32*2,kernel_size=(2,2),stride=(2,2))
-				self.concat_filters3 = 32*2 *2
-				self.multiresblock8 = Multiresblock(self.concat_filters3,32*2)
-				self.in_filters8 = int(32*2*self.alpha*0.167)+int(32*2*self.alpha*0.333)+int(32*2*self.alpha* 0.5)+int(32*2*self.alpha*0.69)
+				self.upsample8 = torch.nn.ConvTranspose2d(self.in_filters7,num_classes*2,kernel_size=(2,2),stride=(2,2))
+				self.concat_filters3 = num_classes*2*2
+				self.multiresblock8 = Multiresblock(self.concat_filters3,num_classes*2)
+				self.in_filters8 = int(num_classes*2*self.alpha*0.167)+int(num_classes*2*self.alpha*0.333)+int(num_classes*2*self.alpha* 0.5)+int(num_classes*2*self.alpha*0.69)
 			
-				self.upsample9 = torch.nn.ConvTranspose2d(self.in_filters8,32,kernel_size=(2,2),stride=(2,2))
-				self.concat_filters4 = 32 *2
-				self.multiresblock9 = Multiresblock(self.concat_filters4,32)
-				self.in_filters9 = int(32*self.alpha*0.167)+int(32*self.alpha*0.333)+int(32*self.alpha* 0.5)+int(32*self.alpha*0.69)
+				self.upsample9 = torch.nn.ConvTranspose2d(self.in_filters8,num_classes,kernel_size=(2,2),stride=(2,2))
+				self.concat_filters4 = num_classes*2
+				self.multiresblock9 = Multiresblock(self.concat_filters4,num_classes)
+				self.in_filters9 = int(num_classes*self.alpha*0.167)+int(num_classes*self.alpha*0.333)+int(num_classes*self.alpha* 0.5)+int(num_classes*self.alpha*0.69)
 
-				self.conv_final = Conv2d_batchnorm(self.in_filters9, num_classes, kernel_size = (1,1), activation='None')
+				self.conv_final = Conv2d_batchnorm(self.in_filters9, output_channels, kernel_size = (1,1), activation='None')
 
-			def forward(self, x : torch.Tensor)->torch.Tensor:
+			def warp(self, tenInput, tenFlow):
+				backwarp_tenGrid = {}
+				k = (str(tenFlow.device), str(tenFlow.size()))
+				if k not in backwarp_tenGrid:
+					tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+					tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+					backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
+					# end
+				tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
+
+				g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+				return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+
+			def forward(self, img0, img1, flow0, flow1, mask, timestep):
+
+				w_img0 = self.warp(img0, flow0)
+				w_img1 = self.warp(img0, flow0)
+
+				x = torch.cat((w_img0, flow0, mask, timestep, flow1, w_img1), dim=1)
 
 				x_multires1 = self.multiresblock1(x)
 				x_pool1 = self.pool1(x_multires1)
