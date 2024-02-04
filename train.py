@@ -1070,6 +1070,10 @@ def main():
         if not os.path.isdir(trained_model_dir):
             os.makedirs(trained_model_dir)
         trained_model_path = os.path.join(trained_model_dir, traned_model_name)
+        inflow_model_path = os.path.join(
+            os.path.abspath(os.path.dirname(trained_model_path)),
+            f'{os.path.splitext(os.path.basename(trained_model_path))[0]}_inflow.pth' 
+        )
 
     try:
         start_timestamp = checkpoint.get('start_timestamp')
