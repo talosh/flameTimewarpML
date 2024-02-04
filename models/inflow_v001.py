@@ -246,7 +246,6 @@ class UNet_3Plus(Module):
         # h2->160*160, hd3->80*80, Pooling 2 times
         self.h2_PT_hd3 = torch.nn.MaxPool2d(2, 2, ceil_mode=True)
         self.h2_PT_hd3_conv = torch.nn.Conv2d(filters[1], self.CatChannels, 3, padding=1, padding_mode = 'reflect')
-        self.h2_PT_hd3_bn = torch.nnBatchNorm2d(self.CatChannels)
         self.h2_PT_hd3_relu = torch.nn.SELU(inplace=True)
 
         # h3->80*80, hd3->80*80, Concatenation
