@@ -264,7 +264,6 @@ class UNet_3Plus(Module):
 
         # fusion(h1_PT_hd3, h2_PT_hd3, h3_Cat_hd3, hd4_UT_hd3, hd5_UT_hd3)
         self.conv3d_1 = torch.nn.Conv2d(self.UpChannels, self.UpChannels, 3, padding=1, padding_mode = 'reflect')  # 16
-        self.bn3d_1 = torch.nnBatchNorm2d(self.UpChannels)
         self.relu3d_1 = torch.nn.SELU(inplace=True)
 
         '''stage 2d '''
