@@ -179,8 +179,8 @@ class Model:
 				self.alpha = alpha
 				input_channels = 12
 				output_channels = 5
-				num_classes = 54
-				img_classes = 18
+				num_classes = 27
+				img_classes = 9
 				
 				# Encoder Path
 				self.multiresblock1 = Multiresblock(input_channels,num_classes)
