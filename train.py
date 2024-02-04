@@ -1145,7 +1145,8 @@ def main():
 
             # loss = criterion_mse(output, img2) + criterion_l1_rife(output_rife, img2) * 1e-4
 
-            target = torch.cat((flow_list[3], mask), dim=1)
+            # target = torch.cat((flow_list[3], mask), dim=1)
+            target = img2
 
             output_gamma = normalize(gamma_up(restore_normalized_values(output)))
             # output_yuv_gamma = normalize(torch.cat(split_to_yuv(output_gamma), dim=1))
