@@ -1163,14 +1163,14 @@ def main():
 
             output_rife = warp(img1, flow0) * blurred_grain_mask + warp(img3, flow1) * (1 - blurred_grain_mask)
 
-            
+            in_flow0, in_flow1, in_mask = model_inflow(torch.cat((img1, timestep, img3), dim=1))
+            output_inflow = warp(img1, in_flow0) * in_mask + warp(img3, in_flow1) * (1 - in_mask)
 
             # with torch.no_grad():
-            r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, blurred_grain_mask, timestep)
+            # r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, blurred_grain_mask, timestep)
+            # output_refine = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
 
-            output_refine = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
-
-            output = output_refine
+            output = output_inflow
             
             # output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
 
@@ -1183,11 +1183,11 @@ def main():
 
             norm_min = - max(mh, mw)
             norm_max = max(mh, mw)
-            r_flow0_nm = ((r_flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
-            r_flow1_nm = ((r_flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
+            in_flow0_nm = ((in_flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
+            in_flow1_nm = ((in_flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
             flow0_nm = ((flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
             flow1_nm = ((flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
-            output_flow = torch.cat((r_flow0_nm, r_flow1_nm), dim=1)
+            output_flow = torch.cat((in_flow0_nm, in_flow1_nm), dim=1)
             target_flow = torch.cat((flow0_nm, flow1_nm), dim=1)
 
             target = img2
@@ -1203,13 +1203,13 @@ def main():
             # loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             # loss_mse = criterion_mse(output, target) # * 0.6 + criterion_mse(output_blurred, target_blurred) * 0.4 # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             # loss_mse = criterion_mse(gamma_up(output_refine), gamma_up(target)) + criterion_mse(gamma_up(output), gamma_up(target)) * 0.2 # + criterion_mse(torch.clamp(output, min=0.12, max = 0.25), torch.clamp(target, min=0.12, max = 0.25))
-            # loss_mse_flow = criterion_mse(output_flow, target_flow)
-            # loss_mse_rife = criterion_mse(output_refine, output_rife)
-            # loss_mse = loss_mse_flow + loss_mse_rife
-            loss_mse = criterion_mse(gamma_up(output), gamma_up(target))
+            loss_mse_flow = criterion_mse(output_flow, target_flow)
+            loss_mse_rife = criterion_mse(output_inflow, output_rife)
+            loss_mse = loss_mse_flow + loss_mse_rife
+            # loss_mse = criterion_mse(gamma_up(output), gamma_up(target))
             # loss_l1 = criterion_l1(output_refine, output_rife)
-            # loss_l1_disp = criterion_l1(output_flow, target_flow) + criterion_l1(output_refine.detach(), output_rife.detach())
-            loss_l1_disp = criterion_l1(output.detach(), target.detach())
+            loss_l1_disp = criterion_l1(output_flow, target_flow) + criterion_l1(output_inflow.detach(), output_rife.detach())
+            # loss_l1_disp = criterion_l1(output.detach(), target.detach())
             loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
 
             loss = loss_mse
@@ -1269,7 +1269,7 @@ def main():
                     rgb_target = restore_normalized_values(img2)
                     rgb_output = restore_normalized_values(output)
                     rgb_output_rife = restore_normalized_values(output_rife)
-                    rgb_output_refine_mask = r_mask.repeat_interleave(3, dim=1)
+                    rgb_output_refine_mask = in_mask.repeat_interleave(3, dim=1)
 
 
                 preview_folder = os.path.join(args.dataset_path, 'preview')
@@ -1307,6 +1307,11 @@ def main():
                     'model_name': model_name,
                     'fusion_model_name': model_fusion_name,
                 }, trained_model_path)
+                
+                torch.save({
+                    'model_state_dict': model_inflow.state_dict(),
+                }, inflow_model_path)
+
                 # model.load_state_dict(convert(rife_state_dict))
 
             data_time += time.time() - time_stamp
@@ -1342,6 +1347,11 @@ def main():
             'model_name': model_name,
             'fusion_model_name': model_fusion_name,
         }, trained_model_path)
+
+        torch.save({
+            'model_state_dict': model_inflow.state_dict(),
+        }, inflow_model_path)
+
         
         smoothed_loss = np.mean(moving_average(epoch_loss, 9))
         epoch_time = time.time() - start_timestamp
