@@ -1185,7 +1185,7 @@ def main():
             loss_mse_rife = criterion_mse(output_refine, output_rife)
             loss_mse = loss_mse_flow + loss_mse_rife
             loss_l1 = criterion_l1(output_refine, output_rife)
-            loss_l1_disp = criterion_l1(output_refine.detach(), output_rife.detach())
+            loss_l1_disp = criterion_l1(output_flow, target_flow) + criterion_l1(output_refine.detach(), output_rife.detach())
             loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
 
             loss = loss_mse
