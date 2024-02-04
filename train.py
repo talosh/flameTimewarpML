@@ -1006,9 +1006,6 @@ def main():
             print (f'unable to load saved model: {e}')
 
         try:
-            inflow_checkpoint = torch.load(trained_model_path)
-
-        try:
             model_refine.load_state_dict(checkpoint['refine_state_dict'], strict=False)
             print('loaded previously saved fusion model')
         except Exception as e:
