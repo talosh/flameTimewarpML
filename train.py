@@ -996,14 +996,19 @@ def main():
             f'{os.path.splitext(os.path.basename(args.model_path))[0]}_inflow.pth' 
         )
 
-        print (f'inflow model: {inflow_model_path}')
-
         try:
             checkpoint = torch.load(trained_model_path)
             model.load_state_dict(checkpoint['model_state_dict'])
             print('loaded previously saved model')
         except Exception as e:
             print (f'unable to load saved model: {e}')
+
+        try:
+            checkpoint = torch.load(inflow_model_path)
+            model_inflow.load_state_dict(checkpoint['model_state_dict'])
+            print('loaded previously saved inflow model')
+        except Exception as e:
+            print (f'unable to load saved inflow model: {e}')
 
         try:
             model_refine.load_state_dict(checkpoint['refine_state_dict'], strict=False)
