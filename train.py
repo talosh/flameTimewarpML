@@ -1134,9 +1134,9 @@ def main():
             # with torch.no_grad():
             r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, mask, timestep)
 
-            output = torch.cat((r_flow0, r_flow1, r_mask), dim=1)
+            # output = torch.cat((r_flow0, r_flow1, r_mask), dim=1)
 
-            # output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
+            output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
 
             # output = ( output + 1 ) / 2
             
@@ -1157,8 +1157,8 @@ def main():
 
             # loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             # loss_mse = criterion_mse(output, target) # * 0.6 + criterion_mse(output_blurred, target_blurred) * 0.4 # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
-            # loss_mse = criterion_mse(gamma_up(output), gamma_up(target)) # + criterion_mse(torch.clamp(output, min=0.12, max = 0.25), torch.clamp(target, min=0.12, max = 0.25))
-            loss_mse = criterion_mse(output, target)
+            loss_mse = criterion_mse(gamma_up(output), gamma_up(target)) # + criterion_mse(torch.clamp(output, min=0.12, max = 0.25), torch.clamp(target, min=0.12, max = 0.25))
+            # loss_mse = criterion_mse(output, target)
             loss_l1 = criterion_l1(output, target)
             loss_l1_disp = criterion_l1(output.detach(), target.detach())
             loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
@@ -1181,11 +1181,11 @@ def main():
 
             optimizer_rife.step()
             optimizer_refine.step()
-            # optimizer_fusion.step()
+            optimizer_fusion.step()
 
             scheduler_rife.step()
             scheduler_refine.step()
-            # scheduler_fusion.step()
+            scheduler_fusion.step()
 
             train_time = time.time() - time_stamp
             time_stamp = time.time()
