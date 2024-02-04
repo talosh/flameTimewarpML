@@ -1139,7 +1139,7 @@ def main():
             mn, _, mh, mw = mask.shape
             grain1 = (torch.rand(mn, 1, mh, mw).to(device = mask.device, dtype = mask.dtype) * 2 - 1) / 11
             grain2 = (torch.rand(mn, 1, mh, mw).to(device = mask.device, dtype = mask.dtype) * 2 - 1) / 11
-            blurred_grain_mask = blur(mask * 2 + grain1) / 2 + grain2
+            blurred_grain_mask = torch.clamp(blur(mask * 2 + grain1) / 2 + grain2)
 
             # with torch.no_grad():
             r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, blurred_grain_mask, timestep)
