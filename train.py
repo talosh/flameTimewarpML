@@ -247,8 +247,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         random.shuffle(self.train_descriptions)
 
-        self.h = 448
-        self.w = 448
+        self.h = 256
+        self.w = 256
         # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
         self.frames_queue = queue.Queue(maxsize=4)
