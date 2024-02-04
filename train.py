@@ -1272,7 +1272,7 @@ def main():
             minutes = int((epoch_time % 3600) // 60)
 
 
-            # clear_lines(2)
+            clear_lines(2)
             print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx + 1} / {len(dataset)}], Lr: {current_lr_str}, Lr RIFE: {current_lr_rife_str}, Loss L1: {loss_l1_str}')
             print(f'\r[Last 1K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f}')
 

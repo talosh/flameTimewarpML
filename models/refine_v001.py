@@ -278,7 +278,6 @@ class Model:
 				x_multires2 = self.multiresblock2(x_pool1)
 				x_multires2_img0 = self.multiresblock2_img(x_pool1_img0)
 				x_multires2_img1 = self.multiresblock2_img(x_pool1_img1)
-				print (f'flow0 {flow0.shape}, enc: {x_multires2_img0.shape}')
 				x_multires2 = torch.cat((
 						self.warp(x_multires2_img0, flow0),
 						x_multires2,
@@ -296,7 +295,6 @@ class Model:
 				x_multires3 = self.multiresblock3(x_pool2)
 				x_multires3_img0 = self.multiresblock3_img(x_pool2_img0)
 				x_multires3_img1 = self.multiresblock3_img(x_pool2_img1)
-				print (f'flow0 {flow0.shape}, enc: {x_multires3_img0.shape}')
 
 				x_multires3 = torch.cat((
 						self.warp(x_multires3_img0, flow0),
@@ -315,7 +313,6 @@ class Model:
 				x_multires4 = self.multiresblock4(x_pool3)
 				x_multires4_img0 = self.multiresblock4_img(x_pool3_img0)
 				x_multires4_img1 = self.multiresblock4_img(x_pool3_img1)
-				print (f'flow0 {flow0.shape}, enc: {x_multires4_img0.shape}')
 
 				x_multires4 = torch.cat((
 						self.warp(x_multires4_img0, flow0),
