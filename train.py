@@ -1132,8 +1132,8 @@ def main():
             flow1 = flow_list[3][:, 2:4]
 
             mn, _, mh, mw = mask.shape
-            grain1 = torch.rand(mn, 1, mh, mw) / 9
-            grain2 = torch.rand(mn, 1, mh, mw) / 9
+            grain1 = torch.rand(mn, 1, mh, mw).to(device = mask.device, dtype = mask.dtype) / 9
+            grain2 = torch.rand(mn, 1, mh, mw).to(device = mask.device, dtype = mask.dtype) / 9
             blurred_grain_mask = blur(mask * grain1) * grain2
 
             # with torch.no_grad():
