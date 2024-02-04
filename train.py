@@ -1075,11 +1075,7 @@ def main():
             f'{os.path.splitext(os.path.basename(trained_model_path))[0]}_inflow.pth' 
         )
 
-    try:
-        start_timestamp = checkpoint.get('start_timestamp')
-    except:
-        start_timestamp = time.time()
-
+    start_timestamp = time.time()
     time_stamp = time.time()
     epoch = current_epoch
     
