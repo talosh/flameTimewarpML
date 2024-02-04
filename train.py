@@ -956,7 +956,7 @@ def main():
 
     # optimizer_sgd = torch.optim.SGD(model.parameters(), lr=lr)
     optimizer_rife = Yogi(model.parameters(), lr=lr_rife)
-    optimizer_inflow = Yogi(model_flownet.parameters(), lr=lr)
+    optimizer_inflow = Yogi(model_inflow.parameters(), lr=lr)
     optimizer_refine = Yogi(model_refine.parameters(), lr=lr)
     optimizer_fusion = Yogi(model_fusion.parameters(), lr=lr)
 
