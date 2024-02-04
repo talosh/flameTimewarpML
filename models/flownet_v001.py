@@ -397,5 +397,5 @@ class Model:
     def get_model(self):
         return UNet_3Plus
 
-    def get_train_model(self):
+    def get_training_model(self):
         return UNet_3Plus
