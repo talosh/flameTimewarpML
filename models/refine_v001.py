@@ -180,7 +180,7 @@ class Model:
 				input_channels = 12
 				output_channels = 5
 				num_classes = 27
-				img_classes = 9
+				img_classes = 11
 				
 				# Encoder Path
 				self.multiresblock1 = Multiresblock(input_channels,num_classes)
