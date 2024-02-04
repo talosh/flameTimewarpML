@@ -993,7 +993,7 @@ def main():
         trained_model_path = args.model_path
         inflow_model_path = os.path.join(
             os.path.abspath(os.path.dirname(args.model_path)),
-            f'{os.path.splitext(os.path.basename(args.model_path))[0]} + _inflow.pth' 
+            f'{os.path.splitext(os.path.basename(args.model_path))[0]}_inflow.pth' 
         )
 
         print (f'inflow model: {inflow_model_path}')
