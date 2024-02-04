@@ -1134,9 +1134,9 @@ def main():
             # with torch.no_grad():
             r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, mask, timestep)
 
-            # output = torch.cat((r_flow0, r_flow1, r_mask), dim=1)
-            output_refine = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
-            output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
+            output = torch.cat((r_flow0, r_flow1, r_mask), dim=1)
+            # output_refine = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
+            # output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
 
             # output = ( output + 1 ) / 2
             
@@ -1145,8 +1145,8 @@ def main():
 
             # loss = criterion_mse(output, img2) + criterion_l1_rife(output_rife, img2) * 1e-4
 
-            # target = torch.cat((flow_list[3], mask), dim=1)
-            target = img2
+            target = torch.cat((flow_list[3], mask), dim=1)
+            # target = img2
 
             output_gamma = normalize(gamma_up(restore_normalized_values(output)))
             # output_yuv_gamma = normalize(torch.cat(split_to_yuv(output_gamma), dim=1))
@@ -1158,8 +1158,8 @@ def main():
 
             # loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             # loss_mse = criterion_mse(output, target) # * 0.6 + criterion_mse(output_blurred, target_blurred) * 0.4 # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
-            loss_mse = criterion_mse(gamma_up(output_refine), gamma_up(target)) + criterion_mse(gamma_up(output), gamma_up(target)) * 0.2 # + criterion_mse(torch.clamp(output, min=0.12, max = 0.25), torch.clamp(target, min=0.12, max = 0.25))
-            # loss_mse = criterion_mse(output, target)
+            # loss_mse = criterion_mse(gamma_up(output_refine), gamma_up(target)) + criterion_mse(gamma_up(output), gamma_up(target)) * 0.2 # + criterion_mse(torch.clamp(output, min=0.12, max = 0.25), torch.clamp(target, min=0.12, max = 0.25))
+            loss_mse = criterion_mse(output, target)
             loss_l1 = criterion_l1(output, target)
             loss_l1_disp = criterion_l1(output.detach(), target.detach())
             loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
@@ -1193,7 +1193,7 @@ def main():
 
             if step % 40 == 1:
                 
-                # output = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
+                output = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
 
                 '''
                 def warp(tenInput, tenFlow):
