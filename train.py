@@ -1193,7 +1193,7 @@ def main():
 
             if step % 40 == 1:
                 
-                output = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
+                # output = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
 
                 '''
                 def warp(tenInput, tenFlow):
