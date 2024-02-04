@@ -1245,8 +1245,7 @@ def main():
                     rgb_target = restore_normalized_values(img2)
                     rgb_output = restore_normalized_values(output)
                     rgb_output_rife = restore_normalized_values(output_rife)
-                    # rgb_output_rife = mask.repeat_interleave(3, dim=1)
-                    rgb_output_rife_mask = blurred_grain_mask.repeat_interleave(3, dim=1)
+                    rgb_output_refine_mask = r_mask.repeat_interleave(3, dim=1)
 
 
                 preview_folder = os.path.join(args.dataset_path, 'preview')
@@ -1255,14 +1254,14 @@ def main():
                 sample_target = rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
                 sample_output = rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
                 sample_output_rife = rgb_output_rife[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
-                sample_output_rife_mask = rgb_output_rife_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+                sample_output_refine_mask = rgb_output_refine_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
 
                 write_exr(sample_source1, os.path.join(preview_folder, f'{preview_index:02}_incomng.exr'))
                 write_exr(sample_source2, os.path.join(preview_folder, f'{preview_index:02}_outgoing.exr'))
                 write_exr(sample_target, os.path.join(preview_folder, f'{preview_index:02}_target.exr'))
                 write_exr(sample_output, os.path.join(preview_folder, f'{preview_index:02}_output.exr'))
                 write_exr(sample_output_rife, os.path.join(preview_folder, f'{preview_index:02}_output_rife.exr'))
-                write_exr(sample_output_rife_mask, os.path.join(preview_folder, f'{preview_index:02}_output_rife_mask.exr'))
+                write_exr(sample_output_refine_mask, os.path.join(preview_folder, f'{preview_index:02}_output_refine_mask.exr'))
 
                 preview_index = preview_index + 1 if preview_index < 9 else 0
 
