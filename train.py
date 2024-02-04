@@ -539,15 +539,13 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img2 = img2.permute(2, 0, 1)
                 img3 = img3.permute(2, 0, 1)
                 img4 = img4.permute(2, 0, 1)
-            else:
-            # elif q < 0.75:
+            elif q < 0.85:
                 img0, img1, img2, img3, img4 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, rsz2_img3, rsz2_img4, self.h, self.w)
                 img0 = img0.permute(2, 0, 1)
                 img1 = img1.permute(2, 0, 1)
                 img2 = img2.permute(2, 0, 1)
                 img3 = img3.permute(2, 0, 1)
                 img4 = img4.permute(2, 0, 1)
-            '''
             else:
                 img0, img1, img2, img3, img4 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, rsz3_img3, rsz3_img4, self.h, self.w)
                 img0 = img0.permute(2, 0, 1)
@@ -555,7 +553,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img2 = img2.permute(2, 0, 1)
                 img3 = img3.permute(2, 0, 1)
                 img4 = img4.permute(2, 0, 1)
-            '''
 
             p = random.uniform(0, 1)
             if p < 0.25:
