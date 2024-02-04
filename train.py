@@ -1131,8 +1131,13 @@ def main():
             flow0 = flow_list[3][:, :2]
             flow1 = flow_list[3][:, 2:4]
 
+            mn, _, mh, mw = mask.shape
+            grain1 = torch.rand(mn, 1, mh, mw) / 9
+            grain2 = torch.rand(mn, 1, mh, mw) / 9
+            blurred_grain_mask = blur(mask * grain1) * grain2
+
             # with torch.no_grad():
-            r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, mask, timestep)
+            r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, blurred_grain_mask, timestep)
 
             # output_refine = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
             # output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
@@ -1144,7 +1149,6 @@ def main():
 
             # loss = criterion_mse(output, img2) + criterion_l1_rife(output_rife, img2) * 1e-4
 
-            _, _, mh, mw = mask.shape
             norm_min = - max(mh, mw)
             norm_max = max(mh, mw)
             r_flow0_nm = ((r_flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
@@ -1234,7 +1238,7 @@ def main():
                     rgb_target = restore_normalized_values(img2)
                     rgb_output = restore_normalized_values(output)
                     rgb_output_rife = restore_normalized_values(output_rife)
-                    rgb_output_rife_mask = mask.repeat_interleave(3, dim=1)
+                    rgb_output_rife_mask = blurred_grain_mask.repeat_interleave(3, dim=1)
 
 
                 preview_folder = os.path.join(args.dataset_path, 'preview')
