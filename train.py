@@ -72,7 +72,7 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
 from models.flownet import FlownetCas
-from models.flownet_v001 import Model as ModelInflow
+from models.inflow_v001 import Model as ModelInflow
 from models.refine_v001 import Model as ModelRefine
 from models.fusion_v001 import Model as ModelFusion
 
