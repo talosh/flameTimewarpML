@@ -1168,7 +1168,7 @@ def main():
             output_flow = torch.cat((r_flow0_nm, r_flow1_nm), dim=1)
             target_flow = torch.cat((flow0_nm, flow1_nm), dim=1)
 
-            # target = img2
+            target = img2
 
             # output_gamma = normalize(gamma_up(restore_normalized_values(output)))
             # output_yuv_gamma = normalize(torch.cat(split_to_yuv(output_gamma), dim=1))
@@ -1181,11 +1181,13 @@ def main():
             # loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             # loss_mse = criterion_mse(output, target) # * 0.6 + criterion_mse(output_blurred, target_blurred) * 0.4 # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             # loss_mse = criterion_mse(gamma_up(output_refine), gamma_up(target)) + criterion_mse(gamma_up(output), gamma_up(target)) * 0.2 # + criterion_mse(torch.clamp(output, min=0.12, max = 0.25), torch.clamp(target, min=0.12, max = 0.25))
-            loss_mse_flow = criterion_mse(output_flow, target_flow)
-            loss_mse_rife = criterion_mse(output_refine, output_rife)
-            loss_mse = loss_mse_flow + loss_mse_rife
-            loss_l1 = criterion_l1(output_refine, output_rife)
-            loss_l1_disp = criterion_l1(output_flow, target_flow) + criterion_l1(output_refine.detach(), output_rife.detach())
+            # loss_mse_flow = criterion_mse(output_flow, target_flow)
+            # loss_mse_rife = criterion_mse(output_refine, output_rife)
+            # loss_mse = loss_mse_flow + loss_mse_rife
+            loss_mse = criterion_mse(output, target)
+            # loss_l1 = criterion_l1(output_refine, output_rife)
+            # loss_l1_disp = criterion_l1(output_flow, target_flow) + criterion_l1(output_refine.detach(), output_rife.detach())
+            loss_l1_disp = criterion_l1(output.detach(), target.detach())
             loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
 
             loss = loss_mse
