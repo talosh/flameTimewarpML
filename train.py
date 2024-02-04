@@ -72,6 +72,7 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
 from models.flownet import FlownetCas
+from models.flownet_v001 import Model as ModelInflow
 from models.refine_v001 import Model as ModelRefine
 from models.fusion_v001 import Model as ModelFusion
 
@@ -933,12 +934,15 @@ def main():
     model = FlownetCas().to(device)
     model_name = 'FlownetCas'
 
+    model_inflow = ModelInflow().get_training_model()(7, 5).to(device)
+
     model_refine_name = ModelRefine.get_name()
     model_refine = ModelRefine().get_training_model()().to(device)
 
     model_fusion_name = ModelFusion.get_name()
     model_fusion = ModelFusion().get_training_model()(7, 3).to(device)
 
+    
     warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
@@ -950,11 +954,9 @@ def main():
     criterion_mse = torch.nn.MSELoss()
     criterion_l1 = torch.nn.L1Loss()
 
-    criterion_mse_rife = torch.nn.MSELoss()
-    criterion_l1_rife = torch.nn.L1Loss()
-
     # optimizer_sgd = torch.optim.SGD(model.parameters(), lr=lr)
     optimizer_rife = Yogi(model.parameters(), lr=lr_rife)
+    optimizer_inflow = Yogi(model_flownet.parameters(), lr=lr)
     optimizer_refine = Yogi(model_refine.parameters(), lr=lr)
     optimizer_fusion = Yogi(model_fusion.parameters(), lr=lr)
 
@@ -968,11 +970,13 @@ def main():
     warnings.filterwarnings('ignore', category=UserWarning)
 
     train_scheduler_rife = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_rife, T_max=pulse_period, eta_min = lr_rife - (( lr_rife / 100 ) * pulse_dive) )
+    train_scheduler_inflow = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_refine, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     train_scheduler_refine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_refine, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     train_scheduler_fusion = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_fusion, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     # warmup_scheduler_fusion = torch.optim.lr_scheduler.LambdaLR(optimizer_fusion, lr_lambda=lambda step: warmup(step, lr=lr, number_warmup_steps=number_warmup_steps))
     # scheduler_fusion = torch.optim.lr_scheduler.SequentialLR(optimizer_fusion, [warmup_scheduler_fusion, train_scheduler_fusion], [number_warmup_steps])
     scheduler_rife = train_scheduler_rife
+    scheduler_inflow = train_scheduler_inflow
     scheduler_refine = train_scheduler_refine
     scheduler_fusion = train_scheduler_fusion
 
@@ -987,12 +991,22 @@ def main():
 
     if args.model_path:
         trained_model_path = args.model_path
+        inflow_model_path = os.path.join(
+            os.path.abspath(os.path.dirname(args.model_path)),
+            f'{os.path.splitext(os.path.basename(args.model_path))[0]} + _inflow.pth' 
+        )
+
+        print (f'inflow model: {inflow_model_path}')
+
         try:
             checkpoint = torch.load(trained_model_path)
             model.load_state_dict(checkpoint['model_state_dict'])
             print('loaded previously saved model')
         except Exception as e:
             print (f'unable to load saved model: {e}')
+
+        try:
+            inflow_checkpoint = torch.load(trained_model_path)
 
         try:
             model_refine.load_state_dict(checkpoint['refine_state_dict'], strict=False)
