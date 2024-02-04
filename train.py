@@ -512,11 +512,11 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         rsz1_img3 = self.resize_image(src_img3, self.h)
         rsz1_img4 = self.resize_image(src_img4, self.h)
 
-        rsz2_img0 = self.resize_image(src_img0, self.h * 1 + 1/4)
-        rsz2_img1 = self.resize_image(src_img1, self.h * 1 + 1/4)
-        rsz2_img2 = self.resize_image(src_img2, self.h * 1 + 1/4)
-        rsz2_img3 = self.resize_image(src_img3, self.h * 1 + 1/4)
-        rsz2_img4 = self.resize_image(src_img4, self.h * 1 + 1/4)
+        rsz2_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
+        rsz2_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
+        rsz2_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
+        rsz2_img3 = self.resize_image(src_img3, int(self.h * (1 + 1/4)))
+        rsz2_img4 = self.resize_image(src_img4, int(self.h * (1 + 1/4)))
 
         rsz3_img0 = self.resize_image(src_img0, self.h * 3)
         rsz3_img1 = self.resize_image(src_img1, self.h * 3)
