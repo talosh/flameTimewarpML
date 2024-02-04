@@ -1163,6 +1163,8 @@ def main():
 
             output_rife = warp(img1, flow0) * blurred_grain_mask + warp(img3, flow1) * (1 - blurred_grain_mask)
 
+            
+
             # with torch.no_grad():
             r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, blurred_grain_mask, timestep)
 

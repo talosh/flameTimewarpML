@@ -383,9 +383,13 @@ class UNet_3Plus(Module):
         hd1 = self.relu1d_1(self.conv1d_1(
             torch.cat((h1_Cat_hd1, hd2_UT_hd1, hd3_UT_hd1, hd4_UT_hd1, hd5_UT_hd1), 1))) # hd1->320*320*UpChannels
 
-        d1 = self.outconv1(hd1)  # d1->320*320*n_classes
-        return d1
+        out = self.outconv1(hd1)  # d1->320*320*n_classes
 
+        res_flow0 = out[: , :2]
+        res_flow1 = out[: , 2:4]
+        res_mask = torch.sigmoid(out[: , 4:5])
+        
+        return res_flow0, res_flow1, res_mask
 
 class Model:
     @staticmethod
