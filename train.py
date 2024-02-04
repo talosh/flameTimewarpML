@@ -1184,7 +1184,7 @@ def main():
             # loss_mse_flow = criterion_mse(output_flow, target_flow)
             # loss_mse_rife = criterion_mse(output_refine, output_rife)
             # loss_mse = loss_mse_flow + loss_mse_rife
-            loss_mse = criterion_mse(output, target)
+            loss_mse = criterion_mse(gamma_up(output), gamma_up(target))
             # loss_l1 = criterion_l1(output_refine, output_rife)
             # loss_l1_disp = criterion_l1(output_flow, target_flow) + criterion_l1(output_refine.detach(), output_rife.detach())
             loss_l1_disp = criterion_l1(output.detach(), target.detach())
