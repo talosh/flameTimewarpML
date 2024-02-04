@@ -11,48 +11,48 @@ def weights_init_normal(m):
     classname = m.__class__.__name__
     #print(classname)
     if classname.find('Conv') != -1:
-        init.normal_(m.weight.data, 0.0, 0.02)
+        torch.nn.init.normal_(m.weight.data, 0.0, 0.02)
     elif classname.find('Linear') != -1:
-        init.normal_(m.weight.data, 0.0, 0.02)
+        torch.nn.init.normal_(m.weight.data, 0.0, 0.02)
     elif classname.find('BatchNorm') != -1:
-        init.normal_(m.weight.data, 1.0, 0.02)
-        init.constant_(m.bias.data, 0.0)
+        torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
+        torch.nn.init.constant_(m.bias.data, 0.0)
 
 
 def weights_init_xavier(m):
     classname = m.__class__.__name__
     #print(classname)
     if classname.find('Conv') != -1:
-        init.xavier_normal_(m.weight.data, gain=1)
+        torch.nn.init.xavier_normal_(m.weight.data, gain=1)
     elif classname.find('Linear') != -1:
-        init.xavier_normal_(m.weight.data, gain=1)
+        torch.nn.init.xavier_normal_(m.weight.data, gain=1)
     elif classname.find('BatchNorm') != -1:
-        init.normal_(m.weight.data, 1.0, 0.02)
-        init.constant_(m.bias.data, 0.0)
+        torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
+        torch.nn.init.constant_(m.bias.data, 0.0)
 
 
 def weights_init_kaiming(m):
     classname = m.__class__.__name__
     #print(classname)
     if classname.find('Conv') != -1:
-        init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
+        torch.nn.init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
     elif classname.find('Linear') != -1:
-        init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
+        torch.nn.init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
     elif classname.find('BatchNorm') != -1:
-        init.normal_(m.weight.data, 1.0, 0.02)
-        init.constant_(m.bias.data, 0.0)
+        torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
+        torch.nn.init.constant_(m.bias.data, 0.0)
 
 
 def weights_init_orthogonal(m):
     classname = m.__class__.__name__
     #print(classname)
     if classname.find('Conv') != -1:
-        init.orthogonal_(m.weight.data, gain=1)
+        torch.nn.init.orthogonal_(m.weight.data, gain=1)
     elif classname.find('Linear') != -1:
-        init.orthogonal_(m.weight.data, gain=1)
+        torch.nn.init.orthogonal_(m.weight.data, gain=1)
     elif classname.find('BatchNorm') != -1:
-        init.normal_(m.weight.data, 1.0, 0.02)
-        init.constant_(m.bias.data, 0.0)
+        torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
+        torch.nn.init.constant_(m.bias.data, 0.0)
 
 
 def init_weights(net, init_type='normal'):
@@ -88,33 +88,6 @@ class unetConv2(Module):
         for m in self.children():
             init_weights(m, init_type='kaiming')
 
-
-    def init_weights(self, net, init_type='normal'):
-
-        def weights_init_kaiming(m):
-            classname = m.__class__.__name__
-            #print(classname)
-            if classname.find('Conv') != -1:
-                init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
-            elif classname.find('Linear') != -1:
-                init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
-            elif classname.find('BatchNorm') != -1:
-                init.normal_(m.weight.data, 1.0, 0.02)
-                init.constant_(m.bias.data, 0.0)
-
-        #print('initialization method [%s]' % init_type)
-        if init_type == 'normal':
-            net.apply(weights_init_normal)
-        elif init_type == 'xavier':
-            net.apply(weights_init_xavier)
-        elif init_type == 'kaiming':
-            net.apply(weights_init_kaiming)
-        elif init_type == 'orthogonal':
-            net.apply(weights_init_orthogonal)
-        else:
-            raise NotImplementedError('initialization method [%s] is not implemented' % init_type)
-
-
     def forward(self, inputs):
         x = inputs
         for i in range(1, self.n + 1):
@@ -122,8 +95,6 @@ class unetConv2(Module):
             x = conv(x)
 
         return x
-
-
 
 class DoubleConv2(Module):
     def __init__(self, in_size, out_size):
