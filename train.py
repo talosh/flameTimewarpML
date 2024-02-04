@@ -1141,10 +1141,13 @@ def main():
             grain2 = (torch.rand(mn, 1, mh, mw).to(device = mask.device, dtype = mask.dtype) * 2 - 1) / 18
             blurred_grain_mask = torch.clamp(blur(mask + grain1) + grain2, min=0, max=1)
 
+            output_rife = warp(img1, flow0) * blurred_grain_mask + warp(img3, flow1) * (1 - blurred_grain_mask)
+
             # with torch.no_grad():
             r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, blurred_grain_mask, timestep)
 
-            # output_refine = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
+            output_refine = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
+            
             # output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
 
             # output = ( output + 1 ) / 2
@@ -1160,27 +1163,27 @@ def main():
             r_flow1_nm = ((r_flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
             flow0_nm = ((flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
             flow1_nm = ((flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
-            r_mask_nm = r_mask * 2 - 1
-            mask_nm = mask * 2 - 1
-            output = torch.cat((r_flow0_nm, r_flow1_nm, r_mask_nm), dim=1)
-            target = torch.cat((flow0_nm, flow1_nm, mask_nm), dim=1)
+            output_flow = torch.cat((r_flow0_nm, r_flow1_nm), dim=1)
+            target_flow = torch.cat((flow0_nm, flow1_nm), dim=1)
 
             # target = img2
 
-            output_gamma = normalize(gamma_up(restore_normalized_values(output)))
+            # output_gamma = normalize(gamma_up(restore_normalized_values(output)))
             # output_yuv_gamma = normalize(torch.cat(split_to_yuv(output_gamma), dim=1))
-            output_blurred = blur(output)
+            # output_blurred = blur(output)
 
-            target_gamma = normalize(gamma_up(restore_normalized_values(target)))
+            # target_gamma = normalize(gamma_up(restore_normalized_values(target)))
             # target_yuv_gamma = normalize(torch.cat(split_to_yuv(target_gamma), dim=1))
-            target_blurred = blur(output)
+            # target_blurred = blur(output)
 
             # loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             # loss_mse = criterion_mse(output, target) # * 0.6 + criterion_mse(output_blurred, target_blurred) * 0.4 # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             # loss_mse = criterion_mse(gamma_up(output_refine), gamma_up(target)) + criterion_mse(gamma_up(output), gamma_up(target)) * 0.2 # + criterion_mse(torch.clamp(output, min=0.12, max = 0.25), torch.clamp(target, min=0.12, max = 0.25))
-            loss_mse = criterion_mse(output, target)
-            loss_l1 = criterion_l1(output, target)
-            loss_l1_disp = criterion_l1(output.detach(), target.detach())
+            loss_mse_flow = (output_flow, target_flow)
+            loss_mse_rife = criterion_mse(output_refine, output_rife)
+            loss_mse = loss_mse_flow + loss_mse_rife
+            loss_l1 = criterion_l1(output_refine, output_rife)
+            loss_l1_disp = criterion_l1(output_refine.detach(), output_rife.detach())
             loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
 
             loss = loss_mse
@@ -1211,9 +1214,6 @@ def main():
             time_stamp = time.time()
 
             if step % 40 == 1:
-                
-                output = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
-
                 '''
                 def warp(tenInput, tenFlow):
                     backwarp_tenGrid = {}
