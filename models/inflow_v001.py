@@ -386,8 +386,8 @@ class UNet_3Plus(Module):
         out = self.outconv1(hd1)  # d1->320*320*n_classes
 
         res_flow0 = out[: , :2]
-        res_flow1 = out[: , 2:4]
-        res_mask = torch.sigmoid(out[: , 4:5])
+        res_mask = torch.sigmoid(out[: , 2:3])
+        res_flow1 = out[: , 3:5]
         
         return res_flow0, res_flow1, res_mask
 
