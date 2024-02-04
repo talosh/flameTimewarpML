@@ -1147,6 +1147,8 @@ def main():
             r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, blurred_grain_mask, timestep)
 
             output_refine = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
+
+            output = output_refine
             
             # output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
 
@@ -1242,8 +1244,8 @@ def main():
                     rgb_source2 = restore_normalized_values(img3)
                     rgb_target = restore_normalized_values(img2)
                     rgb_output = restore_normalized_values(output)
-                    # rgb_output_rife = restore_normalized_values(output_rife)
-                    rgb_output_rife = mask.repeat_interleave(3, dim=1)
+                    rgb_output_rife = restore_normalized_values(output_rife)
+                    # rgb_output_rife = mask.repeat_interleave(3, dim=1)
                     rgb_output_rife_mask = blurred_grain_mask.repeat_interleave(3, dim=1)
 
 
