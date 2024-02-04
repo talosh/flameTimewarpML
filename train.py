@@ -1144,13 +1144,18 @@ def main():
 
             # loss = criterion_mse(output, img2) + criterion_l1_rife(output_rife, img2) * 1e-4
 
-            output = torch.cat((r_flow0, r_flow1, r_mask), dim=1)
-            target = torch.cat((flow_list[3], mask), dim=1)
             _, _, mh, mw = mask.shape
             norm_min = - max(mh, mw)
             norm_max = max(mh, mw)
-            output = ((output - norm_min) / (norm_max - norm_min)) * 2 - 1
-            target = ((target - norm_min) / (norm_max - norm_min)) * 2 - 1
+            r_flow0_nm = ((r_flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
+            r_flow1_nm = ((r_flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
+            flow0_nm = ((flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
+            flow1_nm = ((flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
+            r_mask_nm = r_mask * 2 - 1
+            mask_nm = mask * 2 - 1
+            output = torch.cat((r_flow0_nm, r_flow1_nm, r_mask_nm), dim=1)
+            target = torch.cat((flow0_nm, flow1_nm, mask_nm), dim=1)
+
             # target = img2
 
             output_gamma = normalize(gamma_up(restore_normalized_values(output)))
