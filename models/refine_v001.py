@@ -177,7 +177,7 @@ class Model:
 				super().__init__()
 				
 				self.alpha = alpha
-				input_channels = 12
+				input_channels = 6
 				output_channels = 5
 				num_classes = 27
 				img_classes = 11
@@ -253,10 +253,10 @@ class Model:
 
 			def forward(self, img0, img1, flow0, flow1, mask, timestep):
 
-				w_img0 = self.warp(img0, flow0) * 2 - 1
-				w_img1 = self.warp(img1, flow0) * 2 - 1
+				# w_img0 = self.warp(img0, flow0) * 2 - 1
+				# w_img1 = self.warp(img1, flow0) * 2 - 1
 
-				x = torch.cat((w_img0, flow0, mask, timestep, flow1, w_img1), dim=1)
+				x = torch.cat((flow0, mask, timestep, flow1), dim=1)
 
 				x_multires1 = self.multiresblock1(x)
 				x_multires1_img0 = self.multiresblock1_img(img0 * 2 - 1)
