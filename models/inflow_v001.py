@@ -383,11 +383,11 @@ class UNet_3Plus(Module):
         hd1 = self.relu1d_1(self.conv1d_1(
             torch.cat((h1_Cat_hd1, hd2_UT_hd1, hd3_UT_hd1, hd4_UT_hd1, hd5_UT_hd1), 1))) # hd1->320*320*UpChannels
 
-        out = torch.tanh(self.outconv1(hd1))  # d1->320*320*n_classes
+        out = self.outconv1(hd1)  # d1->320*320*n_classes
 
         n, c, h, w = inputs.shape
         res_flow0 = out[:, :2]
-        res_mask = (out[: , 2:3] + 1) / 2
+        res_mask = (torch.tanh(out[: , 2:3]) + 1) / 2
         res_flow1 = out[:, 3:5]
 
         res_flow0[:, 0, :, :] *= (w - 1) / 2.0  # Horizontal component
