@@ -326,7 +326,6 @@ class UNet_3Plus(Module):
 
         # output
         self.outconv1 = torch.nn.Conv2d(self.UpChannels, n_classes, 3, padding=1, padding_mode = 'reflect')
-        self.outact = torch.nn.Tanh()
 
         # initialise weights
         for m in self.modules():
@@ -384,8 +383,7 @@ class UNet_3Plus(Module):
         hd1 = self.relu1d_1(self.conv1d_1(
             torch.cat((h1_Cat_hd1, hd2_UT_hd1, hd3_UT_hd1, hd4_UT_hd1, hd5_UT_hd1), 1))) # hd1->320*320*UpChannels
 
-        out = self.outconv1(hd1)  # d1->320*320*n_classes
-        out = self.outact(out)
+        out = torch.tanh(self.outconv1(hd1))  # d1->320*320*n_classes
 
         n, c, h, w = inputs.shape
         res_flow0 = out[:, :2]
