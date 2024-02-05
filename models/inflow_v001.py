@@ -386,7 +386,7 @@ class UNet_3Plus(Module):
         out = self.outconv1(hd1)  # d1->320*320*n_classes
 
         n, c, h, w = inputs.shape
-        res_flow0 = out[:, :2]
+        res_flow0 = torch.tanh(out[:, :2])
         res_mask = (torch.tanh(out[: , 2:3]) + 1) / 2
         res_flow1 = out[:, 3:5]
 
