@@ -1259,6 +1259,7 @@ def main():
             loss += loss_cons_d3
             loss += loss_cons_d4
             loss += loss_cons_d5
+            loss += criterion_l1(output, target) * 0.1
 
             # loss_l1 = criterion_l1(output_flow, target_flow) + criterion_l1()
             # loss_l1_disp = loss
