@@ -1127,8 +1127,8 @@ def main():
                 img3 = normalize(img3)
                 img4 = normalize(img4)
 
-            current_lr = scheduler_fusion.get_last_lr()[0]
-            for param_group in optimizer_fusion.param_groups:
+            current_lr = scheduler_inflow.get_last_lr()[0]
+            for param_group in optimizer_inflow.param_groups:
                 param_group['lr'] = current_lr
 
             current_lr_str = str(f'{optimizer_fusion.param_groups[0]["lr"]:.4e}')
