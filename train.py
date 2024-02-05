@@ -1177,15 +1177,14 @@ def main():
 
             # loss = criterion_mse(output, img2) + criterion_l1_rife(output_rife, img2) * 1e-4
 
-            '''
             norm_min = - max(mh, mw)
             norm_max = max(mh, mw)
             in_flow0_nm = ((in_flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
             in_flow1_nm = ((in_flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
             flow0_nm = ((flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
             flow1_nm = ((flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
-            '''
 
+            '''
             flow0_min = flow0.min()
             flow0_max = flow0.max()
             flow0_nm = 2 * ((flow0 - flow0_min) / (flow0_max - flow0_min)) - 1
@@ -1195,6 +1194,7 @@ def main():
             flow1_max = flow1.max()
             flow1_nm = 2 * ((flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
             in_flow1_nm = 2 * ((in_flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
+            '''
 
             output_flow_nm = torch.cat((in_flow0_nm, in_flow1_nm), dim=1)
             target_flow_nm = torch.cat((flow0_nm, flow1_nm), dim=1)
@@ -1216,9 +1216,9 @@ def main():
             loss_mse_flow = criterion_mse(output_flow_nm, target_flow_nm)
             loss_mse_rife = criterion_mse(output_inflow, output_rife)
             loss_mse_mask = criterion_mse(in_mask, blurred_grain_mask)
-            loss_mse = loss_mse_flow + 0.54 * loss_mse_mask + 0.54 * loss_mse_rife + loss_mse 
+            loss_mse = loss_mse_flow + 4 * loss_mse_mask + loss_mse_rife + loss_mse 
             # loss_l1 = criterion_l1(output_refine, output_rife)
-            loss_l1_disp = criterion_l1(output_flow_nm.detach(), target_flow_nm.detach()) + 0.54 * criterion_l1(in_mask.detach(), blurred_grain_mask.detach()) + 0.54 * criterion_l1(output_inflow.detach(), output_rife.detach())+ criterion_l1(output_inflow.detach(), output_rife.detach())
+            loss_l1_disp = criterion_l1(output_flow_nm.detach(), target_flow_nm.detach()) + 4 * criterion_l1(in_mask.detach(), blurred_grain_mask.detach()) + criterion_l1(output_inflow.detach(), output_rife.detach())+ criterion_l1(output_inflow.detach(), output_rife.detach())
             # loss_l1_disp = criterion_l1(output.detach(), target.detach())
             loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
 
