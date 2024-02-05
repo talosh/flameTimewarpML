@@ -324,6 +324,20 @@ class UNet_3Plus(Module):
         self.conv1d_1 = torch.nn.Conv2d(self.UpChannels, self.UpChannels, 3, padding=1, padding_mode = 'reflect')  # 16
         self.relu1d_1 = torch.nn.SELU(inplace=True)
 
+        # -------------Bilinear Upsampling--------------
+        self.upscore6 = torch.nn.Upsample(scale_factor=32,mode='bilinear')###
+        self.upscore5 = torch.nn.Upsample(scale_factor=16,mode='bilinear')
+        self.upscore4 = torch.nn.Upsample(scale_factor=8,mode='bilinear')
+        self.upscore3 = torch.nn.Upsample(scale_factor=4,mode='bilinear')
+        self.upscore2 = torch.nn.Upsample(scale_factor=2, mode='bilinear')
+
+        # DeepSup
+        self.outconv1 = torch.nn.Conv2d(self.UpChannels, n_classes, 3, padding=1)
+        self.outconv2 = torch.nn.Conv2d(self.UpChannels, n_classes, 3, padding=1)
+        self.outconv3 = torch.nn.Conv2d(self.UpChannels, n_classes, 3, padding=1)
+        self.outconv4 = torch.nn.Conv2d(self.UpChannels, n_classes, 3, padding=1)
+        self.outconv5 = torch.nn.Conv2d(filters[4], n_classes, 3, padding=1)
+
         # output
         self.outconv1 = torch.nn.Conv2d(self.UpChannels, n_classes, 3, padding=1, padding_mode = 'reflect')
 
@@ -383,6 +397,18 @@ class UNet_3Plus(Module):
         hd1 = self.relu1d_1(self.conv1d_1(
             torch.cat((h1_Cat_hd1, hd2_UT_hd1, hd3_UT_hd1, hd4_UT_hd1, hd5_UT_hd1), 1))) # hd1->320*320*UpChannels
 
+        d5 = self.outconv5(hd5)
+        d5 = self.upscore5(d5) # 16->256
+
+        d4 = self.outconv4(hd4)
+        d4 = self.upscore4(d4) # 32->256
+
+        d3 = self.outconv3(hd3)
+        d3 = self.upscore3(d3) # 64->256
+
+        d2 = self.outconv2(hd2)
+        d2 = self.upscore2(d2) # 128->256
+
         out = self.outconv1(hd1)  # d1->320*320*n_classes
 
         '''
@@ -400,12 +426,34 @@ class UNet_3Plus(Module):
         res_flow1 = torch.cat([horisontal_flow1, vertical_flow1], dim=1)
         '''
 
+        deepsup = []
+
+        res_flow0_d5 = d5[:, :2]
+        mask_d5 = torch.sigmoid((d5[: , 2:3]+ 1) / 2)
+        res_flow1_d5 = d5[:, 3:5]
+        deepsup.append((res_flow0_d5, res_flow1_d5, mask_d5))
+
+        res_flow0_d4 = d4[:, :2]
+        mask_d4 = torch.sigmoid((d4[: , 2:3]+ 1) / 2)
+        res_flow1_d4 = d4[:, 3:5]
+        deepsup.append((res_flow0_d4, res_flow1_d4, mask_d4))
+
+        res_flow0_d3 = d3[:, :2]
+        mask_d3 = torch.sigmoid((d3[: , 2:3]+ 1) / 2)
+        res_flow1_d3 = d3[:, 3:5]
+        deepsup.append((res_flow0_d3, res_flow1_d3, mask_d3))
+
+        res_flow0_d2 = d2[:, :2]
+        mask_d2 = torch.sigmoid((d2[: , 2:3]+ 1) / 2)
+        res_flow1_d2 = d2[:, 3:5]
+        deepsup.append((res_flow0_d2, res_flow1_d2, mask_d2))
+
         res_flow0 = out[:, :2]
         mask = out[: , 2:3]
         res_mask = torch.sigmoid((mask + 1) / 2)
         res_flow1 = out[:, 3:5]
 
-        return res_flow0, res_flow1, res_mask
+        return res_flow0, res_flow1, res_mask, deepsup
 
 class Model:
     @staticmethod

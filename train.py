@@ -970,7 +970,7 @@ def main():
     warnings.filterwarnings('ignore', category=UserWarning)
 
     train_scheduler_rife = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_rife, T_max=pulse_period, eta_min = lr_rife - (( lr_rife / 100 ) * pulse_dive) )
-    train_scheduler_inflow = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_refine, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+    train_scheduler_inflow = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_inflow, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     train_scheduler_refine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_refine, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     train_scheduler_fusion = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_fusion, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     # warmup_scheduler_fusion = torch.optim.lr_scheduler.LambdaLR(optimizer_fusion, lr_lambda=lambda step: warmup(step, lr=lr, number_warmup_steps=number_warmup_steps))
@@ -1131,12 +1131,9 @@ def main():
             for param_group in optimizer_inflow.param_groups:
                 param_group['lr'] = current_lr
 
-            current_lr_str = str(f'{optimizer_fusion.param_groups[0]["lr"]:.4e}')
+            current_lr_str = str(f'{optimizer_inflow.param_groups[0]["lr"]:.4e}')
             current_lr_rife_str = str(f'{optimizer_rife.param_groups[0]["lr"]:.4e}')
 
-            optimizer_rife.zero_grad(set_to_none=False)
-            optimizer_refine.zero_grad(set_to_none=False)
-            optimizer_fusion.zero_grad(set_to_none=False)
 
             if args.freeze_rife:
                 with torch.no_grad():
@@ -1159,13 +1156,21 @@ def main():
 
             output_rife = warp(img1, flow0) * blurred_grain_mask + warp(img3, flow1) * (1 - blurred_grain_mask)
 
-            in_flow0, in_flow1, in_mask = model_inflow(torch.cat((img1, timestep, img3), dim=1))
+            in_flow0, in_flow1, in_mask, in_deep = model_inflow(torch.cat((img1, timestep, img3), dim=1))
+            
+            output_inflow_d5 = warp(img1, in_deep[0][0]) * in_deep[0][2] + warp(img3, in_deep[0][1]) * (1 - in_deep[0][2])
+            output_inflow_d4 = warp(img1, in_deep[1][0]) * in_deep[1][2] + warp(img3, in_deep[1][1]) * (1 - in_deep[1][2])
+            output_inflow_d3 = warp(img1, in_deep[2][0]) * in_deep[2][2] + warp(img3, in_deep[2][1]) * (1 - in_deep[2][2])
+            output_inflow_d2 = warp(img1, in_deep[3][0]) * in_deep[3][2] + warp(img3, in_deep[3][1]) * (1 - in_deep[3][2])
             output_inflow = warp(img1, in_flow0) * in_mask + warp(img3, in_flow1) * (1 - in_mask)
 
             # with torch.no_grad():
             # r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, blurred_grain_mask, timestep)
             # output_refine = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
-
+            output_d5 = output_inflow_d5
+            output_d4 = output_inflow_d4
+            output_d3 = output_inflow_d3
+            output_d2 = output_inflow_d2
             output = output_inflow
             
             # output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
@@ -1177,12 +1182,14 @@ def main():
 
             # loss = criterion_mse(output, img2) + criterion_l1_rife(output_rife, img2) * 1e-4
 
+            '''
             norm_min = - max(mh, mw)
             norm_max = max(mh, mw)
             in_flow0_nm = ((in_flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
             in_flow1_nm = ((in_flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
             flow0_nm = ((flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
             flow1_nm = ((flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
+            '''
 
             '''
             flow0_min = flow0.min()
@@ -1195,9 +1202,12 @@ def main():
             flow1_nm = 2 * ((flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
             in_flow1_nm = 2 * ((in_flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
             '''
-
-            output_flow_nm = torch.cat((in_flow0, in_flow1), dim=1)
-            target_flow_nm = torch.cat((flow0, flow1), dim=1)
+            output_flow_d5 = torch.cat((in_deep[0][0], in_deep[0][1]), dim=1)
+            output_flow_d4 = torch.cat((in_deep[1][0], in_deep[1][1]), dim=1)
+            output_flow_d3 = torch.cat((in_deep[2][0], in_deep[2][1]), dim=1)
+            output_flow_d2 = torch.cat((in_deep[3][0], in_deep[3][1]), dim=1)
+            output_flow = torch.cat((in_flow0, in_flow1), dim=1)
+            target_flow = torch.cat((flow0, flow1), dim=1)
 
             target = img2
 
@@ -1212,17 +1222,48 @@ def main():
             # loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             # loss_mse = criterion_mse(output, target) # * 0.6 + criterion_mse(output_blurred, target_blurred) * 0.4 # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
             # loss_mse = criterion_mse(gamma_up(output_refine), gamma_up(target)) + criterion_mse(gamma_up(output), gamma_up(target)) * 0.2 # + criterion_mse(torch.clamp(output, min=0.12, max = 0.25), torch.clamp(target, min=0.12, max = 0.25))
-            loss_mse = criterion_mse(gamma_up(output), gamma_up(target))
-            loss_mse_flow = criterion_mse(output_flow_nm, target_flow_nm)
-            loss_mse_rife = criterion_mse(output_inflow, output_rife)
-            loss_mse_mask = criterion_mse(in_mask, blurred_grain_mask)
-            loss_mse = loss_mse_flow + 4 * loss_mse_mask # + loss_mse_rife + loss_mse 
-            # loss_l1 = criterion_l1(output_refine, output_rife)
-            loss_l1_disp = criterion_l1(output_flow_nm.detach(), target_flow_nm.detach()) + 4 * criterion_l1(in_mask.detach(), blurred_grain_mask.detach()) # + criterion_l1(output_inflow.detach(), output_rife.detach())+ criterion_l1(output_inflow.detach(), output_rife.detach())
+            # loss_mse = criterion_mse(gamma_up(output), gamma_up(target))
+            # loss_mse_flow = criterion_mse(output_flow_nm, target_flow_nm)
+            # loss_mse_rife = criterion_mse(output_inflow, output_rife)
+            # loss_mse_mask = criterion_mse(in_mask, blurred_grain_mask)
+            # loss_mse = loss_mse_flow + 4 * loss_mse_mask # + loss_mse_rife + loss_mse
+
+            # optimizer_rife.zero_grad(set_to_none=False)
+            optimizer_inflow.zero_grad(set_to_none=False)
+            # optimizer_refine.zero_grad(set_to_none=False)
+            # optimizer_fusion.zero_grad(set_to_none=False)
+
+            loss_mask_d5 = ((output_d5 - target).abs().mean(1, True) + 1e-2).float().detach()
+            loss_cons_d5 = (((target_flow.detach() - output_flow_d5) ** 2).sum(1, True) ** 0.5 * loss_mask_d5).mean() * 0.001
+            loss_cons_d5 += ((output_flow_d5 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
+            loss_mask_d4 = ((output_d4 - target).abs().mean(1, True) + 1e-2).float().detach()
+            loss_cons_d4 = (((target_flow.detach() - output_flow_d4) ** 2).sum(1, True) ** 0.5 * loss_mask_d4).mean() * 0.001
+            loss_cons_d4 += ((output_flow_d4 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
+            loss_mask_d3 = ((output_d3 - target).abs().mean(1, True) + 1e-2).float().detach()
+            loss_cons_d3 = (((target_flow.detach() - output_flow_d3) ** 2).sum(1, True) ** 0.5 * loss_mask_d3).mean() * 0.001
+            loss_cons_d3 += ((output_flow_d3 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
+            loss_mask_d2 = ((output_d2 - target).abs().mean(1, True) + 1e-2).float().detach()
+            loss_cons_d2 = (((target_flow.detach() - output_flow_d2) ** 2).sum(1, True) ** 0.5 * loss_mask_d2).mean() * 0.001
+            loss_cons_d2 += ((output_flow_d2 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
+            loss_mask = ((output - target).abs().mean(1, True) + 1e-2).float().detach()
+            loss_cons = (((target_flow.detach() - output_flow) ** 2).sum(1, True) ** 0.5 * loss_mask).mean() * 0.001
+            loss_cons += ((output_flow ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
+
+            loss = criterion_mse(output, target)
+            loss += criterion_mse(output_d2, target)
+            loss += criterion_mse(output_d3, target)
+            loss += criterion_mse(output_d4, target)
+            loss += criterion_mse(output_d5, target)
+            loss += loss_cons
+            loss += loss_cons_d2
+            loss += loss_cons_d3
+            loss += loss_cons_d4
+            loss += loss_cons_d5
+
+            loss_l1 = criterion_l1(output_flow, target_flow) + criterion_l1()
+            loss_l1_disp = loss
             # loss_l1_disp = criterion_l1(output.detach(), target.detach())
             loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
-
-            loss = loss_mse
 
             epoch_loss.append(float(loss_l1_disp.item()))
             steps_loss.append(float(loss_l1_disp.item()))
@@ -1238,13 +1279,17 @@ def main():
 
             loss.backward()
 
-            optimizer_rife.step()
-            optimizer_refine.step()
-            optimizer_fusion.step()
+            torch.nn.utils.clip_grad_norm_(model_inflow.parameters(), 1.0)
+            optimizer_inflow.step()
 
-            scheduler_rife.step()
-            scheduler_refine.step()
-            scheduler_fusion.step()
+            # optimizer_rife.step()
+            # optimizer_refine.step()
+            # optimizer_fusion.step()
+
+            # scheduler_rife.step()
+            scheduler_inflow.step()
+            # scheduler_refine.step()
+            # scheduler_fusion.step()
 
             train_time = time.time() - time_stamp
             time_stamp = time.time()
