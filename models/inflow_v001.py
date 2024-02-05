@@ -390,11 +390,11 @@ class UNet_3Plus(Module):
         res_mask = (torch.tanh(out[: , 2:3]) + 1) / 2
         res_flow1 = out[:, 3:5]
 
-        res_flow0[:, 0, :, :] *= (w - 1) / 2.0  # Horizontal component
-        res_flow0[:, 1, :, :] *= (h - 1) / 2.0  # Vertical component
+        # res_flow0[:, 0, :, :] *= (w - 1) / 2.0  # Horizontal component
+        # res_flow0[:, 1, :, :] *= (h - 1) / 2.0  # Vertical component
         
-        res_flow1[:, 0, :, :] *= (w - 1) / 2.0  # Horizontal component
-        res_flow1[:, 1, :, :] *= (h - 1) / 2.0  # Vertical component
+        # res_flow1[:, 0, :, :] *= (w - 1) / 2.0  # Horizontal component
+        # res_flow1[:, 1, :, :] *= (h - 1) / 2.0  # Vertical component
 
         return res_flow0, res_flow1, res_mask
 
