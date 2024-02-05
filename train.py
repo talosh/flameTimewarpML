@@ -1206,9 +1206,9 @@ def main():
             loss_mse_flow = criterion_mse(output_flow, target_flow)
             loss_mse_rife = criterion_mse(output_inflow, output_rife)
             loss_mse_mask = criterion_mse(in_mask, blurred_grain_mask)
-            loss_mse = 0.54 * loss_mse_flow + 0.54 * loss_mse_mask + 0.54 * loss_mse_rife + loss_mse 
+            loss_mse = loss_mse_flow + 0.54 * loss_mse_mask + 0.54 * loss_mse_rife + loss_mse 
             # loss_l1 = criterion_l1(output_refine, output_rife)
-            loss_l1_disp = 0.54 * criterion_l1(output_flow.detach(), target_flow.detach()) + 0.54 * criterion_l1(in_mask.detach(), blurred_grain_mask.detach()) + 0.54 * criterion_l1(output_inflow.detach(), output_rife.detach())+ criterion_l1(output_inflow.detach(), output_rife.detach())
+            loss_l1_disp = criterion_l1(output_flow.detach(), target_flow.detach()) + 0.54 * criterion_l1(in_mask.detach(), blurred_grain_mask.detach()) + 0.54 * criterion_l1(output_inflow.detach(), output_rife.detach())+ criterion_l1(output_inflow.detach(), output_rife.detach())
             # loss_l1_disp = criterion_l1(output.detach(), target.detach())
             loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
 
