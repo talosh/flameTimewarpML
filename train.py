@@ -1264,6 +1264,7 @@ def main():
             # loss_l1_disp = loss
             loss_l1_disp = criterion_l1(output.detach(), target.detach())
             loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
+            loss_cm_str = str(f'{loss.item():.6f}')
 
             epoch_loss.append(float(loss_l1_disp.item()))
             steps_loss.append(float(loss_l1_disp.item()))
@@ -1382,7 +1383,7 @@ def main():
 
 
             clear_lines(2)
-            print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx + 1} / {len(dataset)}], Lr: {current_lr_str}, Lr RIFE: {current_lr_rife_str}, Loss L1: {loss_l1_str}')
+            print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx + 1} / {len(dataset)}], Lr: {current_lr_str}, Loss CM: {loss_cm_str}, Loss L1: {loss_l1_str}')
             print(f'\r[Last 1K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f}')
 
             step = step + 1
