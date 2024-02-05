@@ -1177,12 +1177,24 @@ def main():
 
             # loss = criterion_mse(output, img2) + criterion_l1_rife(output_rife, img2) * 1e-4
 
+            '''
             norm_min = - max(mh, mw)
             norm_max = max(mh, mw)
             in_flow0_nm = ((in_flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
             in_flow1_nm = ((in_flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
             flow0_nm = ((flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
             flow1_nm = ((flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
+            '''
+
+            flow0_min = flow0.min()
+            flow0_max = flow0.max()
+            flow0_nm = 2 * ((flow0 - flow0_min) / (flow0_max - flow0_min)) - 1
+            in_flow0_nm = 2 * ((in_flow0 - flow0_min) / (flow0_max - flow0_min)) - 1
+
+            flow1_min = flow1.min()
+            flow1_max = flow1.max()
+            flow1_nm = 2 * ((flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
+            in_flow1_nm = 2 * ((in_flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
 
             output_flow = torch.cat((in_flow0_nm, in_flow1_nm), dim=1)
             target_flow = torch.cat((flow0_nm, flow1_nm), dim=1)
