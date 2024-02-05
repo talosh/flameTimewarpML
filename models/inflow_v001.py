@@ -401,7 +401,7 @@ class UNet_3Plus(Module):
         '''
 
         res_flow0 = out[:, :2]
-        res_mask = torch.sigmoid((out[: , 2:3] + 1) / 2)
+        res_mask = torch.sigmoid(out[: , 2:3])
         res_flow1 = out[:, 3:5]
 
         return res_flow0, res_flow1, res_mask
