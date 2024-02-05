@@ -1261,8 +1261,8 @@ def main():
             loss += loss_cons_d5
 
             # loss_l1 = criterion_l1(output_flow, target_flow) + criterion_l1()
-            loss_l1_disp = loss
-            # loss_l1_disp = criterion_l1(output.detach(), target.detach())
+            # loss_l1_disp = loss
+            loss_l1_disp = criterion_l1(output.detach(), target.detach())
             loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
 
             epoch_loss.append(float(loss_l1_disp.item()))
