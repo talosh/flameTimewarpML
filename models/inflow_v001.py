@@ -386,15 +386,17 @@ class UNet_3Plus(Module):
         out = self.outconv1(hd1)  # d1->320*320*n_classes
 
         n, c, h, w = inputs.shape
-        res_flow0 = torch.tanh(out[:, :2])
-        res_mask = (torch.tanh(out[: , 2:3]) + 1) / 2
-        res_flow1 = out[:, 3:5]
+        norm_flow0 = torch.tanh(out[:, :2])
+        res_mask = torch.sigmoid((out[: , 2:3] + 1) / 2)
+        norm_flow1 = torch.tanh(out[:, 3:5])
 
-        # res_flow0[:, 0, :, :] *= (w - 1) / 2.0  # Horizontal component
-        # res_flow0[:, 1, :, :] *= (h - 1) / 2.0  # Vertical component
+        horisontal_flow0 = norm_flow0[:, 0:1, :, :] * (w - 1) / 2.0  # Horizontal component
+        vertical_flow0 = norm_flow0[:, 1:2, :, :] * (h - 1) / 2.0  # Vertical component
+        res_flow0 = torch.cat([horisontal_flow0, vertical_flow0], dim=1)
         
-        # res_flow1[:, 0, :, :] *= (w - 1) / 2.0  # Horizontal component
-        # res_flow1[:, 1, :, :] *= (h - 1) / 2.0  # Vertical component
+        horisontal_flow1 = norm_flow1[:, 0:1, :, :] * (w - 1) / 2.0  # Horizontal component
+        vertical_flow1 = norm_flow1[:, 1:2, :, :] * (h - 1) / 2.0  # Vertical component
+        res_flow1 = torch.cat([horisontal_flow1, vertical_flow1], dim=1)
 
         return res_flow0, res_flow1, res_mask
 
