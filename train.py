@@ -1196,8 +1196,8 @@ def main():
             in_flow1_nm = 2 * ((in_flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
             '''
 
-            output_flow_nm = torch.cat((in_flow0_nm, in_flow1_nm), dim=1)
-            target_flow_nm = torch.cat((flow0_nm, flow1_nm), dim=1)
+            output_flow_nm = torch.cat((in_flow0, in_flow1), dim=1)
+            target_flow_nm = torch.cat((flow0, flow1), dim=1)
 
             target = img2
 
