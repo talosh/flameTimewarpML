@@ -1233,19 +1233,19 @@ def main():
             # optimizer_refine.zero_grad(set_to_none=False)
             # optimizer_fusion.zero_grad(set_to_none=False)
 
-            loss_mask_d5 = ((output_d5 - target).abs().mean(1, True) + 1e-2).float().detach()
+            loss_mask_d5 = ((gamma_up(output_d5) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
             loss_cons_d5 = (((target_flow.detach() - output_flow_d5) ** 2).sum(1, True) ** 0.5 * loss_mask_d5).mean() * 0.001
             loss_cons_d5 += ((output_flow_d5 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-            loss_mask_d4 = ((output_d4 - target).abs().mean(1, True) + 1e-2).float().detach()
+            loss_mask_d4 = ((gamma_up(output_d4) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
             loss_cons_d4 = (((target_flow.detach() - output_flow_d4) ** 2).sum(1, True) ** 0.5 * loss_mask_d4).mean() * 0.001
             loss_cons_d4 += ((output_flow_d4 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-            loss_mask_d3 = ((output_d3 - target).abs().mean(1, True) + 1e-2).float().detach()
+            loss_mask_d3 = ((gamma_up(output_d3) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
             loss_cons_d3 = (((target_flow.detach() - output_flow_d3) ** 2).sum(1, True) ** 0.5 * loss_mask_d3).mean() * 0.001
             loss_cons_d3 += ((output_flow_d3 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-            loss_mask_d2 = ((output_d2 - target).abs().mean(1, True) + 1e-2).float().detach()
+            loss_mask_d2 = ((gamma_up(output_d2) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
             loss_cons_d2 = (((target_flow.detach() - output_flow_d2) ** 2).sum(1, True) ** 0.5 * loss_mask_d2).mean() * 0.001
             loss_cons_d2 += ((output_flow_d2 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-            loss_mask = ((output - target).abs().mean(1, True) + 1e-2).float().detach()
+            loss_mask = ((gamma_up(output) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
             loss_cons = (((target_flow.detach() - output_flow) ** 2).sum(1, True) ** 0.5 * loss_mask).mean() * 0.001
             loss_cons += ((output_flow ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
 
