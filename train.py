@@ -1250,15 +1250,15 @@ def main():
             loss_cons += ((output_flow ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
 
             loss = criterion_mse(gamma_up(output), gamma_up(target))
-            loss += criterion_mse(output_d2, target) * (1 / 16)
-            loss += criterion_mse(output_d3, target) * (1 / 8)
-            loss += criterion_mse(output_d4, target) * (1 / 4)
-            loss += criterion_mse(output_d5, target) * (1 / 2)
+            loss += criterion_mse(output_d2, target) * (1 / 16 ** 2)
+            loss += criterion_mse(output_d3, target) * (1 / 8 ** 2)
+            loss += criterion_mse(output_d4, target) * (1 / 4 ** 2)
+            loss += criterion_mse(output_d5, target) * (1 / 2 ** 2)
             loss += loss_cons
-            loss += loss_cons_d2 * (1 / 16)
-            loss += loss_cons_d3 * (1 / 8)
-            loss += loss_cons_d4 * (1 / 4)
-            loss += loss_cons_d5 * (1 / 2)
+            loss += loss_cons_d2 * (1 / 16 ** 2)
+            loss += loss_cons_d3 * (1 / 8 ** 2)
+            loss += loss_cons_d4 * (1 / 4 ** 2)
+            loss += loss_cons_d5 * (1 / 2 ** 2)
             loss += criterion_l1(gamma_up(output), gamma_up(target)) * 0.1
 
             # loss_l1 = criterion_l1(output_flow, target_flow) + criterion_l1()
