@@ -1419,7 +1419,8 @@ def main():
         hours = int((epoch_time % (24 * 3600)) // 3600)
         minutes = int((epoch_time % 3600) // 60)
 
-        print (type(idx))
+        if idx == 0:
+            print ('hello')
 
         # clear_lines(2)
         # print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss CM: {loss_cm_str}, Loss L1: {loss_l1_str}')
