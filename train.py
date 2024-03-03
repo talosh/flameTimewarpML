@@ -1420,6 +1420,7 @@ def main():
         minutes = int((epoch_time % 3600) // 60)
 
         if epoch == 0:
+            epoch = epoch + 1
             continue
         if idx == 0:
             torch.save({
