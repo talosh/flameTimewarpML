@@ -385,8 +385,10 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                     train_data = {}
                     # train_data['pre_start'] = self.fw.read_openexr_file(description['pre_start'])['image_data']
                     train_data['start'] = self.fw.read_openexr_file(description['start'])['image_data']
+                    train_data['pre_start']  = train_data['start']
                     train_data['gt'] = self.fw.read_openexr_file(description['gt'])['image_data']
                     train_data['end'] = self.fw.read_openexr_file(description['end'])['image_data']
+                    train_data['after_end'] = train_data['end']
                     # train_data['after_end'] = self.fw.read_openexr_file(description['after_end'])['image_data']
                     train_data['ratio'] = description['ratio']
                     train_data['h'] = description['h']
@@ -501,13 +503,11 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         train_data = self.getimg(index)
-        # src_img0 = train_data['pre_start']
-        src_img9 = train_data['start']
+        src_img0 = train_data['pre_start']
         src_img1 = train_data['start']
         src_img2 = train_data['gt']
         src_img3 = train_data['end']
-        src_img4 = train_data['end']
-        # src_img4 = train_data['after_end']
+        src_img4 = train_data['after_end']
         imgh = train_data['h']
         imgw = train_data['w']
         ratio = train_data['ratio']
