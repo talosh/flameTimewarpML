@@ -1430,6 +1430,7 @@ def main():
         if epoch == 0:
             continue
         if idx == 0:
+            print ('Helloooo!!!!\n\n\n\n\n')
             torch.save({
                 'step': step,
                 'steps_loss': steps_loss,
