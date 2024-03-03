@@ -1136,6 +1136,8 @@ def main():
 
     print('\n\n')
 
+    batch_idx = 0
+
     while True:
         data_time = time.time() - time_stamp
         time_stamp = time.time()
@@ -1421,6 +1423,7 @@ def main():
         print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss CM: {loss_cm_str}, Loss L1: {loss_l1_str}')
         print(f'\r[Last 1K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f}')
 
+        batch_idx = batch_idx + 1
         step = step + 1
 
         if idx == 0:
@@ -1444,7 +1447,6 @@ def main():
                 'model_state_dict': model_inflow.state_dict(),
             }, inflow_model_path)
 
-            
             smoothed_loss = np.mean(moving_average(epoch_loss, 9))
             epoch_time = time.time() - start_timestamp
             days = int(epoch_time // (24 * 3600))
@@ -1457,6 +1459,7 @@ def main():
             steps_loss = []
             epoch_loss = []
             epoch = epoch + 1
+            batch_idx = 0
 
 if __name__ == "__main__":
     main()
