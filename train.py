@@ -256,6 +256,9 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         self.frame_read_thread.daemon = True
         self.frame_read_thread.start()
 
+        print ('reading first block of training data...')
+        self.last_train_data = self.frames_queue.get()
+
         # self.last_shuffled_index = -1
         # self.last_source_image_data = None
         # self.last_target_image_data = None
@@ -380,11 +383,11 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 description = self.train_descriptions[index]
                 try:
                     train_data = {}
-                    train_data['pre_start'] = self.fw.read_openexr_file(description['pre_start'])['image_data']
+                    # train_data['pre_start'] = self.fw.read_openexr_file(description['pre_start'])['image_data']
                     train_data['start'] = self.fw.read_openexr_file(description['start'])['image_data']
                     train_data['gt'] = self.fw.read_openexr_file(description['gt'])['image_data']
                     train_data['end'] = self.fw.read_openexr_file(description['end'])['image_data']
-                    train_data['after_end'] = self.fw.read_openexr_file(description['after_end'])['image_data']
+                    # train_data['after_end'] = self.fw.read_openexr_file(description['after_end'])['image_data']
                     train_data['ratio'] = description['ratio']
                     train_data['h'] = description['h']
                     train_data['w'] = description['w']
@@ -442,6 +445,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         return resized_tensor
 
     def getimg(self, index):
+        if not self.last_train_data:
+            self.last_train_data = self.frames_queue.get()
         '''
         shuffled_index = self.indices[index // self.frame_multiplier]
         if shuffled_index != self.last_shuffled_index:
@@ -450,7 +455,18 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         
         return self.last_source_image_data, self.last_target_image_data
         '''
-        return self.frames_queue.get()
+
+        try:
+            # Attempt to get new data from the queue without blocking.
+            self.last_train_data = self.frames_queue.get_nowait()
+        except queue.Empty:
+            # If the queue is empty, it will raise a 'queue.Empty' exception,
+            # and the method will return the last train data instead.
+            pass  # 'pass' is used here since we're already handling the empty queue by returning 'self.last_train_data' below.
+
+        # Return the last fetched data if the queue is empty or the new data fetched from the queue.
+        return self.last_train_data
+        # return self.frames_queue.get()
 
     def srgb_to_linear(self, srgb_image):
         # Apply the inverse sRGB gamma curve
@@ -485,11 +501,13 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         train_data = self.getimg(index)
-        src_img0 = train_data['pre_start']
+        # src_img0 = train_data['pre_start']
+        src_img9 = train_data['start']
         src_img1 = train_data['start']
         src_img2 = train_data['gt']
         src_img3 = train_data['end']
-        src_img4 = train_data['after_end']
+        src_img4 = train_data['end']
+        # src_img4 = train_data['after_end']
         imgh = train_data['h']
         imgw = train_data['w']
         ratio = train_data['ratio']
