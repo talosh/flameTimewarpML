@@ -1336,7 +1336,7 @@ def main():
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        if step % 40 == 1:
+        if step % 99 == 1:
             '''
             def warp(tenInput, tenFlow):
                 backwarp_tenGrid = {}
@@ -1427,7 +1427,7 @@ def main():
         step = step + 1
 
         if idx == 0:
-            if epoch == 0:
+            if epoch == -1:
                 continue
             torch.save({
                 'step': step,
