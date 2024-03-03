@@ -243,7 +243,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         for folder_index, folder_path in enumerate(sorted(self.folders_with_exr)):
             print (f'\rBuilding training data from clip {folder_index + 1} of {len(self.folders_with_exr)}', end='')
             self.train_descriptions.extend(self.create_dataset_descriptions(folder_path))
-        print ('\nReshuffling training data indecies...')
+        print ('\nReshuffling training data indices...')
 
         random.shuffle(self.train_descriptions)
 
