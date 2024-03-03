@@ -1295,10 +1295,10 @@ def main():
         loss += criterion_l1(output_d4, target) * (1 / 2 ** 2)
         loss += criterion_l1(output_d5, target) * (1 / 2)
         loss += loss_cons
-        loss += loss_cons_d2 * (1 / 16 ** 2)
-        loss += loss_cons_d3 * (1 / 8 ** 2)
-        loss += loss_cons_d4 * (1 / 4 ** 2)
-        loss += loss_cons_d5 * (1 / 2 ** 2)
+        # loss += loss_cons_d2 * (1 / 16 ** 2)
+        # loss += loss_cons_d3 * (1 / 8 ** 2)
+        # loss += loss_cons_d4 * (1 / 4 ** 2)
+        # loss += loss_cons_d5 * (1 / 2 ** 2)
         # loss += criterion_l1(gamma_up(output), gamma_up(target)) * 0.1
 
         # loss_l1 = criterion_l1(output_flow, target_flow) + criterion_l1()
@@ -1429,7 +1429,7 @@ def main():
 
         if epoch == -1:
             continue
-        if idx == 0:
+        if idx == 1:
             torch.save({
                 'step': step,
                 'steps_loss': steps_loss,
