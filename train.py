@@ -1428,7 +1428,7 @@ def main():
         step = step + 1
 
         if idx == 0:
-            print (f'epoch {epoch}')
+            print (f'epoch {epoch}\n\n')
             torch.save({
                 'step': step,
                 'steps_loss': steps_loss,
