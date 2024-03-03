@@ -1022,7 +1022,7 @@ def main():
     # Rest of your training script...
 
     step = 0
-    current_epoch = -1
+    current_epoch = 0
     preview_index = 0
 
     steps_loss = []
@@ -1427,9 +1427,9 @@ def main():
         batch_idx = batch_idx + 1
         step = step + 1
 
-        if epoch == -1:
+        if epoch == 0:
             continue
-        if idx == 1:
+        if idx == 0:
             torch.save({
                 'step': step,
                 'steps_loss': steps_loss,
