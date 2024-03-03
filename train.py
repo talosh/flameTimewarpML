@@ -1427,6 +1427,8 @@ def main():
         step = step + 1
 
         if idx == 0:
+            if epoch == 0:
+                continue
             torch.save({
                 'step': step,
                 'steps_loss': steps_loss,
