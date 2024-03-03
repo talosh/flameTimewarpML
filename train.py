@@ -1022,7 +1022,7 @@ def main():
     # Rest of your training script...
 
     step = 0
-    current_epoch = 0
+    current_epoch = -1
     preview_index = 0
 
     steps_loss = []
@@ -1137,326 +1137,326 @@ def main():
     print('\n\n')
 
     while True:
-        for batch_idx in range(len(dataset)):
-            data_time = time.time() - time_stamp
-            time_stamp = time.time()
+        data_time = time.time() - time_stamp
+        time_stamp = time.time()
 
-            img0, img1, img2, img3, img4, ratio, idx = read_image_queue.get()
+        img0, img1, img2, img3, img4, ratio, idx = read_image_queue.get()
 
-            if platform.system() == 'Darwin':
-                img0 = normalize_numpy(img0)
-                img1 = normalize_numpy(img1)
-                img2 = normalize_numpy(img2)
-                img3 = normalize_numpy(img3)
-                img4 = normalize_numpy(img4)
-                img0 = img0.to(device, non_blocking = True)
-                img1 = img1.to(device, non_blocking = True)
-                img2 = img2.to(device, non_blocking = True)
-                img3 = img3.to(device, non_blocking = True)
-                img4 = img4.to(device, non_blocking = True)
-            else:
-                img0 = img0.to(device, non_blocking = True)
-                img1 = img1.to(device, non_blocking = True)
-                img2 = img2.to(device, non_blocking = True)
-                img3 = img3.to(device, non_blocking = True)
-                img4 = img4.to(device, non_blocking = True)
-                img0 = normalize(img0)
-                img1 = normalize(img1)
-                img2 = normalize(img2)
-                img3 = normalize(img3)
-                img4 = normalize(img4)
+        if platform.system() == 'Darwin':
+            img0 = normalize_numpy(img0)
+            img1 = normalize_numpy(img1)
+            img2 = normalize_numpy(img2)
+            img3 = normalize_numpy(img3)
+            img4 = normalize_numpy(img4)
+            img0 = img0.to(device, non_blocking = True)
+            img1 = img1.to(device, non_blocking = True)
+            img2 = img2.to(device, non_blocking = True)
+            img3 = img3.to(device, non_blocking = True)
+            img4 = img4.to(device, non_blocking = True)
+        else:
+            img0 = img0.to(device, non_blocking = True)
+            img1 = img1.to(device, non_blocking = True)
+            img2 = img2.to(device, non_blocking = True)
+            img3 = img3.to(device, non_blocking = True)
+            img4 = img4.to(device, non_blocking = True)
+            img0 = normalize(img0)
+            img1 = normalize(img1)
+            img2 = normalize(img2)
+            img3 = normalize(img3)
+            img4 = normalize(img4)
 
-            current_lr = scheduler_inflow.get_last_lr()[0]
-            for param_group in optimizer_inflow.param_groups:
-                param_group['lr'] = current_lr
+        current_lr = scheduler_inflow.get_last_lr()[0]
+        for param_group in optimizer_inflow.param_groups:
+            param_group['lr'] = current_lr
 
-            current_lr_str = str(f'{optimizer_inflow.param_groups[0]["lr"]:.4e}')
-            current_lr_rife_str = str(f'{optimizer_rife.param_groups[0]["lr"]:.4e}')
+        current_lr_str = str(f'{optimizer_inflow.param_groups[0]["lr"]:.4e}')
+        current_lr_rife_str = str(f'{optimizer_rife.param_groups[0]["lr"]:.4e}')
 
 
-            if args.freeze_rife:
-                with torch.no_grad():
-                    x = torch.cat((img1, img3, img2), dim=1)
-                    flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
-                    output_rife = merged[3]
-            else:
+        if args.freeze_rife:
+            with torch.no_grad():
                 x = torch.cat((img1, img3, img2), dim=1)
                 flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
                 output_rife = merged[3]
+        else:
+            x = torch.cat((img1, img3, img2), dim=1)
+            flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
+            output_rife = merged[3]
 
-            timestep = (img1[:, :1].clone() * 0 + 1) * ratio
-            flow0 = flow_list[3][:, :2]
-            flow1 = flow_list[3][:, 2:4]
+        timestep = (img1[:, :1].clone() * 0 + 1) * ratio
+        flow0 = flow_list[3][:, :2]
+        flow1 = flow_list[3][:, 2:4]
 
-            mn, _, mh, mw = mask.shape
-            grain1 = (torch.rand(mn, 1, mh, mw).to(device = mask.device, dtype = mask.dtype) * 2 - 1) / 18
-            grain2 = (torch.rand(mn, 1, mh, mw).to(device = mask.device, dtype = mask.dtype) * 2 - 1) / 18
-            blurred_grain_mask = torch.clamp(blur(mask + grain1) + grain2, min=0, max=1)
+        mn, _, mh, mw = mask.shape
+        grain1 = (torch.rand(mn, 1, mh, mw).to(device = mask.device, dtype = mask.dtype) * 2 - 1) / 18
+        grain2 = (torch.rand(mn, 1, mh, mw).to(device = mask.device, dtype = mask.dtype) * 2 - 1) / 18
+        blurred_grain_mask = torch.clamp(blur(mask + grain1) + grain2, min=0, max=1)
 
-            output_rife = warp(img1, flow0) * blurred_grain_mask + warp(img3, flow1) * (1 - blurred_grain_mask)
+        output_rife = warp(img1, flow0) * blurred_grain_mask + warp(img3, flow1) * (1 - blurred_grain_mask)
 
-            in_flow0, in_flow1, in_mask, in_deep = model_inflow(torch.cat((img1, timestep, img3), dim=1))
-            
-            output_inflow_d5 = warp(img1, in_deep[0][0]) * in_deep[0][2] + warp(img3, in_deep[0][1]) * (1 - in_deep[0][2])
-            output_inflow_d4 = warp(img1, in_deep[1][0]) * in_deep[1][2] + warp(img3, in_deep[1][1]) * (1 - in_deep[1][2])
-            output_inflow_d3 = warp(img1, in_deep[2][0]) * in_deep[2][2] + warp(img3, in_deep[2][1]) * (1 - in_deep[2][2])
-            output_inflow_d2 = warp(img1, in_deep[3][0]) * in_deep[3][2] + warp(img3, in_deep[3][1]) * (1 - in_deep[3][2])
-            output_inflow = warp(img1, in_flow0) * in_mask + warp(img3, in_flow1) * (1 - in_mask)
-
-            # with torch.no_grad():
-            # r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, blurred_grain_mask, timestep)
-            # output_refine = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
-            output_d5 = output_inflow_d5
-            output_d4 = output_inflow_d4
-            output_d3 = output_inflow_d3
-            output_d2 = output_inflow_d2
-            output = output_inflow
-            
-            # output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
-
-            # output = ( output + 1 ) / 2
-            
-            # loss_tea = (teacher_res[0][0] - gt).abs().mean() + ((teacher_res[1][0] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-            # loss_cons += ((flow_list[-1] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-
-            # loss = criterion_mse(output, img2) + criterion_l1_rife(output_rife, img2) * 1e-4
-
-            '''
-            norm_min = - max(mh, mw)
-            norm_max = max(mh, mw)
-            in_flow0_nm = ((in_flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
-            in_flow1_nm = ((in_flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
-            flow0_nm = ((flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
-            flow1_nm = ((flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
-            '''
-
-            '''
-            flow0_min = flow0.min()
-            flow0_max = flow0.max()
-            flow0_nm = 2 * ((flow0 - flow0_min) / (flow0_max - flow0_min)) - 1
-            in_flow0_nm = 2 * ((in_flow0 - flow0_min) / (flow0_max - flow0_min)) - 1
-
-            flow1_min = flow1.min()
-            flow1_max = flow1.max()
-            flow1_nm = 2 * ((flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
-            in_flow1_nm = 2 * ((in_flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
-            '''
-            output_flow_d5 = torch.cat((in_deep[0][0], in_deep[0][1]), dim=1)
-            output_flow_d4 = torch.cat((in_deep[1][0], in_deep[1][1]), dim=1)
-            output_flow_d3 = torch.cat((in_deep[2][0], in_deep[2][1]), dim=1)
-            output_flow_d2 = torch.cat((in_deep[3][0], in_deep[3][1]), dim=1)
-            output_flow = torch.cat((in_flow0, in_flow1), dim=1)
-            target_flow = torch.cat((flow0, flow1), dim=1)
-
-            target = img2
-
-            # output_gamma = normalize(gamma_up(restore_normalized_values(output)))
-            # output_yuv_gamma = normalize(torch.cat(split_to_yuv(output_gamma), dim=1))
-            # output_blurred = blur(output)
-
-            # target_gamma = normalize(gamma_up(restore_normalized_values(target)))
-            # target_yuv_gamma = normalize(torch.cat(split_to_yuv(target_gamma), dim=1))
-            # target_blurred = blur(output)
-
-            # loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
-            # loss_mse = criterion_mse(output, target) # * 0.6 + criterion_mse(output_blurred, target_blurred) * 0.4 # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
-            # loss_mse = criterion_mse(gamma_up(output_refine), gamma_up(target)) + criterion_mse(gamma_up(output), gamma_up(target)) * 0.2 # + criterion_mse(torch.clamp(output, min=0.12, max = 0.25), torch.clamp(target, min=0.12, max = 0.25))
-            # loss_mse = criterion_mse(gamma_up(output), gamma_up(target))
-            # loss_mse_flow = criterion_mse(output_flow_nm, target_flow_nm)
-            # loss_mse_rife = criterion_mse(output_inflow, output_rife)
-            # loss_mse_mask = criterion_mse(in_mask, blurred_grain_mask)
-            # loss_mse = loss_mse_flow + 4 * loss_mse_mask # + loss_mse_rife + loss_mse
-
-            # optimizer_rife.zero_grad(set_to_none=False)
-            optimizer_inflow.zero_grad(set_to_none=False)
-            # optimizer_refine.zero_grad(set_to_none=False)
-            # optimizer_fusion.zero_grad(set_to_none=False)
-
-            loss_mask_d5 = ((gamma_up(output_d5) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
-            loss_cons_d5 = (((target_flow.detach() - output_flow_d5) ** 2).sum(1, True) ** 0.5 * loss_mask_d5).mean() * 0.001
-            loss_cons_d5 += ((output_flow_d5 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-            loss_mask_d4 = ((gamma_up(output_d4) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
-            loss_cons_d4 = (((target_flow.detach() - output_flow_d4) ** 2).sum(1, True) ** 0.5 * loss_mask_d4).mean() * 0.001
-            loss_cons_d4 += ((output_flow_d4 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-            loss_mask_d3 = ((gamma_up(output_d3) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
-            loss_cons_d3 = (((target_flow.detach() - output_flow_d3) ** 2).sum(1, True) ** 0.5 * loss_mask_d3).mean() * 0.001
-            loss_cons_d3 += ((output_flow_d3 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-            loss_mask_d2 = ((gamma_up(output_d2) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
-            loss_cons_d2 = (((target_flow.detach() - output_flow_d2) ** 2).sum(1, True) ** 0.5 * loss_mask_d2).mean() * 0.001
-            loss_cons_d2 += ((output_flow_d2 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-            loss_mask = ((gamma_up(output) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
-            loss_cons = (((target_flow.detach() - output_flow) ** 2).sum(1, True) ** 0.5 * loss_mask).mean() * 0.001
-            loss_cons += ((output_flow ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-
-            loss = criterion_l1(gamma_up(output), gamma_up(target))
-            loss += criterion_l1(output_d2, target) * (1 / 16 ** 2)
-            loss += criterion_l1(output_d3, target) * (1 / 4 ** 2)
-            loss += criterion_l1(output_d4, target) * (1 / 2 ** 2)
-            loss += criterion_l1(output_d5, target) * (1 / 2)
-            # loss += loss_cons
-            # loss += loss_cons_d2 * (1 / 16 ** 2)
-            # loss += loss_cons_d3 * (1 / 8 ** 2)
-            # loss += loss_cons_d4 * (1 / 4 ** 2)
-            # loss += loss_cons_d5 * (1 / 2 ** 2)
-            # loss += criterion_l1(gamma_up(output), gamma_up(target)) * 0.1
-
-            # loss_l1 = criterion_l1(output_flow, target_flow) + criterion_l1()
-            # loss_l1_disp = loss
-            loss_l1_disp = criterion_l1(output.detach(), target.detach())
-            loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
-            loss_cm_str = str(f'{loss.item():.6f}')
-
-            epoch_loss.append(float(loss_l1_disp.item()))
-            steps_loss.append(float(loss_l1_disp.item()))
-
-            if len(epoch_loss) < 999:
-                smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
-                window_min = min(epoch_loss)
-                window_max = max(epoch_loss)
-            else:
-                smoothed_window_loss = np.mean(moving_average(epoch_loss[-999:], 9))
-                window_min = min(epoch_loss[-999:])
-                window_max = max(epoch_loss[-999:])
-
-            loss.backward()
-
-            torch.nn.utils.clip_grad_norm_(model_inflow.parameters(), 1.0)
-            optimizer_inflow.step()
-
-            # optimizer_rife.step()
-            # optimizer_refine.step()
-            # optimizer_fusion.step()
-
-            # scheduler_rife.step()
-            scheduler_inflow.step()
-            # scheduler_refine.step()
-            # scheduler_fusion.step()
-
-            train_time = time.time() - time_stamp
-            time_stamp = time.time()
-
-            if step % 40 == 1:
-                '''
-                def warp(tenInput, tenFlow):
-                    backwarp_tenGrid = {}
-                    k = (str(tenFlow.device), str(tenFlow.size()))
-                    if k not in backwarp_tenGrid:
-                        tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
-                        tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
-                        backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
-                        # end
-                    tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
-
-                    g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-                    return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
-                
-                output = ( warp(img1, flow0) + warp(img3, flow1) ) / 2
-                '''
-
-                if platform.system() == 'Darwin':
-                    rgb_source1 = restore_normalized_values_numpy(img1)
-                    rgb_source2 = restore_normalized_values_numpy(img3)
-                    rgb_target = restore_normalized_values_numpy(img2)
-                    rgb_output = restore_normalized_values_numpy(output)
-                    rgb_output_rife = restore_normalized_values_numpy(output_rife)
-                else:
-                    rgb_source1 = restore_normalized_values(img1)
-                    rgb_source2 = restore_normalized_values(img3)
-                    rgb_target = restore_normalized_values(img2)
-                    rgb_output = restore_normalized_values(output)
-                    rgb_output_rife = restore_normalized_values(output_rife)
-                    rgb_output_refine_mask = in_mask.repeat_interleave(3, dim=1)
-
-                write_image_queue.put(
-                    {
-                        'preview_folder': os.path.join(args.dataset_path, 'preview'),
-                        'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                        'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                        'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                        'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                        'sample_output_rife': rgb_output_rife[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                        'sample_output_refine_mask': rgb_output_refine_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
-                    }
-                )
-
-                preview_index = preview_index + 1 if preview_index < 9 else 0
-
-                # sample_current = rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
-
-            if step % 1000 == 1:
-                torch.save({
-                    'step': step,
-                    'steps_loss': steps_loss,
-                    'epoch': epoch,
-                    'epoch_loss': epoch_loss,
-                    'start_timestamp': start_timestamp,
-                    'lr': optimizer_fusion.param_groups[0]['lr'],
-                    'model_state_dict': model.state_dict(),
-                    'refine_state_dict': model_refine.state_dict(),
-                    'fusion_state_dict': model_fusion.state_dict(),
-                    'optimizer_rife_state_dict': optimizer_rife.state_dict(),
-                    'optimizer_fusion_state_dict': optimizer_fusion.state_dict(),
-                    'model_name': model_name,
-                    'fusion_model_name': model_fusion_name,
-                }, trained_model_path)
-                
-                torch.save({
-                    'model_state_dict': model_inflow.state_dict(),
-                }, inflow_model_path)
-
-                # model.load_state_dict(convert(rife_state_dict))
-
-            data_time += time.time() - time_stamp
-            data_time_str = str(f'{data_time:.2f}')
-            train_time_str = str(f'{train_time:.2f}')
-            # current_lr_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
-            # current_lr_str = str(f'{scheduler.get_last_lr()[0]:.4e}')
-
-            epoch_time = time.time() - start_timestamp
-            days = int(epoch_time // (24 * 3600))
-            hours = int((epoch_time % (24 * 3600)) // 3600)
-            minutes = int((epoch_time % 3600) // 60)
-
-
-            clear_lines(2)
-            print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss CM: {loss_cm_str}, Loss L1: {loss_l1_str}')
-            print(f'\r[Last 1K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f}')
-
-            step = step + 1
-
-        torch.save({
-            'step': step,
-            'steps_loss': steps_loss,
-            'epoch': epoch,
-            'epoch_loss': epoch_loss,
-            'start_timestamp': start_timestamp,
-            'lr': optimizer_fusion.param_groups[0]['lr'],
-            'model_state_dict': model.state_dict(),
-            'refine_state_dict': model_refine.state_dict(),
-            'fusion_state_dict': model_fusion.state_dict(),
-            'optimizer_state_dict': optimizer_rife.state_dict(),
-            'optimizer_fusion_state_dict': optimizer_fusion.state_dict(),
-            'model_name': model_name,
-            'fusion_model_name': model_fusion_name,
-        }, trained_model_path)
-
-        torch.save({
-            'model_state_dict': model_inflow.state_dict(),
-        }, inflow_model_path)
-
+        in_flow0, in_flow1, in_mask, in_deep = model_inflow(torch.cat((img1, timestep, img3), dim=1))
         
-        smoothed_loss = np.mean(moving_average(epoch_loss, 9))
+        output_inflow_d5 = warp(img1, in_deep[0][0]) * in_deep[0][2] + warp(img3, in_deep[0][1]) * (1 - in_deep[0][2])
+        output_inflow_d4 = warp(img1, in_deep[1][0]) * in_deep[1][2] + warp(img3, in_deep[1][1]) * (1 - in_deep[1][2])
+        output_inflow_d3 = warp(img1, in_deep[2][0]) * in_deep[2][2] + warp(img3, in_deep[2][1]) * (1 - in_deep[2][2])
+        output_inflow_d2 = warp(img1, in_deep[3][0]) * in_deep[3][2] + warp(img3, in_deep[3][1]) * (1 - in_deep[3][2])
+        output_inflow = warp(img1, in_flow0) * in_mask + warp(img3, in_flow1) * (1 - in_mask)
+
+        # with torch.no_grad():
+        # r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, blurred_grain_mask, timestep)
+        # output_refine = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
+        output_d5 = output_inflow_d5
+        output_d4 = output_inflow_d4
+        output_d3 = output_inflow_d3
+        output_d2 = output_inflow_d2
+        output = output_inflow
+        
+        # output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
+
+        # output = ( output + 1 ) / 2
+        
+        # loss_tea = (teacher_res[0][0] - gt).abs().mean() + ((teacher_res[1][0] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
+        # loss_cons += ((flow_list[-1] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
+
+        # loss = criterion_mse(output, img2) + criterion_l1_rife(output_rife, img2) * 1e-4
+
+        '''
+        norm_min = - max(mh, mw)
+        norm_max = max(mh, mw)
+        in_flow0_nm = ((in_flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
+        in_flow1_nm = ((in_flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
+        flow0_nm = ((flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
+        flow1_nm = ((flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
+        '''
+
+        '''
+        flow0_min = flow0.min()
+        flow0_max = flow0.max()
+        flow0_nm = 2 * ((flow0 - flow0_min) / (flow0_max - flow0_min)) - 1
+        in_flow0_nm = 2 * ((in_flow0 - flow0_min) / (flow0_max - flow0_min)) - 1
+
+        flow1_min = flow1.min()
+        flow1_max = flow1.max()
+        flow1_nm = 2 * ((flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
+        in_flow1_nm = 2 * ((in_flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
+        '''
+        output_flow_d5 = torch.cat((in_deep[0][0], in_deep[0][1]), dim=1)
+        output_flow_d4 = torch.cat((in_deep[1][0], in_deep[1][1]), dim=1)
+        output_flow_d3 = torch.cat((in_deep[2][0], in_deep[2][1]), dim=1)
+        output_flow_d2 = torch.cat((in_deep[3][0], in_deep[3][1]), dim=1)
+        output_flow = torch.cat((in_flow0, in_flow1), dim=1)
+        target_flow = torch.cat((flow0, flow1), dim=1)
+
+        target = img2
+
+        # output_gamma = normalize(gamma_up(restore_normalized_values(output)))
+        # output_yuv_gamma = normalize(torch.cat(split_to_yuv(output_gamma), dim=1))
+        # output_blurred = blur(output)
+
+        # target_gamma = normalize(gamma_up(restore_normalized_values(target)))
+        # target_yuv_gamma = normalize(torch.cat(split_to_yuv(target_gamma), dim=1))
+        # target_blurred = blur(output)
+
+        # loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
+        # loss_mse = criterion_mse(output, target) # * 0.6 + criterion_mse(output_blurred, target_blurred) * 0.4 # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
+        # loss_mse = criterion_mse(gamma_up(output_refine), gamma_up(target)) + criterion_mse(gamma_up(output), gamma_up(target)) * 0.2 # + criterion_mse(torch.clamp(output, min=0.12, max = 0.25), torch.clamp(target, min=0.12, max = 0.25))
+        # loss_mse = criterion_mse(gamma_up(output), gamma_up(target))
+        # loss_mse_flow = criterion_mse(output_flow_nm, target_flow_nm)
+        # loss_mse_rife = criterion_mse(output_inflow, output_rife)
+        # loss_mse_mask = criterion_mse(in_mask, blurred_grain_mask)
+        # loss_mse = loss_mse_flow + 4 * loss_mse_mask # + loss_mse_rife + loss_mse
+
+        # optimizer_rife.zero_grad(set_to_none=False)
+        optimizer_inflow.zero_grad(set_to_none=False)
+        # optimizer_refine.zero_grad(set_to_none=False)
+        # optimizer_fusion.zero_grad(set_to_none=False)
+
+        loss_mask_d5 = ((gamma_up(output_d5) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
+        loss_cons_d5 = (((target_flow.detach() - output_flow_d5) ** 2).sum(1, True) ** 0.5 * loss_mask_d5).mean() * 0.001
+        loss_cons_d5 += ((output_flow_d5 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
+        loss_mask_d4 = ((gamma_up(output_d4) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
+        loss_cons_d4 = (((target_flow.detach() - output_flow_d4) ** 2).sum(1, True) ** 0.5 * loss_mask_d4).mean() * 0.001
+        loss_cons_d4 += ((output_flow_d4 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
+        loss_mask_d3 = ((gamma_up(output_d3) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
+        loss_cons_d3 = (((target_flow.detach() - output_flow_d3) ** 2).sum(1, True) ** 0.5 * loss_mask_d3).mean() * 0.001
+        loss_cons_d3 += ((output_flow_d3 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
+        loss_mask_d2 = ((gamma_up(output_d2) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
+        loss_cons_d2 = (((target_flow.detach() - output_flow_d2) ** 2).sum(1, True) ** 0.5 * loss_mask_d2).mean() * 0.001
+        loss_cons_d2 += ((output_flow_d2 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
+        loss_mask = ((gamma_up(output) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
+        loss_cons = (((target_flow.detach() - output_flow) ** 2).sum(1, True) ** 0.5 * loss_mask).mean() * 0.001
+        loss_cons += ((output_flow ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
+
+        loss = criterion_l1(gamma_up(output), gamma_up(target))
+        loss += criterion_l1(output_d2, target) * (1 / 16 ** 2)
+        loss += criterion_l1(output_d3, target) * (1 / 4 ** 2)
+        loss += criterion_l1(output_d4, target) * (1 / 2 ** 2)
+        loss += criterion_l1(output_d5, target) * (1 / 2)
+        # loss += loss_cons
+        # loss += loss_cons_d2 * (1 / 16 ** 2)
+        # loss += loss_cons_d3 * (1 / 8 ** 2)
+        # loss += loss_cons_d4 * (1 / 4 ** 2)
+        # loss += loss_cons_d5 * (1 / 2 ** 2)
+        # loss += criterion_l1(gamma_up(output), gamma_up(target)) * 0.1
+
+        # loss_l1 = criterion_l1(output_flow, target_flow) + criterion_l1()
+        # loss_l1_disp = loss
+        loss_l1_disp = criterion_l1(output.detach(), target.detach())
+        loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
+        loss_cm_str = str(f'{loss.item():.6f}')
+
+        epoch_loss.append(float(loss_l1_disp.item()))
+        steps_loss.append(float(loss_l1_disp.item()))
+
+        if len(epoch_loss) < 999:
+            smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
+            window_min = min(epoch_loss)
+            window_max = max(epoch_loss)
+        else:
+            smoothed_window_loss = np.mean(moving_average(epoch_loss[-999:], 9))
+            window_min = min(epoch_loss[-999:])
+            window_max = max(epoch_loss[-999:])
+
+        loss.backward()
+
+        torch.nn.utils.clip_grad_norm_(model_inflow.parameters(), 1.0)
+        optimizer_inflow.step()
+
+        # optimizer_rife.step()
+        # optimizer_refine.step()
+        # optimizer_fusion.step()
+
+        # scheduler_rife.step()
+        scheduler_inflow.step()
+        # scheduler_refine.step()
+        # scheduler_fusion.step()
+
+        train_time = time.time() - time_stamp
+        time_stamp = time.time()
+
+        if step % 40 == 1:
+            '''
+            def warp(tenInput, tenFlow):
+                backwarp_tenGrid = {}
+                k = (str(tenFlow.device), str(tenFlow.size()))
+                if k not in backwarp_tenGrid:
+                    tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+                    tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+                    backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
+                    # end
+                tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
+
+                g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+                return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+            
+            output = ( warp(img1, flow0) + warp(img3, flow1) ) / 2
+            '''
+
+            if platform.system() == 'Darwin':
+                rgb_source1 = restore_normalized_values_numpy(img1)
+                rgb_source2 = restore_normalized_values_numpy(img3)
+                rgb_target = restore_normalized_values_numpy(img2)
+                rgb_output = restore_normalized_values_numpy(output)
+                rgb_output_rife = restore_normalized_values_numpy(output_rife)
+            else:
+                rgb_source1 = restore_normalized_values(img1)
+                rgb_source2 = restore_normalized_values(img3)
+                rgb_target = restore_normalized_values(img2)
+                rgb_output = restore_normalized_values(output)
+                rgb_output_rife = restore_normalized_values(output_rife)
+                rgb_output_refine_mask = in_mask.repeat_interleave(3, dim=1)
+
+            write_image_queue.put(
+                {
+                    'preview_folder': os.path.join(args.dataset_path, 'preview'),
+                    'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_output_rife': rgb_output_rife[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_output_refine_mask': rgb_output_refine_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+                }
+            )
+
+            preview_index = preview_index + 1 if preview_index < 9 else 0
+
+            # sample_current = rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+
+        if step % 1000 == 1:
+            torch.save({
+                'step': step,
+                'steps_loss': steps_loss,
+                'epoch': epoch,
+                'epoch_loss': epoch_loss,
+                'start_timestamp': start_timestamp,
+                'lr': optimizer_fusion.param_groups[0]['lr'],
+                'model_state_dict': model.state_dict(),
+                'refine_state_dict': model_refine.state_dict(),
+                'fusion_state_dict': model_fusion.state_dict(),
+                'optimizer_rife_state_dict': optimizer_rife.state_dict(),
+                'optimizer_fusion_state_dict': optimizer_fusion.state_dict(),
+                'model_name': model_name,
+                'fusion_model_name': model_fusion_name,
+            }, trained_model_path)
+            
+            torch.save({
+                'model_state_dict': model_inflow.state_dict(),
+            }, inflow_model_path)
+
+            # model.load_state_dict(convert(rife_state_dict))
+
+        data_time += time.time() - time_stamp
+        data_time_str = str(f'{data_time:.2f}')
+        train_time_str = str(f'{train_time:.2f}')
+        # current_lr_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
+        # current_lr_str = str(f'{scheduler.get_last_lr()[0]:.4e}')
+
         epoch_time = time.time() - start_timestamp
         days = int(epoch_time // (24 * 3600))
         hours = int((epoch_time % (24 * 3600)) // 3600)
         minutes = int((epoch_time % 3600) // 60)
+
+
         clear_lines(2)
-        # print (f'\r {" "*120}', end='')
-        print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}')
-        print ('\n')
-        steps_loss = []
-        epoch_loss = []
-        epoch = epoch + 1
+        print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss CM: {loss_cm_str}, Loss L1: {loss_l1_str}')
+        print(f'\r[Last 1K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f}')
+
+        step = step + 1
+
+        if idx == 0:
+            torch.save({
+                'step': step,
+                'steps_loss': steps_loss,
+                'epoch': epoch,
+                'epoch_loss': epoch_loss,
+                'start_timestamp': start_timestamp,
+                'lr': optimizer_fusion.param_groups[0]['lr'],
+                'model_state_dict': model.state_dict(),
+                'refine_state_dict': model_refine.state_dict(),
+                'fusion_state_dict': model_fusion.state_dict(),
+                'optimizer_state_dict': optimizer_rife.state_dict(),
+                'optimizer_fusion_state_dict': optimizer_fusion.state_dict(),
+                'model_name': model_name,
+                'fusion_model_name': model_fusion_name,
+            }, trained_model_path)
+
+            torch.save({
+                'model_state_dict': model_inflow.state_dict(),
+            }, inflow_model_path)
+
+            
+            smoothed_loss = np.mean(moving_average(epoch_loss, 9))
+            epoch_time = time.time() - start_timestamp
+            days = int(epoch_time // (24 * 3600))
+            hours = int((epoch_time % (24 * 3600)) // 3600)
+            minutes = int((epoch_time % 3600) // 60)
+            clear_lines(2)
+            # print (f'\r {" "*120}', end='')
+            print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}')
+            print ('\n')
+            steps_loss = []
+            epoch_loss = []
+            epoch = epoch + 1
 
 if __name__ == "__main__":
     main()
