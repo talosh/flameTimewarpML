@@ -394,6 +394,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                     train_data['h'] = description['h']
                     train_data['w'] = description['w']
                     train_data['description'] = description
+                    train_data['index'] = index
                     self.frames_queue.put(train_data)
                 except Exception as e:
                     print (e)                
@@ -511,6 +512,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         imgh = train_data['h']
         imgw = train_data['w']
         ratio = train_data['ratio']
+        images_idx = train_data['index']
 
         device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda')
 
@@ -659,7 +661,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             batch_img3.append(img3)
             batch_img4.append(img4)
 
-        return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), torch.stack(batch_img3), torch.stack(batch_img4), ratio
+        return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), torch.stack(batch_img3), torch.stack(batch_img4), ratio, images_idx
 
     def get_input_channels_number(self, source_frames_paths_list):
         total_num_channels = 0
@@ -938,8 +940,8 @@ def main():
     def read_images(read_image_queue, dataset):
         while True:
             for batch_idx in range(len(dataset)):
-                img0, img1, img2, img3, img4, ratio = dataset[batch_idx]
-                read_image_queue.put((img0, img1, img2, img3, img4, ratio))
+                img0, img1, img2, img3, img4, ratio, idx = dataset[batch_idx]
+                read_image_queue.put((img0, img1, img2, img3, img4, ratio, idx))
 
     def write_images(write_image_queue):
         while True:
@@ -1139,7 +1141,7 @@ def main():
             data_time = time.time() - time_stamp
             time_stamp = time.time()
 
-            img0, img1, img2, img3, img4, ratio = read_image_queue.get()
+            img0, img1, img2, img3, img4, ratio, idx = read_image_queue.get()
 
             if platform.system() == 'Darwin':
                 img0 = normalize_numpy(img0)
@@ -1417,7 +1419,7 @@ def main():
 
 
             clear_lines(2)
-            print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx + 1} / {len(dataset)}], Lr: {current_lr_str}, Loss CM: {loss_cm_str}, Loss L1: {loss_l1_str}')
+            print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx + 1}, {idx} / {len(dataset)}], Lr: {current_lr_str}, Loss CM: {loss_cm_str}, Loss L1: {loss_l1_str}')
             print(f'\r[Last 1K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f}')
 
             step = step + 1
