@@ -259,6 +259,9 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         print ('reading first block of training data...')
         self.last_train_data = self.frames_queue.get()
 
+        self.repeat_count = 9
+        self.repeat_counter = 0
+
         # self.last_shuffled_index = -1
         # self.last_source_image_data = None
         # self.last_target_image_data = None
@@ -458,16 +461,13 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         
         return self.last_source_image_data, self.last_target_image_data
         '''
+        if self.repeat_counter >= self.repeat_count:
+            try:
+                self.last_train_data = self.frames_queue.get_nowait()
+            except queue.Empty:
+                pass
 
-        try:
-            # Attempt to get new data from the queue without blocking.
-            self.last_train_data = self.frames_queue.get_nowait()
-        except queue.Empty:
-            # If the queue is empty, it will raise a 'queue.Empty' exception,
-            # and the method will return the last train data instead.
-            pass  # 'pass' is used here since we're already handling the empty queue by returning 'self.last_train_data' below.
-
-        # Return the last fetched data if the queue is empty or the new data fetched from the queue.
+        self.repeat_counter += 1
         return self.last_train_data
         # return self.frames_queue.get()
 
