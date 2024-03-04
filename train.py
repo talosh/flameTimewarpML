@@ -464,6 +464,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         if self.repeat_counter >= self.repeat_count:
             try:
                 self.last_train_data = self.frames_queue.get_nowait()
+                self.repeat_counter = 0
             except queue.Empty:
                 pass
 
