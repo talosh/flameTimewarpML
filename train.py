@@ -1367,22 +1367,27 @@ def main():
                 ev_img1 = ev_img1.permute(2, 0, 1)
                 ev_img2 = ev_img2.permute(2, 0, 1)
                 ev_img3 = ev_img3.permute(2, 0, 1)
+                ev_img1 = normalize(ev_img1)
+                ev_img2 = normalize(ev_img2)
+                ev_img3 = normalize(ev_img3)
 
+                n, c, h, w = ev_img1.shape
+                
+                ph = ((h - 1) // 64 + 1) * 64
+                pw = ((w - 1) // 64 + 1) * 64
+                padding = (0, pw - w, 0, ph - h)
+                evp_img1 = torch.nn.functional.pad(evp_img1, padding)
+                evp_img2 = torch.nn.functional.pad(evp_img1, padding)
+                evp_img3 = torch.nn.functional.pad(evp_img1, padding)
 
                 print (f'ev_img1 shape: {ev_img1.shape}')
                 print (f'ev_img2 shape: {ev_img2.shape}')
                 print (f'ev_img3 shape: {ev_img3.shape}')
 
-                '''
-                ev_img1 = normalize(ev_img1)
-                ev_img2 = normalize(ev_img2)
-                ev_img3 = normalize(ev_img3)
-
                 with torch.no_grad():
                     x = torch.cat((ev_img1, ev_img2, ev_img3), dim=1)
                     _, _, merged, _, _ = model_rife(x, timestep = ev_ratio)
                     ev_output_rife = merged[3]
-                '''
             
             smoothed_loss = np.mean(moving_average(epoch_loss, 9))
             epoch_time = time.time() - start_timestamp
