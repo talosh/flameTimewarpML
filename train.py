@@ -1437,7 +1437,7 @@ def main():
 
             clear_lines(2)
             # print (f'\r {" "*120}', end='')
-            print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PNSR] {psnr:.2f} [RIFE_PNSR] {rife_psnr:.2f}')
+            print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PNSR] {psnr:.4f} [RIFE_PNSR] {rife_psnr:.4f}')
             print ('\n')
             steps_loss = []
             epoch_loss = []
