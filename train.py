@@ -1116,8 +1116,7 @@ def main():
         grain1 = (torch.rand(mn, 1, mh, mw).to(device = mask.device, dtype = mask.dtype) * 2 - 1) / 18
         grain2 = (torch.rand(mn, 1, mh, mw).to(device = mask.device, dtype = mask.dtype) * 2 - 1) / 18
         blurred_grain_mask = torch.clamp(blur(mask + grain1) + grain2, min=0, max=1)
-
-        output_rife = warp(img1, flow0) * blurred_grain_mask + warp(img3, flow1) * (1 - blurred_grain_mask)
+        blurred_output_rife = warp(img1, flow0) * blurred_grain_mask + warp(img3, flow1) * (1 - blurred_grain_mask)
 
         in_flow0, in_flow1, in_mask, in_deep = model(torch.cat((img1, timestep, img3), dim=1))
         
@@ -1380,15 +1379,17 @@ def main():
                 evp_img2 = torch.nn.functional.pad(ev_img2, padding)
                 evp_img3 = torch.nn.functional.pad(ev_img3, padding)
 
-                print (f'ev_img1 shape: {evp_img1.shape}')
-                print (f'ev_img2 shape: {evp_img2.shape}')
-                print (f'ev_img3 shape: {evp_img3.shape}')
-
                 with torch.no_grad():
                     x = torch.cat((evp_img1, evp_img2, evp_img3), dim=1)
                     _, _, merged, _, _ = model_rife(x, timestep = ev_ratio)
                     ev_output_rife = merged[3]
-            
+                    ev_output_rife = ev_output_rife.permute(1, 2, 0)[:h, :w]
+
+                    print (f'ev_output_rife shape {ev_output_rife.shape}')
+
+                    ev_in_flow0, ev_in_flow1, ev_in_mask, ev_in_deep = model(torch.cat((img1, timestep, img3), dim=1))
+                    output_inflow = warp(img1, in_flow0) * in_mask + warp(img3, in_flow1) * (1 - in_mask)
+
             smoothed_loss = np.mean(moving_average(epoch_loss, 9))
             epoch_time = time.time() - start_timestamp
             days = int(epoch_time // (24 * 3600))
