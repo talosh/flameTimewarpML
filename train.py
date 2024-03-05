@@ -1376,16 +1376,16 @@ def main():
                 ph = ((h - 1) // 64 + 1) * 64
                 pw = ((w - 1) // 64 + 1) * 64
                 padding = (0, pw - w, 0, ph - h)
-                evp_img1 = torch.nn.functional.pad(evp_img1, padding)
-                evp_img2 = torch.nn.functional.pad(evp_img1, padding)
-                evp_img3 = torch.nn.functional.pad(evp_img1, padding)
+                evp_img1 = torch.nn.functional.pad(ev_img1, padding)
+                evp_img2 = torch.nn.functional.pad(ev_img2, padding)
+                evp_img3 = torch.nn.functional.pad(ev_img3, padding)
 
-                print (f'ev_img1 shape: {ev_img1.shape}')
-                print (f'ev_img2 shape: {ev_img2.shape}')
-                print (f'ev_img3 shape: {ev_img3.shape}')
+                print (f'ev_img1 shape: {evp_img1.shape}')
+                print (f'ev_img2 shape: {evp_img2.shape}')
+                print (f'ev_img3 shape: {evp_img3.shape}')
 
                 with torch.no_grad():
-                    x = torch.cat((ev_img1, ev_img2, ev_img3), dim=1)
+                    x = torch.cat((evp_img1, evp_img2, evp_img3), dim=1)
                     _, _, merged, _, _ = model_rife(x, timestep = ev_ratio)
                     ev_output_rife = merged[3]
             
