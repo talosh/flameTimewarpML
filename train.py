@@ -1122,14 +1122,9 @@ def main():
 
         current_lr_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
 
-        if args.freeze_rife:
-            with torch.no_grad():
-                x = torch.cat((img1, img3, img2), dim=1)
-                flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
-                output_rife = merged[3]
-        else:
+        with torch.no_grad():
             x = torch.cat((img1, img3, img2), dim=1)
-            flow_list, mask, merged, teacher_res, loss_cons = model(x, timestep = ratio)
+            flow_list, mask, merged, teacher_res, loss_cons = model_rife(x, timestep = ratio)
             output_rife = merged[3]
 
         timestep = (img1[:, :1].clone() * 0 + 1) * ratio
