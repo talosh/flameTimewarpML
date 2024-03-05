@@ -1358,12 +1358,6 @@ def main():
                 ev_img2 = ev_item['gt']
                 ev_img3 = ev_item['end']
                 ev_ratio = ev_item['ratio']
-
-                print (f'ev_img1 shape: {ev_img1.shape}')
-                print (f'ev_img2 shape: {ev_img2.shape}')
-                print (f'ev_img3 shape: {ev_img3.shape}')
-
-                '''
                 ev_img1 = torch.from_numpy(ev_img1.copy())
                 ev_img2 = torch.from_numpy(ev_img2.copy())
                 ev_img3 = torch.from_numpy(ev_img3.copy())
@@ -1373,6 +1367,13 @@ def main():
                 ev_img1 = ev_img1.permute(2, 0, 1)
                 ev_img2 = ev_img2.permute(2, 0, 1)
                 ev_img3 = ev_img3.permute(2, 0, 1)
+
+
+                print (f'ev_img1 shape: {ev_img1.shape}')
+                print (f'ev_img2 shape: {ev_img2.shape}')
+                print (f'ev_img3 shape: {ev_img3.shape}')
+
+                '''
                 ev_img1 = normalize(ev_img1)
                 ev_img2 = normalize(ev_img2)
                 ev_img3 = normalize(ev_img3)
