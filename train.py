@@ -1361,6 +1361,11 @@ def main():
             rife_psnr_list = []
             psnr_list = []
             for ev_item_index in range(111):
+
+                clear_lines(2)
+                print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
+                print (f'\rCalcualting PSNR {ev_item_index} of 111...')
+
                 ev_item = dataset.frames_queue.get()
                 ev_img1 = ev_item['start']
                 ev_img2 = ev_item['gt']
