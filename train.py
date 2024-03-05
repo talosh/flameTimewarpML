@@ -1364,6 +1364,12 @@ def main():
                 ev_img1 = ev_img1.to(device = device, dtype = torch.float32)
                 ev_img2 = ev_img2.to(device = device, dtype = torch.float32)
                 ev_img3 = ev_img3.to(device = device, dtype = torch.float32)
+                ev_img1 = ev_img1.permute(2, 0, 1)
+                ev_img2 = ev_img2.permute(2, 0, 1)
+                ev_img3 = ev_img3.permute(2, 0, 1)
+                ev_img1 = normalize(ev_img1)
+                ev_img2 = normalize(ev_img2)
+                ev_img3 = normalize(ev_img3)
 
                 with torch.no_grad():
                     x = torch.cat((ev_img1, ev_img2, ev_img3), dim=1)
