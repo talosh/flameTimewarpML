@@ -73,8 +73,6 @@ from torch.optim.optimizer import Optimizer
 
 from models.flownet import FlownetCas
 from models.inflow_v001 import Model as ModelInflow
-from models.refine_v001 import Model as ModelRefine
-from models.fusion_v001 import Model as ModelFusion
 
 class Yogi(Optimizer):
     r"""Implements Yogi Optimizer Algorithm.
@@ -970,7 +968,8 @@ def main():
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
 
     model = ModelInflow().get_training_model()(7, 5).to(device)
-    model_name = 'FlownetCas'
+    model_name = 'Test'
+    model_rife = FlownetCas().to(device)
     
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
@@ -1006,10 +1005,6 @@ def main():
 
     if args.model_path:
         trained_model_path = args.model_path
-        inflow_model_path = os.path.join(
-            os.path.abspath(os.path.dirname(args.model_path)),
-            f'{os.path.splitext(os.path.basename(args.model_path))[0]}_inflow.pth' 
-        )
 
         try:
             checkpoint = torch.load(trained_model_path)
@@ -1038,21 +1033,8 @@ def main():
             print (f'loaded loss statistics for epoch: {current_epoch + 1}')
         except Exception as e:
             print (f'unable to load step and epoch loss statistics: {e}')
-    else:
-        default_model_path = os.path.join(
-            os.path.abspath(os.path.dirname(__file__)),
-            'models_data',
-            'flownet_v412.pkl'
-        )
-        state_dict = torch.load(default_model_path)
-        def convert(param):
-            return {
-                k.replace("module.", ""): v
-                for k, v in param.items()
-                if "module." in k
-            }
-        model.load_state_dict(convert(state_dict))
 
+    else:
         traned_model_name = 'flameTWML_model_' + fw.create_timestamp_uid() + '.pth'
         if platform.system() == 'Darwin':
             trained_model_dir = os.path.join(
@@ -1066,10 +1048,20 @@ def main():
         if not os.path.isdir(trained_model_dir):
             os.makedirs(trained_model_dir)
         trained_model_path = os.path.join(trained_model_dir, traned_model_name)
-        inflow_model_path = os.path.join(
-            os.path.abspath(os.path.dirname(trained_model_path)),
-            f'{os.path.splitext(os.path.basename(trained_model_path))[0]}_inflow.pth' 
-        )
+
+    default_rife_model_path = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)),
+        'models_data',
+        'flownet_v412.pkl'
+    )
+    rife_state_dict = torch.load(default_rife_model_path)
+    def convert(param):
+        return {
+            k.replace("module.", ""): v
+            for k, v in param.items()
+            if "module." in k
+        }
+    model_rife.load_state_dict(convert(rife_state_dict))
 
     start_timestamp = time.time()
     time_stamp = time.time()
@@ -1124,13 +1116,11 @@ def main():
             img3 = normalize(img3)
             img4 = normalize(img4)
 
-        current_lr = scheduler_inflow.get_last_lr()[0]
-        for param_group in optimizer_inflow.param_groups:
+        current_lr = scheduler.get_last_lr()[0]
+        for param_group in optimizer.param_groups:
             param_group['lr'] = current_lr
 
-        current_lr_str = str(f'{optimizer_inflow.param_groups[0]["lr"]:.4e}')
-        current_lr_rife_str = str(f'{optimizer_rife.param_groups[0]["lr"]:.4e}')
-
+        current_lr_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
 
         if args.freeze_rife:
             with torch.no_grad():
@@ -1153,7 +1143,7 @@ def main():
 
         output_rife = warp(img1, flow0) * blurred_grain_mask + warp(img3, flow1) * (1 - blurred_grain_mask)
 
-        in_flow0, in_flow1, in_mask, in_deep = model_inflow(torch.cat((img1, timestep, img3), dim=1))
+        in_flow0, in_flow1, in_mask, in_deep = model(torch.cat((img1, timestep, img3), dim=1))
         
         output_inflow_d5 = warp(img1, in_deep[0][0]) * in_deep[0][2] + warp(img3, in_deep[0][1]) * (1 - in_deep[0][2])
         output_inflow_d4 = warp(img1, in_deep[1][0]) * in_deep[1][2] + warp(img3, in_deep[1][1]) * (1 - in_deep[1][2])
@@ -1226,7 +1216,7 @@ def main():
         # loss_mse = loss_mse_flow + 4 * loss_mse_mask # + loss_mse_rife + loss_mse
 
         # optimizer_rife.zero_grad(set_to_none=False)
-        optimizer_inflow.zero_grad(set_to_none=False)
+        optimizer.zero_grad(set_to_none=False)
         # optimizer_refine.zero_grad(set_to_none=False)
         # optimizer_fusion.zero_grad(set_to_none=False)
 
@@ -1279,15 +1269,15 @@ def main():
 
         loss.backward()
 
-        torch.nn.utils.clip_grad_norm_(model_inflow.parameters(), 1.0)
-        optimizer_inflow.step()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        optimizer.step()
 
         # optimizer_rife.step()
         # optimizer_refine.step()
         # optimizer_fusion.step()
 
         # scheduler_rife.step()
-        scheduler_inflow.step()
+        scheduler.step()
         # scheduler_refine.step()
         # scheduler_fusion.step()
 
@@ -1349,20 +1339,12 @@ def main():
                 'epoch': epoch,
                 'epoch_loss': epoch_loss,
                 'start_timestamp': start_timestamp,
-                'lr': optimizer_fusion.param_groups[0]['lr'],
+                'lr': optimizer.param_groups[0]['lr'],
                 'model_state_dict': model.state_dict(),
-                'refine_state_dict': model_refine.state_dict(),
-                'fusion_state_dict': model_fusion.state_dict(),
-                'optimizer_rife_state_dict': optimizer_rife.state_dict(),
-                'optimizer_fusion_state_dict': optimizer_fusion.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
                 'model_name': model_name,
-                'fusion_model_name': model_fusion_name,
             }, trained_model_path)
             
-            torch.save({
-                'model_state_dict': model_inflow.state_dict(),
-            }, inflow_model_path)
-
             # model.load_state_dict(convert(rife_state_dict))
 
         data_time += time.time() - time_stamp
@@ -1389,19 +1371,11 @@ def main():
                 'epoch': epoch,
                 'epoch_loss': epoch_loss,
                 'start_timestamp': start_timestamp,
-                'lr': optimizer_fusion.param_groups[0]['lr'],
+                'lr': optimizer.param_groups[0]['lr'],
                 'model_state_dict': model.state_dict(),
-                'refine_state_dict': model_refine.state_dict(),
-                'fusion_state_dict': model_fusion.state_dict(),
-                'optimizer_state_dict': optimizer_rife.state_dict(),
-                'optimizer_fusion_state_dict': optimizer_fusion.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
                 'model_name': model_name,
-                'fusion_model_name': model_fusion_name,
             }, trained_model_path)
-
-            torch.save({
-                'model_state_dict': model_inflow.state_dict(),
-            }, inflow_model_path)
 
             for evaluate_item in range(9):
                 ev_item = dataset.frames_queue.get()
