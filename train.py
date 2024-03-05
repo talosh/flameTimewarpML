@@ -1019,26 +1019,7 @@ def main():
             print (f'unable to load saved model: {e}')
 
         try:
-            checkpoint = torch.load(inflow_model_path)
-            model_inflow.load_state_dict(checkpoint['model_state_dict'])
-            print('loaded previously saved inflow model')
-        except Exception as e:
-            print (f'unable to load saved inflow model: {e}')
-
-        try:
-            model_refine.load_state_dict(checkpoint['refine_state_dict'], strict=False)
-            print('loaded previously saved fusion model')
-        except Exception as e:
-            print (f'unable to load saved fusion model: {e}')
-            
-        try:
-            model_fusion.load_state_dict(checkpoint['fusion_state_dict'], strict=False)
-            print('loaded previously saved fusion model')
-        except Exception as e:
-            print (f'unable to load saved fusion model: {e}')
-
-        try:
-            optimizer_fusion.load_state_dict(checkpoint['optimizer_fusion_state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             print('loaded previously saved fusion optmizer')
         except Exception as e:
             print (f'unable to load saved fusion optimizer: {e}')
