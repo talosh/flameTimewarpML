@@ -1064,22 +1064,6 @@ def main():
     time_stamp = time.time()
     epoch = current_epoch
     
-    if args.reset_rife:
-        default_model_path = os.path.join(
-            os.path.abspath(os.path.dirname(__file__)),
-            'models_data',
-            'flownet_v412.pkl'
-        )
-        print (f'loading pretrained RIFE model {default_model_path}')
-        rife_state_dict = torch.load(default_model_path)
-        def convert(param):
-            return {
-                k.replace("module.", ""): v
-                for k, v in param.items()
-                if "module." in k
-            }
-        model.load_state_dict(convert(rife_state_dict))
-
     print('\n\n')
 
     batch_idx = 0
