@@ -1358,6 +1358,12 @@ def main():
                 ev_img2 = ev_item['gt']
                 ev_img3 = ev_item['end']
                 ev_ratio = ev_item['ratio']
+
+                print (f'ev_img1 shape: {ev_img1.shape}')
+                print (f'ev_img2 shape: {ev_img2.shape}')
+                print (f'ev_img3 shape: {ev_img3.shape}')
+
+                '''
                 ev_img1 = torch.from_numpy(ev_img1.copy())
                 ev_img2 = torch.from_numpy(ev_img2.copy())
                 ev_img3 = torch.from_numpy(ev_img3.copy())
@@ -1375,6 +1381,7 @@ def main():
                     x = torch.cat((ev_img1, ev_img2, ev_img3), dim=1)
                     _, _, merged, _, _ = model_rife(x, timestep = ev_ratio)
                     ev_output_rife = merged[3]
+                '''
             
             smoothed_loss = np.mean(moving_average(epoch_loss, 9))
             epoch_time = time.time() - start_timestamp
