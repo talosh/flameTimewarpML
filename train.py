@@ -966,39 +966,22 @@ def main():
     write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
     write_thread.daemon = True
     write_thread.start()
-
-    steps_per_epoch = len(dataset)
     
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
 
-    model = FlownetCas().to(device)
+    model = ModelInflow().get_training_model()(7, 5).to(device)
     model_name = 'FlownetCas'
-
-    model_inflow = ModelInflow().get_training_model()(7, 5).to(device)
-
-    model_refine_name = ModelRefine.get_name()
-    model_refine = ModelRefine().get_training_model()().to(device)
-
-    model_fusion_name = ModelFusion.get_name()
-    model_fusion = ModelFusion().get_training_model()(7, 3).to(device)
-
     
-    warmup_epochs = args.warmup
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
     lr = args.lr
     lr_rife = args.lr * 1e-4
-    # number_warmup_steps = steps_per_epoch * warmup_epochs
-    number_warmup_steps = 1000
 
     criterion_mse = torch.nn.MSELoss()
     criterion_l1 = torch.nn.L1Loss()
 
     # optimizer_sgd = torch.optim.SGD(model.parameters(), lr=lr)
-    optimizer_rife = Yogi(model.parameters(), lr=lr_rife)
-    optimizer_inflow = Yogi(model_inflow.parameters(), lr=lr)
-    optimizer_refine = Yogi(model_refine.parameters(), lr=lr)
-    optimizer_fusion = Yogi(model_fusion.parameters(), lr=lr)
+    optimizer = Yogi(model.parameters(), lr=lr_rife)
 
     def warmup(current_step, lr = 4e-3, number_warmup_steps = 999):
         mul_lin = current_step / number_warmup_steps
@@ -1009,18 +992,10 @@ def main():
     import warnings
     warnings.filterwarnings('ignore', category=UserWarning)
 
-    train_scheduler_rife = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_rife, T_max=pulse_period, eta_min = lr_rife - (( lr_rife / 100 ) * pulse_dive) )
-    train_scheduler_inflow = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_inflow, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
-    train_scheduler_refine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_refine, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
-    train_scheduler_fusion = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_fusion, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+    train_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=pulse_period, eta_min = lr_rife - (( lr_rife / 100 ) * pulse_dive) )
     # warmup_scheduler_fusion = torch.optim.lr_scheduler.LambdaLR(optimizer_fusion, lr_lambda=lambda step: warmup(step, lr=lr, number_warmup_steps=number_warmup_steps))
     # scheduler_fusion = torch.optim.lr_scheduler.SequentialLR(optimizer_fusion, [warmup_scheduler_fusion, train_scheduler_fusion], [number_warmup_steps])
-    scheduler_rife = train_scheduler_rife
-    scheduler_inflow = train_scheduler_inflow
-    scheduler_refine = train_scheduler_refine
-    scheduler_fusion = train_scheduler_fusion
-
-    # Rest of your training script...
+    scheduler = train_scheduler
 
     step = 0
     current_epoch = 0
