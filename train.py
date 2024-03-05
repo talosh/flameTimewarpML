@@ -912,7 +912,7 @@ def blur(img, interations = 16):
     return blurred_img
 
 def psnr_torch(imageA, imageB, max_pixel=1.0):
-    mse = torch.mean((imageA - imageB) ** 2)
+    mse = torch.mean((imageA.cpu().detach().data - imageB.cpu().detach().data) ** 2)
     if mse == 0:
         return torch.tensor(float('inf'))
     return 20 * torch.log10(max_pixel / torch.sqrt(mse))
