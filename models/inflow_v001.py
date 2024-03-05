@@ -93,7 +93,6 @@ class unetConv2(Module):
         for i in range(1, self.n + 1):
             conv = getattr(self, 'conv%d' % i)
             x = conv(x)
-
         return x
 
 class DoubleConv2(Module):
