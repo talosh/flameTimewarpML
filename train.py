@@ -1384,11 +1384,10 @@ def main():
                     _, _, merged, _, _ = model_rife(x, timestep = ev_ratio)
                     ev_output_rife = merged[3]
                     ev_output_rife = ev_output_rife[0].permute(1, 2, 0)[:h, :w]
-
-                    print (f'ev_output_rife shape {ev_output_rife.shape}')
-
-                    ev_in_flow0, ev_in_flow1, ev_in_mask, ev_in_deep = model(torch.cat((img1, timestep, img3), dim=1))
-                    output_inflow = warp(img1, in_flow0) * in_mask + warp(img3, in_flow1) * (1 - in_mask)
+                    
+                    ev_in_flow0, ev_in_flow1, ev_in_mask, ev_in_deep = model(torch.cat((evp_img1, ev_ratio, evp_img3), dim=1))
+                    ev_output_inflow = warp(evp_img1, ev_in_flow0) * ev_in_mask + warp(evp_img3, ev_in_flow1) * (1 - ev_in_mask)
+                    ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
 
             smoothed_loss = np.mean(moving_average(epoch_loss, 9))
             epoch_time = time.time() - start_timestamp
