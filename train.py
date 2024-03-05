@@ -1352,7 +1352,6 @@ def main():
 
             for ev_item_index in range(9):
                 ev_item = dataset.frames_queue.get()
-                print (ev_item.keys())
                 ev_img1 = ev_item['start']
                 ev_img2 = ev_item['gt']
                 ev_img3 = ev_item['end']
@@ -1398,11 +1397,11 @@ def main():
                     except Exception as e:
                         print (e)
                 
-                write_exr(evp_img1[0].permute(1, 2, 0)[:h, :w], os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
-                write_exr(evp_img2[0].permute(1, 2, 0)[:h, :w], os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
-                write_exr(evp_img3[0].permute(1, 2, 0)[:h, :w], os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
-                write_exr(ev_output_inflow, os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
-                write_exr(ev_output_rife, os.path.join(eval_folder, f'{ev_item_index:04}_output_rife.exr'))
+                write_exr(evp_img1[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
+                write_exr(evp_img2[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
+                write_exr(evp_img3[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
+                write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
+                write_exr(ev_output_rife.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output_rife.exr'))
    
             smoothed_loss = np.mean(moving_average(epoch_loss, 9))
             epoch_time = time.time() - start_timestamp
