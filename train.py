@@ -911,6 +911,12 @@ def blur(img, interations = 16):
         '''
     return blurred_img
 
+def psnr_torch(imageA, imageB, max_pixel=1.0):
+    mse = torch.mean((imageA - imageB) ** 2)
+    if mse == 0:
+        return torch.tensor(float('inf'))
+    return 20 * torch.log10(max_pixel / torch.sqrt(mse))
+
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
@@ -1387,14 +1393,14 @@ def main():
                     _, _, merged, _, _ = model_rife(x, timestep = ev_ratio)
                     ev_output_rife = merged[3]
                     ev_output_rife = restore_normalized_values(ev_output_rife)
-                    rife_psnr_list.append(10 * math.log10(1./ torch.mean((evp_img2 - ev_output_rife) * (evp_img2 - ev_output_rife)).cpu().data))
+                    rife_psnr_list.append(psnr_torch(ev_output_rife, evp_img2))
                     ev_output_rife = ev_output_rife[0].permute(1, 2, 0)[:h, :w]
 
                     ev_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
                     ev_in_flow0, ev_in_flow1, ev_in_mask, ev_in_deep = model(torch.cat((evp_img1, ev_timestep, evp_img3), dim=1))
                     ev_output_inflow = warp(evp_img1, ev_in_flow0) * ev_in_mask + warp(evp_img3, ev_in_flow1) * (1 - ev_in_mask)
                     ev_output_inflow = restore_normalized_values(ev_output_inflow)
-                    psnr_list.append(10 * math.log10(1. / torch.mean((evp_img2 - ev_output_inflow) * (evp_img2 - ev_output_inflow)).cpu().data))
+                    psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
                     ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
 
                 preview_folder = os.path.join(args.dataset_path, 'preview')
