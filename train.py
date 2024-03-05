@@ -1350,6 +1350,8 @@ def main():
                 'model_name': model_name,
             }, trained_model_path)
 
+            rife_psnr_list = []
+            psnr_list = []
             for ev_item_index in range(9):
                 ev_item = dataset.frames_queue.get()
                 ev_img1 = ev_item['start']
@@ -1382,11 +1384,13 @@ def main():
                     x = torch.cat((evp_img1, evp_img2, evp_img3), dim=1)
                     _, _, merged, _, _ = model_rife(x, timestep = ev_ratio)
                     ev_output_rife = merged[3]
+                    rife_psnr_list.append(-10 * math.log10(torch.mean((evp_img2 - ev_output_rife) * (evp_img2 - ev_output_rife)).cpu().data))
                     ev_output_rife = ev_output_rife[0].permute(1, 2, 0)[:h, :w]
 
                     ev_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
                     ev_in_flow0, ev_in_flow1, ev_in_mask, ev_in_deep = model(torch.cat((evp_img1, ev_timestep, evp_img3), dim=1))
                     ev_output_inflow = warp(evp_img1, ev_in_flow0) * ev_in_mask + warp(evp_img3, ev_in_flow1) * (1 - ev_in_mask)
+                    psnr_list.append(-10 * math.log10(torch.mean((evp_img2 - ev_output_inflow) * (evp_img2 - ev_output_inflow)).cpu().data))
                     ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
 
                 preview_folder = os.path.join(args.dataset_path, 'preview')
@@ -1396,7 +1400,7 @@ def main():
                         os.makedirs(eval_folder)
                     except Exception as e:
                         print (e)
-                
+
                 write_exr(evp_img1[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
                 write_exr(evp_img2[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
                 write_exr(evp_img3[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
@@ -1408,9 +1412,13 @@ def main():
             days = int(epoch_time // (24 * 3600))
             hours = int((epoch_time % (24 * 3600)) // 3600)
             minutes = int((epoch_time % 3600) // 60)
+
+            rife_psnr = np.array(rife_psnr_list).mean()
+            psnr = np.array(psnr_list).mean()
+
             clear_lines(2)
             # print (f'\r {" "*120}', end='')
-            print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}')
+            print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PNSR] {psnr:.2f} RIFE_PNSR {rife_psnr:.2f}')
             print ('\n')
             steps_loss = []
             epoch_loss = []
