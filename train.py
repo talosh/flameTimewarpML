@@ -1334,8 +1334,6 @@ def main():
         hours = int((epoch_time % (24 * 3600)) // 3600)
         minutes = int((epoch_time % 3600) // 60)
 
-
-
         clear_lines(2)
         print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
         print(f'\r[Last 1K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}')
@@ -1356,7 +1354,16 @@ def main():
             for evaluate_item in range(9):
                 ev_item = dataset.frames_queue.get()
                 print (ev_item.keys())
+                ev_img1 = ev_item['start']
+                ev_img2 = ev_item['gt']
+                ev_img3 = ev_item['end']
+                ev_ratio = ev_item['ratio']
 
+                with torch.no_grad():
+                    x = torch.cat((ev_img1, ev_img2, ev_img3), dim=1)
+                    _, _, merged, _, _ = model_rife(x, timestep = ev_ratio)
+                    ev_output_rife = merged[3]
+            
             smoothed_loss = np.mean(moving_average(epoch_loss, 9))
             epoch_time = time.time() - start_timestamp
             days = int(epoch_time // (24 * 3600))
