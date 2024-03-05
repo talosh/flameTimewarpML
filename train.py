@@ -1390,7 +1390,7 @@ def main():
                     ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
 
                 preview_folder = os.path.join(args.dataset_path, 'preview')
-                eval_folder = os.path.join(args.dataset_path, 'eval')
+                eval_folder = os.path.join(preview_folder, 'eval')
                 if not os.path.isdir(eval_folder):
                     try:
                         os.makedirs(eval_folder)
