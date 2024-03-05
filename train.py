@@ -1447,8 +1447,9 @@ def main():
                 'model_state_dict': model_inflow.state_dict(),
             }, inflow_model_path)
 
-            for evaluate_item in range(99):
-                pass
+            for evaluate_item in range(9):
+                ev_item = dataset.frames_queue.get()
+                print (ev_item.keys())
 
             smoothed_loss = np.mean(moving_average(epoch_loss, 9))
             epoch_time = time.time() - start_timestamp
