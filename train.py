@@ -1350,7 +1350,7 @@ def main():
                 'model_name': model_name,
             }, trained_model_path)
 
-            for evaluate_item in range(9):
+            for ev_item_index in range(9):
                 ev_item = dataset.frames_queue.get()
                 print (ev_item.keys())
                 ev_img1 = ev_item['start']
@@ -1389,6 +1389,20 @@ def main():
                     ev_output_inflow = warp(evp_img1, ev_in_flow0) * ev_in_mask + warp(evp_img3, ev_in_flow1) * (1 - ev_in_mask)
                     ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
 
+                preview_folder = os.path.join(args.dataset_path, 'preview')
+                eval_folder = os.path.join(args.dataset_path, 'eval')
+                if not os.path.isdir(eval_folder):
+                    try:
+                        os.makedirs(eval_folder)
+                    except Exception as e:
+                        print (e)
+                
+                write_exr(evp_img1[0].permute(1, 2, 0)[:h, :w], os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
+                write_exr(evp_img2[0].permute(1, 2, 0)[:h, :w], os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
+                write_exr(evp_img3[0].permute(1, 2, 0)[:h, :w], os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
+                write_exr(ev_output_inflow, os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
+                write_exr(ev_output_rife, os.path.join(eval_folder, f'{ev_item_index:04}_output_rife.exr'))
+   
             smoothed_loss = np.mean(moving_average(epoch_loss, 9))
             epoch_time = time.time() - start_timestamp
             days = int(epoch_time // (24 * 3600))
