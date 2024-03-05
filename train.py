@@ -1358,9 +1358,12 @@ def main():
                 ev_img2 = ev_item['gt']
                 ev_img3 = ev_item['end']
                 ev_ratio = ev_item['ratio']
-                ev_img1 = torch.from_numpy(src_img1.copy())
-                ev_img2 = torch.from_numpy(src_img2.copy())
-                ev_img3 = torch.from_numpy(src_img3.copy())
+                ev_img1 = torch.from_numpy(ev_img1.copy())
+                ev_img2 = torch.from_numpy(ev_img2.copy())
+                ev_img3 = torch.from_numpy(ev_img3.copy())
+                ev_img1 = ev_img1.to(device = device, dtype = torch.float32)
+                ev_img2 = ev_img2.to(device = device, dtype = torch.float32)
+                ev_img3 = ev_img3.to(device = device, dtype = torch.float32)
 
                 with torch.no_grad():
                     x = torch.cat((ev_img1, ev_img2, ev_img3), dim=1)
