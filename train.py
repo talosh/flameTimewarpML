@@ -1136,6 +1136,8 @@ def main():
 
         idflow = id_flow(img1)
         in_flow0, in_flow1, in_mask, in_deep = model(torch.cat((img1, img3, idflow, timestep), dim=1))
+        in_flow0 = in_flow0 + idflow
+        in_flow1 = in_flow1 + idflow
         
         output_inflow_d5 = warp_tenflow(img1, in_deep[0][0]) * in_deep[0][2] + warp_tenflow(img3, in_deep[0][1]) * (1 - in_deep[0][2])
         output_inflow_d4 = warp_tenflow(img1, in_deep[1][0]) * in_deep[1][2] + warp_tenflow(img3, in_deep[1][1]) * (1 - in_deep[1][2])
