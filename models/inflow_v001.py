@@ -427,30 +427,30 @@ class UNet_3Plus(Module):
 
         deepsup = []
 
-        res_flow0_d5 = d5[:, :2]
+        res_flow0_d5 = torch.tanh(d5[:, :2])
         mask_d5 = torch.sigmoid((d5[: , 2:3]+ 1) / 2)
-        res_flow1_d5 = d5[:, 3:5]
+        res_flow1_d5 = torch.tanh(d5[:, 3:5])
         deepsup.append((res_flow0_d5, res_flow1_d5, mask_d5))
 
-        res_flow0_d4 = d4[:, :2]
+        res_flow0_d4 = torch.tanh(d4[:, :2])
         mask_d4 = torch.sigmoid((d4[: , 2:3]+ 1) / 2)
-        res_flow1_d4 = d4[:, 3:5]
+        res_flow1_d4 = torch.tanh(d4[:, 3:5])
         deepsup.append((res_flow0_d4, res_flow1_d4, mask_d4))
 
-        res_flow0_d3 = d3[:, :2]
+        res_flow0_d3 = torch.tanh(d3[:, :2])
         mask_d3 = torch.sigmoid((d3[: , 2:3]+ 1) / 2)
-        res_flow1_d3 = d3[:, 3:5]
+        res_flow1_d3 = torch.tanh(d3[:, 3:5])
         deepsup.append((res_flow0_d3, res_flow1_d3, mask_d3))
 
-        res_flow0_d2 = d2[:, :2]
+        res_flow0_d2 = torch.tanh(d2[:, :2])
         mask_d2 = torch.sigmoid((d2[: , 2:3]+ 1) / 2)
-        res_flow1_d2 = d2[:, 3:5]
+        res_flow1_d2 = torch.tanh(d2[:, 3:5])
         deepsup.append((res_flow0_d2, res_flow1_d2, mask_d2))
 
-        res_flow0 = out[:, :2]
+        res_flow0 = torch.tanh(out[:, :2])
         mask = out[: , 2:3]
         res_mask = torch.sigmoid((mask + 1) / 2)
-        res_flow1 = out[:, 3:5]
+        res_flow1 = torch.tanh(out[:, 3:5])
 
         return res_flow0, res_flow1, res_mask, deepsup
 
