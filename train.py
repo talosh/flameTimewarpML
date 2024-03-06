@@ -1148,7 +1148,7 @@ def main():
         output_inflow_d3 = warp_tenflow(img1, in_deep[2][0]) * in_deep[2][2] + warp_tenflow(img3, in_deep[2][1]) * (1 - in_deep[2][2])
         output_inflow_d2 = warp_tenflow(img1, in_deep[3][0]) * in_deep[3][2] + warp_tenflow(img3, in_deep[3][1]) * (1 - in_deep[3][2])
         # output_inflow = warp_tenflow(img1, in_flow0) * in_mask + warp_tenflow(img3, in_flow1) * (1 - in_mask)
-        ev_output_inflow = warp_tenflow(img2, idflow)
+        output_inflow = warp_tenflow(img2, idflow)
 
         # with torch.no_grad():
         # r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, blurred_grain_mask, timestep)
