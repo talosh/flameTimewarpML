@@ -859,6 +859,16 @@ def warp(tenInput, tenFlow):
     g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
     return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
+def warp_tenflow(tenInput, tenFlow):
+    backwarp_tenGrid = {}
+    k = (str(tenFlow.device), str(tenFlow.size()))
+    if k not in backwarp_tenGrid:
+        tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+        tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+        backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
+    g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+    return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+
 def id_flow(tenInput):
     tenHorizontal = torch.linspace(-1.0, 1.0, tenInput.shape[3]).view(1, 1, 1, tenInput.shape[3]).expand(tenInput.shape[0], -1, tenInput.shape[2], -1)
     tenVertical = torch.linspace(-1.0, 1.0, tenInput.shape[2]).view(1, 1, tenInput.shape[2], 1).expand(tenInput.shape[0], -1, -1, tenInput.shape[3])
@@ -1133,11 +1143,11 @@ def main():
         idflow = id_flow(img1)
         in_flow0, in_flow1, in_mask, in_deep = model(torch.cat((img1, idflow, timestep, img3), dim=1))
         
-        output_inflow_d5 = warp(img1, in_deep[0][0]) * in_deep[0][2] + warp(img3, in_deep[0][1]) * (1 - in_deep[0][2])
-        output_inflow_d4 = warp(img1, in_deep[1][0]) * in_deep[1][2] + warp(img3, in_deep[1][1]) * (1 - in_deep[1][2])
-        output_inflow_d3 = warp(img1, in_deep[2][0]) * in_deep[2][2] + warp(img3, in_deep[2][1]) * (1 - in_deep[2][2])
-        output_inflow_d2 = warp(img1, in_deep[3][0]) * in_deep[3][2] + warp(img3, in_deep[3][1]) * (1 - in_deep[3][2])
-        output_inflow = warp(img1, in_flow0) * in_mask + warp(img3, in_flow1) * (1 - in_mask)
+        output_inflow_d5 = warp_tenflow(img1, in_deep[0][0]) * in_deep[0][2] + warp_tenflow(img3, in_deep[0][1]) * (1 - in_deep[0][2])
+        output_inflow_d4 = warp_tenflow(img1, in_deep[1][0]) * in_deep[1][2] + warp_tenflow(img3, in_deep[1][1]) * (1 - in_deep[1][2])
+        output_inflow_d3 = warp_tenflow(img1, in_deep[2][0]) * in_deep[2][2] + warp_tenflow(img3, in_deep[2][1]) * (1 - in_deep[2][2])
+        output_inflow_d2 = warp_tenflow(img1, in_deep[3][0]) * in_deep[3][2] + warp_tenflow(img3, in_deep[3][1]) * (1 - in_deep[3][2])
+        output_inflow = warp_tenflow(img1, in_flow0) * in_mask + warp_tenflow(img3, in_flow1) * (1 - in_mask)
 
         # with torch.no_grad():
         # r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, blurred_grain_mask, timestep)
@@ -1208,6 +1218,7 @@ def main():
         # optimizer_refine.zero_grad(set_to_none=False)
         # optimizer_fusion.zero_grad(set_to_none=False)
 
+        '''
         loss_mask_d5 = ((gamma_up(output_d5) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
         loss_cons_d5 = (((target_flow.detach() - output_flow_d5) ** 2).sum(1, True) ** 0.5 * loss_mask_d5).mean() * 0.001
         loss_cons_d5 += ((output_flow_d5 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
@@ -1223,13 +1234,14 @@ def main():
         loss_mask = ((gamma_up(output) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
         loss_cons = (((target_flow.detach() - output_flow) ** 2).sum(1, True) ** 0.5 * loss_mask).mean() * 0.001
         loss_cons += ((output_flow ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
+        '''
 
         loss = criterion_l1(gamma_up(output), gamma_up(target))
         loss += criterion_l1(output_d2, target) * (1 / 16 ** 2)
         loss += criterion_l1(output_d3, target) * (1 / 4 ** 2)
         loss += criterion_l1(output_d4, target) * (1 / 2 ** 2)
         loss += criterion_l1(output_d5, target) * (1 / 2)
-        loss += loss_cons
+        # loss += loss_cons
         # loss += loss_cons_d2 * (1 / 16 ** 2)
         # loss += loss_cons_d3 * (1 / 8 ** 2)
         # loss += loss_cons_d4 * (1 / 4 ** 2)
@@ -1409,7 +1421,7 @@ def main():
                     evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
                     evp_id_flow = id_flow(evp_img1)
                     ev_in_flow0, ev_in_flow1, ev_in_mask, ev_in_deep = model(torch.cat((evp_img1, evp_id_flow, evp_timestep, evp_img3), dim=1))
-                    ev_output_inflow = warp(evp_img1, ev_in_flow0) * ev_in_mask + warp(evp_img3, ev_in_flow1) * (1 - ev_in_mask)
+                    ev_output_inflow = warp_tenflow(evp_img1, ev_in_flow0) * ev_in_mask + warp_tenflow(evp_img3, ev_in_flow1) * (1 - ev_in_mask)
                     ev_output_inflow = restore_normalized_values(ev_output_inflow)
                     psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
                     ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
