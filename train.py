@@ -1435,7 +1435,7 @@ def main():
                     psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
                     ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
                     '''
-                    ev_output_inflow, ev_in_deep = model(torch.cat((evp_img1, evp_img3, evp_timestep, ), dim=1))
+                    ev_output_inflow, ev_in_deep = model(torch.cat((evp_img1*2-1, evp_img3*2-1, evp_timestep, ), dim=1))
                     psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
                     ev_output_inflow = restore_normalized_values(ev_output_inflow)
                     ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
