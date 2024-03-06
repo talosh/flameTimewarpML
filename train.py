@@ -859,6 +859,11 @@ def warp(tenInput, tenFlow):
     g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
     return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
+def id_flow(tenInput):
+    tenHorizontal = torch.linspace(-1.0, 1.0, tenInput.shape[3]).view(1, 1, 1, tenInput.shape[3]).expand(tenInput.shape[0], -1, tenInput.shape[2], -1)
+    tenVertical = torch.linspace(-1.0, 1.0, tenInput.shape[2]).view(1, 1, tenInput.shape[2], 1).expand(tenInput.shape[0], -1, -1, tenInput.shape[3])
+    return torch. cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
+
 def split_to_yuv(rgb_tensor):
     r_tensor, g_tensor, b_tensor = rgb_tensor[:, 0:1, :, :], rgb_tensor[:, 1:2, :, :], rgb_tensor[:, 2:3, :, :]
     y_tensor = 0.299 * r_tensor + 0.587 * g_tensor + 0.114 * b_tensor
@@ -972,7 +977,7 @@ def main():
     
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
 
-    model = ModelInflow().get_training_model()(7, 5).to(device)
+    model = ModelInflow().get_training_model()(9, 5).to(device)
     model_name = 'Test'
     model_rife = FlownetCas().to(device)
     
@@ -1125,7 +1130,8 @@ def main():
         blurred_grain_mask = torch.clamp(blur(mask + grain1) + grain2, min=0, max=1)
         blurred_output_rife = warp(img1, flow0) * blurred_grain_mask + warp(img3, flow1) * (1 - blurred_grain_mask)
 
-        in_flow0, in_flow1, in_mask, in_deep = model(torch.cat((img1, timestep, img3), dim=1))
+        idflow = id_flow(img1)
+        in_flow0, in_flow1, in_mask, in_deep = model(torch.cat((img1, idflow, timestep, img3), dim=1))
         
         output_inflow_d5 = warp(img1, in_deep[0][0]) * in_deep[0][2] + warp(img3, in_deep[0][1]) * (1 - in_deep[0][2])
         output_inflow_d4 = warp(img1, in_deep[1][0]) * in_deep[1][2] + warp(img3, in_deep[1][1]) * (1 - in_deep[1][2])
@@ -1400,8 +1406,9 @@ def main():
                     rife_psnr_list.append(psnr_torch(ev_output_rife, evp_img2))
                     ev_output_rife = ev_output_rife[0].permute(1, 2, 0)[:h, :w]
 
-                    ev_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
-                    ev_in_flow0, ev_in_flow1, ev_in_mask, ev_in_deep = model(torch.cat((evp_img1, ev_timestep, evp_img3), dim=1))
+                    evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
+                    evp_id_flow = id_flow(evp_img1)
+                    ev_in_flow0, ev_in_flow1, ev_in_mask, ev_in_deep = model(torch.cat((evp_img1, evp_id_flow, evp_timestep, evp_img3), dim=1))
                     ev_output_inflow = warp(evp_img1, ev_in_flow0) * ev_in_mask + warp(evp_img3, ev_in_flow1) * (1 - ev_in_mask)
                     ev_output_inflow = restore_normalized_values(ev_output_inflow)
                     psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
