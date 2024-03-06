@@ -1315,7 +1315,9 @@ def main():
                 rgb_target = restore_normalized_values(img2)
                 rgb_output = restore_normalized_values(output)
                 rgb_output_rife = restore_normalized_values(output_rife)
-                rgb_output_refine_mask = in_mask.repeat_interleave(3, dim=1)
+                # rgb_output_refine_mask = in_mask.repeat_interleave(3, dim=1)
+                rgb_output_refine_mask = mask.repeat_interleave(3, dim=1)
+
 
             write_image_queue.put(
                 {
