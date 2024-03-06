@@ -1455,7 +1455,7 @@ def main():
                         write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
                         write_exr(ev_output_rife.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output_rife.exr'))
                     except Exception as e:
-                        print (e)
+                        print (f'\n\n\n{e}')
    
             smoothed_loss = np.mean(moving_average(epoch_loss, 9))
             epoch_time = time.time() - start_timestamp
