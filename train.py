@@ -1419,7 +1419,7 @@ def main():
                 evp_img2 = restore_normalized_values(evp_img2)
                 evp_img3 = restore_normalized_values(evp_img3)
 
-                if ev_item_index  % 11 == 1:
+                if ev_item_index  % 9 == 1:
                     write_exr(evp_img1[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
                     write_exr(evp_img3[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
                     write_exr(evp_img2[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
