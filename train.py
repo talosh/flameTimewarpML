@@ -72,7 +72,7 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
 from models.flownet import FlownetCas
-from models.inflow_v001 import Model as ModelInflow
+from models.inflow_v002 import Model as ModelInflow
 
 class Yogi(Optimizer):
     r"""Implements Yogi Optimizer Algorithm.
@@ -981,7 +981,7 @@ def main():
     
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
 
-    model = ModelInflow().get_training_model()(9, 5).to(device)
+    model = ModelInflow().get_training_model()(7, 3).to(device)
     model_name = 'Test'
     model_rife = FlownetCas().to(device)
     
@@ -1134,25 +1134,27 @@ def main():
         blurred_grain_mask = torch.clamp(blur(mask + grain1) + grain2, min=0, max=1)
         blurred_output_rife = warp(img1, flow0) * blurred_grain_mask + warp(img3, flow1) * (1 - blurred_grain_mask)
 
-        idflow = id_flow(img1)
-        in_flow0, in_flow1, in_mask, in_deep = model(torch.cat((img1, img3, idflow, timestep), dim=1))
-        in_flow0 = in_flow0 + idflow
-        in_flow1 = in_flow1 + idflow
-        
-        output_inflow_d5 = warp_tenflow(img1, in_deep[0][0]) * in_deep[0][2] + warp_tenflow(img3, in_deep[0][1]) * (1 - in_deep[0][2])
-        output_inflow_d4 = warp_tenflow(img1, in_deep[1][0]) * in_deep[1][2] + warp_tenflow(img3, in_deep[1][1]) * (1 - in_deep[1][2])
-        output_inflow_d3 = warp_tenflow(img1, in_deep[2][0]) * in_deep[2][2] + warp_tenflow(img3, in_deep[2][1]) * (1 - in_deep[2][2])
-        output_inflow_d2 = warp_tenflow(img1, in_deep[3][0]) * in_deep[3][2] + warp_tenflow(img3, in_deep[3][1]) * (1 - in_deep[3][2])
-        output_inflow = warp_tenflow(img1, in_flow0) * in_mask + warp_tenflow(img3, in_flow1) * (1 - in_mask)
+        # idflow = id_flow(img1)
+        # in_flow0, in_flow1, in_mask, in_deep = model(torch.cat((img1, img3, idflow, timestep), dim=1))
+        # in_flow0 = in_flow0 + idflow
+        # in_flow1 = in_flow1 + idflow
+
+        output_inflow, in_deep = model(torch.cat((img1, img3, timestep), dim=1))
+    
+        # output_inflow_d5 = warp_tenflow(img1, in_deep[0][0]) * in_deep[0][2] + warp_tenflow(img3, in_deep[0][1]) * (1 - in_deep[0][2])
+        # output_inflow_d4 = warp_tenflow(img1, in_deep[1][0]) * in_deep[1][2] + warp_tenflow(img3, in_deep[1][1]) * (1 - in_deep[1][2])
+         #output_inflow_d3 = warp_tenflow(img1, in_deep[2][0]) * in_deep[2][2] + warp_tenflow(img3, in_deep[2][1]) * (1 - in_deep[2][2])
+        # output_inflow_d2 = warp_tenflow(img1, in_deep[3][0]) * in_deep[3][2] + warp_tenflow(img3, in_deep[3][1]) * (1 - in_deep[3][2])
+        # output_inflow = warp_tenflow(img1, in_flow0) * in_mask + warp_tenflow(img3, in_flow1) * (1 - in_mask)
         # output_inflow = warp_tenflow(img2, idflow)
 
         # with torch.no_grad():
         # r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, blurred_grain_mask, timestep)
         # output_refine = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
-        output_d5 = output_inflow_d5
-        output_d4 = output_inflow_d4
-        output_d3 = output_inflow_d3
-        output_d2 = output_inflow_d2
+        output_d5 = in_deep[0]
+        output_d4 = in_deep[1]
+        output_d3 = in_deep[2]
+        output_d2 = in_deep[3]
         output = output_inflow
         
         # output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
@@ -1184,12 +1186,14 @@ def main():
         flow1_nm = 2 * ((flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
         in_flow1_nm = 2 * ((in_flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
         '''
+        '''
         output_flow_d5 = torch.cat((in_deep[0][0], in_deep[0][1]), dim=1)
         output_flow_d4 = torch.cat((in_deep[1][0], in_deep[1][1]), dim=1)
         output_flow_d3 = torch.cat((in_deep[2][0], in_deep[2][1]), dim=1)
         output_flow_d2 = torch.cat((in_deep[3][0], in_deep[3][1]), dim=1)
         output_flow = torch.cat((in_flow0, in_flow1), dim=1)
         target_flow = torch.cat((flow0, flow1), dim=1)
+        '''
 
         target = img2
 
@@ -1416,6 +1420,8 @@ def main():
                     ev_output_rife = ev_output_rife[0].permute(1, 2, 0)[:h, :w]
 
                     evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
+
+                    '''
                     evp_id_flow = id_flow(evp_img1)
                     ev_in_flow0, ev_in_flow1, ev_in_mask, ev_in_deep = model(torch.cat((evp_img1, evp_id_flow, evp_timestep, evp_img3), dim=1))
                     ev_in_flow0 = ev_in_flow0 + evp_id_flow
@@ -1425,6 +1431,8 @@ def main():
                     ev_output_inflow = restore_normalized_values(ev_output_inflow)
                     psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
                     ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
+                    '''
+                    ev_output_inflow, ev_in_deep = model(torch.cat((evp_img1, evp_img3, evp_timestep, ), dim=1))
 
                 preview_folder = os.path.join(args.dataset_path, 'preview')
                 eval_folder = os.path.join(preview_folder, 'eval')
