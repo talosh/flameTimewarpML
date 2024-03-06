@@ -249,7 +249,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         self.w = 256
         # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
-        self.frames_queue = queue.Queue(maxsize=8)
+        self.frames_queue = queue.Queue(maxsize=12)
         self.frame_read_thread = threading.Thread(target=self.read_frames_thread)
         self.frame_read_thread.daemon = True
         self.frame_read_thread.start()
@@ -979,13 +979,12 @@ def main():
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
     lr = args.lr
-    lr_rife = args.lr * 1e-4
 
     criterion_mse = torch.nn.MSELoss()
     criterion_l1 = torch.nn.L1Loss()
 
     # optimizer_sgd = torch.optim.SGD(model.parameters(), lr=lr)
-    optimizer = Yogi(model.parameters(), lr=lr_rife)
+    optimizer = Yogi(model.parameters(), lr=lr)
 
     def warmup(current_step, lr = 4e-3, number_warmup_steps = 999):
         mul_lin = current_step / number_warmup_steps
@@ -996,7 +995,7 @@ def main():
     import warnings
     warnings.filterwarnings('ignore', category=UserWarning)
 
-    train_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=pulse_period, eta_min = lr_rife - (( lr_rife / 100 ) * pulse_dive) )
+    train_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     # warmup_scheduler_fusion = torch.optim.lr_scheduler.LambdaLR(optimizer_fusion, lr_lambda=lambda step: warmup(step, lr=lr, number_warmup_steps=number_warmup_steps))
     # scheduler_fusion = torch.optim.lr_scheduler.SequentialLR(optimizer_fusion, [warmup_scheduler_fusion, train_scheduler_fusion], [number_warmup_steps])
     scheduler = train_scheduler
