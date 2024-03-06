@@ -1418,6 +1418,9 @@ def main():
                     evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
                     evp_id_flow = id_flow(evp_img1)
                     ev_in_flow0, ev_in_flow1, ev_in_mask, ev_in_deep = model(torch.cat((evp_img1, evp_id_flow, evp_timestep, evp_img3), dim=1))
+                    ev_in_flow0 = ev_in_flow0 + evp_id_flow
+                    ev_in_flow1 = ev_in_flow1 + evp_id_flow
+
                     ev_output_inflow = warp_tenflow(evp_img1, ev_in_flow0) * ev_in_mask + warp_tenflow(evp_img3, ev_in_flow1) * (1 - ev_in_mask)
                     ev_output_inflow = restore_normalized_values(ev_output_inflow)
                     psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
