@@ -1238,10 +1238,10 @@ def main():
         '''
 
         loss = criterion_l1(gamma_up(output), gamma_up(target))
-        loss += criterion_l1(output_d2, target) * (1 / 16 ** 2)
-        loss += criterion_l1(output_d3, target) * (1 / 4 ** 2)
-        loss += criterion_l1(output_d4, target) * (1 / 2 ** 2)
-        loss += criterion_l1(output_d5, target) * (1 / 2)
+        # loss += criterion_l1(output_d2, target) * (1 / 16 ** 2)
+        # loss += criterion_l1(output_d3, target) * (1 / 4 ** 2)
+        # loss += criterion_l1(output_d4, target) * (1 / 2 ** 2)
+        # loss += criterion_l1(output_d5, target) * (1 / 2)
         # loss += loss_cons
         # loss += loss_cons_d2 * (1 / 16 ** 2)
         # loss += loss_cons_d3 * (1 / 8 ** 2)
