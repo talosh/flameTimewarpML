@@ -257,7 +257,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         print ('reading first block of training data...')
         self.last_train_data = self.frames_queue.get()
 
-        self.repeat_count = 96
+        self.repeat_count = 1
         self.repeat_counter = 0
 
         # self.last_shuffled_index = -1
