@@ -1435,6 +1435,7 @@ def main():
                     ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
                     '''
                     ev_output_inflow, ev_in_deep = model(torch.cat((evp_img1, evp_img3, evp_timestep, ), dim=1))
+                    psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
 
                 preview_folder = os.path.join(args.dataset_path, 'preview')
                 eval_folder = os.path.join(preview_folder, 'eval')
@@ -1455,7 +1456,7 @@ def main():
                         write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
                         write_exr(ev_output_rife.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output_rife.exr'))
                     except Exception as e:
-                        print (f'\n\n\n{e}')
+                        print (f'\n\n\n{e}\n\n\n')
    
             smoothed_loss = np.mean(moving_average(epoch_loss, 9))
             epoch_time = time.time() - start_timestamp
