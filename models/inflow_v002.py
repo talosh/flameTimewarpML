@@ -445,14 +445,15 @@ class UNet_3Plus(Module):
         # res_flow0_d2 = torch.tanh(d2[:, :2])
         # mask_d2 = torch.sigmoid((d2[: , 2:3]+ 1) / 2)
          #res_flow1_d2 = torch.tanh(d2[:, 3:5])
-        deepsup.append((torch.tanh(d2) + 1) / 2)
+        deepsup.append((torch.tanh(d2)+1) / 2)
+        # deepsup.append(((d2)+1) / 2)
 
         # res_flow0 = torch.tanh(out[:, :2])
         # mask = out[: , 2:3]
          #res_mask = torch.sigmoid((mask + 1) / 2)
         # res_flow1 = torch.tanh(out[:, 3:5])
 
-        return (torch.tanh(out) + 1) / 2, deepsup
+        return ((out) + 1) / 2, deepsup
 
 class Model:
     @staticmethod
