@@ -1381,85 +1381,89 @@ def main():
 
             rife_psnr_list = []
             psnr_list = []
-            for ev_item_index in range(111):
 
-                clear_lines(2)
-                print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
-                print (f'\rCalcualting PSNR on full-scale image {ev_item_index} of 111...')
+            try:
+                for ev_item_index in range(111):
 
-                ev_item = dataset.frames_queue.get()
-                ev_img1 = ev_item['start']
-                ev_img2 = ev_item['gt']
-                ev_img3 = ev_item['end']
-                ev_ratio = ev_item['ratio']
-                ev_img1 = torch.from_numpy(ev_img1.copy())
-                ev_img2 = torch.from_numpy(ev_img2.copy())
-                ev_img3 = torch.from_numpy(ev_img3.copy())
-                ev_img1 = ev_img1.to(device = device, dtype = torch.float32)
-                ev_img2 = ev_img2.to(device = device, dtype = torch.float32)
-                ev_img3 = ev_img3.to(device = device, dtype = torch.float32)
-                ev_img1 = ev_img1.permute(2, 0, 1).unsqueeze(0)
-                ev_img2 = ev_img2.permute(2, 0, 1).unsqueeze(0)
-                ev_img3 = ev_img3.permute(2, 0, 1).unsqueeze(0)
-                ev_img1 = normalize(ev_img1)
-                ev_img2 = normalize(ev_img2)
-                ev_img3 = normalize(ev_img3)
+                    clear_lines(2)
+                    print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
+                    print (f'\rCalcualting PSNR on full-scale image {ev_item_index} of 111...')
 
-                n, c, h, w = ev_img1.shape
-                
-                ph = ((h - 1) // 64 + 1) * 64
-                pw = ((w - 1) // 64 + 1) * 64
-                padding = (0, pw - w, 0, ph - h)
-                evp_img1 = torch.nn.functional.pad(ev_img1, padding)
-                evp_img2 = torch.nn.functional.pad(ev_img2, padding)
-                evp_img3 = torch.nn.functional.pad(ev_img3, padding)
+                    ev_item = dataset.frames_queue.get()
+                    ev_img1 = ev_item['start']
+                    ev_img2 = ev_item['gt']
+                    ev_img3 = ev_item['end']
+                    ev_ratio = ev_item['ratio']
+                    ev_img1 = torch.from_numpy(ev_img1.copy())
+                    ev_img2 = torch.from_numpy(ev_img2.copy())
+                    ev_img3 = torch.from_numpy(ev_img3.copy())
+                    ev_img1 = ev_img1.to(device = device, dtype = torch.float32)
+                    ev_img2 = ev_img2.to(device = device, dtype = torch.float32)
+                    ev_img3 = ev_img3.to(device = device, dtype = torch.float32)
+                    ev_img1 = ev_img1.permute(2, 0, 1).unsqueeze(0)
+                    ev_img2 = ev_img2.permute(2, 0, 1).unsqueeze(0)
+                    ev_img3 = ev_img3.permute(2, 0, 1).unsqueeze(0)
+                    ev_img1 = normalize(ev_img1)
+                    ev_img2 = normalize(ev_img2)
+                    ev_img3 = normalize(ev_img3)
 
-                with torch.no_grad():
-                    x = torch.cat((evp_img1, evp_img2, evp_img3), dim=1)
-                    _, _, merged, _, _ = model_rife(x, timestep = ev_ratio)
-                    ev_output_rife = merged[3]
-                    ev_output_rife = restore_normalized_values(ev_output_rife)
-                    rife_psnr_list.append(psnr_torch(ev_output_rife, evp_img2))
-                    ev_output_rife = ev_output_rife[0].permute(1, 2, 0)[:h, :w]
+                    n, c, h, w = ev_img1.shape
+                    
+                    ph = ((h - 1) // 64 + 1) * 64
+                    pw = ((w - 1) // 64 + 1) * 64
+                    padding = (0, pw - w, 0, ph - h)
+                    evp_img1 = torch.nn.functional.pad(ev_img1, padding)
+                    evp_img2 = torch.nn.functional.pad(ev_img2, padding)
+                    evp_img3 = torch.nn.functional.pad(ev_img3, padding)
 
-                    evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
+                    with torch.no_grad():
+                        x = torch.cat((evp_img1, evp_img2, evp_img3), dim=1)
+                        _, _, merged, _, _ = model_rife(x, timestep = ev_ratio)
+                        ev_output_rife = merged[3]
+                        ev_output_rife = restore_normalized_values(ev_output_rife)
+                        rife_psnr_list.append(psnr_torch(ev_output_rife, evp_img2))
+                        ev_output_rife = ev_output_rife[0].permute(1, 2, 0)[:h, :w]
 
-                    '''
-                    evp_id_flow = id_flow(evp_img1)
-                    ev_in_flow0, ev_in_flow1, ev_in_mask, ev_in_deep = model(torch.cat((evp_img1, evp_id_flow, evp_timestep, evp_img3), dim=1))
-                    ev_in_flow0 = ev_in_flow0 + evp_id_flow
-                    ev_in_flow1 = ev_in_flow1 + evp_id_flow
+                        evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
 
-                    ev_output_inflow = warp_tenflow(evp_img1, ev_in_flow0) * ev_in_mask + warp_tenflow(evp_img3, ev_in_flow1) * (1 - ev_in_mask)
-                    ev_output_inflow = restore_normalized_values(ev_output_inflow)
-                    psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
-                    ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
-                    '''
-                    ev_output_inflow, ev_in_deep = model(torch.cat((evp_img1*2-1, evp_img3*2-1, evp_timestep, ), dim=1))
-                    psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
-                    ev_output_inflow = restore_normalized_values(ev_output_inflow)
-                    ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
+                        '''
+                        evp_id_flow = id_flow(evp_img1)
+                        ev_in_flow0, ev_in_flow1, ev_in_mask, ev_in_deep = model(torch.cat((evp_img1, evp_id_flow, evp_timestep, evp_img3), dim=1))
+                        ev_in_flow0 = ev_in_flow0 + evp_id_flow
+                        ev_in_flow1 = ev_in_flow1 + evp_id_flow
 
-                preview_folder = os.path.join(args.dataset_path, 'preview')
-                eval_folder = os.path.join(preview_folder, 'eval')
-                if not os.path.isdir(eval_folder):
-                    try:
-                        os.makedirs(eval_folder)
-                    except Exception as e:
-                        print (e)
-                evp_img1 = restore_normalized_values(evp_img1)
-                evp_img2 = restore_normalized_values(evp_img2)
-                evp_img3 = restore_normalized_values(evp_img3)
+                        ev_output_inflow = warp_tenflow(evp_img1, ev_in_flow0) * ev_in_mask + warp_tenflow(evp_img3, ev_in_flow1) * (1 - ev_in_mask)
+                        ev_output_inflow = restore_normalized_values(ev_output_inflow)
+                        psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
+                        ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
+                        '''
+                        ev_output_inflow, ev_in_deep = model(torch.cat((evp_img1*2-1, evp_img3*2-1, evp_timestep, ), dim=1))
+                        psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
+                        ev_output_inflow = restore_normalized_values(ev_output_inflow)
+                        ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
 
-                if ev_item_index  % 9 == 1:
-                    try:
-                        write_exr(evp_img1[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
-                        write_exr(evp_img3[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
-                        write_exr(evp_img2[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
-                        write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
-                        write_exr(ev_output_rife.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output_rife.exr'))
-                    except Exception as e:
-                        print (f'{e}\n\n')
+                    preview_folder = os.path.join(args.dataset_path, 'preview')
+                    eval_folder = os.path.join(preview_folder, 'eval')
+                    if not os.path.isdir(eval_folder):
+                        try:
+                            os.makedirs(eval_folder)
+                        except Exception as e:
+                            print (e)
+                    evp_img1 = restore_normalized_values(evp_img1)
+                    evp_img2 = restore_normalized_values(evp_img2)
+                    evp_img3 = restore_normalized_values(evp_img3)
+
+                    if ev_item_index  % 9 == 1:
+                        try:
+                            write_exr(evp_img1[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
+                            write_exr(evp_img3[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
+                            write_exr(evp_img2[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
+                            write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
+                            write_exr(ev_output_rife.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output_rife.exr'))
+                        except Exception as e:
+                            print (f'{e}\n\n')
+            except Exception as e:
+                print (f'{e}\n\n')
    
             smoothed_loss = np.mean(moving_average(epoch_loss, 9))
             epoch_time = time.time() - start_timestamp
