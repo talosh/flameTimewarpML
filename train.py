@@ -1139,7 +1139,7 @@ def main():
         # in_flow0 = in_flow0 + idflow
         # in_flow1 = in_flow1 + idflow
 
-        output_inflow, in_deep = model(torch.cat((img1*2-1, img3*2-1, timestep), dim=1))
+        output_inflow, in_deep = model(torch.cat((img1*2-1, img3*2-1, timestep*2-1), dim=1))
     
         # output_inflow_d5 = warp_tenflow(img1, in_deep[0][0]) * in_deep[0][2] + warp_tenflow(img3, in_deep[0][1]) * (1 - in_deep[0][2])
         # output_inflow_d4 = warp_tenflow(img1, in_deep[1][0]) * in_deep[1][2] + warp_tenflow(img3, in_deep[1][1]) * (1 - in_deep[1][2])
@@ -1437,7 +1437,7 @@ def main():
                         psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
                         ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
                         '''
-                        ev_output_inflow, ev_in_deep = model(torch.cat((evp_img1*2-1, evp_img3*2-1, evp_timestep, ), dim=1))
+                        ev_output_inflow, ev_in_deep = model(torch.cat((evp_img1*2-1, evp_img3*2-1, evp_timestep*2-1, ), dim=1))
                         psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
                         ev_output_inflow = restore_normalized_values(ev_output_inflow)
                         ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
