@@ -945,7 +945,7 @@ def main():
         data_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        img0, img1, img2, ratio, idx = read_image_queue.get()
+        img0 = read_image_queue.get()
 
         if platform.system() == 'Darwin':
             img0 = normalize_numpy(img0)
