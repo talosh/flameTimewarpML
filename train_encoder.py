@@ -518,9 +518,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             if random.uniform(0, 1) < 0.4:
                 img0 = img0 * exp
 
-            print (f'getimg img0 type: {type(img0)}')
-            print (f'getimg img0 shape: {img0.shape}')
-
             # colour agumentation
             delta = random.uniform(0, 0.2)
             r = random.uniform(1-delta, 1+delta)
@@ -528,8 +525,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             b = random.uniform(1-delta, 1+delta)
             y = random.uniform(1-delta, 1+delta)
             multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device)
-
-            print (f'multipliers shape: {multipliers.shape}')
 
             img0 = img0 * multipliers * y
             batch_img0.append(img0)
@@ -949,8 +944,6 @@ def main():
         time_stamp = time.time()
 
         img0, idx = read_image_queue.get()
-
-        pprint (f'img0: {type(img0)}')
 
         if platform.system() == 'Darwin':
             img0 = normalize_numpy(img0)
