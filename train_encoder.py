@@ -827,12 +827,9 @@ def main():
         while True:
             try:
                 write_data = write_image_queue.get_nowait()
-                write_exr(write_data['sample_source1'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'))
-                write_exr(write_data['sample_source2'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_outgoing.exr'))
+                write_exr(write_data['sample_source'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_source.exr'))
                 write_exr(write_data['sample_target'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_target.exr'))
                 write_exr(write_data['sample_output'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_output.exr'))
-                write_exr(write_data['sample_output_rife'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_output_rife.exr'))
-                write_exr(write_data['sample_output_refine_mask'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_output_refine_mask.exr'))
             except:
             # except queue.Empty:
                 time.sleep(0.1)
