@@ -858,7 +858,6 @@ def main():
     criterion_mse = torch.nn.MSELoss()
     criterion_l1 = torch.nn.L1Loss()
 
-    # optimizer_sgd = torch.optim.SGD(model.parameters(), lr=lr)
     optimizer_encoder = Yogi(encoder.parameters(), lr=lr)
     optimizer_decoder = Yogi(decoder.parameters(), lr=lr)
 
@@ -966,7 +965,6 @@ def main():
         output_encoder = encoder(img0)
         output = decoder(output_encoder)
 
-        optimizer.zero_grad(set_to_none=False)
         loss = criterion_mse(output, img0)
         loss_l1 = criterion_l1(output, img0)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
