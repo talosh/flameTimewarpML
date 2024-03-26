@@ -5,10 +5,30 @@ class Model:
 			import torch
 		Module = torch.nn.Module
 
+		class Conv2d(Module):
+			def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1)):
+				super().__init__()
+				self.conv1 = torch.nn.Conv2d(
+					in_channels=num_in_filters,
+					out_channels=num_out_filters,
+					kernel_size=kernel_size,
+					stride=stride,
+					padding = 'same',
+					padding_mode = 'reflect',
+					bias=False
+					)
+				# torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='selu')
+				# torch.nn.init.xavier_uniform_(self.conv1.weight, gain=torch.nn.init.calculate_gain('selu'))
+				# torch.nn.init.dirac_(self.conv1.weight)
+
+			def forward(self,x):
+				x = self.conv1(x)
+				return x
+
 		class Encoder(Module):
 			def __init__(self):
 				super().__init__()
-				self.cnn0 = torch.nn.Conv2d(3, 32, 3, 2, 1)
+				self.cnn0 = Conv2d(3, 32, 3, 2, 1)
 				self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
 				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
 				self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
