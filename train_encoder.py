@@ -516,10 +516,11 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             if random.uniform(0, 1) < 0.4:
                 img0 = img0 * exp
 
+
+            img0 = torch.stack(img0)
+
             print (f'getimg img0 type: {type(img0)}')
             print (f'getimg img0 shape: {img0.shape}')
-
-            img0 = torch.stack([img0])
 
             # colour agumentation
             delta = random.uniform(0, 0.2)
