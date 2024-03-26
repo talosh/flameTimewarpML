@@ -6,7 +6,7 @@ class Model:
 		Module = torch.nn.Module
 
 		class Conv2d(Module):
-			def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1)):
+			def __init__(self, num_in_filters, num_out_filters, kernel_size, stride):
 				super().__init__()
 				self.conv1 = torch.nn.Conv2d(
 					in_channels=num_in_filters,
@@ -28,7 +28,7 @@ class Model:
 		class Encoder(Module):
 			def __init__(self):
 				super().__init__()
-				self.cnn0 = Conv2d(3, 32, 3, 2, 1)
+				self.cnn0 = Conv2d(3, 32, 3, 2)
 				self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
 				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
 				self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
