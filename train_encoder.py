@@ -358,6 +358,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                     train_data['h'] = description['h']
                     train_data['w'] = description['w']
                     train_data['description'] = description
+                    train_data['index'] = index
                     self.frames_queue.put(train_data)
                 except Exception as e:
                     print (e)                
