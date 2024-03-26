@@ -937,6 +937,8 @@ def main():
 
     time_stamp = time.time()
     epoch = current_epoch
+    print('\n\n')
+    batch_idx = 0
 
     while True:
         data_time = time.time() - time_stamp
