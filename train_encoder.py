@@ -954,18 +954,10 @@ def main():
 
         if platform.system() == 'Darwin':
             img0 = normalize_numpy(img0)
-            img1 = normalize_numpy(img1)
-            img2 = normalize_numpy(img2)
             img0 = img0.to(device, non_blocking = True)
-            img1 = img1.to(device, non_blocking = True)
-            img2 = img2.to(device, non_blocking = True)
         else:
             img0 = img0.to(device, non_blocking = True)
-            img1 = img1.to(device, non_blocking = True)
-            img2 = img2.to(device, non_blocking = True)
             img0 = normalize(img0)
-            img1 = normalize(img1)
-            img2 = normalize(img2)
 
         current_lr = scheduler_encoder.get_last_lr()[0]
         for param_group_encoder in optimizer_encoder.param_groups:
