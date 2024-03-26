@@ -477,6 +477,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         rsz3_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/3)))
         rsz4_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/2)))
 
+        batch_img0 = []
+
         for index in range(self.batch_size):
             q = random.uniform(0, 1)
 
@@ -516,9 +518,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             if random.uniform(0, 1) < 0.4:
                 img0 = img0 * exp
 
-
-            img0 = torch.stack(img0)
-
             print (f'getimg img0 type: {type(img0)}')
             print (f'getimg img0 shape: {img0.shape}')
 
@@ -528,10 +527,11 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             g = random.uniform(1-delta, 1+delta)
             b = random.uniform(1-delta, 1+delta)
             y = random.uniform(1-delta, 1+delta)
-            multipliers = torch.tensor([r, g, b]).view(1, 3, 1, 1).to(device)
+            multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device)
             img0 = img0 * multipliers * y
+            batch_img0.append(img0)
 
-        return img0, images_idx
+        return torch.stack(img0), images_idx
 
     def get_input_channels_number(self, source_frames_paths_list):
         total_num_channels = 0
