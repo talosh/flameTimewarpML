@@ -534,7 +534,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             img0 = img0 * multipliers * y
             batch_img0.append(img0)
 
-        return torch.stack(img0), images_idx
+        return torch.stack(batch_img0), images_idx
 
     def get_input_channels_number(self, source_frames_paths_list):
         total_num_channels = 0
