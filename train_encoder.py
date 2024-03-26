@@ -943,6 +943,8 @@ def main():
 
         img0 = read_image_queue.get()
 
+        pprint (f'img0: {type(img0)}')
+
         if platform.system() == 'Darwin':
             img0 = normalize_numpy(img0)
             img1 = normalize_numpy(img1)
