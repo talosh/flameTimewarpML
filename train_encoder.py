@@ -519,6 +519,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             img0 = torch.stack([img0])
 
             # colour agumentation
+            delta = random.uniform(0, 0.2)
             r = random.uniform(1-delta, 1+delta)
             g = random.uniform(1-delta, 1+delta)
             b = random.uniform(1-delta, 1+delta)
