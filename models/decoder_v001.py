@@ -5,7 +5,7 @@ class Model:
 			import torch
 		Module = torch.nn.Module
 
-		class Decoder(nn.Module):
+		class Decoder(Module):
 			def __init__(self):
 				super().__init__()
 				self.cnn0 = torch.nn.Conv2d(8, 32, 3, 2, 1)
