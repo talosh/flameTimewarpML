@@ -965,7 +965,7 @@ def main():
         for param_group_decoder in optimizer_decoder.param_groups:
             param_group_decoder['lr'] = current_lr
 
-        current_lr_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
+        current_lr_str = str(f'{optimizer_encoder.param_groups[0]["lr"]:.4e}')
 
         optimizer_encoder.zero_grad(set_to_none=True)
         optimizer_decoder.zero_grad(set_to_none=True)
