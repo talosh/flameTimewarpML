@@ -367,17 +367,13 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.train_descriptions)
     
-    def crop(self, img0, img1, img2, img3, img4, h, w):
+    def crop(self, img0, h, w):
         np.random.seed(None)
         ih, iw, _ = img0.shape
         x = np.random.randint(0, ih - h + 1)
         y = np.random.randint(0, iw - w + 1)
         img0 = img0[x:x+h, y:y+w, :]
-        img1 = img1[x:x+h, y:y+w, :]
-        img2 = img2[x:x+h, y:y+w, :]
-        img3 = img3[x:x+h, y:y+w, :]
-        img4 = img4[x:x+h, y:y+w, :]
-        return img0, img1, img2, img3, img4
+        return img0
 
     def resize_image(self, tensor, x):
         """
@@ -871,8 +867,6 @@ def main():
     # remove annoying message in pytorch 1.12.1 when using CosineAnnealingLR
     import warnings
     warnings.filterwarnings('ignore', category=UserWarning)
-
-    train_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
 
     train_scheduler_encoder = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_encoder, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     train_scheduler_decoder = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_decoder, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
