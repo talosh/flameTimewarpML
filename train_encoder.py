@@ -72,7 +72,7 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
 from models.encoder_v001 import Model as Encoder
-from models.inflow_v002 import Model as ModelInflow
+from models.decoder_v001 import Model as Decoder
 
 class Yogi(Optimizer):
     r"""Implements Yogi Optimizer Algorithm.
@@ -245,8 +245,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         random.shuffle(self.train_descriptions)
 
-        self.h = 256
-        self.w = 256
+        self.h = 448
+        self.w = 448
         # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
         self.frames_queue = queue.Queue(maxsize=12)
@@ -315,7 +315,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         return folders_with_file, folders_without_file
 
-    def create_dataset_descriptions(self, folder_path, max_window=9):
+    def create_dataset_descriptions(self, folder_path, max_window=3):
 
         def sliding_window(lst, n):
             for i in range(len(lst) - n + 1):
@@ -323,56 +323,23 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         exr_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.exr')]
         exr_files.sort()
-
-        descriptions = []
-
-        if len(exr_files) < max_window:
-            max_window = len(exr_files)
-        if max_window < 3:
-            print(f'\nWarning: minimum clip length is 3 frames, {folder_path} has {len(exr_files)} frame(s) only')
-            return descriptions
         
-        if 'fast' in folder_path:
-            max_window = 3
-        if 'medium' in folder_path:
-            max_window = 5
+        descriptions = []
         
         try:
             first_exr_file_header = self.fw.read_openexr_file(exr_files[0], header_only = True)
             h = first_exr_file_header['shape'][0]
             w = first_exr_file_header['shape'][1]
 
-            for window_size in range(3, max_window + 1):
-                for window in sliding_window(exr_files, window_size):
-                    start_frame = window[0]
-                    start_frame_index = exr_files.index(window[0])
-                    end_frame = window[-1]
-                    end_frame_index = exr_files.index(window[-1])
-                    for gt_frame_index, gt_frame in enumerate(window[1:-1]):
-                        fw_item = {
-                            'h': h,
-                            'w': w,
-                            'pre_start': exr_files[max(start_frame_index - 1, 0)],
-                            'start': start_frame,
-                            'gt': gt_frame,
-                            'end': end_frame,
-                            'after_end': exr_files[min(end_frame_index + 1, len(exr_files) - 1)],
-                            'ratio': 1 / (len(window) - 1) * (gt_frame_index + 1)
-                        }
+            for exr_file in exr_files:
+                item = {
+                    'h': h,
+                    'w': w,
+                    'source': exr_file,
+                    'target': exr_file,
+                }
 
-                        bw_item = {
-                            'h': h,
-                            'w': w,
-                            'pre_start': exr_files[min(end_frame_index + 1, len(exr_files) - 1)],
-                            'start': end_frame,
-                            'gt': gt_frame,
-                            'end': start_frame,
-                            'after_end': exr_files[max(start_frame_index - 1, 0)],
-                            'ratio': 1 - (1 / (len(window) - 1) * (gt_frame_index + 1))
-                        }
-
-                        descriptions.append(fw_item)
-                        descriptions.append(bw_item)
+                descriptions.append(item)
 
         except Exception as e:
             print (f'\nError scanning {folder_path}: {e}')
@@ -386,18 +353,11 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 description = self.train_descriptions[index]
                 try:
                     train_data = {}
-                    # train_data['pre_start'] = self.fw.read_openexr_file(description['pre_start'])['image_data']
-                    train_data['start'] = self.fw.read_openexr_file(description['start'])['image_data']
-                    train_data['pre_start']  = train_data['start']
-                    train_data['gt'] = self.fw.read_openexr_file(description['gt'])['image_data']
-                    train_data['end'] = self.fw.read_openexr_file(description['end'])['image_data']
-                    train_data['after_end'] = train_data['end']
-                    # train_data['after_end'] = self.fw.read_openexr_file(description['after_end'])['image_data']
-                    train_data['ratio'] = description['ratio']
+                    train_data['source'] = self.fw.read_openexr_file(description['source'])['image_data']
+                    train_data['target'] = train_data['source']
                     train_data['h'] = description['h']
                     train_data['w'] = description['w']
                     train_data['description'] = description
-                    train_data['index'] = index
                     self.frames_queue.put(train_data)
                 except Exception as e:
                     print (e)                
@@ -505,164 +465,71 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         train_data = self.getimg(index)
-        src_img0 = train_data['pre_start']
-        src_img1 = train_data['start']
-        src_img2 = train_data['gt']
-        src_img3 = train_data['end']
-        src_img4 = train_data['after_end']
+        src_img0 = train_data['source']
         imgh = train_data['h']
         imgw = train_data['w']
-        ratio = train_data['ratio']
         images_idx = train_data['index']
 
         device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda')
 
         src_img0 = torch.from_numpy(src_img0.copy())
-        src_img1 = torch.from_numpy(src_img1.copy())
-        src_img2 = torch.from_numpy(src_img2.copy())
-        src_img3 = torch.from_numpy(src_img3.copy())
-        src_img4 = torch.from_numpy(src_img4.copy())
         src_img0 = src_img0.to(device = device, dtype = torch.float32)
-        src_img1 = src_img1.to(device = device, dtype = torch.float32)
-        src_img2 = src_img2.to(device = device, dtype = torch.float32)
-        src_img3 = src_img3.to(device = device, dtype = torch.float32)
-        src_img4 = src_img4.to(device = device, dtype = torch.float32)
 
         rsz1_img0 = self.resize_image(src_img0, self.h)
-        rsz1_img1 = self.resize_image(src_img1, self.h)
-        rsz1_img2 = self.resize_image(src_img2, self.h)
-        rsz1_img3 = self.resize_image(src_img3, self.h)
-        rsz1_img4 = self.resize_image(src_img4, self.h)
-
         rsz2_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
-        rsz2_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
-        rsz2_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
-        rsz2_img3 = self.resize_image(src_img3, int(self.h * (1 + 1/4)))
-        rsz2_img4 = self.resize_image(src_img4, int(self.h * (1 + 1/4)))
-
         rsz3_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/3)))
-        rsz3_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/3)))
-        rsz3_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/3)))
-        rsz3_img3 = self.resize_image(src_img3, int(self.h * (1 + 1/3)))
-        rsz3_img4 = self.resize_image(src_img4, int(self.h * (1 + 1/3)))
-
-        batch_img0 = []
-        batch_img1 = []
-        batch_img2 = []
-        batch_img3 = []
-        batch_img4 = []
+        rsz4_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/2)))
 
         for index in range(self.batch_size):
             q = random.uniform(0, 1)
-            if q < 0.69:
-                img0, img1, img2, img3, img4 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, rsz1_img3, rsz1_img4, self.h, self.w)
-                img0 = img0.permute(2, 0, 1)
-                img1 = img1.permute(2, 0, 1)
-                img2 = img2.permute(2, 0, 1)
-                img3 = img3.permute(2, 0, 1)
-                img4 = img4.permute(2, 0, 1)
-            elif q < 0.85:
-                img0, img1, img2, img3, img4 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, rsz2_img3, rsz2_img4, self.h, self.w)
-                img0 = img0.permute(2, 0, 1)
-                img1 = img1.permute(2, 0, 1)
-                img2 = img2.permute(2, 0, 1)
-                img3 = img3.permute(2, 0, 1)
-                img4 = img4.permute(2, 0, 1)
+
+            if q < 0.25:
+                img0 = self.crop(rsz1_img0, self.h, self.w)
+            elif q < 0.5:
+                img0 = self.crop(rsz2_img0, self.h, self.w)
+            elif q < 0.75:
+                img0 = self.crop(rsz3_img0, self.h, self.w)
             else:
-                img0, img1, img2, img3, img4 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, rsz3_img3, rsz3_img4, self.h, self.w)
-                img0 = img0.permute(2, 0, 1)
-                img1 = img1.permute(2, 0, 1)
-                img2 = img2.permute(2, 0, 1)
-                img3 = img3.permute(2, 0, 1)
-                img4 = img4.permute(2, 0, 1)
+                img0 = self.crop(rsz4_img0, self.h, self.w)
+
+            img0 = img0.permute(2, 0, 1)
 
             p = random.uniform(0, 1)
             if p < 0.25:
                 img0 = torch.flip(img0.transpose(1, 2), [2])
-                img1 = torch.flip(img1.transpose(1, 2), [2])
-                img2 = torch.flip(img2.transpose(1, 2), [2])
-                img3 = torch.flip(img3.transpose(1, 2), [2])
-                img4 = torch.flip(img4.transpose(1, 2), [2])
             elif p < 0.5:
                 img0 = torch.flip(img0, [1, 2])
-                img1 = torch.flip(img1, [1, 2])
-                img2 = torch.flip(img2, [1, 2])
-                img3 = torch.flip(img3, [1, 2])
-                img4 = torch.flip(img4, [1, 2])
             elif p < 0.75:
                 img0 = torch.flip(img0.transpose(1, 2), [1])
-                img1 = torch.flip(img1.transpose(1, 2), [1])
-                img2 = torch.flip(img2.transpose(1, 2), [1])
-                img3 = torch.flip(img3.transpose(1, 2), [1])
-                img4 = torch.flip(img4.transpose(1, 2), [1])
 
             # Horizontal flip (reverse width)
             if random.uniform(0, 1) < 0.5:
                 img0 = img0.flip(-1)
-                img1 = img1.flip(-1)
-                img2 = img2.flip(-1)
-                img3 = img3.flip(-1)
-                img4 = img4.flip(-1)
 
             # Vertical flip (reverse height)
             if random.uniform(0, 1) < 0.5:
                 img0 = img0.flip(-2)
-                img1 = img1.flip(-2)
-                img2 = img2.flip(-2)
-                img3 = img3.flip(-2)
-                img4 = img4.flip(-2)
 
             # Depth-wise flip (reverse channels)
             if random.uniform(0, 1) < 0.4:
                 img0 = img0.flip(0)
-                img1 = img1.flip(0)
-                img2 = img2.flip(0)
-                img3 = img3.flip(0)
-                img4 = img4.flip(0)
 
             # Exposure agumentation
             exp = random.uniform(1 / 8, 2)
             if random.uniform(0, 1) < 0.4:
                 img0 = img0 * exp
-                img1 = img1 * exp
-                img2 = img2 * exp
-                img3 = img3 * exp
-                img4 = img4 * exp
 
-            '''
-            # remove srgb encoding
-            cc = random.uniform(0, 1)
-            if cc < 0.2:
-                img0 = self.srgb_to_linear(img0)
-                img1 = self.srgb_to_linear(img1)
-                img2 = self.srgb_to_linear(img2)
-                img3 = self.srgb_to_linear(img3)
-                img4 = self.srgb_to_linear(img4)
-            elif cc < 0.4:
-                img0 = self.srgb_to_linear(img0)
-                img1 = self.srgb_to_linear(img1)
-                img2 = self.srgb_to_linear(img2)
-                img3 = self.srgb_to_linear(img3)
-                img4 = self.srgb_to_linear(img4)
-                img0 = self.apply_aces_logc(img0)
-                img1 = self.apply_aces_logc(img1)
-                img2 = self.apply_aces_logc(img2)
-                img3 = self.apply_aces_logc(img3)
-                img4 = self.apply_aces_logc(img4)
-            elif cc < 0.5:
-                pass
-            '''
+            img0 = torch.stack([img0])
 
-            # img0, img1 = self.crop(img0, img1, self.h, self.w)
-            # img0 = torch.from_numpy(img0.copy()).permute(2, 0, 1)
-            # img1 = torch.from_numpy(img1.copy()).permute(2, 0, 1)
-            batch_img0.append(img0)
-            batch_img1.append(img1)
-            batch_img2.append(img2)
-            batch_img3.append(img3)
-            batch_img4.append(img4)
+            # colour agumentation
+            r = random.uniform(1-delta, 1+delta)
+            g = random.uniform(1-delta, 1+delta)
+            b = random.uniform(1-delta, 1+delta)
+            y = random.uniform(1-delta, 1+delta)
+            multipliers = torch.tensor([r, g, b]).view(1, 3, 1, 1).to(device)
+            img0 = img0 * multipliers * y
 
-        return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), torch.stack(batch_img3), torch.stack(batch_img4), ratio, images_idx
+        return img0
 
     def get_input_channels_number(self, source_frames_paths_list):
         total_num_channels = 0
@@ -936,7 +803,7 @@ def main():
     parser.add_argument('--lr', type=float, default=0.00009, help='Learning rate (default: 9e-5)')
     parser.add_argument('--type', type=int, default=1, help='Model type (int): 1 - MultiresNet, 2 - MultiresNet 4 (default: 1)')
     parser.add_argument('--warmup', type=float, default=0.001, help='Warmup epochs (float) (default: 1)')
-    parser.add_argument('--pulse', type=float, default=999, help='Period in steps to pulse learning rate (float) (default: 9)')
+    parser.add_argument('--pulse', type=float, default=9999, help='Period in steps to pulse learning rate (float) (default: 9999)')
     parser.add_argument('--pulse_amplitude', type=float, default=25, help='Learning rate pulse amplitude (percentage) (default: 25)')
     parser.add_argument('--model_path', type=str, default=None, help='Path to the pre-trained model (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
@@ -981,10 +848,9 @@ def main():
     
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
 
-    model = ModelInflow().get_training_model()(7, 3).to(device)
-    model_name = 'Test'
-    model_rife = FlownetCas().to(device)
-    
+    encoder = Encoder().get_training_model()().to(device)
+    decoder = Decoder().get_training_model()().to(device)
+
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
     lr = args.lr
@@ -993,7 +859,8 @@ def main():
     criterion_l1 = torch.nn.L1Loss()
 
     # optimizer_sgd = torch.optim.SGD(model.parameters(), lr=lr)
-    optimizer = Yogi(model.parameters(), lr=lr)
+    optimizer_encoder = Yogi(encoder.parameters(), lr=lr)
+    optimizer_decoder = Yogi(decoder.parameters(), lr=lr)
 
     def warmup(current_step, lr = 4e-3, number_warmup_steps = 999):
         mul_lin = current_step / number_warmup_steps
@@ -1005,9 +872,12 @@ def main():
     warnings.filterwarnings('ignore', category=UserWarning)
 
     train_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
-    # warmup_scheduler_fusion = torch.optim.lr_scheduler.LambdaLR(optimizer_fusion, lr_lambda=lambda step: warmup(step, lr=lr, number_warmup_steps=number_warmup_steps))
-    # scheduler_fusion = torch.optim.lr_scheduler.SequentialLR(optimizer_fusion, [warmup_scheduler_fusion, train_scheduler_fusion], [number_warmup_steps])
-    scheduler = train_scheduler
+
+    train_scheduler_encoder = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_encoder, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+    train_scheduler_decoder = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_decoder, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+    # scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, [warmup_scheduler, train_scheduler], [steps_per_epoch * warmup_epochs])
+    scheduler_encoder = train_scheduler_encoder
+    scheduler_decoder = train_scheduler_decoder
 
     step = 0
     current_epoch = 0
@@ -1018,23 +888,24 @@ def main():
 
     if args.model_path:
         trained_model_path = args.model_path
-
         try:
             checkpoint = torch.load(trained_model_path)
-            model.load_state_dict(checkpoint['model_state_dict'])
-            print('loaded previously saved model')
+            encoder.load_state_dict(checkpoint['encoder_state_dict'])
+            print('loaded previously saved encoder model')
         except Exception as e:
-            print (f'unable to load saved model: {e}')
+            print (f'unable to load encoder model: {e}')
+
+        # '''
+        try:
+            decoder.load_state_dict(checkpoint['decoder_state_dict'], strict=False)
+            print('loaded previously saved decoder model')
+        except Exception as e:
+            print (f'unable to load saved decoder model: {e}')
+        # '''
 
         try:
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            print('loaded previously saved fusion optmizer')
-        except Exception as e:
-            print (f'unable to load saved fusion optimizer: {e}')
-
-        try:
-            # step = checkpoint['step']
-            # print (f'step: {step}')
+            step = checkpoint['step']
+            print (f'step: {step}')
             current_epoch = checkpoint['epoch']
             print (f'epoch: {current_epoch + 1}')
         except Exception as e:
@@ -1046,8 +917,8 @@ def main():
             print (f'loaded loss statistics for epoch: {current_epoch + 1}')
         except Exception as e:
             print (f'unable to load step and epoch loss statistics: {e}')
-
     else:
+    
         traned_model_name = 'flameTWML_model_' + fw.create_timestamp_uid() + '.pth'
         if platform.system() == 'Darwin':
             trained_model_dir = os.path.join(
@@ -1062,77 +933,48 @@ def main():
             os.makedirs(trained_model_dir)
         trained_model_path = os.path.join(trained_model_dir, traned_model_name)
 
-    default_rife_model_path = os.path.join(
-        os.path.abspath(os.path.dirname(__file__)),
-        'models_data',
-        'flownet_v412.pkl'
-    )
-    rife_state_dict = torch.load(default_rife_model_path)
-    def convert(param):
-        return {
-            k.replace("module.", ""): v
-            for k, v in param.items()
-            if "module." in k
-        }
-    model_rife.load_state_dict(convert(rife_state_dict))
+    try:
+        start_timestamp = checkpoint.get('start_timestamp')
+    except:
+        start_timestamp = time.time()
 
-    start_timestamp = time.time()
     time_stamp = time.time()
     epoch = current_epoch
-    
-    print('\n\n')
-
-    batch_idx = 0
 
     while True:
         data_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        img0, img1, img2, img3, img4, ratio, idx = read_image_queue.get()
+        img0, img1, img2, ratio, idx = read_image_queue.get()
 
         if platform.system() == 'Darwin':
             img0 = normalize_numpy(img0)
             img1 = normalize_numpy(img1)
             img2 = normalize_numpy(img2)
-            img3 = normalize_numpy(img3)
-            img4 = normalize_numpy(img4)
             img0 = img0.to(device, non_blocking = True)
             img1 = img1.to(device, non_blocking = True)
             img2 = img2.to(device, non_blocking = True)
-            img3 = img3.to(device, non_blocking = True)
-            img4 = img4.to(device, non_blocking = True)
         else:
             img0 = img0.to(device, non_blocking = True)
             img1 = img1.to(device, non_blocking = True)
             img2 = img2.to(device, non_blocking = True)
-            img3 = img3.to(device, non_blocking = True)
-            img4 = img4.to(device, non_blocking = True)
             img0 = normalize(img0)
             img1 = normalize(img1)
             img2 = normalize(img2)
-            img3 = normalize(img3)
-            img4 = normalize(img4)
 
-        current_lr = scheduler.get_last_lr()[0]
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = current_lr
+        current_lr = scheduler_encoder.get_last_lr()[0]
+        for param_group_encoder in optimizer_encoder.param_groups:
+            param_group_encoder['lr'] = current_lr
+        for param_group_decoder in optimizer_decoder.param_groups:
+            param_group_decoder['lr'] = current_lr
 
         current_lr_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
 
-        with torch.no_grad():
-            x = torch.cat((img1, img3, img2), dim=1)
-            flow_list, mask, merged, teacher_res, loss_cons = model_rife(x, timestep = ratio)
-            output_rife = merged[3]
+        optimizer_encoder.zero_grad(set_to_none=True)
+        optimizer_decoder.zero_grad(set_to_none=True)
 
-        timestep = (img1[:, :1].clone() * 0 + 1) * ratio
-        flow0 = flow_list[3][:, :2]
-        flow1 = flow_list[3][:, 2:4]
-
-        mn, _, mh, mw = mask.shape
-        grain1 = (torch.rand(mn, 1, mh, mw).to(device = mask.device, dtype = mask.dtype) * 2 - 1) / 18
-        grain2 = (torch.rand(mn, 1, mh, mw).to(device = mask.device, dtype = mask.dtype) * 2 - 1) / 18
-        blurred_grain_mask = torch.clamp(blur(mask + grain1) + grain2, min=0, max=1)
-        blurred_output_rife = warp(img1, flow0) * blurred_grain_mask + warp(img3, flow1) * (1 - blurred_grain_mask)
+        output_encoder = encoder(img0)
+        output = decoder(output_encoder)
 
         # idflow = id_flow(img1)
         # in_flow0, in_flow1, in_mask, in_deep = model(torch.cat((img1, img3, idflow, timestep), dim=1))
