@@ -517,6 +517,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img0 = img0 * exp
 
             print (f'getimg img0 type: {type(img0)}')
+            print (f'getimg img0 shape: {img0.shape}')
 
             img0 = torch.stack([img0])
 
