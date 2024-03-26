@@ -948,7 +948,7 @@ def main():
         data_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        img0 = read_image_queue.get()
+        img0, idx = read_image_queue.get()
 
         pprint (f'img0: {type(img0)}')
 
