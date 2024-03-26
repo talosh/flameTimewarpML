@@ -529,7 +529,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             multipliers = torch.tensor([r, g, b]).view(1, 3, 1, 1).to(device)
             img0 = img0 * multipliers * y
 
-        return img0
+        return img0, images_idx
 
     def get_input_channels_number(self, source_frames_paths_list):
         total_num_channels = 0
@@ -976,130 +976,13 @@ def main():
         output_encoder = encoder(img0)
         output = decoder(output_encoder)
 
-        # idflow = id_flow(img1)
-        # in_flow0, in_flow1, in_mask, in_deep = model(torch.cat((img1, img3, idflow, timestep), dim=1))
-        # in_flow0 = in_flow0 + idflow
-        # in_flow1 = in_flow1 + idflow
-
-        output_inflow, in_deep = model(torch.cat((img1*2-1, img3*2-1, timestep*2-1), dim=1))
-    
-        # output_inflow_d5 = warp_tenflow(img1, in_deep[0][0]) * in_deep[0][2] + warp_tenflow(img3, in_deep[0][1]) * (1 - in_deep[0][2])
-        # output_inflow_d4 = warp_tenflow(img1, in_deep[1][0]) * in_deep[1][2] + warp_tenflow(img3, in_deep[1][1]) * (1 - in_deep[1][2])
-         #output_inflow_d3 = warp_tenflow(img1, in_deep[2][0]) * in_deep[2][2] + warp_tenflow(img3, in_deep[2][1]) * (1 - in_deep[2][2])
-        # output_inflow_d2 = warp_tenflow(img1, in_deep[3][0]) * in_deep[3][2] + warp_tenflow(img3, in_deep[3][1]) * (1 - in_deep[3][2])
-        # output_inflow = warp_tenflow(img1, in_flow0) * in_mask + warp_tenflow(img3, in_flow1) * (1 - in_mask)
-        # output_inflow = warp_tenflow(img2, idflow)
-
-        # with torch.no_grad():
-        # r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, blurred_grain_mask, timestep)
-        # output_refine = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
-        output_d5 = in_deep[0]
-        output_d4 = in_deep[1]
-        output_d3 = in_deep[2]
-        output_d2 = in_deep[3]
-        output = output_inflow
-        
-        # output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
-
-        # output = ( output + 1 ) / 2
-        
-        # loss_tea = (teacher_res[0][0] - gt).abs().mean() + ((teacher_res[1][0] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-        # loss_cons += ((flow_list[-1] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-
-        # loss = criterion_mse(output, img2) + criterion_l1_rife(output_rife, img2) * 1e-4
-
-        '''
-        norm_min = - max(mh, mw)
-        norm_max = max(mh, mw)
-        in_flow0_nm = ((in_flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
-        in_flow1_nm = ((in_flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
-        flow0_nm = ((flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
-        flow1_nm = ((flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
-        '''
-
-        '''
-        flow0_min = flow0.min()
-        flow0_max = flow0.max()
-        flow0_nm = 2 * ((flow0 - flow0_min) / (flow0_max - flow0_min)) - 1
-        in_flow0_nm = 2 * ((in_flow0 - flow0_min) / (flow0_max - flow0_min)) - 1
-
-        flow1_min = flow1.min()
-        flow1_max = flow1.max()
-        flow1_nm = 2 * ((flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
-        in_flow1_nm = 2 * ((in_flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
-        '''
-        '''
-        output_flow_d5 = torch.cat((in_deep[0][0], in_deep[0][1]), dim=1)
-        output_flow_d4 = torch.cat((in_deep[1][0], in_deep[1][1]), dim=1)
-        output_flow_d3 = torch.cat((in_deep[2][0], in_deep[2][1]), dim=1)
-        output_flow_d2 = torch.cat((in_deep[3][0], in_deep[3][1]), dim=1)
-        output_flow = torch.cat((in_flow0, in_flow1), dim=1)
-        target_flow = torch.cat((flow0, flow1), dim=1)
-        '''
-
-        target = img2
-
-        # output_gamma = normalize(gamma_up(restore_normalized_values(output)))
-        # output_yuv_gamma = normalize(torch.cat(split_to_yuv(output_gamma), dim=1))
-        # output_blurred = blur(output)
-
-        # target_gamma = normalize(gamma_up(restore_normalized_values(target)))
-        # target_yuv_gamma = normalize(torch.cat(split_to_yuv(target_gamma), dim=1))
-        # target_blurred = blur(output)
-
-        # loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
-        # loss_mse = criterion_mse(output, target) # * 0.6 + criterion_mse(output_blurred, target_blurred) * 0.4 # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
-        # loss_mse = criterion_mse(gamma_up(output_refine), gamma_up(target)) + criterion_mse(gamma_up(output), gamma_up(target)) * 0.2 # + criterion_mse(torch.clamp(output, min=0.12, max = 0.25), torch.clamp(target, min=0.12, max = 0.25))
-        # loss_mse = criterion_mse(gamma_up(output), gamma_up(target))
-        # loss_mse_flow = criterion_mse(output_flow_nm, target_flow_nm)
-        # loss_mse_rife = criterion_mse(output_inflow, output_rife)
-        # loss_mse_mask = criterion_mse(in_mask, blurred_grain_mask)
-        # loss_mse = loss_mse_flow + 4 * loss_mse_mask # + loss_mse_rife + loss_mse
-
-        # optimizer_rife.zero_grad(set_to_none=False)
         optimizer.zero_grad(set_to_none=False)
-        # optimizer_refine.zero_grad(set_to_none=False)
-        # optimizer_fusion.zero_grad(set_to_none=False)
+        loss = criterion_mse(output, img0)
+        loss_l1 = criterion_l1(output, img0)
+        loss_l1_str = str(f'{loss_l1.item():.6f}')
 
-        '''
-        loss_mask_d5 = ((gamma_up(output_d5) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
-        loss_cons_d5 = (((target_flow.detach() - output_flow_d5) ** 2).sum(1, True) ** 0.5 * loss_mask_d5).mean() * 0.001
-        loss_cons_d5 += ((output_flow_d5 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-        loss_mask_d4 = ((gamma_up(output_d4) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
-        loss_cons_d4 = (((target_flow.detach() - output_flow_d4) ** 2).sum(1, True) ** 0.5 * loss_mask_d4).mean() * 0.001
-        loss_cons_d4 += ((output_flow_d4 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-        loss_mask_d3 = ((gamma_up(output_d3) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
-        loss_cons_d3 = (((target_flow.detach() - output_flow_d3) ** 2).sum(1, True) ** 0.5 * loss_mask_d3).mean() * 0.001
-        loss_cons_d3 += ((output_flow_d3 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-        loss_mask_d2 = ((gamma_up(output_d2) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
-        loss_cons_d2 = (((target_flow.detach() - output_flow_d2) ** 2).sum(1, True) ** 0.5 * loss_mask_d2).mean() * 0.001
-        loss_cons_d2 += ((output_flow_d2 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-        loss_mask = ((gamma_up(output) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
-        loss_cons = (((target_flow.detach() - output_flow) ** 2).sum(1, True) ** 0.5 * loss_mask).mean() * 0.001
-        loss_cons += ((output_flow ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-        '''
-
-        # loss = criterion_l1(gamma_up(output), gamma_up(target))
-        loss = criterion_l1(output, target)
-        loss += criterion_l1(output_d2, target) * (1 / 16 ** 2)
-        loss += criterion_l1(output_d3, target) * (1 / 8 ** 2)
-        loss += criterion_l1(output_d4, target) * (1 / 4 ** 2)
-        loss += criterion_l1(output_d5, target) * (1 / 2 ** 2)
-        # loss += loss_cons
-        # loss += loss_cons_d2 * (1 / 16 ** 2)
-        # loss += loss_cons_d3 * (1 / 8 ** 2)
-        # loss += loss_cons_d4 * (1 / 4 ** 2)
-        # loss += loss_cons_d5 * (1 / 2 ** 2)
-        # loss += criterion_l1(gamma_up(output), gamma_up(target)) * 0.1
-
-        # loss_l1 = criterion_l1(output_flow, target_flow) + criterion_l1()
-        # loss_l1_disp = loss
-        loss_l1_disp = criterion_l1(output.detach(), target.detach())
-        loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
-        loss_cm_str = str(f'{loss.item():.6f}')
-
-        epoch_loss.append(float(loss_l1_disp.item()))
-        steps_loss.append(float(loss_l1_disp.item()))
+        epoch_loss.append(float(loss_l1))
+        steps_loss.append(float(loss_l1))
 
         if len(epoch_loss) < 999:
             smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
@@ -1109,68 +992,34 @@ def main():
             smoothed_window_loss = np.mean(moving_average(epoch_loss[-999:], 9))
             window_min = min(epoch_loss[-999:])
             window_max = max(epoch_loss[-999:])
-        smoothed_loss = np.mean(moving_average(epoch_loss, 9))
 
         loss.backward()
-
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-        optimizer.step()
-
-        # optimizer_rife.step()
-        # optimizer_refine.step()
-        # optimizer_fusion.step()
-
-        # scheduler_rife.step()
-        scheduler.step()
-        # scheduler_refine.step()
-        # scheduler_fusion.step()
+        torch.nn.utils.clip_grad_norm_(encoder.parameters(), 1.0)
+        torch.nn.utils.clip_grad_norm_(decoder.parameters(), 1.0)
+        optimizer_encoder.step()
+        optimizer_decoder.step()
+        scheduler_encoder.step()
+        scheduler_decoder.step()
 
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
         if step % 99 == 1:
-            '''
-            def warp(tenInput, tenFlow):
-                backwarp_tenGrid = {}
-                k = (str(tenFlow.device), str(tenFlow.size()))
-                if k not in backwarp_tenGrid:
-                    tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
-                    tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
-                    backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
-                    # end
-                tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
-
-                g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-                return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
-            
-            output = ( warp(img1, flow0) + warp(img3, flow1) ) / 2
-            '''
-
             if platform.system() == 'Darwin':
-                rgb_source1 = restore_normalized_values_numpy(img1)
-                rgb_source2 = restore_normalized_values_numpy(img3)
-                rgb_target = restore_normalized_values_numpy(img2)
+                rgb_source = restore_normalized_values_numpy(img0)
+                rgb_target = rgb_source
                 rgb_output = restore_normalized_values_numpy(output)
-                rgb_output_rife = restore_normalized_values_numpy(output_rife)
             else:
-                rgb_source1 = restore_normalized_values(img1)
-                rgb_source2 = restore_normalized_values(img3)
-                rgb_target = restore_normalized_values(img2)
+                rgb_source = restore_normalized_values(img0)
+                rgb_target = rgb_source
                 rgb_output = restore_normalized_values(output)
-                rgb_output_rife = restore_normalized_values(output_rife)
-                # rgb_output_refine_mask = in_mask.repeat_interleave(3, dim=1)
-                rgb_output_refine_mask = mask.repeat_interleave(3, dim=1)
-
 
             write_image_queue.put(
                 {
                     'preview_folder': os.path.join(args.dataset_path, 'preview'),
-                    'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_source': rgb_source[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                     'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                     'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output_rife': rgb_output_rife[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output_refine_mask': rgb_output_refine_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
                 }
             )
 
@@ -1185,24 +1034,23 @@ def main():
                 'epoch': epoch,
                 'epoch_loss': epoch_loss,
                 'start_timestamp': start_timestamp,
-                'lr': optimizer.param_groups[0]['lr'],
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'model_name': model_name,
+                'lr': optimizer_encoder.param_groups[0]['lr'],
+                'encoder_state_dict': encoder.state_dict(),
+                'decoder_state_dict': decoder.state_dict(),
+                'optimizer_encoder_state_dict': optimizer_encoder.state_dict(),
+                'optimizer_decoder_state_dict': optimizer_decoder.state_dict(),
             }, trained_model_path)
-            
-            # model.load_state_dict(convert(rife_state_dict))
 
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
         train_time_str = str(f'{train_time:.2f}')
-        # current_lr_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
-        # current_lr_str = str(f'{scheduler.get_last_lr()[0]:.4e}')
 
         epoch_time = time.time() - start_timestamp
         days = int(epoch_time // (24 * 3600))
         hours = int((epoch_time % (24 * 3600)) // 3600)
         minutes = int((epoch_time % 3600) // 60)
+
+        smoothed_loss = np.mean(moving_average(epoch_loss, 9))
 
         clear_lines(2)
         print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
@@ -1215,97 +1063,12 @@ def main():
                 'epoch': epoch,
                 'epoch_loss': epoch_loss,
                 'start_timestamp': start_timestamp,
-                'lr': optimizer.param_groups[0]['lr'],
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'model_name': model_name,
+                'lr': optimizer_encoder.param_groups[0]['lr'],
+                'encoder_state_dict': encoder.state_dict(),
+                'decoder_state_dict': decoder.state_dict(),
+                'optimizer_encoder_state_dict': optimizer_encoder.state_dict(),
+                'optimizer_decoder_state_dict': optimizer_decoder.state_dict(),
             }, trained_model_path)
-
-            rife_psnr_list = []
-            psnr_list = []
-
-            try:
-                for ev_item_index in range(111):
-
-                    clear_lines(2)
-                    print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
-                    print (f'\rCalcualting PSNR on full-scale image {ev_item_index} of 111...')
-
-                    ev_item = dataset.frames_queue.get()
-                    ev_img1 = ev_item['start']
-                    ev_img2 = ev_item['gt']
-                    ev_img3 = ev_item['end']
-                    ev_ratio = ev_item['ratio']
-                    ev_img1 = torch.from_numpy(ev_img1.copy())
-                    ev_img2 = torch.from_numpy(ev_img2.copy())
-                    ev_img3 = torch.from_numpy(ev_img3.copy())
-                    ev_img1 = ev_img1.to(device = device, dtype = torch.float32)
-                    ev_img2 = ev_img2.to(device = device, dtype = torch.float32)
-                    ev_img3 = ev_img3.to(device = device, dtype = torch.float32)
-                    ev_img1 = ev_img1.permute(2, 0, 1).unsqueeze(0)
-                    ev_img2 = ev_img2.permute(2, 0, 1).unsqueeze(0)
-                    ev_img3 = ev_img3.permute(2, 0, 1).unsqueeze(0)
-                    ev_img1 = normalize(ev_img1)
-                    ev_img2 = normalize(ev_img2)
-                    ev_img3 = normalize(ev_img3)
-
-                    n, c, h, w = ev_img1.shape
-                    
-                    ph = ((h - 1) // 64 + 1) * 64
-                    pw = ((w - 1) // 64 + 1) * 64
-                    padding = (0, pw - w, 0, ph - h)
-                    evp_img1 = torch.nn.functional.pad(ev_img1, padding)
-                    evp_img2 = torch.nn.functional.pad(ev_img2, padding)
-                    evp_img3 = torch.nn.functional.pad(ev_img3, padding)
-
-                    with torch.no_grad():
-                        x = torch.cat((evp_img1, evp_img2, evp_img3), dim=1)
-                        _, _, merged, _, _ = model_rife(x, timestep = ev_ratio)
-                        ev_output_rife = merged[3]
-                        ev_output_rife = restore_normalized_values(ev_output_rife)
-                        rife_psnr_list.append(psnr_torch(ev_output_rife, evp_img2))
-                        ev_output_rife = ev_output_rife[0].permute(1, 2, 0)[:h, :w]
-
-                        evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
-
-                        '''
-                        evp_id_flow = id_flow(evp_img1)
-                        ev_in_flow0, ev_in_flow1, ev_in_mask, ev_in_deep = model(torch.cat((evp_img1, evp_id_flow, evp_timestep, evp_img3), dim=1))
-                        ev_in_flow0 = ev_in_flow0 + evp_id_flow
-                        ev_in_flow1 = ev_in_flow1 + evp_id_flow
-
-                        ev_output_inflow = warp_tenflow(evp_img1, ev_in_flow0) * ev_in_mask + warp_tenflow(evp_img3, ev_in_flow1) * (1 - ev_in_mask)
-                        ev_output_inflow = restore_normalized_values(ev_output_inflow)
-                        psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
-                        ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
-                        '''
-                        ev_output_inflow, ev_in_deep = model(torch.cat((evp_img1*2-1, evp_img3*2-1, evp_timestep*2-1, ), dim=1))
-                        psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
-                        ev_output_inflow = restore_normalized_values(ev_output_inflow)
-                        ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
-
-                    preview_folder = os.path.join(args.dataset_path, 'preview')
-                    eval_folder = os.path.join(preview_folder, 'eval')
-                    if not os.path.isdir(eval_folder):
-                        try:
-                            os.makedirs(eval_folder)
-                        except Exception as e:
-                            print (e)
-                    evp_img1 = restore_normalized_values(evp_img1)
-                    evp_img2 = restore_normalized_values(evp_img2)
-                    evp_img3 = restore_normalized_values(evp_img3)
-
-                    if ev_item_index  % 9 == 1:
-                        try:
-                            write_exr(evp_img1[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
-                            write_exr(evp_img3[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
-                            write_exr(evp_img2[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
-                            write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
-                            write_exr(ev_output_rife.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output_rife.exr'))
-                        except Exception as e:
-                            print (f'{e}\n\n')
-            except Exception as e:
-                print (f'{e}\n\n')
    
             smoothed_loss = np.mean(moving_average(epoch_loss, 9))
             epoch_time = time.time() - start_timestamp
@@ -1313,12 +1076,8 @@ def main():
             hours = int((epoch_time % (24 * 3600)) // 3600)
             minutes = int((epoch_time % 3600) // 60)
 
-            rife_psnr = np.array(rife_psnr_list).mean()
-            psnr = np.array(psnr_list).mean()
-
             clear_lines(2)
-            # print (f'\r {" "*120}', end='')
-            print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PNSR] {psnr:.4f} [RIFE_PNSR] {rife_psnr:.4f}')
+            print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}')
             print ('\n')
             steps_loss = []
             epoch_loss = []
