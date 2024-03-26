@@ -528,6 +528,9 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             b = random.uniform(1-delta, 1+delta)
             y = random.uniform(1-delta, 1+delta)
             multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device)
+
+            print (f'multipliers shape: {multipliers.shape}')
+
             img0 = img0 * multipliers * y
             batch_img0.append(img0)
 
