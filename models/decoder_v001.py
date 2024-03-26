@@ -24,8 +24,8 @@ class Model:
 				x = self.cnn3(x)
 				return x
 
-		self.model = Encoder
-		self.training_model = Encoder
+		self.model = Decoder
+		self.training_model = Decoder
 
 	@staticmethod
 	def get_name():
