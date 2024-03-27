@@ -29,7 +29,7 @@ class Model:
 			def forward(self, x):
 				return self.relu(self.conv(x) * self.beta + x)
 
-		class FlownetBlock(Module):
+		class Flownet(Module):
 			def __init__(self, in_planes, c=64):
 				super().__init__()
 				self.conv0 = torch.nn.Sequential(
@@ -65,9 +65,77 @@ class Model:
 				conf = tmp[:, 5:6]
 				return flow, mask, conf
 
+		class FlownetCas(nn.Module):
+			def __init__(self):
+				super().__init__()
+				self.block0 = Flownet(7+16, c=192)
+				self.block1 = Flownet(8+4+16, c=128)
+				self.block2 = Flownet(8+4+16, c=96)
+				self.block3 = Flownet(8+4+16, c=64)
+				# self.encode = Head()
 
-		self.model = Flownet
-		self.training_model = Flownet
+			def forward(self, x, timestep=0.5, scale=[8, 4, 2, 1], training=False, distill=True):
+				img0 = x[:, :3]
+				img1 = x[:, 3:6]
+				f0 = self.encode(img0)
+				f1 = self.encode(img1)
+				
+				if not torch.is_tensor(timestep):
+					timestep = (x[:, :1].clone() * 0 + 1) * timestep
+				else:
+					timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
+				gt = x[:, 6:]
+				flow_list = []
+				merged = []
+				flow_list_teacher = []
+				mask_list = []
+				conf_list = []
+				teacher_list = []
+				warped_img0 = img0
+				warped_img1 = img1
+				flow = None 
+				loss_cons = 0
+				stu = [self.block0, self.block1, self.block2, self.block3]
+				flow = None
+				for i in range(4):
+					if flow is not None:
+						flow_d, mask, conf = stu[i](torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[i])
+						flow = flow + flow_d
+					else:
+						flow, mask, conf = stu[i](torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[i])
+					mask_list.append(mask)
+					flow_list.append(flow)
+					conf_list.append(conf)
+					warped_img0 = warp(img0, flow[:, :2])
+					warped_img1 = warp(img1, flow[:, 2:4])
+					warped_f0 = warp(f0, flow[:, :2])
+					warped_f1 = warp(f1, flow[:, 2:4])
+					merged_student = (warped_img0, warped_img1)
+					merged.append(merged_student)
+				conf = torch.sigmoid(torch.cat(conf_list, 1))
+				conf = conf / (conf.sum(1, True) + 1e-3)
+				if gt.shape[1] == 3:
+					flow_teacher = 0
+					mask_teacher = 0
+					for i in range(4):
+						flow_teacher += conf[:, i:i+1] * flow_list[i]
+						mask_teacher += conf[:, i:i+1] * mask_list[i]
+					warped_img0_teacher = warp(img0, flow_teacher[:, :2])
+					warped_img1_teacher = warp(img1, flow_teacher[:, 2:4])
+					mask_teacher = torch.sigmoid(mask_teacher)
+					merged_teacher = warped_img0_teacher * mask_teacher + warped_img1_teacher * (1 - mask_teacher)
+					teacher_list.append(merged_teacher)
+					flow_list_teacher.append(flow_teacher)
+				for i in range(4):
+					mask_list[i] = torch.sigmoid(mask_list[i])
+					merged[i] = merged[i][0] * mask_list[i] + merged[i][1] * (1 - mask_list[i])
+					if gt.shape[1] == 3:
+						loss_mask = ((merged[i] - gt).abs().mean(1, True) > (merged_teacher - gt).abs().mean(1, True) + 1e-2).float().detach()
+						loss_cons += (((flow_teacher.detach() - flow_list[i]) ** 2).sum(1, True) ** 0.5 * loss_mask).mean() * 0.001
+				return flow_list, mask_list[3], merged, [teacher_list, flow_list_teacher], loss_cons
+
+		self.model = FlownetCas
+		self.training_model = FlownetCas
 
 
 
