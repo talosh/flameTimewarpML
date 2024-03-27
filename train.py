@@ -1155,7 +1155,7 @@ def main():
                     'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                     'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                     'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output_mask': rgb_output_refine_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+                    'sample_output_mask': rgb_output_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
                 }
             )
 
