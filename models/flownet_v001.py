@@ -89,7 +89,7 @@ class Model:
 
 			def forward(self, img0, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):				
 				if not torch.is_tensor(timestep):
-					timestep = (x[:, :1].clone() * 0 + 1) * timestep
+					timestep = (img0[:, :1].clone() * 0 + 1) * timestep
 				else:
 					timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
 				flow_list = []
