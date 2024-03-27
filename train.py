@@ -1092,8 +1092,8 @@ def main():
         loss_l1 = criterion_l1(merged[3], img1)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
 
-        epoch_loss.append(float(loss_l1_disp.item()))
-        steps_loss.append(float(loss_l1_disp.item()))
+        epoch_loss.append(float(loss_l1.item()))
+        steps_loss.append(float(loss_l1.item()))
 
         if len(epoch_loss) < 999:
             smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
