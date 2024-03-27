@@ -557,7 +557,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             if q < 0.25:
                 img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
             elif q < 0.5:
-                img0, img1, img2 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2 self.h, self.w)
+                img0, img1, img2 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, self.h, self.w)
             elif q < 0.75:
                 img0, img1, img2 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, self.h, self.w)
             else:
