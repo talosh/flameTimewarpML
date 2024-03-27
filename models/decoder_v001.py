@@ -8,10 +8,10 @@ class Model:
 		class Decoder(Module):
 			def __init__(self):
 				super().__init__()
-				self.cnn0 = torch.nn.Conv2d(8, 32, 3, 2, 1)
-				self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-				self.cnn3 = torch.nn.ConvTranspose2d(32, 3, 4, 2, 1)
+				self.cnn0 = torch.nn.Conv2d(8, 32, 3, 2, 1, padding_mode = 'reflect', bias=False)
+				self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect', bias=False)
+				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect', bias=False)
+				self.cnn3 = torch.nn.ConvTranspose2d(32, 3, 4, 2, 1, bias=False)
 				self.relu = torch.nn.SELU(inplace = True)
 
 			def forward(self, x):
