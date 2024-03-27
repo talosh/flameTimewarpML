@@ -1046,7 +1046,7 @@ def main():
 
     start_timestamp = time.time()
     time_stamp = time.time()
-    epoch = current_epoch if args.epoch = -1 else args.epoch
+    epoch = current_epoch if args.epoch == -1 else args.epoch
     print('\n\n')
     batch_idx = 0
 
