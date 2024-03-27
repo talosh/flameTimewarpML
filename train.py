@@ -903,6 +903,7 @@ def main():
     parser.add_argument('--model_path', type=str, default=None, help='Path to the pre-trained model (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size (int) (default: 8)')
+    parser.add_argument('--epoch', type=int, default=-1, help='Epoch (int) (default: Saved)')
 
     args = parser.parse_args()
 
@@ -1045,7 +1046,7 @@ def main():
 
     start_timestamp = time.time()
     time_stamp = time.time()
-    epoch = current_epoch
+    epoch = current_epoch if args.epoch = -1 else args.epoch
     print('\n\n')
     batch_idx = 0
 
