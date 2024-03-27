@@ -932,6 +932,7 @@ def main():
     except:
         start_timestamp = time.time()
 
+    start_timestamp = time.time()
     time_stamp = time.time()
     epoch = current_epoch
     print('\n\n')

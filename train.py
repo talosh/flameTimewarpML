@@ -71,8 +71,8 @@ import torch
 import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
-from models.flownet import FlownetCas
-from models.inflow_v002 import Model as ModelInflow
+from models.encoder_v001 import Model as Encoder
+from models.flownet_v001 import Model as Flownet
 
 class Yogi(Optimizer):
     r"""Implements Yogi Optimizer Algorithm.
@@ -245,8 +245,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         random.shuffle(self.train_descriptions)
 
-        self.h = 256
-        self.w = 256
+        self.h = 448
+        self.w = 448
         # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
         self.frames_queue = queue.Queue(maxsize=12)
@@ -352,22 +352,22 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                         fw_item = {
                             'h': h,
                             'w': w,
-                            'pre_start': exr_files[max(start_frame_index - 1, 0)],
+                            # 'pre_start': exr_files[max(start_frame_index - 1, 0)],
                             'start': start_frame,
                             'gt': gt_frame,
                             'end': end_frame,
-                            'after_end': exr_files[min(end_frame_index + 1, len(exr_files) - 1)],
+                            # 'after_end': exr_files[min(end_frame_index + 1, len(exr_files) - 1)],
                             'ratio': 1 / (len(window) - 1) * (gt_frame_index + 1)
                         }
 
                         bw_item = {
                             'h': h,
                             'w': w,
-                            'pre_start': exr_files[min(end_frame_index + 1, len(exr_files) - 1)],
+                            # 'pre_start': exr_files[min(end_frame_index + 1, len(exr_files) - 1)],
                             'start': end_frame,
                             'gt': gt_frame,
                             'end': start_frame,
-                            'after_end': exr_files[max(start_frame_index - 1, 0)],
+                            # 'after_end': exr_files[max(start_frame_index - 1, 0)],
                             'ratio': 1 - (1 / (len(window) - 1) * (gt_frame_index + 1))
                         }
 
@@ -388,10 +388,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                     train_data = {}
                     # train_data['pre_start'] = self.fw.read_openexr_file(description['pre_start'])['image_data']
                     train_data['start'] = self.fw.read_openexr_file(description['start'])['image_data']
-                    train_data['pre_start']  = train_data['start']
                     train_data['gt'] = self.fw.read_openexr_file(description['gt'])['image_data']
                     train_data['end'] = self.fw.read_openexr_file(description['end'])['image_data']
-                    train_data['after_end'] = train_data['end']
                     # train_data['after_end'] = self.fw.read_openexr_file(description['after_end'])['image_data']
                     train_data['ratio'] = description['ratio']
                     train_data['h'] = description['h']
@@ -406,7 +404,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.train_descriptions)
     
-    def crop(self, img0, img1, img2, img3, img4, h, w):
+    def crop(self, img0, img1, img2, h, w):
         np.random.seed(None)
         ih, iw, _ = img0.shape
         x = np.random.randint(0, ih - h + 1)
@@ -414,9 +412,9 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         img0 = img0[x:x+h, y:y+w, :]
         img1 = img1[x:x+h, y:y+w, :]
         img2 = img2[x:x+h, y:y+w, :]
-        img3 = img3[x:x+h, y:y+w, :]
-        img4 = img4[x:x+h, y:y+w, :]
-        return img0, img1, img2, img3, img4
+        # img3 = img3[x:x+h, y:y+w, :]
+        # img4 = img4[x:x+h, y:y+w, :]
+        return img0, img1, img2 #, img3, img4
 
     def resize_image(self, tensor, x):
         """
@@ -505,11 +503,11 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         train_data = self.getimg(index)
-        src_img0 = train_data['pre_start']
-        src_img1 = train_data['start']
-        src_img2 = train_data['gt']
-        src_img3 = train_data['end']
-        src_img4 = train_data['after_end']
+        # src_img0 = train_data['pre_start']
+        src_img0 = train_data['start']
+        src_img1 = train_data['gt']
+        src_img2 = train_data['end']
+        # src_img4 = train_data['after_end']
         imgh = train_data['h']
         imgw = train_data['w']
         ratio = train_data['ratio']
@@ -520,105 +518,86 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         src_img0 = torch.from_numpy(src_img0.copy())
         src_img1 = torch.from_numpy(src_img1.copy())
         src_img2 = torch.from_numpy(src_img2.copy())
-        src_img3 = torch.from_numpy(src_img3.copy())
-        src_img4 = torch.from_numpy(src_img4.copy())
+        #src_img3 = torch.from_numpy(src_img3.copy())
+        # src_img4 = torch.from_numpy(src_img4.copy())
         src_img0 = src_img0.to(device = device, dtype = torch.float32)
         src_img1 = src_img1.to(device = device, dtype = torch.float32)
         src_img2 = src_img2.to(device = device, dtype = torch.float32)
-        src_img3 = src_img3.to(device = device, dtype = torch.float32)
-        src_img4 = src_img4.to(device = device, dtype = torch.float32)
+        # src_img3 = src_img3.to(device = device, dtype = torch.float32)
+        # src_img4 = src_img4.to(device = device, dtype = torch.float32)
 
         rsz1_img0 = self.resize_image(src_img0, self.h)
         rsz1_img1 = self.resize_image(src_img1, self.h)
         rsz1_img2 = self.resize_image(src_img2, self.h)
-        rsz1_img3 = self.resize_image(src_img3, self.h)
-        rsz1_img4 = self.resize_image(src_img4, self.h)
+        # rsz1_img3 = self.resize_image(src_img3, self.h)
+        # rsz1_img4 = self.resize_image(src_img4, self.h)
 
         rsz2_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
         rsz2_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
         rsz2_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
-        rsz2_img3 = self.resize_image(src_img3, int(self.h * (1 + 1/4)))
-        rsz2_img4 = self.resize_image(src_img4, int(self.h * (1 + 1/4)))
+        # rsz2_img3 = self.resize_image(src_img3, int(self.h * (1 + 1/4)))
+        # rsz2_img4 = self.resize_image(src_img4, int(self.h * (1 + 1/4)))
 
         rsz3_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/3)))
         rsz3_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/3)))
         rsz3_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/3)))
-        rsz3_img3 = self.resize_image(src_img3, int(self.h * (1 + 1/3)))
-        rsz3_img4 = self.resize_image(src_img4, int(self.h * (1 + 1/3)))
+        # rsz3_img3 = self.resize_image(src_img3, int(self.h * (1 + 1/3)))
+        # rsz3_img4 = self.resize_image(src_img4, int(self.h * (1 + 1/3)))
+
+        rsz4_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/2)))
+        rsz4_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/2)))
+        rsz4_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/2)))
 
         batch_img0 = []
         batch_img1 = []
         batch_img2 = []
-        batch_img3 = []
-        batch_img4 = []
 
         for index in range(self.batch_size):
             q = random.uniform(0, 1)
-            if q < 0.69:
-                img0, img1, img2, img3, img4 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, rsz1_img3, rsz1_img4, self.h, self.w)
-                img0 = img0.permute(2, 0, 1)
-                img1 = img1.permute(2, 0, 1)
-                img2 = img2.permute(2, 0, 1)
-                img3 = img3.permute(2, 0, 1)
-                img4 = img4.permute(2, 0, 1)
-            elif q < 0.85:
-                img0, img1, img2, img3, img4 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, rsz2_img3, rsz2_img4, self.h, self.w)
-                img0 = img0.permute(2, 0, 1)
-                img1 = img1.permute(2, 0, 1)
-                img2 = img2.permute(2, 0, 1)
-                img3 = img3.permute(2, 0, 1)
-                img4 = img4.permute(2, 0, 1)
+            if q < 0.25:
+                img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
+            elif q < 0.5:
+                img0, img1, img2 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2 self.h, self.w)
+            elif q < 0.75:
+                img0, img1, img2 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, self.h, self.w)
             else:
-                img0, img1, img2, img3, img4 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, rsz3_img3, rsz3_img4, self.h, self.w)
-                img0 = img0.permute(2, 0, 1)
-                img1 = img1.permute(2, 0, 1)
-                img2 = img2.permute(2, 0, 1)
-                img3 = img3.permute(2, 0, 1)
-                img4 = img4.permute(2, 0, 1)
+                img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
+
+            img0 = img0.permute(2, 0, 1)
+            img1 = img1.permute(2, 0, 1)
+            img2 = img2.permute(2, 0, 1)
 
             p = random.uniform(0, 1)
             if p < 0.25:
                 img0 = torch.flip(img0.transpose(1, 2), [2])
                 img1 = torch.flip(img1.transpose(1, 2), [2])
                 img2 = torch.flip(img2.transpose(1, 2), [2])
-                img3 = torch.flip(img3.transpose(1, 2), [2])
-                img4 = torch.flip(img4.transpose(1, 2), [2])
             elif p < 0.5:
                 img0 = torch.flip(img0, [1, 2])
                 img1 = torch.flip(img1, [1, 2])
                 img2 = torch.flip(img2, [1, 2])
-                img3 = torch.flip(img3, [1, 2])
-                img4 = torch.flip(img4, [1, 2])
             elif p < 0.75:
                 img0 = torch.flip(img0.transpose(1, 2), [1])
                 img1 = torch.flip(img1.transpose(1, 2), [1])
                 img2 = torch.flip(img2.transpose(1, 2), [1])
-                img3 = torch.flip(img3.transpose(1, 2), [1])
-                img4 = torch.flip(img4.transpose(1, 2), [1])
 
             # Horizontal flip (reverse width)
             if random.uniform(0, 1) < 0.5:
                 img0 = img0.flip(-1)
                 img1 = img1.flip(-1)
                 img2 = img2.flip(-1)
-                img3 = img3.flip(-1)
-                img4 = img4.flip(-1)
 
             # Vertical flip (reverse height)
             if random.uniform(0, 1) < 0.5:
                 img0 = img0.flip(-2)
                 img1 = img1.flip(-2)
                 img2 = img2.flip(-2)
-                img3 = img3.flip(-2)
-                img4 = img4.flip(-2)
 
             # Depth-wise flip (reverse channels)
             if random.uniform(0, 1) < 0.4:
                 img0 = img0.flip(0)
                 img1 = img1.flip(0)
                 img2 = img2.flip(0)
-                img3 = img3.flip(0)
-                img4 = img4.flip(0)
 
             # Exposure agumentation
             exp = random.uniform(1 / 8, 2)
@@ -626,43 +605,26 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img0 = img0 * exp
                 img1 = img1 * exp
                 img2 = img2 * exp
-                img3 = img3 * exp
-                img4 = img4 * exp
 
-            '''
-            # remove srgb encoding
-            cc = random.uniform(0, 1)
-            if cc < 0.2:
-                img0 = self.srgb_to_linear(img0)
-                img1 = self.srgb_to_linear(img1)
-                img2 = self.srgb_to_linear(img2)
-                img3 = self.srgb_to_linear(img3)
-                img4 = self.srgb_to_linear(img4)
-            elif cc < 0.4:
-                img0 = self.srgb_to_linear(img0)
-                img1 = self.srgb_to_linear(img1)
-                img2 = self.srgb_to_linear(img2)
-                img3 = self.srgb_to_linear(img3)
-                img4 = self.srgb_to_linear(img4)
-                img0 = self.apply_aces_logc(img0)
-                img1 = self.apply_aces_logc(img1)
-                img2 = self.apply_aces_logc(img2)
-                img3 = self.apply_aces_logc(img3)
-                img4 = self.apply_aces_logc(img4)
-            elif cc < 0.5:
-                pass
-            '''
+            # slight colour shift between imcoming and outgoing images
+            delta = random.uniform(0, 0.05)
+            r = random.uniform(1-delta, 1+delta)
+            g = random.uniform(1-delta, 1+delta)
+            b = random.uniform(1-delta, 1+delta)
+            multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device)
+            img0 = img0 * multipliers
 
-            # img0, img1 = self.crop(img0, img1, self.h, self.w)
-            # img0 = torch.from_numpy(img0.copy()).permute(2, 0, 1)
-            # img1 = torch.from_numpy(img1.copy()).permute(2, 0, 1)
+            r = random.uniform(1-delta, 1+delta)
+            g = random.uniform(1-delta, 1+delta)
+            b = random.uniform(1-delta, 1+delta)
+            multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device)
+            img2 = img2 * multipliers
+
             batch_img0.append(img0)
             batch_img1.append(img1)
             batch_img2.append(img2)
-            batch_img3.append(img3)
-            batch_img4.append(img4)
 
-        return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), torch.stack(batch_img3), torch.stack(batch_img4), ratio, images_idx
+        return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), ratio, images_idx
 
     def get_input_channels_number(self, source_frames_paths_list):
         total_num_channels = 0
@@ -936,7 +898,7 @@ def main():
     parser.add_argument('--lr', type=float, default=0.00009, help='Learning rate (default: 9e-5)')
     parser.add_argument('--type', type=int, default=1, help='Model type (int): 1 - MultiresNet, 2 - MultiresNet 4 (default: 1)')
     parser.add_argument('--warmup', type=float, default=0.001, help='Warmup epochs (float) (default: 1)')
-    parser.add_argument('--pulse', type=float, default=999, help='Period in steps to pulse learning rate (float) (default: 9)')
+    parser.add_argument('--pulse', type=float, default=999, help='Period in steps to pulse learning rate (float) (default: 999)')
     parser.add_argument('--pulse_amplitude', type=float, default=25, help='Learning rate pulse amplitude (percentage) (default: 25)')
     parser.add_argument('--model_path', type=str, default=None, help='Path to the pre-trained model (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
@@ -981,9 +943,8 @@ def main():
     
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
 
-    model = ModelInflow().get_training_model()(7, 3).to(device)
-    model_name = 'Test'
-    model_rife = FlownetCas().to(device)
+    encoder = Encoder().get_training_model()().to(device)
+    flownet = Flownet().get_training_model()().to(device)
     
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
@@ -992,22 +953,24 @@ def main():
     criterion_mse = torch.nn.MSELoss()
     criterion_l1 = torch.nn.L1Loss()
 
-    # optimizer_sgd = torch.optim.SGD(model.parameters(), lr=lr)
-    optimizer = Yogi(model.parameters(), lr=lr)
-
+    optimizer_encoder = Yogi(encoder.parameters(), lr=lr)
+    optimizer_flownet = Yogi(flownet.parameters(), lr=lr)
+    
+    '''
     def warmup(current_step, lr = 4e-3, number_warmup_steps = 999):
         mul_lin = current_step / number_warmup_steps
         # print (f'\n number_warmup_steps {number_warmup_steps} lr {lr} mul {mul_lin} res {(lr * mul_lin):.4e}')
         return lr * mul_lin
+    '''
 
     # remove annoying message in pytorch 1.12.1 when using CosineAnnealingLR
     import warnings
     warnings.filterwarnings('ignore', category=UserWarning)
 
-    train_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
-    # warmup_scheduler_fusion = torch.optim.lr_scheduler.LambdaLR(optimizer_fusion, lr_lambda=lambda step: warmup(step, lr=lr, number_warmup_steps=number_warmup_steps))
-    # scheduler_fusion = torch.optim.lr_scheduler.SequentialLR(optimizer_fusion, [warmup_scheduler_fusion, train_scheduler_fusion], [number_warmup_steps])
-    scheduler = train_scheduler
+    train_scheduler_encoder = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_encoder, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+    train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+    scheduler_encoder = train_scheduler_encoder
+    scheduler_flownet = train_scheduler_flownet
 
     step = 0
     current_epoch = 0
@@ -1021,20 +984,23 @@ def main():
 
         try:
             checkpoint = torch.load(trained_model_path)
-            model.load_state_dict(checkpoint['model_state_dict'])
             print('loaded previously saved model')
         except Exception as e:
             print (f'unable to load saved model: {e}')
 
         try:
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            print('loaded previously saved fusion optmizer')
+            encoder.load_state_dict(checkpoint['encoder_state_dict'])
         except Exception as e:
-            print (f'unable to load saved fusion optimizer: {e}')
+            print (f'unable to load Encoder state: {e}')
 
         try:
-            # step = checkpoint['step']
-            # print (f'step: {step}')
+            flownet.load_state_dict(checkpoint['flownet_state_dict'])
+        except Exception as e:
+            print (f'unable to load Flownet state: {e}')
+
+        try:
+            step = checkpoint['step']
+            print (f'step: {step}')
             current_epoch = checkpoint['epoch']
             print (f'epoch: {current_epoch + 1}')
         except Exception as e:
@@ -1062,6 +1028,7 @@ def main():
             os.makedirs(trained_model_dir)
         trained_model_path = os.path.join(trained_model_dir, traned_model_name)
 
+    '''
     default_rife_model_path = os.path.join(
         os.path.abspath(os.path.dirname(__file__)),
         'models_data',
@@ -1075,186 +1042,56 @@ def main():
             if "module." in k
         }
     model_rife.load_state_dict(convert(rife_state_dict))
+    '''
 
     start_timestamp = time.time()
     time_stamp = time.time()
     epoch = current_epoch
-    
     print('\n\n')
-
     batch_idx = 0
 
     while True:
         data_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        img0, img1, img2, img3, img4, ratio, idx = read_image_queue.get()
+        img0, img1, img2, ratio, idx = read_image_queue.get()
 
         if platform.system() == 'Darwin':
             img0 = normalize_numpy(img0)
             img1 = normalize_numpy(img1)
             img2 = normalize_numpy(img2)
-            img3 = normalize_numpy(img3)
-            img4 = normalize_numpy(img4)
             img0 = img0.to(device, non_blocking = True)
             img1 = img1.to(device, non_blocking = True)
             img2 = img2.to(device, non_blocking = True)
-            img3 = img3.to(device, non_blocking = True)
-            img4 = img4.to(device, non_blocking = True)
         else:
             img0 = img0.to(device, non_blocking = True)
             img1 = img1.to(device, non_blocking = True)
             img2 = img2.to(device, non_blocking = True)
-            img3 = img3.to(device, non_blocking = True)
-            img4 = img4.to(device, non_blocking = True)
             img0 = normalize(img0)
             img1 = normalize(img1)
             img2 = normalize(img2)
-            img3 = normalize(img3)
-            img4 = normalize(img4)
 
-        current_lr = scheduler.get_last_lr()[0]
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = current_lr
+        current_lr = scheduler_encoder.get_last_lr()[0]
+        for param_group_encoder in optimizer_encoder.param_groups:
+            param_group_encoder['lr'] = current_lr
+        for param_group_flownet in optimizer_flownet.param_groups:
+            param_group_flownet['lr'] = current_lr
 
-        current_lr_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
+        current_lr_str = str(f'{optimizer_encoder.param_groups[0]["lr"]:.4e}')
 
-        with torch.no_grad():
-            x = torch.cat((img1, img3, img2), dim=1)
-            flow_list, mask, merged, teacher_res, loss_cons = model_rife(x, timestep = ratio)
-            output_rife = merged[3]
+        optimizer_encoder.zero_grad(set_to_none=True)
+        optimizer_flownet.zero_grad(set_to_none=True)
 
-        timestep = (img1[:, :1].clone() * 0 + 1) * ratio
-        flow0 = flow_list[3][:, :2]
-        flow1 = flow_list[3][:, 2:4]
+        f0 = encoder(img0)
+        f1 = encoder(img2)
 
-        mn, _, mh, mw = mask.shape
-        grain1 = (torch.rand(mn, 1, mh, mw).to(device = mask.device, dtype = mask.dtype) * 2 - 1) / 18
-        grain2 = (torch.rand(mn, 1, mh, mw).to(device = mask.device, dtype = mask.dtype) * 2 - 1) / 18
-        blurred_grain_mask = torch.clamp(blur(mask + grain1) + grain2, min=0, max=1)
-        blurred_output_rife = warp(img1, flow0) * blurred_grain_mask + warp(img3, flow1) * (1 - blurred_grain_mask)
+        flow_list, mask_list, merged = flownet(img0, img2, f0, f1, ratio)
+        output = merged[3]
+        mask = mask_list[3]
 
-        # idflow = id_flow(img1)
-        # in_flow0, in_flow1, in_mask, in_deep = model(torch.cat((img1, img3, idflow, timestep), dim=1))
-        # in_flow0 = in_flow0 + idflow
-        # in_flow1 = in_flow1 + idflow
-
-        output_inflow, in_deep = model(torch.cat((img1*2-1, img3*2-1, timestep*2-1), dim=1))
-    
-        # output_inflow_d5 = warp_tenflow(img1, in_deep[0][0]) * in_deep[0][2] + warp_tenflow(img3, in_deep[0][1]) * (1 - in_deep[0][2])
-        # output_inflow_d4 = warp_tenflow(img1, in_deep[1][0]) * in_deep[1][2] + warp_tenflow(img3, in_deep[1][1]) * (1 - in_deep[1][2])
-         #output_inflow_d3 = warp_tenflow(img1, in_deep[2][0]) * in_deep[2][2] + warp_tenflow(img3, in_deep[2][1]) * (1 - in_deep[2][2])
-        # output_inflow_d2 = warp_tenflow(img1, in_deep[3][0]) * in_deep[3][2] + warp_tenflow(img3, in_deep[3][1]) * (1 - in_deep[3][2])
-        # output_inflow = warp_tenflow(img1, in_flow0) * in_mask + warp_tenflow(img3, in_flow1) * (1 - in_mask)
-        # output_inflow = warp_tenflow(img2, idflow)
-
-        # with torch.no_grad():
-        # r_flow0, r_flow1, r_mask = model_refine(img1, img3, flow0, flow1, blurred_grain_mask, timestep)
-        # output_refine = warp(img1, r_flow0) * r_mask + warp(img3, r_flow1) * (1 - r_mask)
-        output_d5 = in_deep[0]
-        output_d4 = in_deep[1]
-        output_d3 = in_deep[2]
-        output_d2 = in_deep[3]
-        output = output_inflow
-        
-        # output = model_fusion(warp(img1, r_flow0), warp(img3, r_flow1), r_mask)
-
-        # output = ( output + 1 ) / 2
-        
-        # loss_tea = (teacher_res[0][0] - gt).abs().mean() + ((teacher_res[1][0] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-        # loss_cons += ((flow_list[-1] ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-
-        # loss = criterion_mse(output, img2) + criterion_l1_rife(output_rife, img2) * 1e-4
-
-        '''
-        norm_min = - max(mh, mw)
-        norm_max = max(mh, mw)
-        in_flow0_nm = ((in_flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
-        in_flow1_nm = ((in_flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
-        flow0_nm = ((flow0 - norm_min) / (norm_max - norm_min)) * 2 - 1
-        flow1_nm = ((flow1 - norm_min) / (norm_max - norm_min)) * 2 - 1
-        '''
-
-        '''
-        flow0_min = flow0.min()
-        flow0_max = flow0.max()
-        flow0_nm = 2 * ((flow0 - flow0_min) / (flow0_max - flow0_min)) - 1
-        in_flow0_nm = 2 * ((in_flow0 - flow0_min) / (flow0_max - flow0_min)) - 1
-
-        flow1_min = flow1.min()
-        flow1_max = flow1.max()
-        flow1_nm = 2 * ((flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
-        in_flow1_nm = 2 * ((in_flow1 - flow1_min) / (flow1_max - flow1_min)) - 1
-        '''
-        '''
-        output_flow_d5 = torch.cat((in_deep[0][0], in_deep[0][1]), dim=1)
-        output_flow_d4 = torch.cat((in_deep[1][0], in_deep[1][1]), dim=1)
-        output_flow_d3 = torch.cat((in_deep[2][0], in_deep[2][1]), dim=1)
-        output_flow_d2 = torch.cat((in_deep[3][0], in_deep[3][1]), dim=1)
-        output_flow = torch.cat((in_flow0, in_flow1), dim=1)
-        target_flow = torch.cat((flow0, flow1), dim=1)
-        '''
-
-        target = img2
-
-        # output_gamma = normalize(gamma_up(restore_normalized_values(output)))
-        # output_yuv_gamma = normalize(torch.cat(split_to_yuv(output_gamma), dim=1))
-        # output_blurred = blur(output)
-
-        # target_gamma = normalize(gamma_up(restore_normalized_values(target)))
-        # target_yuv_gamma = normalize(torch.cat(split_to_yuv(target_gamma), dim=1))
-        # target_blurred = blur(output)
-
-        # loss = criterion_mse(output_yuv_gamma, target_yuv_gamma) # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
-        # loss_mse = criterion_mse(output, target) # * 0.6 + criterion_mse(output_blurred, target_blurred) * 0.4 # * 0.8 + (criterion_mse(output_u, target_u) + criterion_mse(output_v, target_v)) * 0.2
-        # loss_mse = criterion_mse(gamma_up(output_refine), gamma_up(target)) + criterion_mse(gamma_up(output), gamma_up(target)) * 0.2 # + criterion_mse(torch.clamp(output, min=0.12, max = 0.25), torch.clamp(target, min=0.12, max = 0.25))
-        # loss_mse = criterion_mse(gamma_up(output), gamma_up(target))
-        # loss_mse_flow = criterion_mse(output_flow_nm, target_flow_nm)
-        # loss_mse_rife = criterion_mse(output_inflow, output_rife)
-        # loss_mse_mask = criterion_mse(in_mask, blurred_grain_mask)
-        # loss_mse = loss_mse_flow + 4 * loss_mse_mask # + loss_mse_rife + loss_mse
-
-        # optimizer_rife.zero_grad(set_to_none=False)
-        optimizer.zero_grad(set_to_none=False)
-        # optimizer_refine.zero_grad(set_to_none=False)
-        # optimizer_fusion.zero_grad(set_to_none=False)
-
-        '''
-        loss_mask_d5 = ((gamma_up(output_d5) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
-        loss_cons_d5 = (((target_flow.detach() - output_flow_d5) ** 2).sum(1, True) ** 0.5 * loss_mask_d5).mean() * 0.001
-        loss_cons_d5 += ((output_flow_d5 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-        loss_mask_d4 = ((gamma_up(output_d4) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
-        loss_cons_d4 = (((target_flow.detach() - output_flow_d4) ** 2).sum(1, True) ** 0.5 * loss_mask_d4).mean() * 0.001
-        loss_cons_d4 += ((output_flow_d4 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-        loss_mask_d3 = ((gamma_up(output_d3) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
-        loss_cons_d3 = (((target_flow.detach() - output_flow_d3) ** 2).sum(1, True) ** 0.5 * loss_mask_d3).mean() * 0.001
-        loss_cons_d3 += ((output_flow_d3 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-        loss_mask_d2 = ((gamma_up(output_d2) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
-        loss_cons_d2 = (((target_flow.detach() - output_flow_d2) ** 2).sum(1, True) ** 0.5 * loss_mask_d2).mean() * 0.001
-        loss_cons_d2 += ((output_flow_d2 ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-        loss_mask = ((gamma_up(output) - gamma_up(target)).abs().mean(1, True) + 1e-2).float().detach()
-        loss_cons = (((target_flow.detach() - output_flow) ** 2).sum(1, True) ** 0.5 * loss_mask).mean() * 0.001
-        loss_cons += ((output_flow ** 2 + 1e-6).sum(1) ** 0.5).mean() * 1e-5
-        '''
-
-        # loss = criterion_l1(gamma_up(output), gamma_up(target))
-        loss = criterion_l1(output, target)
-        loss += criterion_l1(output_d2, target) * (1 / 16 ** 2)
-        loss += criterion_l1(output_d3, target) * (1 / 8 ** 2)
-        loss += criterion_l1(output_d4, target) * (1 / 4 ** 2)
-        loss += criterion_l1(output_d5, target) * (1 / 2 ** 2)
-        # loss += loss_cons
-        # loss += loss_cons_d2 * (1 / 16 ** 2)
-        # loss += loss_cons_d3 * (1 / 8 ** 2)
-        # loss += loss_cons_d4 * (1 / 4 ** 2)
-        # loss += loss_cons_d5 * (1 / 2 ** 2)
-        # loss += criterion_l1(gamma_up(output), gamma_up(target)) * 0.1
-
-        # loss_l1 = criterion_l1(output_flow, target_flow) + criterion_l1()
-        # loss_l1_disp = loss
-        loss_l1_disp = criterion_l1(output.detach(), target.detach())
-        loss_l1_str = str(f'{loss_l1_disp.item():.6f}')
-        loss_cm_str = str(f'{loss.item():.6f}')
+        loss = criterion_mse(merged[3], img1)
+        loss_l1 = criterion_l1(merged[3], img1)
+        loss_l1_str = str(f'{loss_l1.item():.6f}')
 
         epoch_loss.append(float(loss_l1_disp.item()))
         steps_loss.append(float(loss_l1_disp.item()))
@@ -1271,17 +1108,12 @@ def main():
 
         loss.backward()
 
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-        optimizer.step()
-
-        # optimizer_rife.step()
-        # optimizer_refine.step()
-        # optimizer_fusion.step()
-
-        # scheduler_rife.step()
-        scheduler.step()
-        # scheduler_refine.step()
-        # scheduler_fusion.step()
+        torch.nn.utils.clip_grad_norm_(encoder.parameters(), 1.0)
+        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1.0)
+        optimizer_encoder.step()
+        optimizer_flownet.step()
+        scheduler_encoder.step()
+        scheduler_flownet.step()
 
         train_time = time.time() - time_stamp
         time_stamp = time.time()
@@ -1305,20 +1137,17 @@ def main():
             '''
 
             if platform.system() == 'Darwin':
-                rgb_source1 = restore_normalized_values_numpy(img1)
-                rgb_source2 = restore_normalized_values_numpy(img3)
-                rgb_target = restore_normalized_values_numpy(img2)
+                rgb_source1 = restore_normalized_values_numpy(img0)
+                rgb_source2 = restore_normalized_values_numpy(img2)
+                rgb_target = restore_normalized_values_numpy(img1)
                 rgb_output = restore_normalized_values_numpy(output)
-                rgb_output_rife = restore_normalized_values_numpy(output_rife)
+                rgb_output_mask = mask.repeat_interleave(3, dim=1)
             else:
-                rgb_source1 = restore_normalized_values(img1)
-                rgb_source2 = restore_normalized_values(img3)
-                rgb_target = restore_normalized_values(img2)
+                rgb_source1 = restore_normalized_values(img0)
+                rgb_source2 = restore_normalized_values(img2)
+                rgb_target = restore_normalized_values(img1)
                 rgb_output = restore_normalized_values(output)
-                rgb_output_rife = restore_normalized_values(output_rife)
-                # rgb_output_refine_mask = in_mask.repeat_interleave(3, dim=1)
-                rgb_output_refine_mask = mask.repeat_interleave(3, dim=1)
-
+                rgb_output_mask = mask.repeat_interleave(3, dim=1)
 
             write_image_queue.put(
                 {
@@ -1327,8 +1156,7 @@ def main():
                     'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                     'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                     'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output_rife': rgb_output_rife[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output_refine_mask': rgb_output_refine_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+                    'sample_output_mask': rgb_output_refine_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
                 }
             )
 
@@ -1344,9 +1172,10 @@ def main():
                 'epoch_loss': epoch_loss,
                 'start_timestamp': start_timestamp,
                 'lr': optimizer.param_groups[0]['lr'],
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'model_name': model_name,
+                'encoder_state_dict': encoder.state_dict(),
+                'flownet_state_dict': flownet.state_dict(),
+                'optimizer_encoder_state_dict': optimizer_encoder.state_dict(),
+                'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
             }, trained_model_path)
             
             # model.load_state_dict(convert(rife_state_dict))
@@ -1374,9 +1203,10 @@ def main():
                 'epoch_loss': epoch_loss,
                 'start_timestamp': start_timestamp,
                 'lr': optimizer.param_groups[0]['lr'],
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'model_name': model_name,
+                'encoder_state_dict': encoder.state_dict(),
+                'flownet_state_dict': flownet.state_dict(),
+                'optimizer_encoder_state_dict': optimizer_encoder.state_dict(),
+                'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
             }, trained_model_path)
 
             rife_psnr_list = []
@@ -1390,40 +1220,40 @@ def main():
                     print (f'\rCalcualting PSNR on full-scale image {ev_item_index} of 111...')
 
                     ev_item = dataset.frames_queue.get()
-                    ev_img1 = ev_item['start']
+                    ev_img0 = ev_item['start']
                     ev_img2 = ev_item['gt']
-                    ev_img3 = ev_item['end']
+                    ev_img1 = ev_item['end']
                     ev_ratio = ev_item['ratio']
-                    ev_img1 = torch.from_numpy(ev_img1.copy())
+                    ev_img0 = torch.from_numpy(ev_img1.copy())
                     ev_img2 = torch.from_numpy(ev_img2.copy())
-                    ev_img3 = torch.from_numpy(ev_img3.copy())
-                    ev_img1 = ev_img1.to(device = device, dtype = torch.float32)
+                    ev_img1 = torch.from_numpy(ev_img3.copy())
+                    ev_img0 = ev_img1.to(device = device, dtype = torch.float32)
                     ev_img2 = ev_img2.to(device = device, dtype = torch.float32)
-                    ev_img3 = ev_img3.to(device = device, dtype = torch.float32)
-                    ev_img1 = ev_img1.permute(2, 0, 1).unsqueeze(0)
+                    ev_img1 = ev_img3.to(device = device, dtype = torch.float32)
+                    ev_img0 = ev_img1.permute(2, 0, 1).unsqueeze(0)
                     ev_img2 = ev_img2.permute(2, 0, 1).unsqueeze(0)
-                    ev_img3 = ev_img3.permute(2, 0, 1).unsqueeze(0)
-                    ev_img1 = normalize(ev_img1)
+                    ev_img1 = ev_img3.permute(2, 0, 1).unsqueeze(0)
+                    ev_img0 = normalize(ev_img1)
                     ev_img2 = normalize(ev_img2)
-                    ev_img3 = normalize(ev_img3)
+                    ev_img1 = normalize(ev_img3)
 
                     n, c, h, w = ev_img1.shape
                     
                     ph = ((h - 1) // 64 + 1) * 64
                     pw = ((w - 1) // 64 + 1) * 64
                     padding = (0, pw - w, 0, ph - h)
-                    evp_img1 = torch.nn.functional.pad(ev_img1, padding)
+                    evp_img0 = torch.nn.functional.pad(ev_img1, padding)
                     evp_img2 = torch.nn.functional.pad(ev_img2, padding)
-                    evp_img3 = torch.nn.functional.pad(ev_img3, padding)
+                    evp_img1 = torch.nn.functional.pad(ev_img3, padding)
 
                     with torch.no_grad():
-                        x = torch.cat((evp_img1, evp_img2, evp_img3), dim=1)
-                        _, _, merged, _, _ = model_rife(x, timestep = ev_ratio)
+                        f0 = encoder(img0)
+                        f1 = encoder(img2)
+                        _, _, merged = flownet(img0, img2, f0, f1, timestep = ev_ratio)
                         ev_output_rife = merged[3]
                         ev_output_rife = restore_normalized_values(ev_output_rife)
                         rife_psnr_list.append(psnr_torch(ev_output_rife, evp_img2))
                         ev_output_rife = ev_output_rife[0].permute(1, 2, 0)[:h, :w]
-
                         evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
 
                         '''
@@ -1437,10 +1267,10 @@ def main():
                         psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
                         ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
                         '''
-                        ev_output_inflow, ev_in_deep = model(torch.cat((evp_img1*2-1, evp_img3*2-1, evp_timestep*2-1, ), dim=1))
-                        psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
-                        ev_output_inflow = restore_normalized_values(ev_output_inflow)
-                        ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
+                        # ev_output_inflow, ev_in_deep = model(torch.cat((evp_img1*2-1, evp_img3*2-1, evp_timestep*2-1, ), dim=1))
+                        psnr_list.append(psnr_torch(ev_output_rife, evp_img2))
+                        # ev_output_inflow = restore_normalized_values(ev_output_inflow)
+                        # ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
 
                     preview_folder = os.path.join(args.dataset_path, 'preview')
                     eval_folder = os.path.join(preview_folder, 'eval')
@@ -1449,16 +1279,16 @@ def main():
                             os.makedirs(eval_folder)
                         except Exception as e:
                             print (e)
-                    evp_img1 = restore_normalized_values(evp_img1)
+                    evp_img0 = restore_normalized_values(evp_img0)
                     evp_img2 = restore_normalized_values(evp_img2)
-                    evp_img3 = restore_normalized_values(evp_img3)
+                    evp_img1 = restore_normalized_values(evp_img1)
 
                     if ev_item_index  % 9 == 1:
                         try:
-                            write_exr(evp_img1[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
-                            write_exr(evp_img3[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
-                            write_exr(evp_img2[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
-                            write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
+                            write_exr(evp_img0[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
+                            write_exr(evp_img2[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
+                            write_exr(evp_img1[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
+                            # write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
                             write_exr(ev_output_rife.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output_rife.exr'))
                         except Exception as e:
                             print (f'{e}\n\n')
