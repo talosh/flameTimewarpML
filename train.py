@@ -915,8 +915,8 @@ def main():
     def read_images(read_image_queue, dataset):
         while True:
             for batch_idx in range(len(dataset)):
-                img0, img1, img2, img3, img4, ratio, idx = dataset[batch_idx]
-                read_image_queue.put((img0, img1, img2, img3, img4, ratio, idx))
+                img0, img1, img2, ratio, idx = dataset[batch_idx]
+                read_image_queue.put((img0, img1, img2, ratio, idx))
 
     def write_images(write_image_queue):
         while True:
@@ -926,8 +926,7 @@ def main():
                 write_exr(write_data['sample_source2'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_outgoing.exr'))
                 write_exr(write_data['sample_target'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_target.exr'))
                 write_exr(write_data['sample_output'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_output.exr'))
-                write_exr(write_data['sample_output_rife'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_output_rife.exr'))
-                write_exr(write_data['sample_output_refine_mask'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_output_refine_mask.exr'))
+                write_exr(write_data['sample_output_mask'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_output_mask.exr'))
             except:
             # except queue.Empty:
                 time.sleep(0.1)
