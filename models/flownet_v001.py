@@ -49,7 +49,7 @@ class Model:
 					conv(in_planes, c//2, 3, 2, 1),
 					conv(c//2, c, 3, 2, 1),
 					)
-				self.convblock = nn.Sequential(
+				self.convblock = torch.nn.Sequential(
 					ResConv(c),
 					ResConv(c),
 					ResConv(c),
@@ -59,7 +59,7 @@ class Model:
 					ResConv(c),
 					ResConv(c),
 				)
-				self.lastconv = nn.Sequential(
+				self.lastconv = torch.nn.Sequential(
 					nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
 					nn.PixelShuffle(2)
 				)
