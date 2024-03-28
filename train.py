@@ -1254,6 +1254,13 @@ def main():
                     with torch.no_grad():
                         f0 = encoder(img0)
                         f1 = encoder(img2)
+
+                        print (f'evp_img0 {evp_img0.shape}')
+                        print (f'evp_img2 {evp_img2.shape}')
+                        print (f'evp_img1 {evp_img1.shape}')
+                        print (f'f0 {f0.shape}')
+                        print (f'f1 {f1.shape}')
+
                         _, _, merged = flownet(evp_img0, evp_img2, f0, f1, timestep = ev_ratio)
                         ev_output_rife = merged[3]
                         ev_output_rife = restore_normalized_values(ev_output_rife)
