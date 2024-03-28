@@ -986,17 +986,19 @@ def main():
 
         try:
             checkpoint = torch.load(trained_model_path)
-            print('loaded previously saved model')
+            print('loaded previously saved model checkpoint')
         except Exception as e:
             print (f'unable to load saved model: {e}')
 
         try:
             encoder.load_state_dict(checkpoint['encoder_state_dict'])
+            print('loaded previously saved Encoder state')
         except Exception as e:
             print (f'unable to load Encoder state: {e}')
 
         try:
             flownet.load_state_dict(checkpoint['flownet_state_dict'])
+            print('loaded previously saved Flownet state')
         except Exception as e:
             print (f'unable to load Flownet state: {e}')
 
