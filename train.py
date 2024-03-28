@@ -975,6 +975,7 @@ def main():
     scheduler_flownet = train_scheduler_flownet
 
     step = 0
+    loaded_step = 0
     current_epoch = 0
     preview_index = 0
 
