@@ -1001,8 +1001,8 @@ def main():
             print (f'unable to load Flownet state: {e}')
 
         try:
-            step = checkpoint['step']
-            print (f'step: {step}')
+            loaded_step = checkpoint['step']
+            print (f'loaded step: {loaded_step}')
             current_epoch = checkpoint['epoch']
             print (f'epoch: {current_epoch + 1}')
         except Exception as e:
@@ -1049,6 +1049,7 @@ def main():
     start_timestamp = time.time()
     time_stamp = time.time()
     epoch = current_epoch if args.epoch == -1 else args.epoch
+    step = loaded_step if args.epoch == -1 else step
     print('\n\n')
     batch_idx = 0
 
