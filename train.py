@@ -1225,13 +1225,9 @@ def main():
 
                     ev_item = dataset.frames_queue.get()
                     ev_img0 = ev_item['start']
-                    ev_img2 = ev_item['gt']
-                    ev_img1 = ev_item['end']
+                    ev_img2 = ev_item['end']
+                    ev_img1 = ev_item['gt']
                     ev_ratio = ev_item['ratio']
-
-                    print (f'ev_img0: {ev_img0.shape}')
-                    print (f'ev_img2: {ev_img0.shape}')
-                    print (f'ev_img1: {ev_img0.shape}')
 
                     ev_img0 = torch.from_numpy(ev_img0.copy())
                     ev_img2 = torch.from_numpy(ev_img2.copy())
@@ -1258,7 +1254,7 @@ def main():
                     with torch.no_grad():
                         f0 = encoder(img0)
                         f1 = encoder(img2)
-                        _, _, merged = flownet(img0, img2, f0, f1, timestep = ev_ratio)
+                        _, _, merged = flownet(evp_img0, evp_img2, f0, f1, timestep = ev_ratio)
                         ev_output_rife = merged[3]
                         ev_output_rife = restore_normalized_values(ev_output_rife)
                         psnr_list.append(psnr_torch(ev_output_rife, evp_img2))
