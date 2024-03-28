@@ -1252,8 +1252,8 @@ def main():
                     evp_img1 = torch.nn.functional.pad(ev_img1, padding)
 
                     with torch.no_grad():
-                        f0 = encoder(img0)
-                        f1 = encoder(img2)
+                        f0 = encoder(evp_img0)
+                        f1 = encoder(evp_img2)
 
                         print (f'evp_img0 {evp_img0.shape}')
                         print (f'evp_img2 {evp_img2.shape}')
