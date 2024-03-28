@@ -1257,7 +1257,7 @@ def main():
                         _, _, merged = flownet(evp_img0, evp_img2, f0, f1, timestep = ev_ratio)
                         ev_output_rife = merged[3]
                         ev_output_rife = restore_normalized_values(ev_output_rife)
-                        psnr_list.append(psnr_torch(ev_output_rife, evp_img2))
+                        psnr_list.append(psnr_torch(ev_output_rife, evp_img1))
                         ev_output_rife = ev_output_rife[0].permute(1, 2, 0)[:h, :w]
                         evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
 
