@@ -1228,6 +1228,11 @@ def main():
                     ev_img2 = ev_item['gt']
                     ev_img1 = ev_item['end']
                     ev_ratio = ev_item['ratio']
+
+                    print (f'ev_img0: {ev_img0.shape}')
+                    print (f'ev_img2: {ev_img0.shape}')
+                    print (f'ev_img1: {ev_img0.shape}')
+
                     ev_img0 = torch.from_numpy(ev_img0.copy())
                     ev_img2 = torch.from_numpy(ev_img2.copy())
                     ev_img1 = torch.from_numpy(ev_img1.copy())
