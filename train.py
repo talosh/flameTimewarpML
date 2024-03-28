@@ -1211,7 +1211,6 @@ def main():
                 'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
             }, trained_model_path)
 
-            rife_psnr_list = []
             psnr_list = []
 
             try:
@@ -1226,27 +1225,27 @@ def main():
                     ev_img2 = ev_item['gt']
                     ev_img1 = ev_item['end']
                     ev_ratio = ev_item['ratio']
-                    ev_img0 = torch.from_numpy(ev_img1.copy())
+                    ev_img0 = torch.from_numpy(ev_img0.copy())
                     ev_img2 = torch.from_numpy(ev_img2.copy())
-                    ev_img1 = torch.from_numpy(ev_img3.copy())
-                    ev_img0 = ev_img1.to(device = device, dtype = torch.float32)
+                    ev_img1 = torch.from_numpy(ev_img1.copy())
+                    ev_img0 = ev_img0.to(device = device, dtype = torch.float32)
                     ev_img2 = ev_img2.to(device = device, dtype = torch.float32)
-                    ev_img1 = ev_img3.to(device = device, dtype = torch.float32)
-                    ev_img0 = ev_img1.permute(2, 0, 1).unsqueeze(0)
+                    ev_img1 = ev_img1.to(device = device, dtype = torch.float32)
+                    ev_img0 = ev_img0.permute(2, 0, 1).unsqueeze(0)
                     ev_img2 = ev_img2.permute(2, 0, 1).unsqueeze(0)
-                    ev_img1 = ev_img3.permute(2, 0, 1).unsqueeze(0)
-                    ev_img0 = normalize(ev_img1)
+                    ev_img1 = ev_img1.permute(2, 0, 1).unsqueeze(0)
+                    ev_img0 = normalize(ev_img0)
                     ev_img2 = normalize(ev_img2)
-                    ev_img1 = normalize(ev_img3)
+                    ev_img1 = normalize(ev_img1)
 
                     n, c, h, w = ev_img1.shape
                     
                     ph = ((h - 1) // 64 + 1) * 64
                     pw = ((w - 1) // 64 + 1) * 64
                     padding = (0, pw - w, 0, ph - h)
-                    evp_img0 = torch.nn.functional.pad(ev_img1, padding)
+                    evp_img0 = torch.nn.functional.pad(ev_img0, padding)
                     evp_img2 = torch.nn.functional.pad(ev_img2, padding)
-                    evp_img1 = torch.nn.functional.pad(ev_img3, padding)
+                    evp_img1 = torch.nn.functional.pad(ev_img1, padding)
 
                     with torch.no_grad():
                         f0 = encoder(img0)
@@ -1254,7 +1253,7 @@ def main():
                         _, _, merged = flownet(img0, img2, f0, f1, timestep = ev_ratio)
                         ev_output_rife = merged[3]
                         ev_output_rife = restore_normalized_values(ev_output_rife)
-                        rife_psnr_list.append(psnr_torch(ev_output_rife, evp_img2))
+                        psnr_list.append(psnr_torch(ev_output_rife, evp_img2))
                         ev_output_rife = ev_output_rife[0].permute(1, 2, 0)[:h, :w]
                         evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
 
@@ -1270,7 +1269,7 @@ def main():
                         ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
                         '''
                         # ev_output_inflow, ev_in_deep = model(torch.cat((evp_img1*2-1, evp_img3*2-1, evp_timestep*2-1, ), dim=1))
-                        psnr_list.append(psnr_torch(ev_output_rife, evp_img2))
+                        # psnr_list.append(psnr_torch(ev_output_rife, evp_img2))
                         # ev_output_inflow = restore_normalized_values(ev_output_inflow)
                         # ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
 
@@ -1303,12 +1302,12 @@ def main():
             hours = int((epoch_time % (24 * 3600)) // 3600)
             minutes = int((epoch_time % 3600) // 60)
 
-            rife_psnr = np.array(rife_psnr_list).mean()
+            # rife_psnr = np.array(rife_psnr_list).mean()
             psnr = np.array(psnr_list).mean()
 
             clear_lines(2)
             # print (f'\r {" "*120}', end='')
-            print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PNSR] {psnr:.4f} [RIFE_PNSR] {rife_psnr:.4f}')
+            print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PNSR] {psnr:.4f}')
             print ('\n')
             steps_loss = []
             epoch_loss = []
