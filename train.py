@@ -1283,7 +1283,7 @@ def main():
                         ev_output_rife = merged[3]
                         # ev_output_rife = ev_output_rife[0].permute(1, 2, 0)[:h, :w]
                         # ev_gt = ev_gt[0].permute(1, 2, 0)[:h, :w]
-                        psnr_list.append(psnr_torch(ev_output_rife, ev_img1))
+                        psnr_list.append(psnr_torch(ev_output_rife, evp_img1))
                         
                         # evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
 
