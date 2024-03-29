@@ -1053,7 +1053,7 @@ def main():
     time_stamp = time.time()
     epoch = current_epoch if args.epoch == -1 else args.epoch
     step = loaded_step if args.epoch == -1 else step
-    print('\n\n\n')
+    print('\n\n')
     batch_idx = 0
 
     while True:
