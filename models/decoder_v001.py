@@ -22,7 +22,7 @@ class Model:
 				x = self.cnn2(x)
 				x = self.relu(x)
 				x = self.cnn3(x)
-				return x
+				return (x + 1) / 2
 
 		self.model = Decoder
 		self.training_model = Decoder

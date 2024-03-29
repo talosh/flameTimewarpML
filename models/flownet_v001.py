@@ -89,7 +89,10 @@ class Model:
 				self.block3 = Flownet(8+4+16, c=64)
 				# self.encode = Head()
 
-			def forward(self, img0, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):				
+			def forward(self, img0, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
+				img0 = img0 * 2 - 1
+				img1 = img1 * 2 - 1
+
 				if not torch.is_tensor(timestep):
 					timestep = (img0[:, :1].clone() * 0 + 1) * timestep
 				else:
@@ -116,7 +119,7 @@ class Model:
 					warped_img1 = warp(img1, flow[:, 2:4])
 					warped_f0 = warp(f0, flow[:, :2])
 					warped_f1 = warp(f1, flow[:, 2:4])
-					merged_student = (warped_img0, warped_img1)
+					merged_student = ((warped_img0 + 1) / 2, (warped_img1 + 1) / 2)
 					merged.append(merged_student)
 				conf = torch.sigmoid(torch.cat(conf_list, 1))
 				conf = conf / (conf.sum(1, True) + 1e-3)
