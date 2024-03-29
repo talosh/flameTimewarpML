@@ -1352,6 +1352,7 @@ def main():
             print ('\n')
             steps_loss = []
             epoch_loss = []
+            psnr_list = []
             epoch = epoch + 1
             batch_idx = 0
 
