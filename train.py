@@ -1143,8 +1143,8 @@ def main():
 
         loss.backward()
 
-        torch.nn.utils.clip_grad_norm_(encoder.parameters(), 1.0)
-        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1.0)
+        # torch.nn.utils.clip_grad_norm_(encoder.parameters(), 1.0)
+        # torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1.0)
 
         optimizer_encoder.step()
         optimizer_flownet.step()
