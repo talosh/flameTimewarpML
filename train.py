@@ -1337,7 +1337,6 @@ def main():
                 except Exception as e:
                     print (f'{e}\n\n')
    
-            smoothed_loss = np.mean(moving_average(epoch_loss, 9))
             psnr = np.array(psnr_list).mean()
 
             epoch_time = time.time() - start_timestamp
