@@ -1315,9 +1315,9 @@ def main():
 
                     if ev_item_index  % 9 == 1:
                         try:
-                            write_exr(evp_img0[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
-                            write_exr(evp_img2[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
-                            write_exr(evp_img1[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
+                            write_exr(ev_img0, os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
+                            write_exr(ev_img2, os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
+                            write_exr(ev_img1, os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
                             # write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
                             write_exr(ev_output.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
                         except Exception as e:
