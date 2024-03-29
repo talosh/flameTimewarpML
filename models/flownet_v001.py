@@ -76,7 +76,7 @@ class Model:
 				tmp = self.lastconv(feat)
 				tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
 				flow = tmp[:, :4] * scale
-				mask = tmp[:, 4:5]
+				mask = ( tmp[:, 4:5] + 1 ) / 2
 				conf = tmp[:, 4:5]
 				# conf = tmp[:, 5:6]
 				return flow, mask, conf
