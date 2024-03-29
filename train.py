@@ -1090,8 +1090,15 @@ def main():
 
         f0 = encoder(img0)
         f1 = encoder(img2)
+        fgt = encoder(img1)
 
         flow_list, mask_list, merged = flownet(img0, img2, f0, f1, ratio)
+
+        print (f'merged[0] {merged[0].shape}')
+        print (f'merged[1] {merged[1].shape}')
+        print (f'merged[2] {merged[2].shape}')
+        print (f'merged[3] {merged[3].shape}')
+
         output = merged[3]
         mask = mask_list[3]
 
