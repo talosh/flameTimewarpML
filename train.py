@@ -1311,8 +1311,8 @@ def main():
                         except Exception as e:
                             print (e)
                     evp_img0 = restore_normalized_values(evp_img0)
-                    evp_img2 = restore_normalized_values(evp_img2)
                     evp_img1 = restore_normalized_values(evp_img1)
+                    evp_img2 = restore_normalized_values(evp_img2)
 
                     if ev_item_index  % 9 == 1:
                         try:
