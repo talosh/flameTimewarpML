@@ -1317,10 +1317,10 @@ def main():
             # rife_psnr = np.array(rife_psnr_list).mean()
             psnr = np.array(psnr_list).mean()
 
-            clear_lines(3)
+            clear_lines(4)
             # print (f'\r {" "*240}', end='')
             print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PNSR] {psnr:.4f}')
-            print ('\n\n')
+            print ('\n\n\n')
             steps_loss = []
             epoch_loss = []
             epoch = epoch + 1
