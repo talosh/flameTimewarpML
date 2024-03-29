@@ -1253,18 +1253,18 @@ def main():
                     ev_img2 = ev_item['end']
                     ev_ratio = ev_item['ratio']
 
-                    evn_img0 = torch.from_numpy(ev_img0.copy())
-                    evn_img1 = torch.from_numpy(ev_img1.copy())
-                    evn_img2 = torch.from_numpy(ev_img2.copy())
-                    evn_img0 = evn_img0.to(device = device, dtype = torch.float32)
-                    evn_img1 = evn_img1.to(device = device, dtype = torch.float32)
-                    evn_img2 = evn_img2.to(device = device, dtype = torch.float32)
-                    evn_img0 = evn_img0.permute(2, 0, 1).unsqueeze(0)
-                    evn_img1 = evn_img1.permute(2, 0, 1).unsqueeze(0)
-                    evn_img2 = evn_img2.permute(2, 0, 1).unsqueeze(0)
-                    evn_img0 = normalize(evn_img0)
-                    evn_img1 = normalize(evn_img0)
-                    evn_img2 = normalize(evn_img2)
+                    ev_img0 = torch.from_numpy(ev_img0.copy())
+                    ev_img1 = torch.from_numpy(ev_img1.copy())
+                    ev_img2 = torch.from_numpy(ev_img2.copy())
+                    ev_img0 = evn_img0.to(device = device, dtype = torch.float32)
+                    ev_img1 = evn_img1.to(device = device, dtype = torch.float32)
+                    ev_img2 = evn_img2.to(device = device, dtype = torch.float32)
+                    ev_img0 = evn_img0.permute(2, 0, 1).unsqueeze(0)
+                    ev_img1 = evn_img1.permute(2, 0, 1).unsqueeze(0)
+                    ev_img2 = evn_img2.permute(2, 0, 1).unsqueeze(0)
+                    evn_img0 = normalize(ev_img0)
+                    evn_img1 = normalize(ev_img1)
+                    evn_img2 = normalize(ev_img2)
 
                     n, c, h, w = evn_img1.shape
                     
@@ -1315,9 +1315,9 @@ def main():
 
                     if ev_item_index  % 9 == 1:
                         try:
-                            write_exr(ev_img0, os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
-                            write_exr(ev_img2, os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
-                            write_exr(ev_img1, os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
+                            write_exr(ev_img0[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
+                            write_exr(ev_img2[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
+                            write_exr(ev_img1[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
                             # write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
                             write_exr(ev_output.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
                         except Exception as e:
