@@ -1253,27 +1253,27 @@ def main():
                     ev_img2 = ev_item['end']
                     ev_ratio = ev_item['ratio']
 
-                    ev_img0 = torch.from_numpy(ev_img0.copy())
-                    ev_img1 = torch.from_numpy(ev_img1.copy())
-                    ev_img2 = torch.from_numpy(ev_img2.copy())
-                    ev_img0 = ev_img0.to(device = device, dtype = torch.float32)
-                    ev_img1 = ev_img1.to(device = device, dtype = torch.float32)
-                    ev_img2 = ev_img2.to(device = device, dtype = torch.float32)
-                    ev_img0 = ev_img0.permute(2, 0, 1).unsqueeze(0)
-                    ev_img1 = ev_img1.permute(2, 0, 1).unsqueeze(0)
-                    ev_img2 = ev_img2.permute(2, 0, 1).unsqueeze(0)
-                    ev_img0 = normalize(ev_img0)
-                    ev_img1 = normalize(ev_img0)
-                    ev_img2 = normalize(ev_img2)
+                    evn_img0 = torch.from_numpy(ev_img0.copy())
+                    evn_img1 = torch.from_numpy(ev_img1.copy())
+                    evn_img2 = torch.from_numpy(ev_img2.copy())
+                    evn_img0 = evn_img0.to(device = device, dtype = torch.float32)
+                    evn_img1 = evn_img1.to(device = device, dtype = torch.float32)
+                    evn_img2 = evn_img2.to(device = device, dtype = torch.float32)
+                    evn_img0 = evn_img0.permute(2, 0, 1).unsqueeze(0)
+                    evn_img1 = evn_img1.permute(2, 0, 1).unsqueeze(0)
+                    evn_img2 = evn_img2.permute(2, 0, 1).unsqueeze(0)
+                    evn_img0 = normalize(evn_img0)
+                    evn_img1 = normalize(evn_img0)
+                    evn_img2 = normalize(evn_img2)
 
-                    n, c, h, w = ev_img1.shape
+                    n, c, h, w = evn_img1.shape
                     
                     ph = ((h - 1) // 64 + 1) * 64
                     pw = ((w - 1) // 64 + 1) * 64
                     padding = (0, pw - w, 0, ph - h)
-                    evp_img0 = torch.nn.functional.pad(ev_img0, padding)
-                    evp_img1 = torch.nn.functional.pad(ev_img1, padding)
-                    evp_img2 = torch.nn.functional.pad(ev_img2, padding)
+                    evp_img0 = torch.nn.functional.pad(evn_img0, padding)
+                    evp_img1 = torch.nn.functional.pad(evn_img1, padding)
+                    evp_img2 = torch.nn.functional.pad(evn_img2, padding)
 
                     with torch.no_grad():
                         f0 = encoder(evp_img0)
