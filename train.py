@@ -982,6 +982,7 @@ def main():
 
     steps_loss = []
     epoch_loss = []
+    psnr_list = []
 
     if args.model_path:
         trained_model_path = args.model_path
@@ -1117,12 +1118,13 @@ def main():
         loss_enc = criterion_mse(encoder(output), encoder(img1))
 
         loss = 0.4 * loss_x8 + 0.3 * loss_x4 + 0.2 * loss_x2 + 0.1 * loss_x1 + 0.01 * loss_enc
-        
+
         loss_l1 = criterion_l1(merged[3], img1)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
 
         epoch_loss.append(float(loss_l1.item()))
         steps_loss.append(float(loss_l1.item()))
+        psnr_list.append(psnr_torch(output, img1))
 
         if len(epoch_loss) < 999:
             smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
@@ -1326,12 +1328,13 @@ def main():
                                 write_exr(ev_output.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
                             except Exception as e:
                                 print (f'{e}\n\n')      
-                    psnr = np.array(psnr_list).mean()
 
                 except Exception as e:
                     print (f'{e}\n\n')
    
             smoothed_loss = np.mean(moving_average(epoch_loss, 9))
+            psnr = np.array(psnr_list).mean()
+
             epoch_time = time.time() - start_timestamp
             days = int(epoch_time // (24 * 3600))
             hours = int((epoch_time % (24 * 3600)) // 3600)
