@@ -62,7 +62,7 @@ class Model:
 					ResConv(c),
 				)
 				self.lastconv = torch.nn.Sequential(
-					torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+					torch.nn.ConvTranspose2d(c, 4*5, 4, 2, 1),
 					torch.nn.PixelShuffle(2)
 				)
 
@@ -77,7 +77,8 @@ class Model:
 				tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
 				flow = tmp[:, :4] * scale
 				mask = tmp[:, 4:5]
-				conf = tmp[:, 5:6]
+				conf = tmp[:, 4:5]
+				# conf = tmp[:, 5:6]
 				return flow, mask, conf
 
 		class FlownetCas(Module):
