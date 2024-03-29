@@ -1350,6 +1350,7 @@ def main():
             # print (f'\r {" "*240}', end='')
             print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PNSR] {psnr:.4f}')
             print ('\n')
+            
             steps_loss = []
             epoch_loss = []
             psnr_list = []
