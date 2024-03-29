@@ -1280,9 +1280,9 @@ def main():
                         f1 = encoder(evp_img2)
 
                         _, _, merged = flownet(evp_img0, evp_img2, f0, f1, timestep = ev_ratio)
-                        ev_output = merged[3]
+                        evp_output = merged[3]
                         # ev_gt = ev_gt[0].permute(1, 2, 0)[:h, :w]
-                        psnr_list.append(psnr_torch(ev_output, evp_img1))
+                        psnr_list.append(psnr_torch(evp_output, evp_img1))
                         
                         # evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
 
