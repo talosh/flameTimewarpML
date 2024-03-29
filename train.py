@@ -1118,7 +1118,7 @@ def main():
 
         loss_x1 = criterion_mse(merged[3], img1)
 
-        loss_enc = criterion_mse(encoder(output), encoder(img1))
+        # loss_enc = criterion_mse(encoder(output), encoder(img1))
 
         loss = loss_x1
 
