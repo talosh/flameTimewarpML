@@ -1098,6 +1098,7 @@ def main():
         output = merged[3]
         mask = mask_list[3]
 
+        '''
         loss_x8 = criterion_mse(
             torch.nn.functional.interpolate(merged[0], scale_factor= 1. / 8, mode="bilinear", align_corners=False),
             torch.nn.functional.interpolate(img1, scale_factor= 1. / 8, mode="bilinear", align_corners=False)
@@ -1107,17 +1108,21 @@ def main():
             torch.nn.functional.interpolate(merged[1], scale_factor= 1. / 4, mode="bilinear", align_corners=False),
             torch.nn.functional.interpolate(img1, scale_factor= 1. / 4, mode="bilinear", align_corners=False)
         )
+        
 
         loss_x2 = criterion_mse(
             torch.nn.functional.interpolate(merged[1], scale_factor= 1. / 2, mode="bilinear", align_corners=False),
             torch.nn.functional.interpolate(img1, scale_factor= 1. / 2, mode="bilinear", align_corners=False)
         )
+        '''
 
         loss_x1 = criterion_mse(merged[3], img1)
 
         loss_enc = criterion_mse(encoder(output), encoder(img1))
 
-        loss = 0.4 * loss_x8 + 0.3 * loss_x4 + 0.2 * loss_x2 + 0.1 * loss_x1 + 0.01 * loss_enc
+        loss = loss_x1
+
+        # loss = 0.4 * loss_x8 + 0.3 * loss_x4 + 0.2 * loss_x2 + 0.1 * loss_x1 + 0.01 * loss_enc
 
         loss_l1 = criterion_l1(merged[3], img1)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
