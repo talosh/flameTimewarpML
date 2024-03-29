@@ -1098,12 +1098,12 @@ def main():
         output = merged[3]
         mask = mask_list[3]
 
-        '''
         loss_x8 = criterion_mse(
             torch.nn.functional.interpolate(merged[0], scale_factor= 1. / 8, mode="bilinear", align_corners=False),
             torch.nn.functional.interpolate(img1, scale_factor= 1. / 8, mode="bilinear", align_corners=False)
         )
 
+        '''
         loss_x4 = criterion_mse(
             torch.nn.functional.interpolate(merged[1], scale_factor= 1. / 4, mode="bilinear", align_corners=False),
             torch.nn.functional.interpolate(img1, scale_factor= 1. / 4, mode="bilinear", align_corners=False)
@@ -1120,7 +1120,7 @@ def main():
 
         # loss_enc = criterion_mse(encoder(output), encoder(img1))
 
-        loss = loss_x1
+        loss = 0.4 * loss_x8 + 0.6 * loss_x1
 
         # loss = 0.4 * loss_x8 + 0.3 * loss_x4 + 0.2 * loss_x2 + 0.1 * loss_x1 + 0.01 * loss_enc
 
@@ -1145,7 +1145,7 @@ def main():
 
         torch.nn.utils.clip_grad_norm_(encoder.parameters(), 1.0)
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1.0)
-        
+
         optimizer_encoder.step()
         optimizer_flownet.step()
         scheduler_encoder.step()
