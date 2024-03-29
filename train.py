@@ -1249,22 +1249,22 @@ def main():
 
                     ev_item = dataset.frames_queue.get()
                     ev_img0 = ev_item['start']
-                    ev_img2 = ev_item['end']
                     ev_img1 = ev_item['gt']
+                    ev_img2 = ev_item['end']
                     ev_ratio = ev_item['ratio']
 
                     ev_img0 = torch.from_numpy(ev_img0.copy())
-                    ev_img2 = torch.from_numpy(ev_img2.copy())
                     ev_img1 = torch.from_numpy(ev_img1.copy())
+                    ev_img2 = torch.from_numpy(ev_img2.copy())
                     ev_img0 = ev_img0.to(device = device, dtype = torch.float32)
-                    ev_img2 = ev_img2.to(device = device, dtype = torch.float32)
                     ev_img1 = ev_img1.to(device = device, dtype = torch.float32)
+                    ev_img2 = ev_img2.to(device = device, dtype = torch.float32)
                     ev_img0 = ev_img0.permute(2, 0, 1).unsqueeze(0)
-                    ev_img2 = ev_img2.permute(2, 0, 1).unsqueeze(0)
                     ev_img1 = ev_img1.permute(2, 0, 1).unsqueeze(0)
+                    ev_img2 = ev_img2.permute(2, 0, 1).unsqueeze(0)
                     ev_img0 = normalize(ev_img0)
+                    ev_img1 = normalize(ev_img0)
                     ev_img2 = normalize(ev_img2)
-                    ev_img1 = normalize(ev_img1)
 
                     n, c, h, w = ev_img1.shape
                     
@@ -1272,8 +1272,8 @@ def main():
                     pw = ((w - 1) // 64 + 1) * 64
                     padding = (0, pw - w, 0, ph - h)
                     evp_img0 = torch.nn.functional.pad(ev_img0, padding)
-                    evp_img2 = torch.nn.functional.pad(ev_img2, padding)
                     evp_img1 = torch.nn.functional.pad(ev_img1, padding)
+                    evp_img2 = torch.nn.functional.pad(ev_img2, padding)
 
                     with torch.no_grad():
                         f0 = encoder(evp_img0)
@@ -1281,12 +1281,9 @@ def main():
 
                         _, _, merged = flownet(evp_img0, evp_img2, f0, f1, timestep = ev_ratio)
                         ev_output_rife = merged[3]
-                        ev_output_rife = restore_normalized_values(ev_output_rife)
-                        ev_gt = restore_normalized_values(evp_img1)
-                        
-                        ev_output_rife = ev_output_rife[0].permute(1, 2, 0)[:h, :w]
-                        ev_gt = ev_gt[0].permute(1, 2, 0)[:h, :w]
-                        psnr_list.append(psnr_torch(ev_output_rife, ev_gt))
+                        # ev_output_rife = ev_output_rife[0].permute(1, 2, 0)[:h, :w]
+                        # ev_gt = ev_gt[0].permute(1, 2, 0)[:h, :w]
+                        psnr_list.append(psnr_torch(ev_output_rife, ev_img1))
                         
                         # evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
 
