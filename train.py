@@ -1239,7 +1239,7 @@ def main():
                 'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
             }, trained_model_path)
 
-            pnsr = 0.
+            psnr = 0
 
             if args.eval:
                 psnr_list = []
