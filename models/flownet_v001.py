@@ -167,6 +167,10 @@ class Model:
 				for i in range(4):
 					mask_list[i] = torch.sigmoid(mask_list[i])
 					merged[i] = merged[i][0] * mask_list[i] + merged[i][1] * (1 - mask_list[i])
+					if gt is not None:
+						loss_mask = ((merged[i] - gt).abs().mean(1, True) > (merged_teacher - gt).abs().mean(1, True) + 1e-2).float().detach()
+						loss_cons += (((flow_teacher.detach() - flow_list[i]) ** 2).sum(1, True) ** 0.5 * loss_mask).mean() * 0.001
+
 				return flow_list, mask_list, merged
 
 		self.model = FlownetCas
