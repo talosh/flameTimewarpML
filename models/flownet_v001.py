@@ -130,7 +130,8 @@ class Model:
 				flow_list_teacher = []
 				warped_img0 = img0
 				warped_img1 = img1
-				flow = None 
+				flow = None
+				loss_cons = 0
 				stu = [self.block0, self.block1, self.block2, self.block3]
 				flow = None
 				for i in range(4):
