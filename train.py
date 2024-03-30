@@ -1293,6 +1293,7 @@ def main():
                             f0 = encoder(evp_img0)
                             f1 = encoder(evp_img2)
 
+                            flownet.eval()
                             _, _, merged = flownet(evp_img0, evp_img2, f0, f1, timestep = ev_ratio)
                             evp_output = merged[3]
                             psnr_list.append(psnr_torch(evp_output, evp_img1))
