@@ -1358,6 +1358,9 @@ def main():
             epoch = epoch + 1
             batch_idx = 0
 
+            while  ( idx + 1 ) == len(dataset):
+                img0, img1, img2, ratio, idx = read_image_queue.get()
+
         batch_idx = batch_idx + 1
         step = step + 1
 
