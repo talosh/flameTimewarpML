@@ -243,7 +243,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             self.train_descriptions.extend(self.create_dataset_descriptions(folder_path))
         print ('\nReshuffling training data indices...')
 
-        random.shuffle(self.train_descriptions)
+        self.reshuffle()
 
         self.h = 448
         self.w = 448
@@ -263,6 +263,9 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         # self.last_shuffled_index = -1
         # self.last_source_image_data = None
         # self.last_target_image_data = None
+
+    def reshuffle(self):
+        random.shuffle(self.train_descriptions)
 
     def find_folders_with_exr(self, path):
         """
@@ -1367,6 +1370,7 @@ def main():
 
             while  ( idx + 1 ) == len(dataset):
                 img0, img1, img2, ratio, idx = read_image_queue.get()
+            dataset.reshuffle()
 
         batch_idx = batch_idx + 1
         step = step + 1
