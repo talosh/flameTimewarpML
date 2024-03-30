@@ -16,7 +16,7 @@ class Model:
 					padding_mode = 'reflect',
 					bias=True
 				),
-				nn.LeakyReLU(0.2, True)
+				torch.nn.LeakyReLU(0.2, True)
 				# torch.nn.SELU(inplace = True)
 			)
 
@@ -35,14 +35,14 @@ class Model:
 			g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
 			return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
-		class Head(nn.Module):
+		class Head(Module):
 			def __init__(self):
 				super(Head, self).__init__()
-				self.cnn0 = nn.Conv2d(3, 32, 3, 2, 1)
-				self.cnn1 = nn.Conv2d(32, 32, 3, 1, 1)
-				self.cnn2 = nn.Conv2d(32, 32, 3, 1, 1)
-				self.cnn3 = nn.ConvTranspose2d(32, 8, 4, 2, 1)
-				self.relu = nn.LeakyReLU(0.2, True)
+				self.cnn0 = torch.nn.Conv2d(3, 32, 3, 2, 1)
+				self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
+				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
+				self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
+				self.relu = torch.nn.LeakyReLU(0.2, True)
 
 			def forward(self, x, feat=False):
 				x0 = self.cnn0(x)
@@ -61,7 +61,7 @@ class Model:
 				super().__init__()
 				self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=False)
 				self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-				self.relu = nn.LeakyReLU(0.2, True) # torch.nn.SELU(inplace = True)
+				self.relu = torch.nn.LeakyReLU(0.2, True) # torch.nn.SELU(inplace = True)
 				
 			def forward(self, x):
 				return self.relu(self.conv(x) * self.beta + x)
