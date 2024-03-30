@@ -126,6 +126,7 @@ class Model:
 				merged = []
 				mask_list = []
 				conf_list = []
+        		teacher_list = []
 				warped_img0 = img0
 				warped_img1 = img1
 				flow = None 
@@ -137,11 +138,6 @@ class Model:
 						flow = flow + flow_d
 					else:
 						flow, mask, conf = stu[i](torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[i])
-
-					print (f'conf shape {conf.shape}')
-					print (f'mask shape {mask.shape}')
-					print (f'flow shape {flow.shape}')
-
 
 					mask_list.append(mask)
 					flow_list.append(flow)
@@ -158,8 +154,7 @@ class Model:
 					flow_teacher = 0
 					mask_teacher = 0
 					for i in range(4):
-						# flow_teacher += conf[:, i:i+1] * flow_list[i]
-						flow_teacher += conf[:, i:i+1].expand(-1, 4, -1, -1) * flow_list[i]
+						flow_teacher += conf[:, i:i+1] * flow_list[i]
 						mask_teacher += conf[:, i:i+1] * mask_list[i]
 					warped_img0_teacher = warp(img0, flow_teacher[:, :2])
 					warped_img1_teacher = warp(img1, flow_teacher[:, 2:4])
