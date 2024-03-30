@@ -905,7 +905,8 @@ def main():
     parser.add_argument('--model_path', type=str, default=None, help='Path to the pre-trained model (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size (int) (default: 8)')
-    parser.add_argument('--epoch', type=int, default=-1, help='Epoch (int) (default: Saved)')
+    parser.add_argument('--first_epoch', type=int, default=-1, help='Epoch (int) (default: Saved)')
+    parser.add_argument('--epochs', type=int, default=-1, help='Epoch (int) (default: Saved)')
     parser.add_argument('--no_eval', action='store_false', dest='eval', default=True, help='Disable evaluation mode')
 
     args = parser.parse_args()
