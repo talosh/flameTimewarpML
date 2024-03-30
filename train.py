@@ -956,9 +956,9 @@ def main():
     criterion_mse = torch.nn.MSELoss()
     criterion_l1 = torch.nn.L1Loss()
 
-    optimizer_encoder = Yogi(encoder.parameters(), lr=lr)
-    optimizer_flownet = Yogi(flownet.parameters(), lr=lr)
-    
+    # optimizer_encoder = Yogi(encoder.parameters(), lr=lr)
+    # optimizer_flownet = Yogi(flownet.parameters(), lr=lr)
+    optimizer_flownet = AdamW(self.flownet.parameters(), lr=1e-6, weight_decay=1e-2)
     '''
     def warmup(current_step, lr = 4e-3, number_warmup_steps = 999):
         mul_lin = current_step / number_warmup_steps
@@ -970,7 +970,7 @@ def main():
     import warnings
     warnings.filterwarnings('ignore', category=UserWarning)
 
-    train_scheduler_encoder = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_encoder, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+    # train_scheduler_encoder = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_encoder, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     scheduler_encoder = train_scheduler_encoder
     scheduler_flownet = train_scheduler_flownet
@@ -1079,13 +1079,13 @@ def main():
             img1 = normalize(img1)
             img2 = normalize(img2)
 
-        current_lr = scheduler_encoder.get_last_lr()[0]
-        for param_group_encoder in optimizer_encoder.param_groups:
-            param_group_encoder['lr'] = current_lr
+        current_lr = scheduler_flownet.get_last_lr()[0]
+        # for param_group_encoder in optimizer_encoder.param_groups:
+        #    param_group_encoder['lr'] = current_lr
         for param_group_flownet in optimizer_flownet.param_groups:
             param_group_flownet['lr'] = current_lr
 
-        current_lr_str = str(f'{optimizer_encoder.param_groups[0]["lr"]:.4e}')
+        current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.4e}')
 
         # optimizer_encoder.zero_grad(set_to_none=True)
         optimizer_flownet.zero_grad(set_to_none=True)
@@ -1207,10 +1207,10 @@ def main():
                 'epoch': epoch,
                 'epoch_loss': epoch_loss,
                 'start_timestamp': start_timestamp,
-                'lr': optimizer_encoder.param_groups[0]['lr'],
+                'lr': optimizer_flownet.param_groups[0]['lr'],
                 'encoder_state_dict': encoder.state_dict(),
                 'flownet_state_dict': flownet.state_dict(),
-                'optimizer_encoder_state_dict': optimizer_encoder.state_dict(),
+                # 'optimizer_encoder_state_dict': optimizer_encoder.state_dict(),
                 'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
             }, trained_model_path)
             
@@ -1240,10 +1240,10 @@ def main():
                 'epoch': epoch,
                 'epoch_loss': epoch_loss,
                 'start_timestamp': start_timestamp,
-                'lr': optimizer_encoder.param_groups[0]['lr'],
+                'lr': optimizer_flownet.param_groups[0]['lr'],
                 'encoder_state_dict': encoder.state_dict(),
                 'flownet_state_dict': flownet.state_dict(),
-                'optimizer_encoder_state_dict': optimizer_encoder.state_dict(),
+                # 'optimizer_encoder_state_dict': optimizer_encoder.state_dict(),
                 'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
             }, trained_model_path)
 
