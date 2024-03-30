@@ -137,6 +137,9 @@ class Model:
 						flow = flow + flow_d
 					else:
 						flow, mask, conf = stu[i](torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[i])
+
+					print (f'conf shape {conf.shape}')
+					
 					mask_list.append(mask)
 					flow_list.append(flow)
 					conf_list.append(conf)
