@@ -152,7 +152,8 @@ class Model:
 					flow_teacher = 0
 					mask_teacher = 0
 					for i in range(4):
-						flow_teacher += conf[:, i:i+1] * flow_list[i]
+						# flow_teacher += conf[:, i:i+1] * flow_list[i]
+						flow_teacher += conf[:, i:i+1].expand(-1, 4, -1, -1) * flow_list[i]
 						mask_teacher += conf[:, i:i+1] * mask_list[i]
 					warped_img0_teacher = warp(img0, flow_teacher[:, :2])
 					warped_img1_teacher = warp(img1, flow_teacher[:, 2:4])
