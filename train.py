@@ -958,7 +958,7 @@ def main():
 
     # optimizer_encoder = Yogi(encoder.parameters(), lr=lr)
     # optimizer_flownet = Yogi(flownet.parameters(), lr=lr)
-    optimizer_flownet = AdamW(self.flownet.parameters(), lr=1e-6, weight_decay=1e-2)
+    optimizer_flownet = torch.optim.AdamW(self.flownet.parameters(), lr=1e-6, weight_decay=1e-2)
     '''
     def warmup(current_step, lr = 4e-3, number_warmup_steps = 999):
         mul_lin = current_step / number_warmup_steps
