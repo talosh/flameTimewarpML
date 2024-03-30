@@ -1054,8 +1054,8 @@ def main():
 
     start_timestamp = time.time()
     time_stamp = time.time()
-    epoch = current_epoch if args.epoch == -1 else args.epoch
-    step = loaded_step if args.epoch == -1 else step
+    epoch = current_epoch if args.first_epoch == -1 else args.first_epoch
+    step = loaded_step if args.first_epoch == -1 else step
     print('\n\n')
     batch_idx = 0
 
@@ -1094,6 +1094,7 @@ def main():
         # f0 = encoder(img0)
         # f1 = encoder(img2)
 
+        flownet.train()
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio)
 
         output = merged[3]
@@ -1364,6 +1365,8 @@ def main():
 
         batch_idx = batch_idx + 1
         step = step + 1
+        if epoch == args.epochs:
+            sys.exit()
 
 if __name__ == "__main__":
     main()
