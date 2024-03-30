@@ -16,7 +16,8 @@ class Model:
 					padding_mode = 'reflect',
 					bias=True
 				),
-				torch.nn.SELU(inplace = True)
+				nn.LeakyReLU(0.2, True)
+				# torch.nn.SELU(inplace = True)
 			)
 
 		def warp(tenInput, tenFlow):
@@ -34,12 +35,33 @@ class Model:
 			g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
 			return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
+		class Head(nn.Module):
+			def __init__(self):
+				super(Head, self).__init__()
+				self.cnn0 = nn.Conv2d(3, 32, 3, 2, 1)
+				self.cnn1 = nn.Conv2d(32, 32, 3, 1, 1)
+				self.cnn2 = nn.Conv2d(32, 32, 3, 1, 1)
+				self.cnn3 = nn.ConvTranspose2d(32, 8, 4, 2, 1)
+				self.relu = nn.LeakyReLU(0.2, True)
+
+			def forward(self, x, feat=False):
+				x0 = self.cnn0(x)
+				x = self.relu(x0)
+				x1 = self.cnn1(x)
+				x = self.relu(x1)
+				x2 = self.cnn2(x)
+				x = self.relu(x2)
+				x3 = self.cnn3(x)
+				if feat:
+					return [x0, x1, x2, x3]
+				return x3
+
 		class ResConv(Module):
 			def __init__(self, c, dilation=1):
 				super().__init__()
 				self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=False)
 				self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-				self.relu = torch.nn.SELU(inplace = True)
+				self.relu = nn.LeakyReLU(0.2, True) # torch.nn.SELU(inplace = True)
 				
 			def forward(self, x):
 				return self.relu(self.conv(x) * self.beta + x)
@@ -76,9 +98,9 @@ class Model:
 				tmp = self.lastconv(feat)
 				tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
 				flow = tmp[:, :4] * scale
-				mask = ( tmp[:, 4:5] + 1 ) / 2
+				mask = tmp[:, 4:5]
 				conf = tmp[:, 4:5]
-				# conf = tmp[:, 5:6]
+				conf = tmp[:, 5:6]
 				return flow, mask, conf
 
 		class FlownetCas(Module):
@@ -88,11 +110,13 @@ class Model:
 				self.block1 = Flownet(8+4+16, c=128)
 				self.block2 = Flownet(8+4+16, c=96)
 				self.block3 = Flownet(8+4+16, c=64)
-				# self.encode = Head()
+				self.encode = Head()
 
-			def forward(self, img0, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
-				img0 = img0 * 2 - 1
-				img1 = img1 * 2 - 1
+			def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
+				img0 = img0
+				img1 = img1
+		        f0 = self.encode(img0)
+		        f1 = self.encode(img1)
 
 				if not torch.is_tensor(timestep):
 					timestep = (img0[:, :1].clone() * 0 + 1) * timestep
@@ -120,10 +144,23 @@ class Model:
 					warped_img1 = warp(img1, flow[:, 2:4])
 					warped_f0 = warp(f0, flow[:, :2])
 					warped_f1 = warp(f1, flow[:, 2:4])
-					merged_student = ((warped_img0 + 1) / 2, (warped_img1 + 1) / 2)
+					merged_student = (warped_img0, warped_img1)
 					merged.append(merged_student)
 				conf = torch.sigmoid(torch.cat(conf_list, 1))
 				conf = conf / (conf.sum(1, True) + 1e-3)
+				if gt is not None:
+					flow_teacher = 0
+					mask_teacher = 0
+					for i in range(4):
+						flow_teacher += conf[:, i:i+1] * flow_list[i]
+						mask_teacher += conf[:, i:i+1] * mask_list[i]
+					warped_img0_teacher = warp(img0, flow_teacher[:, :2])
+					warped_img1_teacher = warp(img1, flow_teacher[:, 2:4])
+					mask_teacher = torch.sigmoid(mask_teacher)
+					merged_teacher = warped_img0_teacher * mask_teacher + warped_img1_teacher * (1 - mask_teacher)
+					teacher_list.append(merged_teacher)
+					flow_list_teacher.append(flow_teacher)
+
 				for i in range(4):
 					mask_list[i] = torch.sigmoid(mask_list[i])
 					merged[i] = merged[i][0] * mask_list[i] + merged[i][1] * (1 - mask_list[i])
