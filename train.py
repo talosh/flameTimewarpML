@@ -1090,7 +1090,7 @@ def main():
         # optimizer_encoder.zero_grad(set_to_none=True)
         optimizer_flownet.zero_grad(set_to_none=True)
 
-        with torch.no_grad:
+        with torch.no_grad():
             f0 = encoder(img0)
             f1 = encoder(img2)
 
