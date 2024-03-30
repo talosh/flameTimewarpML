@@ -127,6 +127,7 @@ class Model:
 				mask_list = []
 				conf_list = []
 				teacher_list = []
+				flow_list_teacher = []
 				warped_img0 = img0
 				warped_img1 = img1
 				flow = None 
