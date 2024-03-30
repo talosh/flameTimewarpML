@@ -1087,14 +1087,13 @@ def main():
 
         current_lr_str = str(f'{optimizer_encoder.param_groups[0]["lr"]:.4e}')
 
-        # optimizer_encoder.zero_grad(set_to_none=True)
+        optimizer_encoder.zero_grad(set_to_none=True)
         optimizer_flownet.zero_grad(set_to_none=True)
 
-        with torch.no_grad():
-            f0 = encoder(img0)
-            f1 = encoder(img2)
+        f0 = encoder(img0)
+        f1 = encoder(img2)
 
-        flow_list, mask_list, merged = flownet(img0, img2, f0.detach(), f1.detach(), ratio)
+        flow_list, mask_list, merged = flownet(img0, img2, f0, f1, ratio)
 
         output = merged[3]
         mask = mask_list[3]
@@ -1144,12 +1143,12 @@ def main():
 
         loss.backward()
 
-        # torch.nn.utils.clip_grad_norm_(encoder.parameters(), 1.0)
+        torch.nn.utils.clip_grad_norm_(encoder.parameters(), 1.0)
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1.0)
 
-        # optimizer_encoder.step()
+        optimizer_encoder.step()
         optimizer_flownet.step()
-        # scheduler_encoder.step()
+        scheduler_encoder.step()
         scheduler_flownet.step()
 
         train_time = time.time() - time_stamp
