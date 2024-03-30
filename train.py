@@ -972,7 +972,11 @@ def main():
     warnings.filterwarnings('ignore', category=UserWarning)
 
     # train_scheduler_encoder = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_encoder, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
-    train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+    # train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+    
+    lambda_function = lambda epoch: 1
+    train_scheduler_flownet = LambdaLR(optimizer, lr_lambda=lambda_function)
+
     # scheduler_encoder = train_scheduler_encoder
     scheduler_flownet = train_scheduler_flownet
 
