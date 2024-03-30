@@ -126,7 +126,7 @@ class Model:
 				merged = []
 				mask_list = []
 				conf_list = []
-        		teacher_list = []
+				teacher_list = []
 				warped_img0 = img0
 				warped_img1 = img1
 				flow = None 
