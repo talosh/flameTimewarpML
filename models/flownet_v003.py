@@ -26,8 +26,8 @@ class Model:
 					padding_mode = 'reflect',
 					bias=True
 				),
-				torch.nn.LeakyReLU(0.2, True)
-				# torch.nn.SELU(inplace = True)
+				# torch.nn.LeakyReLU(0.2, True)
+				torch.nn.SELU(inplace = True)
 			)
 
 		def warp_abs(tenInput, tenFlow):
@@ -68,8 +68,8 @@ class Model:
 				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect')
 				self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
 				# self.relu = torch.nn.PReLU()
-				self.relu = torch.nn.LeakyReLU(0.2, True)
-				# self.relu = torch.nn.SELU(inplace = True)
+				# self.relu = torch.nn.LeakyReLU(0.2, True)
+				self.relu = torch.nn.SELU(inplace = True)
 
 			def forward(self, x, feat=False):
 				# x = x * 2 - 1
@@ -91,8 +91,8 @@ class Model:
 				self.conv1 = torch.nn.Conv2d(c, c, kernel_size = (1,1))
 				self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
 				# self.relu = torch.nn.PReLU()      
-				self.relu = torch.nn.LeakyReLU(0.2, True) 
-				# self.relu = torch.nn.SELU(inplace = True)
+				# self.relu = torch.nn.LeakyReLU(0.2, True) 
+				self.relu = torch.nn.SELU(inplace = True)
 				
 			def forward(self, x):
 				# return self.relu(self.conv1(self.conv(x) * self.beta + x))
@@ -139,10 +139,10 @@ class Model:
 		class FlownetCas(Module):
 			def __init__(self):
 				super().__init__()
-				self.block0 = Flownet(7+16+2, c=192)
-				self.block1 = Flownet(8+4+16+2, c=128)
-				self.block2 = Flownet(8+4+16+2, c=96)
-				self.block3 = Flownet(8+4+16+2, c=64)
+				self.block0 = Flownet(7+16, c=192)
+				self.block1 = Flownet(8+4+16, c=128)
+				self.block2 = Flownet(8+4+16, c=96)
+				self.block3 = Flownet(8+4+16, c=64)
 				self.encode = Head()
 
 			def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
@@ -171,10 +171,10 @@ class Model:
 				flow = None
 				for i in range(4):
 					if flow is not None:
-						flow_d, mask, conf = stu[i](torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, idflow, timestep, mask), 1), flow, scale=scale[i])
+						flow_d, mask, conf = stu[i](torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[i])
 						flow = flow + flow_d
 					else:
-						flow, mask, conf = stu[i](torch.cat((img0, img1, f0, f1, idflow, timestep), 1), None, scale=scale[i])
+						flow, mask, conf = stu[i](torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[i])
 
 					mask_list.append(mask)
 					flow_list.append(flow)
