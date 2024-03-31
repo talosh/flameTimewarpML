@@ -1157,8 +1157,6 @@ def main():
         # scale list agumentation
         random_scales = [
             [16, 8, 4, 1],
-            [16, 8, 2, 1],
-            [16, 4, 2, 1],
             [8, 2, 2, 1],
             [4, 2, 1, 1],
             [2, 2, 1, 1],
