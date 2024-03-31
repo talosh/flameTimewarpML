@@ -26,11 +26,11 @@ class Model:
 					padding_mode = 'reflect',
 					bias=True
 				),
-				# torch.nn.LeakyReLU(0.2, True)
-				torch.nn.SELU(inplace = True)
+				torch.nn.LeakyReLU(0.2, True)
+				# torch.nn.SELU(inplace = True)
 			)
 
-		def warp(tenInput, tenFlow):
+		def warp_abs(tenInput, tenFlow):
 			backwarp_tenGrid = {}
 
 			k = (str(tenFlow.device), str(tenFlow.size()))
@@ -45,6 +45,21 @@ class Model:
 			g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
 			return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
+		def warp(tenInput, tenFlow):
+			backwarp_tenGrid = {}
+			k = (str(tenFlow.device), str(tenFlow.size()))
+			if k not in backwarp_tenGrid:
+				tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+				tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+				backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
+			g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+			return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+
+		def id_flow(self, tenInput):
+			tenHorizontal = torch.linspace(-1.0, 1.0, tenInput.shape[3]).view(1, 1, 1, tenInput.shape[3]).expand(tenInput.shape[0], -1, tenInput.shape[2], -1)
+			tenVertical = torch.linspace(-1.0, 1.0, tenInput.shape[2]).view(1, 1, tenInput.shape[2], 1).expand(tenInput.shape[0], -1, -1, tenInput.shape[3])
+			return torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
+
 		class Head(Module):
 			def __init__(self):
 				super(Head, self).__init__()
@@ -53,8 +68,8 @@ class Model:
 				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect')
 				self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
 				# self.relu = torch.nn.PReLU()
-				# self.relu = torch.nn.LeakyReLU(0.2, True)
-				self.relu = torch.nn.SELU(inplace = True)
+				self.relu = torch.nn.LeakyReLU(0.2, True)
+				# self.relu = torch.nn.SELU(inplace = True)
 
 			def forward(self, x, feat=False):
 				# x = x * 2 - 1
@@ -76,8 +91,8 @@ class Model:
 				self.conv1 = torch.nn.Conv2d(c, c, kernel_size = (1,1))
 				self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
 				# self.relu = torch.nn.PReLU()      
-				# self.relu = torch.nn.LeakyReLU(0.2, True) 
-				self.relu = torch.nn.SELU(inplace = True)
+				self.relu = torch.nn.LeakyReLU(0.2, True) 
+				# self.relu = torch.nn.SELU(inplace = True)
 				
 			def forward(self, x):
 				# return self.relu(self.conv1(self.conv(x) * self.beta + x))
@@ -123,10 +138,10 @@ class Model:
 		class FlownetCas(Module):
 			def __init__(self):
 				super().__init__()
-				self.block0 = Flownet(7+16, c=192)
-				self.block1 = Flownet(8+4+16, c=128)
-				self.block2 = Flownet(8+4+16, c=96)
-				self.block3 = Flownet(8+4+16, c=64)
+				self.block0 = Flownet(7+16+2, c=192)
+				self.block1 = Flownet(8+4+16+2, c=128)
+				self.block2 = Flownet(8+4+16+2, c=96)
+				self.block3 = Flownet(8+4+16+2, c=64)
 				self.encode = Head()
 
 			def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
@@ -134,6 +149,8 @@ class Model:
 				img1 = img1 * 2 - 1
 				f0 = self.encode(img0)
 				f1 = self.encode(img1)
+
+				idflow = id_flow(img0)
 
 				if not torch.is_tensor(timestep):
 					timestep = (img0[:, :1].clone() * 0 + 1) * timestep
@@ -153,10 +170,10 @@ class Model:
 				flow = None
 				for i in range(4):
 					if flow is not None:
-						flow_d, mask, conf = stu[i](torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[i])
+						flow_d, mask, conf = stu[i](torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, idflow, timestep, mask), 1), flow, scale=scale[i])
 						flow = flow + flow_d
 					else:
-						flow, mask, conf = stu[i](torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[i])
+						flow, mask, conf = stu[i](torch.cat((img0, img1, f0, f1, idflow, timestep), 1), None, scale=scale[i])
 
 					mask_list.append(mask)
 					flow_list.append(flow)
