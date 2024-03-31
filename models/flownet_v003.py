@@ -50,7 +50,7 @@ class Model:
 				self.relu = torch.nn.SELU(inplace = True)
 
 			def forward(self, x, feat=False):
-				x = x * 2 - 1
+				# x = x * 2 - 1
 				x0 = self.cnn0(x)
 				x = self.relu(x0)
 				x1 = self.cnn1(x)
