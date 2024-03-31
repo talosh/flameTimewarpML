@@ -905,7 +905,7 @@ def main():
     parser.add_argument('--warmup', type=float, default=0.001, help='Warmup epochs (float) (default: 1)')
     parser.add_argument('--pulse', type=float, default=999, help='Period in steps to pulse learning rate (float) (default: 999)')
     parser.add_argument('--pulse_amplitude', type=float, default=25, help='Learning rate pulse amplitude (percentage) (default: 25)')
-    parser.add_argument('--model_path', type=str, default=None, help='Path to the pre-trained model (optional)')
+    parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size (int) (default: 8)')
     parser.add_argument('--first_epoch', type=int, default=-1, help='Epoch (int) (default: Saved)')
@@ -1100,8 +1100,24 @@ def main():
         # f0 = encoder(img0)
         # f1 = encoder(img2)
 
+        # scale list agumentation
+        random_scales = [
+            [16, 8, 4, 1],
+            [16, 8, 2, 1],
+            [16, 4, 2, 1],
+            [8, 2, 2, 1],
+            [4, 2, 1, 1],
+            [2, 2, 1, 1],
+            [2, 1, 1, 1],
+        ]
+
+        if random.uniform(0, 1) < 0.4:
+            traing_scale = random_scales[random.randint(0, len(random_scales) - 1)]
+        else:
+            training_scale = [8, 4, 2, 1]
+
         flownet.train()
-        flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio)
+        flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=trainig_scale)
 
         output = merged[3]
         mask = mask_list[3]
