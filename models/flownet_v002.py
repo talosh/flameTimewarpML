@@ -1,6 +1,6 @@
 # activation changed to SELU in Encoder.
 # Encoder input normalized to (-1, 1) instead of [0, 1]
-# Encoder conv padding mode set to "reflect"
+# All conv padding mode set to "reflect"
 
 class Model:
 	def __init__(self, status = dict(), torch = None):
@@ -64,7 +64,7 @@ class Model:
 		class ResConv(Module):
 			def __init__(self, c, dilation=1):
 				super().__init__()
-				self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=False)
+				self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect')
 				self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
 				self.relu = torch.nn.LeakyReLU(0.2, True) # torch.nn.SELU(inplace = True)
 				
