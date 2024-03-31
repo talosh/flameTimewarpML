@@ -985,8 +985,8 @@ def main():
     epoch_loss = []
     psnr_list = []
 
-    if args.model_path:
-        trained_model_path = args.model_path
+    if args.state_file:
+        trained_model_path = args.state_file
 
         try:
             checkpoint = torch.load(trained_model_path)
