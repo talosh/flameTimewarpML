@@ -50,8 +50,18 @@ class Model:
 				# self.relu = torch.nn.LeakyReLU(0.2, True)
 				self.relu = torch.nn.SELU(inplace = True)
 
+				self.encode = torch.nn.Sequential(
+					self.cnn0,
+					self.relu,
+					self.cnn1,
+					self.relu,
+					self.cnn2,
+					self.relu,
+					self.cnn3
+				)
+
 			def forward(self, x, feat=False):
-				# x = x * 2 - 1
+				'''
 				x0 = self.cnn0(x)
 				x = self.relu(x0)
 				x1 = self.cnn1(x)
@@ -61,7 +71,8 @@ class Model:
 				x3 = self.cnn3(x)
 				if feat:
 					return [x0, x1, x2, x3]
-				return x3
+				'''
+				return self.encode(x)
 
 		class ResConv(Module):
 			def __init__(self, c, dilation=1):
