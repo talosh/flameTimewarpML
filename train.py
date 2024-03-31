@@ -999,6 +999,7 @@ def main():
 
     encoder = Encoder().get_training_model()().to(device)
     Flownet = find_and_import_model(base_name='flownet', model_name=args.model)
+    print (Flownet.get_name())
     flownet = Flownet().get_training_model()().to(device)
     
     pulse_dive = args.pulse_amplitude
