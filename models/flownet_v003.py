@@ -82,7 +82,7 @@ class Model:
 				x3 = self.cnn3(x)
 				if feat:
 					return [x0, x1, x2, x3]
-				return x3
+				return torch.tanh(x3)
 
 		class ResConv(Module):
 			def __init__(self, c, dilation=1):
@@ -128,6 +128,7 @@ class Model:
 				feat = self.conv0(x)
 				feat = self.convblock(feat)
 				tmp = self.lastconv(feat)
+				tmp = torch.tanh(tmp)
 				tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
 				flow = tmp[:, :4] * scale
 				mask = (tmp[:, 4:5] + 1) / 2
