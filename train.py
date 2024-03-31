@@ -609,21 +609,15 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img1 = img1 * exp
                 img2 = img2 * exp
             
-            '''
-            # slight colour shift between imcoming and outgoing images
-            delta = random.uniform(0, 0.05)
+            # add colour banace shift
+            delta = random.uniform(0, 0.28)
             r = random.uniform(1-delta, 1+delta)
             g = random.uniform(1-delta, 1+delta)
             b = random.uniform(1-delta, 1+delta)
             multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device)
             img0 = img0 * multipliers
-
-            r = random.uniform(1-delta, 1+delta)
-            g = random.uniform(1-delta, 1+delta)
-            b = random.uniform(1-delta, 1+delta)
-            multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device)
+            img1 = img1 * multipliers
             img2 = img2 * multipliers
-            '''
 
             batch_img0.append(img0)
             batch_img1.append(img1)
