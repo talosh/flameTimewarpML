@@ -949,7 +949,7 @@ def main():
     parser.add_argument('dataset_path', type=str, help='Path to the dataset')
 
     # Optional arguments
-    parser.add_argument('--lr', type=float, default=0.00009, help='Learning rate (default: 9e-5)')
+    parser.add_argument('--lr', type=float, default=0.00011, help='Learning rate (default: 1e-4)')
     parser.add_argument('--type', type=int, default=1, help='Model type (int): 1 - MultiresNet, 2 - MultiresNet 4 (default: 1)')
     parser.add_argument('--warmup', type=float, default=0.001, help='Warmup epochs (float) (default: 1)')
     parser.add_argument('--pulse', type=float, default=999, help='Period in steps to pulse learning rate (float) (default: 999)')
