@@ -72,7 +72,7 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
 from models.encoder_v001 import Model as Encoder
-from models.flownet_v001 import Model as Flownet
+from models.flownet_v002 import Model as Flownet
 
 class Yogi(Optimizer):
     r"""Implements Yogi Optimizer Algorithm.
