@@ -265,7 +265,9 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         # self.last_target_image_data = None
 
         if device is None:
-            torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda')
+            self.device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda')
+        else:
+            self.device = device
 
     def reshuffle(self):
         random.shuffle(self.train_descriptions)
