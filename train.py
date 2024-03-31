@@ -1106,12 +1106,12 @@ def main():
         ]
 
         if random.uniform(0, 1) < 0.4:
-            traing_scale = random_scales[random.randint(0, len(random_scales) - 1)]
+            training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
         else:
             training_scale = [8, 4, 2, 1]
 
         flownet.train()
-        flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=trainig_scale)
+        flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
 
         output = merged[3]
         mask = mask_list[3]
