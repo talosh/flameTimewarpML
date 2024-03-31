@@ -1,7 +1,6 @@
 # activation changed to SELU in Encoder.
 # Encoder input normalized to (-1, 1) instead of [0, 1]
 # Encoder conv padding mode set to "reflect"
-# Encoder conv bias set to "False"
 
 class Model:
 	def __init__(self, status = dict(), torch = None):
