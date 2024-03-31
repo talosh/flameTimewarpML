@@ -1364,11 +1364,11 @@ def main():
                         evp_img2 = torch.nn.functional.pad(evn_img2, padding)
 
                         with torch.no_grad():
-                            f0 = encoder(evp_img0)
-                            f1 = encoder(evp_img2)
+                            # f0 = encoder(evp_img0)
+                            # f1 = encoder(evp_img2)
 
                             flownet.eval()
-                            _, _, merged = flownet(evp_img0, evp_img2, f0, f1, timestep = ev_ratio)
+                            _, _, merged = flownet(evp_img0, evp_img1, evp_img2, None, None, ev_ratio)
                             evp_output = merged[3]
                             psnr_list.append(psnr_torch(evp_output, evp_img1))
 
