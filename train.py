@@ -902,6 +902,11 @@ def find_and_import_model(models_dir='./models', base_name=None, model_name=None
     :param model_name: Specific name/version of the model (optional).
     :return: Imported Model object or None if not found.
     """
+
+    import os
+    import re
+    import importlib
+
     # Resolve the absolute path of the models directory
     models_abs_path = os.path.abspath(models_dir)
 
