@@ -1,6 +1,6 @@
 # -----
 # v003:
-# 
+# 1d conv instead of beta in ResConv
 
 # -----
 # v002:
