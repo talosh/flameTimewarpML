@@ -1,9 +1,3 @@
-# -----
-# v003:
-# Back to LeakyRELU in Encoder
-
-# -----
-# v002:
 # activation changed to SELU in Encoder.
 # Encoder input normalized to (-1, 1) instead of [0, 1]
 # All conv padding mode set to "reflect"
@@ -45,21 +39,6 @@ class Model:
 			g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
 			return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
-		def warp_rel(tenInput, tenFlow):
-			backwarp_tenGrid = {}
-			k = (str(tenFlow.device), str(tenFlow.size()))
-			if k not in backwarp_tenGrid:
-				tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
-				tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
-				backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
-			g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-			return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
-
-		def id_flow(tenInput):
-			tenHorizontal = torch.linspace(-1.0, 1.0, tenInput.shape[3]).view(1, 1, 1, tenInput.shape[3]).expand(tenInput.shape[0], -1, tenInput.shape[2], -1)
-			tenVertical = torch.linspace(-1.0, 1.0, tenInput.shape[2]).view(1, 1, tenInput.shape[2], 1).expand(tenInput.shape[0], -1, -1, tenInput.shape[3])
-			return torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
-
 		class Head(Module):
 			def __init__(self):
 				super(Head, self).__init__()
@@ -67,12 +46,11 @@ class Model:
 				self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect')
 				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect')
 				self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
-				# self.relu = torch.nn.PReLU()
-				self.relu = torch.nn.LeakyReLU(0.2, True)
-				# self.relu = torch.nn.SELU(inplace = True)
+				# torch.nn.LeakyReLU(0.2, True)
+				self.relu = torch.nn.SELU(inplace = True)
 
 			def forward(self, x, feat=False):
-				# x = x * 2 - 1
+				x = x * 2 - 1
 				x0 = self.cnn0(x)
 				x = self.relu(x0)
 				x1 = self.cnn1(x)
@@ -82,20 +60,17 @@ class Model:
 				x3 = self.cnn3(x)
 				if feat:
 					return [x0, x1, x2, x3]
-				return torch.tanh(x3)
+				return x3
 
 		class ResConv(Module):
 			def __init__(self, c, dilation=1):
 				super().__init__()
 				self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect')
-				self.conv1 = torch.nn.Conv2d(c, c, kernel_size = (1,1))
-				self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-				# self.relu = torch.nn.PReLU()      
-				self.relu = torch.nn.LeakyReLU(0.2, True) 
+				self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
+				self.relu = torch.nn.LeakyReLU(0.2, True)
 				# self.relu = torch.nn.SELU(inplace = True)
 				
 			def forward(self, x):
-				# return self.relu(self.conv1(self.conv(x) * self.beta + x))
 				return self.relu(self.conv(x) * self.beta + x)
 
 		class Flownet(Module):
@@ -130,7 +105,7 @@ class Model:
 				tmp = self.lastconv(feat)
 				tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
 				flow = tmp[:, :4] * scale
-				mask = (tmp[:, 4:5] + 1) / 2
+				mask = tmp[:, 4:5]
 				conf = tmp[:, 4:5]
 				conf = tmp[:, 5:6]
 				return flow, mask, conf
@@ -180,7 +155,7 @@ class Model:
 					warped_img1 = warp(img1, flow[:, 2:4])
 					warped_f0 = warp(f0, flow[:, :2])
 					warped_f1 = warp(f1, flow[:, 2:4])
-					merged_student = ((warped_img0 + 1) / 2, (warped_img1+1)/2)
+					merged_student = ((warped_img0+1)/2, (warped_img1+1)/2)
 					merged.append(merged_student)
 				conf = torch.sigmoid(torch.cat(conf_list, 1))
 				conf = conf / (conf.sum(1, True) + 1e-3)
@@ -211,7 +186,7 @@ class Model:
 
 	@staticmethod
 	def get_name():
-		return 'TWML_Flownet_v003'
+		return 'TWML_Flownet_v002'
 	
 	@staticmethod
 	def input_channels(model_state_dict):
