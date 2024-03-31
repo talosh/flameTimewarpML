@@ -911,11 +911,13 @@ def main():
 
     args = parser.parse_args()
 
+    device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
+
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
     read_image_queue = queue.Queue(maxsize=12)
-    dataset = TimewarpMLDataset(args.dataset_path, batch_size=args.batch_size)
+    dataset = TimewarpMLDataset(args.dataset_path, batch_size=args.batch_size, device=device)
 
     def read_images(read_image_queue, dataset):
         while True:
@@ -945,7 +947,6 @@ def main():
     write_thread.daemon = True
     write_thread.start()
     
-    device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
 
     encoder = Encoder().get_training_model()().to(device)
     flownet = Flownet().get_training_model()().to(device)
