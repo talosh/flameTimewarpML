@@ -1,6 +1,6 @@
 # -----
 # v003:
-# SELU instead of LeakyRELU in ResConv
+# Back to LeakyRELU in Encoder
 
 # -----
 # v002:
@@ -52,7 +52,8 @@ class Model:
 				self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect')
 				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect')
 				self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
-				self.relu = torch.nn.SELU(inplace = True)
+				self.relu = torch.nn.LeakyReLU(0.2, True)
+				# self.relu = torch.nn.SELU(inplace = True)
 
 			def forward(self, x, feat=False):
 				x = x * 2 - 1
@@ -73,8 +74,8 @@ class Model:
 				self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect')
 				# self.conv1d = torch.nn.Conv2d(c, c, kernel_size = (1,1))
 				self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-				# self.relu = torch.nn.LeakyReLU(0.2, True) 
-				self.relu = torch.nn.SELU(inplace = True)
+				self.relu = torch.nn.LeakyReLU(0.2, True) 
+				# self.relu = torch.nn.SELU(inplace = True)
 				
 			def forward(self, x):
 				return self.relu(self.conv(x) * self.beta + x)
