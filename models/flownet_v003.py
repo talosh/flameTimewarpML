@@ -53,11 +53,11 @@ class Model:
 				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect')
 				self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
 				self.relu = torch.nn.PReLU()
-				# self.relu = torch.nn.LeakyReLU(0.2, True)
+				self.relu = torch.nn.LeakyReLU(0.2, True)
 				# self.relu = torch.nn.SELU(inplace = True)
 
 			def forward(self, x, feat=False):
-				x = x * 2 - 1
+				# x = x * 2 - 1
 				x0 = self.cnn0(x)
 				x = self.relu(x0)
 				x1 = self.cnn1(x)
@@ -75,12 +75,13 @@ class Model:
 				self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect')
 				self.conv1 = torch.nn.Conv2d(c, c, kernel_size = (1,1))
 				self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-				self.relu = torch.nn.PReLU()      
-				# self.relu = torch.nn.LeakyReLU(0.2, True) 
+				# self.relu = torch.nn.PReLU()      
+				self.relu = torch.nn.LeakyReLU(0.2, True) 
 				# self.relu = torch.nn.SELU(inplace = True)
 				
 			def forward(self, x):
-				return self.relu(self.conv1(self.conv(x) * self.beta + x))
+				# return self.relu(self.conv1(self.conv(x) * self.beta + x))
+				return self.relu(self.conv(x) * self.beta + x)
 
 		class Flownet(Module):
 			def __init__(self, in_planes, c=64):
@@ -129,8 +130,8 @@ class Model:
 				self.encode = Head()
 
 			def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
-				img0 = img0
-				img1 = img1
+				img0 = img0 * 2 - 1
+				img1 = img1 * 2 - 1
 				f0 = self.encode(img0)
 				f1 = self.encode(img1)
 
@@ -164,7 +165,7 @@ class Model:
 					warped_img1 = warp(img1, flow[:, 2:4])
 					warped_f0 = warp(f0, flow[:, :2])
 					warped_f1 = warp(f1, flow[:, 2:4])
-					merged_student = (warped_img0, warped_img1)
+					merged_student = ((warped_img0 + 1) / 2, (warped_img1+1)/2)
 					merged.append(merged_student)
 				conf = torch.sigmoid(torch.cat(conf_list, 1))
 				conf = conf / (conf.sum(1, True) + 1e-3)
@@ -177,7 +178,7 @@ class Model:
 					warped_img0_teacher = warp(img0, flow_teacher[:, :2])
 					warped_img1_teacher = warp(img1, flow_teacher[:, 2:4])
 					mask_teacher = torch.sigmoid(mask_teacher)
-					merged_teacher = warped_img0_teacher * mask_teacher + warped_img1_teacher * (1 - mask_teacher)
+					merged_teacher = ((warped_img0_teacher+1)/2) * mask_teacher + ((warped_img1_teacher+1)/2) * (1 - mask_teacher)
 					teacher_list.append(merged_teacher)
 					flow_list_teacher.append(flow_teacher)
 
