@@ -213,7 +213,7 @@ class Yogi(Optimizer):
         return loss
 
 class TimewarpMLDataset(torch.utils.data.Dataset):
-    def __init__(self, data_root, batch_size = 8):
+    def __init__(self, data_root, batch_size = 8, device = None):
         self.fw = flameAppFramework()
         self.data_root = data_root
         self.batch_size = batch_size
@@ -263,6 +263,9 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         # self.last_shuffled_index = -1
         # self.last_source_image_data = None
         # self.last_target_image_data = None
+
+        if device is None:
+            torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda')
 
     def reshuffle(self):
         random.shuffle(self.train_descriptions)
@@ -516,7 +519,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         ratio = train_data['ratio']
         images_idx = train_data['index']
 
-        device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda')
+        device = self.device
 
         src_img0 = torch.from_numpy(src_img0.copy())
         src_img1 = torch.from_numpy(src_img1.copy())
