@@ -15,7 +15,7 @@ trained_models.all/*
 !trained_models.all/README
 
 .DS_Store
-packages/*
+packages/.miniconda
 env
 appenv
 train_log/*
