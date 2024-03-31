@@ -72,7 +72,6 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
 from models.encoder_v001 import Model as Encoder
-from models.flownet_v002 import Model as Flownet
 
 class Yogi(Optimizer):
     r"""Implements Yogi Optimizer Algorithm.
@@ -892,6 +891,52 @@ def psnr_torch(imageA, imageB, max_pixel=1.0):
         return torch.tensor(float('inf'))
     return 20 * torch.log10(max_pixel / torch.sqrt(mse))
 
+def find_and_import_model(models_dir='./models', base_name=None, model_name=None):
+    """
+    Dynamically imports the latest version of a model based on the base name,
+    or a specific model if the model name/version is given, and returns the Model
+    object named after the base model name.
+
+    :param models_dir: Relative path to the models directory.
+    :param base_name: Base name of the model to search for.
+    :param model_name: Specific name/version of the model (optional).
+    :return: Imported Model object or None if not found.
+    """
+    # Resolve the absolute path of the models directory
+    models_abs_path = os.path.abspath(models_dir)
+
+    # List all files in the models directory
+    try:
+        files = os.listdir(models_abs_path)
+    except FileNotFoundError:
+        print(f"Directory not found: {models_abs_path}")
+        return None
+
+    # Filter files based on base_name or model_name
+    if model_name:
+        # Look for a specific model version
+        filtered_files = [f for f in files if f == f"{model_name}.py"]
+    else:
+        # Find all versions of the model and select the latest one
+        regex_pattern = fr"{base_name}_v(\d+)\.py"
+        versions = [(f, int(m.group(1))) for f in files if (m := re.match(regex_pattern, f))]
+        if versions:
+            # Sort by version number (second item in tuple) and select the latest one
+            latest_version_file = sorted(versions, key=lambda x: x[1], reverse=True)[0][0]
+            filtered_files = [latest_version_file]
+
+    # Import the module and return the Model object
+    if filtered_files:
+        module_name = filtered_files[0][:-3]  # Remove '.py' from filename to get module name
+        module_path = f"models.{module_name}"
+        module = importlib.import_module(module_path)
+        model_object = getattr(module, 'Model')
+        return model_object
+    else:
+        print(f"Model not found: {base_name or model_name}")
+        return None
+
+
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
@@ -905,6 +950,7 @@ def main():
     parser.add_argument('--pulse', type=float, default=999, help='Period in steps to pulse learning rate (float) (default: 999)')
     parser.add_argument('--pulse_amplitude', type=float, default=25, help='Learning rate pulse amplitude (percentage) (default: 25)')
     parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
+    parser.add_argument('--model', type=str, default=None, help='Model name (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size (int) (default: 8)')
     parser.add_argument('--first_epoch', type=int, default=-1, help='Epoch (int) (default: Saved)')
@@ -948,9 +994,11 @@ def main():
     write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
     write_thread.daemon = True
     write_thread.start()
-    
+
+    from models.flownet_v002 import Model as Flownet
 
     encoder = Encoder().get_training_model()().to(device)
+    Flownet = find_and_import_model(base_name='flownet', model_name=args.model)
     flownet = Flownet().get_training_model()().to(device)
     
     pulse_dive = args.pulse_amplitude
