@@ -17,7 +17,7 @@ class Model:
 					stride=stride,
 					padding=padding, 
 					dilation=dilation,
-					padding_mode = 'reflect',
+					# padding_mode = 'reflect',
 					bias=True
 				),
 				torch.nn.LeakyReLU(0.2, True)
@@ -43,9 +43,9 @@ class Model:
 			def __init__(self):
 				super().__init__()
 				c = 32
-				self.cnn0 = torch.nn.Conv2d(3, c, 3, 2, 1, padding_mode = 'reflect')
-				self.cnn1 = torch.nn.Conv2d(c, c, 5, 1, padding='same', padding_mode = 'reflect')
-				self.cnn2 = torch.nn.Conv2d(c, c, 5, 1, padding='same', padding_mode = 'reflect')
+				self.cnn0 = torch.nn.Conv2d(3, c, 3, 2, 1)
+				self.cnn1 = torch.nn.Conv2d(c, c, 5, 1, padding='same')
+				self.cnn2 = torch.nn.Conv2d(c, c, 5, 1, padding='same')
 				self.cnn3 = torch.nn.ConvTranspose2d(c, 8, 4, 2, 1)
 				# self.relu = torch.nn.LeakyReLU(0.2, True)
 				self.relu = torch.nn.SELU(inplace = True)
@@ -77,7 +77,7 @@ class Model:
 		class ResConv(Module):
 			def __init__(self, c, dilation=1):
 				super().__init__()
-				self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect')
+				self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1)
 				self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
 				self.relu = torch.nn.LeakyReLU(0.2, True)
 				# self.relu = torch.nn.SELU(inplace = True)
