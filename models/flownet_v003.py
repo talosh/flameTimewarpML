@@ -46,8 +46,8 @@ class Model:
 				self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect')
 				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect')
 				self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
-				# torch.nn.LeakyReLU(0.2, True)
-				self.relu = torch.nn.SELU(inplace = True)
+				self.relu = torch.nn.LeakyReLU(0.2, True)
+				# self.relu = torch.nn.SELU(inplace = True)
 
 			def forward(self, x, feat=False):
 				# x = x * 2 - 1
