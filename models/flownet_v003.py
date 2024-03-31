@@ -30,7 +30,7 @@ class Model:
 				# torch.nn.SELU(inplace = True)
 			)
 
-		def warp_abs(tenInput, tenFlow):
+		def warp(tenInput, tenFlow):
 			backwarp_tenGrid = {}
 
 			k = (str(tenFlow.device), str(tenFlow.size()))
@@ -45,7 +45,7 @@ class Model:
 			g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
 			return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
-		def warp(tenInput, tenFlow):
+		def warp_rel(tenInput, tenFlow):
 			backwarp_tenGrid = {}
 			k = (str(tenFlow.device), str(tenFlow.size()))
 			if k not in backwarp_tenGrid:
@@ -128,7 +128,6 @@ class Model:
 				feat = self.conv0(x)
 				feat = self.convblock(feat)
 				tmp = self.lastconv(feat)
-				tmp = torch.tanh(tmp)
 				tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
 				flow = tmp[:, :4] * scale
 				mask = (tmp[:, 4:5] + 1) / 2
@@ -150,8 +149,6 @@ class Model:
 				img1 = img1 * 2 - 1
 				f0 = self.encode(img0)
 				f1 = self.encode(img1)
-
-				idflow = id_flow(img0)
 
 				if not torch.is_tensor(timestep):
 					timestep = (img0[:, :1].clone() * 0 + 1) * timestep
