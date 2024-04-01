@@ -1037,8 +1037,8 @@ def main():
     warnings.filterwarnings('ignore', category=UserWarning)
 
     # train_scheduler_encoder = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_encoder, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
-    # train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
-    train_scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, mode='min', factor=0.1, patience=2)
+    train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+    # train_scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, mode='min', factor=0.1, patience=2)
     # lambda_function = lambda epoch: 1
     # train_scheduler_flownet = torch.optim.lr_scheduler.LambdaLR(optimizer_flownet, lr_lambda=lambda_function)
 
@@ -1149,7 +1149,7 @@ def main():
             img1 = normalize(img1)
             img2 = normalize(img2)
 
-        current_lr = optimizer_flownet.param_groups[0]['lr'] # scheduler_flownet.get_last_lr()[0]
+        current_lr = scheduler_flownet.get_last_lr()[0] # optimizer_flownet.param_groups[0]['lr'] 
         # for param_group_encoder in optimizer_encoder.param_groups:
         #    param_group_encoder['lr'] = current_lr
         for param_group_flownet in optimizer_flownet.param_groups:
