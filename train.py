@@ -623,6 +623,15 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             img1 = img1 * multipliers
             img2 = img2 * multipliers
 
+            def gamma_up(img, gamma = 1.18):
+                return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
+
+            if random.uniform(0, 1) < 0.4:
+                gamma = random.uniform(1.01, 1.8)
+                img0 = gamma_up(img0, gamma=gamma)
+                img1 = gamma_up(img1, gamma=gamma)
+                img2 = gamma_up(img2, gamma=gamma)
+
             batch_img0.append(img0)
             batch_img1.append(img1)
             batch_img2.append(img2)
