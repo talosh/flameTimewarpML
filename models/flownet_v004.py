@@ -48,8 +48,9 @@ class Model:
 				self.cnn2 = torch.nn.Conv2d(c, c, 5, 1, 2)
 				self.cnn3 = torch.nn.Conv2d(c, c, 5, 1, 2)
 				self.cnn4 = torch.nn.ConvTranspose2d(c, 11, 4, 2, 1)
-				self.relu = torch.nn.LeakyReLU(0.2, True)
+				# self.relu = torch.nn.LeakyReLU(0.2, True)
 				# self.relu = torch.nn.ELU(inplace = True)
+				self.relu = torch.tanh()
 
 				self.encode = torch.nn.Sequential(
 					self.cnn0,
