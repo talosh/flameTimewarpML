@@ -76,7 +76,7 @@ class Model:
 				if feat:
 					return [x0, x1, x2, x3]
 				'''
-				return self.encode(x)
+				return self.encode((x+1)/2)
 
 		class ResConv(Module):
 			def __init__(self, c, dilation=1):
