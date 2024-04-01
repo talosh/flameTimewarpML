@@ -47,9 +47,9 @@ class Model:
 				self.cnn1 = torch.nn.Conv2d(c, c, 5, 1, 2)
 				self.cnn2 = torch.nn.Conv2d(c, c, 5, 1, 2)
 				self.cnn3 = torch.nn.Conv2d(c, c, 5, 1, 2)
-				self.cnn4 = torch.nn.ConvTranspose2d(c, 8, 4, 2, 1)
+				self.cnn4 = torch.nn.ConvTranspose2d(c, 11, 4, 2, 1)
 				# self.relu = torch.nn.LeakyReLU(0.2, True)
-				self.relu = torch.nn.SELU(inplace = True)
+				self.relu = torch.nn.ELU(inplace = True)
 
 				self.encode = torch.nn.Sequential(
 					self.cnn0,
@@ -128,10 +128,10 @@ class Model:
 		class FlownetCas(Module):
 			def __init__(self):
 				super().__init__()
-				self.block0 = Flownet(7+16, c=256)
-				self.block1 = Flownet(8+4+16, c=192)
-				self.block2 = Flownet(8+4+16, c=128)
-				self.block3 = Flownet(8+4+16, c=96)
+				self.block0 = Flownet(7+22 c=256)
+				self.block1 = Flownet(8+4+22, c=192)
+				self.block2 = Flownet(8+4+22, c=128)
+				self.block3 = Flownet(8+4+22, c=96)
 				self.encode = Head()
 
 			def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
