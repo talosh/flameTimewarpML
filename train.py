@@ -1149,7 +1149,7 @@ def main():
             img1 = normalize(img1)
             img2 = normalize(img2)
 
-        current_lr = scheduler_flownet.get_last_lr()[0]
+        current_lr = optimizer_flownet.param_groups[0]['lr'] # scheduler_flownet.get_last_lr()[0]
         # for param_group_encoder in optimizer_encoder.param_groups:
         #    param_group_encoder['lr'] = current_lr
         for param_group_flownet in optimizer_flownet.param_groups:
