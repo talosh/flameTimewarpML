@@ -59,8 +59,8 @@ class Model:
 					self.relu,
 					self.cnn2,
 					self.relu,
-					self.cnn3,
-					self.relu,
+					# self.cnn3,
+					# self.relu,
 					self.cnn4
 				)
 
