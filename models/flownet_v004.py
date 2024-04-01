@@ -48,8 +48,8 @@ class Model:
 				self.cnn2 = torch.nn.Conv2d(c, c, 5, 1, 2)
 				self.cnn3 = torch.nn.Conv2d(c, c, 5, 1, 2)
 				self.cnn4 = torch.nn.ConvTranspose2d(c, 11, 4, 2, 1)
-				self.relu = torch.nn.LeakyReLU(0.2, True)
-				# self.relu = torch.nn.ELU(inplace = True)
+				# self.relu = torch.nn.LeakyReLU(0.2, True)
+				self.relu = torch.nn.SELU(inplace = True)
 				# self.relu = torch.nn.Tanh()
 
 				self.encode = torch.nn.Sequential(
@@ -76,7 +76,7 @@ class Model:
 				if feat:
 					return [x0, x1, x2, x3]
 				'''
-				return self.encode((x+1)/2)
+				return self.encode(x)
 
 		class ResConv(Module):
 			def __init__(self, c, dilation=1):
