@@ -42,7 +42,7 @@ class Model:
 		class Head(Module):
 			def __init__(self):
 				super().__init__()
-				c = 48
+				c = 32
 				self.cnn0 = torch.nn.Conv2d(3, c, 3, 2, 1)
 				self.cnn1 = torch.nn.Conv2d(c, c, 5, 1, 2)
 				self.cnn2 = torch.nn.Conv2d(c, c, 5, 1, 2)
