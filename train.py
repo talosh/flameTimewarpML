@@ -950,7 +950,6 @@ def find_and_import_model(models_dir='./models', base_name=None, model_name=None
         print(f"Model not found: {base_name or model_name}")
         return None
 
-
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
@@ -1038,7 +1037,8 @@ def main():
     warnings.filterwarnings('ignore', category=UserWarning)
 
     # train_scheduler_encoder = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_encoder, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
-    train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+    # train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+    train_scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, mode='min', factor=0.1, patience=2)
     # lambda_function = lambda epoch: 1
     # train_scheduler_flownet = torch.optim.lr_scheduler.LambdaLR(optimizer_flownet, lr_lambda=lambda_function)
 
