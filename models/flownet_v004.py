@@ -128,7 +128,7 @@ class Model:
 		class FlownetCas(Module):
 			def __init__(self):
 				super().__init__()
-				self.block0 = Flownet(7+22 c=256)
+				self.block0 = Flownet(7+22, c=256)
 				self.block1 = Flownet(8+4+22, c=192)
 				self.block2 = Flownet(8+4+22, c=128)
 				self.block3 = Flownet(8+4+22, c=96)
