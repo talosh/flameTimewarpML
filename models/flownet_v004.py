@@ -201,7 +201,7 @@ class Model:
 
 	@staticmethod
 	def get_name():
-		return 'TWML_Flownet_v003'
+		return 'TWML_Flownet_v004'
 	
 	@staticmethod
 	def input_channels(model_state_dict):
