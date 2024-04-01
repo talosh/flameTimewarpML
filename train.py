@@ -322,7 +322,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         return folders_with_file, folders_without_file
 
-    def create_dataset_descriptions(self, folder_path, max_window=9):
+    def create_dataset_descriptions(self, folder_path, max_window=5):
 
         def sliding_window(lst, n):
             for i in range(len(lst) - n + 1):
@@ -341,8 +341,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         
         if 'fast' in folder_path:
             max_window = 3
-        if 'medium' in folder_path:
-            max_window = 5
+        if 'slow' in folder_path:
+            max_window = 9
         
         try:
             first_exr_file_header = self.fw.read_openexr_file(exr_files[0], header_only = True)
