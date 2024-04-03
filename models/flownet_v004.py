@@ -43,12 +43,12 @@ class Model:
 			def __init__(self):
 				super().__init__()
 				c = 36
-				self.cnn0 = torch.nn.Conv2d(3, c, 3, 2, 1)
+				self.cnn0 = torch.nn.Conv2d(3, c, 5, 2, 2)
 				self.cnn1 = torch.nn.Conv2d(c, c, 5, 1, 2)
 				self.cnn2 = torch.nn.Conv2d(c, c, 5, 1, 2)
 				self.cnn3 = torch.nn.Conv2d(c, c, 5, 1, 2)
 				self.cnn4 = torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
-				self.relu = torch.nn.PReLU()
+				self.relu = torch.nn.ELU()
 				# self.relu = torch.nn.LeakyReLU(0.2, True)
 				# self.relu = torch.nn.SELU(inplace = True)
 				# self.relu = torch.nn.Tanh()
