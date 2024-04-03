@@ -135,6 +135,7 @@ class Model:
 				self.block1 = Flownet(8+4+18, c=192)
 				self.block2 = Flownet(8+4+18, c=128)
 				self.block3 = Flownet(8+4+18, c=96)
+				self.block4 = Flownet(8+4+18, c=64)
 				self.encode = Head()
 
 			def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
@@ -175,6 +176,19 @@ class Model:
 					warped_f1 = warp(f1, flow[:, 2:4])
 					merged_student = ((warped_img0+1)/2, (warped_img1+1)/2)
 					merged.append(merged_student)
+
+				# last block
+				flow, mask, conf = self.block4(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=1)
+				mask_list[-1] = mask
+				flow_list[-1] = flow
+				conf_list[-1] = conf
+				warped_img0 = warp(img0, flow[:, :2])
+				warped_img1 = warp(img1, flow[:, 2:4])
+				warped_f0 = warp(f0, flow[:, :2])
+				warped_f1 = warp(f1, flow[:, 2:4])
+				merged_student = ((warped_img0+1)/2, (warped_img1+1)/2)
+				merged[-1] = merged_student
+
 				conf = torch.sigmoid(torch.cat(conf_list, 1))
 				conf = conf / (conf.sum(1, True) + 1e-3)
 				if gt is not None:
