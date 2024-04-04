@@ -244,8 +244,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         self.reshuffle()
 
-        self.h = 448
-        self.w = 448
+        self.h = frame_size
+        self.w = frame_size
         # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
         self.frames_queue = queue.Queue(maxsize=12)
@@ -979,7 +979,7 @@ def main():
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
     read_image_queue = queue.Queue(maxsize=12)
-    dataset = TimewarpMLDataset(args.dataset_path, batch_size=args.batch_size, device=device, frame_size=args.frame_size)
+    dataset = TimewarpMLDataset(args.dataset_path, batch_size=args.batch_size, device=device)
 
     def read_images(read_image_queue, dataset):
         while True:
