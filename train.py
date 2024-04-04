@@ -978,6 +978,8 @@ def main():
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
+    print (f'{args.frame_size}')
+
     read_image_queue = queue.Queue(maxsize=12)
     dataset = TimewarpMLDataset(args.dataset_path, batch_size=args.batch_size, device=device)
 
