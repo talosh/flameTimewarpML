@@ -969,7 +969,7 @@ def main():
     parser.add_argument('--first_epoch', type=int, default=-1, help='Epoch (int) (default: Saved)')
     parser.add_argument('--epochs', type=int, default=-1, help='Epoch (int) (default: Saved)')
     parser.add_argument('--no_eval', action='store_false', dest='eval', default=True, help='Disable evaluation mode')
-    parser.add_argument('--frame_size', type=int, default=-448, help='Frame size in pixels (default: 448)')
+    parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
 
     args = parser.parse_args()
 
@@ -978,10 +978,8 @@ def main():
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
-    print (f'{args.frame_size}')
-
     read_image_queue = queue.Queue(maxsize=12)
-    dataset = TimewarpMLDataset(args.dataset_path, batch_size=args.batch_size, device=device)
+    dataset = TimewarpMLDataset(args.dataset_path, batch_size=args.batch_size, device=device, frame_size=abs(int(args.frame_size)))
 
     def read_images(read_image_queue, dataset):
         while True:
