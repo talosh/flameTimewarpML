@@ -212,7 +212,7 @@ class Yogi(Optimizer):
         return loss
 
 class TimewarpMLDataset(torch.utils.data.Dataset):
-    def __init__(self, data_root, batch_size = 8, device = None):
+    def __init__(self, data_root, batch_size = 8, device = None, frame_size=448):
         self.fw = flameAppFramework()
         self.data_root = data_root
         self.batch_size = batch_size
@@ -244,8 +244,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         self.reshuffle()
 
-        self.h = 448
-        self.w = 448
+        self.h = frame_size
+        self.w = frame_size
         # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
         self.frames_queue = queue.Queue(maxsize=12)
@@ -969,6 +969,7 @@ def main():
     parser.add_argument('--first_epoch', type=int, default=-1, help='Epoch (int) (default: Saved)')
     parser.add_argument('--epochs', type=int, default=-1, help='Epoch (int) (default: Saved)')
     parser.add_argument('--no_eval', action='store_false', dest='eval', default=True, help='Disable evaluation mode')
+    parser.add_argument('--frame_size', type=int, default=-448, help='Frame size in pixels (default: 448)')
 
     args = parser.parse_args()
 
@@ -978,7 +979,7 @@ def main():
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
     read_image_queue = queue.Queue(maxsize=12)
-    dataset = TimewarpMLDataset(args.dataset_path, batch_size=args.batch_size, device=device)
+    dataset = TimewarpMLDataset(args.dataset_path, batch_size=args.batch_size, device=device, frame_size=args.frame_size)
 
     def read_images(read_image_queue, dataset):
         while True:
