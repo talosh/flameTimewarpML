@@ -244,8 +244,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         self.reshuffle()
 
-        self.h = frame_size
-        self.w = frame_size
+        self.h = 448
+        self.w = 448
         # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
         self.frames_queue = queue.Queue(maxsize=12)
