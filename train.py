@@ -1196,19 +1196,19 @@ def main():
         mask = mask_list[3]
 
         loss_x8 = criterion_mse(
-            torch.nn.functional.interpolate(merged[0], scale_factor= 1. / random_scales[0], mode="bilinear", align_corners=False),
-            torch.nn.functional.interpolate(img1, scale_factor= 1. / random_scales[0], mode="bilinear", align_corners=False)
+            torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False),
+            torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
         )
 
         loss_x4 = criterion_mse(
-            torch.nn.functional.interpolate(merged[1], scale_factor= 1. / random_scales[1], mode="bilinear", align_corners=False),
-            torch.nn.functional.interpolate(img1, scale_factor= 1. / random_scales[1], mode="bilinear", align_corners=False)
+            torch.nn.functional.interpolate(merged[1], scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False),
+            torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
         )
         
 
         loss_x2 = criterion_mse(
-            torch.nn.functional.interpolate(merged[1], scale_factor= 1. / random_scales[2], mode="bilinear", align_corners=False),
-            torch.nn.functional.interpolate(img1, scale_factor= 1. / random_scales[2], mode="bilinear", align_corners=False)
+            torch.nn.functional.interpolate(merged[1], scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False),
+            torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
         )
 
         loss_x1 = criterion_mse(merged[3], img1)
