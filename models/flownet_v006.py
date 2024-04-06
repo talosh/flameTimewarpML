@@ -86,6 +86,10 @@ class Model:
 			def forward(self, x, feat=False):
 				y, u, v, = self.rgb_to_yuv_separate(x)
 				y = y * 2 - 1
+
+				u = torch.nn.functional.interpolate(u, scale_factor= 1 / 2, mode="bilinear", align_corners=False)
+				v = torch.nn.functional.interpolate(v, scale_factor= 1 / 2, mode="bilinear", align_corners=False)
+
 				x0 = self.cnn0(y)
 				x = self.relu(x0)
 				x = torch.cat([x, u, v], dim=1)
