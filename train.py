@@ -614,7 +614,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img2 = img2 * exp
             
             # add colour banace shift
-            delta = random.uniform(0, 0.44)
+            delta = random.uniform(0, 0.69)
             r = random.uniform(1-delta, 1+delta)
             g = random.uniform(1-delta, 1+delta)
             b = random.uniform(1-delta, 1+delta)
