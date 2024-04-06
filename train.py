@@ -614,7 +614,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img2 = img2 * exp
             
             # add colour banace shift
-            delta = random.uniform(0, 0.48)
+            delta = random.uniform(0, 0.44)
             r = random.uniform(1-delta, 1+delta)
             g = random.uniform(1-delta, 1+delta)
             b = random.uniform(1-delta, 1+delta)
@@ -1249,7 +1249,7 @@ def main():
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        if step % 999 == 1:
+        if step % 10 == 1:
             '''
             def warp(tenInput, tenFlow):
                 backwarp_tenGrid = {}
