@@ -47,7 +47,7 @@ class Model:
 				self.cnn1 = torch.nn.Conv2d(c, c, 5, 1, 2, padding_mode = 'reflect')
 				self.cnn2 = torch.nn.Conv2d(c, c, 5, 1, 2, padding_mode = 'reflect')
 				self.cnn3 = torch.nn.Conv2d(c, c, 5, 1, 2, padding_mode = 'reflect')
-				self.cnn4 = torch.nn.ConvTranspose2d(c, 9, 4, 2, 1, padding_mode = 'reflect')
+				self.cnn4 = torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
 				# self.relu = torch.nn.ELU()
 				self.relu = torch.nn.LeakyReLU(0.2, True)
 				# self.relu = torch.nn.SELU(inplace = True)
