@@ -105,7 +105,7 @@ class Model:
 			def forward(self, x, feat=False):
 				x = self.normalize_tensor(x)
 				y, u, v, = self.rgb_to_yuv_separate(x)
-				# y = self.normalize_tensor(y)
+				y = self.normalize_tensor(y)
 				y = y * 2 - 1
 
 				u = torch.nn.functional.interpolate(u, scale_factor= 1 / 2, mode="bilinear", align_corners=False)
