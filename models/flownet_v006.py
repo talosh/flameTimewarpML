@@ -83,8 +83,29 @@ class Model:
 				
 				return y, u, v
 
+			def normalize_tensor(self, input_tensor):
+				"""
+				Normalize a tensor to have values between 0 and 1.
+				
+				Parameters:
+				- input_tensor: A PyTorch Tensor to be normalized.
+				
+				Returns:
+				- A tensor with values normalized between 0 and 1.
+				"""
+				# Compute the min and max values of the tensor
+				min_val = torch.min(input_tensor)
+				max_val = torch.max(input_tensor)
+				
+				# Apply min-max normalization
+				normalized_tensor = (input_tensor - min_val) / (max_val - min_val)
+				
+				return normalized_tensor
+
 			def forward(self, x, feat=False):
+				x = self.normalize_tensor(x)
 				y, u, v, = self.rgb_to_yuv_separate(x)
+				y = self.normalize_tensor(y)
 				y = y * 2 - 1
 
 				u = torch.nn.functional.interpolate(u, scale_factor= 1 / 2, mode="bilinear", align_corners=False)
