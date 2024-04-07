@@ -332,8 +332,14 @@ class ApplyModelDialog():
 
             clip.render()
             source_clip_folder = os.path.join(result_folder, 'source')
+
+            if clip.bit_depth == 32:
+                export_preset = os.path.join(os.path.dirname(__file__), 'source_export32.xml')
+            else:
+                export_preset = os.path.join(os.path.dirname(__file__), 'source_export.xml')
+    
             tw_setup_path = os.path.join(source_clip_folder, 'tw_setup.timewarp_node')
-            self.export_clip(clip, source_clip_folder)
+            self.export_clip(clip, source_clip_folder, export_preset=export_preset)
             with open(tw_setup_path, 'a') as tw_setup_file:
                 tw_setup_file.write(tw_setup_string)
                 tw_setup_file.close()
