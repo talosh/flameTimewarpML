@@ -43,6 +43,8 @@ class ApplyModelDialog():
 
         self.selection = selection
         self.mode = mode
+        self.settings = settings
+
         try:
             self.fw = flameAppFramework(settings = settings)
         except:
@@ -288,7 +290,21 @@ class ApplyModelDialog():
         self.window.show()   
 
     def apply(self):
-        
+        hold_konsole = self.settings.get('debug')
+        cmd_strings = []
+        number_of_clips = 0
+
+        for clip, tw_setup_string in verified_clips:
+            number_of_clips += 1
+            clip_name = clip.name.get_value()
+
+            result_folder = os.path.abspath(
+                os.path.join(
+                    self.working_folder, 
+                    self.fw.sanitized(clip_name) + '_TWML' + '_' + self.fw.create_timestamp_uid()
+                    )
+                )
+
         # Close export and apply window
         self.window.close()
 
