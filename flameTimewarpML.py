@@ -63,6 +63,7 @@ class ApplyModelDialog():
         self.fw.prefs['model_path'] = self.model_path
         self.fw.save_prefs()
 
+        self.verified_clips = []
         if not self.verify_selection(selection, mode):
             return
 
@@ -110,7 +111,6 @@ class ApplyModelDialog():
                     d[x.tag].append(dictify(x,False))
                 return d
 
-            verified_clips = []
             temp_setup_path = '/var/tmp/temporary_tw_setup.timewarp_node'
 
             for clip in selection:
@@ -146,7 +146,7 @@ class ApplyModelDialog():
                                 TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
                                 TW_SpeedTiming_size = int(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
                                 TW_RetimerMode = int(tw_setup['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
-                                except Exception as e:
+                            except Exception as e:
                                 parse_message(e)
                                 return False
                             # pprint (tw_setup)
@@ -156,7 +156,7 @@ class ApplyModelDialog():
                         effect_message()
                         return
 
-                    verified_clips.append((clip, tw_setup_string))
+                    self.verified_clips.append((clip, tw_setup_string))
             
             os.remove(temp_setup_path)
             return True
@@ -303,7 +303,7 @@ class ApplyModelDialog():
         cmd_strings = []
         number_of_clips = 0
 
-        for clip, tw_setup_string in verified_clips:
+        for clip, tw_setup_string in self.verified_clips:
             number_of_clips += 1
             clip_name = clip.name.get_value()
 
