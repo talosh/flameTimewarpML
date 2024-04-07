@@ -104,7 +104,7 @@ class Model:
 				return normalized_tensor
 
 			def forward(self, x, feat=False):
-				x = self.normalize_tensor(x)
+				# x = self.normalize_tensor(x)
 				y, u, v, = self.rgb_to_yuv_separate(x)
 				# y = self.normalize_tensor(y)
 				y = y * 2 - 1
