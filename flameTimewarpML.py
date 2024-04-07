@@ -146,6 +146,221 @@ class DatasetDialog(QtWidgets.QDialog):
         self.fw.save_prefs()
         self.pathLineEdit.setText(self.dataset_folder)
 
+    def fltw_dialog(self, *args, **kwargs):        
+        # self.scan_trained_models_folder()
+        # flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
+        # self.asset_task_template =  flameMenuNewBatch_prefs.get('asset_task_template', {})
+
+        window = QtWidgets.QDialog()
+        window.setMinimumSize(280, 180)
+        window.setWindowTitle('Slow down clip(s) with ML')
+        window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
+        window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        window.setStyleSheet('background-color: #313131')
+
+        screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
+
+        # Spacer
+        lbl_Spacer = QtWidgets.QLabel('', window)
+        lbl_Spacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
+        lbl_Spacer.setMinimumHeight(2)
+        lbl_Spacer.setMaximumHeight(2)
+        lbl_Spacer.setAlignment(QtCore.Qt.AlignCenter)
+
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.setAlignment(QtCore.Qt.AlignTop)
+
+        # New Speed hbox
+        new_speed_hbox = QtWidgets.QHBoxLayout()
+        # new_speed_hbox.setAlignment(QtCore.Qt.AlignCenter)
+
+        # New Speed label
+
+        lbl_NewSpeed = QtWidgets.QLabel('Processing Options: ', window)
+        lbl_NewSpeed.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_NewSpeed.setMinimumHeight(28)
+        lbl_NewSpeed.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        new_speed_hbox.addWidget(lbl_NewSpeed)
+
+        # Flow Scale Selector
+
+        btn_FlowScaleSelector = QtWidgets.QPushButton(window)
+        self.current_flow_scale = self.prefs.get('fltw_flow_scale', 1.0)
+        btn_FlowScaleSelector.setText(self.flow_scale_list.get(self.current_flow_scale))
+
+        def selectFlowScale(flow_scale):
+            self.current_flow_scale = flow_scale
+            self.prefs['fltw_flow_scale'] = flow_scale
+            btn_FlowScaleSelector.setText(self.flow_scale_list.get(self.current_flow_scale))
+
+        btn_FlowScaleSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_FlowScaleSelector.setMinimumSize(180, 28)
+        btn_FlowScaleSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_FlowScaleSelector_menu = QtWidgets.QMenu()
+        for flow_scale in sorted(self.flow_scale_list.keys(), reverse=True):
+            code = self.flow_scale_list.get(flow_scale, 1.0)
+            action = btn_FlowScaleSelector_menu.addAction(code)            
+            x = lambda chk=False, flow_scale=flow_scale: selectFlowScale(flow_scale)
+            action.triggered[()].connect(x)
+
+        btn_FlowScaleSelector.setMenu(btn_FlowScaleSelector_menu)
+        new_speed_hbox.addWidget(btn_FlowScaleSelector)
+
+        # Cpu Proc button
+
+        if not sys.platform == 'darwin':            
+            def enableCpuProc():
+                if self.cpu:
+                    btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
+                    self.cpu = False
+                else:
+                    btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}')
+                    self.cpu = True
+
+            btn_CpuProc = QtWidgets.QPushButton('CPU Proc', window)
+            btn_CpuProc.setFocusPolicy(QtCore.Qt.NoFocus)
+            btn_CpuProc.setMinimumSize(88, 28)
+            if self.cpu:
+                btn_CpuProc.setStyleSheet('QPushButton {font:italic; background-color: #4f4f4f; color: #d9d9d9; border-top: 1px inset black; border-bottom: 1px inset #555555}')
+            else:
+                btn_CpuProc.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
+            btn_CpuProc.pressed.connect(enableCpuProc)
+            new_speed_hbox.addWidget(btn_CpuProc)
+
+        ### Model Selector START
+
+        current_model_name = self.model_map.get(self.prefs.get('trained_models_folder'), 'Unknown')
+        
+        # Model Selector Button
+        btn_ModelSelector = QtWidgets.QPushButton(window)
+        btn_ModelSelector.setText(current_model_name)
+        
+        def selectModel(trained_models_folder):
+            self.prefs['trained_models_folder'] = trained_models_folder
+            btn_ModelSelector.setText(self.model_map.get(trained_models_folder))
+
+        btn_ModelSelector.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_ModelSelector.setMinimumSize(140, 28)
+        btn_ModelSelector.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+
+        btn_ModelSelector_menu = QtWidgets.QMenu()
+        for trained_models_folder in sorted(self.model_map.keys()):
+            
+            code = self.model_map.get(trained_models_folder)
+            action = btn_ModelSelector_menu.addAction(code)
+            x = lambda chk=False, trained_models_folder=trained_models_folder: selectModel(trained_models_folder)
+            action.triggered[()].connect(x)
+    
+        btn_ModelSelector.setMenu(btn_ModelSelector_menu)
+        new_speed_hbox.addWidget(btn_ModelSelector)
+
+        ### Model Selector END
+        
+        vbox.addLayout(new_speed_hbox)
+        vbox.addWidget(lbl_Spacer)
+
+        # Work Folder
+
+        def chooseFolder():
+            result_folder = str(QtWidgets.QFileDialog.getExistingDirectory(window, "Open Directory", self.working_folder, QtWidgets.QFileDialog.ShowDirsOnly))
+            if result_folder =='':
+                return
+            self.working_folder = result_folder
+            txt_WorkFolder.setText(self.working_folder)
+            self.prefs['working_folder'] = self.working_folder
+
+        def txt_WorkFolder_textChanged():
+            self.working_folder = txt_WorkFolder.text()
+
+        # Work Folder Label
+
+        lbl_WorkFolder = QtWidgets.QLabel('Export folder', window)
+        lbl_WorkFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_WorkFolder.setMinimumHeight(28)
+        lbl_WorkFolder.setMaximumHeight(28)
+        lbl_WorkFolder.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_WorkFolder)
+
+        # Work Folder ENV Variable selector
+
+        if os.getenv('FLAMETWML_WORK_FOLDER'):
+            lbl_WorkFolderPath = QtWidgets.QLabel(self.working_folder, window)
+            lbl_WorkFolderPath.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+            lbl_WorkFolderPath.setMinimumHeight(28)
+            lbl_WorkFolderPath.setMaximumHeight(28)
+            lbl_WorkFolderPath.setAlignment(QtCore.Qt.AlignCenter)
+            vbox.addWidget(lbl_WorkFolderPath)
+
+        else:
+            # Work Folder Text Field
+            hbox_workfolder = QtWidgets.QHBoxLayout()
+            hbox_workfolder.setAlignment(QtCore.Qt.AlignLeft)
+
+            txt_WorkFolder = QtWidgets.QLineEdit('', window)
+            txt_WorkFolder.setFocusPolicy(QtCore.Qt.ClickFocus)
+            txt_WorkFolder.setMinimumSize(280, 28)
+            txt_WorkFolder.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+            txt_WorkFolder.setText(self.working_folder)
+            txt_WorkFolder.textChanged.connect(txt_WorkFolder_textChanged)
+            hbox_workfolder.addWidget(txt_WorkFolder)
+
+            btn_changePreset = QtWidgets.QPushButton('Choose', window)
+            btn_changePreset.setFocusPolicy(QtCore.Qt.NoFocus)
+            btn_changePreset.setMinimumSize(88, 28)
+            btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}')
+            btn_changePreset.clicked.connect(chooseFolder)
+            hbox_workfolder.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
+
+            vbox.addLayout(hbox_workfolder)
+
+        vbox.addWidget(lbl_Spacer)
+
+        # Create and Cancel Buttons
+        hbox_Create = QtWidgets.QHBoxLayout()
+
+        select_btn = QtWidgets.QPushButton('Create', window)
+        select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        select_btn.setMinimumSize(128, 28)
+        select_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        select_btn.clicked.connect(window.accept)
+        select_btn.setAutoDefault(True)
+        select_btn.setDefault(True)
+
+        cancel_btn = QtWidgets.QPushButton('Cancel', window)
+        cancel_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        cancel_btn.setMinimumSize(128, 28)
+        cancel_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        cancel_btn.clicked.connect(window.reject)
+
+        hbox_Create.addWidget(cancel_btn)
+        hbox_Create.addWidget(select_btn)
+
+        vbox.addLayout(hbox_Create)
+
+        window.setLayout(vbox)
+        if window.exec_():
+            if os.getenv('FLAMETWML_WORK_FOLDER'):
+                self.working_folder = os.getenv('FLAMETWML_WORK_FOLDER')
+                self.prefs['working_folder'] = os.getenv('FLAMETWML_WORK_FOLDER')
+
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
+            self.framework.save_prefs()
+            return {
+                'working_folder': self.working_folder,
+                'flow_scale': self.current_flow_scale,
+                'hold_konsole': True if modifiers == QtCore.Qt.ControlModifier else False
+            }
+        else:
+            return {}
+
 
 def get_media_panel_custom_ui_actions():
     def scope_clip(selection):
@@ -435,7 +650,7 @@ def get_media_panel_custom_ui_actions():
         
         os.remove(temp_setup_path)
         dialog = DatasetDialog()
-        dialog.show()
+        dialog.fltw_dialog()
 
     def about_dialog():
         pass
