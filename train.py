@@ -72,8 +72,6 @@ import torch
 import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
-from models.encoder_v001 import Model as Encoder
-
 class Yogi(Optimizer):
     r"""Implements Yogi Optimizer Algorithm.
     It has been proposed in `Adaptive methods for Nonconvex Optimization`__.
@@ -971,10 +969,13 @@ def main():
     parser.add_argument('--epochs', type=int, default=-1, help='Epoch (int) (default: Saved)')
     parser.add_argument('--no_eval', action='store_false', dest='eval', default=True, help='Disable evaluation mode')
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
+    parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
 
     args = parser.parse_args()
 
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
+    if args.all_gpus:
+        device = 'cuda'
 
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
@@ -1012,10 +1013,13 @@ def main():
 
     from models.flownet_v002 import Model as Flownet
 
-    encoder = Encoder().get_training_model()().to(device)
     Flownet = find_and_import_model(base_name='flownet', model_name=args.model)
     print (Flownet.get_name())
     flownet = Flownet().get_training_model()().to(device)
+    if args.all_gpus:
+        print ('Using nn.DataParallel')
+        flownet = torch.nn.DataParallel(flownet)
+        flownet.to(device)
     
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
@@ -1024,7 +1028,6 @@ def main():
     criterion_mse = torch.nn.MSELoss()
     criterion_l1 = torch.nn.L1Loss()
 
-    # optimizer_encoder = Yogi(encoder.parameters(), lr=lr)
     # optimizer_flownet = Yogi(flownet.parameters(), lr=lr)
     optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=1e-2)
     '''
@@ -1038,13 +1041,11 @@ def main():
     import warnings
     warnings.filterwarnings('ignore', category=UserWarning)
 
-    # train_scheduler_encoder = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_encoder, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
     # train_scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, mode='min', factor=0.1, patience=2)
     # lambda_function = lambda epoch: 1
     # train_scheduler_flownet = torch.optim.lr_scheduler.LambdaLR(optimizer_flownet, lr_lambda=lambda_function)
 
-    # scheduler_encoder = train_scheduler_encoder
     scheduler_flownet = train_scheduler_flownet
 
     step = 0
@@ -1064,12 +1065,6 @@ def main():
             print('loaded previously saved model checkpoint')
         except Exception as e:
             print (f'unable to load saved model: {e}')
-
-        try:
-            encoder.load_state_dict(checkpoint['encoder_state_dict'], strict=False)
-            print('loaded previously saved Encoder state')
-        except Exception as e:
-            print (f'unable to load Encoder state: {e}')
 
         try:
             flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
@@ -1152,18 +1147,12 @@ def main():
             img2 = normalize(img2)
 
         # current_lr = scheduler_flownet.get_last_lr()[0] # optimizer_flownet.param_groups[0]['lr'] 
-        # for param_group_encoder in optimizer_encoder.param_groups:
-        #    param_group_encoder['lr'] = current_lr
         # for param_group_flownet in optimizer_flownet.param_groups:
         #     param_group_flownet['lr'] = current_lr
 
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.4e}')
 
-        # optimizer_encoder.zero_grad(set_to_none=True)
         optimizer_flownet.zero_grad(set_to_none=True)
-
-        # f0 = encoder(img0)
-        # f1 = encoder(img2)
 
         # scale list agumentation
         '''
@@ -1214,8 +1203,6 @@ def main():
 
         loss_x1 = criterion_mse(merged[3], img1)
 
-        # loss_enc = criterion_mse(encoder(output), encoder(img1))
-
         loss = 0.1 * loss_x8 + 0.05 * loss_x4 + 0.05 * loss_x2 + 0.8 * loss_x1
 
         # loss = 0.4 * loss_x8 + 0.3 * loss_x4 + 0.2 * loss_x2 + 0.1 * loss_x1 + 0.01 * loss_enc
@@ -1239,12 +1226,9 @@ def main():
 
         loss.backward()
 
-        # torch.nn.utils.clip_grad_norm_(encoder.parameters(), 1.0)
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1.0)
 
-        # optimizer_encoder.step()
         optimizer_flownet.step()
-        # scheduler_encoder.step()
         scheduler_flownet.step()
 
         train_time = time.time() - time_stamp
@@ -1304,9 +1288,7 @@ def main():
                 'epoch_loss': epoch_loss,
                 'start_timestamp': start_timestamp,
                 'lr': optimizer_flownet.param_groups[0]['lr'],
-                'encoder_state_dict': encoder.state_dict(),
                 'flownet_state_dict': flownet.state_dict(),
-                # 'optimizer_encoder_state_dict': optimizer_encoder.state_dict(),
                 'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
             }, trained_model_path)
             
@@ -1337,9 +1319,7 @@ def main():
                 'epoch_loss': epoch_loss,
                 'start_timestamp': start_timestamp,
                 'lr': optimizer_flownet.param_groups[0]['lr'],
-                'encoder_state_dict': encoder.state_dict(),
                 'flownet_state_dict': flownet.state_dict(),
-                # 'optimizer_encoder_state_dict': optimizer_encoder.state_dict(),
                 'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
             }, trained_model_path)
 
@@ -1384,9 +1364,6 @@ def main():
                         evp_img2 = torch.nn.functional.pad(evn_img2, padding)
 
                         with torch.no_grad():
-                            # f0 = encoder(evp_img0)
-                            # f1 = encoder(evp_img2)
-
                             flownet.eval()
                             _, _, merged = flownet(evp_img0, evp_img1, evp_img2, None, None, ev_ratio)
                             evp_output = merged[3]
