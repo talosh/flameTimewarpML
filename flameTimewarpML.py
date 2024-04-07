@@ -121,7 +121,7 @@ class ApplyModelDialog():
         )
 
         self.model_path_label = PyFlameLabel(
-            text='Model State Dict Path',
+            text='Model Path',
         )
 
         # Entries
