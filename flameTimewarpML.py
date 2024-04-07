@@ -53,6 +53,11 @@ class ApplyModelDialog():
         self.fw.prefs['working_folder'] = self.working_folder
         self.fw.save_prefs()
 
+        self.model_path = self.fw.prefs.get(
+            'model_path',
+            os.path.join(os.path.dirname(__file__), 'flameTwml_v2.4.pth')
+        )
+
         if not self.verify_selection(selection, mode):
             return
 
@@ -228,7 +233,7 @@ class ApplyModelDialog():
         )
 
         self.model_path_entry = PyFlameLineEdit(
-            text=self.working_folder,
+            text=self.model_path,
             max_width=1000,
         )
 
