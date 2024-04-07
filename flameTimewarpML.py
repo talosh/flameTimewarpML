@@ -106,6 +106,7 @@ class ApplyModelDialog():
                         return False
                     if len (clip.versions[0].tracks[0].segments) != 1:
                         sequence_message()
+                        return False
                     
                     effects = clip.versions[0].tracks[0].segments[0].effects
                     if not effects:
