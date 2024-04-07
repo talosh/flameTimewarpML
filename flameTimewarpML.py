@@ -288,7 +288,6 @@ class ApplyModelDialog():
         self.window.show()   
 
     def apply(self):
-        print ('JHellooooo!!!!')
         
         # Close export and apply window
         self.window.close()
