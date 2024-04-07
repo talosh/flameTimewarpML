@@ -478,6 +478,21 @@ def get_media_panel_custom_ui_actions():
                 message = 'Please select clips with Timewarp Timeline FX',
                 type = 'error',
                 buttons = ['Ok'])
+            
+        def dictify(r, root=True):
+            from copy import copy
+
+            if root:
+                return {r.tag : dictify(r, False)}
+
+            d = copy(r.attrib)
+            if r.text:
+                d["_text"]=r.text
+            for x in r.findall("./*"):
+                if x.tag not in d:
+                    d[x.tag]=[]
+                d[x.tag].append(dictify(x,False))
+            return d
 
         verified_clips = []
         temp_setup_path = '/var/tmp/temporary_tw_setup.timewarp_node'
