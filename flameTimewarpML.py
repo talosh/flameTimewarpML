@@ -318,6 +318,7 @@ class ApplyModelDialog():
             
             
             if os.path.isdir(result_folder):
+                self.hide()
                 dialog = flame.messages.show_in_dialog(
                     title = f'{settings["app_name"]}',
                     message = 'Please select single-track clips with no versions or edits',
@@ -327,6 +328,8 @@ class ApplyModelDialog():
                 
                 if dialog == 'Cancel':
                     return False
+                
+                self.show()
 
             print (result_folder)
 
