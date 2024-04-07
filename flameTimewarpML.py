@@ -435,6 +435,7 @@ def get_media_panel_custom_ui_actions():
         
         os.remove(temp_setup_path)
         dialog = DatasetDialog()
+        dialog.show()
 
     def about_dialog():
         pass
