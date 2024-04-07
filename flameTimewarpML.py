@@ -90,6 +90,13 @@ class ApplyModelDialog():
                     type = 'error',
                     buttons = ['Ok'])
             
+            def parse_message(e):
+                dialog = flame.messages.show_in_dialog(
+                    title = f'{settings["app_name"]}',
+                    message = f'Error parsing TW setup file: {e}'
+                    type = 'error',
+                    buttons = ['Ok'])
+
             def dictify(r, root=True):
                 from copy import copy
                 if root:
@@ -139,12 +146,11 @@ class ApplyModelDialog():
                                 TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
                                 TW_SpeedTiming_size = int(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
                                 TW_RetimerMode = int(tw_setup['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
+                                1/0
                             except Exception as e:
                                 parse_message(e)
-                                return
-
+                                return False
                             # pprint (tw_setup)
-                                    
                             verified = True
                     
                     if not verified:
@@ -155,9 +161,6 @@ class ApplyModelDialog():
             
             os.remove(temp_setup_path)
             return True
-
-
-
 
         return True
 
@@ -290,6 +293,13 @@ class ApplyModelDialog():
         self.window.show()   
 
     def apply(self):
+        if self.mode == 'timewarp':
+            self.apply_timewarp()
+            
+        # Close export and apply window
+        self.window.close()
+
+    def apply_timewarp(self):
         hold_konsole = self.settings.get('debug')
         cmd_strings = []
         number_of_clips = 0
@@ -304,10 +314,8 @@ class ApplyModelDialog():
                     self.fw.sanitized(clip_name) + '_TWML' + '_' + self.fw.create_timestamp_uid()
                     )
                 )
-
-        # Close export and apply window
-        self.window.close()
-
+            
+            print (result_folder)
 
 def get_media_panel_custom_ui_actions():
     def scope_clip(selection):
