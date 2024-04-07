@@ -42,6 +42,7 @@ class ApplyModelDialog():
         import xml.etree.ElementTree as ET
 
         self.selection = selection
+        self.mode = mode
         try:
             self.fw = flameAppFramework(settings = settings)
         except:
@@ -252,10 +253,10 @@ class ApplyModelDialog():
 
         self.export_and_apply_button = PyFlameButton(
             text='Export and Apply',
-            connect=apply,
+            connect=self.apply,
             color=Color.BLUE,
         )
-        
+
         self.cancel_button = PyFlameButton(
             text='Cancel',
             connect=self.window.close,
@@ -283,6 +284,9 @@ class ApplyModelDialog():
         self.window.add_layout(grid_layout)
 
         self.window.show()   
+
+    def apply(self):
+        print ('JHellooooo!!!!')
 
 def get_media_panel_custom_ui_actions():
     def scope_clip(selection):
