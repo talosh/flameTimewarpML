@@ -168,6 +168,7 @@ class ApplyModelDialog():
         grid_layout.addWidget(self.path_browse_button, 0, 5)
  
         grid_layout.addWidget(self.model_path_label, 1, 0)
+        grid_layout.addWidget(self.model_path_entry, 1, 1, 1, 4)
 
         grid_layout.addWidget(self.cancel_button, 2, 4)
         grid_layout.addWidget(self.export_and_apply_button, 2, 5,)
