@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import importlib
+import platform
 
 import flameSimpleML_framework
 importlib.reload(flameSimpleML_framework)
@@ -45,6 +46,8 @@ except:
             sys.path.remove(fw.site_packages_folder)
 
 from pprint import pprint
+
+device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda')
 
 def find_folders_with_exr(path):
     """
@@ -167,11 +170,37 @@ def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
                 f.write(channel_data[channel][y].tobytes())
         f.close
 
+def resize_image(tensor, new_h, new_w):
+    """
+    Resize the tensor of shape [h, w, c] so that the smallest dimension becomes x,
+    while retaining aspect ratio.
+
+    Parameters:
+    tensor (torch.Tensor): The input tensor with shape [h, w, c].
+    x (int): The target size for the smallest dimension.
+
+    Returns:
+    torch.Tensor: The resized tensor.
+    """
+    # Adjust tensor shape to [n, c, h, w]
+    tensor = tensor.permute(2, 0, 1).unsqueeze(0)
+
+    # Resize
+    resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bicubic', align_corners=False)
+
+    # Adjust tensor shape back to [h, w, c]
+    resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
+
+    return resized_tensor
+
+
 def halve(exr_file_path):
     exr_data = fw.read_openexr_file(exr_file_path)
     h = exr_data['shape'][0]
     w = exr_data['shape'][1]
     img0 = exr_data['image_data']
+    img0 = torch.from_numpy(img0)
+    img0 = img0.to(device = device, dtype = torch.float32)
 
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
