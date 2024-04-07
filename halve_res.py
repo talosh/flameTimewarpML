@@ -202,7 +202,9 @@ def halve(exr_file_path):
     img0 = torch.from_numpy(img0)
     img0 = img0.to(device = device, dtype = torch.float32)
     img0 = resize_image(img0, h//2, w//2)
-    write_exr
+    img0 = img0.to(dtype=torch.half)
+    write_exr(img0.cpu().detach().numpy(), exr_file_path, half_float = True)
+    del img0
 
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
