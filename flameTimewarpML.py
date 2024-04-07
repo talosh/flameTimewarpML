@@ -53,7 +53,7 @@ class ApplyModelDialog():
         self.fw.prefs['working_folder'] = self.working_folder
         self.fw.save_prefs()
 
-        if not self.check_selection(selection, mode):
+        if not self.verify_selection(selection, mode):
             return
 
         self.main_window()
