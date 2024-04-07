@@ -179,6 +179,7 @@ class ApplyModelDialog():
                 self.fw.prefs['working_folder'] = self.working_folder
                 self.fw.save_prefs()
 
+        '''
         def apply():
             """
             Export selected clips and open Timewarp console
@@ -212,6 +213,7 @@ class ApplyModelDialog():
         
             # Close expoty and apply window
             self.window.close()
+        '''
 
         # Create export and apply window
         self.window = PyFlameQDialog(
@@ -287,6 +289,10 @@ class ApplyModelDialog():
 
     def apply(self):
         print ('JHellooooo!!!!')
+        
+        # Close export and apply window
+        self.window.close()
+
 
 def get_media_panel_custom_ui_actions():
     def scope_clip(selection):
