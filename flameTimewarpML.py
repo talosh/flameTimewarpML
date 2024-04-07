@@ -55,8 +55,10 @@ class ApplyModelDialog():
 
         self.model_path = self.fw.prefs.get(
             'model_path',
-            os.path.join(os.path.dirname(__file__), 'flameTwml_v2.4.pth')
+            os.path.join(os.path.dirname(__file__), 'flameTWML_v2.4.pth')
         )
+        self.fw.prefs['model_path'] = self.model_path
+        self.fw.save_prefs()
 
         if not self.verify_selection(selection, mode):
             return
