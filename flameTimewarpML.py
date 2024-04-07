@@ -63,7 +63,7 @@ class ApplyModelDialog():
         self.fw.prefs['model_path'] = self.model_path
         self.fw.save_prefs()
 
-        self.verified_clips = self.verify_selection(selection, mode):
+        self.verified_clips = self.verify_selection(selection, mode)
         if not self.verified_clips:
             return
 
