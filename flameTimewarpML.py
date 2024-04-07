@@ -37,10 +37,11 @@ settings = {
 
 class ApplyModelDialog():
 
-    def __init__(self, selection, parent=None):
+    def __init__(self, selection, mode):
+        import flame
+        import xml.etree.ElementTree as ET
 
         self.selection = selection
-
         try:
             self.fw = flameAppFramework(settings = settings)
         except:
@@ -52,7 +53,21 @@ class ApplyModelDialog():
         self.fw.prefs['working_folder'] = self.working_folder
         self.fw.save_prefs()
 
+        if not self.check_selection(selection, mode):
+            return
+
         self.main_window()
+
+    def verify_selection(selection, mode)
+        if not selection:
+            return False
+
+        if mode == 'timewarp':
+            import flame
+            import xml.etree.ElementTree as ET
+
+        return True
+
 
     def main_window(self):
 
@@ -271,115 +286,6 @@ def get_media_panel_custom_ui_actions():
 
         exporter.export(clip, export_preset, export_dir, hooks=ExportHooks())
 
-    def apply_model(selection):
-        import flame
-
-        apply_dialog = ApplyModelDialog()
-
-        if apply_dialog.exec():
-            first_clip_name = selection[0].name.get_value()
-            result_folder = os.path.abspath(
-                os.path.join(
-                    apply_dialog.working_folder,
-                    f'{sanitized(first_clip_name)}_ML_{create_timestamp_uid()}'
-                    )
-                )
-            source_folder = os.path.abspath(
-                os.path.join(
-                    result_folder,
-                    'src'
-                    )
-                )
-            clip_number = 1
-            for item in selection:
-                if isinstance(item, (flame.PyClip)):
-                    clip = item
-                    source_clip_folder = os.path.join(source_folder, f'{clip_number:02}')
-                    export_clip(clip, source_clip_folder)
-                    clip_number += 1
-
-            first_clip_parent = selection[0].parent
-
-            flameSimpleMLInference(
-                source_folder=source_folder,
-                result_folder=result_folder,
-                first_clip_parent = first_clip_parent,
-                settings=settings
-                )
-
-    def train_model(selection):
-        import flame
-
-        if len (selection) < 2:
-            dialog = flame.messages.show_in_dialog(
-                title ='Dataset creaton error',
-                message = 'Please select at least two clips. The channels of first selected clip, or several clips channels combined will act as input channels, and the last selected clip will be the target',
-                type = 'error',
-                buttons = ['Ok'])
-            return
-
-        dataset_dialog = DatasetDialog()
-
-        if dataset_dialog.exec():
-            first_clip_name = selection[0].name.get_value()
-            dataset_folder = os.path.abspath(
-                os.path.join(
-                    dataset_dialog.dataset_folder,
-                    f'{sanitized(first_clip_name)}_dataset_{create_timestamp_uid()}'
-                    )
-                )
-
-            source_folder = os.path.abspath(
-                os.path.join(
-                    dataset_folder,
-                    'source'
-                    )
-                )
-
-            target_folder = os.path.abspath(
-                os.path.join(
-                    dataset_folder,
-                    'target'
-                    )
-                )
-            
-            selected_clips = list(selection)
-            target_clip = selected_clips.pop()
-            export_clip(target_clip, target_folder)
-
-            clip_number = 1
-            for source_clip in selected_clips:
-                source_clip_folder = os.path.join(source_folder, f'{clip_number:02}')
-                export_clip(source_clip, source_clip_folder)
-                clip_number += 1
-
-            flame_version = flame.get_version()
-            python_executable_path = f'/opt/Autodesk/python/{flame_version}/bin/python'
-            script_folder = os.path.abspath(os.path.dirname(__file__))
-            app_name = settings.get('app_name')
-            version = settings.get('version')
-            command = f'{python_executable_path} {script_folder}/train.py {dataset_folder}'
-            msg = f'GUI for model training is not yet implemented in {app_name} {version}\n'
-            msg += f'Training is currently possible with a command-line script. Please run'
-            msg += f'\n\n"{command}"\n\n'
-            msg += 'use --help flag for more options'
-            dialog = flame.messages.show_in_dialog(
-                title ='Train Model GUI is not yet implemented',
-                message = msg,
-                type = 'info',
-                buttons = ['Copy', 'Ok'])
-            if dialog == 'Copy':
-                try:
-                    from PySide6.QtWidgets import QApplication
-                except ImportError:
-                    from PySide2.QtWidgets import QApplication
-
-                app = QApplication.instance()
-                if not app:
-                    app = QApplication(sys.argv)
-                clipboard = app.clipboard()
-                clipboard.setText(command)
-
     def flame_timewarp(selection):
         import flame
         import xml.etree.ElementTree as ET
@@ -491,11 +397,14 @@ def get_media_panel_custom_ui_actions():
     def about_dialog():
         pass
 
-    def dedup():
-        pass
+    def timewarp(selection):
+        ApplyModelDialog(selection, mode='timewarp')
 
-    def fluidmorph():
-        pass
+    def fluidmorph(selection):
+        ApplyModelDialog(selection, mode='fluidmorph')
+
+    def deduplicate(selection):
+        ApplyModelDialog(selection, mode='deduplicate')
 
     menu = [
         {
@@ -503,19 +412,19 @@ def get_media_panel_custom_ui_actions():
             'actions': [
                 {
                     'name': 'Fill / Remove Duplicate Frames',
-                    'execute': apply_model,
+                    'execute': deduplicate,
                     'isVisible': scope_clip,
                     'waitCursor': False,
                 },
                 {
                     'name': 'Create Fluidmorph Transition',
-                    'execute': train_model,
+                    'execute': fluidmorph,
                     'isVisible': scope_clip,
                     'waitCursor': False,
                 },
                 {
                     'name': "Timewarp from Flame's TW effect",
-                    'execute': ApplyModelDialog,
+                    'execute': timewarp,
                     'isVisible': scope_clip,
                     'waitCursor': False,
                 },
