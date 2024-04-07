@@ -236,10 +236,14 @@ class Model:
 				flow = None
 				for i in range(4):
 					if flow is not None:
-						flow_d, mask, conf = stu[i](torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[i])
+						flow_d, mask, conf = stu[i](torch.cat(
+							(self.yuv(warped_img0), self.yuv(warped_img1), warped_f0, warped_f1, timestep, mask), 1
+							), flow, scale=scale[i])
 						flow = flow + flow_d
 					else:
-						flow, mask, conf = stu[i](torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[i])
+						flow, mask, conf = stu[i](torch.cat(
+							(self.yuv(img0), self.yuv(img1), f0, f1, timestep), 1
+							), None, scale=scale[i])
 
 					mask_list.append(mask)
 					flow_list.append(flow)
