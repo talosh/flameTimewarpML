@@ -112,7 +112,7 @@ class ApplyModelDialog():
         self.window = PyFlameQDialog(
             width=800,
             height=200,
-            title=f'flameSimpleML <small>{settings["version"]}',
+            title=f'{settings["app_name"]} <small>{settings["version"]}',
         )
 
         # Labels
