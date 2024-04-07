@@ -2,6 +2,8 @@ import os
 import sys
 import argparse
 
+from pprint import pprint
+
 def find_folders_with_exr(path):
     """
     Find all folders under the given path that contain .exr files.
@@ -27,7 +29,6 @@ def find_folders_with_exr(path):
 
     return directories_with_exr
 
-
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
@@ -37,7 +38,14 @@ def main():
 
     folders_with_exr = find_folders_with_exr(args.dataset_path)
 
-    print (folders_with_exr)
+    exr_files = []
+
+    for folder_path in sorted(folders_with_exr):
+        folder_exr_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.exr')]
+        folder_exr_files.sort()
+        exr_files.extend(folder_exr_files)
+
+    pprint(exr_files)
 
 if __name__ == "__main__":
     main()
