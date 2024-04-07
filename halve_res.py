@@ -45,7 +45,9 @@ def main():
         folder_exr_files.sort()
         exr_files.extend(folder_exr_files)
 
-    pprint(exr_files)
+    idx = 0
+    for exr_file_path in exr_files:
+        print (f'\rFile [{idx+1} / {len(exr_files)}], {os.path.basename(exr_file_path)}')
 
 if __name__ == "__main__":
     main()
