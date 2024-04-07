@@ -567,10 +567,11 @@ def get_media_panel_custom_ui_actions():
                 verified_clips.append((clip, tw_setup_string))
         
         os.remove(temp_setup_path)
-        timewarp_dialog = ApplyModelDialog()
+        timewarp_dialog = ApplyModelDialog(selection)
         # timewarp_dialog = TimewarpMLDialog()
 
-        if timewarp_dialog.exec(selection):
+        '''
+        if timewarp_dialog.exec():
             first_clip_name = selection[0].name.get_value()
             dataset_folder = os.path.abspath(
                 os.path.join(
@@ -585,6 +586,7 @@ def get_media_panel_custom_ui_actions():
                     'source'
                     )
                 )
+        '''
 
 
     def about_dialog():
