@@ -570,7 +570,7 @@ def get_media_panel_custom_ui_actions():
         timewarp_dialog = ApplyModelDialog()
         # timewarp_dialog = TimewarpMLDialog()
 
-        if timewarp_dialog.exec():
+        if timewarp_dialog.exec(selection):
             first_clip_name = selection[0].name.get_value()
             dataset_folder = os.path.abspath(
                 os.path.join(
