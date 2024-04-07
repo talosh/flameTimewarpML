@@ -255,6 +255,7 @@ class ApplyModelDialog():
             connect=apply,
             color=Color.BLUE,
         )
+        
         self.cancel_button = PyFlameButton(
             text='Cancel',
             connect=self.window.close,
