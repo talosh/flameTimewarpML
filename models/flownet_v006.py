@@ -117,7 +117,7 @@ class Model:
 
 				x0 = self.cnn0(y)
 				x = self.relu(x0)
-				x = torch.cat([x, u, v], dim=1)
+				x = torch.cat([u, v, x], dim=1)
 				x1 = self.cnn1(x)
 				x = self.relu(x1)
 				x2 = self.cnn2(x)
