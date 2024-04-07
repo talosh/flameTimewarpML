@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <preset version="9">
     <type>sequence</type>
-    <comment>Source export 16-bit fp OpenEXR (PIZ compression)</comment>
+    <comment>Source export 16-bit fp OpenEXR (Uncompressed)</comment>
     <sequence>
         <fileType>NONE</fileType>
         <namePattern></namePattern>
@@ -27,7 +27,7 @@
     </sequence>
     <video>
         <fileType>OpenEXR</fileType>
-        <codec>596088</codec>
+        <codec>6264</codec>
         <codecProfile></codecProfile>
         <namePattern>&lt;name&gt;.</namePattern>
         <compressionQuality>50</compressionQuality>
