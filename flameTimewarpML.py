@@ -434,8 +434,6 @@ def get_media_panel_custom_ui_actions():
                 verified_clips.append((clip, tw_setup_string))
         
         os.remove(temp_setup_path)
-        print ('hello!!!')
-
         dialog = DatasetDialog()
 
     def about_dialog():
