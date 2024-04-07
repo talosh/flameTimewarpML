@@ -93,7 +93,7 @@ class ApplyModelDialog():
             def parse_message(e):
                 dialog = flame.messages.show_in_dialog(
                     title = f'{settings["app_name"]}',
-                    message = f'Error parsing TW setup file: {e}'
+                    message = f'Error parsing TW setup file: {e}',
                     type = 'error',
                     buttons = ['Ok'])
 
