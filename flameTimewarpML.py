@@ -151,7 +151,6 @@ class ApplyModelDialog():
 
         return True
 
-
     def main_window(self):
 
         def open_browser():
@@ -369,94 +368,6 @@ def get_media_panel_custom_ui_actions():
 
         exporter.export(clip, export_preset, export_dir, hooks=ExportHooks())
 
-    def flame_timewarp(selection):
-        import flame
-        import xml.etree.ElementTree as ET
-
-        if not selection:
-            return
-
-        def sequence_message():
-            dialog = flame.messages.show_in_dialog(
-                title = f'{settings["app_name"]}',
-                message = 'Please select single-track clips with no versions or edits',
-                type = 'error',
-                buttons = ['Ok'])
-
-        def effect_message():
-            dialog = flame.messages.show_in_dialog(
-                title = f'{settings["app_name"]}',
-                message = 'Please select clips with Timewarp Timeline FX',
-                type = 'error',
-                buttons = ['Ok'])
-            
-        def dictify(r, root=True):
-            from copy import copy
-
-            if root:
-                return {r.tag : dictify(r, False)}
-
-            d = copy(r.attrib)
-            if r.text:
-                d["_text"]=r.text
-            for x in r.findall("./*"):
-                if x.tag not in d:
-                    d[x.tag]=[]
-                d[x.tag].append(dictify(x,False))
-            return d
-
-        verified_clips = []
-        temp_setup_path = '/var/tmp/temporary_tw_setup.timewarp_node'
-
-        for clip in selection:
-            if isinstance(clip, (flame.PyClip)):
-                if len(clip.versions) != 1:
-                    sequence_message()
-                    return
-                if len (clip.versions[0].tracks) != 1:
-                    sequence_message()
-                    return
-                if len (clip.versions[0].tracks[0].segments) != 1:
-                    sequence_message()
-                
-                effects = clip.versions[0].tracks[0].segments[0].effects
-                if not effects:
-                    effect_message()
-                    return
-
-                verified = False
-                for effect in effects:
-                    if effect.type == 'Timewarp':
-                        effect.save_setup(temp_setup_path)
-                        with open(temp_setup_path, 'r') as tw_setup_file:
-                            tw_setup_string = tw_setup_file.read()
-                            tw_setup_file.close()
-                            
-                        tw_setup_xml = ET.fromstring(tw_setup_string)
-                        tw_setup = dictify(tw_setup_xml)
-                        try:
-                            start = int(tw_setup['Setup']['Base'][0]['Range'][0]['Start'])
-                            end = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
-                            TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
-                            TW_SpeedTiming_size = int(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
-                            TW_RetimerMode = int(tw_setup['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
-                        except Exception as e:
-                            parse_message(e)
-                            return
-
-                        # pprint (tw_setup)
-                                
-                        verified = True
-                
-                if not verified:
-                    effect_message()
-                    return
-
-                verified_clips.append((clip, tw_setup_string))
-        
-        os.remove(temp_setup_path)
-        timewarp_dialog = ApplyModelDialog(selection)
-        # timewarp_dialog = TimewarpMLDialog()
 
         '''
         if timewarp_dialog.exec():
@@ -475,7 +386,6 @@ def get_media_panel_custom_ui_actions():
                     )
                 )
         '''
-
 
     def about_dialog():
         pass
