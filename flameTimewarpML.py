@@ -120,8 +120,17 @@ class ApplyModelDialog():
             text='Export Path',
         )
 
+        self.model_path_label = PyFlameLabel(
+            text='Model State Dict Path',
+        )
+
         # Entries
         self.export_path_entry = PyFlameLineEdit(
+            text=self.working_folder,
+            max_width=1000,
+        )
+
+        self.model_path_entry = PyFlameLineEdit(
             text=self.working_folder,
             max_width=1000,
         )
@@ -131,6 +140,12 @@ class ApplyModelDialog():
             text='Browse',
             connect=open_browser,
         )
+
+        self.model_browse_button = PyFlameButton(
+            text='Browse',
+            connect=open_browser,
+        )
+
         self.export_and_apply_button = PyFlameButton(
             text='Export and Apply',
             connect=apply,
@@ -152,6 +167,8 @@ class ApplyModelDialog():
         grid_layout.addWidget(self.export_path_entry, 0, 1, 1, 4)
         grid_layout.addWidget(self.path_browse_button, 0, 5)
  
+        grid_layout.addWidget(self.model_path_label, 1, 0)
+
         grid_layout.addWidget(self.cancel_button, 2, 4)
         grid_layout.addWidget(self.export_and_apply_button, 2, 5,)
 
