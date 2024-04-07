@@ -311,8 +311,7 @@ class ApplyModelDialog():
             result_folder = os.path.abspath(
                 os.path.join(
                     self.working_folder, 
-                    # self.fw.sanitized(clip_name) + '_TWML' + '_' + self.fw.create_timestamp_uid()
-                    'test'
+                    self.fw.sanitized(clip_name) + '_TWML' + '_' + self.fw.create_timestamp_uid()
                     )
                 )
             
@@ -331,7 +330,62 @@ class ApplyModelDialog():
                 
                 self.window.show()
 
-            print (result_folder)
+            clip.render()
+            source_clip_folder = os.path.join(result_folder, 'source')
+            tw_setup_path = os.path.join(source_clip_folder, 'tw_setup.timewarp_node')
+            self.export_clip(clip, source_clip_folder)
+            with open(tw_setup_path, 'a') as tw_setup_file:
+                tw_setup_file.write(tw_setup_string)
+                tw_setup_file.close()
+
+
+
+    def export_clip(self, clip, export_dir, export_preset = None):
+        import flame
+
+        if not os.path.isdir(export_dir):
+            try:
+                os.makedirs(export_dir)
+            except Exception as e:
+                issue = 'Unable to create folder to export'
+                dialog = flame.messages.show_in_dialog(
+                    title =issue,
+                    message = f'{issue}:\n{export_dir}\n\nError:\n{e}',
+                    type = 'error',
+                    buttons = ['Ok'])
+                return False
+
+        class ExportHooks(object):
+            def preExport(self, info, userData, *args, **kwargs):
+                pass
+            def postExport(self, info, userData, *args, **kwargs):
+                pass
+            def preExportSequence(self, info, userData, *args, **kwargs):
+                pass
+            def postExportSequence(self, info, userData, *args, **kwargs):
+                pass
+            def preExportAsset(self, info, userData, *args, **kwargs):
+                pass
+            def postExportAsset(self, info, userData, *args, **kwargs):
+                del args, kwargs
+                pass
+            def exportOverwriteFile(self, path, *args, **kwargs):
+                del path, args, kwargs
+                return "overwrite"
+
+        exporter = flame.PyExporter()
+        exporter.foreground = True
+
+        if not export_preset:
+            for visibility in range(4):
+                export_preset_folder = flame.PyExporter.get_presets_dir(flame.PyExporter.PresetVisibility.values.get(visibility),
+                                flame.PyExporter.PresetType.values.get(0))
+                export_preset = os.path.join(export_preset_folder, 'OpenEXR', 'OpenEXR (16-bit fp Uncompressed).xml')
+                if os.path.isfile(export_preset):
+                    break
+
+        exporter.export(clip, export_preset, export_dir, hooks=ExportHooks())
+
 
 def get_media_panel_custom_ui_actions():
     def scope_clip(selection):
