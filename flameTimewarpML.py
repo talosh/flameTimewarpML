@@ -458,6 +458,40 @@ def get_media_panel_custom_ui_actions():
                 clipboard = app.clipboard()
                 clipboard.setText(command)
 
+    def fltw(selection):
+        import flame
+
+        def sequence_message():
+            dialog = flame.messages.show_in_dialog(
+                title = f'{settings["app_name"]}',
+                message = 'Please select single-track clips with no versions or edits',
+                type = 'error',
+                buttons = ['Ok'])
+
+        def effect_message():
+            dialog = flame.messages.show_in_dialog(
+                title = f'{settings["app_name"]}',
+                message = 'Please select clips with Timewarp Timeline FX',
+                type = 'error',
+                buttons = ['Ok'])
+
+        for clip in selection:
+            if isinstance(clip, (flame.PyClip)):
+                if len(clip.versions) != 1:
+                    sequence_message()
+                    return
+                if len (clip.versions[0].tracks) != 1:
+                    sequence_message()
+                    return
+                if len (clip.versions[0].tracks[0].segments) != 1:
+                    sequence_message()
+                
+                effects = clip.versions[0].tracks[0].segments[0].effects
+                if not effects:
+                    effect_message()
+                    return
+
+
     def about_dialog():
         pass
 
@@ -488,7 +522,7 @@ def get_media_panel_custom_ui_actions():
                 },
                 {
                     'name': "Timewarp from Flame's TW effect",
-                    'execute': train_model,
+                    'execute': fltw,
                     'isVisible': scope_clip,
                     'waitCursor': False,
                 },
