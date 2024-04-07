@@ -146,8 +146,7 @@ class ApplyModelDialog():
                                 TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
                                 TW_SpeedTiming_size = int(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
                                 TW_RetimerMode = int(tw_setup['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
-                                1/0
-                            except Exception as e:
+                                except Exception as e:
                                 parse_message(e)
                                 return False
                             # pprint (tw_setup)
