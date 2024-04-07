@@ -12,6 +12,7 @@ flameTimewarpML.bundle.tar
 test_*
 trained_models.all/*
 !trained_models.all/README
+!packages/README.md
 !packages/.miniconda/twml/README.md
 
 .DS_Store
