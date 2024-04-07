@@ -63,8 +63,8 @@ class ApplyModelDialog():
         self.fw.prefs['model_path'] = self.model_path
         self.fw.save_prefs()
 
-        self.verified_clips = []
-        if not self.verify_selection(selection, mode):
+        self.verified_clips = self.verify_selection(selection, mode):
+        if not self.verified_clips:
             return
 
         self.main_window()
@@ -111,6 +111,7 @@ class ApplyModelDialog():
                     d[x.tag].append(dictify(x,False))
                 return d
 
+            verified_clips = []
             temp_setup_path = '/var/tmp/temporary_tw_setup.timewarp_node'
 
             for clip in selection:
@@ -156,12 +157,12 @@ class ApplyModelDialog():
                         effect_message()
                         return
 
-                    self.verified_clips.append((clip, tw_setup_string))
+                    verified_clips.append((clip, tw_setup_string))
             
             os.remove(temp_setup_path)
-            return True
+            return verified_clips
 
-        return True
+        return []
 
     def main_window(self):
 
