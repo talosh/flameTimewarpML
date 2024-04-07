@@ -58,7 +58,7 @@ class ApplyModelDialog():
 
         self.main_window()
 
-    def verify_selection(selection, mode)
+    def verify_selection(selection, mode):
         import flame
         import xml.etree.ElementTree as ET
 
