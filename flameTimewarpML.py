@@ -35,6 +35,140 @@ settings = {
     'version': 'v0.4.5 dev 001',
 }
 
+class ApplyModelDialog():
+
+    def __init__(self, selection, parent=None):
+
+        self.selection = selection
+
+        try:
+            self.fw = flameAppFramework()
+        except:
+            self.fw = None
+
+        self.working_folder = self.fw.prefs.get('working_folder', os.path.expanduser('~'))
+        if os.getenv('FLAMESMML_WORK_FOLDER'):
+            self.working_folder = os.getenv('FLAMESMML_WORK_FOLDER')
+        self.fw.prefs['working_folder'] = self.working_folder
+        self.fw.save_prefs()
+
+        self.main_window()
+
+    def main_window(self):
+
+        def open_browser():
+            """
+            Open Flame file browser to choose export path.
+            """
+
+            path = pyflame.file_browser(
+                path=self.export_path_entry.text(),
+                title='Choose export path',
+                select_directory=True,
+                window_to_hide=[self.window],
+            )
+
+            if path:
+                self.export_path_entry.setText(path)
+                self.working_folder = path
+                self.fw.prefs['working_folder'] = self.working_folder
+                self.fw.save_prefs()
+
+        def apply():
+            """
+            Export selected clips and open flameSimpleML inference
+            """
+
+            # Get clip info
+            first_clip_name = self.selection[0].name.get_value()
+            result_folder = os.path.abspath(
+                os.path.join(
+                    self.export_path_entry.text(),
+                    f'{sanitized(first_clip_name)}_ML_{create_timestamp_uid()}'
+                    )
+                )
+            source_folder = os.path.abspath(
+                os.path.join(
+                    result_folder,
+                    'src'
+                    )
+                )
+            
+            # Export selected clips
+            clip_number = 1
+            for item in self.selection:
+                if isinstance(item, (flame.PyClip)):
+                    clip = item
+                    source_clip_folder = os.path.join(source_folder, f'{clip_number:02}')
+                    export_clip(clip, source_clip_folder)
+                    clip_number += 1
+
+            first_clip_parent = self.selection[0].parent
+
+            # Open flameSimpleML inference
+            flameSimpleMLInference(
+                source_folder=source_folder,
+                result_folder=result_folder,
+                first_clip_parent = first_clip_parent,
+                settings=settings
+                )
+        
+            # Close expoty and apply window
+            self.window.close()
+
+        # Create export and apply window
+        self.window = PyFlameQDialog(
+            width=800,
+            height=200,
+            title=f'flameSimpleML <small>{settings["version"]}',
+        )
+
+        # Labels
+        self.export_path_label = PyFlameLabel(
+            text='Export Path',
+        )
+
+        # Entries
+        self.export_path_entry = PyFlameLineEdit(
+            text=self.working_folder,
+            max_width=1000,
+        )
+
+        # Buttons
+        self.path_browse_button = PyFlameButton(
+            text='Browse',
+            connect=open_browser,
+        )
+        self.export_and_apply_button = PyFlameButton(
+            text='Export and Apply',
+            connect=apply,
+            color=Color.BLUE,
+        )
+        self.cancel_button = PyFlameButton(
+            text='Cancel',
+            connect=self.window.close,
+        )
+
+        # Window layout
+        grid_layout = QtWidgets.QGridLayout()
+
+        grid_layout.setRowMinimumHeight(1, 30)
+        grid_layout.setColumnMinimumWidth(2, 150)
+        grid_layout.setColumnMinimumWidth(3, 150)
+
+        grid_layout.addWidget(self.export_path_label, 0, 0)
+        grid_layout.addWidget(self.export_path_entry, 0, 1, 1, 4)
+        grid_layout.addWidget(self.path_browse_button, 0, 5)
+ 
+        grid_layout.addWidget(self.cancel_button, 2, 4)
+        grid_layout.addWidget(self.export_and_apply_button, 2, 5,)
+
+        # Add layout to window
+        self.window.add_layout(grid_layout)
+
+        self.window.show()   
+
+
 class TimewarpMLDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -433,7 +567,8 @@ def get_media_panel_custom_ui_actions():
                 verified_clips.append((clip, tw_setup_string))
         
         os.remove(temp_setup_path)
-        timewarp_dialog = TimewarpMLDialog()
+        timewarp_dialog = ApplyModelDialog()
+        # timewarp_dialog = TimewarpMLDialog()
 
         if timewarp_dialog.exec():
             first_clip_name = selection[0].name.get_value()
