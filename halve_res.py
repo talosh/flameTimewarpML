@@ -168,7 +168,7 @@ def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
         f.close
 
 def halve(exr_file_path):
-    exr_data = fw.read_openexr_file(exr_file_path, header_only = True)
+    exr_data = fw.read_openexr_file(exr_file_path)
     h = exr_data['shape'][0]
     w = exr_data['shape'][1]
     img0 = exr_data['image_data']
