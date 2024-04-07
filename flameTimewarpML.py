@@ -311,10 +311,23 @@ class ApplyModelDialog():
             result_folder = os.path.abspath(
                 os.path.join(
                     self.working_folder, 
-                    self.fw.sanitized(clip_name) + '_TWML' + '_' + self.fw.create_timestamp_uid()
+                    # self.fw.sanitized(clip_name) + '_TWML' + '_' + self.fw.create_timestamp_uid()
+                    'test'
                     )
                 )
             
+            
+            if os.path.isdir(result_folder):
+                dialog = flame.messages.show_in_dialog(
+                    title = f'{settings["app_name"]}',
+                    message = 'Please select single-track clips with no versions or edits',
+                    type = 'question',
+                    buttons = ['Owerwrite'],
+                    cancel_button = 'Cancel')
+                
+                if dialog == 'Cancel'
+                    return False
+
             print (result_folder)
 
 def get_media_panel_custom_ui_actions():
