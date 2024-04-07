@@ -325,7 +325,7 @@ class ApplyModelDialog():
                     buttons = ['Owerwrite'],
                     cancel_button = 'Cancel')
                 
-                if dialog == 'Cancel'
+                if dialog == 'Cancel':
                     return False
 
             print (result_folder)
