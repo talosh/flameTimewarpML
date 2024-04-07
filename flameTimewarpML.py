@@ -362,8 +362,8 @@ class ApplyModelDialog():
         if platform.system() == 'Darwin':
 
             cmd_prefix = """tell application "Terminal" to activate do script "clear; """
-            cmd_prefix += f'source {conda_env_path}/bin/activate'
-            cmd_prefix += 'ls -l'
+            cmd_prefix += f'source {conda_env_path}/bin/activate"'
+            # cmd_prefix += 'ls -l'
 
             '''
             cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
