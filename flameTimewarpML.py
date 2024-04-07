@@ -460,6 +460,7 @@ def get_media_panel_custom_ui_actions():
 
     def flame_timewarp(selection):
         import flame
+        import xml.etree.ElementTree as ET
 
         if not selection:
             return
@@ -478,6 +479,9 @@ def get_media_panel_custom_ui_actions():
                 type = 'error',
                 buttons = ['Ok'])
 
+        verified_clips = []
+        temp_setup_path = '/var/tmp/temporary_tw_setup.timewarp_node'
+
         for clip in selection:
             if isinstance(clip, (flame.PyClip)):
                 if len(clip.versions) != 1:
@@ -493,6 +497,38 @@ def get_media_panel_custom_ui_actions():
                 if not effects:
                     effect_message()
                     return
+
+                verified = False
+                for effect in effects:
+                    if effect.type == 'Timewarp':
+                        effect.save_setup(temp_setup_path)
+                        with open(temp_setup_path, 'r') as tw_setup_file:
+                            tw_setup_string = tw_setup_file.read()
+                            tw_setup_file.close()
+                            
+                        tw_setup_xml = ET.fromstring(tw_setup_string)
+                        tw_setup = dictify(tw_setup_xml)
+                        try:
+                            start = int(tw_setup['Setup']['Base'][0]['Range'][0]['Start'])
+                            end = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
+                            TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
+                            TW_SpeedTiming_size = int(tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size'][0]['_text'])
+                            TW_RetimerMode = int(tw_setup['Setup']['State'][0]['TW_RetimerMode'][0]['_text'])
+                        except Exception as e:
+                            parse_message(e)
+                            return
+
+                        # pprint (tw_setup)
+                                
+                        verified = True
+                
+                if not verified:
+                    effect_message()
+                    return
+
+                verified_clips.append((clip, tw_setup_string))
+        
+        os.remove(temp_setup_path)
 
 
     def about_dialog():
