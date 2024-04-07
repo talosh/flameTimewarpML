@@ -29,6 +29,14 @@ def find_folders_with_exr(path):
 
     return directories_with_exr
 
+def clear_lines(n=2):
+    """Clears a specified number of lines in the terminal."""
+    CURSOR_UP_ONE = '\x1b[1A'
+    ERASE_LINE = '\x1b[2K'
+    for _ in range(n):
+        sys.stdout.write(CURSOR_UP_ONE)
+        sys.stdout.write(ERASE_LINE)
+
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
@@ -47,8 +55,10 @@ def main():
 
     idx = 0
     for exr_file_path in exr_files:
-        print (f'\rFile [{idx+1} / {len(exr_files)}], {os.path.basename(exr_file_path)}', end='')
+        clear_lines(1)
+        print (f'\rFile [{idx+1} / {len(exr_files)}], {os.path.basename(exr_file_path)}')
         idx += 1
+    print ('')
 
 if __name__ == "__main__":
     main()
