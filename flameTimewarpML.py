@@ -20,7 +20,7 @@ except ImportError:
 
 import flameSimpleML_framework
 importlib.reload(flameSimpleML_framework)
-from flameSimpleML_framework import flameAppFramework
+from flameTimewarpML_framework import flameAppFramework
 
 from pyflame_lib_flameTimewarpML import * # Import pyflame library for UI elements
 
