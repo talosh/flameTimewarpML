@@ -246,10 +246,10 @@ class Model:
                 img0 = imgs[:, :3]
                 img1 = imgs[:, 3:]
                 if UHD:
-                    flow = F.interpolate(flow, scale_factor=2.0, mode="bilinear", align_corners=False) * 2.0
+                    flow = torch.nn.functional.interpolate(flow, scale_factor=2.0, mode="bilinear", align_corners=False) * 2.0
                 c0 = self.contextnet(img0, flow[:, :2])
                 c1 = self.contextnet(img1, flow[:, 2:4])
-                flow = F.interpolate(flow, scale_factor=2.0, mode="bilinear",
+                flow = torch.nn.functional.interpolate(flow, scale_factor=2.0, mode="bilinear",
                                     align_corners=False) * 2.0
                 refine_output, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt = self.fusionnet(
                     img0, img1, flow, c0, c1, flow_gt)
@@ -284,9 +284,9 @@ class Model:
                         loss_flow = torch.abs(warped_img0_gt - gt).mean()
                         loss_mask = torch.abs(
                             merged_img - gt).sum(1, True).float().detach()
-                        loss_mask = F.interpolate(loss_mask, scale_factor=0.5, mode="bilinear",
+                        loss_mask = torch.nn.functional.interpolate(loss_mask, scale_factor=0.5, mode="bilinear",
                                                 align_corners=False).detach()
-                        flow_gt = (F.interpolate(flow_gt, scale_factor=0.5, mode="bilinear",
+                        flow_gt = (torch.nn.functional.interpolate(flow_gt, scale_factor=0.5, mode="bilinear",
                                                 align_corners=False) * 0.5).detach()
                     loss_cons = 0
                     for i in range(4):
@@ -304,7 +304,6 @@ class Model:
                     loss_G.backward()
                     self.optimG.step()
                 return pred, merged_img, flow, loss_l1, loss_flow, loss_cons, loss_ter, loss_mask
-
 
     @staticmethod
     def get_name():

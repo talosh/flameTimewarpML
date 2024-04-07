@@ -346,6 +346,61 @@ class ApplyModelDialog():
                 tw_setup_file.write(tw_setup_string)
                 tw_setup_file.close()
 
+            self.run_command_in_terminal()
+
+    def run_command_in_terminal(self):
+        import platform
+
+        conda_env_path = os.path.join(
+            os.path.dirname(__file__),
+            'packages',
+            '.miniconda',
+            'twml'
+            )
+
+
+        if platform.system() == 'Darwin':
+
+            cmd_prefix = """tell application "Terminal" to activate do script "clear; """
+            cmd_prefix += f'source {conda_env_path}/bin/activate'
+            cmd_prefix += 'ls -l'
+
+            '''
+            cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
+            cmd_prefix += 
+            cmd_prefix += """ shell.zsh hook)" & quote & "; conda activate twml; """
+
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
+            
+            ml_cmd = cmd_prefix
+           
+            for cmd_string in cmd_strings:
+                ml_cmd += cmd_string
+
+            ml_cmd += """'; exit" """
+            '''
+
+            import subprocess
+            subprocess.Popen(['osascript', '-e', ml_cmd])
+        else:
+            cmd_prefix = 'gnome-terminal '
+            cmd_prefix += """-- /bin/bash -c 'eval "$(""" + os.path.join(self.env_folder, 'bin', 'conda') + ' shell.bash hook)"; conda activate; '
+            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
+
+            ml_cmd = cmd_prefix
+            ml_cmd += 'echo "Received ' + str(number_of_clips)
+            ml_cmd += ' clip ' if number_of_clips < 2 else ' clips '
+            ml_cmd += 'to process, press Ctrl+C to cancel"; '
+            ml_cmd += 'trap exit SIGINT SIGTERM; '
+
+            for cmd_string in cmd_strings:
+                ml_cmd += cmd_string
+            if hold_konsole:
+                ml_cmd += 'echo "Commands finished. You can close this window"; sleep infinity'
+            ml_cmd +="'"
+            self.log('Executing command: %s' % ml_cmd)
+            os.system(ml_cmd)
+
 
     def export_clip(self, clip, export_dir, export_preset = None):
         import flame
