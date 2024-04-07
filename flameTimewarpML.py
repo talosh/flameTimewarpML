@@ -293,6 +293,8 @@ class ApplyModelDialog():
         self.window.show()   
 
     def apply(self):
+        self.window.hide()
+
         if self.mode == 'timewarp':
             self.apply_timewarp()
             
@@ -343,7 +345,6 @@ class ApplyModelDialog():
             with open(tw_setup_path, 'a') as tw_setup_file:
                 tw_setup_file.write(tw_setup_string)
                 tw_setup_file.close()
-
 
 
     def export_clip(self, clip, export_dir, export_preset = None):
