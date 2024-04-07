@@ -183,6 +183,35 @@ class Model:
 				self.block3 = Flownet(8+4+16, c=64)
 				self.encode = Head()
 
+			def yuv(self, rgb):
+				"""
+				Convert an RGB tensor to YUV
+				
+				Parameters:
+				- rgb: Tensor of shape [n, 3, h, w]
+				
+				Returns:
+				- yuv: Tensor of shape [n, 3, h, w]
+				"""
+				# Define the transformation matrix from RGB to YUV
+				transform_matrix = torch.tensor([
+					[0.299, 0.587, 0.114],
+					[-0.14713, -0.28886, 0.436],
+					[0.615, -0.51499, -0.10001]
+				], dtype=rgb.dtype, device=rgb.device)
+				
+				# Permute the input tensor to shape [n, h, w, 3] for matrix multiplication
+				rgb_permuted = rgb.permute(0, 2, 3, 1)
+				
+				# Apply the transformation
+				yuv = torch.matmul(rgb_permuted, transform_matrix.T)
+				
+				# Permute back to shape [n, 3, h, w]
+				yuv = yuv.permute(0, 3, 1, 2)
+								
+				return yuv
+
+
 			def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
 				img0 = img0
 				img1 = img1
