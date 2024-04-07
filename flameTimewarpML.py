@@ -18,8 +18,8 @@ except ImportError:
     from PySide2 import QtWidgets, QtCore, QtGui
     using_pyside6 = False
 
-import flameSimpleML_framework
-importlib.reload(flameSimpleML_framework)
+import flameTimewarpML_framework
+importlib.reload(flameTimewarpML_framework)
 from flameTimewarpML_framework import flameAppFramework
 
 from pyflame_lib_flameTimewarpML import * # Import pyflame library for UI elements
