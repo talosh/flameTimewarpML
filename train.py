@@ -1295,7 +1295,7 @@ def main():
 
             # sample_current = rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
 
-        if step % 10 == 1:
+        if step % 1000 == 1:
             torch.save({
                 'step': step,
                 'steps_loss': steps_loss,
