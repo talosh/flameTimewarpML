@@ -380,6 +380,8 @@ class ApplyModelDialog():
             ml_cmd += """'; exit" """
             '''
 
+            ml_cmd = cmd_prefix
+
             import subprocess
             subprocess.Popen(['osascript', '-e', ml_cmd])
         else:
