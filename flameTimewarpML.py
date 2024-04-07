@@ -461,6 +461,9 @@ def get_media_panel_custom_ui_actions():
     def fltw(selection):
         import flame
 
+        if not selection:
+            return
+
         def sequence_message():
             dialog = flame.messages.show_in_dialog(
                 title = f'{settings["app_name"]}',
