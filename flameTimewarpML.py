@@ -458,7 +458,7 @@ def get_media_panel_custom_ui_actions():
                 clipboard = app.clipboard()
                 clipboard.setText(command)
 
-    def fltw(selection):
+    def flame_timewarp(selection):
         import flame
 
         if not selection:
@@ -504,9 +504,6 @@ def get_media_panel_custom_ui_actions():
     def fluidmorph():
         pass
 
-    def fltw():
-        pass
-
     menu = [
         {
             'name': settings['menu_group_name'],
@@ -525,7 +522,7 @@ def get_media_panel_custom_ui_actions():
                 },
                 {
                     'name': "Timewarp from Flame's TW effect",
-                    'execute': fltw,
+                    'execute': flame_timewarp,
                     'isVisible': scope_clip,
                     'waitCursor': False,
                 },
