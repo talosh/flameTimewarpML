@@ -104,13 +104,16 @@ class Model:
 				return normalized_tensor
 
 			def forward(self, x, feat=False):
-				# x = self.normalize_tensor(x)
+				x = self.normalize_tensor(x)
 				y, u, v, = self.rgb_to_yuv_separate(x)
 				y = self.normalize_tensor(y)
 				y = y * 2 - 1
 
 				u = torch.nn.functional.interpolate(u, scale_factor= 1 / 2, mode="bilinear", align_corners=False)
 				v = torch.nn.functional.interpolate(v, scale_factor= 1 / 2, mode="bilinear", align_corners=False)
+
+				u = u * 2 - 1
+				v = v * 2 - 1
 
 				x0 = self.cnn0(y)
 				x = self.relu(x0)
