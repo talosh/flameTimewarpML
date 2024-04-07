@@ -33,6 +33,7 @@ settings = {
 
 fw = flameAppFramework(settings = settings)
 importlib.invalidate_caches()
+
 try:
     import numpy as np
     import torch
