@@ -184,6 +184,18 @@ class ApplyModelDialog():
                 self.fw.prefs['working_folder'] = self.working_folder
                 self.fw.save_prefs()
 
+        def open_model_browser():
+            import flame
+            flame.browser.show(
+                title = 'Select flameTimewarpML Model:',
+                extension = 'pth',
+                default_path = self.model_path,
+                multi_selection = False)
+            if len(flame.browser.selection) > 0:
+                self.model_path = flame.browser.selection[0]
+                self.fw.prefs['model_path'] = self.model_path
+                self.fw.save_prefs()
+
         '''
         def apply():
             """
@@ -255,7 +267,7 @@ class ApplyModelDialog():
 
         self.model_browse_button = PyFlameButton(
             text='Browse',
-            connect=open_browser,
+            connect=open_model_browser,
         )
 
         self.export_and_apply_button = PyFlameButton(
@@ -317,7 +329,6 @@ class ApplyModelDialog():
                     )
                 )
             
-            
             if os.path.isdir(result_folder):
                 self.window.hide()
                 dialog = flame.messages.show_in_dialog(
@@ -339,12 +350,24 @@ class ApplyModelDialog():
                 export_preset = os.path.join(os.path.dirname(__file__), 'presets', 'source_export32.xml')
             else:
                 export_preset = os.path.join(os.path.dirname(__file__), 'presets', 'source_export.xml')
-    
-            tw_setup_path = os.path.join(source_clip_folder, 'tw_setup.timewarp_node')
+            
             self.export_clip(clip, source_clip_folder, export_preset=export_preset)
+
+            json_info = {}
+            json_info['input'] = source_clip_folder
+            json_info['output'] = result_folder
+            json_info['model'] = self.prefs.get('trained_models_folder')
+
+            record_in = clip.versions[0].tracks[0].segments[0].record_in.relative_frame
+            record_out = clip.versions[0].tracks[0].segments[0].record_out.relative_frame
+
+
+            '''
+            tw_setup_path = os.path.join(source_clip_folder, 'tw_setup.timewarp_node')
             with open(tw_setup_path, 'a') as tw_setup_file:
                 tw_setup_file.write(tw_setup_string)
                 tw_setup_file.close()
+            '''
 
             self.run_inference()
 
@@ -397,7 +420,6 @@ class ApplyModelDialog():
             self.log('Executing command: %s' % ml_cmd)
             os.system(ml_cmd)
         '''
-
 
     def export_clip(self, clip, export_dir, export_preset = None):
         import flame
