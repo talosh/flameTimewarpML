@@ -185,6 +185,7 @@ class ApplyModelDialog():
                 self.fw.save_prefs()
 
         def open_model_browser():
+            self.window.hide()
             import flame
             flame.browser.show(
                 title = 'Select flameTimewarpML Model:',
@@ -195,6 +196,7 @@ class ApplyModelDialog():
                 self.model_path = flame.browser.selection[0]
                 self.fw.prefs['model_path'] = self.model_path
                 self.fw.save_prefs()
+            self.window.show()
 
         '''
         def apply():
