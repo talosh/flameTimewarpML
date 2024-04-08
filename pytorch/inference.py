@@ -1,10 +1,10 @@
+import os
 import sys
 from PySide6.QtWidgets import QApplication, QMainWindow, QTextEdit, QVBoxLayout, QWidget
-from PySide6.QtCore import QObject, Signal, QThread
+from PySide6.QtCore import QObject, Signal, QThread, Qt 
 from PySide6.QtGui import QTextCursor, QFont, QFontDatabase, QFontInfo
 import time
 from tqdm import tqdm
-import io
 
 # Custom stream object to capture output
 class Stream(QObject):
@@ -18,8 +18,15 @@ class Stream(QObject):
 
 # A thread that does some work and produces output
 class Worker(QThread):
+    def __init__(self, argv, parent=None):
+        super(Worker, self).__init__(parent)
+        self.argv = argv
+
     def run(self):
         print ('hello')
+        print (self.argv)
+        print ('hui')
+        print ('pizda')
         for i in tqdm(range(100),
                       file=sys.stdout,
                       bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}', 
@@ -38,32 +45,56 @@ class MainWindow(QMainWindow):
         sys.stdout = Stream(newText=self.onUpdateText)
         sys.stderr = Stream(newText=self.onUpdateText)
 
-        self.worker = Worker()
+        self.worker = Worker(sys.argv)
         self.worker.finished.connect(self.onWorkerFinished)
         self.worker.start()
 
         self.last_progress_line = None  # Keep track of the last progress line
 
+    def loadMonospaceFont(self):
+        DejaVuSansMono = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'fonts',
+            'DejaVuSansMono.ttf'
+        )
+
+        font_id = QFontDatabase.addApplicationFont(DejaVuSansMono)
+        if font_id == -1:
+            all_fonts = QFontDatabase.families()
+            monospaced_fonts = []
+            for font_family in all_fonts:
+                font = QFont(font_family)
+                font_info = QFontInfo(font)
+                if font_info.fixedPitch():
+                    monospaced_fonts.append(font_family)
+            font = QFont(monospaced_fonts[0], 11)  # Generic monospace font
+            return font
+        else:
+            font_families = QFontDatabase.applicationFontFamilies(font_id)
+            if font_families:
+                font_family = font_families[0]  # Get the first family name
+                font = QFont(font_family, 11)  # Set the desired size
+                return font
+            else:
+                return None
+
     def initUI(self):
         layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+
         self.text_edit = QTextEdit()
-
-        # font_database = QFontDatabase()
-        all_fonts = QFontDatabase.families()
-        monospaced_fonts = []
-
-        for font_family in all_fonts:
-            font = QFont(font_family)
-            font_info = QFontInfo(font)
-            if font_info.fixedPitch():
-                monospaced_fonts.append(font_family)
-
-        print("Monospaced Fonts:", monospaced_fonts)
-
-        font = QFont('Spot Mono', 11)  # Generic monospace font
-        self.text_edit.setFont(font)
         self.text_edit.setReadOnly(True)
-        
+        self.text_edit.setStyleSheet("""
+            QTextEdit {
+                color: rgb(188, 188, 188); 
+                background-color: #292929;
+                border: 1px solid #474747;
+            }
+        """)
+        font = self.loadMonospaceFont()
+        if font:
+            self.text_edit.setFont(font)
+
         layout.addWidget(self.text_edit)
         
         central_widget = QWidget()
@@ -75,10 +106,13 @@ class MainWindow(QMainWindow):
         self.show()
 
     def onUpdateText(self, text):
-        text = text.rstrip('\n')
+        # text = text.rstrip('\n')
         # Check for carriage return indicating a progress update
         if '\r' in text:
-            text = text.rstrip('\r')
+            text.replace('\n', '')
+            text.replace('\r', '')
+            # text = text.rstrip('\n')
+            # text = text.rstrip('\r')
             if self.last_progress_line is not None:
                 # Remove the last progress update
                 self.text_edit.moveCursor(QTextCursor.StartOfLine, QTextCursor.KeepAnchor)
@@ -88,6 +122,7 @@ class MainWindow(QMainWindow):
             self.last_progress_line = text
         else:
             pass
+            # text = text + '\n'
             # Not a progress line, so append normally and reset progress tracking
             # self.last_progress_line = None
             # text = text + '\n'  # Add newline for regular prints
@@ -97,6 +132,13 @@ class MainWindow(QMainWindow):
         cursor.insertText(text)  # Insert the text at the end
         self.text_edit.setTextCursor(cursor)
         self.text_edit.ensureCursorVisible()
+
+    def keyPressEvent(self, event):        
+        # Check if Ctrl+C was pressed
+        if event.key() == Qt.Key_C and event.modifiers():
+            self.close()
+        else:
+            super().keyPressEvent(event)
 
     def onWorkerFinished(self):
         sys.stdout = sys.__stdout__
