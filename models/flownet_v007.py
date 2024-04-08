@@ -64,7 +64,7 @@ class Model:
 				a = self.relu(a)
 				b = self.cnn2(a)
 				b = self.relu(b)
-				c = self.cnn2(b)
+				c = self.cnn3(b)
 				c = self.relu(c)
 				x = (torch.cat([a, b, c], dim=1) + shrtct)
 				x = self.relu(x)
