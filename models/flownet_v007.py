@@ -16,7 +16,7 @@ class Model:
 					padding_mode = 'reflect',
 					bias=True
 				),
-				torch.nn.LeakyReLU(inplace=True)
+				torch.nn.LeakyReLU(0.2, True)
 				# torch.nn.SELU(inplace = True)
 			)
 
@@ -62,10 +62,10 @@ class Model:
 				self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect')
 				self.conv1x = torch.nn.Conv2d(c, c, 1, 1)
 				self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-				self.relu = torch.nn.LeakyReLU(inplace=True)
+				self.relu = torch.nn.LeakyReLU(0.2, True)
 				
 			def forward(self, x):
-				return self.relu(self.conv(x) * self.conv1x(x) + x)
+				return self.relu(self.conv(x) * self.beta + x)
 
 		class Flownet(Module):
 			def __init__(self, in_planes, c=64):
