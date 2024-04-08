@@ -38,12 +38,21 @@ class Model:
 		class Head(Module):
 			def __init__(self):
 				super(Head, self).__init__()
-				self.cnn0 = torch.nn.Conv2d(3, 32, 3, 2, 1)
-				self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-				self.cnn3 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-				self.cnn4 = torch.nn.ConvTranspose2d(96, 8, 4, 2, 1)
-				self.shortcut = torch.nn.Conv2d(32, 96, 1, 1)
+				alpha=1.69
+				num_in_channels = 3
+				num_filters = 32
+				self.W = num_filters * alpha
+				filt_cnt_3x3 = int(self.W*0.167)
+				filt_cnt_5x5 = int(self.W*0.333)
+				filt_cnt_7x7 = int(self.W*0.5)
+				num_out_filters = filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7
+
+				self.cnn0 = torch.nn.Conv2d(num_in_channels, filt_cnt_3x3, 3, 2, 1)
+				self.cnn1 = torch.nn.Conv2d(filt_cnt_3x3, filt_cnt_3x3, 3, 1, 1)
+				self.cnn2 = torch.nn.Conv2d(filt_cnt_3x3, filt_cnt_5x5, 3, 1, 1)
+				self.cnn3 = torch.nn.Conv2d(filt_cnt_5x5, filt_cnt_7x7, 3, 1, 1)
+				self.cnn4 = torch.nn.ConvTranspose2d(num_out_filters, 8, 4, 2, 1)
+				self.shortcut = torch.nn.Conv2d(filt_cnt_3x3, num_out_filters, 1, 1)
 				self.relu = torch.nn.LeakyReLU(inplace=True)
 
 			def forward(self, x, feat=False):
