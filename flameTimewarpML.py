@@ -190,7 +190,7 @@ class ApplyModelDialog():
             flame.browser.show(
                 title = 'Select flameTimewarpML Model:',
                 extension = 'pth',
-                default_path = self.model_path,
+                default_path = os.path.dirname(self.model_path),
                 multi_selection = False)
             if len(flame.browser.selection) > 0:
                 self.model_path = flame.browser.selection[0]
