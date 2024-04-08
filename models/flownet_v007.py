@@ -60,7 +60,7 @@ class Model:
 			def __init__(self, c, dilation=1):
 				super().__init__()
 				self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect')
-				self.conv1x = torch.nn.Conv2d(c, c, 1, 1, dilation, dilation = dilation, groups = 1,)
+				self.conv1x = torch.nn.Conv2d(c, c, 1, 0, dilation, dilation = dilation, groups = 1)
 				self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
 				self.relu = torch.nn.LeakyReLU(inplace=True)
 				
