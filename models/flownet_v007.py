@@ -103,12 +103,23 @@ class Model:
 					torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
 					torch.nn.PixelShuffle(2)
 				)
+				self.encode = Head()
 
-			def forward(self, x, flow, scale=1):
-				x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+			def forward(self, img0, img1, timestep, mask, flow, scale=1):
+				img0 = torch.nn.functional.interpolate(img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+				img1 = torch.nn.functional.interpolate(img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+				f0 = self.encode(img0)
+				f1 = self.encode(img1)
+				if flow is None:
+					x = torch.cat((img0, img1, f0, f1, timestep), 1)
 				if flow is not None:
 					flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
-					x = torch.cat((x, flow), 1)
+					mask = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+					warped_img0 = warp(img0, flow[:, :2])
+					warped_img1 = warp(img1, flow[:, 2:4])
+					warped_f0 = warp(f0, flow[:, :2])
+					warped_f1 = warp(f1, flow[:, 2:4])
+					x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, flow), 1)
 				feat = self.conv0(x)
 				feat = self.convblock(feat)
 				tmp = self.lastconv(feat)
@@ -151,19 +162,19 @@ class Model:
 				stu = [self.block0, self.block1, self.block2, self.block3]
 				flow = None
 				for i in range(4):
-					if flow is not None:
-						flow_d, mask, conf = stu[i](torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[i])
-						flow = flow + flow_d
+					if flow is None:
+						flow, mask, conf = stu[i](img0, img1, timestep, None, None, scale=scale[i])
 					else:
-						flow, mask, conf = stu[i](torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[i])
+						flow_d, mask, conf = stu[i](img0, img1, timestep, mask, flow, scale=scale[i])
+						flow = flow + flow_d
 
 					mask_list.append(mask)
 					flow_list.append(flow)
 					conf_list.append(conf)
 					warped_img0 = warp(img0, flow[:, :2])
 					warped_img1 = warp(img1, flow[:, 2:4])
-					warped_f0 = warp(f0, flow[:, :2])
-					warped_f1 = warp(f1, flow[:, 2:4])
+					# warped_f0 = warp(f0, flow[:, :2])
+					# warped_f1 = warp(f1, flow[:, 2:4])
 					merged_student = (warped_img0, warped_img1)
 					merged.append(merged_student)
 				conf = torch.sigmoid(torch.cat(conf_list, 1))
