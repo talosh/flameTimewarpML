@@ -65,7 +65,7 @@ class Model:
 				self.relu = torch.nn.LeakyReLU(inplace=True)
 				
 			def forward(self, x):
-				return self.relu(self.conv(x) * self.beta + self.conv1x(x))
+				return self.relu(self.conv(x) * self.conv1x(x) + x)
 
 		class Flownet(Module):
 			def __init__(self, in_planes, c=64):
