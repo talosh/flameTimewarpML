@@ -33,8 +33,15 @@ class Worker(QThread):
     def run(self):
         print ('hello')
         print (self.argv)
-        print ('hui')
-        print ('pizda')
+
+        import torch
+        if torch.backends.mps.is_available():
+            mps_device = torch.device("mps")
+            x = torch.ones(1, device=mps_device)
+            print (x)
+        else:
+            print ("MPS device not found.")
+
         for i in tqdm(range(100),
                       file=sys.stdout,
                       bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}', 
