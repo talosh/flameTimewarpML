@@ -1,7 +1,7 @@
 import sys
 from PySide6.QtWidgets import QApplication, QMainWindow, QTextEdit, QVBoxLayout, QWidget
 from PySide6.QtCore import QObject, Signal, QThread
-from PySide6.QtGui import QTextCursor, QFont
+from PySide6.QtGui import QTextCursor, QFont, QFontDatabase, QFontInfo
 import time
 from tqdm import tqdm
 import io
@@ -23,8 +23,8 @@ class Worker(QThread):
         for i in tqdm(range(100),
                       file=sys.stdout,
                       bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}', 
-                      # ascii=f' {chr(0x2588)}',
-                      ascii=False,
+                      ascii=f' {chr(0x2588)}',
+                      # ascii=False,
                       ncols=50):
             time.sleep(0.1)  # Simulate work
 
@@ -47,7 +47,20 @@ class MainWindow(QMainWindow):
     def initUI(self):
         layout = QVBoxLayout()
         self.text_edit = QTextEdit()
-        font = QFont("Monaco", 12)  # Generic monospace font
+
+        # font_database = QFontDatabase()
+        all_fonts = QFontDatabase.families()
+        monospaced_fonts = []
+
+        for font_family in all_fonts:
+            font = QFont(font_family)
+            font_info = QFontInfo(font)
+            if font_info.fixedPitch():
+                monospaced_fonts.append(font_family)
+
+        print("Monospaced Fonts:", monospaced_fonts)
+
+        font = QFont('Spot Mono', 11)  # Generic monospace font
         self.text_edit.setFont(font)
         self.text_edit.setReadOnly(True)
         
