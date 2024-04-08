@@ -7,8 +7,6 @@ try:
     import time
     from tqdm import tqdm
 
-    import torch
-    import numpy as np
 except:
     pass
 
