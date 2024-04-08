@@ -41,17 +41,23 @@ class Model:
 				self.cnn0 = torch.nn.Conv2d(3, 32, 3, 2, 1)
 				self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
 				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-				self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
+				self.shortcut = torch.nn.Conv2d(32, 64, 1, 1)
+				self.cnn3 = torch.nn.ConvTranspose2d(64, 8, 4, 2, 1)
 				self.relu = torch.nn.LeakyReLU(inplace=True)
 
 			def forward(self, x, feat=False):
+
 				x0 = self.cnn0(x)
 				x = self.relu(x0)
+
+				shrtct = self.shortcut(x)
+
 				x1 = self.cnn1(x)
-				x = self.relu(x1)
-				x2 = self.cnn2(x)
-				x = self.relu(x2)
-				x3 = self.cnn3(x)
+				x1 = self.relu(x1)
+				x2 = self.cnn2(x1)
+				x2 = self.relu(x2)
+				x3 = self.cnn3(torch.cat([x1, x2], dim=1) + shrtct)
+
 				if feat:
 					return [x0, x1, x2, x3]
 				return x3
