@@ -60,7 +60,6 @@ class ApplyModelDialog():
             'model_path',
             os.path.join(os.path.dirname(__file__), 'models', 'flameTWML_v2.4.pth')
         )
-        self.model_path = os.path.join(os.path.dirname(__file__), 'models', 'flameTWML_v2.4.pth')
         self.fw.prefs['model_path'] = self.model_path
         self.fw.save_prefs()
 
