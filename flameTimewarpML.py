@@ -346,40 +346,34 @@ class ApplyModelDialog():
                 tw_setup_file.write(tw_setup_string)
                 tw_setup_file.close()
 
-            self.run_command_in_terminal()
+            self.run_inference()
 
-    def run_command_in_terminal(self):
+    def run_inference(self):
         import platform
 
-        conda_env_path = os.path.join(
+        conda_python_path = os.path.join(
             os.path.dirname(__file__),
             'packages',
             '.miniconda',
-            'twml'
+            'twml',
+            'bin',
+            'python'
             )
+        inference_script_path = os.path.join(
+            os.path.dirname(__file__),
+            'pytorch',
+            'inference.py'
+        )
 
+        import subprocess
+        subprocess.Popen([conda_python_path, inference_script_path])
 
+        '''
         if platform.system() == 'Darwin':
 
             cmd_prefix = """tell application "Terminal" to activate do script "clear; """
             cmd_prefix += f'source {conda_env_path}/bin/activate;'
             cmd_prefix += f'{conda_env_path}/bin/python"'
-
-            '''
-            cmd_prefix += """/bin/bash -c 'eval " & quote & "$("""
-            cmd_prefix += 
-            cmd_prefix += """ shell.zsh hook)" & quote & "; conda activate twml; """
-
-            cmd_prefix += 'cd ' + self.framework.bundle_path + '; '
-            
-            ml_cmd = cmd_prefix
-           
-            for cmd_string in cmd_strings:
-                ml_cmd += cmd_string
-
-            ml_cmd += """'; exit" """
-            '''
-
             ml_cmd = cmd_prefix
 
             import subprocess
@@ -402,6 +396,7 @@ class ApplyModelDialog():
             ml_cmd +="'"
             self.log('Executing command: %s' % ml_cmd)
             os.system(ml_cmd)
+        '''
 
 
     def export_clip(self, clip, export_dir, export_preset = None):

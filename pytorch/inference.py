@@ -1,10 +1,20 @@
-import os
-import sys
-from PySide6.QtWidgets import QApplication, QMainWindow, QTextEdit, QVBoxLayout, QWidget
-from PySide6.QtCore import QObject, Signal, QThread, Qt 
-from PySide6.QtGui import QTextCursor, QFont, QFontDatabase, QFontInfo
-import time
-from tqdm import tqdm
+try:
+    import os
+    import sys
+    from PySide6.QtWidgets import QApplication, QMainWindow, QTextEdit, QVBoxLayout, QWidget
+    from PySide6.QtCore import QObject, Signal, QThread, Qt 
+    from PySide6.QtGui import QTextCursor, QFont, QFontDatabase, QFontInfo
+    import time
+    from tqdm import tqdm
+
+    import torch
+    import numpy as np
+except:
+    pass
+
+class Timewarp():
+    def __init__(self, json_info):
+        pass
 
 # Custom stream object to capture output
 class Stream(QObject):
