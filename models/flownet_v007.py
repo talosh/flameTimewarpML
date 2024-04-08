@@ -57,8 +57,9 @@ class Model:
 				b = self.relu(b)
 				c = self.cnn2(b)
 				c = self.relu(c)
-				x = self.cnn3(torch.cat([a, b, c], dim=1) + shrtct)
+				x = (torch.cat([a, b, c], dim=1) + shrtct)
 				x = self.relu(x)
+				x = self.cnn4(x)
 				return x
 
 		class ResConv(Module):
