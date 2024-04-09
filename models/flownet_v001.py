@@ -221,6 +221,6 @@ class Model:
 				return param
 		if rank <= 0:
 			if torch.cuda.is_available():
-				flownet.load_state_dict(convert(torch.load('{}/flownet.pkl'.format(path))), False)
+				flownet.load_state_dict(convert(torch.load(path)), False)
 			else:
-				flownet.load_state_dict(convert(torch.load('{}/flownet.pkl'.format(path), map_location ='cpu')), False)
+				flownet.load_state_dict(convert(torch.load(path, map_location ='cpu')), False)
