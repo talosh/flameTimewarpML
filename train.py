@@ -1192,7 +1192,7 @@ def main():
             param.requires_grad = False
 
         # Unfreeze encoder
-        for param in flownet.encode.parameters():
+        for param in flownet.module.encode.parameters():
             param.requires_grad = True
 
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
