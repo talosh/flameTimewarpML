@@ -963,6 +963,7 @@ def main():
     parser.add_argument('--pulse_amplitude', type=float, default=25, help='Learning rate pulse amplitude (percentage) (default: 25)')
     parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
     parser.add_argument('--model', type=str, default=None, help='Model name (optional)')
+    parser.add_argument('--legacy_model', type=str, default=None, help='Model name (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size (int) (default: 8)')
     parser.add_argument('--first_epoch', type=int, default=-1, help='Epoch (int) (default: Saved)')
@@ -1101,6 +1102,12 @@ def main():
         if not os.path.isdir(trained_model_dir):
             os.makedirs(trained_model_dir)
         trained_model_path = os.path.join(trained_model_dir, traned_model_name)
+
+    if args.legacy_model:
+        try:
+            Flownet().load_model(flownet)
+        except Exception as e:
+            print (f'unable to load legacy model: {e}')
 
     '''
     default_rife_model_path = os.path.join(

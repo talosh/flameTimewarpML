@@ -56,7 +56,6 @@ class Model:
 				self.relu = torch.nn.LeakyReLU(inplace=True)
 
 			def forward(self, x, feat=False):
-
 				x = self.cnn0(x)
 				x = self.relu(x)
 				shrtct = self.shortcut(x)
@@ -152,7 +151,7 @@ class Model:
 				else:
 					timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
 				'''
-				
+
 				flow_list = []
 				merged = []
 				mask_list = []

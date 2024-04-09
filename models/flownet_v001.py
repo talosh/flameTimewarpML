@@ -180,7 +180,7 @@ class Model:
 	@staticmethod
 	def get_name():
 		return 'TWML_Flownet_v001'
-	
+
 	@staticmethod
 	def input_channels(model_state_dict):
 		channels = 3
@@ -204,6 +204,22 @@ class Model:
 		if platform.system() == 'Darwin':
 			return self.training_model
 		return self.model
-	
+
 	def get_training_model(self):
 		return self.training_model
+
+	def load_model(self, path, flownet, rank=0):
+		def convert(param):
+			if rank == -1:
+				return {
+					k.replace("module.", ""): v
+					for k, v in param.items()
+					if "module." in k
+				}
+			else:
+				return param
+		if rank <= 0:
+			if torch.cuda.is_available():
+				flownet.load_state_dict(convert(torch.load('{}/flownet.pkl'.format(path))), False)
+			else:
+				flownet.load_state_dict(convert(torch.load('{}/flownet.pkl'.format(path), map_location ='cpu')), False)
