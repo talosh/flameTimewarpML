@@ -1186,6 +1186,15 @@ def main():
             training_scale = [8, 4, 2, 1]
 
         flownet.train()
+
+        # Freeze all layers
+        for param in flownet.parameters():
+            param.requires_grad = False
+
+        # Unfreeze encoder
+        for param in flownet.encode.parameters():
+            param.requires_grad = True
+
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
 
         output = merged[3]
