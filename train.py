@@ -1030,7 +1030,7 @@ def main():
     criterion_l1 = torch.nn.L1Loss()
 
     # optimizer_flownet = Yogi(flownet.parameters(), lr=lr)
-    optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=1e-2)
+    optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=4e-3)
     '''
     def warmup(current_step, lr = 4e-3, number_warmup_steps = 999):
         mul_lin = current_step / number_warmup_steps
