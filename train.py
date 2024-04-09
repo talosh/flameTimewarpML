@@ -1226,7 +1226,7 @@ def main():
 
         loss = 0.1 * loss_x8 + 0.05 * loss_x4 + 0.05 * loss_x2 + 0.8 * loss_x1
 
-        print(loss.requires_grad)  # Should be True
+        # print(loss.requires_grad)  # Should be True
 
         # loss = 0.4 * loss_x8 + 0.3 * loss_x4 + 0.2 * loss_x2 + 0.1 * loss_x1 + 0.01 * loss_enc
 
