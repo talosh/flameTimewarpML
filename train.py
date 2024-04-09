@@ -1106,6 +1106,7 @@ def main():
     if args.legacy_model:
         try:
             Flownet().load_model(args.legacy_model, flownet)
+            print (f'loaded legacy model state: {args.legacy_model}')
         except Exception as e:
             print (f'unable to load legacy model: {e}')
 
