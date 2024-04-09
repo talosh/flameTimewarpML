@@ -1195,8 +1195,8 @@ def main():
         for param in flownet.module.encode.parameters():
             param.requires_grad = True
 
-        for name, param in flownet.named_parameters():
-            print(name, param.requires_grad)
+        # for name, param in flownet.named_parameters():
+        #     print(name, param.requires_grad)
 
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
 
@@ -1222,6 +1222,8 @@ def main():
         loss_x1 = criterion_mse(merged[3], img1)
 
         loss = 0.1 * loss_x8 + 0.05 * loss_x4 + 0.05 * loss_x2 + 0.8 * loss_x1
+
+        print(loss.requires_grad)  # Should be True
 
         # loss = 0.4 * loss_x8 + 0.3 * loss_x4 + 0.2 * loss_x2 + 0.1 * loss_x1 + 0.01 * loss_enc
 
