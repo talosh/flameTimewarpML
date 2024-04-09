@@ -1203,6 +1203,8 @@ def main():
         output = merged[3]
         mask = mask_list[3]
 
+        output.retain_grad()
+
         loss_x8 = criterion_mse(
             torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False),
             torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
