@@ -1195,6 +1195,9 @@ def main():
         for param in flownet.module.encode.parameters():
             param.requires_grad = True
 
+        for name, param in flownet.named_parameters():
+            print(name, param.requires_grad)
+
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
 
         output = merged[3]
