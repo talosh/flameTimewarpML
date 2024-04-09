@@ -209,6 +209,7 @@ class Model:
 		return self.training_model
 
 	def load_model(self, path, flownet, rank=0):
+		import torch
 		def convert(param):
 			if rank == -1:
 				return {
