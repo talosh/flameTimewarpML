@@ -340,7 +340,6 @@ class ApplyModelDialog():
 
             import json
             try:
-                1/0
                 with open(file_path, 'w') as lockfile_path:
                     json.dump(data, json_file, indent=4)
             except Exception as e:
@@ -350,16 +349,6 @@ class ApplyModelDialog():
                     type = 'error',
                     buttons = ['Ok'])
                 return False
-
-
-
-
-            '''
-            tw_setup_path = os.path.join(source_clip_folder, 'tw_setup.timewarp_node')
-            with open(tw_setup_path, 'a') as tw_setup_file:
-                tw_setup_file.write(tw_setup_string)
-                tw_setup_file.close()
-            '''
 
             self.run_inference()
 
