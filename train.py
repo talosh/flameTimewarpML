@@ -1200,6 +1200,7 @@ def main():
 
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
         output = merged[3]
+        
         # flow_list[3].retain_grad()
         # mask_list[3].retain_grad()
         # warped_img0 = warp(img0, flow_list[3][:, :2])
