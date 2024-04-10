@@ -328,7 +328,7 @@ class ApplyModelDialog():
             json_info['input'] = source_clip_folder
             json_info['output'] = result_folder
             json_info['clip_name'] = tw_clip_name
-            json_info['model'] = self.prefs.get('trained_models_folder')
+            json_info['model'] = self.fw.prefs.get('trained_models_folder')
             json_info['setup'] = tw_setup_string
             json_info['record_in'] = record_in
             json_info['record_out'] = record_out
@@ -349,6 +349,7 @@ class ApplyModelDialog():
                     message = f'Unable to save {lockfile_path}: {e}',
                     type = 'error',
                     buttons = ['Ok'])
+                return False
 
 
 
