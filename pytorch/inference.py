@@ -34,14 +34,26 @@ class Worker(QThread):
         self.argv = argv
 
     def run(self):
-        print ('hello')
-
         if len(self.argv) < 2:
             message = f'Missing input arguments:\n{self.argv}'
             print (message)
             self.result.emit(False, message)
             return
 
+        try:
+            1 / 0
+            import json
+            with open(self.argv[1], 'r') as json_file:
+                json_info = json.load(json_file)
+        except Exception as e:
+            message = f'Unable to load input data from {self.argv[1]: {e}}'
+            print (message)
+            self.result.emit(False, message)
+            return
+        
+        print(f'{json_info}')
+
+        print ('Initializing PyTorch...')
         import torch
         if torch.backends.mps.is_available():
             mps_device = torch.device("mps")
