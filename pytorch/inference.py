@@ -46,7 +46,7 @@ class Worker(QThread):
             with open(self.argv[1], 'r') as json_file:
                 json_info = json.load(json_file)
         except Exception as e:
-            message = f'Unable to load input data from {self.argv[1]: {e}}'
+            message = f'Unable to load input data from {self.argv[1]}: {e}'
             print (message)
             self.result.emit(False, message)
             return
