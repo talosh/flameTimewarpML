@@ -1228,6 +1228,12 @@ def main():
         f0_st = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
 
         loss = criterion_mse(f0_st, f0)
+        loss_l1 = criterion_l1(f0_st, f0)
+        loss_l1_str = str(f'{loss_l1.item():.6f}')
+        
+        output = img0
+        mask = img0[:, 0:1, :, :]
+
 
         '''
 
