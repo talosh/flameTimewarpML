@@ -338,8 +338,8 @@ class ApplyModelDialog():
                 f'{tw_clip_name}.json'
             )
 
-            import json
             try:
+                import json
                 with open(lockfile_path, 'w') as json_file:
                     json.dump(data, json_file, indent=4)
             except Exception as e:
