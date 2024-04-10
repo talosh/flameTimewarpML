@@ -1195,6 +1195,9 @@ def main():
         for param in flownet.module.encode.parameters():
             param.requires_grad = True
 
+        img0.requires_grad=True
+        img2.requires_grad=True
+
         # for name, param in flownet.named_parameters():
         #     print(name, param.requires_grad)
 
