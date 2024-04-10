@@ -38,10 +38,10 @@ class Model:
 		class Head(Module):
 			def __init__(self):
 				super(Head, self).__init__()
-				self.cnn0 = torch.nn.Conv2d(3, 32, 3, 2, 1)
-				self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-				self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
+				self.cnn0 = torch.nn.Conv2d(3, 24, 3, 2, 1)
+				self.cnn1 = torch.nn.Conv2d(24, 24, 3, 1, 1)
+				self.cnn2 = torch.nn.Conv2d(24, 24, 3, 1, 1)
+				self.cnn3 = torch.nn.ConvTranspose2d(24, 8, 4, 2, 1)
 				self.relu = torch.nn.LeakyReLU(0.2, True)
 
 			def forward(self, x, feat=False):
