@@ -1199,14 +1199,15 @@ def main():
         #     print(name, param.requires_grad)
 
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
+        mask = mask_list[3]
         output = merged[3]
-        
+
+
         # flow_list[3].retain_grad()
         # mask_list[3].retain_grad()
         # warped_img0 = warp(img0, flow_list[3][:, :2])
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
-        # mask = mask_list[3]
 
         loss_x8 = criterion_mse(
             torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False),
