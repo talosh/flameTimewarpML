@@ -247,3 +247,20 @@ class Model:
 	
 	def get_training_model(self):
 		return self.training_model
+
+	def load_model(self, path, flownet, rank=0):
+		import torch
+		def convert(param):
+			if rank == -1:
+				return {
+					k.replace("module.", ""): v
+					for k, v in param.items()
+					if "module." in k
+				}
+			else:
+				return param
+		if rank <= 0:
+			if torch.cuda.is_available():
+				flownet.load_state_dict(convert(torch.load(path)), False)
+			else:
+				flownet.load_state_dict(convert(torch.load(path, map_location ='cpu')), False)
