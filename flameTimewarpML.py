@@ -341,7 +341,7 @@ class ApplyModelDialog():
             try:
                 import json
                 with open(lockfile_path, 'w') as json_file:
-                    json.dump(data, json_file, indent=4)
+                    json.dump(json_info, json_file, indent=4)
             except Exception as e:
                 dialog = flame.messages.show_in_dialog(
                     title = f'{settings["app_name"]}',
