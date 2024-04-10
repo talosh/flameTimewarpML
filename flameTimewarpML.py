@@ -198,42 +198,6 @@ class ApplyModelDialog():
                 self.fw.save_prefs()
             self.window.show()
 
-        '''
-        def apply():
-            """
-            Export selected clips and open Timewarp console
-            """
-
-            # Get clip info
-            first_clip_name = self.selection[0].name.get_value()
-            result_folder = os.path.abspath(
-                os.path.join(
-                    self.export_path_entry.text(),
-                    f'{sanitized(first_clip_name)}_ML_{create_timestamp_uid()}'
-                    )
-                )
-            source_folder = os.path.abspath(
-                os.path.join(
-                    result_folder,
-                    'src'
-                    )
-                )
-            
-            # Export selected clips
-            clip_number = 1
-            for item in self.selection:
-                if isinstance(item, (flame.PyClip)):
-                    clip = item
-                    source_clip_folder = os.path.join(source_folder, f'{clip_number:02}')
-                    export_clip(clip, source_clip_folder)
-                    clip_number += 1
-
-            first_clip_parent = self.selection[0].parent
-        
-            # Close expoty and apply window
-            self.window.close()
-        '''
-
         # Create export and apply window
         self.window = PyFlameQDialog(
             width=800,
@@ -323,11 +287,12 @@ class ApplyModelDialog():
         for clip, tw_setup_string in self.verified_clips:
             number_of_clips += 1
             clip_name = clip.name.get_value()
+            tw_clip_name = self.fw.sanitized(clip_name) + '_TWML' + '_' + self.fw.create_timestamp_uid()
 
             result_folder = os.path.abspath(
                 os.path.join(
                     self.working_folder, 
-                    self.fw.sanitized(clip_name) + '_TWML' + '_' + self.fw.create_timestamp_uid()
+                    tw_clip_name
                     )
                 )
             
@@ -355,13 +320,37 @@ class ApplyModelDialog():
             
             self.export_clip(clip, source_clip_folder, export_preset=export_preset)
 
-            json_info = {}
-            json_info['input'] = source_clip_folder
-            json_info['output'] = result_folder
-            json_info['model'] = self.prefs.get('trained_models_folder')
-
             record_in = clip.versions[0].tracks[0].segments[0].record_in.relative_frame
             record_out = clip.versions[0].tracks[0].segments[0].record_out.relative_frame
+
+            json_info = {}
+            json_info['mode'] = 'timewarp'
+            json_info['input'] = source_clip_folder
+            json_info['output'] = result_folder
+            json_info['clip_name'] = tw_clip_name
+            json_info['model'] = self.prefs.get('trained_models_folder')
+            json_info['setup'] = tw_setup_string
+            json_info['record_in'] = record_in
+            json_info['record_out'] = record_out
+
+            lockfile_path = os.path.join(
+                result_folder,
+                f'{tw_clip_name}.json'
+            )
+
+            import json
+            try:
+                1/0
+                with open(file_path, 'w') as lockfile_path:
+                    json.dump(data, json_file, indent=4)
+            except Exception as e:
+                dialog = flame.messages.show_in_dialog(
+                    title = f'{settings["app_name"]}',
+                    message = f'Unable to save {lockfile_path}: {e}',
+                    type = 'error',
+                    buttons = ['Ok'])
+
+
 
 
             '''
