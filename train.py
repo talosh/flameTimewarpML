@@ -1144,7 +1144,7 @@ def main():
             f'{os.path.dirname(trained_model_path)}/pretrained_teacher_v007.pth'
             )
         flownet_teacher.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
-        print('loaded previously saved Flownet state')
+        print('loaded previously saved FlownetTeacher state')
     except Exception as e:
         print (f'unable to load FlownetTeacher state: {e}')
     flownet_teacher.eval()
