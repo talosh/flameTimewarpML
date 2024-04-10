@@ -26,13 +26,18 @@ class Stream(QObject):
 
 # A thread that does some work and produces output
 class Worker(QThread):
+
+    result = Signal(bool, str)
+
     def __init__(self, argv, parent=None):
         super(Worker, self).__init__(parent)
         self.argv = argv
 
     def run(self):
-        print ('hello')
-        print (self.argv)
+        if len(self.argv) < 3:
+            message = f'Missing input arguments:\n{self.argv}'
+            self.result.emit(False, message)
+            return
 
         import torch
         if torch.backends.mps.is_available():
@@ -49,6 +54,7 @@ class Worker(QThread):
                       # ascii=False,
                       ncols=50):
             time.sleep(0.1)  # Simulate work
+        self.result.emit(True, '')
 
 # Main window class
 class MainWindow(QMainWindow):
@@ -60,7 +66,9 @@ class MainWindow(QMainWindow):
         sys.stdout = Stream(newText=self.onUpdateText)
         sys.stderr = Stream(newText=self.onUpdateText)
 
+        self.worker_status = False
         self.worker = Worker(sys.argv)
+        self.worker.result.connect(self.handleWorkerResult)
         self.worker.finished.connect(self.onWorkerFinished)
         self.worker.start()
 
@@ -155,9 +163,14 @@ class MainWindow(QMainWindow):
         else:
             super().keyPressEvent(event)
 
+    def handleWorkerResult(self, status, message):
+        self.worker_status = status
+
     def onWorkerFinished(self):
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
+        if self.worker_status:
+            self.close()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
