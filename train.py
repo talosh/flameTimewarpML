@@ -968,7 +968,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size (int) (default: 8)')
     parser.add_argument('--first_epoch', type=int, default=-1, help='Epoch (int) (default: Saved)')
     parser.add_argument('--epochs', type=int, default=-1, help='Epoch (int) (default: Saved)')
-    parser.add_argument('--no_eval', action='store_false', dest='eval', default=True, help='Disable evaluation mode')
+    parser.add_argument('--eval', type=int, dest='eval', default=-1, help='Evaluate after each epoch for N samples')
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
 
@@ -1351,7 +1351,7 @@ def main():
 
             psnr = 0
 
-            if args.eval:
+            if args.eval != -1:
                 psnr_list = []
 
                 try:
