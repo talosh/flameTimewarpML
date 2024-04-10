@@ -113,6 +113,8 @@ class Model:
 				self.encode = Head()
 
 			def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
+				return self.encode(img0)
+
 				img0 = img0
 				img1 = img1
 				f0 = self.encode(img0)

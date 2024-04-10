@@ -1016,8 +1016,6 @@ def main():
     write_thread.daemon = True
     write_thread.start()
 
-    from models.flownet_v002 import Model as Flownet
-
     Flownet = find_and_import_model(base_name='flownet', model_name=args.model)
     print (Flownet.get_name())
     flownet = Flownet().get_training_model()().to(device)
@@ -1137,6 +1135,21 @@ def main():
     print('\n\n')
     batch_idx = 0
 
+    # ENCODER TRANSFER
+
+    from models.flownet_v001 import Model as Flownet_Teacher
+    flownet_teacher = Flownet_Teacher().get_training_model()().to(device)
+    try:
+        checkpoint = torch.load(
+            f'{os.path.dirname(trained_model_path)}/flameTWML_models/pretrained_teacher_v007.pth'
+            )
+        flownet_teacher.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
+        print('loaded previously saved Flownet state')
+    except Exception as e:
+        print (f'unable to load FlownetTeacher state: {e}')
+    flownet_teacher.eval()
+
+
     while True:
         data_time = time.time() - time_stamp
         time_stamp = time.time()
@@ -1191,7 +1204,7 @@ def main():
 
         flownet.train()
 
-        # '''
+        '''
         # Freeze all layers
         for param in flownet.parameters():
             param.requires_grad = False
@@ -1205,8 +1218,19 @@ def main():
 
         # for name, param in flownet.named_parameters():
         #     print(name, param.requires_grad)
-        # '''
-        
+        '''
+        with torch.no_grad():
+            # Freeze all layers
+            for param in flownet_teacher.parameters():
+                param.requires_grad = False
+            f0 = flownet_teacher(img0, img1, img2, None, None, ratio, scale=training_scale)
+
+        f0_st = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
+
+        loss = criterion_mse(f0_st, f0)
+
+        '''
+
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
         mask = mask_list[3]
         output = merged[3]
@@ -1244,6 +1268,8 @@ def main():
 
         loss_l1 = criterion_l1(merged[3], img1)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
+
+        '''
 
         epoch_loss.append(float(loss_l1.item()))
         steps_loss.append(float(loss_l1.item()))
