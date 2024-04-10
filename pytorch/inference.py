@@ -34,8 +34,11 @@ class Worker(QThread):
         self.argv = argv
 
     def run(self):
+        print ('hello')
+
         if len(self.argv) < 3:
             message = f'Missing input arguments:\n{self.argv}'
+            print (message)
             self.result.emit(False, message)
             return
 
