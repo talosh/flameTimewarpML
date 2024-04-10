@@ -41,7 +41,6 @@ class Worker(QThread):
             return
 
         try:
-            1 / 0
             import json
             with open(self.argv[1], 'r') as json_file:
                 json_info = json.load(json_file)
