@@ -949,6 +949,10 @@ def find_and_import_model(models_dir='./models', base_name=None, model_name=None
         print(f"Model not found: {base_name or model_name}")
         return None
 
+# def init_weights(m):
+#     if isinstance(m, torch.nn.Linear):
+
+
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
