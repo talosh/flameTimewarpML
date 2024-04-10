@@ -1141,7 +1141,7 @@ def main():
     flownet_teacher = Flownet_Teacher().get_training_model()().to(device)
     try:
         checkpoint = torch.load(
-            f'{os.path.dirname(trained_model_path)}/flameTWML_models/pretrained_teacher_v007.pth'
+            f'{os.path.dirname(trained_model_path)}/pretrained_teacher_v007.pth'
             )
         flownet_teacher.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
         print('loaded previously saved Flownet state')
