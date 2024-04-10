@@ -47,8 +47,13 @@ class ApplyModelDialog():
 
         try:
             self.fw = flameAppFramework(settings = settings)
-        except:
-            self.fw = None
+        except Exception as e:
+            dialog = flame.messages.show_in_dialog(
+                title = f'{settings["app_name"]}',
+                message = f'Unable to init TimewarpmML framework: {e}',
+                type = 'error',
+                buttons = ['Ok'])
+            return False
 
         self.working_folder = self.fw.prefs.get('working_folder', os.path.expanduser('~'))
         if os.getenv('FLAMETWML_WORK_FOLDER'):
@@ -67,6 +72,8 @@ class ApplyModelDialog():
         if not self.verified_clips:
             return
 
+        self.loops = []
+        
         self.main_window()
 
     def verify_selection(self, selection, mode):
@@ -350,9 +357,24 @@ class ApplyModelDialog():
                     buttons = ['Ok'])
                 return False
 
-            self.run_inference()
+            new_clip_name = clip_name + '_TWML'
+            watcher = threading.Thread(
+                target=self.import_watcher, 
+                args=(
+                    result_folder, 
+                    new_clip_name, 
+                    clip.parent, 
+                    [source_clip_folder],
+                    lockfile_path
+                    )
+                )
+            watcher.daemon = True
+            watcher.start()
+            self.loops.append(watcher)
 
-    def run_inference(self):
+            self.run_inference(lockfile_path)
+
+    def run_inference(self, lockfile_path):
         import platform
 
         conda_python_path = os.path.join(
@@ -401,6 +423,68 @@ class ApplyModelDialog():
             self.log('Executing command: %s' % ml_cmd)
             os.system(ml_cmd)
         '''
+
+    def import_watcher(self, import_path, new_clip_name, clip, folders_to_cleanup, lockfile):
+        flame_friendly_path = None
+        destination = clip.parent
+        def import_flame_clip():
+            import flame
+            new_clips = flame.import_clips(flame_friendly_path, destination)
+            
+            if len(new_clips) > 0:
+                new_clip = new_clips[0]
+                if new_clip:
+                    new_clip.name.set_value(new_clip_name)
+            try:
+                flame.execute_shortcut('Refresh Thumbnails')
+            except:
+                pass
+
+            # Colour Mgmt logic for future setting
+            '''
+            for version in new_clip.versions:
+                for track in version.tracks:
+                    for segment in track.segments:
+                        segment.create_effect('Source Colour Mgmt')
+            '''
+            # End of Colour Mgmt logic for future settin
+
+        while self.threads:
+            if not os.path.isfile(lockfile):
+                self.log('Importing result from: %s' % import_path)
+                file_names = [f for f in os.listdir(import_path) if f.endswith('.exr')]
+                if file_names:
+                    file_names.sort()
+                    first_frame, ext = os.path.splitext(file_names[0])
+                    last_frame, ext = os.path.splitext(file_names[-1])
+                    flame_friendly_path = os.path.join(import_path, '[' + first_frame + '-' + last_frame + ']' + '.exr')
+
+                    import flame
+                    flame.schedule_idle_event(import_flame_clip)
+
+                # clean-up source files used
+                self.log('Cleaning up temporary files used: %s' % pformat(folders_to_cleanup))
+                for folder in folders_to_cleanup:
+                    cmd = 'rm -f "' + os.path.abspath(folder) + '/"*'
+                    self.log('Executing command: %s' % cmd)
+                    os.system(cmd)
+                    try:
+                        os.rmdir(folder)
+                    except Exception as e:
+                        self.log('Error removing %s: %s' % (folder, e))
+
+                if os.getenv('FLAMETWML_HARDCOMMIT') == 'True':
+                    time.sleep(1)
+                    cmd = 'rm -f "' + os.path.abspath(import_path) + '/"*'
+                    self.log('Executing command: %s' % cmd)
+                    os.system(cmd)
+                    try:
+                        os.rmdir(import_path)
+                    except Exception as e:
+                        self.log('Error removing %s: %s' % (import_path, e))
+                break
+            time.sleep(0.1)
+
 
     def export_clip(self, clip, export_dir, export_preset = None):
         import flame
