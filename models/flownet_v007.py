@@ -107,13 +107,9 @@ class Model:
 			def forward(self, img0, img1, timestep, mask, flow, scale=1):
 				img0 = torch.nn.functional.interpolate(img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 				img1 = torch.nn.functional.interpolate(img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-				# img0.retain_grad()
-				# img1.retain_grad()
 				timestep = (img0[:, :1].clone() * 0 + 1) * timestep
 				f0 = self.encode(img0)
 				f1 = self.encode(img1)
-				# f0.retain_grad()
-				# f1.retain_grad()
 				if flow is None:
 					x = torch.cat((img0, img1, f0, f1, timestep), 1)
 				if flow is not None:
@@ -121,12 +117,8 @@ class Model:
 					mask = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 					warped_img0 = warp(img0, flow[:, :2])
 					warped_img1 = warp(img1, flow[:, 2:4])
-					# warped_img0.retain_grad()
-					# warped_img1.retain_grad()
 					warped_f0 = warp(f0, flow[:, :2])
 					warped_f1 = warp(f1, flow[:, 2:4])
-					# warped_f0.retain_grad()
-					# warped_f1.retain_grad()
 					x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, flow), 1)
 				feat = self.conv0(x)
 				feat = self.convblock(feat)
