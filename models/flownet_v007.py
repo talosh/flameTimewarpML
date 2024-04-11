@@ -163,8 +163,12 @@ class Model:
 				# return self.encode(img0)
 				img0 = img0
 				img1 = img1
-				f0 = self.encode(img0)
-				f1 = self.encode(img1)
+				
+				f0 = None
+				f1 = None
+				
+				# f0 = self.encode(img0)
+				# f1 = self.encode(img1)
 
 				'''
 				if not torch.is_tensor(timestep):
@@ -197,8 +201,10 @@ class Model:
 					conf_list.append(conf)
 					warped_img0 = warp(img0, flow[:, :2])
 					warped_img1 = warp(img1, flow[:, 2:4])
-					warped_f0 = warp(f0, flow[:, :2])
-					warped_f1 = warp(f1, flow[:, 2:4])
+					warped_f0 = None
+					warped_f1 = None
+					# warped_f0 = warp(f0, flow[:, :2])
+					# warped_f1 = warp(f1, flow[:, 2:4])
 					merged_student = (warped_img0, warped_img1)
 					merged.append(merged_student)
 				conf = torch.sigmoid(torch.cat(conf_list, 1))
