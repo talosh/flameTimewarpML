@@ -125,7 +125,7 @@ class Model:
 					torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
 					torch.nn.PixelShuffle(2)
 				)
-				self.encode = Head()
+				# self.encode = Head()
 
 			def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
 				img0 = torch.nn.functional.interpolate(img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
