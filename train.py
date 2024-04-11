@@ -1136,7 +1136,7 @@ def main():
     batch_idx = 0
 
     # ENCODER TRANSFER
-
+    '''
     from models.flownet_v001 import Model as Flownet_Teacher
     flownet_teacher = Flownet_Teacher().get_training_model()().to(device)
     try:
@@ -1148,7 +1148,7 @@ def main():
     except Exception as e:
         print (f'unable to load FlownetTeacher state: {e}')
     flownet_teacher.eval()
-
+    '''
 
     while True:
         data_time = time.time() - time_stamp
@@ -1219,6 +1219,8 @@ def main():
         # for name, param in flownet.named_parameters():
         #     print(name, param.requires_grad)
         '''
+
+        '''
         with torch.no_grad():
             # Freeze all layers
             for param in flownet_teacher.parameters():
@@ -1233,9 +1235,8 @@ def main():
         
         output = img0
         mask = img0[:, 0:1, :, :]
-
-
         '''
+        # '''
 
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
         mask = mask_list[3]
@@ -1266,7 +1267,7 @@ def main():
 
         loss_x1 = criterion_mse(merged[3], img1)
 
-        loss = 0.1 * loss_x8 + 0.05 * loss_x4 + 0.05 * loss_x2 + 0.8 * loss_x1
+        loss = 0.05 * loss_x8 + 0.05 * loss_x4 + 0.05 * loss_x2 + 0.85 * loss_x1
 
         # print(loss.requires_grad)  # Should be True
 
@@ -1275,7 +1276,7 @@ def main():
         loss_l1 = criterion_l1(merged[3], img1)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
 
-        '''
+        # '''
 
         epoch_loss.append(float(loss_l1.item()))
         steps_loss.append(float(loss_l1.item()))
