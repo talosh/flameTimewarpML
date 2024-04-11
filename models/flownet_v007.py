@@ -135,11 +135,11 @@ class Model:
 				timestep = (img0[:, :1].clone() * 0 + 1) * timestep
 				x = torch.cat((img0, img1, f0_loc, f1_loc, timestep), 1)
 				if flow is not None:
-					f0 = torch.nn.functional.interpolate(f0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-					f1 = torch.nn.functional.interpolate(f1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+					# f0 = torch.nn.functional.interpolate(f0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+					# f1 = torch.nn.functional.interpolate(f1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 					mask = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 					flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
-					x = torch.cat((img0, img1, f0, f1, timestep, mask, flow), 1)
+					x = torch.cat((img0, img1, f0_loc, f1_loc, timestep, mask, flow), 1)
 				feat = self.conv0(x)
 				feat = self.convblock(feat)
 				tmp = self.lastconv(feat)
