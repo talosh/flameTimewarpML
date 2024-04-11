@@ -127,11 +127,15 @@ class Model:
 				)
 				self.encode = Head()
 
-			def forward(self, x, flow, scale=1):
-				x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+			def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
+				img0 = torch.nn.functional.interpolate(img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+				img1 = torch.nn.functional.interpolate(img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+				timestep = (img0[:, :1].clone() * 0 + 1) * timestep
+				x = torch.cat((img0, img1, f0, f1, timestep), 1)
 				if flow is not None:
+					mask = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 					flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
-					x = torch.cat((x, flow), 1)
+					x = torch.cat((img0, img1, f0, f1, timestep, flow), 1)
 				feat = self.conv0(x)
 				feat = self.convblock(feat)
 				tmp = self.lastconv(feat)
@@ -158,10 +162,13 @@ class Model:
 				f0 = self.encode(img0)
 				f1 = self.encode(img1)
 
+				'''
 				if not torch.is_tensor(timestep):
 					timestep = (img0[:, :1].clone() * 0 + 1) * timestep
 				else:
 					timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
+				'''
+
 				flow_list = []
 				merged = []
 				mask_list = []
@@ -176,10 +183,10 @@ class Model:
 				flow = None
 				for i in range(4):
 					if flow is not None:
-						flow_d, mask, conf = stu[i](torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[i])
+						flow_d, mask, conf = stu[i](warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, flow, scale=scale[i])
 						flow = flow + flow_d
 					else:
-						flow, mask, conf = stu[i](torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[i])
+						flow, mask, conf = stu[i](img0, img1, f0, f1, timestep, None, None, scale=scale[i])
 
 					mask_list.append(mask)
 					flow_list.append(flow)
