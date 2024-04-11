@@ -35,6 +35,7 @@ class Model:
 			g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
 			return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
+		'''
 		class Head(Module):
 			def __init__(self):
 				super(Head, self).__init__()
@@ -69,6 +70,28 @@ class Model:
 				x = self.relu(x)
 				x = self.cnn4(x)
 				return x
+		'''
+
+		class Head(Module):
+			def __init__(self):
+				super(Head, self).__init__()
+				self.cnn0 = torch.nn.Conv2d(3, 32, 3, 2, 1)
+				self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
+				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
+				self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
+				self.relu = torch.nn.LeakyReLU(0.2, True)
+
+			def forward(self, x, feat=False):
+				x0 = self.cnn0(x)
+				x = self.relu(x0)
+				x1 = self.cnn1(x)
+				x = self.relu(x1)
+				x2 = self.cnn2(x)
+				x = self.relu(x2)
+				x3 = self.cnn3(x)
+				if feat:
+					return [x0, x1, x2, x3]
+				return x3
 
 		class ResConv(Module):
 			def __init__(self, c, dilation=1):
@@ -104,22 +127,11 @@ class Model:
 				)
 				self.encode = Head()
 
-			def forward(self, img0, img1, timestep, mask, flow, scale=1):
-				img0 = torch.nn.functional.interpolate(img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-				img1 = torch.nn.functional.interpolate(img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-				timestep = (img0[:, :1].clone() * 0 + 1) * timestep
-				f0 = self.encode(img0)
-				f1 = self.encode(img1)
-				if flow is None:
-					x = torch.cat((img0, img1, f0, f1, timestep), 1)
+			def forward(self, x, flow, scale=1):
+				x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 				if flow is not None:
 					flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
-					mask = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-					warped_img0 = warp(img0, flow[:, :2])
-					warped_img1 = warp(img1, flow[:, 2:4])
-					warped_f0 = warp(f0, flow[:, :2])
-					warped_f1 = warp(f1, flow[:, 2:4])
-					x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, flow), 1)
+					x = torch.cat((x, flow), 1)
 				feat = self.conv0(x)
 				feat = self.convblock(feat)
 				tmp = self.lastconv(feat)
@@ -140,19 +152,16 @@ class Model:
 				self.encode = Head()
 
 			def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
+				# return self.encode(img0)
 				img0 = img0
 				img1 = img1
-				
-				# return self.encode(img0)
-				'''
 				f0 = self.encode(img0)
 				f1 = self.encode(img1)
+
 				if not torch.is_tensor(timestep):
 					timestep = (img0[:, :1].clone() * 0 + 1) * timestep
 				else:
 					timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
-				'''
-
 				flow_list = []
 				merged = []
 				mask_list = []
@@ -166,19 +175,19 @@ class Model:
 				stu = [self.block0, self.block1, self.block2, self.block3]
 				flow = None
 				for i in range(4):
-					if flow is None:
-						flow, mask, conf = stu[i](img0, img1, timestep, None, None, scale=scale[i])
-					else:
-						flow_d, mask, conf = stu[i](img0, img1, timestep, mask, flow, scale=scale[i])
+					if flow is not None:
+						flow_d, mask, conf = stu[i](torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[i])
 						flow = flow + flow_d
+					else:
+						flow, mask, conf = stu[i](torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[i])
 
 					mask_list.append(mask)
 					flow_list.append(flow)
 					conf_list.append(conf)
 					warped_img0 = warp(img0, flow[:, :2])
 					warped_img1 = warp(img1, flow[:, 2:4])
-					# warped_f0 = warp(f0, flow[:, :2])
-					# warped_f1 = warp(f1, flow[:, 2:4])
+					warped_f0 = warp(f0, flow[:, :2])
+					warped_f1 = warp(f1, flow[:, 2:4])
 					merged_student = (warped_img0, warped_img1)
 					merged.append(merged_student)
 				conf = torch.sigmoid(torch.cat(conf_list, 1))
