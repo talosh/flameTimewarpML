@@ -54,8 +54,8 @@ class Model:
 				self.cnn3 = torch.nn.Conv2d(filt_cnt_5x5, filt_cnt_7x7, 3, 1, 1)
 				self.cnn4 = torch.nn.ConvTranspose2d(num_out_filters, 8, 4, 2, 1)
 				self.shortcut = torch.nn.Conv2d(filt_cnt_3x3, num_out_filters, 1, 1)
-				# self.relu = torch.nn.LeakyReLU(inplace=True)
-				self.relu = torch.nn.ELU(inplace=True)
+				self.relu = torch.nn.LeakyReLU(inplace=True)
+				# self.relu = torch.nn.ELU(inplace=True)
 
 			def forward(self, x, feat=False):
 				x = self.cnn0(x)
