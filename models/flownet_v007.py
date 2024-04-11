@@ -127,7 +127,7 @@ class Model:
 				)
 				# self.encode = Head()
 
-			def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
+			def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1, encode=None):
 				img0 = torch.nn.functional.interpolate(img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 				img1 = torch.nn.functional.interpolate(img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 				f0 = torch.nn.functional.interpolate(f0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
@@ -185,10 +185,10 @@ class Model:
 				flow = None
 				for i in range(4):
 					if flow is not None:
-						flow_d, mask, conf = stu[i](warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, flow, scale=scale[i])
+						flow_d, mask, conf = stu[i](warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, flow, scale=scale[i], encode=self.encode)
 						flow = flow + flow_d
 					else:
-						flow, mask, conf = stu[i](img0, img1, f0, f1, timestep, None, None, scale=scale[i])
+						flow, mask, conf = stu[i](img0, img1, f0, f1, timestep, None, None, scale=scale[i], encode=self.encode)
 
 					mask_list.append(mask)
 					flow_list.append(flow)
