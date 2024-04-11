@@ -1206,26 +1206,45 @@ def main():
 
         # '''
         # Freeze all layers
-        for param in flownet.parameters():
+        # for param in flownet.parameters():
+        #    param.requires_grad = False
+
+        # Freeze predictors
+        for param in flownet.module.block0.conv0.parameters():
+            param.requires_grad = False
+        for param in flownet.module.block0.convblock.parameters():
+            param.requires_grad = False
+        for param in flownet.module.block0.lastconv.parameters():
             param.requires_grad = False
 
-        # Unfreeze encoders
-        for param in flownet.module.block0.encode.parameters():
-            param.requires_grad = True
-        for param in flownet.module.block1.encode.parameters():
-            param.requires_grad = True
-        for param in flownet.module.block2.encode.parameters():
-            param.requires_grad = True
-        for param in flownet.module.block3.encode.parameters():
-            param.requires_grad = True
+        for param in flownet.module.block1.conv0.parameters():
+            param.requires_grad = False
+        for param in flownet.module.block1.convblock.parameters():
+            param.requires_grad = False
+        for param in flownet.module.block1.lastconv.parameters():
+            param.requires_grad = False
 
+        for param in flownet.module.block2.conv0.parameters():
+            param.requires_grad = False
+        for param in flownet.module.block2.convblock.parameters():
+            param.requires_grad = False
+        for param in flownet.module.block2.lastconv.parameters():
+            param.requires_grad = False
 
-        img0.requires_grad=True
-        img2.requires_grad=True
+        for param in flownet.module.block3.conv0.parameters():
+            param.requires_grad = False
+        for param in flownet.module.block3.convblock.parameters():
+            param.requires_grad = False
+        for param in flownet.module.block3.lastconv.parameters():
+            param.requires_grad = False
 
-        # for name, param in flownet.named_parameters():
-        #     print(name, param.requires_grad)
-        # '''
+            
+
+        # img0.requires_grad=True
+        # img2.requires_grad=True
+
+        for name, param in flownet.named_parameters():
+            print(name, param.requires_grad)
 
         '''
         with torch.no_grad():
