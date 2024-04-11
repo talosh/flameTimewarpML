@@ -130,6 +130,8 @@ class Model:
 			def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
 				img0 = torch.nn.functional.interpolate(img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 				img1 = torch.nn.functional.interpolate(img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+				f0 = torch.nn.functional.interpolate(f0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+				f1 = torch.nn.functional.interpolate(f1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 				timestep = (img0[:, :1].clone() * 0 + 1) * timestep
 				x = torch.cat((img0, img1, f0, f1, timestep), 1)
 				if flow is not None:
