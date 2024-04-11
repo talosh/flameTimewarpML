@@ -658,7 +658,7 @@ class Timewarp():
             timing_interpolator = FlameChannellInterpolator(speed_timing_channel)
 
             for frame_number in range (start_frame, end_frame+1):
-                frame_value_map[frame_number] = timing_interpolator.sample_at(frame_number)
+                frame_value_map[frame_number] = round(timing_interpolator.sample_at(frame_number), 4)
                     
         return frame_value_map
 
