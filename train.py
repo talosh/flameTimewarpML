@@ -1397,7 +1397,7 @@ def main():
                 psnr_list = []
 
                 try:
-                    for ev_item_index in range(111):
+                    for ev_item_index in range(args.eval):
 
                         clear_lines(2)
                         print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
