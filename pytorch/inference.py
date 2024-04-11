@@ -12,7 +12,13 @@ except:
 
 class Timewarp():
     def __init__(self, json_info):
-        pass
+        self.json_info = json_info
+
+    def process(self):
+        tw_setup_string = self.json_info.get('setup')
+        frame_value_map = self.bake_flame_tw_setup(tw_setup_string)
+        print (f'{frame_value_map}')
+
 
     def bake_flame_tw_setup(self, tw_setup_string):
         import numpy as np
@@ -701,6 +707,10 @@ class Worker(QThread):
         else:
             print ("MPS device not found.")
 
+        tw = Timewarp(json_info)
+        tw.process()
+
+        '''
         for i in tqdm(range(100),
                       file=sys.stdout,
                       bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}', 
@@ -709,6 +719,7 @@ class Worker(QThread):
                       ncols=50):
             time.sleep(0.1)  # Simulate work
         self.result.emit(True, '')
+        '''
 
 # Main window class
 class MainWindow(QMainWindow):
