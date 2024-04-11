@@ -35,13 +35,51 @@ class Model:
 			g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
 			return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
+		# '''
 		class Head(Module):
 			def __init__(self):
 				super(Head, self).__init__()
-				self.cnn0 = torch.nn.Conv2d(3, 31, 3, 2, 1)
-				self.cnn1 = torch.nn.Conv2d(31, 31, 3, 1, 1)
-				self.cnn2 = torch.nn.Conv2d(31, 31, 3, 1, 1)
-				self.cnn3 = torch.nn.ConvTranspose2d(31, 8, 4, 2, 1)
+				alpha=1.69
+				num_in_channels = 3
+				num_filters = 32
+				self.W = num_filters * alpha
+				filt_cnt_3x3 = int(self.W*0.167)
+				filt_cnt_5x5 = int(self.W*0.333)
+				filt_cnt_7x7 = int(self.W*0.5)
+				num_out_filters = filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7
+
+				self.cnn0 = torch.nn.Conv2d(num_in_channels, filt_cnt_3x3, 3, 2, 1)
+				self.cnn1 = torch.nn.Conv2d(filt_cnt_3x3, filt_cnt_3x3, 3, 1, 1)
+				self.cnn2 = torch.nn.Conv2d(filt_cnt_3x3, filt_cnt_5x5, 3, 1, 1)
+				self.cnn3 = torch.nn.Conv2d(filt_cnt_5x5, filt_cnt_7x7, 3, 1, 1)
+				self.cnn4 = torch.nn.ConvTranspose2d(num_out_filters, 8, 4, 2, 1)
+				self.shortcut = torch.nn.Conv2d(filt_cnt_3x3, num_out_filters, 1, 1)
+				self.relu = torch.nn.LeakyReLU(inplace=True)
+
+			def forward(self, x, feat=False):
+				x = self.cnn0(x)
+				x = self.relu(x)
+				shrtct = self.shortcut(x)
+				a = self.cnn1(x)
+				a = self.relu(a)
+				b = self.cnn2(a)
+				b = self.relu(b)
+				c = self.cnn3(b)
+				c = self.relu(c)
+				x = (torch.cat([a, b, c], dim=1) + shrtct)
+				x = self.relu(x)
+				x = self.cnn4(x)
+				return x
+		# '''
+
+		'''
+		class Head(Module):
+			def __init__(self):
+				super(Head, self).__init__()
+				self.cnn0 = torch.nn.Conv2d(3, 32, 3, 2, 1)
+				self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
+				self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
+				self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
 				self.relu = torch.nn.LeakyReLU(0.2, True)
 
 			def forward(self, x, feat=False):
@@ -55,13 +93,15 @@ class Model:
 				if feat:
 					return [x0, x1, x2, x3]
 				return x3
+		'''
 
 		class ResConv(Module):
 			def __init__(self, c, dilation=1):
 				super().__init__()
-				self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=False)
+				self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect')
+				self.conv1x = torch.nn.Conv2d(c, c, 1, 1)
 				self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-				self.relu = torch.nn.LeakyReLU(0.2, True) # torch.nn.SELU(inplace = True)
+				self.relu = torch.nn.LeakyReLU(0.2, True)
 				
 			def forward(self, x):
 				return self.relu(self.conv(x) * self.beta + x)
@@ -87,12 +127,21 @@ class Model:
 					torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
 					torch.nn.PixelShuffle(2)
 				)
+				self.encode = Head()
 
-			def forward(self, x, flow, scale=1):
-				x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+			def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1, encode=None):
+				img0 = torch.nn.functional.interpolate(img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+				img1 = torch.nn.functional.interpolate(img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+				f0_loc = self.encode(img0)
+				f1_loc = self.encode(img1)
+				timestep = (img0[:, :1].clone() * 0 + 1) * timestep
+				x = torch.cat((img0, img1, f0_loc, f1_loc, timestep), 1)
 				if flow is not None:
+					# f0 = torch.nn.functional.interpolate(f0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+					# f1 = torch.nn.functional.interpolate(f1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+					mask = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 					flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
-					x = torch.cat((x, flow), 1)
+					x = torch.cat((img0, img1, f0_loc, f1_loc, timestep, mask, flow), 1)
 				feat = self.conv0(x)
 				feat = self.convblock(feat)
 				tmp = self.lastconv(feat)
@@ -110,18 +159,26 @@ class Model:
 				self.block1 = Flownet(8+4+16, c=128)
 				self.block2 = Flownet(8+4+16, c=96)
 				self.block3 = Flownet(8+4+16, c=64)
-				self.encode = Head()
+				# self.encode = Head()
 
 			def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
+				# return self.encode(img0)
 				img0 = img0
 				img1 = img1
-				f0 = self.encode(img0)
-				f1 = self.encode(img1)
+				
+				f0 = None
+				f1 = None
+				
+				# f0 = self.encode(img0)
+				# f1 = self.encode(img1)
 
+				'''
 				if not torch.is_tensor(timestep):
 					timestep = (img0[:, :1].clone() * 0 + 1) * timestep
 				else:
 					timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
+				'''
+
 				flow_list = []
 				merged = []
 				mask_list = []
@@ -136,18 +193,20 @@ class Model:
 				flow = None
 				for i in range(4):
 					if flow is not None:
-						flow_d, mask, conf = stu[i](torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[i])
+						flow_d, mask, conf = stu[i](warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, flow, scale=scale[i])
 						flow = flow + flow_d
 					else:
-						flow, mask, conf = stu[i](torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[i])
+						flow, mask, conf = stu[i](img0, img1, f0, f1, timestep, None, None, scale=scale[i])
 
 					mask_list.append(mask)
 					flow_list.append(flow)
 					conf_list.append(conf)
 					warped_img0 = warp(img0, flow[:, :2])
 					warped_img1 = warp(img1, flow[:, 2:4])
-					warped_f0 = warp(f0, flow[:, :2])
-					warped_f1 = warp(f1, flow[:, 2:4])
+					warped_f0 = None
+					warped_f1 = None
+					# warped_f0 = warp(f0, flow[:, :2])
+					# warped_f1 = warp(f1, flow[:, 2:4])
 					merged_student = (warped_img0, warped_img1)
 					merged.append(merged_student)
 				conf = torch.sigmoid(torch.cat(conf_list, 1))
@@ -179,8 +238,8 @@ class Model:
 
 	@staticmethod
 	def get_name():
-		return 'TWML_Flownet_v008'
-
+		return 'TWML_Flownet_v007'
+	
 	@staticmethod
 	def input_channels(model_state_dict):
 		channels = 3
@@ -204,7 +263,7 @@ class Model:
 		if platform.system() == 'Darwin':
 			return self.training_model
 		return self.model
-
+	
 	def get_training_model(self):
 		return self.training_model
 

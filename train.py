@@ -1204,21 +1204,28 @@ def main():
 
         flownet.train()
 
-        '''
+        # '''
         # Freeze all layers
         for param in flownet.parameters():
             param.requires_grad = False
 
-        # Unfreeze encoder
-        for param in flownet.module.encode.parameters():
+        # Unfreeze encoders
+        for param in flownet.module.block0.encode.parameters():
             param.requires_grad = True
+        for param in flownet.module.block1.encode.parameters():
+            param.requires_grad = True
+        for param in flownet.module.block2.encode.parameters():
+            param.requires_grad = True
+        for param in flownet.module.block3.encode.parameters():
+            param.requires_grad = True
+
 
         img0.requires_grad=True
         img2.requires_grad=True
 
         # for name, param in flownet.named_parameters():
         #     print(name, param.requires_grad)
-        '''
+        # '''
 
         '''
         with torch.no_grad():
