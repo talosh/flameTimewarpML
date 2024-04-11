@@ -13,6 +13,7 @@ except:
 class Timewarp():
     def __init__(self, json_info):
         self.json_info = json_info
+        print ('hello from tw')
 
     def process(self):
         tw_setup_string = self.json_info.get('setup')
@@ -696,8 +697,9 @@ class Worker(QThread):
             self.result.emit(False, message)
             return
         
-        print(f'{json_info}')
+        # print(f'{json_info}')
 
+        '''
         print ('Initializing PyTorch...')
         import torch
         if torch.backends.mps.is_available():
@@ -706,6 +708,7 @@ class Worker(QThread):
             print (x)
         else:
             print ("MPS device not found.")
+        '''
 
         tw = Timewarp(json_info)
         tw.process()
