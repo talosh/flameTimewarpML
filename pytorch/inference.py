@@ -22,6 +22,7 @@ class Timewarp():
         for k in self.json_info.keys():
             print (k)
         src_files_list = [file for file in self.source_folder if file.endswith('.exr')]
+        print (f'{src_files_list}')
 
 
 
