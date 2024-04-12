@@ -1032,7 +1032,7 @@ def main():
     criterion_l1 = torch.nn.L1Loss()
 
     # optimizer_flownet = Yogi(flownet.parameters(), lr=lr)
-    optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=4e-3)
+    optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=4e-4)
     '''
     def warmup(current_step, lr = 4e-3, number_warmup_steps = 999):
         mul_lin = current_step / number_warmup_steps
@@ -1204,11 +1204,7 @@ def main():
 
         flownet.train()
 
-        # '''
-        # Freeze all layers
-        # for param in flownet.parameters():
-        #    param.requires_grad = False
-
+        '''        
         # Freeze predictors
         for param in flownet.module.block0.conv0.parameters():
             param.requires_grad = False
@@ -1237,40 +1233,15 @@ def main():
             param.requires_grad = False
         for param in flownet.module.block3.lastconv.parameters():
             param.requires_grad = False
-
+        '''
             
-
-        # img0.requires_grad=True
-        # img2.requires_grad=True
-
         # for name, param in flownet.named_parameters():
         #     print(name, param.requires_grad)
-
-        '''
-        with torch.no_grad():
-            # Freeze all layers
-            for param in flownet_teacher.parameters():
-                param.requires_grad = False
-            f0 = flownet_teacher(img0, img1, img2, None, None, ratio, scale=training_scale)
-
-        f0_st = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
-
-        loss = criterion_mse(f0_st, f0)
-        loss_l1 = criterion_l1(f0_st, f0)
-        loss_l1_str = str(f'{loss_l1.item():.6f}')
-        
-        output = img0
-        mask = img0[:, 0:1, :, :]
-        '''
-        # '''
 
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
         mask = mask_list[3]
         output = merged[3]
 
-
-        # flow_list[3].retain_grad()
-        # mask_list[3].retain_grad()
         # warped_img0 = warp(img0, flow_list[3][:, :2])
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
