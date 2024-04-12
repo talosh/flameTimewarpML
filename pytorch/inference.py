@@ -140,197 +140,6 @@ class Timewarp():
                     interpolated_scalar = np.dot(self.basis, multipliers_vec)
                     return interpolated_scalar
 
-            class HermiteSegmentQuartic(LinearSegment):
-                '''
-                Make sure not to confuse them with quartic (= degree 4) Hermite splines, 
-                which are defined by 5 values per segment: function value and first derivative at both ends, 
-                and one of the second derivatives.
-                '''
-                '''
-                P(x0) = y0    =>    a0 + a1*x0 + a2*x0^2 + a3*x0^3 + a4*x0^4 = y0   --(1)
-                P(x1) = y1    =>    a0 + a1*x1 + a2*x1^2 + a3*x1^3 + a4*x1^4 = y1   --(2)
-                
-                P'(x0) = tx0    =>    a1 + 2*a2*x0 + 3*a3*x0^2 + 4*a4*x0^3 = tx0   --(3)
-                P'(x1) = tx1    =>    a1 + 2*a2*x1 + 3*a3*x1^2 + 4*a4*x1^3 = tx1   --(4)
-
-                We have four equations (equations (1)-(4)) and five unknowns (a0, a1, a2, a3, a4). 
-                To solve this system of equations, we can rewrite it in matrix form:
-
-                A * X = B
-
-                where A is the coefficient matrix, 
-                X is the column vector of unknowns, 
-                and B is the column vector of constants.
-
-                A = | 1   x0   x0^2   x0^3   x0^4 |
-                    | 1   x1   x1^2   x1^3   x1^4 |
-                    | 0   1    2*x0   3*x0^2 4*x0^3 |
-                    | 0   1    2*x1   3*x1^2 4*x1^3 |
-
-                X = | a0 |
-                    | a1 |
-                    | a2 |
-                    | a3 |
-                    | a4 |
-
-                B = | y0 |
-                    | y1 |
-                    | tx0 |
-                    | tx1 |
-
-                To solve for X, we can compute X = inv(A) * B, where inv(A) is the inverse of matrix A.
-                Once we have the values of a0, a1, a2, a3, and a4, we can substitute them back 
-                into the quartic polynomial P(x) to obtain the interpolated values for any desired x.
-
-                P(x) = a0 + a1*x + a2*x^2 + a3*x^3 + a4*x^4
-                
-                '''
-                def __init__(self, from_frame, to_frame, value1, value2, tangent1, tangent2):
-                    self.start_frame, self.end_frame = from_frame, to_frame
-                    frame_interval = (self.end_frame - self.start_frame)
-                    self._mode = 'hermite'
-                    self.a = 0
-                    self.b = 0
-                    self.value1 = value1
-                    self.value2 = value2
-                    self.tangent1 = tangent1
-                    self.tangent2 = tangent2
-                    self.frame_interval = frame_interval
-
-                    self.HERMATRIX = np.array([
-                                [2, -2, 1, 1],
-                                [-3, 3, -2, -1],
-                                [0, 0, 1, 0],
-                                [1, 0, 0, 0],
-                                [2, 0, 0, 0]
-                            ])
-                    
-                    # self.HERMATRIX = np.linalg.inv(self.HERMATRIX)
-                    # pprint (self.HERMATRIX)
-
-                    # Default tangents in flame are 0, so when we do None.to_f this is what we will get
-                    # CC = {P1, P2, T1, T2}
-                    p1, p2, t1, t2 = value1, value2, tangent1 * frame_interval, tangent2 * frame_interval
-                    self.hermite = np.array([p1, p2, t1, t2])
-                    pprint (self.hermite)
-                    self.basis = np.dot(self.HERMATRIX, self.hermite)
-                    pprint (self.basis)
-
-                def value_at(self, frame):
-                    if frame == self.start_frame:
-                        return self.hermite[0]
-
-                    # Get the 0 < T < 1 interval we will interpolate on
-                    t = (frame - self.start_frame) / (self.end_frame - self.start_frame)
-
-                    # S[s_] = {s^4, s^3, s^2, s^1, s^0}
-                    multipliers_vec = np.array([t ** 4, t ** 3, t ** 2, t ** 1, t ** 0])
-
-                    # cubic functions
-                    a0 = (1 - 3 * (t ** 2) + 2 * (t ** 3))
-                    a1 = (3 * (t ** 2) - 2 * (t ** 3))
-                    b0 = (t - 2* (t ** 2) + t**3)
-                    b1 = -1 * (t ** 2) + (t ** 3)
-
-                    # quatric functions
-                    alpha = self.a
-                    beta = self.b
-
-                    aa0 = 1 + (alpha - 3)*(t ** 2) + 2 * (1 - alpha) * (t ** 3) + alpha * (t ** 4)
-                    aa1 = (3 - alpha) * (t **2) + 2 * (alpha - 1) * (t ** 3) - alpha * (t ** 4)
-                    bb0 = t + (beta - 2) * (t ** 2) + (1 - 2 * beta) * (t ** 3) + beta * (t ** 4)
-                    bb1 = -1 * (beta + 1) * (t ** 2) + (2 * beta + 1) * (t ** 3) - beta * (t ** 4)
-
-                    # P[s_] = S[s].h.CC
-                    # interpolated_scalar = np.dot(self.basis, multipliers_vec)
-                    p1, p2, t1, t2 = self.value1, self.value2, self.tangent1 * self.frame_interval, self.tangent2 * self.frame_interval
-                    # interpolated_scalar = a0*p1 + a1*p2 + b0*t1 + b1*t2
-                    interpolated_scalar = aa0*p1 + aa1*p2 + bb0*t1 + bb1*t2
-                    return interpolated_scalar
-
-            class HermiteSegmentQuartic5x5(LinearSegment):
-                '''
-                Make sure not to confuse them with quartic (= degree 4) Hermite splines, 
-                which are defined by 5 values per segment: function value and first derivative at both ends, 
-                and one of the second derivatives.
-                '''
-                '''
-                P(x0) = y0    =>    a0 + a1*x0 + a2*x0^2 + a3*x0^3 + a4*x0^4 = y0   --(1)
-                P(x1) = y1    =>    a0 + a1*x1 + a2*x1^2 + a3*x1^3 + a4*x1^4 = y1   --(2)
-                
-                P'(x0) = tx0    =>    a1 + 2*a2*x0 + 3*a3*x0^2 + 4*a4*x0^3 = tx0   --(3)
-                P'(x1) = tx1    =>    a1 + 2*a2*x1 + 3*a3*x1^2 + 4*a4*x1^3 = tx1   --(4)
-
-                We have four equations (equations (1)-(4)) and five unknowns (a0, a1, a2, a3, a4). 
-                To solve this system of equations, we can rewrite it in matrix form:
-
-                A * X = B
-
-                where A is the coefficient matrix, 
-                X is the column vector of unknowns, 
-                and B is the column vector of constants.
-
-                A = | 1   x0   x0^2   x0^3   x0^4 |
-                    | 1   x1   x1^2   x1^3   x1^4 |
-                    | 0   1    2*x0   3*x0^2 4*x0^3 |
-                    | 0   1    2*x1   3*x1^2 4*x1^3 |
-
-                X = | a0 |
-                    | a1 |
-                    | a2 |
-                    | a3 |
-                    | a4 |
-
-                B = | y0 |
-                    | y1 |
-                    | tx0 |
-                    | tx1 |
-
-                To solve for X, we can compute X = inv(A) * B, where inv(A) is the inverse of matrix A.
-                Once we have the values of a0, a1, a2, a3, and a4, we can substitute them back 
-                into the quartic polynomial P(x) to obtain the interpolated values for any desired x.
-
-                P(x) = a0 + a1*x + a2*x^2 + a3*x^3 + a4*x^4
-                
-                '''
-                def __init__(self, from_frame, to_frame, value1, value2, tangent1, tangent2):
-                    self.start_frame, self.end_frame = from_frame, to_frame
-                    frame_interval = (self.end_frame - self.start_frame)
-                    self._mode = 'hermite'
-
-                    self.HERMATRIX = np.array([
-                                [0, 0, 0, 0, 1],
-                                [1, 1, 1, 1, 1],
-                                [0, 0, 0, 1, 0],
-                                [4, 3, 2, 1, 0],
-                                [0, 0, 2, 0, 0]
-                            ])
-                    
-                    self.HERMATRIX = np.linalg.inv(self.HERMATRIX)
-                    pprint (self.HERMATRIX)
-
-                    # Default tangents in flame are 0, so when we do None.to_f this is what we will get
-                    # CC = {P1, P2, T1, T2}
-                    p1, p2, t1, t2 = value1, value2, tangent1 * frame_interval, tangent2 * frame_interval
-                    self.hermite = np.array([p1, p2, t1, t2, 0])
-                    pprint (self.hermite)
-                    self.basis = np.dot(self.HERMATRIX, self.hermite)
-                    pprint (self.basis)
-
-                def value_at(self, frame):
-                    if frame == self.start_frame:
-                        return self.hermite[0]
-
-                    # Get the 0 < T < 1 interval we will interpolate on
-                    t = (frame - self.start_frame) / (self.end_frame - self.start_frame)
-
-                    # S[s_] = {s^4, s^3, s^2, s^1, s^0}
-                    multipliers_vec = np.array([t ** 4, t ** 3, t ** 2, t ** 1, t ** 0])
-
-                    # P[s_] = S[s].h.CC
-                    interpolated_scalar = np.dot(self.basis, multipliers_vec)
-                    return interpolated_scalar
-
             class BezierSegment(LinearSegment):
                 class Pt:
                     def __init__(self, x, y, tanx, tany):
@@ -635,7 +444,7 @@ class Timewarp():
                 channel['KFrames'] = {x['Frame']: x for x in sorted(channel['KFrames'][0]['Key'], key=lambda d: d['Value'])}
             interpolator = FlameChannellInterpolator(channel)
             for frame_number in range (start_frame, end_frame+1):
-                frame_value_map[frame_number] = interpolator.sample_at(frame_number)
+                frame_value_map[frame_number] = round(interpolator.sample_at(frame_number), 4)
             return frame_value_map
 
         else:
@@ -656,6 +465,9 @@ class Timewarp():
 
             speed_interpolator = FlameChannellInterpolator(speed_channel)
             timing_interpolator = FlameChannellInterpolator(speed_timing_channel)
+
+            if 'quartic' in tw_setup_string:
+                print ('Hello to hermite curve!')
 
             for frame_number in range (start_frame, end_frame+1):
                 frame_value_map[frame_number] = round(timing_interpolator.sample_at(frame_number), 4)
