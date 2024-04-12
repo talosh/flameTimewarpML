@@ -438,8 +438,95 @@ class Timewarp():
                     value = (value[0].firstChild.nodeValue)
                 tw_speed_timing[int(index)] = {'frame': int(frame), 'value': float(value)}
 
-            return {'hui': 'pizda'}
+            if tw_speed_timing[0]['frame'] > start:
+                # we need to extrapolate backwards from the first 
+                # keyframe in SpeedTiming channel
 
+                anchor_frame_value = tw_speed_timing[0]['value']
+                for frame_number in range(tw_speed_timing[0]['frame'] - 1, start - 1, -1):
+                    if frame_number + 1 not in tw_channel.keys() or frame_number not in tw_channel.keys():
+                        step_back = tw_channel[min(list(tw_channel.keys()))] / 100
+                    else:
+                        step_back = (tw_channel[frame_number + 1] + tw_channel[frame_number]) / 200
+                    frame_value_map[frame_number] = anchor_frame_value - step_back
+                    anchor_frame_value = frame_value_map[frame_number]
+
+            # build up frame values between keyframes of SpeedTiming channel
+            for key_frame_index in range(0, len(tw_speed_timing.keys()) - 1):
+                # The value from my gess algo is close to the one in flame but not exact
+                # and error is accumulated. SO quick and dirty way is to do forward
+                # and backward pass and mix them rationally
+
+                range_start = tw_speed_timing[key_frame_index]['frame']
+                range_end = tw_speed_timing[key_frame_index + 1]['frame']
+                
+                if range_end == range_start + 1:
+                # keyframes on next frames, no need to interpolate
+                    frame_value_map[range_start] = tw_speed_timing[key_frame_index]['value']
+                    frame_value_map[range_end] = tw_speed_timing[key_frame_index + 1]['value']
+                    continue
+
+                forward_pass = {}
+                anchor_frame_value = tw_speed_timing[key_frame_index]['value']
+                forward_pass[range_start] = anchor_frame_value
+
+                for frame_number in range(range_start + 1, range_end):
+                    if frame_number + 1 not in tw_channel.keys() or frame_number not in tw_channel.keys():
+                        step = tw_channel[max(list(tw_channel.keys()))] / 100
+                    else:
+                        step = (tw_channel[frame_number] + tw_channel[frame_number + 1]) / 200
+                    forward_pass[frame_number] = anchor_frame_value + step
+                    anchor_frame_value = forward_pass[frame_number]
+                forward_pass[range_end] = tw_speed_timing[key_frame_index + 1]['value']
+                
+                backward_pass = {}
+                anchor_frame_value = tw_speed_timing[key_frame_index + 1]['value']
+                backward_pass[range_end] = anchor_frame_value
+                
+                for frame_number in range(range_end - 1, range_start -1, -1):
+                    if frame_number + 1 not in tw_channel.keys() or frame_number not in tw_channel.keys():
+                        step_back = tw_channel[min(list(tw_channel.keys()))] / 100
+                    else:
+                        step_back = (tw_channel[frame_number + 1] + tw_channel[frame_number]) / 200
+                    backward_pass[frame_number] = anchor_frame_value - step_back
+                    anchor_frame_value = backward_pass[frame_number]
+                
+                backward_pass[range_start] = tw_speed_timing[key_frame_index]['value']
+
+                def hermite_curve(t):
+                    P0, P1 = 0, 1
+                    T0, T1 = 1, 1
+                    h00 = 2*t**3 - 3*t**2 + 1  # Compute basis function 1
+                    h10 = t**3 - 2*t**2 + t    # Compute basis function 2
+                    h01 = -2*t**3 + 3*t**2     # Compute basis function 3
+                    h11 = t**3 - t**2          # Compute basis function 4
+
+                    return h00 * P0 + h10 * T0 + h01 * P1 + h11 * T1
+
+
+                work_range = list(forward_pass.keys())
+                ratio = 0
+                rstep = 1 / len(work_range)
+                for frame_number in sorted(work_range):
+                    frame_value_map[frame_number] = forward_pass[frame_number] * (1 - hermite_curve(ratio)) + backward_pass[frame_number] * hermite_curve(ratio)
+                    ratio += rstep
+
+            last_key_index = list(sorted(tw_speed_timing.keys()))[-1]
+            if tw_speed_timing[last_key_index]['frame'] < end:
+                # we need to extrapolate further on from the 
+                # last keyframe in SpeedTiming channel
+                anchor_frame_value = tw_speed_timing[last_key_index]['value']
+                frame_value_map[tw_speed_timing[last_key_index]['frame']] = anchor_frame_value
+
+                for frame_number in range(tw_speed_timing[last_key_index]['frame'] + 1, end + 1):
+                    if frame_number + 1 not in tw_channel.keys() or frame_number not in tw_channel.keys():
+                        step = tw_channel[max(list(tw_channel.keys()))] / 100
+                    else:
+                        step = (tw_channel[frame_number] + tw_channel[frame_number + 1]) / 200
+                    frame_value_map[frame_number] = anchor_frame_value + step
+                    anchor_frame_value = frame_value_map[frame_number]
+
+            return frame_value_map
 
         if 'quartic' in tw_setup_string:
             print ('Hello to hermite curve!')
