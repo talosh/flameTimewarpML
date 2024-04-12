@@ -30,6 +30,11 @@ class Timewarp():
         self.record_out = self.json_info.get('record_out', input_duration)
         frame_value_map = self.bake_flame_tw_setup(tw_setup_string)
 
+        start_frame = 1
+        src_files_list.sort()
+        src_files = {x:os.path.join(self.source_folder, file_path) for x, file_path in enumerate(src_files_list, start=start_frame)}
+
+        print (f'{src_files}')
 
         for i in frame_value_map.keys():
             print (f'{i}: {frame_value_map[i]}')
