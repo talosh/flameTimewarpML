@@ -574,7 +574,7 @@ class Timewarp():
                 speed_interpolator = FlameChannellInterpolator(speed_channel)
                 tw_channel = {}
                 for frame_number in range (start_frame, end_frame+1):
-                    tw_channel[frame_number] = round(timing_interpolator.sample_at(frame_number), 4)
+                    tw_channel[frame_number] = round(speed_interpolator.sample_at(frame_number), 4)
                 print ('Hello to hermite curve!')
                 start = self.json_info.get('record_in')
                 end = self.json_info.get('record_out')
