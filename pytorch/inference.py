@@ -37,7 +37,7 @@ class Timewarp():
         src_files_list.sort()
         src_files = {x:os.path.join(self.source_folder, file_path) for x, file_path in enumerate(src_files_list, start=start_frame)}
 
-        frames_map = {}
+        frame_info_list = []
         output_frame_number = 1
         for frame_number in range(self.record_in, self.record_out + 1):
             frame_info = {}
@@ -46,14 +46,28 @@ class Timewarp():
                 frame_info['incoming'] = src_files.get(1)
                 frame_info['outgoing'] = None
                 frame_info['ratio'] = 0
-                frame_info['output'] = None
+                frame_info['output'] = os.path.join(self.target_folder, f'{self.clip_name}.{output_frame_number:08}.exr')
+                frame_info_list.append[frame_info]
+                output_frame_number += 1
                 continue
 
             if incoming_frame_number >= input_duration:
-                src_files.get(input_duration)
+                frame_info['incoming'] = src_files.get(input_duration)
+                frame_info['outgoing'] = None
+                frame_info['ratio'] = 0
+                frame_info['output'] = os.path.join(self.target_folder, f'{self.clip_name}.{output_frame_number:08}.exr')
+                frame_info_list.append[frame_info]
+                output_frame_number += 1
                 continue
 
-        print (f'clip_name: {self.clip_name}')
+            frame_info['incoming'] = src_files.get(incoming_frame_number)
+            frame_info['outgoing'] = src_files.get(incoming_frame_number + 1)
+            frame_info['ratio'] = frame_value_map[frame_number] - int(frame_value_map[frame_number])
+            frame_info['output'] = os.path.join(self.target_folder, f'{self.clip_name}.{output_frame_number:08}.exr')
+            frame_info_list.append[frame_info]
+            output_frame_number += 1
+
+        print (f'frame_info_list: {frame_info_list}')
 
         '''
         read_thread = threading.Thread(target=read_images, args=(read_image_queue, dataset))
