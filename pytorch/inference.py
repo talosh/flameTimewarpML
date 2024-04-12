@@ -528,12 +528,6 @@ class Timewarp():
 
             return frame_value_map
 
-        if 'quartic' in tw_setup_string:
-            print ('Hello to hermite curve!')
-            start = self.json_info.get('record_in')
-            end = self.json_info.get('record_out')
-            return approximate_speed_curve(tw_setup_string, start, end)
-
         import numpy as np
         import xml.etree.ElementTree as ET
 
@@ -569,12 +563,20 @@ class Timewarp():
             channel = tw_setup['Setup']['State'][0][tw_channel][0]['Channel'][0]
             if 'KFrames' in channel.keys():
                 channel['KFrames'] = {x['Frame']: x for x in sorted(channel['KFrames'][0]['Key'], key=lambda d: d['Value'])}
-            # speed_channel = dict(channel)
+            speed_channel = dict(channel)
             tw_channel = 'TW_SpeedTiming'
             channel = tw_setup['Setup']['State'][0][tw_channel][0]['Channel'][0]
             if 'KFrames' in channel.keys():
                 channel['KFrames'] = {x['Frame']: x for x in sorted(channel['KFrames'][0]['Key'], key=lambda d: d['Value'])}
             speed_timing_channel = dict(channel)
+
+            if 'quartic' in tw_setup_string:
+                print ('Hello to hermite curve!')
+                start = self.json_info.get('record_in')
+                end = self.json_info.get('record_out')
+                print (speed_channel)
+                return {'hui': 'pizda'}
+                return approximate_speed_curve(tw_setup_string, start, end)
 
             # speed_interpolator = FlameChannellInterpolator(speed_channel)
             timing_interpolator = FlameChannellInterpolator(speed_timing_channel)
