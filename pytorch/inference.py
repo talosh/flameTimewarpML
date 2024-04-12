@@ -422,7 +422,7 @@ class Timewarp():
                         next_key.get('Value')
                         )
 
-        def approximate_speed_curve(tw_setup_string, start, end):
+        def approximate_speed_curve(tw_setup_string, start, end, tw_channel):
             from xml.dom import minidom
             xml = minidom.parseString(tw_setup_string)  
             tw_speed_timing = {}
@@ -572,15 +572,13 @@ class Timewarp():
 
             if 'quartic' in tw_setup_string:
                 speed_interpolator = FlameChannellInterpolator(speed_channel)
-                tw_channel = {}
+                interpolated_speed_channel = {}
                 for frame_number in range (start_frame, end_frame+1):
-                    tw_channel[frame_number] = round(speed_interpolator.sample_at(frame_number), 4)
+                    interpolated_speed_channel[frame_number] = round(speed_interpolator.sample_at(frame_number), 4)
                 print ('Hello to hermite curve!')
                 start = self.json_info.get('record_in')
                 end = self.json_info.get('record_out')
-                print (tw_channel)
-                return {'hui': 'pizda'}
-                return approximate_speed_curve(tw_setup_string, start, end)
+                return approximate_speed_curve(tw_setup_string, start, end, interpolated_speed_channel)
 
             timing_interpolator = FlameChannellInterpolator(speed_timing_channel)
 
