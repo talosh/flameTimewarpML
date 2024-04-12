@@ -6,6 +6,7 @@ try:
     from PySide6.QtGui import QTextCursor, QFont, QFontDatabase, QFontInfo
     import time
     from tqdm import tqdm
+    import threading
 
 except:
     pass
@@ -33,6 +34,34 @@ class Timewarp():
         start_frame = 1
         src_files_list.sort()
         src_files = {x:os.path.join(self.source_folder, file_path) for x, file_path in enumerate(src_files_list, start=start_frame)}
+
+        frames_map = {}
+        output_frame_number = 1
+        for frame_number in range(self.record_in, self.record_out + 1):
+            frame_info = {}
+            incoming_frame_number = int(frame_value_map[frame_number])
+            if incoming_frame_number < 1:
+                frame_info['incoming'] = src_files.get(1)
+                frame_info['outgoing'] = None
+                frame_info['ratio'] = 0
+                frame_info['output'] = None
+                continue
+
+            if incoming_frame_number >= input_duration:
+                src_files.get(input_duration)
+                continue
+
+
+        '''
+        read_thread = threading.Thread(target=read_images, args=(read_image_queue, dataset))
+        read_thread.daemon = True
+        read_thread.start()
+
+        write_image_queue = queue.Queue(maxsize=96)
+        write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
+        write_thread.daemon = True
+        write_thread.start()
+        '''
 
         print (f'{src_files}')
 
