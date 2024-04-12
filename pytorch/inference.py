@@ -22,7 +22,7 @@ class Timewarp():
         frame_value_map = self.bake_flame_tw_setup(tw_setup_string)
         for k in self.json_info.keys():
             print (k)
-        src_files_list = [file for file in self.source_folder if file.endswith('.exr')]
+        src_files_list = [file for file in os.listdir(self.source_folder) if file.endswith('.exr')]
         print (f'{src_files_list}')
 
 
