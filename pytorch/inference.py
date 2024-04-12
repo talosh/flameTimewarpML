@@ -422,7 +422,7 @@ class Timewarp():
                         next_key.get('Value')
                         )
 
-        def approximate_speed_curve(tw_setup_string):
+        def approximate_speed_curve(tw_setup_string, start, end):
             from xml.dom import minidom
             xml = minidom.parseString(tw_setup_string)  
             tw_speed_timing = {}
@@ -443,7 +443,9 @@ class Timewarp():
 
         if 'quartic' in tw_setup_string:
             print ('Hello to hermite curve!')
-            return approximate_speed_curve(tw_setup_string)
+            start = self.json_info.get('record_in')
+            end = self.json_info.get('record_out')
+            return approximate_speed_curve(tw_setup_string, start, end)
 
         import numpy as np
         import xml.etree.ElementTree as ET
