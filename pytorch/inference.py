@@ -495,7 +495,7 @@ class Timewarp():
 
                 def hermite_curve(t):
                     P0, P1 = 0, 1
-                    T0, T1 = 10, 10
+                    T0, T1 = 1, 1
                     h00 = 2*t**3 - 3*t**2 + 1  # Compute basis function 1
                     h10 = t**3 - 2*t**2 + t    # Compute basis function 2
                     h01 = -2*t**3 + 3*t**2     # Compute basis function 3
