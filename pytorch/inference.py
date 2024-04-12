@@ -18,6 +18,9 @@ class Timewarp():
     def process(self):
         tw_setup_string = self.json_info.get('setup')
         frame_value_map = self.bake_flame_tw_setup(tw_setup_string)
+        src_files_list = []
+
+
 
         for i in frame_value_map.keys():
             print (f'{i}: {frame_value_map[i]}')
