@@ -19,7 +19,6 @@ class Timewarp():
 
     def process(self):
         tw_setup_string = self.json_info.get('setup')
-        frame_value_map = self.bake_flame_tw_setup(tw_setup_string)
         for k in self.json_info.keys():
             print (k)
         src_files_list = [file for file in os.listdir(self.source_folder) if file.endswith('.exr')]
@@ -29,8 +28,7 @@ class Timewarp():
             return False
         self.record_in = self.json_info.get('record_in', 1)
         self.record_out = self.json_info.get('record_out', input_duration)
-
-
+        frame_value_map = self.bake_flame_tw_setup(tw_setup_string)
 
 
         for i in frame_value_map.keys():
