@@ -13,8 +13,7 @@ except:
 class Timewarp():
     def __init__(self, json_info):
         self.json_info = json_info
-        print ('hello from tw')
-        print (json_info)
+        print('Initializing TimewarpML from Flame setup...')
 
     def process(self):
         tw_setup_string = self.json_info.get('setup')
