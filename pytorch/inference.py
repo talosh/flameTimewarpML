@@ -24,9 +24,8 @@ class Timewarp():
             print (k)
         src_files_list = [file for file in os.listdir(self.source_folder) if file.endswith('.exr')]
         input_duration = len(src_files_list)
-        input_duration = None
         if not input_duration:
-            print(f'no input frames in: {self.source_folder}')
+            print(f'no input frames found in: "{self.source_folder}"')
             return False
 
 
