@@ -14,6 +14,7 @@ class Timewarp():
     def __init__(self, json_info):
         self.json_info = json_info
         print ('hello from tw')
+        print (json_info)
 
     def process(self):
         tw_setup_string = self.json_info.get('setup')
@@ -24,9 +25,6 @@ class Timewarp():
         
 
     def bake_flame_tw_setup(self, tw_setup_string):
-        import numpy as np
-        import xml.etree.ElementTree as ET
-
         # parses tw setup from flame and returns dictionary
         # with baked frame - value pairs
         
@@ -424,6 +422,32 @@ class Timewarp():
                         next_key.get('Value')
                         )
 
+        def approximate_speed_curve(tw_setup_string):
+            from xml.dom import minidom
+            xml = minidom.parseString(tw_setup_string)  
+            tw_speed_timing = {}
+            TW_SpeedTiming = xml.getElementsByTagName('TW_SpeedTiming')
+            keys = TW_SpeedTiming[0].getElementsByTagName('Key')
+            for key in keys:
+                index = key.getAttribute('Index') 
+                frame = key.getElementsByTagName('Frame')
+                if frame:
+                    frame = (frame[0].firstChild.nodeValue)
+                value = key.getElementsByTagName('Value')
+                if value:
+                    value = (value[0].firstChild.nodeValue)
+                tw_speed_timing[int(index)] = {'frame': int(frame), 'value': float(value)}
+
+            return {'hui': 'pizda'}
+
+
+        if 'quartic' in tw_setup_string:
+            print ('Hello to hermite curve!')
+            return approximate_speed_curve(tw_setup_string)
+
+        import numpy as np
+        import xml.etree.ElementTree as ET
+
         tw_setup_xml = ET.fromstring(tw_setup_string)
         tw_setup = dictify(tw_setup_xml)
 
@@ -431,7 +455,7 @@ class Timewarp():
         end_frame = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
         # TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
 
-        TW_SpeedTiming_size = tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size']
+        # TW_SpeedTiming_size = tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size']
         TW_RetimerMode = tw_setup['Setup']['State'][0]['TW_RetimerMode']
 
         frame_value_map = {}
@@ -456,18 +480,15 @@ class Timewarp():
             channel = tw_setup['Setup']['State'][0][tw_channel][0]['Channel'][0]
             if 'KFrames' in channel.keys():
                 channel['KFrames'] = {x['Frame']: x for x in sorted(channel['KFrames'][0]['Key'], key=lambda d: d['Value'])}
-            speed_channel = dict(channel)
+            # speed_channel = dict(channel)
             tw_channel = 'TW_SpeedTiming'
             channel = tw_setup['Setup']['State'][0][tw_channel][0]['Channel'][0]
             if 'KFrames' in channel.keys():
                 channel['KFrames'] = {x['Frame']: x for x in sorted(channel['KFrames'][0]['Key'], key=lambda d: d['Value'])}
             speed_timing_channel = dict(channel)
 
-            speed_interpolator = FlameChannellInterpolator(speed_channel)
+            # speed_interpolator = FlameChannellInterpolator(speed_channel)
             timing_interpolator = FlameChannellInterpolator(speed_timing_channel)
-
-            if 'quartic' in tw_setup_string:
-                print ('Hello to hermite curve!')
 
             for frame_number in range (start_frame, end_frame+1):
                 frame_value_map[frame_number] = round(timing_interpolator.sample_at(frame_number), 4)
