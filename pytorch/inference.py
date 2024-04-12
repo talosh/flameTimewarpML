@@ -13,6 +13,7 @@ except:
 class Timewarp():
     def __init__(self, json_info):
         self.json_info = json_info
+        self.source_folder = self.json_info.get('input')
         print('Initializing TimewarpML from Flame setup...')
 
     def process(self):
@@ -20,7 +21,7 @@ class Timewarp():
         frame_value_map = self.bake_flame_tw_setup(tw_setup_string)
         for k in self.json_info.keys():
             print (k)
-        src_files_list = [file for file in self.json_info.get('input') if file.endswith('.exr')]
+        src_files_list = [file for file in self.source_folder if file.endswith('.exr')]
 
 
 
