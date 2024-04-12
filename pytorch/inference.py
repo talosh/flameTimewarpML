@@ -53,6 +53,7 @@ class Timewarp():
                 src_files.get(input_duration)
                 continue
 
+        print (f'clip_name: {self.clip_name}')
 
         '''
         read_thread = threading.Thread(target=read_images, args=(read_image_queue, dataset))
