@@ -27,6 +27,8 @@ class Timewarp():
         if not input_duration:
             print(f'no input frames found in: "{self.source_folder}"')
             return False
+        self.record_in = self.json_info.get('record_in', 1)
+        self.record_out = self.json_info.get('record_out', input_duration)
 
 
 
@@ -587,9 +589,7 @@ class Timewarp():
                 for frame_number in range (start_frame, end_frame+1):
                     interpolated_speed_channel[frame_number] = round(speed_interpolator.sample_at(frame_number), 4)
                 print ('Hello to hermite curve!')
-                start = self.json_info.get('record_in')
-                end = self.json_info.get('record_out')
-                return approximate_speed_curve(tw_setup_string, start, end, interpolated_speed_channel)
+                return approximate_speed_curve(tw_setup_string, self.record_in, self.record_out, interpolated_speed_channel)
 
             timing_interpolator = FlameChannellInterpolator(speed_timing_channel)
 
