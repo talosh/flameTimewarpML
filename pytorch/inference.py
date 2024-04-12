@@ -14,6 +14,7 @@ class Timewarp():
     def __init__(self, json_info):
         self.json_info = json_info
         self.source_folder = self.json_info.get('input')
+        print (self.source_folder)
         print('Initializing TimewarpML from Flame setup...')
 
     def process(self):
