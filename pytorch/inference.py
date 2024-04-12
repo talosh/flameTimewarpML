@@ -23,7 +23,11 @@ class Timewarp():
         for k in self.json_info.keys():
             print (k)
         src_files_list = [file for file in os.listdir(self.source_folder) if file.endswith('.exr')]
-        print (f'{src_files_list}')
+        input_duration = len(src_files_list)
+        if not input_duration:
+            print(f'no input frames in: {self.source_folder}')
+            return False
+
 
 
 
@@ -645,7 +649,8 @@ class Worker(QThread):
         '''
 
         tw = Timewarp(json_info)
-        tw.process()
+        result = tw.process()
+        self.result.emit(result, '')
 
         '''
         for i in tqdm(range(100),
