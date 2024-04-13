@@ -1002,6 +1002,24 @@ def psnr_torch(imageA, imageB, max_pixel=1.0):
         return torch.tensor(float('inf'))
     return 20 * torch.log10(max_pixel / torch.sqrt(mse))
 
+def create_timestamp_uid(self):
+    import random
+    import uuid
+    from datetime import datetime
+
+    def number_to_letter(number):
+        # Map each digit to a letter
+        mapping = {
+            '0': 'A', '1': 'B', '2': 'C', '3': 'D', '4': 'E',
+            '5': 'F', '6': 'G', '7': 'H', '8': 'I', '9': 'J'
+        }
+        return ''.join(mapping.get(char, char) for char in number)
+
+    uid = ((str(uuid.uuid4()).replace('-', '')).upper())
+    uid = ''.join(random.sample(number_to_letter(uid), 4))
+    timestamp = (datetime.now()).strftime('%Y%b%d_%H%M').upper()
+    return f'{timestamp}_{uid}'
+
 def find_and_import_model(models_dir='models', base_name=None, model_name=None):
     """
     Dynamically imports the latest version of a model based on the base name,
@@ -1225,7 +1243,7 @@ def main():
             print (f'unable to load step and epoch loss statistics: {e}')
 
     else:
-        traned_model_name = 'flameTWML_model_' + fw.create_timestamp_uid() + '.pth'
+        traned_model_name = 'flameTWML_model_' + create_timestamp_uid() + '.pth'
         if platform.system() == 'Darwin':
             trained_model_dir = os.path.join(
                 os.path.expanduser('~'),
