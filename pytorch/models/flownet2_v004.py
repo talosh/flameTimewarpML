@@ -22,8 +22,8 @@ class Model:
         def warp(tenInput, tenFlow):
             input_device = tenInput.device
 
-            tenInput = tenInput.detach().copy().to(device=torch.device('cpu'))
-            tenFlow = tenFlow.detach().copy().to(device=torch.device('cpu'))
+            tenInput = tenInput.detach().to(device=torch.device('cpu'))
+            tenFlow = tenFlow.detach().to(device=torch.device('cpu'))
 
             backwarp_tenGrid = {}
 
@@ -38,7 +38,7 @@ class Model:
 
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             result = torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='zeros', align_corners=True)
-            return result.detach().copy().to(device=torch.device('mps'))
+            return result.detach().to(device=torch.device('mps'))
         # '''
 
         '''
