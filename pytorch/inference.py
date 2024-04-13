@@ -16,8 +16,8 @@ try:
     import threading
     import importlib
 
-except:
-    pass
+except Exception as e:
+    print (f'Exception: {e}')
 
 class MinExrReader:
     '''Minimal, standalone OpenEXR reader for single-part, uncompressed scan line files.
