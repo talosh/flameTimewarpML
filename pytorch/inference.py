@@ -19,6 +19,8 @@ try:
 except Exception as e:
     print (f'Exception: {e}')
 
+from PyQt5.QtCore import QObject
+
 class MinExrReader:
     '''Minimal, standalone OpenEXR reader for single-part, uncompressed scan line files.
 
