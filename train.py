@@ -851,6 +851,7 @@ def main():
     write_thread.start()
 
     Flownet = find_and_import_model(base_name='flownet', model_name=args.model)
+    print ('Model info:')
     pprint (Flownet.get_info())
     flownet = Flownet().get_training_model()().to(device)
     if args.all_gpus:
