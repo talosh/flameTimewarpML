@@ -1179,11 +1179,11 @@ def main():
             if 'contextnet.' in key:
                 contextnet_weights[key.replace('contextnet.', '')] = checkpoint['flownet_state_dict'][key].to(device='cpu')
             if 'fusionnet.' in key:
-                fusion_weights[key.replace('fusionnet.', '')] = checkpoint['flownet_state_dict'][key]
+                fusion_weights[key.replace('fusionnet.', '')] = checkpoint['flownet_state_dict'][key].to(device='cpu')
 
         flownet.flownet.to(device=device)
         flownet.contextnet.to(device='cpu')
-        flownet.fusionnet.to(device=device)
+        flownet.fusionnet.to(device='cpu')
 
         flownet.flownet.load_state_dict(flownet_weights)
         flownet.contextnet.load_state_dict(contextnet_weights)
