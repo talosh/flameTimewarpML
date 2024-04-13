@@ -179,6 +179,7 @@ class Model:
             
         class FlownetModel(Module):
             def __init__(self):
+                super().__init__()
                 self.flownet = IFNet()
                 self.contextnet = ContextNet()
                 self.fusionnet = FusionNet()
@@ -233,9 +234,9 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v008',
-            'file': 'flownet4_v008.py',
-            'ratio_support': True
+            'name': 'Flownet2_v004',
+            'file': 'flownet2_v004.py',
+            'ratio_support': False
         }
         return info
 
