@@ -1010,7 +1010,7 @@ class Timewarp():
 
         import numpy as np
         with open(file_path, 'rb') as sfp:
-            source_reader = self.MinExrReader(sfp, header_only)
+            source_reader = MinExrReader(sfp, header_only)
             result = {
                 'attrs': source_reader.attrs,
                 'compr': source_reader.compr,
