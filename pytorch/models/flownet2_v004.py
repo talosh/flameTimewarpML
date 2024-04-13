@@ -218,7 +218,7 @@ class Model:
                         return param
                     
                 device = next(self.parameters()).device
-                print (f'device: {device}')
+                print (f'loading old model to device: {device}')
 
                 if rank <= 0:
                     self.flownet.load_state_dict(
