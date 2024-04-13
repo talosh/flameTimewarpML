@@ -220,13 +220,9 @@ class Model:
                 imgs = imgs.to(device = torch.device('cpu'))
                 self.flownet.to(device = torch.device('cpu'))
                 flow, _ = self.flownet(imgs, UHD=False)
-                imgs = imgs.to(device=torch.device("mps"))
-                flow = flow.to(device=torch.device("mps"))
                 return self.predict(imgs, flow, training=False, UHD=False)
 
             def predict(self, imgs, flow, training=True, flow_gt=None, UHD=False):
-                imgs = imgs.to(device = torch.device('cpu'))
-                flow = imgs.to(device = torch.device('cpu'))
                 self.contextnet.to(device = torch.device('cpu'))
                 self.fusionnet.to(device = torch.device('cpu'))
                 img0 = imgs[:, :3]
