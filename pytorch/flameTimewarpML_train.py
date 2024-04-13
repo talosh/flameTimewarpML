@@ -999,7 +999,7 @@ def psnr_torch(imageA, imageB, max_pixel=1.0):
         return torch.tensor(float('inf'))
     return 20 * torch.log10(max_pixel / torch.sqrt(mse))
 
-def find_and_import_model(models_dir='./models', base_name=None, model_name=None):
+def find_and_import_model(models_dir='models', base_name=None, model_name=None):
     """
     Dynamically imports the latest version of a model based on the base name,
     or a specific model if the model name/version is given, and returns the Model
@@ -1016,7 +1016,10 @@ def find_and_import_model(models_dir='./models', base_name=None, model_name=None
     import importlib
 
     # Resolve the absolute path of the models directory
-    models_abs_path = os.path.abspath(models_dir)
+    models_abs_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__)),
+        models_dir
+        )
 
     # List all files in the models directory
     try:
