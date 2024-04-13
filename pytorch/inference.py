@@ -1,9 +1,15 @@
 try:
     import os
     import sys
+    '''
     from PySide6.QtWidgets import QApplication, QMainWindow, QTextEdit, QVBoxLayout, QWidget
     from PySide6.QtCore import QObject, Signal, QThread, Qt 
     from PySide6.QtGui import QTextCursor, QFont, QFontDatabase, QFontInfo
+    '''
+    from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QVBoxLayout, QWidget
+    from PyQt5.QtCore import QObject, QThread, Qt, pyqtSignal
+    from PyQt5.QtGui import QTextCursor, QFont, QFontDatabase, QFontInfo
+
     import time
     from tqdm import tqdm
     import queue
@@ -1046,7 +1052,7 @@ class Timewarp():
 
 # Custom stream object to capture output
 class Stream(QObject):
-    newText = Signal(str)
+    newText = pyqtSignal(str)
 
     def write(self, text):
         self.newText.emit(str(text))
@@ -1057,7 +1063,7 @@ class Stream(QObject):
 # A thread that does some work and produces output
 class Worker(QThread):
 
-    result = Signal(bool, str)
+    result = pyqtSignal(bool, str)
 
     def __init__(self, argv, parent=None):
         super(Worker, self).__init__(parent)
