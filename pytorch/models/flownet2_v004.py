@@ -165,13 +165,14 @@ class Model:
             def forward(self, x, UHD=False):
                 if UHD:
                     x = torch.nn.functional.interpolate(x, scale_factor=0.5, mode="bilinear", align_corners=False)
-
+                '''
                 self.block0.to(device=torch.device('mps'))
                 self.block1.to(device=torch.device('mps'))
                 self.block2.to(device=torch.device('mps'))
                 self.block3.to(device=torch.device('mps'))
                 x = x.detach().to(device=torch.device('mps'))
-
+                '''
+                
                 flow0 = self.block0(x)
                 F1 = flow0
                 F1_large = torch.nn.functional.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
