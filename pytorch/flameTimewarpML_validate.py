@@ -451,7 +451,8 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
             else:
                 self.device = device
 
-        def reshuffle(self):
+        def reshuffle(self, seed=42):
+            random.seed(seed)
             random.shuffle(self.train_descriptions)
 
         def find_folders_with_exr(self, path):
