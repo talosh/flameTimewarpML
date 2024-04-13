@@ -253,45 +253,6 @@ except:
             assert buf.nleft() > 0 and buf.peek() != 0x00, 'Failed to read offset.'
             return struct.unpack('<Q', buf.read(8))[0]
 
-    def read_openexr_file(self, file_path, header_only = False):
-        """
-        Reads data from an OpenEXR file specified by the file path.
-
-        This function opens an OpenEXR file and reads its contents, either the header information only or the full data, including image data. It utilizes the MinExrReader to process the file.
-
-        Parameters:
-        - file_path (str): Path to the OpenEXR file to be read.
-        - header_only (bool, optional): If True, only header information is read. Defaults to False.
-
-        Returns:
-        - dict: A dictionary containing the OpenEXR file's metadata and image data (if header_only is False). The dictionary includes the following keys:
-            - 'attrs': Attributes of the OpenEXR file.
-            - 'compr': Compression type used in the OpenEXR file.
-            - 'channel_names': Names of the channels in the OpenEXR file.
-            - 'channel_types': Data types of the channels in the OpenEXR file.
-            - 'shape': The shape of the image data, rearranged as (height, width, channels).
-            - 'image_data': Numpy array of the image data if header_only is False. The data is transposed to match the shape (height, width, channels).
-
-        Note:
-        - The function uses a context manager to ensure the file is properly closed after reading.
-        - It assumes the existence of a class method `MinExrReader` for reading the OpenEXR file.
-        """
-
-        import numpy as np
-        with open(file_path, 'rb') as sfp:
-            source_reader = self.MinExrReader(sfp, header_only)
-            result = {
-                'attrs': source_reader.attrs,
-                'compr': source_reader.compr,
-                'channel_names': source_reader.channel_names,
-                'channel_types': source_reader.channel_types,
-                'shape': (source_reader.shape[0], source_reader.shape[2], source_reader.shape[1]),
-            }
-            if not header_only:
-                result['image_data'] = source_reader.image.transpose(0, 2, 1)[:, :, ::-1].copy()
-            del source_reader
-        return result
-
     def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
         import struct
     
@@ -439,14 +400,9 @@ class Timewarp():
 
         print (f'frame_info_list: {frame_info_list}')
 
-        def read_images(read_image_queue, frame_info_list):
-            for frame_info in frame_info_list:
-                frame_info['incoming_image_data'] = read_openexr_file(frame_info['incoming'])
-                frame_info['outgoing_image_data'] = read_openexr_file(frame_info['outgoing'])
-                read_image_queue.put(frame_info)
 
         read_image_queue = queue.Queue(maxsize=8)
-        read_thread = threading.Thread(target=read_images, args=(read_image_queue, frame_info_list))
+        read_thread = threading.Thread(target=self.read_images, args=(read_image_queue, frame_info_list))
         read_thread.daemon = True
         read_thread.start()
 
@@ -460,8 +416,7 @@ class Timewarp():
         for idx in len(frame_info_list):
             frame_info = read_image_queue.get()
             print (f'frame {idx} of {len(frame_info_list)}')
-
-        
+   
     def bake_flame_tw_setup(self, tw_setup_string):
         # parses tw setup from flame and returns dictionary
         # with baked frame - value pairs
@@ -1023,6 +978,50 @@ class Timewarp():
                     
         return frame_value_map
 
+    def read_images(self, read_image_queue, frame_info_list):
+        for frame_info in frame_info_list:
+            frame_info['incoming_image_data'] = self.read_openexr_file(frame_info['incoming'])
+            frame_info['outgoing_image_data'] = self.read_openexr_file(frame_info['outgoing'])
+            read_image_queue.put(frame_info)
+
+    def read_openexr_file(self, file_path, header_only = False):
+        """
+        Reads data from an OpenEXR file specified by the file path.
+
+        This function opens an OpenEXR file and reads its contents, either the header information only or the full data, including image data. It utilizes the MinExrReader to process the file.
+
+        Parameters:
+        - file_path (str): Path to the OpenEXR file to be read.
+        - header_only (bool, optional): If True, only header information is read. Defaults to False.
+
+        Returns:
+        - dict: A dictionary containing the OpenEXR file's metadata and image data (if header_only is False). The dictionary includes the following keys:
+            - 'attrs': Attributes of the OpenEXR file.
+            - 'compr': Compression type used in the OpenEXR file.
+            - 'channel_names': Names of the channels in the OpenEXR file.
+            - 'channel_types': Data types of the channels in the OpenEXR file.
+            - 'shape': The shape of the image data, rearranged as (height, width, channels).
+            - 'image_data': Numpy array of the image data if header_only is False. The data is transposed to match the shape (height, width, channels).
+
+        Note:
+        - The function uses a context manager to ensure the file is properly closed after reading.
+        - It assumes the existence of a class method `MinExrReader` for reading the OpenEXR file.
+        """
+
+        import numpy as np
+        with open(file_path, 'rb') as sfp:
+            source_reader = self.MinExrReader(sfp, header_only)
+            result = {
+                'attrs': source_reader.attrs,
+                'compr': source_reader.compr,
+                'channel_names': source_reader.channel_names,
+                'channel_types': source_reader.channel_types,
+                'shape': (source_reader.shape[0], source_reader.shape[2], source_reader.shape[1]),
+            }
+            if not header_only:
+                result['image_data'] = source_reader.image.transpose(0, 2, 1)[:, :, ::-1].copy()
+            del source_reader
+        return result
 
 # Custom stream object to capture output
 class Stream(QObject):
