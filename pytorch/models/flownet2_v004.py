@@ -216,8 +216,13 @@ class Model:
                 self.fusionnet = FusionNet()
 
             def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
+                mps_device = torch.device("mps")
                 imgs = torch.cat((img0, img1), 1)
+                imgs = imgs.to(device=mps_device)
+                self.flownet.to(device=mps_device)
                 flow, _ = self.flownet(imgs, UHD=False)
+                imgs = imgs.to(device='cpu')
+                flow = flow.to(device='cpu')
                 return self.predict(imgs, flow, training=False, UHD=False)
 
             def predict(self, imgs, flow, training=True, flow_gt=None, UHD=False):
