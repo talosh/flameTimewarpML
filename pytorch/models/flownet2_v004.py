@@ -157,7 +157,7 @@ class Model:
 
                 self.block0.to(device=torch.device('mps'))
                 self.block1.to(device=torch.device('mps'))
-                # self.block2.to(device=torch.device('mps'))
+                self.block2.to(device=torch.device('mps'))
                 # self.block3.to(device=torch.device('mps'))
                 x = x.detach().to(device=torch.device('mps'))
 
@@ -181,18 +181,25 @@ class Model:
                 F2_large = torch.nn.functional.interpolate(F2, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 warped_img0 = warp(x[:, :3], F2_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F2_large[:, 2:4])
-                
+
+                warped_img0 = warped_img0.detach().to(device=torch.device('mps'))
+                warped_img1 = warped_img1.detach().to(device=torch.device('mps'))
+                F2_large = F2_large.detach().to(device=torch.device('mps'))
                 flow2 = self.block2(torch.cat((warped_img0, warped_img1, F2_large), 1))
+                flow2 = flow2.detach().to(device=torch.device('cpu'))
                 
                 F3 = (flow0 + flow1 + flow2)
                 F3_large = torch.nn.functional.interpolate(F3, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 warped_img0 = warp(x[:, :3], F3_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
                 
+                warped_img0 = warped_img0.detach().to(device=torch.device('mps'))
+                warped_img1 = warped_img1.detach().to(device=torch.device('mps'))
+                F3_large = F3_large.detach().to(device=torch.device('mps'))
                 flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3_large), 1))
-                
+                flow3 = flow3.detach().to(device=torch.device('cpu'))
+
                 F4 = (flow0 + flow1 + flow2 + flow3)
-                F4 = F4.detach().cpu()
                 return F4, [F1, F2, F3, F4]
 
         class FusionNet(Module):
