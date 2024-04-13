@@ -455,7 +455,7 @@ class Timewarp():
 
         def write_images(write_image_queue):
             while True:
-                image_path = 'unknown path'
+                image_path = ''
                 try:
                     write_data = write_image_queue.get_nowait()
                     image_data = write_data['image_data']
