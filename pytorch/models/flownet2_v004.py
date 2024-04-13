@@ -22,8 +22,8 @@ class Model:
         def warp(tenInput, tenFlow):
             input_device = tenInput.device
 
-            tenInput = tenInput.detach().to(device=torch.device('cpu'))
-            tenFlow = tenFlow.detach().to(device=torch.device('cpu'))
+            # tenInput = tenInput.detach().to(device=torch.device('cpu'))
+            # tenFlow = tenFlow.detach().to(device=torch.device('cpu'))
 
             backwarp_tenGrid = {}
 
