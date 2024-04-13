@@ -220,13 +220,12 @@ class Model:
                 device = next(self.parameters()).device
                 print (f'loading old model to device: {device}')
 
-                if rank <= 0:
-                    self.flownet.load_state_dict(
-                        convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
-                    self.contextnet.load_state_dict(
-                        convert(torch.load('{}/contextnet.pkl'.format(path), map_location=device)))
-                    self.fusionnet.load_state_dict(
-                        convert(torch.load('{}/unet.pkl'.format(path), map_location=device)))
+                self.flownet.load_state_dict(
+                    convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
+                self.contextnet.load_state_dict(
+                    convert(torch.load('{}/contextnet.pkl'.format(path), map_location=device)))
+                self.fusionnet.load_state_dict(
+                    convert(torch.load('{}/unet.pkl'.format(path), map_location=device)))
 
         self.model = FlownetModel
         self.training_model = FlownetModel
