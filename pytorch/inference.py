@@ -294,6 +294,7 @@ def read_openexr_file(file_path, header_only = False):
 
 def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
     import struct
+    import numpy as np
 
     print (f'writing {filename}')
     print (f'image_data: {image_data.shape}')
