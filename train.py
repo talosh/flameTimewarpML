@@ -960,7 +960,7 @@ def main():
     parser.add_argument('dataset_path', type=str, help='Path to the dataset')
 
     # Optional arguments
-    parser.add_argument('--lr', type=float, default=0.00011, help='Learning rate (default: 1e-4)')
+    parser.add_argument('--lr', type=float, default=1e-6, help='Learning rate (default: 1e-6)')
     parser.add_argument('--type', type=int, default=1, help='Model type (int): 1 - MultiresNet, 2 - MultiresNet 4 (default: 1)')
     parser.add_argument('--pulse', type=float, default=9999, help='Period in steps to pulse learning rate (float) (default: 10K)')
     parser.add_argument('--pulse_amplitude', type=float, default=25, help='Learning rate pulse amplitude (percentage) (default: 25)')
