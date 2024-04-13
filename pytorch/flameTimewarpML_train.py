@@ -528,7 +528,7 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                 max_window = 9
             
             try:
-                first_exr_file_header = self.fw.read_openexr_file(exr_files[0], header_only = True)
+                first_exr_file_header = read_openexr_file(exr_files[0], header_only = True)
                 h = first_exr_file_header['shape'][0]
                 w = first_exr_file_header['shape'][1]
 
@@ -576,11 +576,11 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                     description = self.train_descriptions[index]
                     try:
                         train_data = {}
-                        # train_data['pre_start'] = self.fw.read_openexr_file(description['pre_start'])['image_data']
-                        train_data['start'] = self.fw.read_openexr_file(description['start'])['image_data']
-                        train_data['gt'] = self.fw.read_openexr_file(description['gt'])['image_data']
-                        train_data['end'] = self.fw.read_openexr_file(description['end'])['image_data']
-                        # train_data['after_end'] = self.fw.read_openexr_file(description['after_end'])['image_data']
+                        # train_data['pre_start'] = read_openexr_file(description['pre_start'])['image_data']
+                        train_data['start'] = read_openexr_file(description['start'])['image_data']
+                        train_data['gt'] = read_openexr_file(description['gt'])['image_data']
+                        train_data['end'] = read_openexr_file(description['end'])['image_data']
+                        # train_data['after_end'] = read_openexr_file(description['after_end'])['image_data']
                         train_data['ratio'] = description['ratio']
                         train_data['h'] = description['h']
                         train_data['w'] = description['w']
@@ -824,7 +824,7 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
         def get_input_channels_number(self, source_frames_paths_list):
             total_num_channels = 0
             for src_path in source_frames_paths_list:
-                file_header = self.fw.read_openexr_file(src_path, header_only=True)
+                file_header = read_openexr_file(src_path, header_only=True)
                 total_num_channels += file_header['shape'][2]
             return total_num_channels
 
