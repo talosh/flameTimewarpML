@@ -177,70 +177,16 @@ class Model:
                 x = self.conv(x)
                 return x, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt
             
-
-
-
-        class Model:
-            def __init__(self, local_rank=-1):
+        class FlownetModel(Module):
+            def __init__(self):
                 self.flownet = IFNet()
                 self.contextnet = ContextNet()
                 self.fusionnet = FusionNet()
-                self.device()
-                self.optimG = AdamW(itertools.chain(
-                    self.flownet.parameters(),
-                    self.contextnet.parameters(),
-                    self.fusionnet.parameters()), lr=1e-6, weight_decay=1e-5)
-                self.schedulerG = optim.lr_scheduler.CyclicLR(
-                    self.optimG, base_lr=1e-6, max_lr=1e-3, step_size_up=8000, cycle_momentum=False)
-                self.epe = EPE()
-                self.ter = Ternary()
-                self.sobel = SOBEL()
-                if local_rank != -1:
-                    self.flownet = DDP(self.flownet, device_ids=[
-                                    local_rank], output_device=local_rank)
-                    self.contextnet = DDP(self.contextnet, device_ids=[
-                                        local_rank], output_device=local_rank)
-                    self.fusionnet = DDP(self.fusionnet, device_ids=[
-                                        local_rank], output_device=local_rank)
 
-            def train(self):
-                self.flownet.train()
-                self.contextnet.train()
-                self.fusionnet.train()
-
-            def eval(self):
-                self.flownet.eval()
-                self.contextnet.eval()
-                self.fusionnet.eval()
-
-            def device(self):
-                self.flownet.to(device)
-                self.contextnet.to(device)
-                self.fusionnet.to(device)
-
-            def load_model(self, path, rank):
-                def convert(param):
-                    if rank == -1:
-                        return {
-                            k.replace("module.", ""): v
-                            for k, v in param.items()
-                            if "module." in k
-                        }
-                    else:
-                        return param
-                if rank <= 0:
-                    self.flownet.load_state_dict(
-                        convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
-                    self.contextnet.load_state_dict(
-                        convert(torch.load('{}/contextnet.pkl'.format(path), map_location=device)))
-                    self.fusionnet.load_state_dict(
-                        convert(torch.load('{}/unet.pkl'.format(path), map_location=device)))
-
-            def save_model(self, path, rank):
-                if rank == 0:
-                    torch.save(self.flownet.state_dict(), '{}/flownet.pkl'.format(path))
-                    torch.save(self.contextnet.state_dict(), '{}/contextnet.pkl'.format(path))
-                    torch.save(self.fusionnet.state_dict(), '{}/unet.pkl'.format(path))
+            def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
+                imgs = torch.cat((img0, img1), 1)
+                flow, _ = self.flownet(imgs, UHD=False)
+                return self.predict(imgs, flow, training=False, UHD=False)
 
             def predict(self, imgs, flow, training=True, flow_gt=None, UHD=False):
                 img0 = imgs[:, :3]
@@ -257,57 +203,23 @@ class Model:
                 mask = torch.sigmoid(refine_output[:, 3:4])
                 merged_img = warped_img0 * mask + warped_img1 * (1 - mask)
                 pred = merged_img + res
-                # pred = torch.clamp(pred, 0, 1)
-                if training:
-                    return pred, mask, merged_img, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt
-                else:
-                    return pred
+                return [flow] * 4, [mask] * 4, [pred] * 4
 
-            def inference(self, img0, img1, UHD=False):
-                imgs = torch.cat((img0, img1), 1)
-                flow, _ = self.flownet(imgs, UHD)
-                return self.predict(imgs, flow, training=False, UHD=UHD)
+        self.model = FlownetModel
+        self.training_model = FlownetModel
 
-            def update(self, imgs, gt, learning_rate=0, mul=1, training=True, flow_gt=None):
-                for param_group in self.optimG.param_groups:
-                    param_group['lr'] = learning_rate
-                if training:
-                    self.train()
-                else:
-                    self.eval()
-                flow, flow_list = self.flownet(imgs)
-                pred, mask, merged_img, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt = self.predict(
-                    imgs, flow, flow_gt=flow_gt)
-                loss_ter = self.ter(pred, gt).mean()
-                if training:
-                    with torch.no_grad():
-                        loss_flow = torch.abs(warped_img0_gt - gt).mean()
-                        loss_mask = torch.abs(
-                            merged_img - gt).sum(1, True).float().detach()
-                        loss_mask = torch.nn.functional.interpolate(loss_mask, scale_factor=0.5, mode="bilinear",
-                                                align_corners=False).detach()
-                        flow_gt = (torch.nn.functional.interpolate(flow_gt, scale_factor=0.5, mode="bilinear",
-                                                align_corners=False) * 0.5).detach()
-                    loss_cons = 0
-                    for i in range(4):
-                        loss_cons += self.epe(flow_list[i][:, :2], flow_gt[:, :2], 1)
-                        loss_cons += self.epe(flow_list[i][:, 2:4], flow_gt[:, 2:4], 1)
-                    loss_cons = loss_cons.mean() * 0.01
-                else:
-                    loss_cons = torch.tensor([0])
-                    loss_flow = torch.abs(warped_img0 - gt).mean()
-                    loss_mask = 1
-                loss_l1 = (((pred - gt) ** 2 + 1e-6) ** 0.5).mean()
-                if training:
-                    self.optimG.zero_grad()
-                    loss_G = loss_l1 + loss_cons + loss_ter
-                    loss_G.backward()
-                    self.optimG.step()
-                return pred, merged_img, flow, loss_l1, loss_flow, loss_cons, loss_ter, loss_mask
+    @staticmethod
+    def get_info():
+        info = {
+            'name': 'Flownet4_v008',
+            'file': 'flownet4_v008.py',
+            'ratio_support': True
+        }
+        return info
 
     @staticmethod
     def get_name():
-        return 'model_v2_004'
+        return 'Flownet4_v008'
 
     @staticmethod
     def get_file_name():
@@ -340,3 +252,20 @@ class Model:
 
     def get_training_model(self):
         return self.training_model
+
+    def load_model(self, path, flownet, rank=0):
+        import torch
+        def convert(param):
+            if rank == -1:
+                return {
+                    k.replace("module.", ""): v
+                    for k, v in param.items()
+                    if "module." in k
+                }
+            else:
+                return param
+        if rank <= 0:
+            if torch.cuda.is_available():
+                flownet.load_state_dict(convert(torch.load(path)), False)
+            else:
+                flownet.load_state_dict(convert(torch.load(path, map_location ='cpu')), False)
