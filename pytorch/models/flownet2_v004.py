@@ -18,7 +18,7 @@ class Model:
                 torch.nn.PReLU(out_planes)
             )
 
-        '''
+        # '''
         def warp(tenInput, tenFlow):
             backwarp_tenGrid = {}
 
@@ -33,9 +33,9 @@ class Model:
 
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='reflection', align_corners=True)
-        '''
-
         # '''
+
+        '''
         def warp(tenInput, tenFlow):
             original_device = tenInput.device
             device = 'cpu'
@@ -56,13 +56,13 @@ class Model:
                                 tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0)], 1)
 
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-            result = torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='zero', align_corners=True)
+            result = torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
             # return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
             # cpu_g = g.to('cpu')
             # cpu_tenInput = tenInput.to('cpu')
             # cpu_result = torch.nn.functional.grid_sample(input=cpu_tenInput, grid=cpu_g, mode='bicubic', padding_mode='border', align_corners=True)
             return result.to(device = original_device)
-        # '''
+        '''
 
         class Conv2(Module):
             def __init__(self, in_planes, out_planes, stride=2):
