@@ -247,6 +247,20 @@ class Model:
                     flow = torch.nn.functional.interpolate(flow, scale_factor=2.0, mode="bilinear", align_corners=False) * 2.0
                 c0 = self.contextnet(img0, flow[:, :2])
                 c1 = self.contextnet(img1, flow[:, 2:4])
+                
+                
+                img0 = img0.detach().to(device=torch.device('mps'))
+                img1 = img1.detach().to(device=torch.device('mps'))
+                flow = flow.detach().to(device=torch.device('mps'))
+                c0[0] = c0[0].detach().to(device=torch.device('mps'))
+                c0[1] = c0[1].detach().to(device=torch.device('mps'))
+                c0[2] = c0[2].detach().to(device=torch.device('mps'))
+                c0[3] = c0[3].detach().to(device=torch.device('mps'))
+                c1[0] = c1[0].detach().to(device=torch.device('mps'))
+                c1[1] = c1[1].detach().to(device=torch.device('mps'))
+                c1[2] = c1[2].detach().to(device=torch.device('mps'))
+                c1[3] = c1[3].detach().to(device=torch.device('mps'))
+                
                 flow = torch.nn.functional.interpolate(flow, scale_factor=2.0, mode="bilinear",
                                     align_corners=False) * 2.0
                 
