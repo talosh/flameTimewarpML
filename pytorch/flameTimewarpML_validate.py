@@ -1175,6 +1175,7 @@ def main():
         except Exception as e:
             print (f'unable to load saved model: {e}')
 
+        '''
         flownet_weights = {}
         contextnet_weights = {}
         fusion_weights = {}
@@ -1193,14 +1194,15 @@ def main():
         flownet.flownet.load_state_dict(flownet_weights)
         flownet.contextnet.load_state_dict(contextnet_weights)
         flownet.fusionnet.load_state_dict(fusion_weights)
-
         '''
+
+        # '''
         try:
             flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
             print('loaded previously saved Flownet state')
         except Exception as e:
             print (f'unable to load Flownet state: {e}')
-        '''
+        # '''
 
         try:
             loaded_step = checkpoint['step']
