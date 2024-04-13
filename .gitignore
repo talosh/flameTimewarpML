@@ -17,7 +17,7 @@ packages/.miniconda/appenv
 !trained_models.all/README
 !packages/README.md
 !packages/.miniconda/README.md
-!packages/.miniconda/twml/README.md
+!packages/.miniconda/appenv/README.md
 
 .DS_Store
 # packages/.miniconda/
