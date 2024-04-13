@@ -8,7 +8,7 @@ cd "$SCRIPT_DIR"
 
 # Define the path to the Python executable and the Python script
 PYTHON_CMD="./packages/.miniconda/appenv/bin/python"
-PYTHON_SCRIPT="./pytorch/train.py"
+PYTHON_SCRIPT="./pytorch/flameTimewarpML_train.py"
 
 # Run the Python script with all arguments passed to this shell script
 $PYTHON_CMD $PYTHON_SCRIPT "$@"
