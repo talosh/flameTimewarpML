@@ -39,8 +39,8 @@ class Model:
         def warp(tenInput, tenFlow):
             original_device = tenInput.device
             device = 'cpu'
-            tenInput.cpu()
-            tenFlow.cpu()
+            tenInput = tenInput.to(device=device)
+            tenFlow = tenFlow.to(device=device)
 
             backwarp_tenGrid = {}
             k = (str(tenFlow.device), str(tenFlow.size()))
