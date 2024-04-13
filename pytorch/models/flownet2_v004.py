@@ -188,7 +188,7 @@ class Model:
 
                 # F4 = F4.detach().to(device=torch.device('cpu'))
 
-                return F4, [F1, F2, F3, F4]
+                return F4.detach(), [F1, F2, F3, F4]
 
         class FusionNet(Module):
             def __init__(self):
