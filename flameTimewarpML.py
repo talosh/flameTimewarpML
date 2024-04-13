@@ -406,7 +406,7 @@ class ApplyModelDialog():
             'platforms'
         )
 
-        print (f'command: {conda_python_path} {inference_script_path} {lockfile_path}')
+        # print (f'command: {conda_python_path} {inference_script_path} {lockfile_path}')
 
         import subprocess
         subprocess.Popen([conda_python_path, inference_script_path, lockfile_path], env=env)
