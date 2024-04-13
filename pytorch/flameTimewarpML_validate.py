@@ -1169,8 +1169,20 @@ def main():
         except Exception as e:
             print (f'unable to load saved model: {e}')
 
+        flownet_weights = {}
+        contextnet_weights = {}
+        fusion_weights = {}
         for key in checkpoint['flownet_state_dict'].keys():
-            print(key, checkpoint['flownet_state_dict'][key].size())
+            if 'flownet.' in key:
+                flownet_weights[key.replace('flownet.', '')] = checkpoint['flownet_state_dict'][key]
+            if 'contextnet.' in key:
+                contextnet_weights[key.replace('contextnet.', '')] = checkpoint['flownet_state_dict'][key].to(device='cpu')
+            if 'fusionnet.' in key:
+                fusion_weights[key.replace('fusionnet.', '')] = checkpoint['flownet_state_dict'][key]
+
+        flownet.flownet.load_state_dict(flownet_weights)
+        flownet.contextnet.load_state_dict(contextnet_weights)
+        flownet.fusionnet.load_state_dict(fusion_weights)
 
         try:
             flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
