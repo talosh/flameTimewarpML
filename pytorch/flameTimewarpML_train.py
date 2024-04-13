@@ -505,7 +505,7 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
 
             return folders_with_file, folders_without_file
 
-        def create_dataset_descriptions(self, folder_path, max_window=5):
+        def create_dataset_descriptions(self, folder_path, max_window=9):
 
             def sliding_window(lst, n):
                 for i in range(len(lst) - n + 1):
@@ -521,12 +521,15 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
             if max_window < 3:
                 print(f'\nWarning: minimum clip length is 3 frames, {folder_path} has {len(exr_files)} frame(s) only')
                 return descriptions
-            
+
             if 'fast' in folder_path:
                 max_window = 3
-            if 'slow' in folder_path:
-                max_window = 9
-            
+            elif 'slow' in folder_path:
+                max_window = max_window
+            else:
+                if max_window > 4:
+                    max_window = 4
+
             try:
                 first_exr_file_header = read_openexr_file(exr_files[0], header_only = True)
                 h = first_exr_file_header['shape'][0]
@@ -1086,6 +1089,19 @@ def main():
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
     if args.all_gpus:
         device = 'cuda'
+    
+    # Find and initialize model
+    Flownet = find_and_import_model(base_name='flownet', model_name=args.model)
+    if Flownet is None:
+        print (f'Unable to load model {args.model}')
+        return
+    print ('Model info:')
+    pprint (Flownet.get_info())
+    flownet = Flownet().get_training_model()().to(device)
+    if args.all_gpus:
+        print ('Using nn.DataParallel')
+        flownet = torch.nn.DataParallel(flownet)
+        flownet.to(device)
 
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
@@ -1120,18 +1136,6 @@ def main():
     write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
     write_thread.daemon = True
     write_thread.start()
-
-    Flownet = find_and_import_model(base_name='flownet', model_name=args.model)
-    if Flownet is None:
-        print (f'Unable to load model {args.model}')
-        return
-    print ('Model info:')
-    pprint (Flownet.get_info())
-    flownet = Flownet().get_training_model()().to(device)
-    if args.all_gpus:
-        print ('Using nn.DataParallel')
-        flownet = torch.nn.DataParallel(flownet)
-        flownet.to(device)
     
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
