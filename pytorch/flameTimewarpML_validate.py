@@ -1095,8 +1095,8 @@ def main():
 
     args = parser.parse_args()
 
-    # device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
-    device = 'cpu'
+    device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
+    # device = 'cpu'
     
     # Find and initialize model
     Flownet = find_and_import_model(base_name='flownet', model_name=args.model)
@@ -1184,11 +1184,13 @@ def main():
         flownet.contextnet.load_state_dict(contextnet_weights)
         flownet.fusionnet.load_state_dict(fusion_weights)
 
+        '''
         try:
             flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
             print('loaded previously saved Flownet state')
         except Exception as e:
             print (f'unable to load Flownet state: {e}')
+        '''
 
         try:
             loaded_step = checkpoint['step']
