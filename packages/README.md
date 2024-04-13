@@ -1,8 +1,7 @@
 # flameTimewarpML
 
-
-
-* pre-configured miniconda environment to be placed here:
+* pre-configured miniconda environment to be placed into hidden .miniconda folder
+folder is hidden (starts with .) in order to keep Flame from scanning it looking for python hooks
 
 ```sh Miniconda3-py311_24.1.2-0-MacOSX-arm64.sh
 eval "$(~/miniconda3/bin/conda shell.zsh hook)"
