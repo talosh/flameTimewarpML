@@ -1,11 +1,6 @@
 try:
     import os
     import sys
-    '''
-    from PySide6.QtWidgets import QApplication, QMainWindow, QTextEdit, QVBoxLayout, QWidget
-    from PySide6.QtCore import QObject, Signal, QThread, Qt 
-    from PySide6.QtGui import QTextCursor, QFont, QFontDatabase, QFontInfo
-    '''
     from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QVBoxLayout, QWidget
     from PyQt5.QtCore import QObject, QThread, Qt, pyqtSignal
     from PyQt5.QtGui import QTextCursor, QFont, QFontDatabase, QFontInfo
@@ -18,8 +13,6 @@ try:
 
 except Exception as e:
     print (f'Exception: {e}')
-
-from PyQt5.QtCore import QObject
 
 class MinExrReader:
     '''Minimal, standalone OpenEXR reader for single-part, uncompressed scan line files.
