@@ -225,6 +225,10 @@ class Model:
                 return self.predict(imgs, flow, training=False, UHD=False)
 
             def predict(self, imgs, flow, training=True, flow_gt=None, UHD=False):
+                imgs = imgs.to(device = torch.device('cpu'))
+                flow = imgs.to(device = torch.device('cpu'))
+                self.contextnet.to(device = torch.device('cpu'))
+                self.fusionnet.to(device = torch.device('cpu'))
                 img0 = imgs[:, :3]
                 img1 = imgs[:, 3:]
                 if UHD:
@@ -239,7 +243,9 @@ class Model:
                 mask = torch.sigmoid(refine_output[:, 3:4])
                 merged_img = warped_img0 * mask + warped_img1 * (1 - mask)
                 pred = merged_img + res
-                pred.to(device='cpu')
+
+                pred.to(device=torch.device('mps'))
+                
                 return [flow] * 4, [mask] * 4, [pred] * 4
 
             def load_old_model(self, path, rank=0):
