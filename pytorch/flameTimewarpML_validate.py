@@ -1355,6 +1355,8 @@ def main():
     hours = int((epoch_time % (24 * 3600)) // 3600)
     minutes = int((epoch_time % 3600) // 60)
 
+    print (epoch_time)
+
     # rife_psnr = np.array(rife_psnr_list).mean()
 
     clear_lines(2)
