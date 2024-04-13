@@ -296,9 +296,8 @@ def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
     import struct
     import numpy as np
 
-    print (f'writing {filename}')
-    print (f'image_data: {image_data.shape}')
-    print (f'image_data dtype: {image_data.dtype}')
+    if image_data.dtype == np.float16:
+        half_float = True
 
     height, width, depth = image_data.shape
     red = image_data[:, :, 0]
