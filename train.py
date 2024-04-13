@@ -1039,7 +1039,7 @@ def main():
 
     train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
 
-    if args.oncyclelr:
+    if args.onecyclelr:
         if args.epochs == -1:
             train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(optimizer_flownet, max_lr=args.lr, total_steps=len(dataset))
         else:
