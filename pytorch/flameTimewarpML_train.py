@@ -1117,6 +1117,9 @@ def main():
     write_thread.start()
 
     Flownet = find_and_import_model(base_name='flownet', model_name=args.model)
+    if Flownet is None:
+        print (f'Unable to load model {args.model}')
+        sys.exit()
     print ('Model info:')
     pprint (Flownet.get_info())
     flownet = Flownet().get_training_model()().to(device)
