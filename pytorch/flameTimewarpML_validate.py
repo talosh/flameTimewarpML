@@ -1280,9 +1280,9 @@ def main():
             ev_img0 = ev_img0.permute(2, 0, 1).unsqueeze(0)
             ev_img1 = ev_img1.permute(2, 0, 1).unsqueeze(0)
             ev_img2 = ev_img2.permute(2, 0, 1).unsqueeze(0)
-            evn_img0 = normalize_numpy(ev_img0)
-            evn_img1 = normalize_numpy(ev_img1)
-            evn_img2 = normalize_numpy(ev_img2)
+            evn_img0 = normalize(ev_img0)
+            evn_img1 = normalize(ev_img1)
+            evn_img2 = normalize(ev_img2)
 
             n, c, h, w = evn_img1.shape
             
