@@ -19,7 +19,7 @@ class Model:
             )
 
         # '''
-        def warp_mps(tenInput, tenFlow):
+        def warp(tenInput, tenFlow):
             backwarp_tenGrid = {}
 
             k = (str(tenFlow.device), str(tenFlow.size()))
