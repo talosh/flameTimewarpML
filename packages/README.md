@@ -32,13 +32,12 @@ conda install pytorch::pytorch -c pytorch
 conda install conda-pack
 ```
 
-```sh Miniconda3-py311_24.1.2-0-MacOSX-arm64.sh
-eval "$(~/miniconda3/bin/conda shell.zsh hook)"
-conda create --name twml --clone base
-conda install numpy
-pip install PySide6
-conda install pytorch::pytorch -c pytorch
-conda install conda-pack
+* Pack append environment into a portable tar file
+
+```bash
 conda pack --ignore-missing-files -n twml
+```
+
+```bash
 tar xvf twml.tar.gz -C {flameTimewarpML folder}/packages/.miniconda/twml/
 ```
