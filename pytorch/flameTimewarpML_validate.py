@@ -835,20 +835,15 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
     return TimewarpMLDataset(data_root, batch_size=batch_size, device=device, frame_size=frame_size, max_window=max_window)
 
 def normalize(image_array) :
-
-    def custom_bend(xt):
+    def custom_bend(x):
+        input_device = x.device
         import platform
         if platform.system() == 'Darwin':
-            x = xt.clone().cpu().detach().numpy()
-            linear_part = x
-            exp_bend = np.sign(x) * np.power(np.abs(x), 1 / 4)
-            res = np.where(x > 1, exp_bend, np.where(x < -1, exp_bend, linear_part))
-            return torch.from_numpy(res.copy()).to(device = xt.device)
-        else:
-            x = xt
-            linear_part = x
-            exp_bend = torch.sign(x) * torch.pow(torch.abs(x), 1 / 4 )
-            return torch.where(x > 1, exp_bend, torch.where(x < -1, exp_bend, linear_part))
+            x = x.cpu()
+        linear_part = x
+        exp_bend = torch.sign(x) * torch.pow(torch.abs(x), 1 / 4 )
+        return torch.where(x > 1, exp_bend, torch.where(x < -1, exp_bend, linear_part)).to(device=input_device)
+    
 
     # transfer (0.0 - 1.0) onto (-1.0 - 1.0) for tanh
     image_array = (image_array * 2) - 1
