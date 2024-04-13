@@ -445,21 +445,37 @@ class Timewarp():
                 frame_info['outgoing_image_data'] = read_openexr_file(frame_info['outgoing'])
                 read_image_queue.put(frame_info)
 
-        read_image_queue = queue.Queue(maxsize=8)
+        read_image_queue = queue.Queue(maxsize=9)
         read_thread = threading.Thread(target=read_images, args=(read_image_queue, frame_info_list))
         read_thread.daemon = True
         read_thread.start()
 
-        '''
-        write_image_queue = queue.Queue(maxsize=96)
+        def write_images(write_image_queue):
+            while True:
+                try:
+                    write_data = write_image_queue.get_nowait()
+                    if write_data is None:
+                        print ('finishing write thread')
+                        break
+                    write_exr(write_data['image_data'], write_data['image_path'])
+                except:
+                # except queue.Empty:
+                    time.sleep(1e-4)
+
+        write_image_queue = queue.Queue(maxsize=9)
         write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
         write_thread.daemon = True
         write_thread.start()
-        '''
 
         for idx in range(len(frame_info_list)):
             frame_info = read_image_queue.get()
             print (f'frame {idx + 1} of {len(frame_info_list)}')
+            image_data = frame_info['incoming_image_data']['image_data']
+            image_path = frame_info['output']
+            write_image_queue.put({'image_data': image_data, 'image_path': image_path})
+
+        write_image_queue.put(None)
+        write_thread.join()
    
     def bake_flame_tw_setup(self, tw_setup_string):
         # parses tw setup from flame and returns dictionary
