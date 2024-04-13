@@ -838,7 +838,7 @@ def normalize(image_array) :
 
     def custom_bend(xt):
         import platform
-        if platform.system() == 'Darwin'
+        if platform.system() == 'Darwin':
             x = xt.clone().cpu().detach().numpy()
             linear_part = x
             exp_bend = np.sign(x) * np.power(np.abs(x), 1 / 4)
@@ -1185,13 +1185,13 @@ def main():
         fusion_weights = {}
         for key in checkpoint['flownet_state_dict'].keys():
             if 'flownet.' in key:
-                flownet_weights[key.replace('flownet.', '')] = checkpoint['flownet_state_dict'][key].to(device='cpu')
+                flownet_weights[key.replace('flownet.', '')] = checkpoint['flownet_state_dict'][key].to(device='mps')
             if 'contextnet.' in key:
                 contextnet_weights[key.replace('contextnet.', '')] = checkpoint['flownet_state_dict'][key].to(device='cpu')
             if 'fusionnet.' in key:
                 fusion_weights[key.replace('fusionnet.', '')] = checkpoint['flownet_state_dict'][key].to(device='cpu')
 
-        flownet.flownet.to(device='cpu')
+        flownet.flownet.to(device='mps')
         flownet.contextnet.to(device='cpu')
         flownet.fusionnet.to(device='cpu')
 
