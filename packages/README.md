@@ -4,7 +4,7 @@
 * the folder is hidden (starts with ".") in order to keep Flame from scanning it looking for python hooks
 * pre-configured python environment usually packed with release tar file
 
-### Installing python environment manually
+### Installing and configuring python environment manually
 
 * download Miniconda for Mac or Linux (I'm using python 3.11 for tests) from 
 <https://docs.anaconda.com/free/miniconda/miniconda-other-installer-links/>
