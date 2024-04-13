@@ -1114,8 +1114,7 @@ def main():
     max_dataset_window = 9
     if not model_info.get('ratio_support'):
         max_dataset_window = 3
-    # flownet = Flownet().get_training_model()().to(device)
-    flownet = Flownet().get_training_model()()
+    flownet = Flownet().get_training_model()().to(device)
     
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
