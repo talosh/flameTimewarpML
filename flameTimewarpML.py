@@ -384,7 +384,7 @@ class ApplyModelDialog():
             os.path.dirname(__file__),
             'packages',
             '.miniconda',
-            'twml',
+            'appenv',
             'bin',
             'python'
             )
