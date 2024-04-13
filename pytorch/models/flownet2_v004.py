@@ -242,7 +242,8 @@ class Model:
             def predict(self, imgs, flow, training=True, flow_gt=None, UHD=False):
                 imgs = imgs.detach().to(device=torch.device('cpu'))
                 flow = flow.detach().to(device=torch.device('cpu'))
-
+                self.contextnet.to(device=torch.device('cpu'))
+                
                 img0 = imgs[:, :3]
                 img1 = imgs[:, 3:]
                 if UHD:
@@ -262,7 +263,7 @@ class Model:
                 c1[1] = c1[1].detach().to(device=torch.device('mps'))
                 c1[2] = c1[2].detach().to(device=torch.device('mps'))
                 c1[3] = c1[3].detach().to(device=torch.device('mps'))
-                self.fusionnet.to(device=torch.device('mps'))
+                # self.fusionnet.to(device=torch.device('mps'))
 
                 flow = torch.nn.functional.interpolate(flow, scale_factor=2.0, mode="bilinear",
                                     align_corners=False) * 2.0
@@ -273,8 +274,6 @@ class Model:
                 mask = torch.sigmoid(refine_output[:, 3:4])
                 merged_img = warped_img0 * mask + warped_img1 * (1 - mask)
                 pred = merged_img + res
-
-                pred.to(device=torch.device('mps'))
                 
                 return [flow] * 4, [mask] * 4, [pred] * 4
 
