@@ -11,9 +11,6 @@
 
 * install downloaded Miniconda python distribution, use "-p" to select install location. For example:
 
-```sh Miniconda3-py311_24.1.2-0-Linux-x86_64.sh -bfsm -p ~/miniconda3
-```
-
 ```sh Miniconda3-py311_24.1.2-0-MacOSX-arm64.sh
 eval "$(~/miniconda3/bin/conda shell.zsh hook)"
 conda create --name twml --clone base
