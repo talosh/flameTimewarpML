@@ -61,7 +61,7 @@ class Model:
             # cpu_g = g.to('cpu')
             # cpu_tenInput = tenInput.to('cpu')
             # cpu_result = torch.nn.functional.grid_sample(input=cpu_tenInput, grid=cpu_g, mode='bicubic', padding_mode='border', align_corners=True)
-            return result.to(device)
+            return result.to(original_device)
         # '''
 
         class Conv2(Module):
