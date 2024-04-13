@@ -1198,7 +1198,7 @@ def main():
         trained_model_path = args.state_file
 
         try:
-            checkpoint = torch.load(trained_model_path)
+            checkpoint = torch.load(trained_model_path, map_location=device)
             print('loaded previously saved model checkpoint')
         except Exception as e:
             print (f'unable to load saved model: {e}')
