@@ -391,7 +391,7 @@ class ApplyModelDialog():
         inference_script_path = os.path.join(
             os.path.dirname(__file__),
             'pytorch',
-            'inference.py'
+            'flameTimewarpML_inference.py'
         )
 
         print (f'command: {conda_python_path} {inference_script_path} {lockfile_path}')
