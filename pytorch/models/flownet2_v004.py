@@ -57,18 +57,18 @@ class Model:
             def forward(self, x, flow):
                 x = self.conv0(x)
                 x = self.conv1(x)
-                flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear", align_corners=False) * 0.5
+                flow = torch.nn.functional.interpolate(flow, scale_factor=0.5, mode="bilinear", align_corners=False) * 0.5
                 f1 = warp(x, flow)
                 x = self.conv2(x)
-                flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
+                flow = torch.nn.functional.interpolate(flow, scale_factor=0.5, mode="bilinear",
                                     align_corners=False) * 0.5
                 f2 = warp(x, flow)
                 x = self.conv3(x)
-                flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
+                flow = torch.nn.functional.interpolate(flow, scale_factor=0.5, mode="bilinear",
                                     align_corners=False) * 0.5
                 f3 = warp(x, flow)
                 x = self.conv4(x)
-                flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear",
+                flow = torch.nn.functional.interpolate(flow, scale_factor=0.5, mode="bilinear",
                                     align_corners=False) * 0.5
                 f4 = warp(x, flow)
                 return [f1, f2, f3, f4]
