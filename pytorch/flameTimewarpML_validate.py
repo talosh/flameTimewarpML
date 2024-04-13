@@ -1175,13 +1175,13 @@ def main():
         fusion_weights = {}
         for key in checkpoint['flownet_state_dict'].keys():
             if 'flownet.' in key:
-                flownet_weights[key.replace('flownet.', '')] = checkpoint['flownet_state_dict'][key]
+                flownet_weights[key.replace('flownet.', '')] = checkpoint['flownet_state_dict'][key].to(device='cpu')
             if 'contextnet.' in key:
                 contextnet_weights[key.replace('contextnet.', '')] = checkpoint['flownet_state_dict'][key].to(device='cpu')
             if 'fusionnet.' in key:
                 fusion_weights[key.replace('fusionnet.', '')] = checkpoint['flownet_state_dict'][key].to(device='cpu')
 
-        flownet.flownet.to(device=device)
+        flownet.flownet.to(device='cpu')
         flownet.contextnet.to(device='cpu')
         flownet.fusionnet.to(device='cpu')
 
