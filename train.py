@@ -39,7 +39,6 @@ try:
     import torch
 except:
     if fw.site_packages_folder in sys.path:
-
         print ('unable to import numpy and pytorch')
         sys.exit()
     else:
