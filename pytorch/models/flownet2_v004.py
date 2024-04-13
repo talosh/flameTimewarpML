@@ -56,7 +56,7 @@ class Model:
                                 tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0)], 1)
 
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-            result = torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+            result = torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='zero', align_corners=True)
             # return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
             # cpu_g = g.to('cpu')
             # cpu_tenInput = tenInput.to('cpu')
