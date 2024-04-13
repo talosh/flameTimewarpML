@@ -1280,9 +1280,9 @@ def main():
             ev_img0 = ev_img0.permute(2, 0, 1).unsqueeze(0)
             ev_img1 = ev_img1.permute(2, 0, 1).unsqueeze(0)
             ev_img2 = ev_img2.permute(2, 0, 1).unsqueeze(0)
-            evn_img0 = normalize(ev_img0)
-            evn_img1 = normalize(ev_img1)
-            evn_img2 = normalize(ev_img2)
+            evn_img0 = normalize_numpy(ev_img0)
+            evn_img1 = normalize_numpy(ev_img1)
+            evn_img2 = normalize_numpy(ev_img2)
 
             n, c, h, w = evn_img1.shape
             
@@ -1296,7 +1296,7 @@ def main():
             with torch.no_grad():
                 flownet.eval()
                 _, _, merged = flownet(evp_img0, evp_img1, evp_img2, None, None, ev_ratio)
-                evp_output = merged[3].to(device=device)
+                evp_output = merged[3]
                 psnr_list.append(psnr_torch(evp_output, evp_img1))
 
                 # ev_gt = ev_gt[0].permute(1, 2, 0)[:h, :w]                        
@@ -1326,7 +1326,7 @@ def main():
                 except Exception as e:
                     print (e)
 
-            evp_output = restore_normalized_values(evp_output)
+            evp_output = restore_normalized_values_numpy(evp_output)
             ev_output = evp_output[0].permute(1, 2, 0)[:h, :w]
 
             # if ev_item_index  % 9 == 1:
