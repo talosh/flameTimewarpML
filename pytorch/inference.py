@@ -69,11 +69,19 @@ class Timewarp():
 
         print (f'frame_info_list: {frame_info_list}')
 
-        '''
+        def read_images(read_image_queue, dataset):
+            while True:
+                for batch_idx in range(len(dataset)):
+                    img0, img1, img2, ratio, idx = dataset[batch_idx]
+                    read_image_queue.put((img0, img1, img2, ratio, idx))
+
+
+        read_image_queue = queue.Queue(maxsize=8)
         read_thread = threading.Thread(target=read_images, args=(read_image_queue, dataset))
         read_thread.daemon = True
         read_thread.start()
 
+        '''
         write_image_queue = queue.Queue(maxsize=96)
         write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
         write_thread.daemon = True

@@ -339,6 +339,7 @@ class ApplyModelDialog():
             json_info['setup'] = tw_setup_string
             json_info['record_in'] = record_in
             json_info['record_out'] = record_out
+            json_info['settings'] = self.settings
 
             lockfile_path = os.path.join(
                 result_folder,
