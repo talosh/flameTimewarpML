@@ -1119,7 +1119,7 @@ def main():
         batch_size=1, 
         device=device, 
         frame_size=256,
-        max_window=3
+        max_window=max_dataset_window
         )
 
     def read_images(read_image_queue, dataset):
