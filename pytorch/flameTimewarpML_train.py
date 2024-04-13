@@ -1487,6 +1487,7 @@ def main():
                 'epoch_loss': epoch_loss,
                 'start_timestamp': start_timestamp,
                 'lr': optimizer_flownet.param_groups[0]['lr'],
+                'model_info': model_info,
                 'flownet_state_dict': flownet.state_dict(),
                 'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
             }, trained_model_path)
@@ -1518,6 +1519,7 @@ def main():
                 'epoch_loss': epoch_loss,
                 'start_timestamp': start_timestamp,
                 'lr': optimizer_flownet.param_groups[0]['lr'],
+                'model_info': model_info,
                 'flownet_state_dict': flownet.state_dict(),
                 'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
             }, trained_model_path)

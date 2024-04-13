@@ -240,7 +240,7 @@ class Model:
 	@staticmethod
 	def get_info():
 		info = {
-			'name': 'TWML_Flownet_v008',
+			'name': 'Flownet4_v008',
 			'file': 'flownet4_v008.py',
 			'ratio_support': True
 		}
