@@ -170,6 +170,7 @@ class Model:
                 self.block1.to(device=torch.device('mps'))
                 self.block2.to(device=torch.device('mps'))
                 self.block3.to(device=torch.device('mps'))
+                x = x.detach().to(device=torch.device('mps'))
 
                 flow0 = self.block0(x)
                 F1 = flow0
@@ -234,13 +235,11 @@ class Model:
                 self.fusionnet = FusionNet()
 
             def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
-                imgs = torch.cat((img0, img1), 1).detach().to(device=torch.device('mps'))
+                imgs = torch.cat((img0, img1), 1)
                 flow, _ = self.flownet(imgs, UHD=False)
                 return self.predict(imgs, flow, training=False, UHD=False)
 
             def predict(self, imgs, flow, training=True, flow_gt=None, UHD=False):
-
-                self.contextnet.to(device=torch.device('mps'))
                 img0 = imgs[:, :3]
                 img1 = imgs[:, 3:]
                 if UHD:
@@ -250,18 +249,6 @@ class Model:
                 flow = torch.nn.functional.interpolate(flow, scale_factor=2.0, mode="bilinear",
                                     align_corners=False) * 2.0
                 
-                img0 = img1.detach().to(device=torch.device('cpu'))
-                img1 = img1.detach().to(device=torch.device('cpu'))
-                c0[0] = c0[0].detach().to(device=torch.device('cpu'))
-                c0[1] = c0[1].detach().to(device=torch.device('cpu'))
-                c0[2] = c0[2].detach().to(device=torch.device('cpu'))
-                c0[3] = c0[3].detach().to(device=torch.device('cpu'))
-                c1[0] = c1[0].detach().to(device=torch.device('cpu'))
-                c1[1] = c1[1].detach().to(device=torch.device('cpu'))
-                c1[2] = c1[2].detach().to(device=torch.device('cpu'))
-                c1[3] = c1[3].detach().to(device=torch.device('cpu'))
-                flow = flow.detach().to(device=torch.device('cpu'))
-
                 refine_output, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt = self.fusionnet(
                     img0, img1, flow, c0, c1, flow_gt)
                 res = torch.sigmoid(refine_output[:, :3]) * 2 - 1
