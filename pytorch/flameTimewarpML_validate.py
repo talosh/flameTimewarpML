@@ -1229,8 +1229,6 @@ def main():
 
     start_timestamp = time.time()
     time_stamp = time.time()
-    epoch = current_epoch if args.first_epoch == -1 else args.first_epoch
-    step = loaded_step if args.first_epoch == -1 else step
     print('\n\n')
     batch_idx = 0
 
@@ -1337,8 +1335,6 @@ def main():
     steps_loss = []
     epoch_loss = []
     psnr_list = []
-    epoch = epoch + 1
-    batch_idx = 0
 
 if __name__ == "__main__":
     main()
