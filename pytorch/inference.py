@@ -439,9 +439,14 @@ class Timewarp():
 
         print (f'frame_info_list: {frame_info_list}')
 
+        def read_images(read_image_queue, frame_info_list):
+            for frame_info in frame_info_list:
+                frame_info['incoming_image_data'] = read_openexr_file(frame_info['incoming'])
+                frame_info['outgoing_image_data'] = read_openexr_file(frame_info['outgoing'])
+                read_image_queue.put(frame_info)
 
         read_image_queue = queue.Queue(maxsize=8)
-        read_thread = threading.Thread(target=self.read_images, args=(read_image_queue, frame_info_list))
+        read_thread = threading.Thread(target=read_images, args=(read_image_queue, frame_info_list))
         read_thread.daemon = True
         read_thread.start()
 
@@ -1007,7 +1012,6 @@ class Timewarp():
                 interpolated_speed_channel = {}
                 for frame_number in range (start_frame, end_frame+1):
                     interpolated_speed_channel[frame_number] = round(speed_interpolator.sample_at(frame_number), 4)
-                print ('Hello to hermite curve!')
                 return approximate_speed_curve(tw_setup_string, self.record_in, self.record_out, interpolated_speed_channel)
 
             timing_interpolator = FlameChannellInterpolator(speed_timing_channel)
@@ -1016,12 +1020,6 @@ class Timewarp():
                 frame_value_map[frame_number] = round(timing_interpolator.sample_at(frame_number), 4)
                     
         return frame_value_map
-
-    def read_images(self, read_image_queue, frame_info_list):
-        for frame_info in frame_info_list:
-            frame_info['incoming_image_data'] = read_openexr_file(frame_info['incoming'])
-            frame_info['outgoing_image_data'] = read_openexr_file(frame_info['outgoing'])
-            read_image_queue.put(frame_info)
 
 # Custom stream object to capture output
 class Stream(QObject):
