@@ -455,18 +455,19 @@ class Timewarp():
 
         def write_images(write_image_queue):
             while True:
+                image_path = 'unknown path'
                 try:
                     write_data = write_image_queue.get_nowait()
-                    if write_data['image_data'] is None:
-                        print ('finishing write thread')
-                        break
                     image_data = write_data['image_data']
                     image_path = write_data['image_path']
+                    if image_data is None:
+                        print ('finishing write thread')
+                        break
                     write_exr(image_data, image_path)
                 except queue.Empty:
                     time.sleep(1e-4)
                 except Exception as e:
-                    print (f'error writing file: {}')
+                    print (f'error writing file: {image_path}: {e}')
 
 
         write_image_queue = queue.Queue(maxsize=9)
