@@ -158,7 +158,7 @@ class Model:
                 self.block0.to(device=torch.device('mps'))
                 self.block1.to(device=torch.device('mps'))
                 self.block2.to(device=torch.device('mps'))
-                # self.block3.to(device=torch.device('mps'))
+                self.block3.to(device=torch.device('mps'))
                 x = x.detach().to(device=torch.device('mps'))
 
                 flow0 = self.block0(x)
