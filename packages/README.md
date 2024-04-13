@@ -19,6 +19,8 @@ sh Miniconda3-py311_24.1.2-0-Linux-x86_64.sh -bfsm -p ~/miniconda3
 
 ```bash
 eval "$(~/miniconda3/bin/conda shell.bash hook)"
+conda create --name appenv --clone base
+conda activate appenv
 ```
 
 ```sh Miniconda3-py311_24.1.2-0-MacOSX-arm64.sh
