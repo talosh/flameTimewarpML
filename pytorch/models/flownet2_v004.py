@@ -36,13 +36,23 @@ class Model:
             tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
 
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+            '''
             result = torch.nn.functional.grid_sample(
                 input=tenInput.detach().to(device=torch.device('cpu')), 
                 grid=g.detach().to(device=torch.device('cpu')), 
                 mode='bilinear', 
-                padding_mode='reflection', 
+                padding_mode='border', 
                 align_corners=True
                 )
+            '''
+            result = torch.nn.functional.grid_sample(
+                input=tenInput, 
+                grid=g, 
+                mode='bilinear', 
+                padding_mode='border', 
+                align_corners=True
+                )
+
             return result.detach().to(device=input_device)
         # '''
 
