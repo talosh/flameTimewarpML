@@ -1045,187 +1045,190 @@ class Timewarp():
                     
         return frame_value_map
 
-# Custom stream object to capture output
-class Stream(QObject):
-    newText = pyqtSignal(str)
+def main():
+    # Custom stream object to capture output
+    class Stream(QObject):
+        newText = pyqtSignal(str)
 
-    def write(self, text):
-        self.newText.emit(str(text))
+        def write(self, text):
+            self.newText.emit(str(text))
 
-    def flush(self):
-        pass
+        def flush(self):
+            pass
 
-# A thread that does some work and produces output
-class Worker(QThread):
+    # A thread that does some work and produces output
+    class Worker(QThread):
 
-    result = pyqtSignal(bool, str)
+        result = pyqtSignal(bool, str)
 
-    def __init__(self, argv, parent=None):
-        super(Worker, self).__init__(parent)
-        self.argv = argv
+        def __init__(self, argv, parent=None):
+            super(Worker, self).__init__(parent)
+            self.argv = argv
 
-    def run(self):
-        if len(self.argv) < 2:
-            message = f'Missing input arguments:\n{self.argv}'
-            print (message)
-            self.result.emit(False, message)
-            return
+        def run(self):
+            if len(self.argv) < 2:
+                message = f'Missing input arguments:\n{self.argv}'
+                print (message)
+                self.result.emit(False, message)
+                return
 
-        try:
-            import json
-            with open(self.argv[1], 'r') as json_file:
-                json_info = json.load(json_file)
-        except Exception as e:
-            message = f'Unable to load input data from {self.argv[1]}: {e}'
-            print (message)
-            self.result.emit(False, message)
-            return
-        
-        # print(f'{json_info}')
+            try:
+                import json
+                with open(self.argv[1], 'r') as json_file:
+                    json_info = json.load(json_file)
+            except Exception as e:
+                message = f'Unable to load input data from {self.argv[1]}: {e}'
+                print (message)
+                self.result.emit(False, message)
+                return
+            
+            # print(f'{json_info}')
 
-        '''
-        print ('Initializing PyTorch...')
-        import torch
-        if torch.backends.mps.is_available():
-            mps_device = torch.device("mps")
-            x = torch.randn(4, device=mps_device)
-            print (x)
-        else:
-            print ("MPS device not found.")
-        '''
+            '''
+            print ('Initializing PyTorch...')
+            import torch
+            if torch.backends.mps.is_available():
+                mps_device = torch.device("mps")
+                x = torch.randn(4, device=mps_device)
+                print (x)
+            else:
+                print ("MPS device not found.")
+            '''
 
-        tw = Timewarp(json_info)
-        result = tw.process()
-        self.result.emit(result, '')
+            tw = Timewarp(json_info)
+            result = tw.process()
+            self.result.emit(result, '')
 
-        '''
-        for i in tqdm(range(100),
-                      file=sys.stdout,
-                      bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}', 
-                      ascii=f' {chr(0x2588)}',
-                      # ascii=False,
-                      ncols=50):
-            time.sleep(0.1)  # Simulate work
-        self.result.emit(True, '')
-        '''
+            '''
+            for i in tqdm(range(100),
+                        file=sys.stdout,
+                        bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}', 
+                        ascii=f' {chr(0x2588)}',
+                        # ascii=False,
+                        ncols=50):
+                time.sleep(0.1)  # Simulate work
+            self.result.emit(True, '')
+            '''
 
-# Main window class
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.initUI()
-        
-        # Redirect sys.stdout and sys.stderr
-        sys.stdout = Stream(newText=self.onUpdateText)
-        sys.stderr = Stream(newText=self.onUpdateText)
+    # Main window class
+    class MainWindow(QMainWindow):
+        def __init__(self):
+            super().__init__()
+            self.initUI()
+            
+            # Redirect sys.stdout and sys.stderr
+            sys.stdout = Stream(newText=self.onUpdateText)
+            sys.stderr = Stream(newText=self.onUpdateText)
 
-        self.worker_status = False
-        self.worker = Worker(sys.argv)
-        self.worker.result.connect(self.handleWorkerResult)
-        self.worker.finished.connect(self.onWorkerFinished)
-        self.worker.start()
+            self.worker_status = False
+            self.worker = Worker(sys.argv)
+            self.worker.result.connect(self.handleWorkerResult)
+            self.worker.finished.connect(self.onWorkerFinished)
+            self.worker.start()
 
-        self.last_progress_line = None  # Keep track of the last progress line
+            self.last_progress_line = None  # Keep track of the last progress line
 
-    def loadMonospaceFont(self):
-        DejaVuSansMono = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            'fonts',
-            'DejaVuSansMono.ttf'
-        )
+        def loadMonospaceFont(self):
+            DejaVuSansMono = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                'fonts',
+                'DejaVuSansMono.ttf'
+            )
 
-        font_id = QFontDatabase.addApplicationFont(DejaVuSansMono)
-        if font_id == -1:
-            all_fonts = QFontDatabase.families()
-            monospaced_fonts = []
-            for font_family in all_fonts:
-                font = QFont(font_family)
-                font_info = QFontInfo(font)
-                if font_info.fixedPitch():
-                    monospaced_fonts.append(font_family)
-            font = QFont(monospaced_fonts[0], 11)  # Generic monospace font
-            return font
-        else:
-            font_families = QFontDatabase.applicationFontFamilies(font_id)
-            if font_families:
-                font_family = font_families[0]  # Get the first family name
-                font = QFont(font_family, 11)  # Set the desired size
+            font_id = QFontDatabase.addApplicationFont(DejaVuSansMono)
+            if font_id == -1:
+                all_fonts = QFontDatabase.families()
+                monospaced_fonts = []
+                for font_family in all_fonts:
+                    font = QFont(font_family)
+                    font_info = QFontInfo(font)
+                    if font_info.fixedPitch():
+                        monospaced_fonts.append(font_family)
+                font = QFont(monospaced_fonts[0], 11)  # Generic monospace font
                 return font
             else:
-                return None
+                font_families = QFontDatabase.applicationFontFamilies(font_id)
+                if font_families:
+                    font_family = font_families[0]  # Get the first family name
+                    font = QFont(font_family, 11)  # Set the desired size
+                    return font
+                else:
+                    return None
 
-    def initUI(self):
-        layout = QVBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
+        def initUI(self):
+            layout = QVBoxLayout()
+            layout.setContentsMargins(0, 0, 0, 0)
 
-        self.text_edit = QTextEdit()
-        self.text_edit.setReadOnly(True)
-        self.text_edit.setStyleSheet("""
-            QTextEdit {
-                color: rgb(188, 188, 188); 
-                background-color: #292929;
-                border: 1px solid #474747;
-            }
-        """)
-        font = self.loadMonospaceFont()
-        if font:
-            self.text_edit.setFont(font)
+            self.text_edit = QTextEdit()
+            self.text_edit.setReadOnly(True)
+            self.text_edit.setStyleSheet("""
+                QTextEdit {
+                    color: rgb(188, 188, 188); 
+                    background-color: #292929;
+                    border: 1px solid #474747;
+                }
+            """)
+            font = self.loadMonospaceFont()
+            if font:
+                self.text_edit.setFont(font)
 
-        layout.addWidget(self.text_edit)
-        
-        central_widget = QWidget()
-        central_widget.setLayout(layout)
-        self.setCentralWidget(central_widget)
-        
-        self.setGeometry(300, 300, 600, 400)
-        self.setWindowTitle('Capture tqdm Output')
-        self.show()
+            layout.addWidget(self.text_edit)
+            
+            central_widget = QWidget()
+            central_widget.setLayout(layout)
+            self.setCentralWidget(central_widget)
+            
+            self.setGeometry(300, 300, 600, 400)
+            self.setWindowTitle('Capture tqdm Output')
+            self.show()
 
-    def onUpdateText(self, text):
-        # text = text.rstrip('\n')
-        # Check for carriage return indicating a progress update
-        if '\r' in text:
-            text.replace('\n', '')
-            text.replace('\r', '')
+        def onUpdateText(self, text):
             # text = text.rstrip('\n')
-            # text = text.rstrip('\r')
-            if self.last_progress_line is not None:
-                # Remove the last progress update
-                self.text_edit.moveCursor(QTextCursor.StartOfLine, QTextCursor.KeepAnchor)
-                self.text_edit.textCursor().removeSelectedText()
-                self.text_edit.moveCursor(QTextCursor.End)
-                self.text_edit.textCursor().deletePreviousChar()  # Remove newline left after text removal
-            self.last_progress_line = text
-        else:
-            pass
-            # text = text + '\n'
-            # Not a progress line, so append normally and reset progress tracking
-            # self.last_progress_line = None
-            # text = text + '\n'  # Add newline for regular prints
+            # Check for carriage return indicating a progress update
+            if '\r' in text:
+                text.replace('\n', '')
+                text.replace('\r', '')
+                # text = text.rstrip('\n')
+                # text = text.rstrip('\r')
+                if self.last_progress_line is not None:
+                    # Remove the last progress update
+                    self.text_edit.moveCursor(QTextCursor.StartOfLine, QTextCursor.KeepAnchor)
+                    self.text_edit.textCursor().removeSelectedText()
+                    self.text_edit.moveCursor(QTextCursor.End)
+                    self.text_edit.textCursor().deletePreviousChar()  # Remove newline left after text removal
+                self.last_progress_line = text
+            else:
+                pass
+                # text = text + '\n'
+                # Not a progress line, so append normally and reset progress tracking
+                # self.last_progress_line = None
+                # text = text + '\n'  # Add newline for regular prints
 
-        cursor = self.text_edit.textCursor()
-        cursor.movePosition(QTextCursor.End)
-        cursor.insertText(text)  # Insert the text at the end
-        self.text_edit.setTextCursor(cursor)
-        self.text_edit.ensureCursorVisible()
+            cursor = self.text_edit.textCursor()
+            cursor.movePosition(QTextCursor.End)
+            cursor.insertText(text)  # Insert the text at the end
+            self.text_edit.setTextCursor(cursor)
+            self.text_edit.ensureCursorVisible()
 
-    def keyPressEvent(self, event):        
-        # Check if Ctrl+C was pressed
-        if event.key() == Qt.Key_C and event.modifiers():
-            self.close()
-        else:
-            super().keyPressEvent(event)
+        def keyPressEvent(self, event):        
+            # Check if Ctrl+C was pressed
+            if event.key() == Qt.Key_C and event.modifiers():
+                self.close()
+            else:
+                super().keyPressEvent(event)
 
-    def handleWorkerResult(self, status, message):
-        self.worker_status = status
+        def handleWorkerResult(self, status, message):
+            self.worker_status = status
 
-    def onWorkerFinished(self):
-        sys.stdout = sys.__stdout__
-        sys.stderr = sys.__stderr__
-        if self.worker_status:
-            self.close()
+        def onWorkerFinished(self):
+            sys.stdout = sys.__stdout__
+            sys.stderr = sys.__stderr__
+            if self.worker_status:
+                self.close()
 
-if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = MainWindow()
     sys.exit(app.exec())
+
+if __name__ == '__main__':
+    main()
