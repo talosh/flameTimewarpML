@@ -112,7 +112,7 @@ class Model:
                         )
                 return flow
 
-        class IFNet(nn.Module):
+        class IFNet(Module):
             def __init__(self):
                 super(IFNet, self).__init__()
                 self.block0 = IFBlock(6, scale=8, c=192)
