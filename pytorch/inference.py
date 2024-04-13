@@ -455,7 +455,7 @@ class Timewarp():
                     if write_data['image_data'] is None:
                         print ('finishing write thread')
                         break
-                    print (f'writing {write_data['image_path']}')
+                    print (f'writing {write_data["image_path"]}')
                     write_exr(write_data['image_data'], write_data['image_path'])
                 except:
                 # except queue.Empty:
