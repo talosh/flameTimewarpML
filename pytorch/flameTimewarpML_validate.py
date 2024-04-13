@@ -847,7 +847,7 @@ def normalize(image_array) :
         linear_part = x
         exp_bend = np.sign(x) * np.power(np.abs(x), 1 / 4)
         res = np.where(x > 1, exp_bend, np.where(x < -1, exp_bend, linear_part))
-        torch.from_numpy(res.copy()).to(device = xt.device)
+        return torch.from_numpy(res.copy()).to(device = xt.device)
 
     # transfer (0.0 - 1.0) onto (-1.0 - 1.0) for tanh
     image_array = (image_array * 2) - 1
