@@ -298,6 +298,7 @@ def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
 
     print (f'writing {filename}')
     print (f'image_data: {image_data.shape}')
+    print (f'image_data dtype: {image_data.dtype}')
 
     height, width, depth = image_data.shape
     red = image_data[:, :, 0]
@@ -459,10 +460,14 @@ class Timewarp():
                     if write_data['image_data'] is None:
                         print ('finishing write thread')
                         break
-                    write_exr(write_data['image_data'], write_data['image_path'])
-                except:
-                # except queue.Empty:
+                    image_data = write_data['image_data']
+                    image_path = write_data['image_path']
+                    write_exr(image_data, image_path)
+                except queue.Empty:
                     time.sleep(1e-4)
+                except Exception as e:
+                    print (f'error writing file: {}')
+
 
         write_image_queue = queue.Queue(maxsize=9)
         write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
