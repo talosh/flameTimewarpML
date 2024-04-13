@@ -18,7 +18,7 @@ sh Miniconda3-py311_24.1.2-0-Linux-x86_64.sh -bfsm -p ~/miniconda3
 * Activate anc clone default environment into another named "appenv" 
 
 ```bash
-eval "$(/home/flame/miniconda3/bin/conda shell.bash hook)"
+eval "$(~/miniconda3/bin/conda shell.bash hook)"
 ```
 
 ```sh Miniconda3-py311_24.1.2-0-MacOSX-arm64.sh
