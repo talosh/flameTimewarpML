@@ -2,6 +2,7 @@
 
 * pre-configured miniconda environment should be placed into hidden "packages/.miniconda" folder
 * the folder is hidden (starts with ".") in order to keep Flame from scanning it looking for python hooks
+* pre-configured python environment is packed with release tar file
 
 ### Installing python environment manually
 
