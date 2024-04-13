@@ -208,24 +208,25 @@ class Model:
 
             def load_old_model(self, path, rank=0):
                 def convert(param):
-                    if rank == -1:
-                        return {
-                            k.replace("module.", ""): v
-                            for k, v in param.items()
-                            if "module." in k
-                        }
-                    else:
-                        return param
+                    return {
+                        k.replace("module.", ""): v
+                        for k, v in param.items()
+                        if "module." in k
+                    }
                     
                 device = next(self.parameters()).device
                 print (f'loading old model to device: {device}')
+                # flownet_dict = torch.load('{}/flownet.pkl'.format(path), map_location=device)
 
+
+                # '''
                 self.flownet.load_state_dict(
                     convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
                 self.contextnet.load_state_dict(
                     convert(torch.load('{}/contextnet.pkl'.format(path), map_location=device)))
                 self.fusionnet.load_state_dict(
                     convert(torch.load('{}/unet.pkl'.format(path), map_location=device)))
+                # '''
 
         self.model = FlownetModel
         self.training_model = FlownetModel
