@@ -1109,8 +1109,9 @@ def main():
     max_dataset_window = 9
     if not model_info.get('ratio_support'):
         max_dataset_window = 3
-    flownet = Flownet().get_training_model()().to(device)
-
+    # flownet = Flownet().get_training_model()().to(device)
+    flownet = Flownet().get_training_model()()
+    
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
@@ -1179,6 +1180,10 @@ def main():
                 contextnet_weights[key.replace('contextnet.', '')] = checkpoint['flownet_state_dict'][key].to(device='cpu')
             if 'fusionnet.' in key:
                 fusion_weights[key.replace('fusionnet.', '')] = checkpoint['flownet_state_dict'][key]
+
+        flownet.flownet.to(device=device)
+        flownet.contextnet.to(device='cpu')
+        flownet.fusionnet.to(device=device)
 
         flownet.flownet.load_state_dict(flownet_weights)
         flownet.contextnet.load_state_dict(contextnet_weights)
