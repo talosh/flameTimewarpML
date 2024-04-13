@@ -1355,13 +1355,13 @@ def main():
     hours = int((epoch_time % (24 * 3600)) // 3600)
     minutes = int((epoch_time % 3600) // 60)
 
-    print (epoch_time)
+    # print (epoch_time)
 
     # rife_psnr = np.array(rife_psnr_list).mean()
 
     clear_lines(2)
     # print (f'\r {" "*240}', end='')
-    print(f'\r[PNSR] {psnr:.4f}')
+    print(f'\rTime: {epoch_time}, [PNSR] {psnr:.4f}')
     print ('\n')
 
     steps_loss = []
