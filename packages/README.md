@@ -23,7 +23,7 @@ conda create --name appenv --clone base
 conda activate appenv
 ```
 
-* Install main dependency libraries
+* Install dependency libraries
 
 ```bash
 conda install numpy
