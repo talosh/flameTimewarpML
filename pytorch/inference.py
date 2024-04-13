@@ -437,8 +437,6 @@ class Timewarp():
             frame_info_list.append(frame_info)
             output_frame_number += 1
 
-        print (f'frame_info_list: {frame_info_list}')
-
         def read_images(read_image_queue, frame_info_list):
             for frame_info in frame_info_list:
                 frame_info['incoming_image_data'] = read_openexr_file(frame_info['incoming'])
@@ -457,6 +455,7 @@ class Timewarp():
                     if write_data['image_data'] is None:
                         print ('finishing write thread')
                         break
+                    print (f'writing {write_data['image_path']}')
                     write_exr(write_data['image_data'], write_data['image_path'])
                 except:
                 # except queue.Empty:
