@@ -18,7 +18,7 @@ class Model:
                 torch.nn.PReLU(out_planes)
             )
 
-        # '''
+        '''
         def warp_mps(tenInput, tenFlow):
             backwarp_tenGrid = {}
 
@@ -33,7 +33,7 @@ class Model:
 
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='zeros', align_corners=True)
-        # '''
+        '''
 
         # '''
         def warp(tenInput, tenFlow):
@@ -157,18 +157,18 @@ class Model:
                 flow0 = self.block0(x)
                 F1 = flow0
                 F1_large = torch.nn.functional.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
-                warped_img0 = warp_mps(x[:, :3], F1_large[:, :2])
-                warped_img1 = warp_mps(x[:, 3:], F1_large[:, 2:4])
+                warped_img0 = warp(x[:, :3], F1_large[:, :2])
+                warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
                 flow1 = self.block1(torch.cat((warped_img0, warped_img1, F1_large), 1))
                 F2 = (flow0 + flow1)
                 F2_large = torch.nn.functional.interpolate(F2, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
-                warped_img0 = warp_mps(x[:, :3], F2_large[:, :2])
-                warped_img1 = warp_mps(x[:, 3:], F2_large[:, 2:4])
+                warped_img0 = warp(x[:, :3], F2_large[:, :2])
+                warped_img1 = warp(x[:, 3:], F2_large[:, 2:4])
                 flow2 = self.block2(torch.cat((warped_img0, warped_img1, F2_large), 1))
                 F3 = (flow0 + flow1 + flow2)
                 F3_large = torch.nn.functional.interpolate(F3, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
-                warped_img0 = warp_mps(x[:, :3], F3_large[:, :2])
-                warped_img1 = warp_mps(x[:, 3:], F3_large[:, 2:4])
+                warped_img0 = warp(x[:, :3], F3_large[:, :2])
+                warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
                 flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3_large), 1))
                 F4 = (flow0 + flow1 + flow2 + flow3)
                 return F4, [F1, F2, F3, F4]
