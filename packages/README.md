@@ -32,6 +32,19 @@ conda install pytorch::pytorch -c pytorch
 conda install conda-pack
 ```
 
+* Install pytorch. Please look up exact commands depending on OS and Cuda versions at <>
+
+* Linux example
+```bash
+conda install pytorch pytorch-cuda=11.8 -c pytorch -c nvidia
+```
+
+* MacOS example:
+
+```bash
+conda install pytorch::pytorch -c pytorch
+```
+
 * Pack append environment into a portable tar file
 
 ```bash
@@ -39,5 +52,5 @@ conda pack --ignore-missing-files -n appenv
 ```
 
 ```bash
-tar xvf twml.tar.gz -C {flameTimewarpML folder}/packages/.miniconda/twml/
+tar xvf twml.tar.gz -C {flameTimewarpML folder}/packages/.miniconda/appenv
 ```
