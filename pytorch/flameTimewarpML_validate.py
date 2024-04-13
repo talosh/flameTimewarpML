@@ -1095,8 +1095,8 @@ def main():
 
     args = parser.parse_args()
 
-    device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
-    # device = 'cpu'
+    # device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
+    device = 'cpu'
     
     # Find and initialize model
     Flownet = find_and_import_model(base_name='flownet', model_name=args.model)
@@ -1110,6 +1110,8 @@ def main():
     if not model_info.get('ratio_support'):
         max_dataset_window = 3
     flownet = Flownet().get_training_model()().to(device)
+
+    device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
 
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
@@ -1159,6 +1161,8 @@ def main():
     steps_loss = []
     epoch_loss = []
     psnr_list = []
+
+    device = 'cpu'
 
     if args.state_file:
         trained_model_path = args.state_file
@@ -1237,6 +1241,9 @@ def main():
     psnr_list = []
 
     args.eval = args.eval if args.eval < len(dataset) else len(dataset)
+
+    device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
+    flownet.to(device=device)
 
     try:
         for ev_item_index in range(args.eval):
