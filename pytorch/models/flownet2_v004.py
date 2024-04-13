@@ -218,14 +218,13 @@ class Model:
             def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
                 imgs = torch.cat((img0, img1), 1)
                 flow, _ = self.flownet(imgs, UHD=False)
+                imgs = imgs.to(device=torch.device("mps"))
+                flow = flow.to(device=torch.device("mps"))
                 return self.predict(imgs, flow, training=False, UHD=False)
 
             def predict(self, imgs, flow, training=True, flow_gt=None, UHD=False):
-                mps_device = torch.device("mps")
-                imgs = imgs.to(device='cpu')
-                flow = flow.to(device='cpu')
-                self.contextnet.to(device='cpu')
-                self.fusionnet.to(device='cpu')
+                self.contextnet.to(device=torch.device("mps"))
+                self.fusionnet.to(device=torch.device("mps"))
 
                 img0 = imgs[:, :3]
                 img1 = imgs[:, 3:]
@@ -241,7 +240,7 @@ class Model:
                 mask = torch.sigmoid(refine_output[:, 3:4])
                 merged_img = warped_img0 * mask + warped_img1 * (1 - mask)
                 pred = merged_img + res
-                pred.to(device=mps_device)
+                pred.to(device='cpu')
                 return [flow] * 4, [mask] * 4, [pred] * 4
 
             def load_old_model(self, path, rank=0):
