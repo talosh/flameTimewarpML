@@ -1095,13 +1095,15 @@ def main():
     parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
     parser.add_argument('--model', type=str, default=None, help='Model name (optional)')
     parser.add_argument('--legacy_model', type=str, default=None, help='Model name (optional)')
+    parser.add_argument('--cpu', action='store_true', default=False, help='CPU only')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
     parser.add_argument('--eval', type=int, dest='eval', default=999, help='Evaluate after each epoch for N samples')
 
     args = parser.parse_args()
 
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
-    # device = 'cpu'
+    if args.cpu:
+        device = torch.device('cpu')
     
     # Find and initialize model
     Flownet = find_and_import_model(base_name='flownet', model_name=args.model)
