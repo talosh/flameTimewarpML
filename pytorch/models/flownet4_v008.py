@@ -241,7 +241,7 @@ class Model:
 	def get_info():
 		info = {
 			'name': 'TWML_Flownet_v008',
-			'file': 'flownet_v008.py',
+			'file': 'flownet4_v008.py',
 			'ratio_support': True
 		}
 		return info
