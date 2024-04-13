@@ -166,7 +166,7 @@ class Model:
                 x = x.detach().to(device=torch.device('cpu'))
                 F1 = flow0
                 F1_large = torch.nn.functional.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
-                F1 = F1.detach().to(device=torch.device('cpu'))
+                F1_large = F1_large.detach().to(device=torch.device('cpu'))
 
                 warped_img0 = warp(x[:, :3], F1_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
