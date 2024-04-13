@@ -1017,9 +1017,11 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None):
 
     # Resolve the absolute path of the models directory
     models_abs_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__)),
-        models_dir
+        os.path.join(
+            os.path.dirname(__file__),
+            models_dir
         )
+    )
 
     # List all files in the models directory
     try:
