@@ -10,7 +10,7 @@ flameTimewarpML.package
 flameTimewarpMLenv.tar.bz2
 flameTimewarpML.bundle.tar
 test_*
-trained_models.all/*
+models/*
 env
 appenv
 .DS_Store
