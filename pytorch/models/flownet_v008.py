@@ -244,6 +244,7 @@ class Model:
 			'file': 'flownet_v008.py',
 			'ratio_support': True
 		}
+		return info
 
 	@staticmethod
 	def get_name():
