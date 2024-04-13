@@ -170,9 +170,6 @@ class Model:
 				f0 = None
 				f1 = None
 				
-				# f0 = self.encode(img0)
-				# f1 = self.encode(img1)
-
 				'''
 				if not torch.is_tensor(timestep):
 					timestep = (img0[:, :1].clone() * 0 + 1) * timestep
