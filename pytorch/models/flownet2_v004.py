@@ -252,8 +252,14 @@ class Model:
                 
                 img0 = img1.detach().to(device=torch.device('cpu'))
                 img1 = img1.detach().to(device=torch.device('cpu'))
-                c0 = c0.detach().to(device=torch.device('cpu'))
-                c1 = c1.detach().to(device=torch.device('cpu'))
+                c0[0] = c0[0].detach().to(device=torch.device('cpu'))
+                c0[1] = c0[1].detach().to(device=torch.device('cpu'))
+                c0[2] = c0[2].detach().to(device=torch.device('cpu'))
+                c0[3] = c0[3].detach().to(device=torch.device('cpu'))
+                c1[0] = c1[0].detach().to(device=torch.device('cpu'))
+                c1[1] = c1[1].detach().to(device=torch.device('cpu'))
+                c1[2] = c1[2].detach().to(device=torch.device('cpu'))
+                c1[3] = c1[3].detach().to(device=torch.device('cpu'))
                 flow = flow.detach().to(device=torch.device('cpu'))
 
                 refine_output, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt = self.fusionnet(
