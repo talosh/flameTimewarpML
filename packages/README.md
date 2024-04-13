@@ -6,7 +6,7 @@
 
 ### Installing python environment manually
 
-* download Miniconda for Mac or Linux (I'm using python 3.11 for tests)
+* download Miniconda for Mac or Linux (I'm using python 3.11 for tests) from 
 <https://docs.anaconda.com/free/miniconda/miniconda-other-installer-links/>
 
 ```sh Miniconda3-py311_24.1.2-0-MacOSX-arm64.sh
