@@ -425,7 +425,7 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                 self.train_descriptions.extend(self.create_dataset_descriptions(folder_path, max_window=self.max_window))
             print ('\nReshuffling training data indices...')
 
-            self.reshuffle()
+            # self.reshuffle()
 
             self.h = frame_size
             self.w = frame_size
@@ -1096,6 +1096,7 @@ def main():
     parser.add_argument('--model', type=str, default=None, help='Model name (optional)')
     parser.add_argument('--legacy_model', type=str, default=None, help='Model name (optional)')
     parser.add_argument('--cpu', action='store_true', default=False, help='CPU only')
+    parser.add_argument('--no_shuffle', action='store_true', default=False, help='Do not reshuffle')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
     parser.add_argument('--eval', type=int, dest='eval', default=999, help='Evaluate after each epoch for N samples')
 
@@ -1129,6 +1130,9 @@ def main():
         frame_size=256,
         max_window=max_dataset_window
         )
+
+    if not args.no_shuffle:
+        dataset.reshuffle()
 
     def read_images(read_image_queue, dataset):
         while True:
