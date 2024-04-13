@@ -6,6 +6,8 @@
 
 ### Installing python environment manually
 
+* download Miniconda for Mac or Linux (I'm using python 3.11 for tests)
+
 ```sh Miniconda3-py311_24.1.2-0-MacOSX-arm64.sh
 eval "$(~/miniconda3/bin/conda shell.zsh hook)"
 conda create --name twml --clone base
