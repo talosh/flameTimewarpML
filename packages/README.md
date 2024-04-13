@@ -26,7 +26,7 @@ conda activate appenv
 * Install dependency libraries
 
 ```bash
-pip install PySide6
+conda install pyqt
 conda install numpy
 conda install conda-pack
 ```
