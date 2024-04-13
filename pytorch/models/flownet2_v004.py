@@ -240,6 +240,7 @@ class Model:
                 return self.predict(imgs, flow, training=False, UHD=False)
 
             def predict(self, imgs, flow, training=True, flow_gt=None, UHD=False):
+                flow = flow.detach().to(device=torch.device('cpu'))
                 img0 = imgs[:, :3]
                 img1 = imgs[:, 3:]
                 if UHD:
