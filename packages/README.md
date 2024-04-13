@@ -35,7 +35,7 @@ conda install conda-pack
 * Pack append environment into a portable tar file
 
 ```bash
-conda pack --ignore-missing-files -n twml
+conda pack --ignore-missing-files -n appenv
 ```
 
 ```bash
