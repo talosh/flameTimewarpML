@@ -26,8 +26,8 @@ conda activate appenv
 * Install dependency libraries
 
 ```bash
-conda install numpy
 pip install PySide6
+conda install numpy
 conda install pytorch::pytorch -c pytorch
 conda install conda-pack
 ```
