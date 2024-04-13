@@ -459,7 +459,7 @@ class Timewarp():
 
         for idx in range(len(frame_info_list)):
             frame_info = read_image_queue.get()
-            print (f'frame {idx} of {len(frame_info_list)}')
+            print (f'frame {idx + 1} of {len(frame_info_list)}')
    
     def bake_flame_tw_setup(self, tw_setup_string):
         # parses tw setup from flame and returns dictionary
