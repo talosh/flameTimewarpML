@@ -1095,8 +1095,8 @@ def main():
 
     args = parser.parse_args()
 
-    # device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
-    device = 'cpu'
+    device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
+    # device = 'cpu'
     
     # Find and initialize model
     Flownet = find_and_import_model(base_name='flownet', model_name=args.model)
