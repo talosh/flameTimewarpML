@@ -205,6 +205,28 @@ class Model:
                 pred = merged_img + res
                 return [flow] * 4, [mask] * 4, [pred] * 4
 
+            def load_old_model(self, path, rank=0):
+                def convert(param):
+                    if rank == -1:
+                        return {
+                            k.replace("module.", ""): v
+                            for k, v in param.items()
+                            if "module." in k
+                        }
+                    else:
+                        return param
+                    
+                device = next(self.parameters()).device
+                print (f'device: {device}')
+
+                if rank <= 0:
+                    self.flownet.load_state_dict(
+                        convert(torch.load('{}/flownet.pkl'.format(path), map_location=device)))
+                    self.contextnet.load_state_dict(
+                        convert(torch.load('{}/contextnet.pkl'.format(path), map_location=device)))
+                    self.fusionnet.load_state_dict(
+                        convert(torch.load('{}/unet.pkl'.format(path), map_location=device)))
+
         self.model = FlownetModel
         self.training_model = FlownetModel
 
@@ -254,18 +276,4 @@ class Model:
         return self.training_model
 
     def load_model(self, path, flownet, rank=0):
-        import torch
-        def convert(param):
-            if rank == -1:
-                return {
-                    k.replace("module.", ""): v
-                    for k, v in param.items()
-                    if "module." in k
-                }
-            else:
-                return param
-        if rank <= 0:
-            if torch.cuda.is_available():
-                flownet.load_state_dict(convert(torch.load(path)), False)
-            else:
-                flownet.load_state_dict(convert(torch.load(path, map_location ='cpu')), False)
+        flownet.load_old_model(path)
