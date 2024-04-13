@@ -1116,10 +1116,10 @@ def main():
     read_image_queue = queue.Queue(maxsize=12)
     dataset = get_dataset(
         args.dataset_path, 
-        batch_size=args.batch_size, 
+        batch_size=1, 
         device=device, 
-        frame_size=abs(int(args.frame_size)),
-        max_window=max_dataset_window
+        frame_size=256,
+        max_window=3
         )
 
     def read_images(read_image_queue, dataset):
