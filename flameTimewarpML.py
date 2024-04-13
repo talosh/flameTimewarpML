@@ -380,24 +380,36 @@ class ApplyModelDialog():
     def run_inference(self, lockfile_path):
         import platform
 
-        conda_python_path = os.path.join(
+        conda_env_path = os.path.join(
             os.path.dirname(__file__),
             'packages',
             '.miniconda',
-            'appenv',
+            'appenv'
+        )
+
+        conda_python_path = os.path.join(
+            conda_env_path,
             'bin',
             'python'
             )
+
         inference_script_path = os.path.join(
             os.path.dirname(__file__),
             'pytorch',
             'flameTimewarpML_inference.py'
         )
 
+        env = os.environ.copy()
+        env['QT_QPA_PLATFORM_PLUGIN_PATH'] = os.path.join(
+            conda_env_path,
+            'plugins',
+            'platforms'
+        )
+
         print (f'command: {conda_python_path} {inference_script_path} {lockfile_path}')
 
         import subprocess
-        subprocess.Popen([conda_python_path, inference_script_path, lockfile_path])
+        subprocess.Popen([conda_python_path, inference_script_path, lockfile_path], env=env)
 
         '''
         if platform.system() == 'Darwin':
