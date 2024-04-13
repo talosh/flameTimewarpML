@@ -20,6 +20,11 @@ class Model:
 
         # '''
         def warp(tenInput, tenFlow):
+            input_device = tenInput.device
+
+            tenInput = tenInput.detach().copy().to(device=torch.device('cpu'))
+            tenFlow = tenFlow.detach().copy().to(device=torch.device('cpu'))
+
             backwarp_tenGrid = {}
 
             k = (str(tenFlow.device), str(tenFlow.size()))
@@ -32,7 +37,8 @@ class Model:
             tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
 
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-            return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='zeros', align_corners=True)
+            result = torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='zeros', align_corners=True)
+            return result.detach().copy().to(device=torch.device('mps'))
         # '''
 
         '''
@@ -161,46 +167,27 @@ class Model:
                 self.block3.to(device=torch.device('mps'))
                 x = x.detach().to(device=torch.device('mps'))
 
-                flow0 = self.block0(x)
 
+                flow0 = self.block0(x)
                 F1 = flow0
                 F1_large = torch.nn.functional.interpolate(F1, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
-                F1_large = F1_large.detach().to(device=torch.device('cpu'))
-                x = x.detach().to(device=torch.device('cpu'))
-                flow0 = flow0.detach().to(device=torch.device('cpu'))
-
                 warped_img0 = warp(x[:, :3], F1_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F1_large[:, 2:4])
-                
-                warped_img0 = warped_img0.detach().to(device=torch.device('mps'))
-                warped_img1 = warped_img1.detach().to(device=torch.device('mps'))
-                F1_large = F1_large.detach().to(device=torch.device('mps'))
                 flow1 = self.block1(torch.cat((warped_img0, warped_img1, F1_large), 1))
-                flow1 = flow1.detach().to(device=torch.device('cpu'))
-                
                 F2 = (flow0 + flow1)
                 F2_large = torch.nn.functional.interpolate(F2, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 warped_img0 = warp(x[:, :3], F2_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F2_large[:, 2:4])
-
-                warped_img0 = warped_img0.detach().to(device=torch.device('mps'))
-                warped_img1 = warped_img1.detach().to(device=torch.device('mps'))
-                F2_large = F2_large.detach().to(device=torch.device('mps'))
                 flow2 = self.block2(torch.cat((warped_img0, warped_img1, F2_large), 1))
-                flow2 = flow2.detach().to(device=torch.device('cpu'))
-                
                 F3 = (flow0 + flow1 + flow2)
                 F3_large = torch.nn.functional.interpolate(F3, scale_factor=2.0, mode="bilinear", align_corners=False, recompute_scale_factor=False) * 2.0
                 warped_img0 = warp(x[:, :3], F3_large[:, :2])
                 warped_img1 = warp(x[:, 3:], F3_large[:, 2:4])
-                
-                warped_img0 = warped_img0.detach().to(device=torch.device('mps'))
-                warped_img1 = warped_img1.detach().to(device=torch.device('mps'))
-                F3_large = F3_large.detach().to(device=torch.device('mps'))
                 flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3_large), 1))
-                flow3 = flow3.detach().to(device=torch.device('cpu'))
-
                 F4 = (flow0 + flow1 + flow2 + flow3)
+
+                F4 = F4.detach().to(device=torch.device('cpu'))
+
                 return F4, [F1, F2, F3, F4]
 
         class FusionNet(Module):
