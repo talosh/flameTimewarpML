@@ -38,19 +38,11 @@ try:
     import numpy as np
     import torch
 except:
-    if fw.site_packages_folder in sys.path:
-        print ('unable to import numpy and pytorch')
+    python_executable_path = sys.executable
+    if '.miniconda' in python_executable_path:
+        print ('Unable to import Numpy and PyTorch libraries')
+        print (f'Using {python_executable_path} python interpreter')
         sys.exit()
-    else:
-        sys.path.append(fw.site_packages_folder)
-        try:
-            import numpy as np
-            import torch
-        except:
-            print ('unable to import numpy and pytorch')
-            sys.exit()
-        if fw.site_packages_folder in sys.path:
-            sys.path.remove(fw.site_packages_folder)
 
 class TimewarpMLDataset(torch.utils.data.Dataset):
     def __init__(self, data_root, batch_size = 8, device = None, frame_size=448):
