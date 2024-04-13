@@ -1,6 +1,6 @@
 ## flameTimewarpML
 
-* pre-configured miniconda environment should be placed into hidden .miniconda folder
+* pre-configured miniconda environment should be placed into hidden "packages/.miniconda" folder
 * folder is hidden (starts with .) in order to keep Flame from scanning it looking for python hooks
 
 ### Installation
