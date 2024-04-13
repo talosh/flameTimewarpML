@@ -217,15 +217,14 @@ class Model:
 
             def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
                 imgs = torch.cat((img0, img1), 1)
+                imgs = imgs.to(device = torch.device('mps'))
+                self.flownet.to(device = torch.device('mps'))
                 flow, _ = self.flownet(imgs, UHD=False)
-                imgs = imgs.to(device=torch.device("mps"))
-                flow = flow.to(device=torch.device("mps"))
+                imgs = imgs.to(device=torch.device("cpu"))
+                flow = flow.to(device=torch.device("cpu"))
                 return self.predict(imgs, flow, training=False, UHD=False)
 
             def predict(self, imgs, flow, training=True, flow_gt=None, UHD=False):
-                self.contextnet.to(device=torch.device("mps"))
-                self.fusionnet.to(device=torch.device("mps"))
-
                 img0 = imgs[:, :3]
                 img1 = imgs[:, 3:]
                 if UHD:
