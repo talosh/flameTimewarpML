@@ -11,13 +11,16 @@ flameTimewarpMLenv.tar.bz2
 flameTimewarpML.bundle.tar
 test_*
 trained_models.all/*
+
+packages/.miniconda/appenv
+
 !trained_models.all/README
 !packages/README.md
 !packages/.miniconda/README.md
 !packages/.miniconda/twml/README.md
 
 .DS_Store
-packages/.miniconda
+# packages/.miniconda/
 env
 appenv
 train_log/*
