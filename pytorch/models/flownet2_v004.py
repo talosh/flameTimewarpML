@@ -186,7 +186,7 @@ class Model:
                 flow3 = self.block3(torch.cat((warped_img0, warped_img1, F3_large), 1))
                 F4 = (flow0 + flow1 + flow2 + flow3)
 
-                F4 = F4.detach().to(device=torch.device('cpu'))
+                # F4 = F4.detach().to(device=torch.device('cpu'))
 
                 return F4, [F1, F2, F3, F4]
 
