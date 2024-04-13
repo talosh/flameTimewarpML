@@ -1041,9 +1041,9 @@ def main():
 
     if args.oncyclelr:
         if args.epochs == -1:
-            train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(optimizer_flownet, max_lr=0.1, total_steps=len(dataset))
+            train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(optimizer_flownet, max_lr=args.lr, total_steps=len(dataset))
         else:
-            train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(optimizer_flownet, max_lr=0.1, steps_per_epoch=len(dataset), epochs=args.epochs)
+            train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(optimizer_flownet, max_lr=args.lr, steps_per_epoch=len(dataset), epochs=args.epochs)
 
     # train_scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, mode='min', factor=0.1, patience=2)
     # lambda_function = lambda epoch: 1
