@@ -238,6 +238,14 @@ class Model:
 		self.training_model = FlownetCas
 
 	@staticmethod
+	def get_info():
+		info = {
+			'name': 'TWML_Flownet_v008',
+			'file': 'flownet_v008.py',
+			'ratio_support': True
+		}
+
+	@staticmethod
 	def get_name():
 		return 'TWML_Flownet_v008'
 	

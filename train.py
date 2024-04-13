@@ -962,16 +962,16 @@ def main():
     # Optional arguments
     parser.add_argument('--lr', type=float, default=0.00011, help='Learning rate (default: 1e-4)')
     parser.add_argument('--type', type=int, default=1, help='Model type (int): 1 - MultiresNet, 2 - MultiresNet 4 (default: 1)')
-    parser.add_argument('--warmup', type=float, default=0.001, help='Warmup epochs (float) (default: 1)')
-    parser.add_argument('--pulse', type=float, default=999, help='Period in steps to pulse learning rate (float) (default: 999)')
+    parser.add_argument('--pulse', type=float, default=9999, help='Period in steps to pulse learning rate (float) (default: 10K)')
     parser.add_argument('--pulse_amplitude', type=float, default=25, help='Learning rate pulse amplitude (percentage) (default: 25)')
+    parser.add_argument('--oncyclelr', action='store_true', default=False, help='Use OneCycleLR strategy. If number of epochs is not set cycle is set to single epoch.')
     parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
     parser.add_argument('--model', type=str, default=None, help='Model name (optional)')
     parser.add_argument('--legacy_model', type=str, default=None, help='Model name (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size (int) (default: 8)')
     parser.add_argument('--first_epoch', type=int, default=-1, help='Epoch (int) (default: Saved)')
-    parser.add_argument('--epochs', type=int, default=-1, help='Epoch (int) (default: Saved)')
+    parser.add_argument('--epochs', type=int, default=-1, help='Number of epoch to run (int) (default: Unlimited)')
     parser.add_argument('--eval', type=int, dest='eval', default=-1, help='Evaluate after each epoch for N samples')
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
@@ -1031,20 +1031,20 @@ def main():
     criterion_mse = torch.nn.MSELoss()
     criterion_l1 = torch.nn.L1Loss()
 
-    # optimizer_flownet = Yogi(flownet.parameters(), lr=lr)
     optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=4e-4)
-    '''
-    def warmup(current_step, lr = 4e-3, number_warmup_steps = 999):
-        mul_lin = current_step / number_warmup_steps
-        # print (f'\n number_warmup_steps {number_warmup_steps} lr {lr} mul {mul_lin} res {(lr * mul_lin):.4e}')
-        return lr * mul_lin
-    '''
 
     # remove annoying message in pytorch 1.12.1 when using CosineAnnealingLR
     import warnings
     warnings.filterwarnings('ignore', category=UserWarning)
 
     train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+
+    if args.oncyclelr:
+        if args.epochs == -1:
+            train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(optimizer_flownet, max_lr=0.1, total_steps=len(dataset))
+        else:
+            train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(optimizer_flownet, max_lr=0.1, steps_per_epoch=len(dataset), epochs=args.epochs)
+
     # train_scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, mode='min', factor=0.1, patience=2)
     # lambda_function = lambda epoch: 1
     # train_scheduler_flownet = torch.optim.lr_scheduler.LambdaLR(optimizer_flownet, lr_lambda=lambda_function)
