@@ -236,13 +236,7 @@ class Model:
                 self.fusionnet = FusionNet()
 
             def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
-                imgs = torch.cat((img0, img1), 1)
-
-                imgs = imgs.detach().to(device=torch.device('cpu'))
-                self.flownet.to(device=torch.device('cpu'))
-                self.contextnet.to(device=torch.device('cpu'))
-                self.fusionnet.to(device=torch.device('cpu'))
-                
+                imgs = torch.cat((img0, img1), 1)                
                 flow, _ = self.flownet(imgs, UHD=False)
                 return self.predict(imgs, flow, training=False, UHD=False)
 
@@ -258,7 +252,6 @@ class Model:
                 c0 = self.contextnet(img0, flow[:, :2])
                 c1 = self.contextnet(img1, flow[:, 2:4])
                 
-                '''
                 img0 = img0.detach().to(device=torch.device('mps'))
                 img1 = img1.detach().to(device=torch.device('mps'))
                 flow = flow.detach().to(device=torch.device('mps'))
@@ -270,8 +263,7 @@ class Model:
                 c1[1] = c1[1].detach().to(device=torch.device('mps'))
                 c1[2] = c1[2].detach().to(device=torch.device('mps'))
                 c1[3] = c1[3].detach().to(device=torch.device('mps'))
-                self.fusionnet.to(device=torch.device('mps'))
-                '''
+                # self.fusionnet.to(device=torch.device('mps'))
 
                 flow = torch.nn.functional.interpolate(flow, scale_factor=2.0, mode="bilinear",
                                     align_corners=False) * 2.0
