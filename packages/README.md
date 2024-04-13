@@ -51,5 +51,6 @@ conda pack --ignore-missing-files -n appenv
 ```
 
 ```bash
-tar xvf twml.tar.gz -C {flameTimewarpML folder}/packages/.miniconda/appenv
+mkdir  {flameTimewarpML folder}/packages/.miniconda/appenv/
+tar xvf appenv.tar.gz -C {flameTimewarpML folder}/packages/.miniconda/appenv
 ```
