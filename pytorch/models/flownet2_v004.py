@@ -243,14 +243,13 @@ class Model:
                 imgs = imgs.detach().to(device=torch.device('cpu'))
                 flow = flow.detach().to(device=torch.device('cpu'))
                 self.contextnet.to(device=torch.device('cpu'))
-                
+
                 img0 = imgs[:, :3]
                 img1 = imgs[:, 3:]
                 if UHD:
                     flow = torch.nn.functional.interpolate(flow, scale_factor=2.0, mode="bilinear", align_corners=False) * 2.0
                 c0 = self.contextnet(img0, flow[:, :2])
                 c1 = self.contextnet(img1, flow[:, 2:4])
-                
                 
                 img0 = img0.detach().to(device=torch.device('mps'))
                 img1 = img1.detach().to(device=torch.device('mps'))
