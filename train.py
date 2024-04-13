@@ -1264,7 +1264,7 @@ def main():
 
         loss_x1 = criterion_mse(merged[3], img1)
 
-        loss = 0.05 * loss_x8 + 0.05 * loss_x4 + 0.05 * loss_x2 + 0.85 * loss_x1
+        loss = 0.2 * loss_x8 + 0.1 * loss_x4 + 0.1 * loss_x2 + 0.6 * loss_x1
 
         # print(loss.requires_grad)  # Should be True
 
