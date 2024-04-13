@@ -1326,7 +1326,7 @@ def main():
                 except Exception as e:
                     print (e)
 
-            evp_output = restore_normalized_values_numpy(evp_output)
+            evp_output = restore_normalized_values(evp_output)
             ev_output = evp_output[0].permute(1, 2, 0)[:h, :w]
 
             # if ev_item_index  % 9 == 1:
