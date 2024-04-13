@@ -6,6 +6,7 @@ try:
     from PySide6.QtGui import QTextCursor, QFont, QFontDatabase, QFontInfo
     import time
     from tqdm import tqdm
+    import queue
     import threading
 
 except:
