@@ -1096,8 +1096,6 @@ def main():
     args = parser.parse_args()
 
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
-    if args.all_gpus:
-        device = 'cuda'
     
     # Find and initialize model
     Flownet = find_and_import_model(base_name='flownet', model_name=args.model)
