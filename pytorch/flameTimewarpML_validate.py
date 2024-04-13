@@ -1239,6 +1239,7 @@ def main():
 
     try:
         for ev_item_index in range(args.eval):
+            clear_lines(1)
             print (f'\rCalcualting PSNR on full-scale image {ev_item_index} of {args.eval}...')
 
             ev_item = dataset.frames_queue.get()
