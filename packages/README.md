@@ -3,7 +3,7 @@
 * pre-configured miniconda environment should be placed into hidden "packages/.miniconda" folder
 * the folder is hidden (starts with ".") in order to keep Flame from scanning it looking for python hooks
 
-### Installation
+### Installing python environment manually
 
 ```sh Miniconda3-py311_24.1.2-0-MacOSX-arm64.sh
 eval "$(~/miniconda3/bin/conda shell.zsh hook)"
