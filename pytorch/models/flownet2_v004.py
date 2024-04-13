@@ -239,7 +239,9 @@ class Model:
                 imgs = torch.cat((img0, img1), 1)
 
                 imgs = imgs.detach().to(device=torch.device('cpu'))
-                # self.flownet.to(device=torch.device('mps'))
+                self.flownet.to(device=torch.device('cpu'))
+                self.contextnet.to(device=torch.device('cpu'))
+                self.fusionnet.to(device=torch.device('cpu'))
                 
                 flow, _ = self.flownet(imgs, UHD=False)
                 return self.predict(imgs, flow, training=False, UHD=False)
