@@ -1169,6 +1169,9 @@ def main():
         except Exception as e:
             print (f'unable to load saved model: {e}')
 
+        for key in checkpoint['flownet_state_dict'].keys():
+            print(key, checkpoint['flownet_state_dict'][key].size())
+
         try:
             flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
             print('loaded previously saved Flownet state')
