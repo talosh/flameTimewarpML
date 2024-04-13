@@ -295,6 +295,9 @@ def read_openexr_file(file_path, header_only = False):
 def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
     import struct
 
+    print (f'writing {filename}')
+    print (f'image_data: {image_data.shape}')
+
     height, width, depth = image_data.shape
     red = image_data[:, :, 0]
     green = image_data[:, :, 1]
@@ -455,7 +458,6 @@ class Timewarp():
                     if write_data['image_data'] is None:
                         print ('finishing write thread')
                         break
-                    print (f'writing {write_data["image_path"]}')
                     write_exr(write_data['image_data'], write_data['image_path'])
                 except:
                 # except queue.Empty:
