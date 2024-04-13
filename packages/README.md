@@ -23,6 +23,15 @@ conda create --name appenv --clone base
 conda activate appenv
 ```
 
+* Install main dependency libraries
+
+```bash
+conda install numpy
+pip install PySide6
+conda install pytorch::pytorch -c pytorch
+conda install conda-pack
+```
+
 ```sh Miniconda3-py311_24.1.2-0-MacOSX-arm64.sh
 eval "$(~/miniconda3/bin/conda shell.zsh hook)"
 conda create --name twml --clone base
