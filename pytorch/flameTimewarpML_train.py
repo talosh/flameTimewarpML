@@ -1095,8 +1095,12 @@ def main():
     if Flownet is None:
         print (f'Unable to load model {args.model}')
         return
+    model_info = Flownet.get_info()
     print ('Model info:')
-    pprint (Flownet.get_info())
+    pprint (model_info)
+    max_dataset_window = 9
+    if not model_info.get('ratio_support'):
+        max_dataset_window = 3
     flownet = Flownet().get_training_model()().to(device)
     if args.all_gpus:
         print ('Using nn.DataParallel')
@@ -1107,7 +1111,13 @@ def main():
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
     read_image_queue = queue.Queue(maxsize=12)
-    dataset = get_dataset(args.dataset_path, batch_size=args.batch_size, device=device, frame_size=abs(int(args.frame_size)))
+    dataset = get_dataset(
+        args.dataset_path, 
+        batch_size=args.batch_size, 
+        device=device, 
+        frame_size=abs(int(args.frame_size))
+        max_window=max_dataset_window
+        )
 
     def read_images(read_image_queue, dataset):
         while True:
