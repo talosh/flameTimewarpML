@@ -799,6 +799,7 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                     img1 = img1 * exp
                     img2 = img2 * exp
                 
+                '''
                 # add colour banace shift
                 delta = random.uniform(0, 0.69)
                 r = random.uniform(1-delta, 1+delta)
@@ -808,6 +809,7 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                 img0 = img0 * multipliers
                 img1 = img1 * multipliers
                 img2 = img2 * multipliers
+                '''
 
                 def gamma_up(img, gamma = 1.18):
                     return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
