@@ -760,6 +760,8 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                 img1 = img1.permute(2, 0, 1)
                 img2 = img2.permute(2, 0, 1)
 
+                '''
+
                 p = random.uniform(0, 1)
                 if p < 0.25:
                     img0 = torch.flip(img0.transpose(1, 2), [2])
@@ -792,7 +794,6 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                     img1 = img1.flip(0)
                     img2 = img2.flip(0)
 
-                # '''
                 # Exposure agumentation
                 exp = random.uniform(1 / 8, 2)
                 if random.uniform(0, 1) < 0.4:
@@ -818,7 +819,7 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                     img0 = gamma_up(img0, gamma=gamma)
                     img1 = gamma_up(img1, gamma=gamma)
                     img2 = gamma_up(img2, gamma=gamma)
-                #'''
+                '''
 
                 batch_img0.append(img0)
                 batch_img1.append(img1)
