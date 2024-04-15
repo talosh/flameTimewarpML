@@ -1441,6 +1441,11 @@ def main():
     model_rife.load_state_dict(convert(rife_state_dict))
     '''
 
+    # LPIPS Init
+    import lpips
+    os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
+    loss_fn_alex = lpips.LPIPS(net='alex')
+
     start_timestamp = time.time()
     time_stamp = time.time()
     epoch = current_epoch if args.first_epoch == -1 else args.first_epoch
@@ -1463,10 +1468,6 @@ def main():
     flownet_teacher.eval()
     '''
 
-    # LPIPS Init
-    import lpips
-    os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
-    loss_fn_alex = lpips.LPIPS(net='alex')
 
 
     while True:
