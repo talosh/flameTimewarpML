@@ -1878,6 +1878,7 @@ def main():
                     print (f'{e}\n\n')
    
             psnr = np.array(psnr_list).mean()
+            lpips_val = np.array(lpips_list).mean()
 
             epoch_time = time.time() - start_timestamp
             days = int(epoch_time // (24 * 3600))
@@ -1888,7 +1889,7 @@ def main():
 
             clear_lines(2)
             # print (f'\r {" "*240}', end='')
-            print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PNSR] {psnr:.4f}')
+            print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PNSR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
             print ('\n')
 
             steps_loss = []
