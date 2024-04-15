@@ -1192,8 +1192,8 @@ class UnetD(torch.nn.Module):
             classname = m.__class__.__name__
             if classname.lower().find('conv') != -1:
                 # print(classname)
-                torch.nn.init.kaiming_normal(m.weight)
-                torch.nn.init.constant(m.bias, 0)
+                torch.nn.init.kaiming_normal_(m.weight)
+                torch.nn.init.constant_(m.bias, 0)
             elif classname.find('bn') != -1:
                 m.weight.data.normal_(1.0, 0.02)
                 m.bias.data.fill_(0)
@@ -1381,6 +1381,12 @@ def main():
             print('loaded previously saved Flownet state')
         except Exception as e:
             print (f'unable to load Flownet state: {e}')
+
+        try:
+            model_D.load_state_dict(checkpoint['model_d_state_dict'], strict=False)
+            print('loaded previously saved Determinator state')
+        except Exception as e:
+            print (f'unable to load Determinator state: {e}')
 
         try:
             loaded_step = checkpoint['step']
