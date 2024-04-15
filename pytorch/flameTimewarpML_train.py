@@ -1678,11 +1678,14 @@ def main():
             smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
             window_min = min(epoch_loss)
             window_max = max(epoch_loss)
+            lpips_window_val = np.array(lpips_list).mean()
         else:
             smoothed_window_loss = np.mean(moving_average(epoch_loss[-999:], 9))
             window_min = min(epoch_loss[-999:])
             window_max = max(epoch_loss[-999:])
+            lpips_window_val = np.array(lpips_list[-999:]).mean()
         smoothed_loss = np.mean(moving_average(epoch_loss, 9))
+        lpips_val = np.array(lpips_list).mean()
 
         loss.backward()
 
@@ -1771,7 +1774,7 @@ def main():
         # print (f'\r {" "*180}', end='')
         # print ('\n')
         print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
-        print(f'\r[Last 1K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}')
+        print(f'\r[Last 1K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} [LPIPS] {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} [LPIPS] {lpips_val:.4f}')
 
         if ( idx + 1 ) == len(dataset):
             torch.save({
@@ -1896,6 +1899,7 @@ def main():
             steps_loss = []
             epoch_loss = []
             psnr_list = []
+            lpips_list = []
             epoch = epoch + 1
             batch_idx = 0
 
