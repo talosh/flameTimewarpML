@@ -1582,7 +1582,7 @@ def main():
         output = merged[3]
 
         # D
-        e_S, d_S, _, _ = model_D( output )
+        e_S, d_S, _, _ = model_D( output ).detach()
         e_H, d_H, _, _ = model_D( img1 )
 
         # D Loss, for encoder end and decoder end
