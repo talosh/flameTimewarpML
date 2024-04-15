@@ -1077,7 +1077,7 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None):
 
 ### U-Net Discriminator ###
 # Residual block for the discriminator
-class DBlock(nn.Module):
+class DBlock(torch.nn.Module):
     def __init__(self, in_channels, out_channels, which_conv=nn.Conv2d, which_bn=nn.BatchNorm2d, wide=True,
                 preactivation=True, activation=nn.LeakyReLU(0.1, inplace=False), downsample=nn.AvgPool2d(2, stride=2)):
         super(DBlock, self).__init__()
@@ -1129,7 +1129,7 @@ class DBlock(nn.Module):
         return h #+ self.shortcut(x)
         
 
-class GBlock(nn.Module):
+class GBlock(torch.nn.Module):
     def __init__(self, in_channels, out_channels,
                 which_conv=nn.Conv2d, which_bn=nn.BatchNorm2d, activation=nn.LeakyReLU(0.1, inplace=False), 
                 upsample=nn.Upsample(scale_factor=2, mode='nearest')):
