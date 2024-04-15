@@ -1638,7 +1638,8 @@ def main():
         loss_Pixel = Huber(output, img1)
         loss_G = loss_Pixel
         # LPIPS loss
-        loss_LPIPS = loss_fn_alex(output * 2 - 1, img1 * 2 - 1) * L_LPIPS
+        loss_LPIPS = loss_fn_alex(output * 2 - 1, img1 * 2 - 1)
+        loss_LPIPS = torch.mean(loss_LPIPS) * L_LPIPS
         # FM and GAN losses
         e_S, d_S, e_Ss, d_Ss = model_D( output )
         _, _, e_Hs, d_Hs = model_D( img1 )
