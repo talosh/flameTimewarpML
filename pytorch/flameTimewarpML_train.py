@@ -1577,12 +1577,16 @@ def main():
             
         # for name, param in flownet.named_parameters():
         #     print(name, param.requires_grad)
-        flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
-        mask = mask_list[3]
-        output = merged[3]
+
+        # Determinator training pass
+        
+        with torch.no_grad():
+            flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
+            mask = mask_list[3]
+            output = merged[3]
 
         # D
-        e_S, d_S, _, _ = model_D( output ).detach()
+        e_S, d_S, _, _ = model_D( output.detach() )
         e_H, d_H, _, _ = model_D( img1 )
 
         # D Loss, for encoder end and decoder end
@@ -1596,6 +1600,13 @@ def main():
         loss_D.backward()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 0.1)
         optimizer_dt.step()
+
+        ### End of determinator training pass
+
+        flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
+        mask = mask_list[3]
+        output = merged[3]
+
 
         # warped_img0 = warp(img0, flow_list[3][:, :2])
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
