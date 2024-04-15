@@ -1383,6 +1383,7 @@ def main():
     steps_loss = []
     epoch_loss = []
     psnr_list = []
+    lpips_list = []
 
     if args.state_file:
         trained_model_path = args.state_file
@@ -1638,8 +1639,8 @@ def main():
         loss_Pixel = Huber(output, img1)
         loss_G = loss_Pixel
         # LPIPS loss
-        loss_LPIPS = loss_fn_alex(output * 2 - 1, img1 * 2 - 1)
-        loss_LPIPS = torch.mean(loss_LPIPS) * L_LPIPS
+        loss_LPIPS_ = loss_fn_alex(output * 2 - 1, img1 * 2 - 1)
+        loss_LPIPS = torch.mean(loss_LPIPS_) * L_LPIPS
         # FM and GAN losses
         e_S, d_S, e_Ss, d_Ss = model_D( output )
         _, _, e_Hs, d_Hs = model_D( img1 )
@@ -1655,7 +1656,7 @@ def main():
         loss_Advs += [torch.nn.ReLU()(1.0 - d_S).mean() * L_ADV]
         loss_Adv = torch.mean(torch.stack(loss_Advs))
 
-        loss = loss_Pixel + loss_LPIPS # + loss_FM + loss_Adv
+        loss = loss_Pixel + loss_LPIPS + loss_FM + loss_Adv
 
         # loss = 0.2 * loss_x8 + 0.1 * loss_x4 + 0.1 * loss_x2 + 0.6 * loss_x1
 
@@ -1669,6 +1670,7 @@ def main():
 
         epoch_loss.append(float(loss_l1.item()))
         steps_loss.append(float(loss_l1.item()))
+        lpips_list.append(float(loss_LPIPS_.item()))
         psnr_list.append(psnr_torch(output, img1))
 
         if len(epoch_loss) < 999:
@@ -1788,6 +1790,7 @@ def main():
 
             if args.eval != -1:
                 psnr_list = []
+                lpips_list = []
 
                 try:
                     for ev_item_index in range(args.eval):
@@ -1829,6 +1832,7 @@ def main():
                             _, _, merged = flownet(evp_img0, evp_img1, evp_img2, None, None, ev_ratio)
                             evp_output = merged[3]
                             psnr_list.append(psnr_torch(evp_output, evp_img1))
+                            lpips_list.append(float(loss_fn_alex(evp_output * 2 - 1, evp_img1 * 2 - 1).item()))
 
                             # ev_gt = ev_gt[0].permute(1, 2, 0)[:h, :w]                        
                             # evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
