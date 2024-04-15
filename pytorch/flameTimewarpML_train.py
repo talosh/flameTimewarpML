@@ -1225,6 +1225,22 @@ class UnetD(torch.nn.Module):
 
         return e_out, d_out, [e1,e2,e3,e4,e5,e6], [d1,d2,d3,d4,d5,d6]
 
+def Huber(input, target, delta=0.01, reduce=True):
+    abs_error = torch.abs(input - target)
+    quadratic = torch.clamp(abs_error, max=delta)
+
+    # The following expression is the same in value as
+    # tf.maximum(abs_error - delta, 0), but importantly the gradient for the
+    # expression when abs_error == delta is 0 (for tf.maximum it would be 1).
+    # This is necessary to avoid doubling the gradient, since there is already a
+    # nonzero contribution to the gradient from the quadratic term.
+    linear = (abs_error - quadratic)
+    losses = 0.5 * torch.pow(quadratic, 2) + delta * linear
+    
+    if reduce:
+        return torch.mean(losses)
+    else:
+        return losses
 
 # def init_weights(m):
 #     if isinstance(m, torch.nn.Linear):
@@ -1602,10 +1618,36 @@ def main():
 
         loss_x1 = criterion_mse(merged[3], img1)
 
-        loss = 0.2 * loss_x8 + 0.1 * loss_x4 + 0.1 * loss_x2 + 0.6 * loss_x1
+        #### GAN + LPIPS loss block
+
+        L_ADV = 1e-3        # Scaling params for the Adv loss
+        L_FM = 1            # Scaling params for the feature matching loss
+        L_LPIPS = 1e-3      # Scaling params for the LPIPS loss
+        # Pixel loss
+        loss_Pixel = Huber(output, img1)
+        loss_G = loss_Pixel
+        # LPIPS loss
+        loss_LPIPS = loss_fn_alex(output * 2 - 1, img1 * 2 - 1) * L_LPIPS
+        # FM and GAN losses
+        e_S, d_S, e_Ss, d_Ss = model_D( output )
+        _, _, e_Hs, d_Hs = model_D( img1 )
+        # FM loss
+        loss_FMs = []
+        for f in range(6):
+            loss_FMs += [Huber(e_Ss[f], e_Hs[f])]
+            loss_FMs += [Huber(d_Ss[f], d_Hs[f])]
+        loss_FM = torch.mean(torch.stack(loss_FMs)) * L_FM
+        # GAN loss
+        loss_Advs = []
+        loss_Advs += [torch.nn.ReLU()(1.0 - e_S).mean() * L_ADV]
+        loss_Advs += [torch.nn.ReLU()(1.0 - d_S).mean() * L_ADV]
+        loss_Adv = torch.mean(torch.stack(loss_Advs))
+
+        loss = loss_Pixel + loss_LPIPS + loss_FM + loss_Adv
+
+        # loss = 0.2 * loss_x8 + 0.1 * loss_x4 + 0.1 * loss_x2 + 0.6 * loss_x1
 
         # print(loss.requires_grad)  # Should be True
-
         # loss = 0.4 * loss_x8 + 0.3 * loss_x4 + 0.2 * loss_x2 + 0.1 * loss_x1 + 0.01 * loss_enc
 
         loss_l1 = criterion_l1(merged[3], img1)
