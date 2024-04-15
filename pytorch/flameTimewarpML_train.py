@@ -1466,7 +1466,7 @@ def main():
     # LPIPS Init
     import lpips
     os.environ['TORCH_HOME'] = os.path.join(
-        os.path.abspath(__file__),
+        os.path.abspath(os.path.dirname(__file__)),
         'pytorch'
     )
     loss_fn_alex = lpips.LPIPS(net='alex')
