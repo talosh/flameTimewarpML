@@ -1078,8 +1078,8 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None):
 ### U-Net Discriminator ###
 # Residual block for the discriminator
 class DBlock(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, which_conv=nn.Conv2d, which_bn=nn.BatchNorm2d, wide=True,
-                preactivation=True, activation=nn.LeakyReLU(0.1, inplace=False), downsample=nn.AvgPool2d(2, stride=2)):
+    def __init__(self, in_channels, out_channels, which_conv=torch.nn.Conv2d, which_bn=torch.nn.BatchNorm2d, wide=True,
+                preactivation=True, activation=torch.nn.LeakyReLU(0.1, inplace=False), downsample=torch.nn.AvgPool2d(2, stride=2)):
         super(DBlock, self).__init__()
         self.in_channels, self.out_channels = in_channels, out_channels
         # If using wide D (as in SA-GAN and BigGAN), change the channel pattern
