@@ -527,8 +527,8 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
             elif 'slow' in folder_path:
                 max_window = max_window
             else:
-                if max_window > 4:
-                    max_window = 4
+                if max_window > 5:
+                    max_window = 5
 
             try:
                 first_exr_file_header = read_openexr_file(exr_files[0], header_only = True)
