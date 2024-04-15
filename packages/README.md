@@ -44,6 +44,11 @@ conda install pytorch pytorch-cuda=11.8 -c pytorch -c nvidia
 conda install pytorch::pytorch -c pytorch
 ```
 
+* Install rest of the dependencies
+```bash
+pip install -r requirements.txt
+```
+
 * Pack append environment into a portable tar file
 
 ```bash
