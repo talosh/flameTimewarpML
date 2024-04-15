@@ -1131,8 +1131,8 @@ class DBlock(torch.nn.Module):
 
 class GBlock(torch.nn.Module):
     def __init__(self, in_channels, out_channels,
-                which_conv=nn.Conv2d, which_bn=nn.BatchNorm2d, activation=nn.LeakyReLU(0.1, inplace=False), 
-                upsample=nn.Upsample(scale_factor=2, mode='nearest')):
+                which_conv=torch.nn.Conv2d, which_bn=torch.nn.BatchNorm2d, activation=torch.nn.LeakyReLU(0.1, inplace=False), 
+                upsample=torch.nn.Upsample(scale_factor=2, mode='nearest')):
         super(GBlock, self).__init__()
         
         self.in_channels, self.out_channels = in_channels, out_channels
@@ -1176,7 +1176,7 @@ class UnetD(torch.nn.Module):
         self.enc_b5 = DBlock(256, 320)
         self.enc_b6 = DBlock(320, 384)
 
-        self.enc_out = nn.Conv2d(384, 1, kernel_size=1, padding=0)
+        self.enc_out = torch.nn.Conv2d(384, 1, kernel_size=1, padding=0)
 
         self.dec_b1 = GBlock(384, 320)
         self.dec_b2 = GBlock(320*2, 256)
@@ -1185,15 +1185,15 @@ class UnetD(torch.nn.Module):
         self.dec_b5 = GBlock(128*2, 64)
         self.dec_b6 = GBlock(64*2, 32)
 
-        self.dec_out = nn.Conv2d(32, 1, kernel_size=1, padding=0)
+        self.dec_out = torch.nn.Conv2d(32, 1, kernel_size=1, padding=0)
 
         # Init weights
         for m in self.modules():
             classname = m.__class__.__name__
             if classname.lower().find('conv') != -1:
                 # print(classname)
-                nn.init.kaiming_normal(m.weight)
-                nn.init.constant(m.bias, 0)
+                torch.nn.init.kaiming_normal(m.weight)
+                torch.nn.init.constant(m.bias, 0)
             elif classname.find('bn') != -1:
                 m.weight.data.normal_(1.0, 0.02)
                 m.bias.data.fill_(0)
@@ -1206,7 +1206,7 @@ class UnetD(torch.nn.Module):
         e5 = self.enc_b5(e4)
         e6 = self.enc_b6(e5)
 
-        e_out = self.enc_out(F.leaky_relu(e6, 0.1))
+        e_out = self.enc_out(torch.nn.functional.leaky_relu(e6, 0.1))
         # print(e1.size())
         # print(e2.size())
         # print(e3.size())
@@ -1221,7 +1221,7 @@ class UnetD(torch.nn.Module):
         d5 = self.dec_b5(torch.cat([d4, e2], 1))
         d6 = self.dec_b6(torch.cat([d5, e1], 1))
 
-        d_out = self.dec_out(F.leaky_relu(d6, 0.1))
+        d_out = self.dec_out(torch.nn.functional.leaky_relu(d6, 0.1))
 
         return e_out, d_out, [e1,e2,e3,e4,e5,e6], [d1,d2,d3,d4,d5,d6]
 
