@@ -1670,7 +1670,7 @@ def main():
 
         epoch_loss.append(float(loss_l1.item()))
         steps_loss.append(float(loss_l1.item()))
-        lpips_list.append(float(loss_LPIPS_.item()))
+        lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
         psnr_list.append(psnr_torch(output, img1))
 
         if len(epoch_loss) < 999:
