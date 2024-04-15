@@ -1462,6 +1462,7 @@ def main():
     import lpips
     os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
     loss_fn_alex = lpips.LPIPS(net='alex')
+    loss_fn_alex.to(device)
 
     start_timestamp = time.time()
     time_stamp = time.time()
