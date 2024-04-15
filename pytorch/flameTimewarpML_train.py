@@ -1328,6 +1328,7 @@ def main():
     criterion_l1 = torch.nn.L1Loss()
 
     optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=4e-4)
+    optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
 
     # remove annoying message in pytorch 1.12.1 when using CosineAnnealingLR
     import warnings
@@ -1497,7 +1498,8 @@ def main():
 
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.4e}')
 
-        optimizer_flownet.zero_grad(set_to_none=True)
+        optimizer_flownet.zero_grad()
+        optimizer_dt.zero_grad()
 
         # scale list agumentation
         random_scales = [
@@ -1523,6 +1525,7 @@ def main():
             training_scale = [8, 4, 2, 1]
 
         flownet.train()
+        model_D.train()
 
         '''        
         # Freeze predictors
@@ -1560,6 +1563,22 @@ def main():
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
         mask = mask_list[3]
         output = merged[3]
+
+        # D
+        e_S, d_S, _, _ = model_D( output )
+        e_H, d_H, _, _ = model_D( img1 )
+
+        # D Loss, for encoder end and decoder end
+        loss_D_Enc_S = torch.nn.ReLU()(1.0 + e_S).mean()
+        loss_D_Enc_H = torch.nn.ReLU()(1.0 - e_H).mean()
+
+        loss_D_Dec_S = torch.nn.ReLU()(1.0 + d_S).mean()
+        loss_D_Dec_H = torch.nn.ReLU()(1.0 - d_H).mean()
+
+        loss_D = loss_D_Enc_H + loss_D_Dec_H + loss_D_Enc_S + loss_D_Dec_S
+        loss_D.backward()
+        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 0.1)
+        optimizer_dt.step()
 
         # warped_img0 = warp(img0, flow_list[3][:, :2])
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
