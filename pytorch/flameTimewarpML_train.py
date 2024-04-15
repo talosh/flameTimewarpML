@@ -1342,6 +1342,7 @@ def main():
 
     criterion_mse = torch.nn.MSELoss()
     criterion_l1 = torch.nn.L1Loss()
+    criterion_huber = torch.nn.HuberLoss(delta=0.01)
 
     optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=4e-4)
     optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
@@ -1612,23 +1613,23 @@ def main():
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
 
-        loss_x8 = criterion_mse(
+        loss_x8 = criterion_huber(
             torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False),
             torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
         )
 
-        loss_x4 = criterion_mse(
+        loss_x4 = criterion_huber(
             torch.nn.functional.interpolate(merged[1], scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False),
             torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
         )
         
 
-        loss_x2 = criterion_mse(
+        loss_x2 = criterion_huber(
             torch.nn.functional.interpolate(merged[2], scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False),
             torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
         )
 
-        loss_x1 = criterion_mse(merged[3], img1)
+        loss_x1 = criterion_huber(output, img1)
 
         #### GAN + LPIPS loss block
 
@@ -1636,7 +1637,7 @@ def main():
         L_FM = 1            # Scaling params for the feature matching loss
         L_LPIPS = 1e-3      # Scaling params for the LPIPS loss
         # Pixel loss
-        loss_Pixel = Huber(output, img1)
+        loss_Pixel = 0.2 * loss_x8 + 0.1 * loss_x4 + 0.1 * loss_x2 + 0.6 * loss_x1
         loss_G = loss_Pixel
         # LPIPS loss
         loss_LPIPS_ = loss_fn_alex(output * 2 - 1, img1 * 2 - 1)
