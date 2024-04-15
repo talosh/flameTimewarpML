@@ -1579,7 +1579,7 @@ def main():
         #     print(name, param.requires_grad)
 
         # Determinator training pass
-        
+
         with torch.no_grad():
             flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
             mask = mask_list[3]
@@ -1606,7 +1606,6 @@ def main():
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
         mask = mask_list[3]
         output = merged[3]
-
 
         # warped_img0 = warp(img0, flow_list[3][:, :2])
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
@@ -1655,7 +1654,7 @@ def main():
         loss_Advs += [torch.nn.ReLU()(1.0 - d_S).mean() * L_ADV]
         loss_Adv = torch.mean(torch.stack(loss_Advs))
 
-        loss = loss_Pixel + loss_LPIPS + loss_FM + loss_Adv
+        loss = loss_Pixel # + loss_LPIPS + loss_FM + loss_Adv
 
         # loss = 0.2 * loss_x8 + 0.1 * loss_x4 + 0.1 * loss_x2 + 0.6 * loss_x1
 
