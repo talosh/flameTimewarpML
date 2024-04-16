@@ -1648,8 +1648,8 @@ def main():
         # FM loss
         loss_FMs = []
         for f in range(6):
-            loss_FMs += [Huber(e_Ss[f], e_Hs[f])]
-            loss_FMs += [Huber(d_Ss[f], d_Hs[f])]
+            loss_FMs += [criterion_huber(e_Ss[f], e_Hs[f])]
+            loss_FMs += [criterion_huber(d_Ss[f], d_Hs[f])]
         loss_FM = torch.mean(torch.stack(loss_FMs)) * L_FM
         # GAN loss
         loss_Advs = []
