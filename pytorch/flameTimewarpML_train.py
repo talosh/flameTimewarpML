@@ -1631,16 +1631,21 @@ def main():
 
         loss_x1 = criterion_huber(output, img1)
 
+        loss_LPIPS_ = loss_fn_alex(output * 2 - 1, img1 * 2 - 1)
+        loss_LPIPS = torch.mean(loss_LPIPS_)
+
+        loss_Pixel = 0.2 * loss_x8 + 0.1 * loss_x4 + 0.1 * loss_x2 + 0.6 * loss_x1
+        loss = loss_Pixel + loss_LPIPS * 1e-4 # + loss_FM + loss_Adv
+
         #### GAN + LPIPS loss block
 
+        '''
         L_ADV = 1e-3        # Scaling params for the Adv loss
         L_FM = 1            # Scaling params for the feature matching loss
         L_LPIPS = 1e-3      # Scaling params for the LPIPS loss
         # Pixel loss
-        loss_Pixel = 0.2 * loss_x8 + 0.1 * loss_x4 + 0.1 * loss_x2 + 0.6 * loss_x1
         loss_G = loss_Pixel
         # LPIPS loss
-        loss_LPIPS_ = loss_fn_alex(output * 2 - 1, img1 * 2 - 1)
         loss_LPIPS = torch.mean(loss_LPIPS_) * L_LPIPS
         # FM and GAN losses
         e_S, d_S, e_Ss, d_Ss = model_D( output )
@@ -1656,8 +1661,8 @@ def main():
         loss_Advs += [torch.nn.ReLU()(1.0 - e_S).mean() * L_ADV]
         loss_Advs += [torch.nn.ReLU()(1.0 - d_S).mean() * L_ADV]
         loss_Adv = torch.mean(torch.stack(loss_Advs))
-
         loss = loss_Pixel + loss_LPIPS + loss_FM + loss_Adv
+        '''
 
         # loss = 0.2 * loss_x8 + 0.1 * loss_x4 + 0.1 * loss_x2 + 0.6 * loss_x1
 
