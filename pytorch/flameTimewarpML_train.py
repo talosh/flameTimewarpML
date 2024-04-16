@@ -1518,7 +1518,6 @@ def main():
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.4e}')
 
         optimizer_flownet.zero_grad()
-        optimizer_dt.zero_grad()
 
         # scale list agumentation
         random_scales = [
@@ -1544,7 +1543,6 @@ def main():
             training_scale = [8, 4, 2, 1]
 
         flownet.train()
-        model_D.train()
 
         '''        
         # Freeze predictors
@@ -1580,8 +1578,12 @@ def main():
         # for name, param in flownet.named_parameters():
         #     print(name, param.requires_grad)
 
-        # Determinator training pass
 
+        # discriminator training pass
+        
+        '''
+        optimizer_dt.zero_grad()
+        model_D.train()
         with torch.no_grad():
             flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
             mask = mask_list[3]
@@ -1602,6 +1604,7 @@ def main():
         loss_D.backward()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 0.1)
         optimizer_dt.step()
+        '''
 
         ### End of determinator training pass
 
