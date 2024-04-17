@@ -847,7 +847,14 @@ class Model:
 					timestep_tensor,
 					mask_rife,
 					)
-				return flow_list, mask_list, merged, res, res_mask, res_flow0, res_flow1
+				
+				output_fusion_merged = self.fusion.warp_tenflow(img0, res_flow0) * res_mask + self.fusion.warp_tenflow(img1, res_flow1) * (1 - res_mask)
+				output = output_fusion_merged + res
+
+				mask_list[3] = res_mask
+				merged[3] = output
+
+				return flow_list, mask_list, merged
 
 		self.model = FlownetCas
 		self.training_model = FlownetCas
