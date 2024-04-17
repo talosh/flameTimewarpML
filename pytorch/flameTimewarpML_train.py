@@ -1496,20 +1496,15 @@ def main():
 
         img0, img1, img2, ratio, idx = read_image_queue.get()
 
-        if platform.system() == 'Darwin':
-            img0 = normalize_numpy(img0)
-            img1 = normalize_numpy(img1)
-            img2 = normalize_numpy(img2)
-            img0 = img0.to(device, non_blocking = True)
-            img1 = img1.to(device, non_blocking = True)
-            img2 = img2.to(device, non_blocking = True)
-        else:
-            img0 = img0.to(device, non_blocking = True)
-            img1 = img1.to(device, non_blocking = True)
-            img2 = img2.to(device, non_blocking = True)
-            img0 = normalize(img0)
-            img1 = normalize(img1)
-            img2 = normalize(img2)
+        img0 = img0.to(device, non_blocking = True)
+        img1 = img1.to(device, non_blocking = True)
+        img2 = img2.to(device, non_blocking = True)
+        img0_orig = img0
+        img1_orig = img1
+        img2_orig = img2
+        img0 = normalize(img0)
+        img1 = normalize(img1)
+        img2 = normalize(img2)
 
         # current_lr = scheduler_flownet.get_last_lr()[0] # optimizer_flownet.param_groups[0]['lr'] 
         # for param_group_flownet in optimizer_flownet.param_groups:
@@ -1607,7 +1602,7 @@ def main():
         '''
 
         ### End of determinator training pass
-
+        
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
         mask = mask_list[3]
         output = merged[3]
@@ -1632,9 +1627,9 @@ def main():
             torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
         )
 
-        loss_x1 = criterion_huber(output, img1)
+        loss_x1 = criterion_huber(restore_normalized_values(output), img1_orig)
 
-        loss_LPIPS_ = loss_fn_alex(output * 2 - 1, img1 * 2 - 1)
+        loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
         loss_LPIPS = torch.mean(loss_LPIPS_)
 
         loss_deep = 0.2 * loss_x8 + 0.1 * loss_x4 + 0.1 * loss_x2 + 0.6 * loss_x1
@@ -1672,7 +1667,7 @@ def main():
         # print(loss.requires_grad)  # Should be True
         # loss = 0.4 * loss_x8 + 0.3 * loss_x4 + 0.2 * loss_x2 + 0.1 * loss_x1 + 0.01 * loss_enc
 
-        loss_l1 = criterion_l1(merged[3], img1)
+        loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
 
         # '''
@@ -1723,18 +1718,11 @@ def main():
             output = ( warp(img1, flow0) + warp(img3, flow1) ) / 2
             '''
 
-            if platform.system() == 'Darwin':
-                rgb_source1 = restore_normalized_values_numpy(img0)
-                rgb_source2 = restore_normalized_values_numpy(img2)
-                rgb_target = restore_normalized_values_numpy(img1)
-                rgb_output = restore_normalized_values_numpy(output)
-                rgb_output_mask = mask.repeat_interleave(3, dim=1)
-            else:
-                rgb_source1 = restore_normalized_values(img0)
-                rgb_source2 = restore_normalized_values(img2)
-                rgb_target = restore_normalized_values(img1)
-                rgb_output = restore_normalized_values(output)
-                rgb_output_mask = mask.repeat_interleave(3, dim=1)
+            rgb_source1 = img0_orig
+            rgb_source2 = img2_orig
+            rgb_target = img1_orig
+            rgb_output = restore_normalized_values(output)
+            rgb_output_mask = mask.repeat_interleave(3, dim=1)
 
             write_image_queue.put(
                 {
@@ -1826,6 +1814,9 @@ def main():
                         ev_img0 = ev_img0.permute(2, 0, 1).unsqueeze(0)
                         ev_img1 = ev_img1.permute(2, 0, 1).unsqueeze(0)
                         ev_img2 = ev_img2.permute(2, 0, 1).unsqueeze(0)
+                        evn_img0_orig = ev_img0
+                        evn_img1_orig = ev_img1
+                        evn_img2_orig = ev_img2
                         evn_img0 = normalize(ev_img0)
                         evn_img1 = normalize(ev_img1)
                         evn_img2 = normalize(ev_img2)
@@ -1843,8 +1834,8 @@ def main():
                             flownet.eval()
                             _, _, merged = flownet(evp_img0, evp_img1, evp_img2, None, None, ev_ratio)
                             evp_output = merged[3]
-                            psnr_list.append(psnr_torch(evp_output, evp_img1))
-                            lpips_list.append(float(loss_fn_alex(evp_output * 2 - 1, evp_img1 * 2 - 1).item()))
+                            psnr_list.append(psnr_torch(restore_normalized_values(evp_output)[:h, :w], evn_img1_orig))
+                            lpips_list.append(float(loss_fn_alex(restore_normalized_values(evp_output)[:h, :w] * 2 - 1, evn_img1_orig * 2 - 1).item()))
 
                             # ev_gt = ev_gt[0].permute(1, 2, 0)[:h, :w]                        
                             # evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
@@ -1878,9 +1869,9 @@ def main():
 
                         # if ev_item_index  % 9 == 1:
                         try:
-                            write_exr(ev_img0[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
-                            write_exr(ev_img2[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
-                            write_exr(ev_img1[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
+                            write_exr(evn_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
+                            write_exr(evn_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
+                            write_exr(evn_img1_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
                             # write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
                             write_exr(ev_output.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
                         except Exception as e:
