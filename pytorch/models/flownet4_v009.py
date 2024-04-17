@@ -842,8 +842,8 @@ class Model:
 				res, res_mask, res_flow0, res_flow1 = self.fusion(
 					img0,
 					img1,
-					self.fusion.tenfow(flow0),
-					self.fusion.tenfow(flow1),
+					self.fusion.tenflow(flow0),
+					self.fusion.tenflow(flow1),
 					timestep_tensor,
 					mask_rife,
 					)
@@ -862,15 +862,15 @@ class Model:
 	@staticmethod
 	def get_info():
 		info = {
-			'name': 'Flownet4_v007',
-			'file': 'flownet4_v007.py',
+			'name': 'Flownet4_v009',
+			'file': 'flownet4_v009.py',
 			'ratio_support': True
 		}
 		return info
 
 	@staticmethod
 	def get_name():
-		return 'TWML_Flownet_v007'
+		return 'TWML_Flownet_v009'
 	
 	@staticmethod
 	def input_channels(model_state_dict):
