@@ -417,7 +417,7 @@ class Model:
 
 				self.conv_final = Conv2d_batchnorm(self.in_filters9, num_classes, kernel_size = (5,5), activation='None')
 
-			def tenflow(tenFlow):
+			def tenflow(self, tenFlow):
 				tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenFlow.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenFlow.shape[2] - 1.0) / 2.0) ], 1)
 				return tenFlow
 
