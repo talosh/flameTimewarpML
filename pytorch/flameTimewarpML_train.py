@@ -1633,7 +1633,7 @@ def main():
         loss_LPIPS = torch.mean(loss_LPIPS_)
 
         loss_deep = 0.2 * loss_x8 + 0.1 * loss_x4 + 0.1 * loss_x2 + 0.6 * loss_x1
-        loss = 0.85 * loss_deep + 0.15 * loss_LPIPS # + loss_FM + loss_Adv
+        loss = loss_deep + 1e-2 * loss_LPIPS # + loss_FM + loss_Adv
 
         #### GAN + LPIPS loss block
 
