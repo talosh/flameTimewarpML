@@ -1287,6 +1287,8 @@ def main():
     if not model_info.get('ratio_support'):
         max_dataset_window = 3
     flownet = Flownet().get_training_model()().to(device)
+
+    '''
     model_D = UnetD().to(device)
     if args.all_gpus:
         print ('Using nn.DataParallel')
@@ -1294,7 +1296,7 @@ def main():
         flownet.to(device)
         model_D = torch.nn.DataParallel(model_D)
         model_D.to(device)
-
+    '''
 
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
@@ -1345,7 +1347,7 @@ def main():
     criterion_huber = torch.nn.HuberLoss(delta=0.01)
 
     optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=4e-4)
-    optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
+    # optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
 
     # remove annoying message in pytorch 1.12.1 when using CosineAnnealingLR
     import warnings
@@ -1401,11 +1403,13 @@ def main():
         except Exception as e:
             print (f'unable to load Flownet state: {e}')
 
+        '''
         try:
             model_D.load_state_dict(checkpoint['model_d_state_dict'], strict=False)
             print('loaded previously saved Determinator state')
         except Exception as e:
             print (f'unable to load Determinator state: {e}')
+        '''
 
         try:
             loaded_step = checkpoint['step']
@@ -1749,7 +1753,7 @@ def main():
                 'lr': optimizer_flownet.param_groups[0]['lr'],
                 'model_info': model_info,
                 'flownet_state_dict': flownet.state_dict(),
-                'model_d_state_dict': model_D.state_dict(),
+                # 'model_d_state_dict': model_D.state_dict(),
                 'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
             }, trained_model_path)
             
@@ -1782,7 +1786,7 @@ def main():
                 'lr': optimizer_flownet.param_groups[0]['lr'],
                 'model_info': model_info,
                 'flownet_state_dict': flownet.state_dict(),
-                'model_d_state_dict': model_D.state_dict(),
+                # 'model_d_state_dict': model_D.state_dict(),
                 'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
             }, trained_model_path)
 
