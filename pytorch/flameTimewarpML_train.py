@@ -421,7 +421,7 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
             self.train_descriptions = []
 
             for folder_index, folder_path in enumerate(sorted(self.folders_with_exr)):
-                print (f'\rBuilding training data from clip {folder_index + 1} of {len(self.folders_with_exr)}', end='')
+                print (f'\rReading headers and building training data from clip {folder_index + 1} of {len(self.folders_with_exr)}', end='')
                 self.train_descriptions.extend(self.create_dataset_descriptions(folder_path, max_window=self.max_window))
             print ('\nReshuffling training data indices...')
 
