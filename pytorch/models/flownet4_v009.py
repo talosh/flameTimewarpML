@@ -623,7 +623,7 @@ class Model:
 				return out
 				'''
 
-				return res, res_mask, res_flow0, res_flow1
+				return res, res_mask #, res_flow0, res_flow1
 
 
 		def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
