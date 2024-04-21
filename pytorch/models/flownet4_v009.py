@@ -576,7 +576,7 @@ class Model:
 				# res_flow1 = out_fusion[:, 2:4]
 				# res_flow0 = torch.tanh(out_fusion[:, :2])
 				# res_flow1 = torch.tanh(out_fusion[:, 2:4])
-				res = self.normalize(out_fusion[:, :3]) * 2 - 1
+				res = torch.sigmoid(out_fusion[:, :3]) * 2 - 1
 				res_mask = torch.sigmoid(out_fusion[:, 3:4])
 				# res_flow0 = flow0 + (torch.sigmoid(out_fusion[:, 4:6]) * 2 - 1)
 				# res_flow1 = flow1 + (torch.sigmoid(out_fusion[:, 6:8]) * 2 - 1)
