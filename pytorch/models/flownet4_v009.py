@@ -309,7 +309,7 @@ class Model:
 				enc_channels = 3
 				enc_classes = 8
 				input_channels = 5
-				num_classes = 8
+				num_classes = 4
 
 				complx_enc = 11 # 27
 				complx_flowenc = 24
@@ -436,6 +436,23 @@ class Model:
 				tenVertical = torch.linspace(-1.0, 1.0, tenInput.shape[2]).view(1, 1, tenInput.shape[2], 1).expand(tenInput.shape[0], -1, -1, tenInput.shape[3])
 				return torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
 
+			def normalize(self, image_array) :
+				def custom_bend(x):
+					linear_part = x
+					exp_bend = torch.sign(x) * torch.pow(torch.abs(x), 1 / 4 )
+					return torch.where(x > 1, exp_bend, torch.where(x < -1, exp_bend, linear_part))
+
+				# transfer (0.0 - 1.0) onto (-1.0 - 1.0) for tanh
+				image_array = (image_array * 2) - 1
+				# bend values below -1.0 and above 1.0 exponentially so they are not larger then (-4.0 - 4.0)
+				image_array = custom_bend(image_array)
+				# bend everything to fit -1.0 - 1.0 with hyperbolic tanhent
+				image_array = torch.tanh(image_array)
+				# move it to 0.0 - 1.0 range
+				image_array = (image_array + 1) / 2
+
+				return image_array
+			
 			def forward(self, img0, img1, flow0, flow1, timestep, mask):
 
 				img0 = img0 * 2 - 1
@@ -559,10 +576,10 @@ class Model:
 				# res_flow1 = out_fusion[:, 2:4]
 				# res_flow0 = torch.tanh(out_fusion[:, :2])
 				# res_flow1 = torch.tanh(out_fusion[:, 2:4])
-				res = torch.sigmoid(out_fusion[:, :3]) * 2 - 1
+				res = self.normalize(out_fusion[:, :3]) * 2 - 1
 				res_mask = torch.sigmoid(out_fusion[:, 3:4])
-				res_flow0 = flow0 + (torch.sigmoid(out_fusion[:, 4:6]) * 2 - 1)
-				res_flow1 = flow1 + (torch.sigmoid(out_fusion[:, 6:8]) * 2 - 1)
+				# res_flow0 = flow0 + (torch.sigmoid(out_fusion[:, 4:6]) * 2 - 1)
+				# res_flow1 = flow1 + (torch.sigmoid(out_fusion[:, 6:8]) * 2 - 1)
 
 
 				'''
@@ -640,7 +657,7 @@ class Model:
 			g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
 			return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
-		'''
+		# '''
 		class Head(Module):
 			def __init__(self):
 				super(Head, self).__init__()
@@ -675,8 +692,9 @@ class Model:
 				x = self.relu(x)
 				x = self.cnn4(x)
 				return x
-		'''
+		# '''
 
+		'''
 		class Head(Module):
 			def __init__(self):
 				super(Head, self).__init__()
@@ -697,6 +715,7 @@ class Model:
 				if feat:
 					return [x0, x1, x2, x3]
 				return x3
+		'''
 
 		class ResConv(Module):
 			def __init__(self, c, dilation=1):
@@ -839,7 +858,7 @@ class Model:
 				flow1 = flow_list[3][:, 2:4]
 				timestep_tensor = (img0[:, :1].clone() * 0 + 1) * timestep
 				mask_rife = mask_list[3]
-				res, res_mask, res_flow0, res_flow1 = self.fusion(
+				res, res_mask = self.fusion(
 					img0,
 					img1,
 					self.fusion.tenflow(flow0),
@@ -848,7 +867,7 @@ class Model:
 					mask_rife,
 					)
 				
-				output_fusion_merged = self.fusion.warp_tenflow(img0, res_flow0) * res_mask + self.fusion.warp_tenflow(img1, res_flow1) * (1 - res_mask)
+				output_fusion_merged = self.fusion.warp_tenflow(img0, flow0) * res_mask + self.fusion.warp_tenflow(img1, flow1) * (1 - res_mask)
 				output = output_fusion_merged + res
 
 				mask_list[3] = res_mask
