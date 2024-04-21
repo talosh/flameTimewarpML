@@ -867,8 +867,8 @@ class Model:
 					mask_rife,
 					)
 				
-				output_fusion_merged = self.fusion.warp_tenflow(img0, self.fusion.tenflow(flow0)) * res_mask + self.fusion.warp_tenflow(img1, self.fusion.tenflow(flow1)) * (1 - res_mask)
-				output = output_fusion_merged + res
+				output = self.fusion.warp_tenflow(img0, self.fusion.tenflow(flow0)) * res_mask + self.fusion.warp_tenflow(img1, self.fusion.tenflow(flow1)) * (1 - res_mask)
+				# output = output + res
 
 				mask_list[3] = res_mask
 				merged[3] = output
