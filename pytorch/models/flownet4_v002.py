@@ -176,13 +176,13 @@ class Model:
                     torch.nn.PixelShuffle(2)
                 )
                 self.alpha = 1.69
-                self.upsample01 = torch.nn.ConvTranspose2d(c, c, 2, 2, 1)
+                self.upsample01 = torch.nn.ConvTranspose2d(c, c, 4, 2, 1)
                 self.multires01 = Multiresblock(c, c*2)
                 self.multires01_filters = int(c*2*self.alpha*0.167)+int(c*2*self.alpha*0.333)+int(c*2*self.alpha* 0.5)
-                self.upsample02 = torch.nn.ConvTranspose2d(self.multires01_filters, c//2, 2, 2, 1)
+                self.upsample02 = torch.nn.ConvTranspose2d(self.multires01_filters, c//2, 4, 2, 1)
                 self.multires02 = Multiresblock(c//2, c)
                 self.multires02_filters = int(c*self.alpha*0.167)+int(c*self.alpha*0.333)+int(c*self.alpha* 0.5)
-                self.upsample03 = torch.nn.ConvTranspose2d(self.multires02_filters, 8, 2, 2, 1)
+                self.upsample03 = torch.nn.ConvTranspose2d(self.multires02_filters, 8, 4, 2, 1)
 
 
             def forward(self, x, flow, scale=1):
