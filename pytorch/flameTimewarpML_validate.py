@@ -1360,13 +1360,13 @@ def main():
             evp_output = restore_normalized_values(evp_output)
             ev_output = evp_output[0].permute(1, 2, 0)[:h, :w]
             target = ev_img1[0].permute(1, 2, 0)[:h, :w]
-
-            print (f'output: {ev_output.shape}, target: {target.shape}')
-
             loss_l1 = criterion_l1(ev_output, target)
             validate_loss_list.append(float(loss_l1.item()))
 
-            loss_LPIPS_ = loss_fn_alex(ev_output * 2 - 1, target * 2 - 1)
+            loss_LPIPS_ = loss_fn_alex(
+                ev_output.permute(2, 0, 1).unsqueeze(0) * 2 - 1, 
+                target.permute(2, 0, 1).unsqueeze(0) * 2 - 1
+                )
             loss_LPIPS = torch.mean(loss_LPIPS_)
             lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
 
