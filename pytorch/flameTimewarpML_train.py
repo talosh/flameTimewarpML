@@ -1671,7 +1671,7 @@ def main():
         loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
         loss_LPIPS = torch.mean(loss_LPIPS_)
 
-        loss_deep = 0.21 * loss_x8 + 0.05 * loss_x4 + 0.05 * loss_x2 + 0.69 * loss_x1
+        loss_deep = 0.3 * loss_x8 + 0.2 * loss_x4 + 0.1 * loss_x2 + 0.4 * loss_x1
         loss = loss_deep + 1e-4 * loss_LPIPS # + loss_FM + loss_Adv
 
         #### GAN + LPIPS loss block
