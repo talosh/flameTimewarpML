@@ -221,7 +221,7 @@ class Model:
 
                 print (f'up03 shape: {up03.shape}')
 
-                # up03 = torch.nn.functional.interpolate(up03, scale_factor=scale, mode="bilinear", align_corners=False)
+                up03 = torch.nn.functional.interpolate(up03, scale_factor=scale, mode="bilinear", align_corners=False)
 
                 addflow = up03[:, :4] * scale
                 addmask = up03[:, 4:5]
