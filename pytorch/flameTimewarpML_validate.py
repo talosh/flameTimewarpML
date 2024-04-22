@@ -1014,7 +1014,7 @@ def psnr_torch(imageA, imageB, max_pixel=1.0):
         return torch.tensor(float('inf'))
     return 20 * torch.log10(max_pixel / torch.sqrt(mse))
 
-def create_timestamp_uid(self):
+def create_timestamp_uid():
     import random
     import uuid
     from datetime import datetime
