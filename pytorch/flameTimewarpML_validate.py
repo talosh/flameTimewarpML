@@ -1359,10 +1359,11 @@ def main():
 
             evp_output = restore_normalized_values(evp_output)
             ev_output = evp_output[0].permute(1, 2, 0)[:h, :w]
-            loss_l1 = criterion_l1(ev_output, ev_img1)
+            target = ev_img1[0].permute(1, 2, 0)[:h, :w]
+            loss_l1 = criterion_l1(ev_output, target)
             validate_loss_list.append(float(loss_l1.item()))
 
-            loss_LPIPS_ = loss_fn_alex(ev_output * 2 - 1, ev_img1 * 2 - 1)
+            loss_LPIPS_ = loss_fn_alex(ev_output * 2 - 1, target * 2 - 1)
             loss_LPIPS = torch.mean(loss_LPIPS_)
             lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
 
