@@ -1739,7 +1739,7 @@ def main():
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        if step % 10 == 1:
+        if step % 1000 == 1:
             '''
             def warp(tenInput, tenFlow):
                 backwarp_tenGrid = {}
