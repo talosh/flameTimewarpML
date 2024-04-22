@@ -426,8 +426,6 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
 
             self.reshuffle(seed = seed)
 
-            pprint(self.train_descriptions)
-
             self.h = frame_size
             self.w = frame_size
             # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
