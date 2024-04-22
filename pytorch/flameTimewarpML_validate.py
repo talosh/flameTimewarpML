@@ -393,7 +393,7 @@ def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
                 f.write(channel_data[channel][y].tobytes())
         f.close
 
-def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_window=5):
+def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_window=5, seed=42):
     class TimewarpMLDataset(torch.utils.data.Dataset):
         def __init__(self, data_root, batch_size = 8, device = None, frame_size=448, max_window=5, seed = 42):
             self.data_root = data_root
@@ -831,7 +831,14 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                 total_num_channels += file_header['shape'][2]
             return total_num_channels
 
-    return TimewarpMLDataset(data_root, batch_size=batch_size, device=device, frame_size=frame_size, max_window=max_window)
+    return TimewarpMLDataset(
+        data_root, 
+        batch_size=batch_size, 
+        device=device, 
+        frame_size=frame_size, 
+        max_window=max_window,
+        seed = seed
+        )
 
 def normalize(image_array) :
     def custom_bend(x):
