@@ -182,7 +182,7 @@ class Model:
                 self.upsample02 = torch.nn.ConvTranspose2d(self.multires01_filters, c//2, 4, 2, 1)
                 self.multires02 = Multiresblock(c//2, c)
                 self.multires02_filters = int(c*self.alpha*0.167)+int(c*self.alpha*0.333)+int(c*self.alpha* 0.5)
-                self.upsample03 = torch.nn.ConvTranspose2d(self.multires02_filters, 8, 4, 2, 1)
+                self.conv_final = Conv2d_batchnorm(self.multires02_filters, 8, kernel_size = (3,3), activation='None')
 
             def forward(self, x, flow, scale=1):
                 x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
@@ -217,7 +217,7 @@ class Model:
                 print (f'up02 shape: {up02.shape}')
 
                 x02 = self.multires02(up02)
-                up03 = self.upsample03(x02)
+                up03 = self.conv_final(x02)
 
                 print (f'up03 shape: {up03.shape}')
 
