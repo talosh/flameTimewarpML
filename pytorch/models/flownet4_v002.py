@@ -192,18 +192,37 @@ class Model:
                     x = torch.cat((x, flow), 1)
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
+
+                print (f'feat shape: {feat.shape}')
+            
                 tmp = self.lastconv(feat)
+
+                print (f'tmp shape: {tmp.shape}')
+
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
+
+                print (f'tmp scaled shape: {tmp.shape}')
+
                 flow = tmp[:, :4] * scale
                 mask = tmp[:, 4:5]
                 conf = tmp[:, 5:6]
 
                 # additional lastconv block
                 up01 = self.upsample01(feat)
+                print (f'feat shape: {feat.shape}')
+                print (f'up01 shape: {up01.shape}')
+
                 x01 = self.multires01(up01)
                 up02 = self.upsample02(x01)
+
+                print (f'up02 shape: {up02.shape}')
+
                 x02 = self.multires02(up02)
                 up03 = self.upsample03(x02)
+
+                print (f'up03 shape: {up03.shape}')
+
+                up03 = torch.nn.functional.interpolate(up03, scale_factor=scale, mode="bilinear", align_corners=False)
 
                 addflow = up03[:, :4] * scale
                 addmask = up03[:, 4:5]
