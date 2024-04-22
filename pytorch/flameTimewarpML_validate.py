@@ -1266,6 +1266,12 @@ def main():
     model_rife.load_state_dict(convert(rife_state_dict))
     '''
 
+    # LPIPS Init
+    import lpips
+    os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
+    loss_fn_alex = lpips.LPIPS(net='alex')
+    loss_fn_alex.to(device)
+
     start_timestamp = time.time()
     time_stamp = time.time()
     print('\n\n')
@@ -1273,13 +1279,17 @@ def main():
 
     psnr = 0
     psnr_list = []
+    validate_loss_list = []
+    lpips_list = []
 
     args.eval = args.eval if args.eval < len(dataset) else len(dataset)
+
+    criterion_l1 = torch.nn.L1Loss()
 
     try:
         for ev_item_index in range(args.eval):
             clear_lines(1)
-            print (f'\rCalcualting PSNR on full-scale image {ev_item_index} of {args.eval}...')
+            print (f'\rTimewarping full-scale image {ev_item_index} of {args.eval}...')
 
             ev_item = dataset.frames_queue.get()
             ev_img0 = ev_item['start']
@@ -1308,12 +1318,17 @@ def main():
             evp_img0 = torch.nn.functional.pad(evn_img0, padding)
             evp_img1 = torch.nn.functional.pad(evn_img1, padding)
             evp_img2 = torch.nn.functional.pad(evn_img2, padding)
+            
+            evp_orig_img1 = torch.nn.functional.pad(ev_img1, padding)
 
             with torch.no_grad():
                 flownet.eval()
                 _, _, merged = flownet(evp_img0, evp_img1, evp_img2, None, None, ev_ratio)
                 evp_output = merged[3]
                 psnr_list.append(psnr_torch(evp_output, evp_img1))
+
+
+
 
                 # ev_gt = ev_gt[0].permute(1, 2, 0)[:h, :w]                        
                 # evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
@@ -1344,6 +1359,12 @@ def main():
 
             evp_output = restore_normalized_values(evp_output)
             ev_output = evp_output[0].permute(1, 2, 0)[:h, :w]
+            loss_l1 = criterion_l1(ev_output, ev_img1)
+            validate_loss_list.append(float(loss_l1.item()))
+
+            loss_LPIPS_ = loss_fn_alex(ev_output * 2 - 1, ev_img1 * 2 - 1)
+            loss_LPIPS = torch.mean(loss_LPIPS_)
+            lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
 
             # if ev_item_index  % 9 == 1:
             try:
@@ -1359,6 +1380,8 @@ def main():
         print (f'{e}\n\n')
    
     psnr = np.array(psnr_list).mean()
+    smoothed_loss = np.mean(moving_average(validate_loss_list, 9))
+    lpips_val = np.array(lpips_list).mean()
 
     epoch_time = time.time() - start_timestamp
     days = int(epoch_time // (24 * 3600))
@@ -1371,7 +1394,7 @@ def main():
 
     clear_lines(2)
     # print (f'\r {" "*240}', end='')
-    print(f'\rTime: {epoch_time}, [PNSR] {psnr:.4f}')
+    print(f'\rTime: {epoch_time:.2f}, Min: {min(validate_loss_list):.6f} Avg: {smoothed_loss:.6f}, Max: {max(validate_loss_list):.6f}, [PNSR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
     print ('\n')
 
     steps_loss = []
