@@ -184,7 +184,6 @@ class Model:
                 self.multires02_filters = int(c*self.alpha*0.167)+int(c*self.alpha*0.333)+int(c*self.alpha* 0.5)
                 self.upsample03 = torch.nn.ConvTranspose2d(self.multires02_filters, 8, 4, 2, 1)
 
-
             def forward(self, x, flow, scale=1):
                 x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 if flow is not None:
@@ -222,7 +221,7 @@ class Model:
 
                 print (f'up03 shape: {up03.shape}')
 
-                up03 = torch.nn.functional.interpolate(up03, scale_factor=scale, mode="bilinear", align_corners=False)
+                # up03 = torch.nn.functional.interpolate(up03, scale_factor=scale, mode="bilinear", align_corners=False)
 
                 addflow = up03[:, :4] * scale
                 addmask = up03[:, 4:5]
