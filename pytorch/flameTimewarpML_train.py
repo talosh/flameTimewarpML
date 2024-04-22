@@ -1569,11 +1569,11 @@ def main():
             for param in flownet.module.block3.lastconv.parameters():
                 param.requires_grad = False
 
-            for param in flownet.moule.encode.parameters():
+            for param in flownet.module.encode.parameters():
                 param.requires_grad = False
 
         else:
-            
+
             for param in flownet.block0.conv0.parameters():
                 param.requires_grad = False
             for param in flownet.block0.convblock.parameters():
