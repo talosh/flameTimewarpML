@@ -395,7 +395,7 @@ def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
 
 def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_window=5):
     class TimewarpMLDataset(torch.utils.data.Dataset):
-        def __init__(self, data_root, batch_size = 8, device = None, frame_size=448, max_window=5):
+        def __init__(self, data_root, batch_size = 8, device = None, frame_size=448, max_window=5, seed = 42):
             self.data_root = data_root
             self.batch_size = batch_size
             self.max_window = max_window
@@ -424,7 +424,7 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                 print (f'\rBuilding training data from clip {folder_index + 1} of {len(self.folders_with_exr)}', end='')
                 self.train_descriptions.extend(self.create_dataset_descriptions(folder_path, max_window=self.max_window))
 
-            # self.reshuffle()
+            self.reshuffle(seed = seed)
 
             self.h = frame_size
             self.w = frame_size
@@ -438,7 +438,7 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
             print ('reading first block of training data...')
             self.last_train_data = self.frames_queue.get()
 
-            self.repeat_count = 9
+            self.repeat_count = 1
             self.repeat_counter = 0
 
             # self.last_shuffled_index = -1
@@ -452,8 +452,7 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
 
         def reshuffle(self, seed=42):
             print ('\nReshuffling training data indices...')
-            random.seed(seed)
-            random.shuffle(self.train_descriptions)
+            random.Random(seed).shuffle(self.train_descriptions)
 
         def find_folders_with_exr(self, path):
             """
@@ -1096,7 +1095,7 @@ def main():
     parser.add_argument('--model', type=str, default=None, help='Model name (optional)')
     parser.add_argument('--legacy_model', type=str, default=None, help='Model name (optional)')
     parser.add_argument('--cpu', action='store_true', default=False, help='CPU only')
-    parser.add_argument('--no_shuffle', action='store_true', default=False, help='Do not reshuffle')
+    parser.add_argument('--seed', type=int, dest='seed', default=9, help='Random seed')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
     parser.add_argument('--eval', type=int, dest='eval', default=999, help='Evaluate after each epoch for N samples')
 
@@ -1128,11 +1127,9 @@ def main():
         batch_size=1, 
         device=device, 
         frame_size=256,
-        max_window=max_dataset_window
+        max_window=max_dataset_window,
+        seed = args.seed
         )
-
-    if not args.no_shuffle:
-        dataset.reshuffle()
 
     def read_images(read_image_queue, dataset):
         while True:
