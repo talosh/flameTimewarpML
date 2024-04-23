@@ -1300,7 +1300,7 @@ def main():
                 for k, v in param.items()
                 if "module." in k
             }
-        flownet.load_state_dict(rife_state_dict)
+        flownet.load_state_dict(convert(rife_state_dict))
     # '''
 
     # LPIPS Init
