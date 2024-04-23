@@ -393,6 +393,8 @@ def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
                 f.write(channel_data[channel][y].tobytes())
         f.close
 
+    del image_data, red, green, blue
+
 def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_window=5):
     class TimewarpMLDataset(torch.utils.data.Dataset):
         def __init__(self, data_root, batch_size = 8, device = None, frame_size=448, max_window=5):
