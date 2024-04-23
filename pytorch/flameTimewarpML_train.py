@@ -1607,9 +1607,8 @@ def main():
         # '''
 
 
-        # for name, param in flownet.named_parameters():
-        #     print(name, param.requires_grad)
-
+        for name, param in flownet.named_parameters():
+            print(name, param.requires_grad)
 
         # discriminator training pass
         
