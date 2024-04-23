@@ -1416,8 +1416,8 @@ def main():
             for param in flownet.module.block3.lastconv.parameters():
                 param.requires_grad = False
 
-            # for param in flownet.module.encode.parameters():
-            #     param.requires_grad = False
+            for param in flownet.module.encode.parameters():
+                param.requires_grad = False
 
         else:
 
@@ -1449,8 +1449,8 @@ def main():
             for param in flownet.block3.lastconv.parameters():
                 param.requires_grad = False
 
-            # for param in flownet.encode.parameters():
-            #    param.requires_grad = False
+            for param in flownet.encode.parameters():
+                param.requires_grad = False
         # '''
 
 
