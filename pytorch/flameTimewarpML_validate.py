@@ -1244,11 +1244,22 @@ def main():
         trained_model_path = os.path.join(trained_model_dir, traned_model_name)
 
     if args.legacy_model:
+        '''
         try:
             Flownet().load_model(args.legacy_model, flownet)
             print (f'loaded legacy model state: {args.legacy_model}')
         except Exception as e:
             print (f'unable to load legacy model: {e}')
+        '''
+        rife_state_dict = torch.load(args.legacy_model)
+        def convert(param):
+            return {
+                k.replace("module.", ""): v
+                for k, v in param.items()
+                if "module." in k
+            }
+        flownet.load_state_dict(convert(rife_state_dict))
+
 
     '''
     default_rife_model_path = os.path.join(
