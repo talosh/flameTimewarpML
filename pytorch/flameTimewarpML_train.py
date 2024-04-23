@@ -591,7 +591,8 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                         train_data['index'] = index
                         self.frames_queue.put(train_data)
                     except Exception as e:
-                        print (e)                
+                        del train_data
+                        print (e)           
                 time.sleep(timeout)
 
         def __len__(self):
@@ -642,16 +643,9 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
             return resized_tensor
 
         def getimg(self, index):
+            '''
             if not self.last_train_data:
                 self.last_train_data = self.frames_queue.get()
-            '''
-            shuffled_index = self.indices[index // self.frame_multiplier]
-            if shuffled_index != self.last_shuffled_index:
-                self.last_source_image_data, self.last_target_image_data = self.frames_queue.get()
-                self.last_shuffled_index = shuffled_index
-            
-            return self.last_source_image_data, self.last_target_image_data
-            '''
             if self.repeat_counter >= self.repeat_count:
                 try:
                     new_data = self.frames_queue.get_nowait()
@@ -663,7 +657,8 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
 
             self.repeat_counter += 1
             return self.last_train_data
-            # return self.frames_queue.get()
+            '''
+            return self.frames_queue.get()
 
         def srgb_to_linear(self, srgb_image):
             # Apply the inverse sRGB gamma curve
