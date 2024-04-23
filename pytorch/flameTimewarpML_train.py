@@ -1503,11 +1503,6 @@ def main():
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
-        import gc
-        gc.collect()
-        continue
-
         '''
         if step % 1000 == 1:
             rgb_source1 = img0_orig
@@ -1675,8 +1670,16 @@ def main():
 
         batch_idx = batch_idx + 1
         step = step + 1
+
+        del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
+        import gc
+        gc.collect()
+        # continue
+
         if epoch == args.epochs:
             sys.exit()
+
+
 
 if __name__ == "__main__":
     main()
