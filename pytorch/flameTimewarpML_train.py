@@ -1305,7 +1305,6 @@ def main():
                 if "module." in k
             }
         flownet.load_state_dict(convert(rife_state_dict), strict=False)
-    # '''
 
     # LPIPS Init
     import lpips
@@ -1319,23 +1318,6 @@ def main():
     step = loaded_step if args.first_epoch == -1 else step
     print('\n\n')
     batch_idx = 0
-
-    # ENCODER TRANSFER
-    '''
-    from models.flownet_v001 import Model as Flownet_Teacher
-    flownet_teacher = Flownet_Teacher().get_training_model()().to(device)
-    try:
-        checkpoint = torch.load(
-            f'{os.path.dirname(trained_model_path)}/pretrained_teacher_v007.pth'
-            )
-        flownet_teacher.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
-        print('loaded previously saved FlownetTeacher state')
-    except Exception as e:
-        print (f'unable to load FlownetTeacher state: {e}')
-    flownet_teacher.eval()
-    '''
-
-
 
     while True:
         data_time = time.time() - time_stamp
@@ -1352,10 +1334,6 @@ def main():
         img0 = normalize(img0)
         img1 = normalize(img1)
         img2 = normalize(img2)
-
-        # current_lr = scheduler_flownet.get_last_lr()[0] # optimizer_flownet.param_groups[0]['lr'] 
-        # for param_group_flownet in optimizer_flownet.param_groups:
-        #     param_group_flownet['lr'] = current_lr
 
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.4e}')
 
@@ -1576,7 +1554,6 @@ def main():
         print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
         print(f'\r[Last 1K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
 
-        '''
         if ( idx + 1 ) == len(dataset):
             torch.save({
                 'step': step,
@@ -1686,8 +1663,8 @@ def main():
 
             while  ( idx + 1 ) == len(dataset):
                 img0, img1, img2, ratio, idx = read_image_queue.get()
+                del img0, img1, img2m, ratio, idx
             dataset.reshuffle()
-        '''
 
         batch_idx = batch_idx + 1
         step = step + 1
