@@ -1339,9 +1339,9 @@ def main():
         img0 = img0.to(device, non_blocking = True)
         img1 = img1.to(device, non_blocking = True)
         img2 = img2.to(device, non_blocking = True)
-        img0_orig = img0
-        img1_orig = img1
-        img2_orig = img2
+        img0_orig = img0.detach().copy()
+        img1_orig = img1.detach().copy()
+        img2_orig = img2.detach().copy()
         img0 = normalize(img0)
         img1 = normalize(img1)
         img2 = normalize(img2)
@@ -1455,7 +1455,7 @@ def main():
         flow0 = flow_list[3][:, :2]
         flow1 = flow_list[3][:, 2:4]
         mask = mask_list[3]
-        output = warp(img0, flow0) * mask + warp(img2, flow1) * (1 - mask)
+        output = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
         
         # output = merged[3]
         # warped_img0 = warp(img0, flow_list[3][:, :2])
@@ -1478,11 +1478,11 @@ def main():
             torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
         )
 
-        loss_x1 = criterion_huber(restore_normalized_values(output), img1_orig)
-        loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
+        # loss_x1 = criterion_huber(restore_normalized_values(output), img1_orig)
+        # loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
 
-        # loss_x1 = criterion_huber(output, img1_orig)
-        # loss_LPIPS_ = loss_fn_alex(output * 2 - 1, img1_orig * 2 - 1)
+        loss_x1 = criterion_huber(output, img1_orig)
+        loss_LPIPS_ = loss_fn_alex(output * 2 - 1, img1_orig * 2 - 1)
         loss_LPIPS = torch.mean(loss_LPIPS_)
 
         loss_deep = 0.3 * loss_x8 + 0.2 * loss_x4 + 0.1 * loss_x2 + 0.4 * loss_x1
