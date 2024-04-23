@@ -1452,12 +1452,12 @@ def main():
         #     print(name, param.requires_grad)
         
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
-        flow0 = flow_list[3][:, :2]
-        flow1 = flow_list[3][:, 2:4]
+        # flow0 = flow_list[3][:, :2]
+        # flow1 = flow_list[3][:, 2:4]
         mask = mask_list[3]
-        output = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
+        # output = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
         
-        # output = merged[3]
+        output = merged[3]
         # warped_img0 = warp(img0, flow_list[3][:, :2])
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
@@ -1478,8 +1478,8 @@ def main():
             torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
         )
 
-        # loss_x1 = criterion_huber(restore_normalized_values(output), img1_orig)
-        # loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
+        loss_x1 = criterion_huber(restore_normalized_values(output), img1_orig)
+        loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
 
         loss_x1 = criterion_huber(output, img1_orig)
         loss_LPIPS_ = loss_fn_alex(output * 2 - 1, img1_orig * 2 - 1)
