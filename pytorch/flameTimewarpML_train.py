@@ -1284,7 +1284,7 @@ def main():
         except Exception as e:
             print (f'unable to load legacy model: {e}')
 
-    '''
+    # '''
     default_rife_model_path = os.path.join(
         os.path.abspath(os.path.dirname(__file__)),
         'models_data',
@@ -1297,8 +1297,8 @@ def main():
             for k, v in param.items()
             if "module." in k
         }
-    model_rife.load_state_dict(convert(rife_state_dict))
-    '''
+    flownet.load_state_dict(convert(rife_state_dict))
+    # '''
 
     # LPIPS Init
     import lpips
