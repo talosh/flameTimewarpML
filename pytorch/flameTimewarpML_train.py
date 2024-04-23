@@ -1470,7 +1470,7 @@ def main():
         loss_LPIPS = torch.mean(loss_LPIPS_)
 
         loss_deep = 0.3 * loss_x8 + 0.2 * loss_x4 + 0.1 * loss_x2 + 0.4 * loss_x1
-        loss = loss_deep + 1e-4 * loss_LPIPS # + loss_FM + loss_Adv
+        loss = loss_deep + 4e-4 * loss_LPIPS # + loss_FM + loss_Adv
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
@@ -1503,7 +1503,6 @@ def main():
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        '''
         if step % 1000 == 1:
             rgb_source1 = img0_orig
             rgb_source2 = img2_orig
@@ -1523,9 +1522,7 @@ def main():
             )
 
             del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
-
             preview_index = preview_index + 1 if preview_index < 9 else 0
-        '''
 
         if step % 1000 == 1:
             torch.save({
@@ -1554,7 +1551,6 @@ def main():
         print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
         print(f'\r[Last 1K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
 
-        '''
         if ( idx + 1 ) == len(dataset):
             torch.save({
                 'step': step,
@@ -1664,9 +1660,8 @@ def main():
 
             while  ( idx + 1 ) == len(dataset):
                 img0, img1, img2, ratio, idx = read_image_queue.get()
-                del img0, img1, img2m, ratio, idx
+                del img0, img1, img2, ratio, idx
             dataset.reshuffle()
-        '''
 
         batch_idx = batch_idx + 1
         step = step + 1
