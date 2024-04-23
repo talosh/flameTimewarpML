@@ -1593,6 +1593,8 @@ def main():
                 }
             )
 
+            del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
+
             preview_index = preview_index + 1 if preview_index < 9 else 0
 
             # sample_current = rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
@@ -1763,6 +1765,8 @@ def main():
             while  ( idx + 1 ) == len(dataset):
                 img0, img1, img2, ratio, idx = read_image_queue.get()
             dataset.reshuffle()
+
+        del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig
 
         batch_idx = batch_idx + 1
         step = step + 1
