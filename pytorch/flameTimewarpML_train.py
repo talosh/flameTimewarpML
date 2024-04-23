@@ -1478,11 +1478,11 @@ def main():
             torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
         )
 
-        loss_x1 = criterion_huber(restore_normalized_values(output), img1_orig)
-        loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
+        # loss_x1 = criterion_huber(restore_normalized_values(output), img1_orig)
+        # loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
 
-        loss_x1 = criterion_huber(output, img1_orig)
-        loss_LPIPS_ = loss_fn_alex(output * 2 - 1, img1_orig * 2 - 1)
+        loss_x1 = criterion_huber(output, img1)
+        loss_LPIPS_ = loss_fn_alex(output * 2 - 1, img1 * 2 - 1)
         loss_LPIPS = torch.mean(loss_LPIPS_)
 
         loss_deep = 0.3 * loss_x8 + 0.2 * loss_x4 + 0.1 * loss_x2 + 0.4 * loss_x1
