@@ -431,7 +431,7 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
             self.w = frame_size
             # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
-            self.frames_queue = queue.Queue(maxsize=12)
+            self.frames_queue = queue.Queue(maxsize=4)
             self.frame_read_thread = threading.Thread(target=self.read_frames_thread)
             self.frame_read_thread.daemon = True
             self.frame_read_thread.start()
@@ -654,7 +654,9 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
             '''
             if self.repeat_counter >= self.repeat_count:
                 try:
-                    self.last_train_data = self.frames_queue.get_nowait()
+                    new_data = self.frames_queue.get_nowait()
+                    self.last_train_data = new_data
+                    del new_data
                     self.repeat_counter = 0
                 except queue.Empty:
                     pass
@@ -697,9 +699,9 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
         def __getitem__(self, index):
             train_data = self.getimg(index)
             # src_img0 = train_data['pre_start']
-            src_img0 = train_data['start']
-            src_img1 = train_data['gt']
-            src_img2 = train_data['end']
+            np_img0 = train_data['start']
+            np_img1 = train_data['gt']
+            np_img2 = train_data['end']
             # src_img4 = train_data['after_end']
             imgh = train_data['h']
             imgw = train_data['w']
@@ -708,9 +710,12 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
 
             device = self.device
 
-            src_img0 = torch.from_numpy(src_img0.copy())
-            src_img1 = torch.from_numpy(src_img1.copy())
-            src_img2 = torch.from_numpy(src_img2.copy())
+            src_img0 = torch.from_numpy(np_img0.copy())
+            src_img1 = torch.from_numpy(np_img1.copy())
+            src_img2 = torch.from_numpy(np_img2.copy())
+
+            del train_data, np_img0, np_img1, np_img2
+
             #src_img3 = torch.from_numpy(src_img3.copy())
             # src_img4 = torch.from_numpy(src_img4.copy())
             src_img0 = src_img0.to(device = device, dtype = torch.float32)
@@ -949,7 +954,6 @@ def warp_tenflow(tenInput, tenFlow):
     g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
     return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
-
 def id_flow(tenInput):
     tenHorizontal = torch.linspace(-1.0, 1.0, tenInput.shape[3]).view(1, 1, 1, tenInput.shape[3]).expand(tenInput.shape[0], -1, tenInput.shape[2], -1)
     tenVertical = torch.linspace(-1.0, 1.0, tenInput.shape[2]).view(1, 1, tenInput.shape[2], 1).expand(tenInput.shape[0], -1, -1, tenInput.shape[3])
@@ -1086,7 +1090,6 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None):
         print(f"Model not found: {base_name or model_name}")
         return None
 
-
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
@@ -1137,7 +1140,7 @@ def main():
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
-    read_image_queue = queue.Queue(maxsize=12)
+    read_image_queue = queue.Queue(maxsize=4)
     dataset = get_dataset(
         args.dataset_path, 
         batch_size=args.batch_size, 
@@ -1169,7 +1172,7 @@ def main():
     read_thread.daemon = True
     read_thread.start()
 
-    write_image_queue = queue.Queue(maxsize=96)
+    write_image_queue = queue.Queue(maxsize=4)
     write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
     write_thread.daemon = True
     write_thread.start()
