@@ -939,6 +939,23 @@ def warp_tenflow(tenInput, tenFlow):
     g = (tenFlow).permute(0, 2, 3, 1)
     return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
+def tenflow(tenFlow):
+    tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenFlow.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenFlow.shape[2] - 1.0) / 2.0) ], 1)
+    return tenFlow
+
+'''
+def warp_tenflow(tenInput, tenFlow):
+    backwarp_tenGrid = {}
+    k = (str(tenFlow.device), str(tenFlow.size()))
+    if k not in backwarp_tenGrid:
+        tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+        tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+        backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
+    g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+    return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+'''
+
+
 def id_flow(tenInput):
     tenHorizontal = torch.linspace(-1.0, 1.0, tenInput.shape[3]).view(1, 1, 1, tenInput.shape[3]).expand(tenInput.shape[0], -1, tenInput.shape[2], -1)
     tenVertical = torch.linspace(-1.0, 1.0, tenInput.shape[2]).view(1, 1, tenInput.shape[2], 1).expand(tenInput.shape[0], -1, -1, tenInput.shape[3])
@@ -1075,176 +1092,6 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None):
         print(f"Model not found: {base_name or model_name}")
         return None
 
-### U-Net Discriminator ###
-# Residual block for the discriminator
-class DBlock(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, which_conv=torch.nn.Conv2d, which_bn=torch.nn.BatchNorm2d, wide=True,
-                preactivation=True, activation=torch.nn.LeakyReLU(0.1, inplace=False), downsample=torch.nn.AvgPool2d(2, stride=2)):
-        super(DBlock, self).__init__()
-        self.in_channels, self.out_channels = in_channels, out_channels
-        # If using wide D (as in SA-GAN and BigGAN), change the channel pattern
-        self.hidden_channels = self.out_channels if wide else self.in_channels
-        self.which_conv, self.which_bn = which_conv, which_bn
-        self.preactivation = preactivation
-        self.activation = activation
-        self.downsample = downsample
-            
-        # Conv layers
-        self.conv1 = self.which_conv(self.in_channels, self.hidden_channels, kernel_size=3, padding=1)
-        self.conv2 = self.which_conv(self.hidden_channels, self.out_channels, kernel_size=3, padding=1)
-        self.learnable_sc = True if (in_channels != out_channels) or downsample else False
-        if self.learnable_sc:
-            self.conv_sc = self.which_conv(in_channels, out_channels, 
-                                            kernel_size=1, padding=0)
-
-        self.bn1 = self.which_bn(self.hidden_channels)
-        self.bn2 = self.which_bn(out_channels)
-
-    # def shortcut(self, x):
-    #     if self.preactivation:
-    #         if self.learnable_sc:
-    #             x = self.conv_sc(x)
-    #         if self.downsample:
-    #             x = self.downsample(x)
-    #     else:
-    #         if self.downsample:
-    #             x = self.downsample(x)
-    #         if self.learnable_sc:
-    #             x = self.conv_sc(x)
-    #     return x
-        
-    def forward(self, x):
-        if self.preactivation:
-            # h = self.activation(x) # NOT TODAY SATAN
-            # Andy's note: This line *must* be an out-of-place ReLU or it 
-            #              will negatively affect the shortcut connection.
-            h = self.activation(x)
-        else:
-            h = x    
-        h = self.bn1(self.conv1(h))
-        # h = self.conv2(self.activation(h))
-        if self.downsample:
-            h = self.downsample(h)     
-            
-        return h #+ self.shortcut(x)
-        
-
-class GBlock(torch.nn.Module):
-    def __init__(self, in_channels, out_channels,
-                which_conv=torch.nn.Conv2d, which_bn=torch.nn.BatchNorm2d, activation=torch.nn.LeakyReLU(0.1, inplace=False), 
-                upsample=torch.nn.Upsample(scale_factor=2, mode='nearest')):
-        super(GBlock, self).__init__()
-        
-        self.in_channels, self.out_channels = in_channels, out_channels
-        self.which_conv, self.which_bn = which_conv, which_bn
-        self.activation = activation
-        self.upsample = upsample
-        # Conv layers
-        self.conv1 = self.which_conv(self.in_channels, self.out_channels, kernel_size=3, padding=1)
-        self.conv2 = self.which_conv(self.out_channels, self.out_channels, kernel_size=3, padding=1)
-        self.learnable_sc = in_channels != out_channels or upsample
-        if self.learnable_sc:
-            self.conv_sc = self.which_conv(in_channels, out_channels, 
-                                            kernel_size=1, padding=0)
-        # Batchnorm layers
-        self.bn1 = self.which_bn(out_channels)
-        self.bn2 = self.which_bn(out_channels)
-        # upsample layers
-        self.upsample = upsample
-
-    def forward(self, x):
-        h = self.activation(x)
-        if self.upsample:
-            h = self.upsample(h)
-            # x = self.upsample(x)
-        h = self.bn1(self.conv1(h))
-        # h = self.activation(self.bn2(h))
-        # h = self.conv2(h)
-        # if self.learnable_sc:       
-        #     x = self.conv_sc(x)
-        return h #+ x
-
-
-class UnetD(torch.nn.Module):
-    def __init__(self):
-        super(UnetD, self).__init__()
-
-        self.enc_b1 = DBlock(3, 64, preactivation=False)
-        self.enc_b2 = DBlock(64, 128)
-        self.enc_b3 = DBlock(128, 192)
-        self.enc_b4 = DBlock(192, 256)
-        self.enc_b5 = DBlock(256, 320)
-        self.enc_b6 = DBlock(320, 384)
-
-        self.enc_out = torch.nn.Conv2d(384, 1, kernel_size=1, padding=0)
-
-        self.dec_b1 = GBlock(384, 320)
-        self.dec_b2 = GBlock(320*2, 256)
-        self.dec_b3 = GBlock(256*2, 192)
-        self.dec_b4 = GBlock(192*2, 128)
-        self.dec_b5 = GBlock(128*2, 64)
-        self.dec_b6 = GBlock(64*2, 32)
-
-        self.dec_out = torch.nn.Conv2d(32, 1, kernel_size=1, padding=0)
-
-        # Init weights
-        for m in self.modules():
-            classname = m.__class__.__name__
-            if classname.lower().find('conv') != -1:
-                # print(classname)
-                torch.nn.init.kaiming_normal_(m.weight)
-                torch.nn.init.constant_(m.bias, 0)
-            elif classname.find('bn') != -1:
-                m.weight.data.normal_(1.0, 0.02)
-                m.bias.data.fill_(0)
-
-    def forward(self, x):
-        e1 = self.enc_b1(x)
-        e2 = self.enc_b2(e1)
-        e3 = self.enc_b3(e2)
-        e4 = self.enc_b4(e3)
-        e5 = self.enc_b5(e4)
-        e6 = self.enc_b6(e5)
-
-        e_out = self.enc_out(torch.nn.functional.leaky_relu(e6, 0.1))
-        # print(e1.size())
-        # print(e2.size())
-        # print(e3.size())
-        # print(e4.size())
-        # print(e5.size())
-        # print(e6.size())
-
-        d1 = self.dec_b1(e6)
-        d2 = self.dec_b2(torch.cat([d1, e5], 1))
-        d3 = self.dec_b3(torch.cat([d2, e4], 1))
-        d4 = self.dec_b4(torch.cat([d3, e3], 1))
-        d5 = self.dec_b5(torch.cat([d4, e2], 1))
-        d6 = self.dec_b6(torch.cat([d5, e1], 1))
-
-        d_out = self.dec_out(torch.nn.functional.leaky_relu(d6, 0.1))
-
-        return e_out, d_out, [e1,e2,e3,e4,e5,e6], [d1,d2,d3,d4,d5,d6]
-
-def Huber(input, target, delta=0.01, reduce=True):
-    abs_error = torch.abs(input - target)
-    quadratic = torch.clamp(abs_error, max=delta)
-
-    # The following expression is the same in value as
-    # tf.maximum(abs_error - delta, 0), but importantly the gradient for the
-    # expression when abs_error == delta is 0 (for tf.maximum it would be 1).
-    # This is necessary to avoid doubling the gradient, since there is already a
-    # nonzero contribution to the gradient from the quadratic term.
-    linear = (abs_error - quadratic)
-    losses = 0.5 * torch.pow(quadratic, 2) + delta * linear
-    
-    if reduce:
-        return torch.mean(losses)
-    else:
-        return losses
-
-# def init_weights(m):
-#     if isinstance(m, torch.nn.Linear):
-
 
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
@@ -1341,7 +1188,7 @@ def main():
     criterion_l1 = torch.nn.L1Loss()
     criterion_huber = torch.nn.HuberLoss(delta=0.01)
 
-    optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=4e-4)
+    optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=9e-4)
     # optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
 
     # remove annoying message in pytorch 1.12.1 when using CosineAnnealingLR
@@ -1609,40 +1456,14 @@ def main():
 
         for name, param in flownet.named_parameters():
             print(name, param.requires_grad)
-
-        # discriminator training pass
-        
-        '''
-        optimizer_dt.zero_grad()
-        model_D.train()
-        with torch.no_grad():
-            flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
-            mask = mask_list[3]
-            output = merged[3]
-
-        # D
-        e_S, d_S, _, _ = model_D( output.detach() )
-        e_H, d_H, _, _ = model_D( img1 )
-
-        # D Loss, for encoder end and decoder end
-        loss_D_Enc_S = torch.nn.ReLU()(1.0 + e_S).mean()
-        loss_D_Enc_H = torch.nn.ReLU()(1.0 - e_H).mean()
-
-        loss_D_Dec_S = torch.nn.ReLU()(1.0 + d_S).mean()
-        loss_D_Dec_H = torch.nn.ReLU()(1.0 - d_H).mean()
-
-        loss_D = loss_D_Enc_H + loss_D_Dec_H + loss_D_Enc_S + loss_D_Dec_S
-        loss_D.backward()
-        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 0.1)
-        optimizer_dt.step()
-        '''
-
-        ### End of determinator training pass
         
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
+        flow0 = flow_list[3][:, :2]
+        flow1 = flow_list[3][:, 2:4]
         mask = mask_list[3]
-        output = merged[3]
-
+        output = warp_tenflow(img0_orig, tenflow(flow0)) * mask + warp_tenflow(img2_orig, tenflow(flow1)) * (1 - mask)
+        
+        # output = merged[3]
         # warped_img0 = warp(img0, flow_list[3][:, :2])
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
