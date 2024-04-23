@@ -74,7 +74,7 @@ class Model:
                 x = self.act(x)
                 return x
 
-        class Multiresblock(nn.Module):
+        class Multiresblock(Module):
             '''
             MultiRes Block
             
