@@ -1469,11 +1469,6 @@ def main():
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
 
-        del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
-        import gc
-        gc.collect()
-        continue
-
         loss_x8 = criterion_huber(
             torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False),
             torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
@@ -1484,7 +1479,6 @@ def main():
             torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
         )
         
-
         loss_x2 = criterion_huber(
             torch.nn.functional.interpolate(merged[2], scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False),
             torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
@@ -1500,42 +1494,8 @@ def main():
         loss_deep = 0.3 * loss_x8 + 0.2 * loss_x4 + 0.1 * loss_x2 + 0.4 * loss_x1
         loss = loss_deep + 1e-4 * loss_LPIPS # + loss_FM + loss_Adv
 
-        #### GAN + LPIPS loss block
-
-        '''
-        L_ADV = 1e-3        # Scaling params for the Adv loss
-        L_FM = 1            # Scaling params for the feature matching loss
-        L_LPIPS = 1e-3      # Scaling params for the LPIPS loss
-        # Pixel loss
-        loss_G = loss_Pixel
-        # LPIPS loss
-        loss_LPIPS = torch.mean(loss_LPIPS_) * L_LPIPS
-        # FM and GAN losses
-        e_S, d_S, e_Ss, d_Ss = model_D( output )
-        _, _, e_Hs, d_Hs = model_D( img1 )
-        # FM loss
-        loss_FMs = []
-        for f in range(6):
-            loss_FMs += [criterion_huber(e_Ss[f], e_Hs[f])]
-            loss_FMs += [criterion_huber(d_Ss[f], d_Hs[f])]
-        loss_FM = torch.mean(torch.stack(loss_FMs)) * L_FM
-        # GAN loss
-        loss_Advs = []
-        loss_Advs += [torch.nn.ReLU()(1.0 - e_S).mean() * L_ADV]
-        loss_Advs += [torch.nn.ReLU()(1.0 - d_S).mean() * L_ADV]
-        loss_Adv = torch.mean(torch.stack(loss_Advs))
-        loss = loss_Pixel + loss_LPIPS + loss_FM + loss_Adv
-        '''
-
-        # loss = 0.2 * loss_x8 + 0.1 * loss_x4 + 0.1 * loss_x2 + 0.6 * loss_x1
-
-        # print(loss.requires_grad)  # Should be True
-        # loss = 0.4 * loss_x8 + 0.3 * loss_x4 + 0.2 * loss_x2 + 0.1 * loss_x1 + 0.01 * loss_enc
-
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
-
-        # '''
 
         epoch_loss.append(float(loss_l1.item()))
         steps_loss.append(float(loss_l1.item()))
@@ -1564,6 +1524,11 @@ def main():
 
         train_time = time.time() - time_stamp
         time_stamp = time.time()
+
+        del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
+        import gc
+        gc.collect()
+        continue
 
         if step % 1000 == 1:
             '''
