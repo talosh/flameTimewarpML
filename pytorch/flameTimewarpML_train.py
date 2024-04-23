@@ -1667,8 +1667,8 @@ def main():
         step = step + 1
 
         del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
-        import gc
-        gc.collect()
+        # import gc
+        # gc.collect()
         # continue
 
         if epoch == args.epochs:
