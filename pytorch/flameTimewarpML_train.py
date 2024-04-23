@@ -1478,20 +1478,20 @@ def main():
         epoch_loss.append(float(loss_l1.item()))
         steps_loss.append(float(loss_l1.item()))
         lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
-        psnr_list.append(psnr_torch(output, img1))
+        psnr_list.append(float(psnr_torch(output, img1)))
 
         if len(epoch_loss) < 999:
             smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
             window_min = min(epoch_loss)
             window_max = max(epoch_loss)
-            lpips_window_val = np.array(lpips_list).mean()
+            lpips_window_val = float(np.array(lpips_list).mean())
         else:
             smoothed_window_loss = np.mean(moving_average(epoch_loss[-999:], 9))
             window_min = min(epoch_loss[-999:])
             window_max = max(epoch_loss[-999:])
-            lpips_window_val = np.array(lpips_list[-999:]).mean()
-        smoothed_loss = np.mean(moving_average(epoch_loss, 9))
-        lpips_val = np.array(lpips_list).mean()
+            lpips_window_val = float(np.array(lpips_list[-999:]).mean())
+        smoothed_loss = float(np.mean(moving_average(epoch_loss, 9)))
+        lpips_val = float(np.array(lpips_list).mean())
 
         loss.backward()
 
