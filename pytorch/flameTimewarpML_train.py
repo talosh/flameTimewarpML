@@ -433,7 +433,7 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
             self.w = frame_size
             # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
-            self.frames_queue = queue.Queue(maxsize=4)
+            self.frames_queue = queue.Queue(maxsize=8)
             self.frame_read_thread = threading.Thread(target=self.read_frames_thread)
             self.frame_read_thread.daemon = True
             self.frame_read_thread.start()
@@ -1139,7 +1139,7 @@ def main():
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
-    read_image_queue = queue.Queue(maxsize=4)
+    read_image_queue = queue.Queue(maxsize=8)
     dataset = get_dataset(
         args.dataset_path, 
         batch_size=args.batch_size, 
@@ -1173,7 +1173,7 @@ def main():
     read_thread.daemon = True
     read_thread.start()
 
-    write_image_queue = queue.Queue(maxsize=4)
+    write_image_queue = queue.Queue(maxsize=8)
     write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
     write_thread.daemon = True
     write_thread.start()
