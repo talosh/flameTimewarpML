@@ -1353,14 +1353,6 @@ def main():
         img1 = normalize(img1)
         img2 = normalize(img2)
 
-        time.sleep(0.1)
-
-        del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig
-
-        import gc
-        gc.collect()
-        continue
-
         # current_lr = scheduler_flownet.get_last_lr()[0] # optimizer_flownet.param_groups[0]['lr'] 
         # for param_group_flownet in optimizer_flownet.param_groups:
         #     param_group_flownet['lr'] = current_lr
@@ -1476,6 +1468,14 @@ def main():
         # warped_img0 = warp(img0, flow_list[3][:, :2])
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
+
+        time.sleep(0.1)
+
+        del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
+
+        import gc
+        gc.collect()
+        continue
 
         loss_x8 = criterion_huber(
             torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False),
