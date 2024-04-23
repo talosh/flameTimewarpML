@@ -1454,8 +1454,8 @@ def main():
         # '''
 
 
-        for name, param in flownet.named_parameters():
-            print(name, param.requires_grad)
+        # for name, param in flownet.named_parameters():
+        #     print(name, param.requires_grad)
         
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
         flow0 = flow_list[3][:, :2]
