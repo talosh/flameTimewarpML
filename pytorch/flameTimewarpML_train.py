@@ -1770,6 +1770,10 @@ def main():
 
         del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig
 
+        import gc
+        gc.collect()
+        gc.set_debug(gc.DEBUG_LEAK)
+
         batch_idx = batch_idx + 1
         step = step + 1
         if epoch == args.epochs:
