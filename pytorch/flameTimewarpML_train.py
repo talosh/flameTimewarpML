@@ -1455,7 +1455,7 @@ def main():
         flow0 = flow_list[3][:, :2]
         flow1 = flow_list[3][:, 2:4]
         mask = mask_list[3]
-        output = warp_tenflow(img0_orig, tenflow(flow0)) * mask + warp_tenflow(img2_orig, tenflow(flow1)) * (1 - mask)
+        output = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
         
         # output = merged[3]
         # warped_img0 = warp(img0, flow_list[3][:, :2])
