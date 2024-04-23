@@ -1353,6 +1353,14 @@ def main():
         img1 = normalize(img1)
         img2 = normalize(img2)
 
+        time.sleep(0.1)
+
+        del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig
+
+        import gc
+        gc.collect()
+        continue
+
         # current_lr = scheduler_flownet.get_last_lr()[0] # optimizer_flownet.param_groups[0]['lr'] 
         # for param_group_flownet in optimizer_flownet.param_groups:
         #     param_group_flownet['lr'] = current_lr
