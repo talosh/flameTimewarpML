@@ -1503,6 +1503,11 @@ def main():
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
+        del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
+        import gc
+        gc.collect()
+        continue
+
         '''
         if step % 1000 == 1:
             rgb_source1 = img0_orig
@@ -1554,6 +1559,7 @@ def main():
         print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
         print(f'\r[Last 1K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
 
+        '''
         if ( idx + 1 ) == len(dataset):
             torch.save({
                 'step': step,
@@ -1665,16 +1671,12 @@ def main():
                 img0, img1, img2, ratio, idx = read_image_queue.get()
                 del img0, img1, img2m, ratio, idx
             dataset.reshuffle()
+        '''
 
         batch_idx = batch_idx + 1
         step = step + 1
         if epoch == args.epochs:
             sys.exit()
-
-        del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
-        import gc
-        gc.collect()
-        continue
 
 if __name__ == "__main__":
     main()
