@@ -1151,6 +1151,7 @@ def main():
             for batch_idx in range(len(dataset)):
                 img0, img1, img2, ratio, idx = dataset[batch_idx]
                 read_image_queue.put((img0, img1, img2, ratio, idx))
+                del img0, img1, img2, ratio, idx
 
     def write_images(write_image_queue):
         while True:
