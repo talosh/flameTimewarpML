@@ -1469,10 +1469,7 @@ def main():
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
 
-        time.sleep(0.1)
-
         del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
-
         import gc
         gc.collect()
         continue
