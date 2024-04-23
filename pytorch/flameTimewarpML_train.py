@@ -1525,29 +1525,8 @@ def main():
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
-        import gc
-        gc.collect()
-        continue
-
+        '''
         if step % 1000 == 1:
-            '''
-            def warp(tenInput, tenFlow):
-                backwarp_tenGrid = {}
-                k = (str(tenFlow.device), str(tenFlow.size()))
-                if k not in backwarp_tenGrid:
-                    tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
-                    tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
-                    backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
-                    # end
-                tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
-
-                g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-                return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
-            
-            output = ( warp(img1, flow0) + warp(img3, flow1) ) / 2
-            '''
-
             rgb_source1 = img0_orig
             rgb_source2 = img2_orig
             rgb_target = img1_orig
@@ -1568,8 +1547,7 @@ def main():
             del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
 
             preview_index = preview_index + 1 if preview_index < 9 else 0
-
-            # sample_current = rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+        '''
 
         if step % 1000 == 1:
             torch.save({
@@ -1584,14 +1562,10 @@ def main():
                 # 'model_d_state_dict': model_D.state_dict(),
                 'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
             }, trained_model_path)
-            
-            # model.load_state_dict(convert(rife_state_dict))
 
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
         train_time_str = str(f'{train_time:.2f}')
-        # current_lr_str = str(f'{optimizer.param_groups[0]["lr"]:.4e}')
-        # current_lr_str = str(f'{scheduler.get_last_lr()[0]:.4e}')
 
         epoch_time = time.time() - start_timestamp
         days = int(epoch_time // (24 * 3600))
@@ -1599,11 +1573,10 @@ def main():
         minutes = int((epoch_time % 3600) // 60)
 
         clear_lines(2)
-        # print (f'\r {" "*180}', end='')
-        # print ('\n')
         print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
         print(f'\r[Last 1K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
 
+        '''
         if ( idx + 1 ) == len(dataset):
             torch.save({
                 'step': step,
@@ -1669,25 +1642,6 @@ def main():
                             psnr_list.append(psnr_torch(restore_normalized_values(evp_output)[:h, :w], evn_img1_orig))
                             lpips_list.append(float(loss_fn_alex(restore_normalized_values(evp_output)[:h, :w] * 2 - 1, evn_img1_orig * 2 - 1).item()))
 
-                            # ev_gt = ev_gt[0].permute(1, 2, 0)[:h, :w]                        
-                            # evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
-
-                            '''
-                            evp_id_flow = id_flow(evp_img1)
-                            ev_in_flow0, ev_in_flow1, ev_in_mask, ev_in_deep = model(torch.cat((evp_img1, evp_id_flow, evp_timestep, evp_img3), dim=1))
-                            ev_in_flow0 = ev_in_flow0 + evp_id_flow
-                            ev_in_flow1 = ev_in_flow1 + evp_id_flow
-
-                            ev_output_inflow = warp_tenflow(evp_img1, ev_in_flow0) * ev_in_mask + warp_tenflow(evp_img3, ev_in_flow1) * (1 - ev_in_mask)
-                            ev_output_inflow = restore_normalized_values(ev_output_inflow)
-                            psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
-                            ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
-                            '''
-                            # ev_output_inflow, ev_in_deep = model(torch.cat((evp_img1*2-1, evp_img3*2-1, evp_timestep*2-1, ), dim=1))
-                            # psnr_list.append(psnr_torch(ev_output_rife, evp_img2))
-                            # ev_output_inflow = restore_normalized_values(ev_output_inflow)
-                            # ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
-
                         preview_folder = os.path.join(args.dataset_path, 'preview')
                         eval_folder = os.path.join(preview_folder, 'eval')
                         if not os.path.isdir(eval_folder):
@@ -1699,7 +1653,6 @@ def main():
                         evp_output = restore_normalized_values(evp_output)
                         ev_output = evp_output[0].permute(1, 2, 0)[:h, :w]
 
-                        # if ev_item_index  % 9 == 1:
                         try:
                             write_exr(evn_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
                             write_exr(evn_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
@@ -1720,10 +1673,7 @@ def main():
             hours = int((epoch_time % (24 * 3600)) // 3600)
             minutes = int((epoch_time % 3600) // 60)
 
-            # rife_psnr = np.array(rife_psnr_list).mean()
-
             clear_lines(2)
-            # print (f'\r {" "*240}', end='')
             print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PNSR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
             print ('\n')
 
@@ -1737,17 +1687,17 @@ def main():
             while  ( idx + 1 ) == len(dataset):
                 img0, img1, img2, ratio, idx = read_image_queue.get()
             dataset.reshuffle()
-
-        del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig
-
-        import gc
-        gc.collect()
-        # gc.set_debug(gc.DEBUG_LEAK)
+        '''
 
         batch_idx = batch_idx + 1
         step = step + 1
         if epoch == args.epochs:
             sys.exit()
+
+        del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
+        import gc
+        gc.collect()
+        continue
 
 if __name__ == "__main__":
     main()
