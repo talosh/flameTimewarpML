@@ -1452,12 +1452,12 @@ def main():
         #     print(name, param.requires_grad)
         
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
-        # flow0 = flow_list[3][:, :2]
-        # flow1 = flow_list[3][:, 2:4]
+        flow0 = flow_list[3][:, :2]
+        flow1 = flow_list[3][:, 2:4]
         mask = mask_list[3]
-        # output = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
+        output = warp(img0, flow0) * mask + warp(img2, flow1) * (1 - mask)
         
-        output = merged[3]
+        # output = merged[3]
         # warped_img0 = warp(img0, flow_list[3][:, :2])
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
