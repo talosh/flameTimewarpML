@@ -1364,36 +1364,36 @@ def main():
 
         flownet.train()
 
-        '''
+        # '''
         # Freeze predictors
         if args.all_gpus:
             for param in flownet.module.block0.conv0.parameters():
                 param.requires_grad = False
             for param in flownet.module.block0.convblock.parameters():
                 param.requires_grad = False
-            for param in flownet.module.block0.lastconv.parameters():
-                param.requires_grad = False
+            # for param in flownet.module.block0.lastconv.parameters():
+            #    param.requires_grad = False
 
             for param in flownet.module.block1.conv0.parameters():
                 param.requires_grad = False
             for param in flownet.module.block1.convblock.parameters():
                 param.requires_grad = False
-            for param in flownet.module.block1.lastconv.parameters():
-                param.requires_grad = False
+            # for param in flownet.module.block1.lastconv.parameters():
+            #    param.requires_grad = False
 
             for param in flownet.module.block2.conv0.parameters():
                 param.requires_grad = False
             for param in flownet.module.block2.convblock.parameters():
                 param.requires_grad = False
-            for param in flownet.module.block2.lastconv.parameters():
-                param.requires_grad = False
+            #for param in flownet.module.block2.lastconv.parameters():
+            #    param.requires_grad = False
 
             for param in flownet.module.block3.conv0.parameters():
                 param.requires_grad = False
             for param in flownet.module.block3.convblock.parameters():
                 param.requires_grad = False
-            for param in flownet.module.block3.lastconv.parameters():
-                param.requires_grad = False
+            #for param in flownet.module.block3.lastconv.parameters():
+            #    param.requires_grad = False
 
             for param in flownet.module.encode.parameters():
                 param.requires_grad = False
@@ -1404,33 +1404,33 @@ def main():
                 param.requires_grad = False
             for param in flownet.block0.convblock.parameters():
                 param.requires_grad = False
-            for param in flownet.block0.lastconv.parameters():
-                param.requires_grad = False
+            #for param in flownet.block0.lastconv.parameters():
+            #    param.requires_grad = False
 
             for param in flownet.block1.conv0.parameters():
                 param.requires_grad = False
             for param in flownet.block1.convblock.parameters():
                 param.requires_grad = False
-            for param in flownet.block1.lastconv.parameters():
-                param.requires_grad = False
+            #for param in flownet.block1.lastconv.parameters():
+            #    param.requires_grad = False
 
             for param in flownet.block2.conv0.parameters():
                 param.requires_grad = False
             for param in flownet.block2.convblock.parameters():
                 param.requires_grad = False
-            for param in flownet.block2.lastconv.parameters():
-                param.requires_grad = False
+            #for param in flownet.block2.lastconv.parameters():
+            #    param.requires_grad = False
 
             for param in flownet.block3.conv0.parameters():
                 param.requires_grad = False
             for param in flownet.block3.convblock.parameters():
                 param.requires_grad = False
-            for param in flownet.block3.lastconv.parameters():
-                param.requires_grad = False
+            #for param in flownet.block3.lastconv.parameters():
+            #    param.requires_grad = False
 
             for param in flownet.encode.parameters():
                 param.requires_grad = False
-        '''
+        # '''
 
 
         # for name, param in flownet.named_parameters():
