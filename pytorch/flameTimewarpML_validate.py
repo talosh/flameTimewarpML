@@ -1286,9 +1286,7 @@ def main():
     loss_fn_alex.to(device)
 
     start_timestamp = time.time()
-    time_stamp = time.time()
     print('\n\n')
-    batch_idx = 0
 
     psnr = 0
     psnr_list = []
@@ -1338,29 +1336,7 @@ def main():
                 flownet.eval()
                 _, _, merged = flownet(evp_img0, evp_img1, evp_img2, None, None, ev_ratio)
                 evp_output = merged[3]
-                psnr_list.append(psnr_torch(evp_output, evp_img1))
-
-
-
-
-                # ev_gt = ev_gt[0].permute(1, 2, 0)[:h, :w]                        
-                # evp_timestep = (evp_img1[:, :1].clone() * 0 + 1) * ev_ratio
-
-                '''
-                evp_id_flow = id_flow(evp_img1)
-                ev_in_flow0, ev_in_flow1, ev_in_mask, ev_in_deep = model(torch.cat((evp_img1, evp_id_flow, evp_timestep, evp_img3), dim=1))
-                ev_in_flow0 = ev_in_flow0 + evp_id_flow
-                ev_in_flow1 = ev_in_flow1 + evp_id_flow
-
-                ev_output_inflow = warp_tenflow(evp_img1, ev_in_flow0) * ev_in_mask + warp_tenflow(evp_img3, ev_in_flow1) * (1 - ev_in_mask)
-                ev_output_inflow = restore_normalized_values(ev_output_inflow)
-                psnr_list.append(psnr_torch(ev_output_inflow, evp_img2))
-                ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
-                '''
-                # ev_output_inflow, ev_in_deep = model(torch.cat((evp_img1*2-1, evp_img3*2-1, evp_timestep*2-1, ), dim=1))
-                # psnr_list.append(psnr_torch(ev_output_rife, evp_img2))
-                # ev_output_inflow = restore_normalized_values(ev_output_inflow)
-                # ev_output_inflow = ev_output_inflow[0].permute(1, 2, 0)[:h, :w]
+                psnr_list.append(float(psnr_torch(evp_output, evp_img1)))
 
             preview_folder = os.path.join(args.dataset_path, 'preview')
             eval_folder = os.path.join(preview_folder, 'eval')
@@ -1380,10 +1356,8 @@ def main():
                 ev_output.permute(2, 0, 1).unsqueeze(0) * 2 - 1, 
                 target.permute(2, 0, 1).unsqueeze(0) * 2 - 1
                 )
-            loss_LPIPS = torch.mean(loss_LPIPS_)
             lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
 
-            # if ev_item_index  % 9 == 1:
             try:
                 write_exr(ev_img0[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
                 write_exr(ev_img2[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
@@ -1391,32 +1365,26 @@ def main():
                 # write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
                 write_exr(ev_output.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
             except Exception as e:
-                print (f'{e}\n\n')      
+                print (f'{e}\n\n')
+
+            del ev_item, ev_img0, ev_img1, ev_img2, ev_ratio, evn_img0, evn_img1, evn_img2, evp_img0, evp_img1, evp_img2
+            del _, merged, evp_output, evp_output, target
 
     except Exception as e:
         print (f'{e}\n\n')
    
-    psnr = np.array(psnr_list).mean()
-    smoothed_loss = np.mean(moving_average(validate_loss_list, 9))
-    lpips_val = np.array(lpips_list).mean()
+    psnr = float(np.array(psnr_list).mean())
+    smoothed_loss = float(np.mean(moving_average(validate_loss_list, 9)))
+    lpips_val = float(np.array(lpips_list).mean())
 
     epoch_time = time.time() - start_timestamp
     days = int(epoch_time // (24 * 3600))
     hours = int((epoch_time % (24 * 3600)) // 3600)
     minutes = int((epoch_time % 3600) // 60)
 
-    # print (epoch_time)
-
-    # rife_psnr = np.array(rife_psnr_list).mean()
-
     clear_lines(2)
-    # print (f'\r {" "*240}', end='')
     print(f'\rTime: {epoch_time:.2f}, Min: {min(validate_loss_list):.6f} Avg: {smoothed_loss:.6f}, Max: {max(validate_loss_list):.6f}, [PNSR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
     print ('\n')
-
-    steps_loss = []
-    epoch_loss = []
-    psnr_list = []
 
 if __name__ == "__main__":
     main()
