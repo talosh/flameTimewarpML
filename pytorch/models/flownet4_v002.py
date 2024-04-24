@@ -33,7 +33,7 @@ class Model:
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
         class Conv2d(Module):
-            def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1)):
+            def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1), bias=True):
                 super().__init__()
                 self.conv1 = torch.nn.Conv2d(
                     in_channels=num_in_filters,
@@ -44,7 +44,7 @@ class Model:
                     padding_mode = 'reflect',
                     bias=False
                     )
-                # torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='selu')
+                torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
                 # torch.nn.init.xavier_uniform_(self.conv1.weight, gain=torch.nn.init.calculate_gain('selu'))
                 # torch.nn.init.dirac_(self.conv1.weight)
 
@@ -65,7 +65,7 @@ class Model:
                     bias=False
                     )
                 self.act = torch.nn.LeakyReLU(0.2, True)
-                # torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='selu')
+                torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
                 # torch.nn.init.xavier_uniform_(self.conv1.weight, gain=torch.nn.init.calculate_gain('selu'))
                 # torch.nn.init.dirac_(self.conv1.weight)
 
@@ -120,6 +120,51 @@ class Model:
                 x = self.act(x)
             
                 return x
+
+
+        class Multiresblock4Rev(nn.Module):
+            def __init__(self, num_in_channels, num_filters, alpha=1.69):
+            
+                super().__init__()
+                self.alpha = alpha
+                self.W = num_filters * alpha
+                
+                filt_cnt_3x3 = int(self.W*0.167)
+                filt_cnt_5x5 = int(self.W*0.333)
+                filt_cnt_7x7 = int(self.W*0.5)
+                filt_cnt_9x9 = int(self.W*0.69)
+                num_out_filters = filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7 + filt_cnt_9x9
+                
+                self.shortcut = Conv2d(num_in_channels ,num_out_filters , kernel_size = (1,1))
+
+                self.conv_3x3 = Conv2d_ReLU(num_in_channels, filt_cnt_3x3, kernel_size = (3,3))
+
+                self.conv_5x5 = Conv2d_ReLU(filt_cnt_3x3, filt_cnt_5x5, kernel_size = (3,3))
+                
+                self.conv_7x7 = Conv2d_ReLU(filt_cnt_5x5, filt_cnt_7x7, kernel_size = (3,3))
+
+                self.conv_9x9 = Conv2d_ReLU(filt_cnt_7x7, filt_cnt_9x9, kernel_size = (3,3))
+
+                # self.act = torch.nn.SELU()
+                self.act = torch.nn.LeakyReLU(0.1, True)
+
+
+            def forward(self,x):
+
+                shrtct = self.shortcut(x)
+                
+                a = self.conv_3x3(x)
+                b = self.conv_5x5(a)
+                c = self.conv_7x7(b)
+                d = self.conv_9x9(c)
+
+                x = torch.cat([a,b,c,d],axis=1)
+
+                x = x + shrtct
+                x = self.act(x)
+            
+                return x
+
 
         class Head(Module):
             def __init__(self):
