@@ -1364,7 +1364,7 @@ def main():
 
         flownet.train()
 
-        # '''
+        '''
         # Freeze predictors
         if args.all_gpus:
             for param in flownet.module.block0.conv0.parameters():
@@ -1430,7 +1430,7 @@ def main():
 
             for param in flownet.encode.parameters():
                 param.requires_grad = False
-        # '''
+        '''
 
 
         # for name, param in flownet.named_parameters():
