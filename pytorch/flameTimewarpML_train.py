@@ -1660,7 +1660,7 @@ def main():
 
             while  ( idx + 1 ) == len(dataset):
                 img0, img1, img2, ratio, idx = read_image_queue.get()
-                del img0, img1, img2, ratio, idx
+                del img0, img1, img2, ratio
             dataset.reshuffle()
 
         batch_idx = batch_idx + 1
