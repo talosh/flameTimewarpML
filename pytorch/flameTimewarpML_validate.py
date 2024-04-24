@@ -1367,7 +1367,7 @@ def main():
             except Exception as e:
                 print (f'{e}\n\n')
 
-            del ev_item, ev_img0, ev_img1, ev_img2, ev_ratio, evn_img0, evn_img1, evn_img2, evp_img0, evp_img1, evp_img2
+            # del ev_item, ev_img0, ev_img1, ev_img2, ev_ratio, evn_img0, evn_img1, evn_img2, evp_img0, evp_img1, evp_img2
             # del _, merged, evp_output, evp_output, target
 
     except Exception as e:
