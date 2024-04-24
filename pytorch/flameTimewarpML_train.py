@@ -1666,7 +1666,7 @@ def main():
         batch_idx = batch_idx + 1
         step = step + 1
 
-        del img0, img1, img2, ratio, idx, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
+        del img0, img1, img2, ratio, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
         # import gc
         # gc.collect()
         # continue
