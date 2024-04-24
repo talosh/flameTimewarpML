@@ -1297,81 +1297,81 @@ def main():
 
     criterion_l1 = torch.nn.L1Loss()
 
-    # try:
-    for ev_item_index in range(args.eval):
-        clear_lines(1)
-        print (f'\rTimewarping full-scale image {ev_item_index} of {args.eval}...')
+    try:
+        for ev_item_index in range(args.eval):
+            clear_lines(1)
+            print (f'\rTimewarping full-scale image {ev_item_index} of {args.eval}...')
 
-        ev_item = dataset.frames_queue.get()
-        ev_img0 = ev_item['start']
-        ev_img1 = ev_item['gt']
-        ev_img2 = ev_item['end']
-        ev_ratio = ev_item['ratio']
+            ev_item = dataset.frames_queue.get()
+            ev_img0 = ev_item['start']
+            ev_img1 = ev_item['gt']
+            ev_img2 = ev_item['end']
+            ev_ratio = ev_item['ratio']
 
-        ev_img0 = torch.from_numpy(ev_img0.copy())
-        ev_img1 = torch.from_numpy(ev_img1.copy())
-        ev_img2 = torch.from_numpy(ev_img2.copy())
-        ev_img0 = ev_img0.to(device = device, dtype = torch.float32)
-        ev_img1 = ev_img1.to(device = device, dtype = torch.float32)
-        ev_img2 = ev_img2.to(device = device, dtype = torch.float32)
-        ev_img0 = ev_img0.permute(2, 0, 1).unsqueeze(0)
-        ev_img1 = ev_img1.permute(2, 0, 1).unsqueeze(0)
-        ev_img2 = ev_img2.permute(2, 0, 1).unsqueeze(0)
-        evn_img0 = normalize(ev_img0)
-        evn_img1 = normalize(ev_img1)
-        evn_img2 = normalize(ev_img2)
+            ev_img0 = torch.from_numpy(ev_img0.copy())
+            ev_img1 = torch.from_numpy(ev_img1.copy())
+            ev_img2 = torch.from_numpy(ev_img2.copy())
+            ev_img0 = ev_img0.to(device = device, dtype = torch.float32)
+            ev_img1 = ev_img1.to(device = device, dtype = torch.float32)
+            ev_img2 = ev_img2.to(device = device, dtype = torch.float32)
+            ev_img0 = ev_img0.permute(2, 0, 1).unsqueeze(0)
+            ev_img1 = ev_img1.permute(2, 0, 1).unsqueeze(0)
+            ev_img2 = ev_img2.permute(2, 0, 1).unsqueeze(0)
+            evn_img0 = normalize(ev_img0)
+            evn_img1 = normalize(ev_img1)
+            evn_img2 = normalize(ev_img2)
 
-        n, c, h, w = evn_img1.shape
-        
-        ph = ((h - 1) // 64 + 1) * 64
-        pw = ((w - 1) // 64 + 1) * 64
-        padding = (0, pw - w, 0, ph - h)
-        evp_img0 = torch.nn.functional.pad(evn_img0, padding)
-        evp_img1 = torch.nn.functional.pad(evn_img1, padding)
-        evp_img2 = torch.nn.functional.pad(evn_img2, padding)
-        
-        evp_orig_img1 = torch.nn.functional.pad(ev_img1, padding)
+            n, c, h, w = evn_img1.shape
+            
+            ph = ((h - 1) // 64 + 1) * 64
+            pw = ((w - 1) // 64 + 1) * 64
+            padding = (0, pw - w, 0, ph - h)
+            evp_img0 = torch.nn.functional.pad(evn_img0, padding)
+            evp_img1 = torch.nn.functional.pad(evn_img1, padding)
+            evp_img2 = torch.nn.functional.pad(evn_img2, padding)
+            
+            evp_orig_img1 = torch.nn.functional.pad(ev_img1, padding)
 
-        with torch.no_grad():
-            flownet.eval()
-            _, _, merged = flownet(evp_img0, evp_img1, evp_img2, None, None, ev_ratio)
-            evp_output = merged[3]
-            psnr_list.append(float(psnr_torch(evp_output, evp_img1)))
+            with torch.no_grad():
+                flownet.eval()
+                _, _, merged = flownet(evp_img0, evp_img1, evp_img2, None, None, ev_ratio)
+                evp_output = merged[3]
+                psnr_list.append(float(psnr_torch(evp_output, evp_img1)))
 
-        preview_folder = os.path.join(args.dataset_path, 'preview')
-        eval_folder = os.path.join(preview_folder, 'eval')
-        if not os.path.isdir(eval_folder):
+            preview_folder = os.path.join(args.dataset_path, 'preview')
+            eval_folder = os.path.join(preview_folder, 'eval')
+            if not os.path.isdir(eval_folder):
+                try:
+                    os.makedirs(eval_folder)
+                except Exception as e:
+                    print (e)
+
+            evp_output = restore_normalized_values(evp_output)
+            ev_output = evp_output[0].permute(1, 2, 0)[:h, :w]
+            target = ev_img1[0].permute(1, 2, 0)[:h, :w]
+            loss_l1 = criterion_l1(ev_output, target)
+            validate_loss_list.append(float(loss_l1.item()))
+
+            loss_LPIPS_ = loss_fn_alex(
+                ev_output.permute(2, 0, 1).unsqueeze(0) * 2 - 1, 
+                target.permute(2, 0, 1).unsqueeze(0) * 2 - 1
+                )
+            lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
+
             try:
-                os.makedirs(eval_folder)
+                write_exr(ev_img0[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
+                write_exr(ev_img2[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
+                write_exr(ev_img1[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
+                # write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
+                write_exr(ev_output.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
             except Exception as e:
-                print (e)
+                print (f'{e}\n\n')
 
-        evp_output = restore_normalized_values(evp_output)
-        ev_output = evp_output[0].permute(1, 2, 0)[:h, :w]
-        target = ev_img1[0].permute(1, 2, 0)[:h, :w]
-        loss_l1 = criterion_l1(ev_output, target)
-        validate_loss_list.append(float(loss_l1.item()))
+            # del ev_item, ev_img0, ev_img1, ev_img2, ev_ratio, evn_img0, evn_img1, evn_img2, evp_img0, evp_img1, evp_img2
+            # del _, merged, evp_output, evp_output, target
 
-        loss_LPIPS_ = loss_fn_alex(
-            ev_output.permute(2, 0, 1).unsqueeze(0) * 2 - 1, 
-            target.permute(2, 0, 1).unsqueeze(0) * 2 - 1
-            )
-        lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
-
-        try:
-            write_exr(ev_img0[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
-            write_exr(ev_img2[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
-            write_exr(ev_img1[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
-            # write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
-            write_exr(ev_output.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
-        except Exception as e:
-            print (f'{e}\n\n')
-
-        # del ev_item, ev_img0, ev_img1, ev_img2, ev_ratio, evn_img0, evn_img1, evn_img2, evp_img0, evp_img1, evp_img2
-        # del _, merged, evp_output, evp_output, target
-
-    # except Exception as e:
-    #     print (f'{e}\n\n')
+    except Exception as e:
+        print (f'{e}\n\n')
    
     psnr = float(np.array(psnr_list).mean())
     smoothed_loss = float(np.mean(moving_average(validate_loss_list, 9)))
