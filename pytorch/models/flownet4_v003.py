@@ -371,7 +371,7 @@ class Model:
                         merged[i] = merged[i] + last_refine + refine_list[i]
                         last_refine += refine_list[i]
 
-                return flow_list, mask_list[3], merged
+                return flow_list, mask_list, merged
 
         self.model = FlownetCas
         self.training_model = FlownetCas
