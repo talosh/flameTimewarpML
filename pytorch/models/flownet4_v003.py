@@ -46,6 +46,8 @@ class Model:
                     )
                 torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
                 self.conv1.weight.data *= 1e-2
+                if self.conv1.bias is not None:
+                    torch.nn.init.constant_(self.conv1.bias, 0)
                 # torch.nn.init.xavier_uniform_(self.conv1.weight, gain=torch.nn.init.calculate_gain('selu'))
                 # torch.nn.init.dirac_(self.conv1.weight)
 
@@ -68,6 +70,8 @@ class Model:
                 self.act = torch.nn.LeakyReLU(0.2, True)
                 torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
                 self.conv1.weight.data *= 1e-2
+                if self.conv1.bias is not None:
+                    torch.nn.init.constant_(self.conv1.bias, 0)
                 # torch.nn.init.xavier_uniform_(self.conv1.weight, gain=torch.nn.init.calculate_gain('selu'))
                 # torch.nn.init.dirac_(self.conv1.weight)
 
