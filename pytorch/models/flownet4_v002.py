@@ -121,18 +121,14 @@ class Model:
             
                 return x
 
-
         class Multiresblock4Rev(nn.Module):
-            def __init__(self, num_in_channels, num_filters, alpha=1.69):
+            def __init__(self, num_in_channels, num_filters):
             
                 super().__init__()
-                self.alpha = alpha
-                self.W = num_filters * alpha
-                
-                filt_cnt_3x3 = int(self.W*0.167)
-                filt_cnt_5x5 = int(self.W*0.333)
-                filt_cnt_7x7 = int(self.W*0.5)
-                filt_cnt_9x9 = int(self.W*0.69)
+                filt_cnt_3x3 = int(num_filters*0.618)
+                filt_cnt_5x5 = int(num_filters*0.236)
+                filt_cnt_7x7 = int(num_filters*0.09)
+                filt_cnt_9x9 = int(num_filters - filt_cnt_3x3 - filt_cnt_5x5 - filt_cnt_7x7)
                 num_out_filters = filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7 + filt_cnt_9x9
                 
                 self.shortcut = Conv2d(num_in_channels ,num_out_filters , kernel_size = (1,1))
@@ -145,7 +141,6 @@ class Model:
 
                 self.conv_9x9 = Conv2d_ReLU(filt_cnt_7x7, filt_cnt_9x9, kernel_size = (3,3))
 
-                # self.act = torch.nn.SELU()
                 self.act = torch.nn.LeakyReLU(0.1, True)
 
 
@@ -215,19 +210,20 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
-                    torch.nn.PixelShuffle(2)
+                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
+                    conv(c//2, c//2, 3, 1, 1),
+                    torch.nn.ConvTranspose2d(c//2, c//2, 4, 2, 1),
+                    conv(c//2, 6, 3, 1, 1),
+                    # torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    # torch.nn.PixelShuffle(2)
                 )
                 self.alpha = 1.69
-                self.multires01 = Multiresblock(c, c)
-                self.filters01 = int((c)*self.alpha*0.167)+int((c)*self.alpha*0.333)+int((c)*self.alpha* 0.5)
-                self.upsample01 = torch.nn.ConvTranspose2d(self.filters01, c//2, 4, 2, 1)
-                self.multires02 = Multiresblock(c//2, c//2)
-                self.filters02 = int((c//2)*self.alpha*0.167)+int((c//2)*self.alpha*0.333)+int((c//2)*self.alpha* 0.5)
-                self.upsample02 = torch.nn.ConvTranspose2d(self.filters02, self.filters02//2, 4, 2, 1)
-                self.multires03 = Multiresblock(self.filters02//2, c//4)
-                self.filters03 = int((c//4)*self.alpha*0.167)+int((c//4)*self.alpha*0.333)+int((c//4)*self.alpha* 0.5)
-                self.conv_final = Conv2d(self.filters03+6 ,6 , kernel_size = (3,3))
+                self.multires01 = Multiresblock4Rev(c, c*2)
+                self.upsample01 = torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1)
+                self.multires02 = Multiresblock4Rev(c, c)
+                self.upsample02 = torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1)
+                self.multires03 = Multiresblock(c//2+6, c//2)
+                self.conv_final = Conv2d(c//2 ,8 , kernel_size = (3,3))
 
             def forward(self, x, flow, scale=1):
                 x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
@@ -243,8 +239,8 @@ class Model:
                 tmp_refine = self.upsample01(tmp_refine)
                 tmp_refine = self.multires02(tmp_refine)
                 tmp_refine = self.upsample02(tmp_refine)
-                tmp_refine = self.multires03(tmp_refine)
-                tmp = self.conv_final(torch.cat((tmp_rife, tmp_refine), dim=1))
+                tmp_refine = self.multires03(torch.cat((tmp_rife, tmp_refine), dim=1))
+                tmp = self.conv_final(tmp_refine)
 
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
                 flow = tmp[:, :4] * scale
