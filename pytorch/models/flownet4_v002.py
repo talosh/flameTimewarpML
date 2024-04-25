@@ -121,7 +121,7 @@ class Model:
             
                 return x
 
-        class Multiresblock4Rev(nn.Module):
+        class Multiresblock4Rev(torch.nn.Module):
             def __init__(self, num_in_channels, num_filters):
             
                 super().__init__()
