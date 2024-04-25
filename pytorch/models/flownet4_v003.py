@@ -332,7 +332,7 @@ class Model:
                 f1 = self.encode(img1)
                 
                 if not torch.is_tensor(timestep):
-                    timestep = (x[:, :1].clone() * 0 + 1) * timestep
+                    timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 else:
                     timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
                 flow_list = []
