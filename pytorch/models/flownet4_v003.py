@@ -277,12 +277,12 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
-                self.lastconv2 = nn.Sequential(
+                self.lastconv2 = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
                     conv(c//2, c//2, 3, 1, 1),
                     torch.nn.ConvTranspose2d(c//2, c//2, 4, 2, 1),
                     conv(c//2, 6, 3, 1, 1),
-                    # nn.PixelShuffle(2)
+                    # torch.nn.PixelShuffle(2)
                 )
                 self.multires01 = Multiresblock4(c, c*2)
                 self.upsample01 = torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1)
