@@ -121,6 +121,92 @@ class Model:
             
                 return x
 
+        class Multiresblock4(Module):
+            def __init__(self, num_in_channels, num_filters, shortcut_bias = True):
+            
+                super().__init__()        
+                filt_cnt_3x3 = int(num_filters*0.382)
+                filt_cnt_5x5 = int(num_filters*0.236)
+                filt_cnt_7x7 = int(num_filters*0.192)
+                filt_cnt_9x9 = num_filters - (filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7)
+                num_out_filters = num_filters
+                
+                self.shortcut = Conv2d(
+                    num_in_channels,
+                    num_out_filters, 
+                    kernel_size = (1,1),
+                    bias = shortcut_bias
+                    )
+
+                self.conv_3x3 = Conv2d_ReLU(num_in_channels, filt_cnt_3x3, kernel_size = (3,3))
+                self.conv_5x5 = Conv2d_ReLU(filt_cnt_3x3, filt_cnt_5x5, kernel_size = (3,3))
+                self.conv_7x7 = Conv2d_ReLU(filt_cnt_5x5, filt_cnt_7x7, kernel_size = (3,3))
+                self.conv_9x9 = Conv2d_ReLU(filt_cnt_7x7, filt_cnt_9x9, kernel_size = (3,3))
+
+                # self.act = torch.nn.SELU()
+                self.act = torch.nn.LeakyReLU(0.1, True)
+
+
+            def forward(self,x):
+
+                shrtct = self.shortcut(x)
+                
+                a = self.conv_3x3(x)
+                b = self.conv_5x5(a)
+                c = self.conv_7x7(b)
+                d = self.conv_9x9(c)
+
+                x = torch.cat([a,b,c,d],axis=1)
+
+                x = x + shrtct
+                # x = self.act(x)
+
+                return x
+
+        class ResConvBlock4(Module):
+            def __init__(self, num_in_channels, num_filters):
+            
+                super().__init__()        
+                filt_cnt_3x3 = int(num_filters*0.382)
+                filt_cnt_5x5 = int(num_filters*0.236)
+                filt_cnt_7x7 = int(num_filters*0.192)
+                filt_cnt_9x9 = num_filters - (filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7)
+                num_out_filters = num_filters
+                
+                self.shortcut = Conv2d(
+                    num_in_channels,
+                    num_out_filters, 
+                    kernel_size = (3,3),
+                    )
+
+                self.conv_3x3 = Conv2d_ReLU(num_in_channels, filt_cnt_3x3, kernel_size = (3,3))
+                self.conv_5x5 = Conv2d_ReLU(filt_cnt_3x3, filt_cnt_5x5, kernel_size = (3,3))
+                self.conv_7x7 = Conv2d_ReLU(filt_cnt_5x5, filt_cnt_7x7, kernel_size = (3,3))
+                self.conv_9x9 = Conv2d_ReLU(filt_cnt_7x7, filt_cnt_9x9, kernel_size = (3,3))
+
+                self.joinconv = Conv2d(
+                    num_filters*2,
+                    num_out_filters, 
+                    kernel_size = (3,3),
+                    )
+
+                # self.act = torch.nn.SELU()
+                self.act = torch.nn.LeakyReLU(0.1, True)
+
+                def forward(self,x):
+
+                    shrtct = self.shortcut(x)
+                    
+                    a = self.conv_3x3(x)
+                    b = self.conv_5x5(a)
+                    c = self.conv_7x7(b)
+                    d = self.conv_9x9(c)
+
+                    x = torch.cat([a,b,c,d],axis=1)                
+                    x = self.joinconv(torch.cat([x, shrtct],axis=1))
+                
+                    return x
+
 
         class Head(Module):
             def __init__(self):
@@ -152,6 +238,17 @@ class Model:
                 
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
+
+        class MultiResConv(Module):
+            def __init__(self, c):
+                super().__init__()
+                self.conv = ResConvBlock4(c, c)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
+                self.relu = torch.nn.LeakyReLU(0.2, True)
+                
+            def forward(self, x):
+                return self.relu(self.conv(x) * self.beta + x)
+
 
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
