@@ -13,8 +13,8 @@ test_*
 env
 appenv
 .DS_Store
+models/flownet2_v004.pth
 
-!trained_models.all/README
 !packages/README.md
 !packages/.miniconda/README.md
 !packages/.miniconda/appenv/README.md
