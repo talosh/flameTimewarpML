@@ -271,16 +271,19 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
-                self.alpha = 1.69
-                self.multires01 = Multiresblock(c, c)
-                self.filters01 = int((c)*self.alpha*0.167)+int((c)*self.alpha*0.333)+int((c)*self.alpha* 0.5)
-                self.upsample01 = torch.nn.ConvTranspose2d(self.filters01, c//2, 4, 2, 1)
-                self.multires02 = Multiresblock(c//2, c//2)
-                self.filters02 = int((c//2)*self.alpha*0.167)+int((c//2)*self.alpha*0.333)+int((c//2)*self.alpha* 0.5)
-                self.upsample02 = torch.nn.ConvTranspose2d(self.filters02, self.filters02//2, 4, 2, 1)
-                self.multires03 = Multiresblock(self.filters02//2, c//4)
-                self.filters03 = int((c//4)*self.alpha*0.167)+int((c//4)*self.alpha*0.333)+int((c//4)*self.alpha* 0.5)
-                self.conv_final = Conv2d(self.filters03+6 ,6 , kernel_size = (3,3))
+                self.lastconv2 = nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
+                    conv(c//2, c//2, 3, 1, 1),
+                    torch.nn.ConvTranspose2d(c//2, c//2, 4, 2, 1),
+                    conv(c//2, 6, 3, 1, 1),
+                    # nn.PixelShuffle(2)
+                )
+                self.multires01 = Multiresblock4(c, c*2)
+                self.upsample01 = torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1)
+                self.multires02 = Multiresblock4(c, c)
+                self.upsample02 = torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1)
+                self.multires03 = Multiresblock4(c//2+6, c//2+6, shortcut_bias=False)
+                self.conv_final = Conv2d(c//2+6, 8, kernel_size = (3,3))
 
             def forward(self, x, flow, scale=1):
                 x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
@@ -290,20 +293,22 @@ class Model:
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
 
-                tmp_rife = self.lastconv(feat)
+                tmp_rife = self.lastconv2(feat)
 
                 tmp_refine = self.multires01(feat)
                 tmp_refine = self.upsample01(tmp_refine)
                 tmp_refine = self.multires02(tmp_refine)
                 tmp_refine = self.upsample02(tmp_refine)
-                tmp_refine = self.multires03(tmp_refine)
-                tmp = self.conv_final(torch.cat((tmp_rife, tmp_refine), dim=1))
+
+                tmp_refine = self.multires03(torch.cat((tmp_rife, tmp_refine), dim=1))
+
+                tmp = self.conv_final(tmp_refine)
 
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
                 flow = tmp[:, :4] * scale
                 mask = tmp[:, 4:5]
-                conf = tmp[:, 5:6]
-                return flow, mask, conf
+                refine = tmp[:, 5:8]
+                return flow, mask, refine
 
         class FlownetCas(Module):
             def __init__(self):
@@ -314,68 +319,53 @@ class Model:
                 self.block3 = Flownet(8+4+16, c=64)
                 self.encode = Head()
 
-            def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
-                # return self.encode(img0)
-                img0 = img0
-                img1 = img1
-                f0 = self.encode(img0)
-                f1 = self.encode(img1)
-
+            def forward(self, x, timestep=0.5, scale=[8, 4, 2, 1], training=False, distill=True):
+                img0 = x[:, :3]
+                img1 = x[:, 3:6]
+                f0 = self.encode(img0*2-1)
+                f1 = self.encode(img1*2-1)
+                
                 if not torch.is_tensor(timestep):
-                    timestep = (img0[:, :1].clone() * 0 + 1) * timestep
+                    timestep = (x[:, :1].clone() * 0 + 1) * timestep
                 else:
                     timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
                 flow_list = []
                 merged = []
                 mask_list = []
-                conf_list = []
-                teacher_list = []
-                flow_list_teacher = []
+                refine_list = []
                 warped_img0 = img0
                 warped_img1 = img1
-                flow = None
-                loss_cons = 0
+                flow = None 
                 stu = [self.block0, self.block1, self.block2, self.block3]
                 flow = None
                 for i in range(4):
                     if flow is not None:
-                        flow_d, mask, conf = stu[i](torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[i])
+                        flow_d, mask, refine = stu[i](torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[i])
                         flow = flow + flow_d
                     else:
-                        flow, mask, conf = stu[i](torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[i])
-
+                        flow, mask, refine = stu[i](torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[i])
                     mask_list.append(mask)
                     flow_list.append(flow)
-                    conf_list.append(conf)
+                    refine_list.append(refine)
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
                     merged_student = (warped_img0, warped_img1)
                     merged.append(merged_student)
-                conf = torch.sigmoid(torch.cat(conf_list, 1))
-                conf = conf / (conf.sum(1, True) + 1e-3)
-                if gt is not None:
-                    flow_teacher = 0
-                    mask_teacher = 0
-                    for i in range(4):
-                        flow_teacher += conf[:, i:i+1] * flow_list[i]
-                        mask_teacher += conf[:, i:i+1] * mask_list[i]
-                    warped_img0_teacher = warp(img0, flow_teacher[:, :2])
-                    warped_img1_teacher = warp(img1, flow_teacher[:, 2:4])
-                    mask_teacher = torch.sigmoid(mask_teacher)
-                    merged_teacher = warped_img0_teacher * mask_teacher + warped_img1_teacher * (1 - mask_teacher)
-                    teacher_list.append(merged_teacher)
-                    flow_list_teacher.append(flow_teacher)
-
                 for i in range(4):
+                    last_refine = None
                     mask_list[i] = torch.sigmoid(mask_list[i])
+                    refine_list[i] = torch.sigmoid(refine_list[i]) * 2 - 1
                     merged[i] = merged[i][0] * mask_list[i] + merged[i][1] * (1 - mask_list[i])
-                    if gt is not None:
-                        loss_mask = ((merged[i] - gt).abs().mean(1, True) > (merged_teacher - gt).abs().mean(1, True) + 1e-2).float().detach()
-                        loss_cons += (((flow_teacher.detach() - flow_list[i]) ** 2).sum(1, True) ** 0.5 * loss_mask).mean() * 0.001
+                    if last_refine is None:
+                        merged[i] += refine_list[i]
+                        last_refine = refine_list[i]
+                    else:
+                        merged[i] = merged[i] + last_refine + refine_list[i]
+                        last_refine += refine_list[i]
 
-                return flow_list, mask_list, merged
+                return flow_list, mask_list[3], merged
 
         self.model = FlownetCas
         self.training_model = FlownetCas
