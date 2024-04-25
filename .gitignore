@@ -14,6 +14,7 @@ env
 appenv
 .DS_Store
 models/flownet2_v004.pth
+pytorch/hub/checkpoints/alexnet-owt-7be5be79.pth
 
 !packages/README.md
 !packages/.miniconda/README.md
