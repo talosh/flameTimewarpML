@@ -325,11 +325,11 @@ class Model:
                 self.block3 = Flownet(8+4+16, c=64)
                 self.encode = Head()
 
-            def forward(self, x, timestep=0.5, scale=[8, 4, 2, 1], training=False, distill=True):
-                img0 = x[:, :3]
-                img1 = x[:, 3:6]
-                f0 = self.encode(img0*2-1)
-                f1 = self.encode(img1*2-1)
+            def forward(self, img0, gt, img1, f0, f1, timestep=0.5, scale=[8, 4, 2, 1]):
+                img0 = img0
+                img1 = img1
+                f0 = self.encode(img0)
+                f1 = self.encode(img1)
                 
                 if not torch.is_tensor(timestep):
                     timestep = (x[:, :1].clone() * 0 + 1) * timestep
