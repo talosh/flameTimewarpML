@@ -42,7 +42,7 @@ class Model:
                     stride=stride,
                     padding = 'same',
                     padding_mode = 'reflect',
-                    bias=False
+                    bias=bias
                     )
                 torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
                 # torch.nn.init.xavier_uniform_(self.conv1.weight, gain=torch.nn.init.calculate_gain('selu'))
@@ -62,7 +62,7 @@ class Model:
                     stride=stride,
                     padding = 'same',
                     padding_mode = 'reflect',
-                    bias=False
+                    bias=True
                     )
                 self.act = torch.nn.LeakyReLU(0.2, True)
                 torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
