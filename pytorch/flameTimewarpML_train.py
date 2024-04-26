@@ -1111,6 +1111,7 @@ def main():
     parser.add_argument('--eval', type=int, dest='eval', default=-1, help='Evaluate after each epoch for N samples')
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
+    parser.add_argument('--freeze', action='store_true', dest='freeze', default=False, help='Freeze RIFE parameters')
 
     args = parser.parse_args()
 
@@ -1364,7 +1365,7 @@ def main():
 
         flownet.train()
 
-        '''
+        # '''
         # Freeze predictors
         if args.all_gpus:
             for param in flownet.module.block0.conv0.parameters():
@@ -1443,7 +1444,7 @@ def main():
             for param in flownet.block3.convblock[-1].parameters():
                 param.requires_grad = True
 
-        '''
+        # '''
 
 
         # for name, param in flownet.named_parameters():
