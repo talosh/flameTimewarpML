@@ -1320,6 +1320,9 @@ def main():
     print('\n\n')
     batch_idx = 0
 
+    if args.freeze:
+        print ('Freezing parameters')
+
     while True:
         data_time = time.time() - time_stamp
         time_stamp = time.time()
