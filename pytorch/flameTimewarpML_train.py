@@ -817,7 +817,7 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                     return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
 
                 if random.uniform(0, 1) < 0.44:
-                    gamma = random.uniform(1.01, 1.69)
+                    gamma = random.uniform(0.9, 1.9)
                     img0 = gamma_up(img0, gamma=gamma)
                     img1 = gamma_up(img1, gamma=gamma)
                     img2 = gamma_up(img2, gamma=gamma)
