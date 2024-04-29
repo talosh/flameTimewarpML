@@ -1489,7 +1489,7 @@ def main():
         loss_LPIPS = torch.mean(loss_LPIPS_)
 
         loss_deep = 0.2 * loss_x8 + 0.2 * loss_x4 + 0.2 * loss_x2 + 0.4 * loss_x1
-        loss = loss_deep # + 4e-5 * loss_LPIPS # + loss_FM + loss_Adv
+        loss = loss_deep + 1e-6 * loss_LPIPS # + loss_FM + loss_Adv
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
