@@ -131,9 +131,9 @@ class Model:
             def __init__(self, num_in_channels, num_filters, shortcut_bias = True):
             
                 super().__init__()        
-                filt_cnt_3x3 = int(num_filters*0.382)
+                filt_cnt_3x3 = int(num_filters*0.192)
                 filt_cnt_5x5 = int(num_filters*0.236)
-                filt_cnt_7x7 = int(num_filters*0.192)
+                filt_cnt_7x7 = int(num_filters*0.382)
                 filt_cnt_9x9 = num_filters - (filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7)
                 num_out_filters = num_filters
                 
@@ -173,9 +173,9 @@ class Model:
             def __init__(self, num_in_channels, num_filters):
             
                 super().__init__()        
-                filt_cnt_3x3 = int(num_filters*0.382)
+                filt_cnt_3x3 = int(num_filters*0.192)
                 filt_cnt_5x5 = int(num_filters*0.236)
-                filt_cnt_7x7 = int(num_filters*0.192)
+                filt_cnt_7x7 = int(num_filters*0.382)
                 filt_cnt_9x9 = num_filters - (filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7)
                 num_out_filters = num_filters
                 
@@ -271,7 +271,7 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
-                    ResConv(c),
+                    ResConvBlock4(c),
                 )
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
