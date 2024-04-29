@@ -199,19 +199,19 @@ class Model:
                 # self.act = torch.nn.SELU()
                 self.act = torch.nn.LeakyReLU(0.1, True)
 
-                def forward(self,x):
+            def forward(self,x):
 
-                    shrtct = self.shortcut(x)
-                    
-                    a = self.conv_3x3(x)
-                    b = self.conv_5x5(a)
-                    c = self.conv_7x7(b)
-                    d = self.conv_9x9(c)
-
-                    x = torch.cat([a,b,c,d],axis=1)                
-                    x = self.joinconv(torch.cat([x, shrtct],axis=1))
+                shrtct = self.shortcut(x)
                 
-                    return x
+                a = self.conv_3x3(x)
+                b = self.conv_5x5(a)
+                c = self.conv_7x7(b)
+                d = self.conv_9x9(c)
+
+                x = torch.cat([a,b,c,d],axis=1)                
+                x = self.joinconv(torch.cat([x, shrtct],axis=1))
+            
+                return x
 
 
         class Head(Module):
