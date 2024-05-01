@@ -281,6 +281,54 @@ class Model:
             
                 return x
 
+        class ResConvBlockRev(Module):
+            def __init__(self, num_in_channels, num_filters, alpha=1, shortcut_bias = True):
+            
+                super().__init__()
+                self.alpha = alpha
+                self.W = num_filters * alpha
+                
+                filt_cnt_7x7 = int(self.W*0.167)
+                filt_cnt_5x5 = int(self.W*0.333)
+                # filt_cnt_7x7 = int(self.W*0.5)
+                filt_cnt_3x3 = num_filters - (filt_cnt_7x7 + filt_cnt_5x5)
+                num_out_filters = filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7
+                
+                self.shortcut = Conv2d(
+                    num_in_channels,
+                    num_out_filters, 
+                    kernel_size = (3,3),
+                    )
+
+                self.conv_3x3 = Conv2d_ReLU(num_in_channels, filt_cnt_3x3, kernel_size = (3,3))
+
+                self.conv_5x5 = Conv2d_ReLU(filt_cnt_3x3, filt_cnt_5x5, kernel_size = (3,3))
+                
+                self.conv_7x7 = Conv2d_ReLU(filt_cnt_5x5, filt_cnt_7x7, kernel_size = (3,3))
+
+                self.act = torch.nn.LeakyReLU(0.2, True)
+
+                self.joinconv = Conv2d(
+                    num_filters*2,
+                    num_out_filters, 
+                    kernel_size = (3,3),
+                    )
+
+            def forward(self,x):
+
+                shrtct = self.shortcut(x)
+                
+                a = self.conv_3x3(x)
+                b = self.conv_5x5(a)
+                c = self.conv_7x7(b)
+
+                x = torch.cat([a,b,c],axis=1)
+
+                x = self.joinconv(torch.cat([x, shrtct],axis=1))
+            
+                return x
+
+
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
@@ -294,7 +342,10 @@ class Model:
         class MultiResConv(Module):
             def __init__(self, c):
                 super().__init__()
-                self.conv = ResConvBlock(c, c)
+                self.conv = torch.nn.Sequential(
+                    ResConvBlock(c, c),
+                    ResConvBlockRev(c, c)
+                )
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.LeakyReLU(0.2, True)
                 
