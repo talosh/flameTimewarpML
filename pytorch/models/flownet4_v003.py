@@ -344,7 +344,20 @@ class Model:
                 x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 if flow is not None:
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
+                    img0_sliced = x[:, 0:3, :, :]       # Slice out channels 0-2 for img0
+                    img1_sliced = x[:, 3:6, :, :]       # Slice out channels 3-5 for img1
+                    f0_sliced = x[:, 6:14, :, :]        # Slice out channels 6-13 for f0
+                    f1_sliced = x[:, 14:22, :, :]       # Slice out channels 14-21 for f1
+                    timestep_sliced = x[:, 22:23, :, :] # Slice out channel 22 for timestep
                     x = torch.cat((x, flow), 1)
+                else:
+                    img0_sliced = x[:, 0:3, :, :]       # Slice out channels 0-2 for img0
+                    img1_sliced = x[:, 3:6, :, :]       # Slice out channels 3-5 for img1
+                    f0_sliced = x[:, 6:14, :, :]        # Slice out channels 6-13 for f0
+                    f1_sliced = x[:, 14:22, :, :]       # Slice out channels 14-21 for f1
+                    timestep_sliced = x[:, 22:23, :, :] # Slice out channel 22 for timestep
+                    mask_sliced = x[:, 23:24, :, :] # Slice out channel 23 for timestep
+
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
 
