@@ -80,139 +80,6 @@ class Model:
                 x = self.act(x)
                 return x
 
-        class Multiresblock(Module):
-            '''
-            MultiRes Block
-            
-            Arguments:
-                num_in_channels {int} -- Number of channels coming into mutlires block
-                num_filters {int} -- Number of filters in a corrsponding UNet stage
-                alpha {float} -- alpha hyperparameter (default: 1.67)
-            
-            '''
-
-            def __init__(self, num_in_channels, num_filters, alpha=1.69):
-            
-                super().__init__()
-                self.alpha = alpha
-                self.W = num_filters * alpha
-                
-                filt_cnt_3x3 = int(self.W*0.167)
-                filt_cnt_5x5 = int(self.W*0.333)
-                filt_cnt_7x7 = int(self.W*0.5)
-                num_out_filters = filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7
-                
-                self.shortcut = Conv2d(num_in_channels ,num_out_filters , kernel_size = (1,1))
-
-                self.conv_3x3 = Conv2d_ReLU(num_in_channels, filt_cnt_3x3, kernel_size = (3,3))
-
-                self.conv_5x5 = Conv2d_ReLU(filt_cnt_3x3, filt_cnt_5x5, kernel_size = (3,3))
-                
-                self.conv_7x7 = Conv2d_ReLU(filt_cnt_5x5, filt_cnt_7x7, kernel_size = (3,3))
-
-                self.act = torch.nn.LeakyReLU(0.1, True)
-
-            def forward(self,x):
-
-                shrtct = self.shortcut(x)
-                
-                a = self.conv_3x3(x)
-                b = self.conv_5x5(a)
-                c = self.conv_7x7(b)
-
-                x = torch.cat([a,b,c],axis=1)
-
-                x = x + shrtct
-                x = self.act(x)
-            
-                return x
-
-        class Multiresblock4(Module):
-            def __init__(self, num_in_channels, num_filters, shortcut_bias = True):
-            
-                super().__init__()        
-                filt_cnt_3x3 = int(num_filters*0.192)
-                filt_cnt_5x5 = int(num_filters*0.236)
-                filt_cnt_7x7 = int(num_filters*0.382)
-                filt_cnt_9x9 = num_filters - (filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7)
-                num_out_filters = num_filters
-                
-                self.shortcut = Conv2d(
-                    num_in_channels,
-                    num_out_filters, 
-                    kernel_size = (1,1),
-                    bias = shortcut_bias
-                    )
-
-                self.conv_3x3 = Conv2d_ReLU(num_in_channels, filt_cnt_3x3, kernel_size = (3,3))
-                self.conv_5x5 = Conv2d_ReLU(filt_cnt_3x3, filt_cnt_5x5, kernel_size = (3,3))
-                self.conv_7x7 = Conv2d_ReLU(filt_cnt_5x5, filt_cnt_7x7, kernel_size = (3,3))
-                self.conv_9x9 = Conv2d_ReLU(filt_cnt_7x7, filt_cnt_9x9, kernel_size = (3,3))
-
-                # self.act = torch.nn.SELU()
-                self.act = torch.nn.LeakyReLU(0.1, True)
-
-
-            def forward(self,x):
-
-                shrtct = self.shortcut(x)
-                
-                a = self.conv_3x3(x)
-                b = self.conv_5x5(a)
-                c = self.conv_7x7(b)
-                d = self.conv_9x9(c)
-
-                x = torch.cat([a,b,c,d],axis=1)
-
-                x = x + shrtct
-                # x = self.act(x)
-
-                return x
-
-        class ResConvBlock4(Module):
-            def __init__(self, num_in_channels, num_filters):
-            
-                super().__init__()        
-                filt_cnt_3x3 = int(num_filters*0.192)
-                filt_cnt_5x5 = int(num_filters*0.236)
-                filt_cnt_7x7 = int(num_filters*0.382)
-                filt_cnt_9x9 = num_filters - (filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7)
-                num_out_filters = num_filters
-                
-                self.shortcut = Conv2d(
-                    num_in_channels,
-                    num_out_filters, 
-                    kernel_size = (3,3),
-                    )
-
-                self.conv_3x3 = Conv2d_ReLU(num_in_channels, filt_cnt_3x3, kernel_size = (3,3))
-                self.conv_5x5 = Conv2d_ReLU(filt_cnt_3x3, filt_cnt_5x5, kernel_size = (3,3))
-                self.conv_7x7 = Conv2d_ReLU(filt_cnt_5x5, filt_cnt_7x7, kernel_size = (3,3))
-                self.conv_9x9 = Conv2d_ReLU(filt_cnt_7x7, filt_cnt_9x9, kernel_size = (3,3))
-
-                self.joinconv = Conv2d(
-                    num_filters*2,
-                    num_out_filters, 
-                    kernel_size = (3,3),
-                    )
-
-                # self.act = torch.nn.SELU()
-                self.act = torch.nn.LeakyReLU(0.1, True)
-
-            def forward(self,x):
-
-                shrtct = self.shortcut(x)
-                
-                a = self.conv_3x3(x)
-                b = self.conv_5x5(a)
-                c = self.conv_7x7(b)
-                d = self.conv_9x9(c)
-
-                x = torch.cat([a,b,c,d],axis=1)                
-                x = self.joinconv(torch.cat([x, shrtct],axis=1))
-            
-                return x
-
 
         class Head(Module):
             def __init__(self):
@@ -234,6 +101,185 @@ class Model:
                 if feat:
                     return [x0, x1, x2, x3]
                 return x3
+    
+        class Multiresblock(Module):
+            def __init__(self, num_in_channels, num_filters, alpha=1, shortcut_bias = True):
+            
+                super().__init__()
+                self.alpha = alpha
+                self.W = num_filters * alpha
+                
+                filt_cnt_3x3 = int(self.W*0.167)
+                filt_cnt_5x5 = int(self.W*0.333)
+                # filt_cnt_7x7 = int(self.W*0.5)
+                filt_cnt_7x7 = num_filters - (filt_cnt_3x3 + filt_cnt_5x5)
+
+                num_out_filters = filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7
+                
+                self.shortcut = Conv2d(
+                    num_in_channels,
+                    num_out_filters, 
+                    kernel_size = (1,1),
+                    bias = shortcut_bias
+                    )
+
+                self.conv_3x3 = Conv2d_ReLU(num_in_channels, filt_cnt_3x3, kernel_size = (3,3))
+
+                self.conv_5x5 = Conv2d_ReLU(filt_cnt_3x3, filt_cnt_5x5, kernel_size = (3,3))
+                
+                self.conv_7x7 = Conv2d_ReLU(filt_cnt_5x5, filt_cnt_7x7, kernel_size = (3,3))
+
+                self.act = torch.nn.LeakyReLU(0.2, True)
+
+            def forward(self,x):
+
+                shrtct = self.shortcut(x)
+                
+                a = self.conv_3x3(x)
+                b = self.conv_5x5(a)
+                c = self.conv_7x7(b)
+
+                x = torch.cat([a,b,c],axis=1)
+
+                x = x + shrtct
+                x = self.act(x)
+            
+                return x
+
+        class MultiresblockRev(Module):
+            def __init__(self, num_in_channels, num_filters, alpha=1, shortcut_bias = True):
+            
+                super().__init__()
+                self.alpha = alpha
+                self.W = num_filters * alpha
+                
+                filt_cnt_7x7 = int(self.W*0.167)
+                filt_cnt_5x5 = int(self.W*0.333)
+                # filt_cnt_7x7 = int(self.W*0.5)
+                filt_cnt_3x3 = num_filters - (filt_cnt_7x7 + filt_cnt_5x5)
+
+                num_out_filters = filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7
+                
+                self.shortcut = Conv2d(
+                    num_in_channels,
+                    num_out_filters, 
+                    kernel_size = (1,1),
+                    bias = shortcut_bias
+                    )
+
+                self.conv_3x3 = Conv2d_ReLU(num_in_channels, filt_cnt_3x3, kernel_size = (3,3))
+
+                self.conv_5x5 = Conv2d_ReLU(filt_cnt_3x3, filt_cnt_5x5, kernel_size = (3,3))
+                
+                self.conv_7x7 = Conv2d_ReLU(filt_cnt_5x5, filt_cnt_7x7, kernel_size = (3,3))
+
+                self.act = torch.nn.LeakyReLU(0.2, True)
+
+            def forward(self,x):
+
+                shrtct = self.shortcut(x)
+                
+                a = self.conv_3x3(x)
+                b = self.conv_5x5(a)
+                c = self.conv_7x7(b)
+
+                x = torch.cat([a,b,c],axis=1)
+
+                x = x + shrtct
+                x = self.act(x)
+            
+                return x
+
+        class MultiresblockRevNoact(Module):
+            def __init__(self, num_in_channels, num_filters, alpha=1, shortcut_bias = True):
+            
+                super().__init__()
+                self.alpha = alpha
+                self.W = num_filters * alpha
+                
+                filt_cnt_7x7 = int(self.W*0.167)
+                filt_cnt_5x5 = int(self.W*0.333)
+                # filt_cnt_7x7 = int(self.W*0.5)
+                filt_cnt_3x3 = num_filters - (filt_cnt_7x7 + filt_cnt_5x5)
+
+                num_out_filters = filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7
+                
+                self.shortcut = Conv2d(
+                    num_in_channels,
+                    num_out_filters, 
+                    kernel_size = (1,1),
+                    bias = shortcut_bias
+                    )
+
+                self.conv_3x3 = Conv2d_ReLU(num_in_channels, filt_cnt_3x3, kernel_size = (3,3))
+
+                self.conv_5x5 = Conv2d_ReLU(filt_cnt_3x3, filt_cnt_5x5, kernel_size = (3,3))
+                
+                self.conv_7x7 = Conv2d_ReLU(filt_cnt_5x5, filt_cnt_7x7, kernel_size = (3,3))
+
+                self.act = torch.nn.LeakyReLU(0.2, True)
+
+            def forward(self,x):
+
+                shrtct = self.shortcut(x)
+                
+                a = self.conv_3x3(x)
+                b = self.conv_5x5(a)
+                c = self.conv_7x7(b)
+
+                x = torch.cat([a,b,c],axis=1)
+
+                x = x + shrtct
+                # x = self.act(x)
+            
+                return x
+
+        class ResConvBlock(Module):
+            def __init__(self, num_in_channels, num_filters, alpha=1, shortcut_bias = True):
+            
+                super().__init__()
+                self.alpha = alpha
+                self.W = num_filters * alpha
+                
+                filt_cnt_3x3 = int(self.W*0.167)
+                filt_cnt_5x5 = int(self.W*0.333)
+                # filt_cnt_7x7 = int(self.W*0.5)
+                filt_cnt_7x7 = num_filters - (filt_cnt_3x3 + filt_cnt_5x5)
+                num_out_filters = filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7
+                
+                self.shortcut = Conv2d(
+                    num_in_channels,
+                    num_out_filters, 
+                    kernel_size = (3,3),
+                    )
+
+                self.conv_3x3 = Conv2d_ReLU(num_in_channels, filt_cnt_3x3, kernel_size = (3,3))
+
+                self.conv_5x5 = Conv2d_ReLU(filt_cnt_3x3, filt_cnt_5x5, kernel_size = (3,3))
+                
+                self.conv_7x7 = Conv2d_ReLU(filt_cnt_5x5, filt_cnt_7x7, kernel_size = (3,3))
+
+                self.act = torch.nn.LeakyReLU(0.2, True)
+
+                self.joinconv = Conv2d(
+                    num_filters*2,
+                    num_out_filters, 
+                    kernel_size = (3,3),
+                    )
+
+            def forward(self,x):
+
+                shrtct = self.shortcut(x)
+                
+                a = self.conv_3x3(x)
+                b = self.conv_5x5(a)
+                c = self.conv_7x7(b)
+
+                x = torch.cat([a,b,c],axis=1)
+
+                x = self.joinconv(torch.cat([x, shrtct],axis=1))
+            
+                return x
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
@@ -248,13 +294,12 @@ class Model:
         class MultiResConv(Module):
             def __init__(self, c):
                 super().__init__()
-                self.conv = ResConvBlock4(c, c)
+                self.conv = ResConvBlock(c, c)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.LeakyReLU(0.2, True)
                 
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
-
 
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
@@ -280,16 +325,20 @@ class Model:
                 self.lastconv2 = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
                     conv(c//2, c//2, 3, 1, 1),
-                    torch.nn.ConvTranspose2d(c//2, c//2, 4, 2, 1),
-                    conv(c//2, 6, 3, 1, 1),
+                    torch.nn.ConvTranspose2d(c//2, c//4, 4, 2, 1),
+                    conv(c//4, 8, 3, 1, 1),
                     # torch.nn.PixelShuffle(2)
                 )
-                self.multires01 = Multiresblock4(c, c*2)
+                self.downconv = conv(c, c*2, 3, 2, 1)
+                self.multires_deep01 = Multiresblock(c*2, c*2)
+                self.multires_deep02 = MultiresblockRev(c*2, c*2)
+                self.upsample_deep01 = torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1)
+                self.multires01 = MultiresblockRevNoact(c, c)
                 self.upsample01 = torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1)
-                self.multires02 = Multiresblock4(c, c)
+                self.multires02 = MultiresblockRevNoact(c, c)
                 self.upsample02 = torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1)
-                self.multires03 = Multiresblock4(c//2+6, c//2+6, shortcut_bias=False)
-                self.conv_final = Conv2d(c//2+6, 8, kernel_size = (3,3))
+                self.multires03 = MultiresblockRevNoact(c//2 + 8, c//2+8, shortcut_bias=False)
+                self.conv_final = Conv2d(c//2+8, 8, kernel_size = (3,3))
 
             def forward(self, x, flow, scale=1):
                 x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
@@ -300,9 +349,14 @@ class Model:
                 feat = self.convblock(feat)
 
                 tmp_rife = self.lastconv2(feat)
+                
+                tmp_deep = self.downconv(feat)
+                tmp_deep = self.multires_deep01(tmp_deep)
+                tmp_deep = self.multires_deep02(tmp_deep)
+                tmp_deep = self.upsample_deep01(tmp_deep)
 
                 tmp_refine = self.multires01(feat)
-                tmp_refine = self.upsample01(tmp_refine)
+                tmp_refine = self.upsample01(torch.cat((tmp_refine, tmp_deep), dim=1))
                 tmp_refine = self.multires02(tmp_refine)
                 tmp_refine = self.upsample02(tmp_refine)
 
