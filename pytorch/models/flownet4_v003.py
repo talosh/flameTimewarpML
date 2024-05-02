@@ -382,7 +382,7 @@ class Model:
                 )
                 self.downconv = conv(c, c*2, 3, 2, 1)
                 self.multires_deep01 = Multiresblock(c*2, c*2)
-                self.multires_deep02 = MultiresblockRev(c*2, c*2)
+                # self.multires_deep02 = MultiresblockRev(c*2, c*2)
                 self.upsample_deep01 = torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1)
                 self.multires01 = MultiresblockRevNoact(c, c)
                 self.upsample01 = torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1)
@@ -416,7 +416,6 @@ class Model:
                 
                 tmp_deep = self.downconv(feat)
                 tmp_deep = self.multires_deep01(tmp_deep)
-                tmp_deep = self.multires_deep02(tmp_deep)
                 tmp_deep = self.upsample_deep01(tmp_deep)
 
                 tmp_refine = self.multires01(feat)
