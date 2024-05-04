@@ -419,8 +419,8 @@ class Model:
 
                     warped_f0 = warp(self.encode01(img0), flow[:, :2])
                     warped_f1 = warp(self.encode01(img1), flow[:, :2])
-
-
+                    
+                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, flow), 1)
                 else:
                     img0_sliced = x[:, 0:3, :, :]       # Slice out channels 0-2 for img0
                     img1_sliced = x[:, 3:6, :, :]       # Slice out channels 3-5 for img1
