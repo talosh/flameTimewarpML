@@ -402,7 +402,7 @@ class Model:
                 self.multires03 = MultiresblockRevNoact(c//2 + 8, c//2+8, shortcut_bias=False)
                 self.conv_final = Conv2d(c//2+8, 8, kernel_size = (3,3))
 
-            def forward(self, x, flow, scale=1):
+            def forward(self, img0, img1, timestep, mask, flow, scale=1):
                 x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 if flow is not None:
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
