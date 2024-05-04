@@ -422,12 +422,16 @@ class Model:
                     
                     x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, flow), 1)
                 else:
-                    img0_sliced = x[:, 0:3, :, :]       # Slice out channels 0-2 for img0
-                    img1_sliced = x[:, 3:6, :, :]       # Slice out channels 3-5 for img1
-                    f0_sliced = x[:, 6:14, :, :]        # Slice out channels 6-13 for f0
-                    f1_sliced = x[:, 14:22, :, :]       # Slice out channels 14-21 for f1
-                    timestep_sliced = x[:, 22:23, :, :] # Slice out channel 22 for timestep
-                    mask_sliced = x[:, 23:24, :, :] # Slice out channel 23 for timestep
+                    # initial flow estimation run
+                    img0 = torch.nn.functional.interpolate(img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    img1 = torch.nn.functional.interpolate(img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+
+                    timestep = (img0[:, :1].clone() * 0 + 1) * timestep
+                    
+                    f0 = self.encode01(img0)
+                    f1 = self.encode01(img1)
+
+                    x = torch.cat((img0, img1, f0, f1, timestep), 1)
 
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
