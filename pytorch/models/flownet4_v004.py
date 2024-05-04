@@ -411,16 +411,12 @@ class Model:
                     img1 = torch.nn.functional.interpolate(img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     warped_img0 = torch.nn.functional.interpolate(warped_img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     warped_img1 = torch.nn.functional.interpolate(warped_img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                    timestep = torch.nn.functional.interpolate(timestep, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     mask = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 
+                    timestep = (img0[:, :1].clone() * 0 + 1) * timestep
+
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
-                    warped_img0_sliced = x[:, 0:3, :, :]       # Slice out channels 0-2 for img0
-                    warped_img1_sliced = x[:, 3:6, :, :]       # Slice out channels 3-5 for img1
-                    f0_sliced = x[:, 6:14, :, :]        # Slice out channels 6-13 for f0
-                    f1_sliced = x[:, 14:22, :, :]       # Slice out channels 14-21 for f1
-                    timestep_sliced = x[:, 22:23, :, :] # Slice out channel 22 for timestep
-                    x = torch.cat((x, flow), 1)
+
                 else:
                     img0_sliced = x[:, 0:3, :, :]       # Slice out channels 0-2 for img0
                     img1_sliced = x[:, 3:6, :, :]       # Slice out channels 3-5 for img1
@@ -466,10 +462,11 @@ class Model:
                 img0 = img0
                 img1 = img1
                 
-                if not torch.is_tensor(timestep):
-                    timestep = (img0[:, :1].clone() * 0 + 1) * timestep
-                else:
-                    timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
+                # if not torch.is_tensor(timestep):
+                #    timestep = (img0[:, :1].clone() * 0 + 1) * timestep
+                # else:
+                #    timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
+                
                 flow_list = []
                 merged = []
                 mask_list = []
