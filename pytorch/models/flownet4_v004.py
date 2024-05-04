@@ -456,8 +456,6 @@ class Model:
             def forward(self, img0, gt, img1, f0_0, f1_0, timestep=0.5, scale=[8, 4, 2, 1]):
                 img0 = img0
                 img1 = img1
-                # f0 = self.encode(img0)
-                # f1 = self.encode(img1)
                 
                 if not torch.is_tensor(timestep):
                     timestep = (img0[:, :1].clone() * 0 + 1) * timestep
@@ -467,8 +465,6 @@ class Model:
                 merged = []
                 mask_list = []
                 refine_list = []
-                # warped_img0 = img0
-                # warped_img1 = img1
                 flow = None
                 last_refine = None
                 stu = [self.block0, self.block1, self.block2, self.block3]
