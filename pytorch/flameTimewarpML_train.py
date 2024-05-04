@@ -1307,6 +1307,10 @@ def main():
             }
         flownet.load_state_dict(convert(rife_state_dict), strict=False)
 
+        # copy encoder weights for flownet4_v004 to separate encoders on each pass
+        # flownet.block0.encode01[0].load_state_dict(flownet.encode.cnn0.state_dict())
+
+
     # LPIPS Init
     import lpips
     os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
