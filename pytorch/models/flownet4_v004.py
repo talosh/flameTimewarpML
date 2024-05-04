@@ -403,8 +403,17 @@ class Model:
                 self.conv_final = Conv2d(c//2+8, 8, kernel_size = (3,3))
 
             def forward(self, img0, img1, timestep, mask, flow, scale=1):
-                x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 if flow is not None:
+                    warped_img0 = warp(img0, flow[:, :2])
+                    warped_img1 = warp(img1, flow[:, 2:4])
+
+                    img0 = torch.nn.functional.interpolate(img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    img1 = torch.nn.functional.interpolate(img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    warped_img0 = torch.nn.functional.interpolate(warped_img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    warped_img1 = torch.nn.functional.interpolate(warped_img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    timestep = torch.nn.functional.interpolate(timestep, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    mask = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
                     warped_img0_sliced = x[:, 0:3, :, :]       # Slice out channels 0-2 for img0
                     warped_img1_sliced = x[:, 3:6, :, :]       # Slice out channels 3-5 for img1
