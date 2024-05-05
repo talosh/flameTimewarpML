@@ -4,6 +4,8 @@ import argparse
 import importlib
 import platform
 
+os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
+
 import numpy as np
 import torch
 
