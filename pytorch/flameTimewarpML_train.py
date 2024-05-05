@@ -1553,6 +1553,10 @@ def main():
             rgb_target = img1_orig
             rgb_output = restore_normalized_values(output)
             rgb_output_mask = mask.repeat_interleave(3, dim=1)
+            # rgb_refine = refine_list[0] + refine_list[1] + refine_list[2] + refine_list[3]
+            # rgb_refine = (rgb_refine + 1) / 2
+            # sample_refine = rgb_refine[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+
 
             write_image_queue.put(
                 {
