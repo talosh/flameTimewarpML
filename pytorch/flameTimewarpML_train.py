@@ -1308,7 +1308,25 @@ def main():
         flownet.load_state_dict(convert(rife_state_dict), strict=False)
 
         # copy encoder weights for flownet4_v004 to separate encoders on each pass
-        # flownet.block0.encode01[0].load_state_dict(flownet.encode.cnn0.state_dict())
+        flownet.block0.encode01[0].load_state_dict(flownet.encode.cnn0.state_dict())
+        flownet.block0.encode01[2].load_state_dict(flownet.encode.cnn1.state_dict())
+        flownet.block0.encode01[4].load_state_dict(flownet.encode.cnn2.state_dict())
+        flownet.block0.encode01[6].load_state_dict(flownet.encode.cnn3.state_dict())
+
+        flownet.block1.encode01[0].load_state_dict(flownet.encode.cnn0.state_dict())
+        flownet.block1.encode01[2].load_state_dict(flownet.encode.cnn1.state_dict())
+        flownet.block1.encode01[4].load_state_dict(flownet.encode.cnn2.state_dict())
+        flownet.block1.encode01[6].load_state_dict(flownet.encode.cnn3.state_dict())
+
+        flownet.block2.encode01[0].load_state_dict(flownet.encode.cnn0.state_dict())
+        flownet.block2.encode01[2].load_state_dict(flownet.encode.cnn1.state_dict())
+        flownet.block2.encode01[4].load_state_dict(flownet.encode.cnn2.state_dict())
+        flownet.block2.encode01[6].load_state_dict(flownet.encode.cnn3.state_dict())
+
+        flownet.block3.encode01[0].load_state_dict(flownet.encode.cnn0.state_dict())
+        flownet.block3.encode01[2].load_state_dict(flownet.encode.cnn1.state_dict())
+        flownet.block3.encode01[4].load_state_dict(flownet.encode.cnn2.state_dict())
+        flownet.block3.encode01[6].load_state_dict(flownet.encode.cnn3.state_dict())
 
 
     # LPIPS Init
@@ -1381,29 +1399,29 @@ def main():
                     param.requires_grad = False
                 for param in flownet.module.block0.convblock.parameters():
                     param.requires_grad = False
-                # for param in flownet.module.block0.lastconv.parameters():
-                #    param.requires_grad = False
+                for param in flownet.module.block0.encode01.parameters():
+                    param.requires_grad = False
 
                 for param in flownet.module.block1.conv0.parameters():
                     param.requires_grad = False
                 for param in flownet.module.block1.convblock.parameters():
                     param.requires_grad = False
-                # for param in flownet.module.block1.lastconv.parameters():
-                #    param.requires_grad = False
+                for param in flownet.module.block1.encode01.parameters():
+                    param.requires_grad = False
 
                 for param in flownet.module.block2.conv0.parameters():
                     param.requires_grad = False
                 for param in flownet.module.block2.convblock.parameters():
                     param.requires_grad = False
-                #for param in flownet.module.block2.lastconv.parameters():
-                #    param.requires_grad = False
+                for param in flownet.module.block2.encode01.parameters():
+                    param.requires_grad = False
 
                 for param in flownet.module.block3.conv0.parameters():
                     param.requires_grad = False
                 for param in flownet.module.block3.convblock.parameters():
                     param.requires_grad = False
-                #for param in flownet.module.block3.lastconv.parameters():
-                #    param.requires_grad = False
+                for param in flownet.module.block3.encode01.parameters():
+                    param.requires_grad = False
 
                 for param in flownet.module.encode.parameters():
                     param.requires_grad = False
@@ -1414,29 +1432,29 @@ def main():
                     param.requires_grad = False
                 for param in flownet.block0.convblock.parameters():
                     param.requires_grad = False
-                #for param in flownet.block0.lastconv.parameters():
-                #    param.requires_grad = False
+                for param in flownet.block0.encode01.parameters():
+                    param.requires_grad = False
 
                 for param in flownet.block1.conv0.parameters():
                     param.requires_grad = False
                 for param in flownet.block1.convblock.parameters():
                     param.requires_grad = False
-                #for param in flownet.block1.lastconv.parameters():
-                #    param.requires_grad = False
+                for param in flownet.block1.encode01.parameters():
+                    param.requires_grad = False
 
                 for param in flownet.block2.conv0.parameters():
                     param.requires_grad = False
                 for param in flownet.block2.convblock.parameters():
                     param.requires_grad = False
-                #for param in flownet.block2.lastconv.parameters():
-                #    param.requires_grad = False
+                for param in flownet.block2.encode01.parameters():
+                    param.requires_grad = False
 
                 for param in flownet.block3.conv0.parameters():
                     param.requires_grad = False
                 for param in flownet.block3.convblock.parameters():
                     param.requires_grad = False
-                #for param in flownet.block3.lastconv.parameters():
-                #    param.requires_grad = False
+                for param in flownet.block3.encode01.parameters():
+                    param.requires_grad = False
 
                 for param in flownet.encode.parameters():
                     param.requires_grad = False
