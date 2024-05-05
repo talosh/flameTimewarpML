@@ -1307,6 +1307,7 @@ def main():
             }
         flownet.load_state_dict(convert(rife_state_dict), strict=False)
 
+        '''
         # copy encoder weights for flownet4_v004 to separate encoders on each pass
         flownet.block0.encode01[0].load_state_dict(flownet.encode.cnn0.state_dict())
         flownet.block0.encode01[2].load_state_dict(flownet.encode.cnn1.state_dict())
@@ -1327,7 +1328,7 @@ def main():
         flownet.block3.encode01[2].load_state_dict(flownet.encode.cnn1.state_dict())
         flownet.block3.encode01[4].load_state_dict(flownet.encode.cnn2.state_dict())
         flownet.block3.encode01[6].load_state_dict(flownet.encode.cnn3.state_dict())
-
+        '''
 
     # LPIPS Init
     import lpips
