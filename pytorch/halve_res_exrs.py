@@ -447,10 +447,10 @@ def halve(exr_file_path):
     del img0
 
 def main():
-    parser = argparse.ArgumentParser(description='Training script.')
+    parser = argparse.ArgumentParser(description='Resize exrs to half-res in place (WARNING - DESTRUCTIVE!)')
 
     # Required argument
-    parser.add_argument('dataset_path', type=str, help='Path to the dataset')
+    parser.add_argument('dataset_path', type=str, help='Path to folders with exrs')
     args = parser.parse_args()
 
     folders_with_exr = find_folders_with_exr(args.dataset_path)
