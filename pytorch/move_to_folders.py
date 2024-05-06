@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 
 def main():
@@ -15,7 +16,9 @@ def main():
     for exr_file_name in exr_files:
         exr_file_names.add(exr_file_name.split('.')[0])
 
-    print (exr_file_names)
-
+    for name in exr_file_names:
+        os.system(f'mkdir -p {name}')
+        os.system(f'mv {name}.* {name}/')
+        
 if __name__ == "__main__":
     main()
