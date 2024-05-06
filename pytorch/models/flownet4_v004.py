@@ -502,7 +502,7 @@ class Model:
                     refine_list[i] = torch.sigmoid(refine_list[i]) * 2 - 1
                     merged[i] = merged[i][0] * mask_list[i] + merged[i][1] * (1 - mask_list[i])
                     if last_refine is None:
-                        merged[i] += refine_list[i]
+                        merged[i] = merged[i] + refine_list[i]
                         last_refine = refine_list[i]
                     else:
                         merged[i] = merged[i] + last_refine + refine_list[i]
