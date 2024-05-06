@@ -17,8 +17,8 @@ def main():
         exr_file_names.add(exr_file_name.split('.')[0])
 
     for name in exr_file_names:
-        os.system(f'mkdir -p {name}')
-        os.system(f'mv {name}.* {name}/')
+        os.system(f'mkdir -p {args.path}/{name}')
+        os.system(f'mv {args.path}/{name}.* {args.path}/{name}/')
         
 if __name__ == "__main__":
     main()
