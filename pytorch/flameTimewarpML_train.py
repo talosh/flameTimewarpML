@@ -1576,7 +1576,7 @@ def main():
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        if step % 1000 == 1:
+        if step % args.preview == 1:
             rgb_source1 = img0_orig
             rgb_source2 = img2_orig
             rgb_target = img1_orig
