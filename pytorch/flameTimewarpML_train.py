@@ -856,7 +856,15 @@ def get_dataset(
                 total_num_channels += file_header['shape'][2]
             return total_num_channels
 
-    return TimewarpMLDataset(data_root, batch_size=batch_size, device=device, frame_size=frame_size, max_window=max_window)
+    return TimewarpMLDataset(
+        data_root, 
+        batch_size=batch_size, 
+        device=device, 
+        frame_size=frame_size, 
+        max_window=max_window,
+        acescc_rate=acescc_rate,
+        generalize=generalize
+        )
 
 def normalize(image_array) :
     def custom_bend(x):
