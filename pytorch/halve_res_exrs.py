@@ -10,7 +10,11 @@ try:
     import numpy as np
     import torch
 except:
-    pass
+    python_executable_path = sys.executable
+    if '.miniconda' in python_executable_path:
+        print ('Unable to import Numpy and PyTorch libraries')
+        print (f'Using {python_executable_path} python interpreter')
+        sys.exit()
 
 from pprint import pprint
 
