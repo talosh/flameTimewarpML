@@ -6,8 +6,11 @@ import platform
 
 os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
 
-import numpy as np
-import torch
+try:
+    import numpy as np
+    import torch
+except:
+    pass
 
 from pprint import pprint
 

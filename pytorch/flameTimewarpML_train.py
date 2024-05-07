@@ -822,6 +822,8 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                     img1 = gamma_up(img1, gamma=gamma)
                     img2 = gamma_up(img2, gamma=gamma)
 
+                print (f'\n\nimg0 shape: {img0.shape}')
+
                 batch_img0.append(img0)
                 batch_img1.append(img1)
                 batch_img2.append(img2)
