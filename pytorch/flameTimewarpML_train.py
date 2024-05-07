@@ -1111,9 +1111,14 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None):
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
+    def check_range_percent(value):
+        ivalue = int(value)
+        if ivalue < 0 or ivalue > 100:
+            raise argparse.ArgumentTypeError(f"Percent must be between 0 and 100, got value={ivalue}")
+        return ivalue
+
     # Required argument
     parser.add_argument('dataset_path', type=str, help='Path to the dataset')
-
     # Optional arguments
     parser.add_argument('--lr', type=float, default=1e-6, help='Learning rate (default: 1e-6)')
     parser.add_argument('--type', type=int, default=1, help='Model type (int): 1 - MultiresNet, 2 - MultiresNet 4 (default: 1)')
@@ -1131,6 +1136,8 @@ def main():
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
     parser.add_argument('--freeze', action='store_true', dest='freeze', default=False, help='Freeze RIFE parameters')
+    parser.add_argument('--acescc', type=check_range_percent, default=40, help='Percentage of ACEScc encoded frames (default: 40))')
+    parser.add_argument('--generalize', type=check_range_percent, default=40, help='Generalization level (0 - 100) (default: 80)')
 
     args = parser.parse_args()
 
@@ -1165,7 +1172,9 @@ def main():
         batch_size=args.batch_size, 
         device=device, 
         frame_size=abs(int(args.frame_size)),
-        max_window=max_dataset_window
+        max_window=max_dataset_window,
+        acescc_rate=args.acescc,
+        generalize=args.generalize
         )
 
     def read_images(read_image_queue, dataset):
