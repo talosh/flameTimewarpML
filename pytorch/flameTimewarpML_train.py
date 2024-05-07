@@ -838,12 +838,10 @@ def get_dataset(
                     img1 = gamma_up(img1, gamma=gamma)
                     img2 = gamma_up(img2, gamma=gamma)
 
-                '''
                 if random.uniform(0, 1) < (self.acescc_rate / 100):
                     img0 = self.apply_acescc(img0)
                     img1 = self.apply_acescc(img1)
                     img2 = self.apply_acescc(img2)
-                '''
 
                 batch_img0.append(img0)
                 batch_img1.append(img1)
