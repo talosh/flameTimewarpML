@@ -473,7 +473,7 @@ def get_dataset(
             else:
                 self.device = device
 
-            print (f'ACEScc rate: {self.acescc_rate}')
+            print (f'ACEScc rate: {self.acescc_rate}%')
 
         def reshuffle(self):
             random.shuffle(self.train_descriptions)
