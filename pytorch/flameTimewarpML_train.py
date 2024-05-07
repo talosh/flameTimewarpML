@@ -693,7 +693,7 @@ def get_dataset(
             return srgb_image
 
         def apply_acescc(self, linear_image):
-            const_neg16 = torch.tensor(2**-16, linear_image.dtype, device=linear_image.device)
+            const_neg16 = torch.tensor(2**-16, dtype=linear_image.dtype, device=linear_image.device)
             const_neg15 = torch.tensor(2**-15, dtype=linear_image.dtype, device=linear_image.device)
             const_972 = torch.tensor(9.72, dtype=linear_image.dtype, device=linear_image.device)
             const_1752 = torch.tensor(17.52, dtype=linear_image.dtype, device=linear_image.device)
