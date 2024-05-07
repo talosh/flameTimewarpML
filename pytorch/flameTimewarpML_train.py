@@ -395,12 +395,32 @@ def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
 
     del image_data, red, green, blue
 
-def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_window=5):
+def get_dataset(
+        data_root, 
+        batch_size = 8, 
+        device = None, 
+        frame_size=448, 
+        max_window=5,
+        acescc_rate = 40,
+        generalize = 80
+        ):
     class TimewarpMLDataset(torch.utils.data.Dataset):
-        def __init__(self, data_root, batch_size = 8, device = None, frame_size=448, max_window=5):
+        def __init__(   
+                self, 
+                data_root, 
+                batch_size = 8, 
+                device = None, 
+                frame_size=448, 
+                max_window=5,
+                acescc_rate = 40,
+                generalize = 80
+                ):
+            
             self.data_root = data_root
             self.batch_size = batch_size
             self.max_window = max_window
+            self.acescc_rate = acescc_rate
+            self.generalize = generalize
 
             print (f'scanning for exr files in {self.data_root}...')
             self.folders_with_exr = self.find_folders_with_exr(data_root)
@@ -672,28 +692,22 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
 
             return srgb_image
 
-        def apply_aces_logc(self, linear_image, middle_grey=0.18, min_exposure=-6.5, max_exposure=6.5):
-            """
-            Apply the ACES LogC curve to a linear image.
+        def apply_acescc(self, linear_image):
+            const_neg16 = torch.tensor(2**-16, linear_image.dtype, device=linear_image.device)
+            const_neg15 = torch.tensor(2**-15, dtype=linear_image.dtype, device=linear_image.device)
+            const_972 = torch.tensor(9.72, dtype=linear_image.dtype, device=linear_image.device)
+            const_1752 = torch.tensor(17.52, dtype=linear_image.dtype, device=linear_image.device)
+            
+            condition = linear_image < 0
+            value_if_true = (torch.log2(const_neg16) + const_972) / const_1752
+            value_if_false = (torch.log2(const_neg16 + linear_image * 0.5) + const_972) / const_1752
+            ACEScc = torch.where(condition, value_if_true, value_if_false)
 
-            Parameters:
-            linear_image (torch.Tensor): The linear image tensor.
-            middle_grey (float): The middle grey value. Default is 0.18.
-            min_exposure (float): The minimum exposure value. Default is -6.5.
-            max_exposure (float): The maximum exposure value. Default is 6.5.
+            condition = linear_image >= const_neg15
+            value_if_true = (torch.log2(linear_image) + const_972) / const_1752
+            ACEScc = torch.where(condition, value_if_true, ACEScc)
 
-            Returns:
-            torch.Tensor: The image with the ACES LogC curve applied.
-            """
-            # Constants for the ACES LogC curve
-            A = (max_exposure - min_exposure) * 0.18 / middle_grey
-            B = min_exposure
-            C = math.log2(middle_grey) / 0.18
-
-            # Apply the ACES LogC curve
-            logc_image = (torch.log2(linear_image * A + B) + C) / (max_exposure - min_exposure)
-
-            return logc_image
+            return ACEScc
 
         def __getitem__(self, index):
             train_data = self.getimg(index)
@@ -822,7 +836,10 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                     img1 = gamma_up(img1, gamma=gamma)
                     img2 = gamma_up(img2, gamma=gamma)
 
-                print (f'\n\nimg0 shape: {img0.shape}')
+                if random.uniform(0, 1) < (self.acescc_rate / 100):
+                    img0 = self.apply_acescc(img0)
+                    img1 = self.apply_acescc(img1)
+                    img2 = self.apply_acescc(img2)
 
                 batch_img0.append(img0)
                 batch_img1.append(img1)
