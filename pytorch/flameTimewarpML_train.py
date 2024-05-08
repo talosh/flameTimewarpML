@@ -1178,7 +1178,7 @@ def main():
     parser.add_argument('--acescc', type=check_range_percent, default=40, help='Percentage of ACEScc encoded frames (default: 40))')
     parser.add_argument('--generalize', type=check_range_percent, default=85, help='Generalization level (0 - 100) (default: 85)')
     parser.add_argument('--preview', type=int, default=1000, help='Save preview each N steps (default: 1000)')
-    parser.add_argument('--reeat', type=int, default=1, help='Repeat each triade N times with agumentation (default: 1)')
+    parser.add_argument('--repeat', type=int, default=1, help='Repeat each triade N times with agumentation (default: 1)')
 
     args = parser.parse_args()
 
@@ -1215,7 +1215,8 @@ def main():
         frame_size=abs(int(args.frame_size)),
         max_window=max_dataset_window,
         acescc_rate=args.acescc,
-        generalize=args.generalize
+        generalize=args.generalize,
+        repeat=args.repeat
         )
 
     def read_images(read_image_queue, dataset):
