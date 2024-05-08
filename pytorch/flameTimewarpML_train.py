@@ -1259,7 +1259,12 @@ def main():
 
     weight_decay = 10 ** (0.07 * args.generalize - 9) if args.generalize > 1 else 1e-9
 
-    print (f'Setting agumentation rate to {args.generalize}% and weight decay to {weight_decay:.2e}')
+    if args.generalize == 0:
+        print (f'Disabling agumentation and setting weight decay to {weight_decay:.2e}')
+    elif args.generalize == 1:
+        print (f'Setting agumentation to horizontal flip and scale only and weight decay to {weight_decay:.2e}')
+    else:
+        print (f'Setting agumentation rate to {args.generalize}% and weight decay to {weight_decay:.2e}')
 
     optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=9e-4)
     # optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
