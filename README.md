@@ -9,7 +9,7 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 
 ### Todo for v0.4.5 dev 001
 
-* Add generalization logic to training script
+* ~~Add generalization logic to training script~~
 * Refine batch retime script
 * Optimize memory usage for Flownet4
 * Add Fluidmorph and Interpolate logic to new Flame script.
