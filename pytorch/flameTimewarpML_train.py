@@ -734,31 +734,21 @@ def get_dataset(
 
             del train_data, np_img0, np_img1, np_img2
 
-            #src_img3 = torch.from_numpy(src_img3.copy())
-            # src_img4 = torch.from_numpy(src_img4.copy())
             src_img0 = src_img0.to(device = device, dtype = torch.float32)
             src_img1 = src_img1.to(device = device, dtype = torch.float32)
             src_img2 = src_img2.to(device = device, dtype = torch.float32)
-            # src_img3 = src_img3.to(device = device, dtype = torch.float32)
-            # src_img4 = src_img4.to(device = device, dtype = torch.float32)
 
             rsz1_img0 = self.resize_image(src_img0, self.h)
             rsz1_img1 = self.resize_image(src_img1, self.h)
             rsz1_img2 = self.resize_image(src_img2, self.h)
-            # rsz1_img3 = self.resize_image(src_img3, self.h)
-            # rsz1_img4 = self.resize_image(src_img4, self.h)
 
             rsz2_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
             rsz2_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
             rsz2_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
-            # rsz2_img3 = self.resize_image(src_img3, int(self.h * (1 + 1/4)))
-            # rsz2_img4 = self.resize_image(src_img4, int(self.h * (1 + 1/4)))
 
             rsz3_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/5)))
             rsz3_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/5)))
             rsz3_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/5)))
-            # rsz3_img3 = self.resize_image(src_img3, int(self.h * (1 + 1/3)))
-            # rsz3_img4 = self.resize_image(src_img4, int(self.h * (1 + 1/3)))
 
             rsz4_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
             rsz4_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
@@ -769,78 +759,112 @@ def get_dataset(
             batch_img2 = []
 
             for index in range(self.batch_size):
-                q = random.uniform(0, 1)
-                if q < 0.25:
+
+                if self.generalize == 0:
+                    # No agumentaton
                     img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
-                elif q < 0.5:
-                    img0, img1, img2 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, self.h, self.w)
-                elif q < 0.75:
-                    img0, img1, img2 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, self.h, self.w)
+                    img0 = img0.permute(2, 0, 1)
+                    img1 = img1.permute(2, 0, 1)
+                    img2 = img2.permute(2, 0, 1)
+                elif self.generalize == 1:
+                    # Agument only scale and horizontal flip
+                    q = random.uniform(0, 1)
+                    if q < 0.25:
+                        img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
+                    elif q < 0.5:
+                        img0, img1, img2 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, self.h, self.w)
+                    elif q < 0.75:
+                        img0, img1, img2 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, self.h, self.w)
+                    else:
+                        img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
+                    img0 = img0.permute(2, 0, 1)
+                    img1 = img1.permute(2, 0, 1)
+                    img2 = img2.permute(2, 0, 1)
+                    if random.uniform(0, 1) < 0.5:
+                        img0 = img0.flip(-1)
+                        img1 = img1.flip(-1)
+                        img2 = img2.flip(-1)
                 else:
-                    img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
+                    q = random.uniform(0, 1)
+                    if q < 0.25:
+                        img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
+                    elif q < 0.5:
+                        img0, img1, img2 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, self.h, self.w)
+                    elif q < 0.75:
+                        img0, img1, img2 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, self.h, self.w)
+                    else:
+                        img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
 
-                img0 = img0.permute(2, 0, 1)
-                img1 = img1.permute(2, 0, 1)
-                img2 = img2.permute(2, 0, 1)
+                    img0 = img0.permute(2, 0, 1)
+                    img1 = img1.permute(2, 0, 1)
+                    img2 = img2.permute(2, 0, 1)
 
-                p = random.uniform(0, 1)
-                if p < 0.25:
-                    img0 = torch.flip(img0.transpose(1, 2), [2])
-                    img1 = torch.flip(img1.transpose(1, 2), [2])
-                    img2 = torch.flip(img2.transpose(1, 2), [2])
-                elif p < 0.5:
-                    img0 = torch.flip(img0, [1, 2])
-                    img1 = torch.flip(img1, [1, 2])
-                    img2 = torch.flip(img2, [1, 2])
-                elif p < 0.75:
-                    img0 = torch.flip(img0.transpose(1, 2), [1])
-                    img1 = torch.flip(img1.transpose(1, 2), [1])
-                    img2 = torch.flip(img2.transpose(1, 2), [1])
+                    # Horizontal flip (reverse width)
+                    if random.uniform(0, 1) < 0.5:
+                        img0 = img0.flip(-1)
+                        img1 = img1.flip(-1)
+                        img2 = img2.flip(-1)
 
-                # Horizontal flip (reverse width)
-                if random.uniform(0, 1) < 0.5:
-                    img0 = img0.flip(-1)
-                    img1 = img1.flip(-1)
-                    img2 = img2.flip(-1)
+                    # Rotation
+                    if random.uniform(0, 1) < (self.generalize / 100):
+                        p = random.uniform(0, 1)
+                        if p < 0.25:
+                            img0 = torch.flip(img0.transpose(1, 2), [2])
+                            img1 = torch.flip(img1.transpose(1, 2), [2])
+                            img2 = torch.flip(img2.transpose(1, 2), [2])
+                        elif p < 0.5:
+                            img0 = torch.flip(img0, [1, 2])
+                            img1 = torch.flip(img1, [1, 2])
+                            img2 = torch.flip(img2, [1, 2])
+                        elif p < 0.75:
+                            img0 = torch.flip(img0.transpose(1, 2), [1])
+                            img1 = torch.flip(img1.transpose(1, 2), [1])
+                            img2 = torch.flip(img2.transpose(1, 2), [1])
 
-                # Vertical flip (reverse height)
-                if random.uniform(0, 1) < 0.5:
-                    img0 = img0.flip(-2)
-                    img1 = img1.flip(-2)
-                    img2 = img2.flip(-2)
+                    if random.uniform(0, 1) < (self.generalize / 100):
+                        # Vertical flip (reverse height)
+                        if random.uniform(0, 1) < 0.5:
+                            img0 = img0.flip(-2)
+                            img1 = img1.flip(-2)
+                            img2 = img2.flip(-2)
 
-                # Depth-wise flip (reverse channels)
-                if random.uniform(0, 1) < 0.28:
-                    img0 = img0.flip(0)
-                    img1 = img1.flip(0)
-                    img2 = img2.flip(0)
+                    if random.uniform(0, 1) < (self.generalize / 100):
+                        # Depth-wise flip (reverse channels)
+                        if random.uniform(0, 1) < 0.28:
+                            img0 = img0.flip(0)
+                            img1 = img1.flip(0)
+                            img2 = img2.flip(0)
 
-                # Exposure agumentation
-                exp = random.uniform(1 / 8, 2)
-                if random.uniform(0, 1) < 0.4:
-                    img0 = img0 * exp
-                    img1 = img1 * exp
-                    img2 = img2 * exp
-                
-                # add colour banace shift
-                delta = random.uniform(0, 0.49)
-                r = random.uniform(1-delta, 1+delta)
-                g = random.uniform(1-delta, 1+delta)
-                b = random.uniform(1-delta, 1+delta)
-                multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device)
-                img0 = img0 * multipliers
-                img1 = img1 * multipliers
-                img2 = img2 * multipliers
+                    if random.uniform(0, 1) < (self.generalize / 100):
+                        # Exposure agumentation
+                        exp = random.uniform(1 / 8, 2)
+                        if random.uniform(0, 1) < 0.4:
+                            img0 = img0 * exp
+                            img1 = img1 * exp
+                            img2 = img2 * exp
 
-                def gamma_up(img, gamma = 1.18):
-                    return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
+                    if random.uniform(0, 1) < (self.generalize / 100):
+                        # add colour banace shift
+                        delta = random.uniform(0, 0.49)
+                        r = random.uniform(1-delta, 1+delta)
+                        g = random.uniform(1-delta, 1+delta)
+                        b = random.uniform(1-delta, 1+delta)
+                        multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device)
+                        img0 = img0 * multipliers
+                        img1 = img1 * multipliers
+                        img2 = img2 * multipliers
 
-                if random.uniform(0, 1) < 0.44:
-                    gamma = random.uniform(0.9, 1.9)
-                    img0 = gamma_up(img0, gamma=gamma)
-                    img1 = gamma_up(img1, gamma=gamma)
-                    img2 = gamma_up(img2, gamma=gamma)
+                    def gamma_up(img, gamma = 1.18):
+                        return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
 
+                    if random.uniform(0, 1) < (self.generalize / 100):
+                        if random.uniform(0, 1) < 0.44:
+                            gamma = random.uniform(0.9, 1.9)
+                            img0 = gamma_up(img0, gamma=gamma)
+                            img1 = gamma_up(img1, gamma=gamma)
+                            img2 = gamma_up(img2, gamma=gamma)
+
+                # Convert to ACEScc
                 if random.uniform(0, 1) < (self.acescc_rate / 100):
                     img0 = self.apply_acescc(img0)
                     img1 = self.apply_acescc(img1)
