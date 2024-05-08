@@ -1,6 +1,7 @@
 import os
 import sys
 import random
+import shutil
 import struct
 import ctypes
 import argparse
@@ -1630,6 +1631,9 @@ def main():
             preview_index = preview_index + 1 if preview_index < 9 else 0
 
         if step % 1000 == 1:
+            if os.path.isfile(trained_model_path):
+                backup_file = trained_model_path.replace('.pth', '.backup.pth')
+                shutil.copy(trained_model_path, backup_file)
             torch.save({
                 'step': step,
                 'steps_loss': steps_loss,
@@ -1657,6 +1661,9 @@ def main():
         print(f'\r[Last 1K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
 
         if ( idx + 1 ) == len(dataset):
+            if os.path.isfile(trained_model_path):
+                backup_file = trained_model_path.replace('.pth', '.backup.pth')
+                shutil.copy(trained_model_path, backup_file)
             torch.save({
                 'step': step,
                 'steps_loss': steps_loss,
