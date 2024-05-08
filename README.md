@@ -13,6 +13,7 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 * Refine batch retime script
 * Optimize memory usage for Flownet4
 * Add Fluidmorph and Interpolate logic to new Flame script.
+* Add "Allow paint-in" switch for inference.
 
 ### Installing and configuring python environment manually
 
