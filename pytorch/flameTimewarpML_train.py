@@ -1138,6 +1138,7 @@ def main():
     parser.add_argument('--pulse', type=float, default=9999, help='Period in steps to pulse learning rate (float) (default: 10K)')
     parser.add_argument('--pulse_amplitude', type=float, default=25, help='Learning rate pulse amplitude (percentage) (default: 25)')
     parser.add_argument('--onecyclelr', action='store_true', default=False, help='Use OneCycleLR strategy. If number of epochs is not set cycle is set to single epoch.')
+    parser.add_argument('--onecycle', type=int, default=-1, help='Train one cycle for N epochs (default: None)')
     parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
     parser.add_argument('--model', type=str, default=None, help='Model name (optional)')
     parser.add_argument('--legacy_model', type=str, default=None, help='Model name (optional)')
@@ -1246,7 +1247,7 @@ def main():
                 max_lr=args.lr, 
                 total_steps=len(dataset)*dataset.repeat_count
                 )
-            print (f'setting OneCycleLR with max_lr={args.lr}, total_steps={len(dataset)*dataset.repeat_count}')
+            print (f'setting repeating OneCycleLR with max_lr={args.lr}, total_steps={len(dataset)*dataset.repeat_count}')
         else:
             train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
                 optimizer_flownet, 
@@ -1254,7 +1255,16 @@ def main():
                 steps_per_epoch=len(dataset)*dataset.repeat_count, 
                 epochs=args.epochs
                 )
-            print (f'setting OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.epochs}')
+            print (f'setting repeating OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.epochs}')
+
+    if args.onecycle != -1:
+        train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
+            optimizer_flownet,
+            max_lr=args.lr, 
+            steps_per_epoch=len(dataset)*dataset.repeat_count, 
+            epochs=args.onecycle
+            )
+        print (f'setting OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.onecycle}')
 
     # train_scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, mode='min', factor=0.1, patience=2)
     # lambda_function = lambda epoch: 1
