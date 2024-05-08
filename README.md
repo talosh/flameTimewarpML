@@ -9,7 +9,7 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 
 ### Todo for v0.4.5 dev 001
 
-* ~~Add generalization logic to training script~~ done
+* (done) ~~Add generalization logic to training script~~ 
 * Refine batch retime script
 * Share pre-trained weights for flownet4 to enable using it in prod with command line.
 * Optimize memory usage for Flownet4
