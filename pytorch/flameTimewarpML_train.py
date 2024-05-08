@@ -1257,7 +1257,7 @@ def main():
     criterion_l1 = torch.nn.L1Loss()
     criterion_huber = torch.nn.HuberLoss(delta=0.01)
 
-    weight_decay = 10 ** (0.07 * args.generalize - 9)
+    weight_decay = 10 ** (0.07 * args.generalize - 9) if args.generalize > 1 else 1e-9
 
     print (f'Setting agumentation rate to {args.generalize}% and weight decay to {weight_decay:.2e}')
 
