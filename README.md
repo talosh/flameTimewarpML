@@ -7,7 +7,7 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 * Training script and Flownet4 tested in production on Linux with constant speed retime
 * Flownet2 tested on MacOS Apple Silicon with Pytorch 2.2.2
 
-#### Todo for v0.4.5 dev 001
+    #### Todo for v0.4.5 dev 001
 
 * (done) ~~Add generalization logic to training script~~ 
 * Refine batch retime script
