@@ -1258,7 +1258,7 @@ def main():
 
     weight_decay = 10 ** (0.07 * args.generalize - 9)
 
-    print (f'Setting agumentation to {args.generalize}% and weight decay to {weight_decay:.2e}')
+    print (f'Setting agumentation rate to {args.generalize}% and weight decay to {weight_decay:.2e}')
 
     optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=9e-4)
     # optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
@@ -1711,7 +1711,7 @@ def main():
                     for ev_item_index in range(args.eval):
 
                         clear_lines(2)
-                        print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [{batch_idx+1}, {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
+                        print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Frame: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
                         print (f'\rCalcualting PSNR on full-scale image {ev_item_index} of {args.eval}...')
 
                         ev_item = dataset.frames_queue.get()
