@@ -455,7 +455,7 @@ def get_dataset(
             self.w = frame_size
             # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
-            self.frames_queue = queue.Queue(maxsize=16)
+            self.frames_queue = queue.Queue(maxsize=8)
             self.frame_read_thread = threading.Thread(target=self.read_frames_thread)
             self.frame_read_thread.daemon = True
             self.frame_read_thread.start()
