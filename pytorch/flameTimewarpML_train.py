@@ -1444,6 +1444,15 @@ def main():
         for param in flownet.block3.parameters():
             param.requires_grad = False
 
+        for param in flownet.block0.encode01.parameters():
+            param.requires_grad = True
+        for param in flownet.block1.encode01.parameters():
+            param.requires_grad = True
+        for param in flownet.block2.encode01.parameters():
+            param.requires_grad = True
+        for param in flownet.block3.encode01.parameters():
+            param.requires_grad = True
+
         for param in flownet.block0.encode02.parameters():
             param.requires_grad = True
         for param in flownet.block1.encode02.parameters():
