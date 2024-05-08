@@ -492,11 +492,14 @@ class Model:
 
                 self.encode01 = torch.nn.Sequential(
                     torch.nn.Conv2d(3, 32, 3, 2, 1),
-                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.SiLU(inplace=True),
+                    # torch.nn.LeakyReLU(0.2, True),
                     torch.nn.Conv2d(32, 32, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.SiLU(inplace=True),
+                    # torch.nn.LeakyReLU(0.2, True),
                     torch.nn.Conv2d(32, 32, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.SiLU(inplace=True),
+                    # torch.nn.LeakyReLU(0.2, True),
                     torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 )
 
