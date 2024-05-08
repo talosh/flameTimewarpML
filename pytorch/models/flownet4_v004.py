@@ -80,7 +80,7 @@ class Model:
                 x = self.act(x)
                 return x
 
-        class Conv2d_SiLU(nn.Module):
+        class Conv2d_SiLU(Module):
             def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1)):
                 super().__init__()
                 self.conv1 = torch.nn.Conv2d(
@@ -211,7 +211,7 @@ class Model:
             
                 return x
 
-        class MultiresblockRevSwish(nn.Module):
+        class MultiresblockRevSwish(Module):
             def __init__(self, num_in_channels, num_filters, alpha=1, shortcut_bias = True):
             
                 super().__init__()
@@ -299,7 +299,7 @@ class Model:
             
                 return x
 
-        class MultiresblockRevMix(nn.Module):
+        class MultiresblockRevMix(Module):
             def __init__(self, num_in_channels, num_filters, alpha=1, shortcut_bias = True):
             
                 super().__init__()
