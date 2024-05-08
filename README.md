@@ -14,11 +14,11 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 * Optimize memory usage for Flownet4
 * Add Fluidmorph and Interpolate logic to new Flame script.
 
+### Installing and configuring python environment manually
+
 * pre-configured miniconda environment should be placed into hidden "packages/.miniconda" folder
 * the folder is hidden (starts with ".") in order to keep Flame from scanning it looking for python hooks
 * pre-configured python environment usually packed with release tar file
-
-### Installing and configuring python environment manually
 
 * download Miniconda for Mac or Linux (I'm using python 3.11 for tests) from 
 <https://docs.anaconda.com/free/miniconda/miniconda-other-installer-links/>
