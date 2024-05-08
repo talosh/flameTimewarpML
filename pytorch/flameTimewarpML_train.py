@@ -1231,6 +1231,10 @@ def main():
     criterion_l1 = torch.nn.L1Loss()
     criterion_huber = torch.nn.HuberLoss(delta=0.01)
 
+    weight_decay = 10 ** (0.07 * args.generalize - 9)
+
+    print (f'Setting agumentation to {args.generalize}% and weight decay to {weight_decay:.2e}')
+
     optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=9e-4)
     # optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
 
