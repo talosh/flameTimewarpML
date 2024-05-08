@@ -402,7 +402,8 @@ def get_dataset(
         frame_size=448, 
         max_window=5,
         acescc_rate = 40,
-        generalize = 80
+        generalize = 80,
+        repeat = 1
         ):
     class TimewarpMLDataset(torch.utils.data.Dataset):
         def __init__(   
@@ -413,7 +414,8 @@ def get_dataset(
                 frame_size=448, 
                 max_window=5,
                 acescc_rate = 40,
-                generalize = 80
+                generalize = 80,
+                repeat = 1
                 ):
             
             self.data_root = data_root
@@ -461,7 +463,7 @@ def get_dataset(
             print ('reading first block of training data...')
             self.last_train_data = self.frames_queue.get()
 
-            self.repeat_count = 9
+            self.repeat_count = repeat
             self.repeat_counter = 0
 
             # self.last_shuffled_index = -1
@@ -863,7 +865,8 @@ def get_dataset(
         frame_size=frame_size, 
         max_window=max_window,
         acescc_rate=acescc_rate,
-        generalize=generalize
+        generalize=generalize,
+        repeat=repeat
         )
 
 def normalize(image_array) :
@@ -1147,8 +1150,9 @@ def main():
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
     parser.add_argument('--freeze', action='store_true', dest='freeze', default=False, help='Freeze RIFE parameters')
     parser.add_argument('--acescc', type=check_range_percent, default=40, help='Percentage of ACEScc encoded frames (default: 40))')
-    parser.add_argument('--generalize', type=check_range_percent, default=40, help='Generalization level (0 - 100) (default: 80)')
+    parser.add_argument('--generalize', type=check_range_percent, default=80, help='Generalization level (0 - 100) (default: 80)')
     parser.add_argument('--preview', type=int, default=1000, help='Save preview each N steps (default: 1000)')
+    parser.add_argument('--reeat', type=int, default=1, help='Repeat each triade N times with agumentation (default: 1)')
 
     args = parser.parse_args()
 
