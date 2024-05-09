@@ -1269,10 +1269,6 @@ def main():
     optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=9e-4)
     # optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
 
-    # remove annoying message in pytorch 1.12.1 when using CosineAnnealingLR
-    import warnings
-    warnings.filterwarnings('ignore', category=UserWarning)
-
     train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
 
     if args.onecyclelr:
@@ -1395,7 +1391,7 @@ def main():
             }
         flownet.load_state_dict(convert(rife_state_dict), strict=False)
 
-        '''
+        # '''
         # copy encoder weights for flownet4_v004 to separate encoders on each pass
         flownet.block0.encode01[0].load_state_dict(flownet.encode.cnn0.state_dict())
         flownet.block0.encode01[2].load_state_dict(flownet.encode.cnn1.state_dict())
@@ -1416,13 +1412,19 @@ def main():
         flownet.block3.encode01[2].load_state_dict(flownet.encode.cnn1.state_dict())
         flownet.block3.encode01[4].load_state_dict(flownet.encode.cnn2.state_dict())
         flownet.block3.encode01[6].load_state_dict(flownet.encode.cnn3.state_dict())
-        '''
+        # '''
 
     # LPIPS Init
+
+    import warnings
+    warnings.filterwarnings('ignore', category=UserWarning)
+
     import lpips
     os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
     loss_fn_alex = lpips.LPIPS(net='alex')
     loss_fn_alex.to(device)
+
+    warnings.resetwarnings()
 
     start_timestamp = time.time()
     time_stamp = time.time()
@@ -1453,22 +1455,13 @@ def main():
         for param in flownet.block3.encode01.parameters():
             param.requires_grad = True
 
-        for param in flownet.block0.encode02.parameters():
+        for param in flownet.block0.conv0.parameters():
             param.requires_grad = True
-        for param in flownet.block1.encode02.parameters():
+        for param in flownet.block1.conv0.parameters():
             param.requires_grad = True
-        for param in flownet.block2.encode02.parameters():
+        for param in flownet.block2.conv0.parameters():
             param.requires_grad = True
-        for param in flownet.block3.encode02.parameters():
-            param.requires_grad = True
-
-        for param in flownet.block0.encode_mix.parameters():
-            param.requires_grad = True
-        for param in flownet.block1.encode_mix.parameters():
-            param.requires_grad = True
-        for param in flownet.block2.encode_mix.parameters():
-            param.requires_grad = True
-        for param in flownet.block3.encode_mix.parameters():
+        for param in flownet.block3.conv0.parameters():
             param.requires_grad = True
 
         for param in flownet.block0.convblock[0].parameters():
