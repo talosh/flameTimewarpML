@@ -641,8 +641,8 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v001',
-            'file': 'flownet4_v001.py',
+            'name': 'Flownet4_v004',
+            'file': 'flownet4_v004.py',
             'ratio_support': True
         }
         return info
