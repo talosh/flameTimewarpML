@@ -503,15 +503,6 @@ class Model:
                     torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 )
 
-                self.encode02 = torch.nn.Sequential(
-                    conv(3, 9, 3, 2, 1),
-                    MultiresblockRevSwish(9, 18),
-                    conv(18, 24, 3, 2, 1),
-                    MultiresblockRevSwish(24, 24)
-                )
-
-                self.encode_mix = MultiresblockRevMix(48, c)
-
                 self.downconv = conv(c, c*2, 3, 2, 1)
                 self.multires_deep01 = Multiresblock(c*2, c*2)
                 # self.multires_deep02 = MultiresblockRev(c*2, c*2)
@@ -539,7 +530,7 @@ class Model:
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
 
                     warped_f0 = warp(self.encode01(img0), flow[:, :2])
-                    warped_f1 = warp(self.encode01(img1), flow[:, :2])
+                    warped_f1 = warp(self.encode01(img1), flow[:, 2:4])
                     
                     x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, flow), 1)
                 else:
@@ -556,11 +547,6 @@ class Model:
 
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
-
-                f0m = self.encode02(img0)
-                f1m = self.encode02(img1)
-                feat = self.encode_mix(feat, f0m, f1m)
-
                 tmp_rife = self.lastconv2(feat)
                 
                 tmp_deep = self.downconv(feat)
