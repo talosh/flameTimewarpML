@@ -1389,7 +1389,7 @@ def main():
                 for k, v in param.items()
                 if "module." in k
             }
-        flownet.load_state_dict(convert(rife_state_dict))
+        flownet.load_state_dict(convert(rife_state_dict), strict=False)
 
         # '''
         # copy encoder weights for flownet4_v004 to separate encoders on each pass
