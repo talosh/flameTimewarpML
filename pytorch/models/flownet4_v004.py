@@ -429,6 +429,7 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                 )
+
                 self.lastconv = LastConvBlock(c + in_planes)
 
             def forward(self, img0, img1, timestep, mask, flow, scale=1):
