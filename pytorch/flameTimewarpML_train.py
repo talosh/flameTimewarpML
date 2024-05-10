@@ -1440,22 +1440,22 @@ def main():
         # Freeze predictors - its custom hard-coded depending on a task
 
         for param in flownet.block0.encode01.parameters():
-            param.requires_grad = True
+            param.requires_grad = False
         for param in flownet.block1.encode01.parameters():
-            param.requires_grad = True
+            param.requires_grad = False
         for param in flownet.block2.encode01.parameters():
-            param.requires_grad = True
+            param.requires_grad = False
         for param in flownet.block3.encode01.parameters():
-            param.requires_grad = True
+            param.requires_grad = False
 
         for param in flownet.block0.conv0.parameters():
-            param.requires_grad = True
+            param.requires_grad = False
         for param in flownet.block1.conv0.parameters():
-            param.requires_grad = True
+            param.requires_grad = False
         for param in flownet.block2.conv0.parameters():
-            param.requires_grad = True
+            param.requires_grad = False
         for param in flownet.block3.conv0.parameters():
-            param.requires_grad = True
+            param.requires_grad = False
 
         for param in flownet.block0.convblock.parameters():
             param.requires_grad = False
