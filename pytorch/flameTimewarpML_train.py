@@ -1391,7 +1391,7 @@ def main():
             }
         missing_keys, unexpected_keys = flownet.load_state_dict(convert(rife_state_dict), strict=False)
         print (f'\nMissing keys: {missing_keys}')
-        print (f'\Unexpected keys: {unexpected_keys}')
+        print (f'\nUnexpected keys: {unexpected_keys}')
 
         # '''
         # copy encoder weights for flownet4_v004 to separate encoders on each pass
