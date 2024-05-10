@@ -453,7 +453,7 @@ class Model:
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
 
-                x = torch.nn.functional.interpolate(flow, scale_factor= 1 / 4, mode="bilinear", align_corners=False) * 1 / 4
+                x = torch.nn.functional.interpolate(x, scale_factor= 1 / 4, mode="bilinear", align_corners=False) * 1 / 4
                 x[:, :-4] *= 1 / 4
                 out = self.lastconv(torch.cat([x, feat], dim=1))
 
