@@ -1390,8 +1390,8 @@ def main():
                 if "module." in k
             }
         missing_keys, unexpected_keys = flownet.load_state_dict(convert(rife_state_dict), strict=False)
-        print (f'\nMissing keys: {missing_keys}')
-        print (f'\nUnexpected keys: {unexpected_keys}')
+        print (f'\nMissing keys:\n{missing_keys}\n')
+        print (f'\nUnexpected keys:\n{unexpected_keys}\n')
 
         # '''
         # copy encoder weights for flownet4_v004 to separate encoders on each pass
