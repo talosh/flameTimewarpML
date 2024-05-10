@@ -1437,15 +1437,6 @@ def main():
         # '''
         # Freeze predictors - its custom hard-coded depending on a task
 
-        for param in flownet.block0.convblock.parameters():
-            param.requires_grad = False
-        for param in flownet.block1.convblock.parameters():
-            param.requires_grad = False
-        for param in flownet.block2.convblock.parameters():
-            param.requires_grad = False
-        for param in flownet.block3.convblock.parameters():
-            param.requires_grad = False
-
         for param in flownet.block0.encode01.parameters():
             param.requires_grad = True
         for param in flownet.block1.encode01.parameters():
@@ -1464,6 +1455,16 @@ def main():
         for param in flownet.block3.conv0.parameters():
             param.requires_grad = True
 
+        for param in flownet.block0.convblock.parameters():
+            param.requires_grad = False
+        for param in flownet.block1.convblock.parameters():
+            param.requires_grad = False
+        for param in flownet.block2.convblock.parameters():
+            param.requires_grad = False
+        for param in flownet.block3.convblock.parameters():
+            param.requires_grad = False
+
+        '''
         for param in flownet.block0.convblock[-1].parameters():
             param.requires_grad = True
         for param in flownet.block1.convblock[-1].parameters():
@@ -1472,8 +1473,7 @@ def main():
             param.requires_grad = True
         for param in flownet.block3.convblock[-1].parameters():
             param.requires_grad = True
-
-
+        '''
 
         '''
         for param in flownet.block0.conv0.parameters():
@@ -1561,18 +1561,8 @@ def main():
             [4, 2, 1, 1],
             [2, 2, 1, 1],
             [2, 1, 1, 1],
-        ]
-
-        '''        
-        random_scales = [
-            [8, 8, 4, 2],
-            [4, 4, 2, 2],
-            [4, 2, 1, 1],
-            [2, 2, 1, 1],
-            [2, 1, 1, 1],
             [1, 1, 1, 1],
         ]
-        '''
 
         if random.uniform(0, 1) < 0.44:
             training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
