@@ -1437,13 +1437,13 @@ def main():
         # '''
         # Freeze predictors - its custom hard-coded depending on a task
 
-        for param in flownet.block0.parameters():
+        for param in flownet.block0.convblock.parameters():
             param.requires_grad = False
-        for param in flownet.block1.parameters():
+        for param in flownet.block1.convblock.parameters():
             param.requires_grad = False
-        for param in flownet.block2.parameters():
+        for param in flownet.block2.convblock.parameters():
             param.requires_grad = False
-        for param in flownet.block3.parameters():
+        for param in flownet.block3.convblock.parameters():
             param.requires_grad = False
 
         for param in flownet.block0.encode01.parameters():
@@ -1464,23 +1464,15 @@ def main():
         for param in flownet.block3.conv0.parameters():
             param.requires_grad = True
 
-        for param in flownet.block0.convblock[0].parameters():
+        for param in flownet.block0.convblock[-1].parameters():
             param.requires_grad = True
-        for param in flownet.block1.convblock[0].parameters():
+        for param in flownet.block1.convblock[-1].parameters():
             param.requires_grad = True
-        for param in flownet.block2.convblock[0].parameters():
+        for param in flownet.block2.convblock[-1].parameters():
             param.requires_grad = True
-        for param in flownet.block3.convblock[0].parameters():
+        for param in flownet.block3.convblock[-1].parameters():
             param.requires_grad = True
 
-        for param in flownet.block0.convblock[1].parameters():
-            param.requires_grad = True
-        for param in flownet.block1.convblock[1].parameters():
-            param.requires_grad = True
-        for param in flownet.block2.convblock[1].parameters():
-            param.requires_grad = True
-        for param in flownet.block3.convblock[1].parameters():
-            param.requires_grad = True
 
 
         '''
