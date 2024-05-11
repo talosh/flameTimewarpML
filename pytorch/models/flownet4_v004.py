@@ -504,6 +504,8 @@ class Model:
         
                 flow_d, mask = self.block1(img0, img1, timestep, mask, flow, scale=scale[1])
                 flow = flow + flow_d
+                flow_d, mask = self.block1(img0, img1, timestep, mask, flow, scale=scale[1])
+                flow = flow + flow_d
 
                 flow_list[1] = flow
                 mask_list[1] = torch.sigmoid(mask)
