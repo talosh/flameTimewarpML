@@ -385,12 +385,13 @@ class Model:
                     # torch.nn.PixelShuffle(2)
                 )
 
-                '''
                 c = c + in_planes 
-
                 self.downconv = conv(c, c*2, 3, 2, 1)
                 self.multires_deep01 = MultiresblockRev(c*2, c*2)
                 self.upsample_deep01 = torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1)
+                self.mix = Conv2d(c*2-in_planes, c, kernel_size=(1,1))
+
+                '''
                 self.multires01 = MultiresblockRevNoact(c, c)
                 self.upsample01 = torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1)
                 self.multires02 = MultiresblockRevNoact(c, c)
@@ -400,13 +401,13 @@ class Model:
                 '''
 
             def forward(self, feat, x):
-                tmp_rife = self.lastconv2(feat)
-
-                '''
                 tmp_deep = self.downconv(torch.cat([feat, x], dim=1))
                 tmp_deep = self.multires_deep01(tmp_deep)
                 tmp_deep = self.upsample_deep01(tmp_deep)
+                feat = self.mix(torch.cat([feat, tmp_deep], dim=1))
+                tmp_rife = self.lastconv2(feat)
 
+                '''
                 tmp_refine = self.multires01(torch.cat([feat, x], dim=1))
                 tmp_refine = self.upsample01(torch.cat((tmp_refine, tmp_deep), dim=1))
                 tmp_refine = self.multires02(tmp_refine)
