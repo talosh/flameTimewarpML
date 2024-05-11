@@ -504,18 +504,21 @@ class Model:
         
                 flow_d, mask = self.block1(img0, img1, timestep, mask, flow, scale=scale[1])
                 flow = flow + flow_d
+
                 flow_list[1] = flow
                 mask_list[1] = torch.sigmoid(mask)
                 merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
                 flow_d, mask = self.block2(img0, img1, timestep, mask, flow, scale=scale[2])
                 flow = flow + flow_d
+
                 flow_list[2] = flow
                 mask_list[2] = torch.sigmoid(mask)
                 merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
                 flow_d, mask = self.block3(img0, img1, timestep, mask, flow, scale=scale[3])
                 flow = flow + flow_d
+
                 flow_list[3] = flow
                 mask_list[3] = torch.sigmoid(mask)
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
