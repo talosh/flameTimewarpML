@@ -499,6 +499,7 @@ class Model:
                 merged = [None] * 4
                 print ('calling block 0')
                 flow, mask = self.block0(img0, img1, timestep, None, None, scale=scale[0])
+                print ('end of block 0')
                 flow_list[0] = flow
                 mask_list[0] = torch.sigmoid(mask)
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
