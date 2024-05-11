@@ -523,7 +523,6 @@ class Model:
                 mask_list[3] = torch.sigmoid(mask)
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
-                print ('hust before return')
                 return flow_list, mask_list, merged
 
         self.model = FlownetCas
