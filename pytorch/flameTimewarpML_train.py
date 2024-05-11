@@ -1584,9 +1584,6 @@ def main():
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
 
-
-        print ('after output')
-
         loss_x8 = criterion_huber(
             torch.nn.functional.interpolate(restore_normalized_values(merged[0]), scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False),
             torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
@@ -1634,6 +1631,8 @@ def main():
         lpips_val = float(np.array(lpips_list).mean())
 
         loss.backward()
+
+        print ('after loss.backward()')
 
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 0.9)
 
