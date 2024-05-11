@@ -1574,9 +1574,6 @@ def main():
         flownet.train()
         
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
-
-        print ('after flow')
-
         # flow0 = flow_list[3][:, :2]
         # flow1 = flow_list[3][:, 2:4]
         mask = mask_list[3]
@@ -1586,6 +1583,9 @@ def main():
         # warped_img0 = warp(img0, flow_list[3][:, :2])
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
+
+
+        print ('after output')
 
         loss_x8 = criterion_huber(
             torch.nn.functional.interpolate(restore_normalized_values(merged[0]), scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False),
