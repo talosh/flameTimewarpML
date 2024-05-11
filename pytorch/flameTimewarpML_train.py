@@ -1617,16 +1617,16 @@ def main():
         lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
         psnr_list.append(float(psnr_torch(output, img1)))
 
-        if len(epoch_loss) < 999:
+        if len(epoch_loss) < 9999:
             smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
             window_min = min(epoch_loss)
             window_max = max(epoch_loss)
             lpips_window_val = float(np.array(lpips_list).mean())
         else:
-            smoothed_window_loss = np.mean(moving_average(epoch_loss[-999:], 9))
-            window_min = min(epoch_loss[-999:])
-            window_max = max(epoch_loss[-999:])
-            lpips_window_val = float(np.array(lpips_list[-999:]).mean())
+            smoothed_window_loss = np.mean(moving_average(epoch_loss[-9999:], 9))
+            window_min = min(epoch_loss[-9999:])
+            window_max = max(epoch_loss[-9999:])
+            lpips_window_val = float(np.array(lpips_list[-9999:]).mean())
         smoothed_loss = float(np.mean(moving_average(epoch_loss, 9)))
         lpips_val = float(np.array(lpips_list).mean())
 
@@ -1693,7 +1693,7 @@ def main():
 
         clear_lines(2)
         print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
-        print(f'\r[Last 1K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
+        print(f'\r[Last 10K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
 
         if ( idx + 1 ) == len(dataset):
             if os.path.isfile(trained_model_path):
