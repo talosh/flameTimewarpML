@@ -1632,8 +1632,6 @@ def main():
 
         loss.backward()
 
-        print ('after loss.backward()')
-
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 0.9)
 
         optimizer_flownet.step()
@@ -1666,6 +1664,8 @@ def main():
 
             del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
             preview_index = preview_index + 1 if preview_index < 9 else 0
+
+        print ('after args.preview')
 
         if step % 1000 == 1:
             if os.path.isfile(trained_model_path):
