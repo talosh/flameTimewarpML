@@ -1682,8 +1682,6 @@ def main():
                 'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
             }, trained_model_path)
 
-        print ('after step % 1000')
-
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
         train_time_str = str(f'{train_time:.2f}')
