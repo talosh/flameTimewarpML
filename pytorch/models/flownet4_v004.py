@@ -385,11 +385,11 @@ class Model:
                     # torch.nn.PixelShuffle(2)
                 )
 
-                c = c + in_planes 
-                self.downconv = conv(c, c*2, 3, 2, 1)
-                self.multires_deep01 = MultiresblockRev(c*2, c*2)
-                self.upsample_deep01 = torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1)
-                self.mix = Conv2d(c*2-in_planes, c-in_planes, kernel_size=(1,1))
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True) 
+                self.downconv = conv(c+in_planes, (c+in_planes)*2, 3, 2, 1)
+                self.multires_deep01 = MultiresblockRev((c+in_planes)*2, (c+in_planes)*2)
+                self.upsample_deep01 = torch.nn.ConvTranspose2d((c+in_planes)*2, c, 4, 2, 1)
+                self.relu = torch.nn.LeakyReLU(0.2, True)
 
                 '''
                 self.multires01 = MultiresblockRevNoact(c, c)
@@ -404,8 +404,8 @@ class Model:
                 tmp_deep = self.downconv(torch.cat([feat, x], dim=1))
                 tmp_deep = self.multires_deep01(tmp_deep)
                 tmp_deep = self.upsample_deep01(tmp_deep)
-                feat = self.mix(torch.cat([feat, tmp_deep], dim=1))
-                tmp_rife = self.lastconv2(feat)
+                feat = self.relu(tmp_deep * self.beta + feat)
+                out = self.lastconv2(feat)
 
                 '''
                 tmp_refine = self.multires01(torch.cat([feat, x], dim=1))
@@ -417,7 +417,7 @@ class Model:
                 out = self.conv_final(tmp_refine)
                 '''
 
-                return tmp_rife
+                return out
 
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
