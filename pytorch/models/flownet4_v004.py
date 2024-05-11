@@ -497,13 +497,11 @@ class Model:
                 flow_list = [None] * 4
                 mask_list = [None] * 4
                 merged = [None] * 4
-                print ('calling block 0')
                 flow, mask = self.block0(img0, img1, timestep, None, None, scale=scale[0])
                 flow_list[0] = flow
                 mask_list[0] = torch.sigmoid(mask)
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
         
-                print ('calling block 1')
                 flow_d, mask = self.block1(img0, img1, timestep, mask, flow, scale=scale[1])
                 flow = flow + flow_d
 
@@ -511,7 +509,6 @@ class Model:
                 mask_list[1] = torch.sigmoid(mask)
                 merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
-                print ('calling block 2')
                 flow_d, mask = self.block2(img0, img1, timestep, mask, flow, scale=scale[2])
                 flow = flow + flow_d
 
@@ -519,7 +516,6 @@ class Model:
                 mask_list[2] = torch.sigmoid(mask)
                 merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
-                print ('calling block 3')
                 flow_d, mask = self.block3(img0, img1, timestep, mask, flow, scale=scale[3])
                 flow = flow + flow_d
 
@@ -527,6 +523,7 @@ class Model:
                 mask_list[3] = torch.sigmoid(mask)
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
+                print ('hust before return')
                 return flow_list, mask_list, merged
 
         self.model = FlownetCas
