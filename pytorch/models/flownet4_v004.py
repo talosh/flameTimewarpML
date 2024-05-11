@@ -513,11 +513,15 @@ class Model:
 
                 flow_d, mask = self.block2(img0, img1, timestep, mask, flow, scale=scale[2])
                 flow = flow + flow_d
+                flow_d, mask = self.block2(img0, img1, timestep, mask, flow, scale=scale[2])
+                flow = flow + flow_d
 
                 flow_list[2] = flow
                 mask_list[2] = torch.sigmoid(mask)
                 merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
+                flow_d, mask = self.block3(img0, img1, timestep, mask, flow, scale=scale[3])
+                flow = flow + flow_d
                 flow_d, mask = self.block3(img0, img1, timestep, mask, flow, scale=scale[3])
                 flow = flow + flow_d
 
