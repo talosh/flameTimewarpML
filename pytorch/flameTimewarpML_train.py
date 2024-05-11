@@ -1574,6 +1574,9 @@ def main():
         flownet.train()
         
         flow_list, mask_list, merged = flownet(img0, img1, img2, None, None, ratio, scale=training_scale)
+
+        print ('after flow')
+
         # flow0 = flow_list[3][:, :2]
         # flow1 = flow_list[3][:, 2:4]
         mask = mask_list[3]
