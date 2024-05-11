@@ -1665,7 +1665,7 @@ def main():
             del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
             preview_index = preview_index + 1 if preview_index < 9 else 0
 
-        if step % 1000 == 1:
+        if step % 10000 == 1:
             if os.path.isfile(trained_model_path):
                 backup_file = trained_model_path.replace('.pth', '.backup.pth')
                 shutil.copy(trained_model_path, backup_file)
