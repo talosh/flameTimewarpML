@@ -505,6 +505,7 @@ class Model:
                 mask_list[0] = torch.sigmoid(mask)
                 print ('hello again before merged')
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
+                print ('hello again sfter merged')
         
                 flow_d, mask = self.block1(img0, img1, timestep, mask, flow, scale=scale[1])
                 flow = flow + flow_d
