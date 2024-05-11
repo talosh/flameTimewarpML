@@ -374,8 +374,18 @@ class Model:
                 return self.relu(self.conv(x) * self.beta + x)
 
         class LastConvBlock(Module):
-            def __init__(self, c):
+            def __init__(self, in_planes, c):
                 super().__init__()
+
+                self.lastconv2 = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
+                    conv(c//2, c//2, 3, 1, 1),
+                    torch.nn.ConvTranspose2d(c//2, c//4, 4, 2, 1),
+                    conv(c//4, 5, 3, 1, 1),
+                    # torch.nn.PixelShuffle(2)
+                )
+
+                c = c + in_planes 
 
                 self.downconv = conv(c, c*2, 3, 2, 1)
                 self.multires_deep01 = MultiresblockRev(c*2, c*2)
@@ -385,19 +395,23 @@ class Model:
                 self.upsample01 = torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1)
                 self.multires02 = MultiresblockRevNoact(c, c)
                 self.upsample02 = torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1)
-                self.multires03 = MultiresblockRevNoact(c//2, c//2, shortcut_bias=False)
-                self.conv_final = Conv2d(c//2, 5, kernel_size = (3,3))
+                self.multires03 = MultiresblockRevNoact(c//2+5, c//2+5, shortcut_bias=False)
+                self.conv_final = Conv2d(c//2+5, 5, kernel_size = (3,3))
 
-            def forward(self, x):
-                tmp_deep = self.downconv(x)
+            def forward(self, feat, x):
+                tmp_rife = self.lastconv2(feat)
+
+                tmp_deep = self.downconv(torch.cat([feat, x], dim=1))
                 tmp_deep = self.multires_deep01(tmp_deep)
                 tmp_deep = self.multires_deep02(tmp_deep)
                 tmp_deep = self.upsample_deep01(tmp_deep)
 
-                tmp_refine = self.multires01(x)
+                tmp_refine = self.multires01(torch.cat([feat, x], dim=1))
                 tmp_refine = self.upsample01(torch.cat((tmp_refine, tmp_deep), dim=1))
                 tmp_refine = self.multires02(tmp_refine)
                 tmp_refine = self.upsample02(tmp_refine)
+
+                tmp_refine = self.multires03(torch.cat((tmp_rife, tmp_refine), dim=1))
 
                 out = self.conv_final(tmp_refine)
 
@@ -428,9 +442,10 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
+                    MultiResConv(c),
                 )
 
-                self.lastconv = LastConvBlock(c + in_planes)
+                self.lastconv2 = LastConvBlock(in_planes, c)
 
             def forward(self, img0, img1, timestep, mask, flow, scale=1):
 
@@ -456,7 +471,7 @@ class Model:
 
                 x = torch.nn.functional.interpolate(x, scale_factor= 1 / 4, mode="bilinear", align_corners=False) * 1 / 4
                 x[:, :-4] *= 1 / 4
-                out = self.lastconv(torch.cat([x, feat], dim=1))
+                out = self.lastconv2(feat, x)
 
                 out = torch.nn.functional.interpolate(out, scale_factor=scale, mode="bilinear", align_corners=False)
                 flow = out[:, :4] * scale
