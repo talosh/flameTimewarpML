@@ -1665,8 +1665,6 @@ def main():
             del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
             preview_index = preview_index + 1 if preview_index < 9 else 0
 
-        print ('after args.preview')
-
         if step % 1000 == 1:
             if os.path.isfile(trained_model_path):
                 backup_file = trained_model_path.replace('.pth', '.backup.pth')
@@ -1683,6 +1681,8 @@ def main():
                 # 'model_d_state_dict': model_D.state_dict(),
                 'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
             }, trained_model_path)
+
+        print ('after step % 1000')
 
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
