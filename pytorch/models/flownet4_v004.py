@@ -491,15 +491,13 @@ class Model:
                 self.encode = Head()
 
             def forward(self, img0, gt, img1, f0_0, f1_0, timestep=0.5, scale=[8, 4, 2, 1]):
-                print ('hello')
-
-
                 img0 = img0
                 img1 = img1
 
                 flow_list = [None] * 4
                 mask_list = [None] * 4
                 merged = [None] * 4
+                print ('calling block 0')
                 flow, mask = self.block0(img0, img1, timestep, None, None, scale=scale[0])
                 flow_list[0] = flow
                 mask_list[0] = torch.sigmoid(mask)
