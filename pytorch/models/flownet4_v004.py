@@ -389,7 +389,7 @@ class Model:
                 self.downconv = conv(c, c*2, 3, 2, 1)
                 self.multires_deep01 = MultiresblockRev(c*2, c*2)
                 self.upsample_deep01 = torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1)
-                self.mix = Conv2d(c*2-in_planes, c, kernel_size=(1,1))
+                self.mix = Conv2d(c*2-in_planes, c-in_planes, kernel_size=(1,1))
 
                 '''
                 self.multires01 = MultiresblockRevNoact(c, c)
