@@ -1265,7 +1265,7 @@ def main():
         args.dataset_path, 
         batch_size=args.batch_size, 
         device=device, 
-        frame_size=abs(int(args.frame_size)),
+        frame_size=frame_size,
         max_window=max_dataset_window,
         acescc_rate=args.acescc,
         generalize=args.generalize,
