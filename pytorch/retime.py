@@ -581,13 +581,13 @@ def main():
     for frame_idx in range(len(all_frame_descriptions)):
         print (f'\rProcessing frame {frame_idx + 1} of {len(all_frame_descriptions)}', end='')
 
-        frame_data = frames_queue.get()
-        if frame_data['ratio'] == 0:
-            result = torch.from_numpy(frame_data['incoming_data'].copy())
-        elif frame_data['ratio'] == 1:
-            result = torch.from_numpy(frame_data['outgoing_data'].copy())
-        else:
-            with torch.no_grad():
+        with torch.no_grad():
+            frame_data = frames_queue.get()
+            if frame_data['ratio'] == 0:
+                result = torch.from_numpy(frame_data['incoming_data'].copy())
+            elif frame_data['ratio'] == 1:
+                result = torch.from_numpy(frame_data['outgoing_data'].copy())
+            else:
                 img0 = torch.from_numpy(frame_data['incoming_data'].copy())
                 img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
                 img0 = img0.permute(2, 0, 1).unsqueeze(0)
@@ -618,14 +618,14 @@ def main():
                 # result = merged[3][:, :3, :h, :w]
                 # result = restore_normalized_values(result)
                 result = result[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
-                del img0, img1, flow_list, mask_list, merged,
+                del img0, img1, flow_list, mask_list, merged
 
-        output_path = frame_data['destination']
-        if not os.path.isdir(os.path.dirname(output_path)):
-            os.makedirs(os.path.dirname(output_path))
-        save_queue.put((result, output_path))
+            output_path = frame_data['destination']
+            if not os.path.isdir(os.path.dirname(output_path)):
+                os.makedirs(os.path.dirname(output_path))
+            save_queue.put((result, output_path))
 
-        del frame_data, result
+            del frame_data, result
 
     print ('\n')
 
