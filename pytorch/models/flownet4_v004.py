@@ -36,7 +36,7 @@ class Model:
 
         def warp(tenInput, tenFlow):
             input_device = tenInput.device
-            if input_device == torch.device('mps'):
+            if 'mps' in str(input_device):
                 tenInput = tenInput.detach().to(device=torch.device('cpu'))
                 tenFlow = tenFlow.detach().to(device=torch.device('cpu'))
 
