@@ -1219,6 +1219,8 @@ def main():
             sys.exit()
 
         model_info = checkpoint.get('model_info')
+        print ('Model info:')
+        pprint (model_info)
         model_name = model_info.get('name')
     else:
         model_name = args.model
