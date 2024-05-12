@@ -14,8 +14,8 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 
     #### Todo for v0.4.5 dev 001
 
-* (done) ~~Add generalization logic to training script~~ 
-* Refine batch retime script
+* (done) ~~Add generalization logic to training script~~
+* (done) ~~Refine batch retime script~~
 * Share pre-trained weights for Flownet4 to enable using it in prod with command line.
 * Optimize memory usage for Flownet4
 * Add Fluidmorph and Interpolate logic to new Flame script.
