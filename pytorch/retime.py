@@ -506,6 +506,11 @@ def find_and_import_model(models_dir='models', model_file=None):
     return model_object
 
 def warp(tenInput, tenFlow):
+    input_device = tenInput.device
+    if input_device == torch.device('mps'):
+        tenInput = tenInput.detach().to(device=torch.device('cpu'))
+        tenFlow = tenFlow.detach().to(device=torch.device('cpu'))
+
     backwarp_tenGrid = {}
     k = (str(tenFlow.device), str(tenFlow.size()))
     if k not in backwarp_tenGrid:
@@ -515,7 +520,15 @@ def warp(tenInput, tenFlow):
     tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
 
     g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-    return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+    result = torch.nn.functional.grid_sample(
+        input=tenInput, 
+        grid=g, 
+        mode='bilinear', 
+        padding_mode='border', 
+        align_corners=True
+        )
+
+    return result.detach().to(device=input_device)
 
 
 def main():
