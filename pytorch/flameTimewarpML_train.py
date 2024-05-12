@@ -1136,9 +1136,9 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None, 
         filtered_files = [f for f in files if f == f"{model_name}.py"]
     else:
         # Find all versions of the model and select the latest one
-        regex_pattern = fr"{base_name}_v(\d+)\.py"
-        versions = [(f, int(m.group(1))) for f in files if (m := re.match(regex_pattern, f))]
-        print (versions)
+        # regex_pattern = fr"{base_name}_v(\d+)\.py"
+        # versions = [(f, int(m.group(1))) for f in files if (m := re.match(regex_pattern, f))]
+        versions = [f for f in files if f.endswith'.py']
         if versions:
             # Sort by version number (second item in tuple) and select the latest one
             latest_version_file = sorted(versions, key=lambda x: x[1], reverse=True)[0][0]
