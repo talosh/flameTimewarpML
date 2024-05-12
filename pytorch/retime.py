@@ -505,6 +505,19 @@ def find_and_import_model(models_dir='models', model_file=None):
     model_object = getattr(module, 'Model')
     return model_object
 
+def warp(tenInput, tenFlow):
+    backwarp_tenGrid = {}
+    k = (str(tenFlow.device), str(tenFlow.size()))
+    if k not in backwarp_tenGrid:
+        tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+        tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+        backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
+    tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
+
+    g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+    return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description='Retime script.')
     # Required argument
@@ -572,39 +585,39 @@ def main():
         img0 = torch.from_numpy(frame_data['incoming_data'].copy())
         img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
         img0 = img0.permute(2, 0, 1).unsqueeze(0)
-        img0 = normalize(img0)
 
         img1 = torch.from_numpy(frame_data['outgoing_data'].copy())
         img1 = img1.to(device = device, dtype = torch.float16, non_blocking = True)
         img1 = img1.permute(2, 0, 1).unsqueeze(0)
-        img1 = normalize(img1)
+
+        img0_ref = normalize(img0)
+        img1_ref = normalize(img1)
 
         n, c, h, w = img0.shape
         ph = ((h - 1) // 64 + 1) * 64
         pw = ((w - 1) // 64 + 1) * 64
         padding = (0, pw - w, 0, ph - h)
         
-        img0 = torch.nn.functional.pad(img0, padding)
-        img1 = torch.nn.functional.pad(img1, padding)
+        img0_ref = torch.nn.functional.pad(img0_ref, padding)
+        img1_ref = torch.nn.functional.pad(img1_ref, padding)
 
         flow_list, mask_list, merged = model(
-            img0, 
-            img1, 
+            img0_ref, 
+            img1_ref, 
             frame_data['ratio'], 
             iterations = args.iterations
             )
 
-        flow_list, mask, merged, teacher_res, loss_cons = model(torch.cat((img0, img1), dim=1), timestep = frame_data['ratio'])    
-
-        result = merged[3][:, :3, :h, :w]
-        result = restore_normalized_values(result)
+        result = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3])
+        # result = merged[3][:, :3, :h, :w]
+        # result = restore_normalized_values(result)
         result = result[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
         output_path = frame_data['destination']
         if not os.path.isdir(os.path.dirname(output_path)):
             os.makedirs(os.path.dirname(output_path))
         save_queue.put((result, output_path))
 
-        del img0, img1, frame_data, flow_list, mask, merged, teacher_res, loss_cons, result
+        del img0, img1, frame_data, flow_list, mask_list, merged, result
 
 
 if __name__ == "__main__":

@@ -3,7 +3,6 @@ class Model:
         if torch is None:
             import torch
         Module = torch.nn.Module
-        backwarp_tenGrid = {}
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
