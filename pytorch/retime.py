@@ -513,9 +513,10 @@ def find_and_import_model(models_dir='models', model_file=None):
 
 def warp(tenInput, tenFlow):
     input_device = tenInput.device
+    input_dtype = tenInput.dtype
     if 'mps' in str(input_device):
-        tenInput = tenInput.detach().to(device=torch.device('cpu'))
-        tenFlow = tenFlow.detach().to(device=torch.device('cpu'))
+        tenInput = tenInput.detach().to(device=torch.device('cpu'), dtype=torch.float32)
+        tenFlow = tenFlow.detach().to(device=torch.device('cpu'), dtype=torch.float32)
 
     backwarp_tenGrid = {}
     k = (str(tenFlow.device), str(tenFlow.size()))
@@ -534,7 +535,7 @@ def warp(tenInput, tenFlow):
         align_corners=True
         )
 
-    return result.detach().to(device=input_device)
+    return result.detach().to(device=input_device, dtype=input_dtype)
 
 
 def main():
