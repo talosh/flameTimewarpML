@@ -618,14 +618,14 @@ def main():
                 # result = merged[3][:, :3, :h, :w]
                 # result = restore_normalized_values(result)
                 result = result[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
-                del img0, img1, frame_data, flow_list, mask_list, merged,
+                del img0, img1, flow_list, mask_list, merged,
 
         output_path = frame_data['destination']
         if not os.path.isdir(os.path.dirname(output_path)):
             os.makedirs(os.path.dirname(output_path))
         save_queue.put((result, output_path))
-        
-        del result
+
+        del frame_data, result
 
     print ('\n')
 
