@@ -1168,10 +1168,10 @@ def closest_divisible(x):
     int: Closest number divisible by 64.
     """
     # Round down to the nearest multiple of 64
-    lower = (x // 128) * 128
+    lower = (x // 64) * 64
     
     # Round up to the nearest multiple of 64
-    upper = lower + 128
+    upper = lower + 64
 
     # Check which one is closer to x
     if x - lower > upper - x:
