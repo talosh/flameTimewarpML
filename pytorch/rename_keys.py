@@ -19,8 +19,8 @@ key_mapping_01 = {
     'block0.encode01.2.bias':   'block0.encode01.conv01.conv1.bias',
     'block0.encode01.4.weight': 'block0.encode01.conv02.conv1.weight',
     'block0.encode01.4.bias':   'block0.encode01.conv02.conv1.bias',
-    'block0.encode01.6.weight': 'block0.encode01.upsample01.weight',
-    'block0.encode01.6.bias':   'block0.encode01.upsample01.bias',
+    'block0.encode01.6.weight': 'block0.encode01.upsample01.conv1.weight',
+    'block0.encode01.6.bias':   'block0.encode01.upsample01.conv1.bias',
 
     'block1.encode01.0.weight': 'block1.encode01.downconv01.conv1.weight',
     'block1.encode01.0.bias':   'block1.encode01.downconv01.conv1.bias',
@@ -28,8 +28,8 @@ key_mapping_01 = {
     'block1.encode01.2.bias':   'block1.encode01.conv01.conv1.bias',
     'block1.encode01.4.weight': 'block1.encode01.conv02.conv1.weight',
     'block1.encode01.4.bias':   'block1.encode01.conv02.conv1.bias',
-    'block1.encode01.6.weight': 'block1.encode01.upsample01.weight',
-    'block1.encode01.6.bias':   'block1.encode01.upsample01.bias',
+    'block1.encode01.6.weight': 'block1.encode01.upsample01.conv1.weight',
+    'block1.encode01.6.bias':   'block1.encode01.upsample01.conv1.bias',
 
     'block2.encode01.0.weight': 'block2.encode01.downconv01.conv1.weight',
     'block2.encode01.0.bias':   'block2.encode01.downconv01.conv1.bias',
@@ -37,8 +37,8 @@ key_mapping_01 = {
     'block2.encode01.2.bias':   'block2.encode01.conv01.conv1.bias',
     'block2.encode01.4.weight': 'block2.encode01.conv02.conv1.weight',
     'block2.encode01.4.bias':   'block2.encode01.conv02.conv1.bias',
-    'block2.encode01.6.weight': 'block2.encode01.upsample01.weight',
-    'block2.encode01.6.bias':   'block2.encode01.upsample01.bias',
+    'block2.encode01.6.weight': 'block2.encode01.upsample01.conv1.weight',
+    'block2.encode01.6.bias':   'block2.encode01.upsample01.conv1.bias',
 
     'block3.encode01.0.weight': 'block3.encode01.downconv01.conv1.weight',
     'block3.encode01.0.bias':   'block3.encode01.downconv01.conv1.bias',
@@ -46,8 +46,8 @@ key_mapping_01 = {
     'block3.encode01.2.bias':   'block3.encode01.conv01.conv1.bias',
     'block3.encode01.4.weight': 'block3.encode01.conv02.conv1.weight',
     'block3.encode01.4.bias':   'block3.encode01.conv02.conv1.bias',
-    'block3.encode01.6.weight': 'block3.encode01.upsample01.weight',
-    'block3.encode01.6.bias':   'block3.encode01.upsample01.bias',
+    'block3.encode01.6.weight': 'block3.encode01.upsample01.conv1.weight',
+    'block3.encode01.6.bias':   'block3.encode01.upsample01.conv1.bias',
 }
 
 def main():
