@@ -492,9 +492,6 @@ class Model:
                 self.lastconv2 = LastConvBlock(in_planes, c)
 
             def forward(self, img0, img1, timestep, mask, flow, scale=1):
-
-                print (f'scale {scale}')
-
                 img0 = torch.nn.functional.interpolate(img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 img1 = torch.nn.functional.interpolate(img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 f0 = self.encode01(img0)
@@ -502,13 +499,6 @@ class Model:
 
                 if flow is None:
                     timestep = (img0[:, :1].clone() * 0 + 1) * timestep
-                    
-                    print (f'img0 shape {img0.shape}')
-                    print (f'img1 shape {img1.shape}')
-                    print (f'f0 shape {f0.shape}')
-                    print (f'f1 shape {f1.shape}')
-                    print (f'timestep shape {timestep.shape}')
-
                     x = torch.cat((img0, img1, f0, f1, timestep), 1)
                 else:
                     mask = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
@@ -518,16 +508,6 @@ class Model:
                     f0 = warp(f0, flow[:, :2])
                     f1 = warp(f1, flow[:, 2:4])
                     timestep = (img0[:, :1].clone() * 0 + 1) * timestep
-                    
-                    print (f'img0 shape {img0.shape}')
-                    print (f'img1 shape {img1.shape}')
-                    print (f'f0 shape {f0.shape}')
-                    print (f'f1 shape {f1.shape}')
-                    print (f'timestep shape {timestep.shape}')
-                    print (f'mask shape {mask.shape}')
-                    print (f'flow shape {flow.shape}')
-
-                                    
                     x = torch.cat((img0, img1, f0, f1, timestep, mask, flow), 1)
 
                 feat = self.conv0(x)
