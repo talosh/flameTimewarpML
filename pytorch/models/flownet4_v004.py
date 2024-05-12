@@ -500,6 +500,7 @@ class Model:
                 f1 = self.encode01(img1)
 
                 if flow is None:
+                    timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                     x = torch.cat((img0, img1, f0, f1, timestep), 1)
                 else:
                     mask = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
@@ -508,6 +509,7 @@ class Model:
                     img1 = warp(img1, flow[:, 2:4])
                     f0 = warp(f0, flow[:, :2])
                     f1 = warp(f1, flow[:, 2:4])
+                    timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                     x = torch.cat((img0, img1, f0, f1, timestep, mask, flow), 1)
 
                 feat = self.conv0(x)
