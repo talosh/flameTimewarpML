@@ -23,9 +23,15 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 
 ### Training
 
-#### Data preparation
+#### Dataset preparation
 Export your shots so each shot are in separate folder.
 Only Uncompressed OpenEXR files are supported at the moment.
+There are two magic words in shot path: "fast" and "slow"
+When "fast" is in path 3-frame window will be used for those shots.
+When "slow" is in path 9-frame window will be used.
+Default window size is 5 frames.
+Put shots with fast motion in "fast" folder and shots where motion are slow and continious to "slow" folder to let the model learn more intermediae ratios.
+
 
 ### Installation
 
