@@ -391,24 +391,34 @@ class Model:
                 self.upsample_deep01 = torch.nn.ConvTranspose2d((c+in_planes)*2, c, 4, 2, 1)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
-                '''
                 self.multires01 = MultiresblockRevNoact(c, c)
                 self.upsample01 = torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1)
                 self.multires02 = MultiresblockRevNoact(c, c)
                 self.upsample02 = torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1)
                 self.multires03 = MultiresblockRevNoact(c//2+5, c//2+5, shortcut_bias=False)
                 self.conv_final = Conv2d(c//2+5, 5, kernel_size = (3,3))
-                '''
 
             def forward(self, feat, x):
+                tmp_rife = self.lastconv2(feat)
+
                 tmp_deep = self.downconv(torch.cat([feat, x], dim=1))
                 tmp_deep = self.multires_deep01(tmp_deep)
                 tmp_deep = self.upsample_deep01(tmp_deep)
-                feat = self.relu(tmp_deep * self.beta + feat)
-                out = self.lastconv2(feat)
+
+                tmp_refine = self.multires01(feat)
+                tmp_refine = self.upsample01(torch.cat((tmp_refine, tmp_deep), dim=1))
+                tmp_refine = self.multires02(tmp_refine)
+                tmp_refine = self.upsample02(tmp_refine)
+
+                tmp_refine = self.multires03(torch.cat((tmp_rife, tmp_refine), dim=1))
+
+                out = self.conv_final(tmp_refine)
+
+                # feat = self.relu(tmp_deep * self.beta + feat)
+                # out = self.lastconv2(feat)
 
                 '''
-                tmp_refine = self.multires01(torch.cat([feat, x], dim=1))
+                
                 tmp_refine = self.upsample01(torch.cat((tmp_refine, tmp_deep), dim=1))
                 tmp_refine = self.multires02(tmp_refine)
                 tmp_refine = self.upsample02(tmp_refine)
