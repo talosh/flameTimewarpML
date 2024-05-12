@@ -1091,7 +1091,7 @@ def create_timestamp_uid(self):
     timestamp = (datetime.now()).strftime('%Y%b%d_%H%M').upper()
     return f'{timestamp}_{uid}'
 
-def find_and_import_model(models_dir='models', base_name=None, model_name=None):
+def find_and_import_model(models_dir='models', base_name=None, model_name=None, model_file=None):
     """
     Dynamically imports the latest version of a model based on the base name,
     or a specific model if the model name/version is given, and returns the Model
@@ -1106,6 +1106,13 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None):
     import os
     import re
     import importlib
+
+    if model_file:
+        module_name = model_file[0][:-3]  # Remove '.py' from filename to get module name
+        module_path = f"models.{module_name}"
+        module = importlib.import_module(module_path)
+        model_object = getattr(module, 'Model')
+        return model_object
 
     # Resolve the absolute path of the models directory
     models_abs_path = os.path.abspath(
