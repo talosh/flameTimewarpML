@@ -82,26 +82,27 @@ class Model:
                 x = self.act(x)
                 return x
 
-        class Conv2d_SiLU(Module):
-            def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1)):
+        class Upsample(Module):
+            def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (2,2), padding = 2, bias=True):
                 super().__init__()
-                self.conv1 = torch.nn.Conv2d(
+                self.conv1 = torch.nn.ConvTranspose2d(
                     in_channels=num_in_filters,
                     out_channels=num_out_filters,
                     kernel_size=kernel_size,
                     stride=stride,
-                    padding = 'same',
-                    padding_mode = 'reflect',
-                    bias=True
+                    padding = padding,
+                    bias=bias
                     )
-                self.act = torch.nn.SiLU(inplace=True)
-                # torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='selu')
+                
+                torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
+                self.conv1.weight.data *= 1e-2
+                if self.conv1.bias is not None:
+                    torch.nn.init.constant_(self.conv1.bias, 0)
                 # torch.nn.init.xavier_uniform_(self.conv1.weight, gain=torch.nn.init.calculate_gain('selu'))
                 # torch.nn.init.dirac_(self.conv1.weight)
 
             def forward(self,x):
                 x = self.conv1(x)
-                x = self.act(x)
                 return x
 
         class Head(Module):
@@ -149,7 +150,12 @@ class Model:
                     padding = 1
                 )
 
-                self.upsample01 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
+                self.upsample01 = Upsample(
+                    32, 8,
+                    kernel_size = (4,4),
+                    stride = (2,2),
+                    padding = 1
+                    )
 
             def forward(self, x):
                 x = self.downconv01(x)
