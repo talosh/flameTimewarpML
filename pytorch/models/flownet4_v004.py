@@ -21,6 +21,7 @@ class Model:
             )
 
         def warp(tenInput, tenFlow):
+            backwarp_tenGrid = {}
             k = (str(tenFlow.device), str(tenFlow.size()))
             if k not in backwarp_tenGrid:
                 tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
