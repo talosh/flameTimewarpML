@@ -1233,6 +1233,7 @@ def main():
         Flownet = find_and_import_model(model_file=model_file)
     else:
         model_name = args.model
+        print (model_name)
         Flownet = find_and_import_model(base_name='flownet', model_name=model_name)
 
     if Flownet is None:
