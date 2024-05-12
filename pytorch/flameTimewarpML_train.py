@@ -1209,8 +1209,22 @@ def main():
     if args.all_gpus:
         device = 'cuda'
     
+    if args.state_file:
+        trained_model_path = args.state_file
+        try:
+            checkpoint = torch.load(trained_model_path, map_location=device)
+            print('loaded previously saved model checkpoint')
+        except Exception as e:
+            print (f'unable to load saved model checkpoint: {e}')
+            sys.exit()
+
+        model_info = checkpoint.get('model_info')
+        model_name = model_info.get('name')
+    else:
+        model_name = args.model
+
     # Find and initialize model
-    Flownet = find_and_import_model(base_name='flownet', model_name=args.model)
+    Flownet = find_and_import_model(base_name='flownet', model_name=model_name)
     if Flownet is None:
         print (f'Unable to load model {args.model}')
         return
@@ -1710,7 +1724,7 @@ def main():
             del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
             preview_index = preview_index + 1 if preview_index < 9 else 0
 
-        if step % 10000 == 1:
+        if step % 1000 == 1:
             if os.path.isfile(trained_model_path):
                 backup_file = trained_model_path.replace('.pth', '.backup.pth')
                 shutil.copy(trained_model_path, backup_file)
