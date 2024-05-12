@@ -559,7 +559,7 @@ def main():
     model_info = checkpoint.get('model_info')
     model_file = model_info.get('file')
     Flownet = find_and_import_model(model_file=model_file)
-    model = Flownet().to(device)
+    model = Flownet().get_model()().to(device)
 
     model.load_state_dict(checkpoint['flownet_state_dict'])
     # model.half()
