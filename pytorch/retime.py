@@ -584,9 +584,9 @@ def main():
         with torch.no_grad():
             frame_data = frames_queue.get()
             if frame_data['ratio'] == 0:
-                result = torch.from_numpy(frame_data['incoming_data'].copy())
+                result = frame_data['incoming_data']
             elif frame_data['ratio'] == 1:
-                result = torch.from_numpy(frame_data['outgoing_data'].copy())
+                result = frame_data['outgoing_data']
             else:
                 img0 = torch.from_numpy(frame_data['incoming_data'].copy())
                 img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
