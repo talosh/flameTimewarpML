@@ -1350,8 +1350,10 @@ def main():
             print (f'unable to load saved model: {e}')
 
         try:
-            flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
+            missing_keys, unexpected_keys = flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
             print('loaded previously saved Flownet state')
+            print (f'\nMissing keys:\n{missing_keys}\n')
+            print (f'\nUnexpected keys:\n{unexpected_keys}\n')
         except Exception as e:
             print (f'unable to load Flownet state: {e}')
 
