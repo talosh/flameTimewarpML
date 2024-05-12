@@ -353,7 +353,7 @@ def normalize(image_array) :
 
     # bend values below -1.0 and above 1.0 exponentially so they are not larger then (-4.0 - 4.0)
     input_device = image_array.device
-    if input_device == torch.device('mps'):
+    if 'mps' in str(input_device):
         image_array = custom_bend(input_device.detach().to(device=torch.device('cpu'))).to(device=input_device)
     else:
         image_array = custom_bend(image_array)
@@ -513,7 +513,7 @@ def find_and_import_model(models_dir='models', model_file=None):
 
 def warp(tenInput, tenFlow):
     input_device = tenInput.device
-    if input_device == torch.device('mps'):
+    if 'mps' in str(input_device):
         tenInput = tenInput.detach().to(device=torch.device('cpu'))
         tenFlow = tenFlow.detach().to(device=torch.device('cpu'))
 
