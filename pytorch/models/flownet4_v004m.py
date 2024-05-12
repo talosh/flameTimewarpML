@@ -44,6 +44,7 @@ class Model:
                     padding_mode = 'reflect',
                     bias=bias
                     )
+                
                 torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
                 self.conv1.weight.data *= 1e-2
                 if self.conv1.bias is not None:
@@ -68,6 +69,7 @@ class Model:
                     bias=bias
                     )
                 self.act = torch.nn.LeakyReLU(0.2, True)
+
                 torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
                 self.conv1.weight.data *= 1e-2
                 if self.conv1.bias is not None:
@@ -137,23 +139,35 @@ class Model:
                     torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 )
 
-                self.cnn0 = torch.nn.Conv2d(3, 32, 3, 2, 1)
-                self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-                self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-                self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
-                self.relu = torch.nn.LeakyReLU(0.2, True)
+                self.downconv01 = Conv2d_ReLU(
+                    3, 32,
+                    kernel_size = (3,3),
+                    stride = (2,2),
+                    padding = 1
+                )
 
-            def forward(self, x, feat=False):
-                x0 = self.cnn0(x)
-                x = self.relu(x0)
-                x1 = self.cnn1(x)
-                x = self.relu(x1)
-                x2 = self.cnn2(x)
-                x = self.relu(x2)
-                x3 = self.cnn3(x)
-                if feat:
-                    return [x0, x1, x2, x3]
-                return x3
+                self.conv01 = Conv2d_ReLU(
+                    32, 32,
+                    kernel_size = (3,3),
+                    stride = (1,1),
+                    padding = 1
+                )
+
+                self.conv02 = Conv2d_ReLU(
+                    32, 32,
+                    kernel_size = (3,3),
+                    stride = (1,1),
+                    padding = 1
+                )
+
+                self.upsample01 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
+
+            def forward(self, x):
+                x = self.downconv01(x)
+                x = self.conv01(x)
+                x = self.conv02(x)
+                x = self.upsample01(x)
+                return x
 
         class Multiresblock(Module):
             def __init__(self, num_in_channels, num_filters, alpha=1, shortcut_bias = True):
