@@ -562,7 +562,7 @@ def main():
     model = Flownet().get_model()().to(device)
 
     model.load_state_dict(checkpoint['flownet_state_dict'])
-    # model.half()
+    model.half()
     model.eval()
 
     for frame_idx in range(len(all_frame_descriptions)):
