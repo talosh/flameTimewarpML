@@ -644,6 +644,9 @@ def main():
                     )
 
                 result = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
+                if 'mps' in str(device):
+                    result.to(dtype=torch.float16)
+                
                 # result = merged[3][:, :3, :h, :w]
                 # result = restore_normalized_values(result)
                 result = result[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
