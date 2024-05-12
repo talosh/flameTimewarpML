@@ -51,6 +51,10 @@ Put shots with fast motion in "fast" folder and shots where motion are slow and 
             - Shot003.002.exr
             - ...
 
+#### Window size
+Samples for training are 3 frames and ratio. The model is given the first and the last frame and tries to re-create middle frame at given ratio.
+
+
 ### Installation
 
 ### Installing and configuring python environment manually
