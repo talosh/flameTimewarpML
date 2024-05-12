@@ -595,7 +595,8 @@ def main():
     model = Flownet().get_model()().to(device)
 
     model.load_state_dict(checkpoint['flownet_state_dict'])
-    model.half()
+    if 'mps' not in str(device):
+        model.half()
     model.eval()
 
     for frame_idx in range(len(all_frame_descriptions)):
@@ -609,11 +610,18 @@ def main():
                 result = frame_data['outgoing_data']
             else:
                 img0 = torch.from_numpy(frame_data['incoming_data'].copy())
-                img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
+                if 'mps' not in str(device):
+                    img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
+                else:
+                    img0 = img0.to(device = device, dtype = torch.float32, non_blocking = True)
                 img0 = img0.permute(2, 0, 1).unsqueeze(0)
 
                 img1 = torch.from_numpy(frame_data['outgoing_data'].copy())
-                img1 = img1.to(device = device, dtype = torch.float16, non_blocking = True)
+                if 'mps' not in str(device):
+                    img1 = img1.to(device = device, dtype = torch.float16, non_blocking = True)
+                else:
+                    img0 = img0.to(device = device, dtype = torch.float32, non_blocking = True)
+
                 img1 = img1.permute(2, 0, 1).unsqueeze(0)
 
                 img0_ref = normalize(img0)
