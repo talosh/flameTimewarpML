@@ -1352,8 +1352,10 @@ def main():
         try:
             missing_keys, unexpected_keys = flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
             print('loaded previously saved Flownet state')
-            print (f'\nMissing keys:\n{missing_keys}\n')
-            print (f'\nUnexpected keys:\n{unexpected_keys}\n')
+            if missing_keys:
+                print (f'\nMissing keys:\n{missing_keys}\n')
+            if unexpected_keys:
+                print (f'\nUnexpected keys:\n{unexpected_keys}\n')
         except Exception as e:
             print (f'unable to load Flownet state: {e}')
 
