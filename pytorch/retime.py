@@ -1,16 +1,11 @@
 import os
 import sys
-import random
 import struct
-import ctypes
 import argparse
-import importlib
 import queue
 import threading
 import time
 import platform
-
-from pprint import pprint
 
 try:
     import numpy as np
@@ -21,9 +16,6 @@ except:
         print ('Unable to import Numpy and PyTorch libraries')
         print (f'Using {python_executable_path} python interpreter')
         sys.exit()
-
-from models.flownet import FlownetCas
-from models.multires_v001 import Model as Model_01
 
 def find_folders_with_exr(path):
     """
@@ -225,6 +217,16 @@ def save_frames(save_queue):
 
         time.sleep(timeout)
 
+def find_and_import_model(models_dir='models', model_file=None):
+    import importlib
+
+    module_name = model_file[:-3]  # Remove '.py' from filename to get module name
+    module_path = f"models.{module_name}"
+    print (f'module_path: {module_path}')
+    module = importlib.import_module(module_path)
+    model_object = getattr(module, 'Model')
+    return model_object
+
 def main():
     parser = argparse.ArgumentParser(description='Retime script.')
     # Required argument
@@ -234,10 +236,11 @@ def main():
     # Optional arguments
     default_model_path = os.path.join(
         os.path.abspath(os.path.dirname(__file__)),
-        'models_data',
-        'flownet_v412.pkl'
+        'models',
+        'flownet.pkl'
     )
     parser.add_argument('--model_path', type=str, default=default_model_path, help='Path to the pre-trained model (optional)')
+    parser.add_argument('--iterations', type=int, default=1, help='Run each refinement pass for N iterations (default: 1)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
 
     args = parser.parse_args()
@@ -268,16 +271,19 @@ def main():
 
     print ('loading model...')
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
-    model = FlownetCas().to(device)
+    try:
+        checkpoint = torch.load(trained_model_path, map_location=device)
+        print('loaded previously saved model checkpoint')
+    except Exception as e:
+        print (f'unable to load saved model checkpoint: {e}')
+        sys.exit()
 
-    state_dict = torch.load(args.model_path, map_location=device)
-    def convert(param):
-        return {
-            k.replace("module.", ""): v
-            for k, v in param.items()
-            if "module." in k
-        }
-    model.load_state_dict(convert(state_dict))
+    model_info = checkpoint.get('model_info')
+    model_file = model_info.get('file')
+    Flownet = find_and_import_model(model_file=model_file)
+    model = Flownet().to(device)
+
+    model.load_state_dict(checkpoint['flownet_state_dict'])
     model.half()
     model.eval()
 
