@@ -354,7 +354,7 @@ def normalize(image_array) :
     # bend values below -1.0 and above 1.0 exponentially so they are not larger then (-4.0 - 4.0)
     input_device = image_array.device
     if 'mps' in str(input_device):
-        image_array = custom_bend(input_device.detach().to(device=torch.device('cpu'))).to(device=input_device)
+        image_array = custom_bend(image_array.detach().to(device=torch.device('cpu'))).to(device=input_device)
     else:
         image_array = custom_bend(image_array)
 
