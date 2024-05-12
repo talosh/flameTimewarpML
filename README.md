@@ -24,8 +24,10 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 ### Training
 
 #### Dataset preparation
-Export your shots so each shot are in separate folder.
+Training script will scan all the folders under a given path and will compose training samples out of folders where .exr files are found.
 Only Uncompressed OpenEXR files are supported at the moment.
+
+Export your shots so each shot are in separate folder.
 There are two magic words in shot path: "fast" and "slow"
 When "fast" is in path 3-frame window will be used for those shots.
 When "slow" is in path 9-frame window will be used.
@@ -37,16 +39,17 @@ Put shots with fast motion in "fast" folder and shots where motion are slow and 
         - Shot001
             - Shot001.001.exr
             - Shot001.002.exr
-            ...
+            - ...
     - fast
         - Shot002
             - Shot002.001.exr
             - Shot002.002.exr
-            ...
+            - ...
     - normal
         - Shot003
             - Shot003.001.exr
             - Shot003.002.exr
+            - ...
 
 ### Installation
 
