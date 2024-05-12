@@ -1141,7 +1141,8 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None, 
         versions = [f for f in files if f.endswith'.py']
         if versions:
             # Sort by version number (second item in tuple) and select the latest one
-            latest_version_file = sorted(versions, key=lambda x: x[1], reverse=True)[0][0]
+            # latest_version_file = sorted(versions, key=lambda x: x[1], reverse=True)[0][0]
+            latest_version_file = sorted(versions, reverse=True)[0]
             filtered_files = [latest_version_file]
 
     # Import the module and return the Model object
