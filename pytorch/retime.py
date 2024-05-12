@@ -619,6 +619,7 @@ def main():
 
         del img0, img1, frame_data, flow_list, mask_list, merged, result
 
+    print ('\n')
 
 if __name__ == "__main__":
     main()
