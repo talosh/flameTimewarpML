@@ -500,6 +500,13 @@ class Model:
 
                 if flow is None:
                     timestep = (img0[:, :1].clone() * 0 + 1) * timestep
+                    
+                    print (f'img0 shape {img0.shape}')
+                    print (f'img1 shape {img1.shape}')
+                    print (f'f0 shape {f0.shape}')
+                    print (f'f1 shape {f1.shape}')
+                    print (f'timestep shape {timestep.shape}')
+
                     x = torch.cat((img0, img1, f0, f1, timestep), 1)
                 else:
                     mask = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
