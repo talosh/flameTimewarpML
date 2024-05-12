@@ -581,44 +581,51 @@ def main():
     for frame_idx in range(len(all_frame_descriptions)):
         print (f'\rProcessing frame {frame_idx + 1} of {len(all_frame_descriptions)}', end='')
 
-        with torch.no_grad():
-            frame_data = frames_queue.get()
-            img0 = torch.from_numpy(frame_data['incoming_data'].copy())
-            img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
-            img0 = img0.permute(2, 0, 1).unsqueeze(0)
+        frame_data = frames_queue.get()
+        if frame_data['ratio'] == 0:
+            result = torch.from_numpy(frame_data['incoming_data'].copy())
+        elif frame_data['ratio'] == 1:
+            result = torch.from_numpy(frame_data['outgoing_data'].copy())
+        else:
+            with torch.no_grad():
+                img0 = torch.from_numpy(frame_data['incoming_data'].copy())
+                img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
+                img0 = img0.permute(2, 0, 1).unsqueeze(0)
 
-            img1 = torch.from_numpy(frame_data['outgoing_data'].copy())
-            img1 = img1.to(device = device, dtype = torch.float16, non_blocking = True)
-            img1 = img1.permute(2, 0, 1).unsqueeze(0)
+                img1 = torch.from_numpy(frame_data['outgoing_data'].copy())
+                img1 = img1.to(device = device, dtype = torch.float16, non_blocking = True)
+                img1 = img1.permute(2, 0, 1).unsqueeze(0)
 
-            img0_ref = normalize(img0)
-            img1_ref = normalize(img1)
+                img0_ref = normalize(img0)
+                img1_ref = normalize(img1)
 
-            n, c, h, w = img0.shape
-            ph = ((h - 1) // 64 + 1) * 64
-            pw = ((w - 1) // 64 + 1) * 64
-            padding = (0, pw - w, 0, ph - h)
-            
-            img0_ref = torch.nn.functional.pad(img0_ref, padding)
-            img1_ref = torch.nn.functional.pad(img1_ref, padding)
+                n, c, h, w = img0.shape
+                ph = ((h - 1) // 64 + 1) * 64
+                pw = ((w - 1) // 64 + 1) * 64
+                padding = (0, pw - w, 0, ph - h)
+                
+                img0_ref = torch.nn.functional.pad(img0_ref, padding)
+                img1_ref = torch.nn.functional.pad(img1_ref, padding)
 
-            flow_list, mask_list, merged = model(
-                img0_ref, 
-                img1_ref, 
-                frame_data['ratio'], 
-                iterations = args.iterations
-                )
+                flow_list, mask_list, merged = model(
+                    img0_ref, 
+                    img1_ref, 
+                    frame_data['ratio'], 
+                    iterations = args.iterations
+                    )
 
-            result = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
-            # result = merged[3][:, :3, :h, :w]
-            # result = restore_normalized_values(result)
-            result = result[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
-            output_path = frame_data['destination']
-            if not os.path.isdir(os.path.dirname(output_path)):
-                os.makedirs(os.path.dirname(output_path))
-            save_queue.put((result, output_path))
+                result = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
+                # result = merged[3][:, :3, :h, :w]
+                # result = restore_normalized_values(result)
+                result = result[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+                del img0, img1, frame_data, flow_list, mask_list, merged,
 
-        del img0, img1, frame_data, flow_list, mask_list, merged, result
+        output_path = frame_data['destination']
+        if not os.path.isdir(os.path.dirname(output_path)):
+            os.makedirs(os.path.dirname(output_path))
+        save_queue.put((result, output_path))
+        
+        del result
 
     print ('\n')
 
