@@ -495,7 +495,6 @@ class Model:
 
                 img0 = torch.nn.functional.interpolate(img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 img1 = torch.nn.functional.interpolate(img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 f0 = self.encode01(img0)
                 f1 = self.encode01(img1)
 
