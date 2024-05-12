@@ -33,17 +33,18 @@ class Model:
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
         class Conv2d(Module):
-            def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1), bias=True):
+            def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1), padding = 'same', bias=True):
                 super().__init__()
                 self.conv1 = torch.nn.Conv2d(
                     in_channels=num_in_filters,
                     out_channels=num_out_filters,
                     kernel_size=kernel_size,
                     stride=stride,
-                    padding = 'same',
+                    padding = padding,
                     padding_mode = 'reflect',
                     bias=bias
                     )
+                
                 torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
                 self.conv1.weight.data *= 1e-2
                 if self.conv1.bias is not None:
@@ -56,18 +57,19 @@ class Model:
                 return x
 
         class Conv2d_ReLU(Module):
-            def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1)):
+            def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1), padding = 'same', bias=True):
                 super().__init__()
                 self.conv1 = torch.nn.Conv2d(
                     in_channels=num_in_filters,
                     out_channels=num_out_filters,
                     kernel_size=kernel_size,
                     stride=stride,
-                    padding = 'same',
+                    padding = padding,
                     padding_mode = 'reflect',
-                    bias=True
+                    bias=bias
                     )
                 self.act = torch.nn.LeakyReLU(0.2, True)
+
                 torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
                 self.conv1.weight.data *= 1e-2
                 if self.conv1.bias is not None:
@@ -80,26 +82,27 @@ class Model:
                 x = self.act(x)
                 return x
 
-        class Conv2d_SiLU(Module):
-            def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1)):
+        class Upsample(Module):
+            def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (2,2), padding = 2, bias=True):
                 super().__init__()
-                self.conv1 = torch.nn.Conv2d(
+                self.conv1 = torch.nn.ConvTranspose2d(
                     in_channels=num_in_filters,
                     out_channels=num_out_filters,
                     kernel_size=kernel_size,
                     stride=stride,
-                    padding = 'same',
-                    padding_mode = 'reflect',
-                    bias=True
+                    padding = padding,
+                    bias=bias
                     )
-                self.act = torch.nn.SiLU(inplace=True)
-                # torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='selu')
+                
+                torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
+                self.conv1.weight.data *= 1e-2
+                if self.conv1.bias is not None:
+                    torch.nn.init.constant_(self.conv1.bias, 0)
                 # torch.nn.init.xavier_uniform_(self.conv1.weight, gain=torch.nn.init.calculate_gain('selu'))
                 # torch.nn.init.dirac_(self.conv1.weight)
 
             def forward(self,x):
                 x = self.conv1(x)
-                x = self.act(x)
                 return x
 
         class Head(Module):
@@ -123,6 +126,44 @@ class Model:
                     return [x0, x1, x2, x3]
                 return x3
     
+        class Encoder(Module):
+            def __init__(self):
+                super(Encoder, self).__init__()
+                self.downconv01 = Conv2d_ReLU(
+                    3, 32,
+                    kernel_size = (3,3),
+                    stride = (2,2),
+                    padding = 1
+                )
+
+                self.conv01 = Conv2d_ReLU(
+                    32, 32,
+                    kernel_size = (3,3),
+                    stride = (1,1),
+                    padding = 1
+                )
+
+                self.conv02 = Conv2d_ReLU(
+                    32, 32,
+                    kernel_size = (3,3),
+                    stride = (1,1),
+                    padding = 1
+                )
+
+                self.upsample01 = Upsample(
+                    32, 8,
+                    kernel_size = (4,4),
+                    stride = (2,2),
+                    padding = 1
+                    )
+
+            def forward(self, x):
+                x = self.downconv01(x)
+                x = self.conv01(x)
+                x = self.conv02(x)
+                x = self.upsample01(x)
+                return x
+
         class Multiresblock(Module):
             def __init__(self, num_in_channels, num_filters, alpha=1, shortcut_bias = True):
             
@@ -349,7 +390,6 @@ class Model:
             
                 return x
 
-
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
@@ -432,15 +472,7 @@ class Model:
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                self.encode01 = torch.nn.Sequential(
-                    torch.nn.Conv2d(3, 32, 3, 2, 1),
-                    torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.Conv2d(32, 32, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.Conv2d(32, 32, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
-                )
+                self.encode01 = Encoder()
                 self.conv0 = torch.nn.Sequential(
                     conv(in_planes, c//2, 3, 2, 1),
                     conv(c//2, c, 3, 2, 1),
