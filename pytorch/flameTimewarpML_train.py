@@ -1107,13 +1107,6 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None, 
     import re
     import importlib
 
-    if model_file:
-        module_name = model_file[0][:-3]  # Remove '.py' from filename to get module name
-        module_path = f"models.{module_name}"
-        module = importlib.import_module(module_path)
-        model_object = getattr(module, 'Model')
-        return model_object
-
     # Resolve the absolute path of the models directory
     models_abs_path = os.path.abspath(
         os.path.join(
@@ -1141,6 +1134,14 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None, 
             # Sort by version number (second item in tuple) and select the latest one
             latest_version_file = sorted(versions, key=lambda x: x[1], reverse=True)[0][0]
             filtered_files = [latest_version_file]
+
+    if model_file:
+        module_name = model_file[0][:-3]  # Remove '.py' from filename to get module name
+        module_path = f"models.{module_name}"
+        print (f'module_path: {module_path}')
+        module = importlib.import_module(module_path)
+        model_object = getattr(module, 'Model')
+        return model_object
 
     # Import the module and return the Model object
     if filtered_files:
@@ -1217,7 +1218,6 @@ def main():
     if args.all_gpus:
         device = 'cuda'
 
-    '''    
     # Find and initialize model
     if args.state_file:
         trained_model_path = args.state_file
@@ -1232,10 +1232,8 @@ def main():
         model_file = model_info.get('file')
         Flownet = find_and_import_model(model_file=model_file)
     else:
-    '''
-
-    model_name = args.model
-    Flownet = find_and_import_model(base_name='flownet', model_name=model_name)
+        model_name = args.model
+        Flownet = find_and_import_model(base_name='flownet', model_name=model_name)
 
     if Flownet is None:
         print (f'Unable to load model {args.model}')
