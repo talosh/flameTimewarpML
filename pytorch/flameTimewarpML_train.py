@@ -1216,6 +1216,7 @@ def main():
     if args.all_gpus:
         device = 'cuda'
     
+    # Find and initialize model
     if args.state_file:
         trained_model_path = args.state_file
         try:
@@ -1226,14 +1227,13 @@ def main():
             sys.exit()
 
         model_info = checkpoint.get('model_info')
-        print ('Model info:')
-        pprint (model_info)
-        model_name = model_info.get('name')
+        model_file = model_info.get('file')
+        Flownet = find_and_import_model(model_file=model_file)
     else:
         model_name = args.model
+        Flownet = find_and_import_model(base_name='flownet', model_name=model_name)
 
-    # Find and initialize model
-    Flownet = find_and_import_model(base_name='flownet', model_name=model_name)
+
     if Flownet is None:
         print (f'Unable to load model {args.model}')
         return
