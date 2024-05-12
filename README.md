@@ -4,11 +4,8 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 
 ## Table of Contents
 - [Status](#status)
-- [Usage](#usage)
+- [Training](#training)
 - [Installation](#installation)
-- [FAQ](#faq)
-- [Contributing](#contributing)
-
 
 ### Status
 
@@ -23,6 +20,12 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 * Optimize memory usage for Flownet4
 * Add Fluidmorph and Interpolate logic to new Flame script.
 * Add "Allow paint-in" switch for inference.
+
+### Training
+
+#### Data preparation
+Export your shots so each shot are in separate folder.
+Only Uncompressed OpenEXR files are supported at the moment.
 
 ### Installation
 
