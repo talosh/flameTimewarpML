@@ -1219,7 +1219,7 @@ def main():
         device = 'cuda'
 
     # Find and initialize model
-    if args.state_file and os.path.isfile(args.state_file):
+    if (args.state_file) and (os.path.isfile(args.state_file)):
         trained_model_path = args.state_file
         try:
             checkpoint = torch.load(trained_model_path, map_location=device)
