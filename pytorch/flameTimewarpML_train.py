@@ -1211,6 +1211,7 @@ def main():
     parser.add_argument('--acescc', type=check_range_percent, default=40, help='Percentage of ACEScc encoded frames (default: 40))')
     parser.add_argument('--generalize', type=check_range_percent, default=85, help='Generalization level (0 - 100) (default: 85)')
     parser.add_argument('--preview', type=int, default=1000, help='Save preview each N steps (default: 1000)')
+    parser.add_argument('--save', type=int, default=1000, help='Save model state dict each N steps (default: 1000)')
     parser.add_argument('--repeat', type=int, default=1, help='Repeat each triade N times with agumentation (default: 1)')
     parser.add_argument('--iterations', type=int, default=1, help='Process each flow refinement N times (default: 1)')
 
