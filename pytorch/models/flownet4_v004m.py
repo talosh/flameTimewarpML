@@ -128,17 +128,6 @@ class Model:
         class Encoder(Module):
             def __init__(self):
                 super(Encoder, self).__init__()
-
-                torch.nn.Sequential(
-                    torch.nn.Conv2d(3, 32, 3, 2, 1),
-                    torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.Conv2d(32, 32, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.Conv2d(32, 32, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
-                )
-
                 self.downconv01 = Conv2d_ReLU(
                     3, 32,
                     kernel_size = (3,3),
@@ -395,7 +384,6 @@ class Model:
             
                 return x
 
-
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
@@ -478,15 +466,7 @@ class Model:
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                self.encode01 = torch.nn.Sequential(
-                    torch.nn.Conv2d(3, 32, 3, 2, 1),
-                    torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.Conv2d(32, 32, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.Conv2d(32, 32, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
-                )
+                self.encode01 = Encoder()
                 self.conv0 = torch.nn.Sequential(
                     conv(in_planes, c//2, 3, 2, 1),
                     conv(c//2, c, 3, 2, 1),
