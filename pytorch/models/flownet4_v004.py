@@ -41,8 +41,6 @@ class Model:
                 tenInput = tenInput.detach().to(device=torch.device('cpu'), dtype=torch.float32)
                 tenFlow = tenFlow.detach().to(device=torch.device('cpu'), dtype=torch.float32)
 
-            print (f'Warp input device: {tenInput.device}')
-
             backwarp_tenGrid = {}
             k = (str(tenFlow.device), str(tenFlow.size()))
             if k not in backwarp_tenGrid:
