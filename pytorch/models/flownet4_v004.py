@@ -36,9 +36,10 @@ class Model:
 
         def warp(tenInput, tenFlow):
             input_device = tenInput.device
+            input_dtype = tenInput.dtype
             if 'mps' in str(input_device):
-                tenInput = tenInput.detach().to(device=torch.device('cpu'))
-                tenFlow = tenFlow.detach().to(device=torch.device('cpu'))
+                tenInput = tenInput.detach().to(device=torch.device('cpu'), dtype=torch.float32)
+                tenFlow = tenFlow.detach().to(device=torch.device('cpu'), dtype=torch.float32)
 
             print (f'Warp input device: {tenInput.device}')
 
@@ -59,7 +60,7 @@ class Model:
                 align_corners=True
                 )
 
-            return result.detach().to(device=input_device)
+            return result.detach().to(device=input_device, dtype=input_dtype)
 
 
         class Conv2d(Module):
