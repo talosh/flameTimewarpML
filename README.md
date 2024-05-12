@@ -35,21 +35,21 @@ Default window size is 5 frames.
 Put shots with fast motion in "fast" folder and shots where motion are slow and continious to "slow" folder to let the model learn more intermediae ratios.
 
 - Scene001/
-        - slow/
-            - Shot001/
-                - Shot001.001.exr
-                - Shot001.002.exr
-                - ...
-        - fast/
-            - Shot002
-                - Shot002.001.exr
-                - Shot002.002.exr
-                - ...
-        - normal/
-            - Shot003
-                - Shot003.001.exr
-                - Shot003.002.exr
-                - ...
+    - slow/
+        - Shot001/
+            - Shot001.001.exr
+            - Shot001.002.exr
+            - ...
+    - fast/
+        - Shot002
+            - Shot002.001.exr
+            - Shot002.002.exr
+            - ...
+    - normal/
+        - Shot003
+            - Shot003.001.exr
+            - Shot003.002.exr
+            - ...
 
 ### Installation
 
