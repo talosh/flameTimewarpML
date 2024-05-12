@@ -1146,6 +1146,28 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None):
         print(f"Model not found: {base_name or model_name}")
         return None
 
+def closest_divisible_by_64(x):
+    """
+    Find the closest integer divisible by 64 to the given number x.
+
+    Args:
+    x (int or float): The number to find the closest divisible value for.
+
+    Returns:
+    int: Closest number divisible by 64.
+    """
+    # Round down to the nearest multiple of 64
+    lower = (x // 64) * 64
+    
+    # Round up to the nearest multiple of 64
+    upper = lower + 64
+
+    # Check which one is closer to x
+    if x - lower > upper - x:
+        return upper
+    else:
+        return lower
+
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
@@ -1207,6 +1229,10 @@ def main():
 
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
+
+    frame_size = closest_divisible_by_64(abs(int(args.frame_size)))
+    if frame_size != args.frame_size:
+        print (f'Frame size should be divisible by 64 for training. Using {frame_size}')
 
     read_image_queue = queue.Queue(maxsize=8)
     dataset = get_dataset(
