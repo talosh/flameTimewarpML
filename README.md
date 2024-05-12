@@ -3,14 +3,14 @@
 Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/flameTimewarpML/blob/main/README_v044.md)
 
 ## Table of Contents
-- [Current status](#currentstatus)
+- [Status](#status)
 - [Usage](#usage)
 - [Installation](#installation)
 - [FAQ](#faq)
 - [Contributing](#contributing)
 
 
-### Current status
+### Status
 
 * Training script and Flownet4 tested in production on Linux with constant speed retime
 * Flownet2 tested on MacOS Apple Silicon with Pytorch 2.2.2
@@ -23,6 +23,8 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 * Optimize memory usage for Flownet4
 * Add Fluidmorph and Interpolate logic to new Flame script.
 * Add "Allow paint-in" switch for inference.
+
+### Installation
 
 ### Installing and configuring python environment manually
 
