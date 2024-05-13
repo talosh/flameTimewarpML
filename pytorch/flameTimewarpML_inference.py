@@ -404,9 +404,6 @@ class Timewarp():
         print (self.model_path)
         import importlib
         import torch
-
-        return
-
         model_file = os.path.basename(model_file_path)
         module_name = model_file[:-3]  # Remove '.py' from filename to get module name
         module_path = f"models.{module_name}"
