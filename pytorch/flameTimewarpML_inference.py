@@ -399,7 +399,7 @@ class Timewarp():
         tw_setup_string = self.json_info.get('setup')
         for k in self.json_info.keys():
             print (k)
-            print (f'{self.json_info}')
+        print (f'{self.json_info}')
         src_files_list = [file for file in os.listdir(self.source_folder) if file.endswith('.exr')]
         input_duration = len(src_files_list)
         if not input_duration:
@@ -474,6 +474,8 @@ class Timewarp():
         write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
         write_thread.daemon = True
         write_thread.start()
+
+        print(f'rendering {len(frame_info_list)} frames to {self.target_folder}')
 
         for idx in range(len(frame_info_list)):
             frame_info = read_image_queue.get()
