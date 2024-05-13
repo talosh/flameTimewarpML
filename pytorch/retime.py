@@ -647,7 +647,7 @@ def main():
                 
                 # result = merged[3][:, :3, :h, :w]
                 # result = restore_normalized_values(result)
-                result = result[0].clone().cpu().detach().numpy().transpose(1, 2, 0).astype(np.float16)
+                result = result[0].clone().cpu().detach().numpy().transpose(1, 2, 0).astype(np.float16  )
 
                 del img0, img1, flow_list, mask_list, merged
 
