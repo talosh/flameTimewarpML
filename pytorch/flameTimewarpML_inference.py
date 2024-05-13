@@ -465,7 +465,7 @@ class Timewarp():
         self.pbar = tqdm(total=len(frame_info_list), 
                          unit='frame',
                          file=sys.stdout,
-                         bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}',
+                         bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]',
                          ascii=f' {chr(0x2588)}',
                          ncols=50
                          )
