@@ -401,6 +401,9 @@ class Timewarp():
         self.model = self.find_and_import_model(self.model_path)
 
     def find_and_import_model(self, model_file_path):
+
+        print (self.model_path)
+
         import importlib
 
         model_file = os.path.basename(model_file_path)
