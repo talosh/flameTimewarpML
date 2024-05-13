@@ -98,7 +98,7 @@ conda install pytorch pytorch-cuda=11.8 -c pytorch -c nvidia
 * MacOS example:
 
 ```bash
-conda install pytorch::pytorch -c pytorch
+conda install pytorch::pytorch torchvision -c pytorch
 ```
 
 * Install rest of the dependencies
