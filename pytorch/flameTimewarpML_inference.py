@@ -601,9 +601,6 @@ class Timewarp():
             elif ratio == 1:
                 return outgoing_data
             else:
-                
-                ratio = 0.1
-
                 img0 = torch.from_numpy(incoming_data.copy())
                 if 'mps' not in str(device):
                     img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
@@ -639,7 +636,7 @@ class Timewarp():
                 result = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
                 result = result[0].clone().cpu().detach().numpy().transpose(1, 2, 0).astype(np.float16)
                 del img0, img1, img0_ref, img1_ref, flow_list, mask_list, merged, incoming_data, outgoing_data
-            return result
+                return result
 
     def bake_flame_tw_setup(self, tw_setup_string):
         # parses tw setup from flame and returns dictionary
