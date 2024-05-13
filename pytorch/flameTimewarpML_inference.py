@@ -636,10 +636,10 @@ class Timewarp():
                     iterations = iterations
                     )
 
-                result_torch = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
-                result = result_torch[0].clone().cpu().detach().numpy().transpose(1, 2, 0).astype(np.float16)
-                del img0, img1, img0_ref, img1_ref, flow_list, mask_list, merged, incoming_data, outgoing_data, result_torch
-                return result
+                result = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
+                return result[0].clone().cpu().detach().numpy().transpose(1, 2, 0).astype(np.float16)
+                # del img0, img1, img0_ref, img1_ref, flow_list, mask_list, merged, incoming_data, outgoing_data, result_torch
+                # return result
 
     def bake_flame_tw_setup(self, tw_setup_string):
         # parses tw setup from flame and returns dictionary
