@@ -398,6 +398,8 @@ class Timewarp():
         print('Initializing TimewarpML from Flame setup...')
         self.model_path = self.json_info.get('model_path')
         self.model = self.find_and_import_model(self.model_path)
+        if not self.model:
+            print (f'Unable to import model from file {self.model_path}')
 
     def find_and_import_model(self, model_file_path):
 
@@ -410,12 +412,17 @@ class Timewarp():
 
         try:
             module = importlib.import_module(module_path)
+            model_object = getattr(module, 'Model')
+            return model_object
         except Exception as e:
             print ({e})
-        # model_object = getattr(module, 'Model')
-        # return model_object
+            return None
 
     def process(self):
+        if not self.model:
+            print (f'Unable to import model from file {self.model_path}')
+            return False
+
         tw_setup_string = self.json_info.get('setup')
         '''
         for k in self.json_info.keys():
