@@ -398,6 +398,8 @@ class Timewarp():
         self.settings = self.json_info.get('settings')
         print('Initializing TimewarpML from Flame setup...')
 
+        print (f'{self.settings}')
+
     def process(self):
         tw_setup_string = self.json_info.get('setup')
         '''
