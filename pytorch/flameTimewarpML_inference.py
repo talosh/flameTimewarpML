@@ -539,15 +539,11 @@ class Timewarp():
             img1 = frame_info['outgoing_image_data']['image_data']
             ratio = frame_info['ratio']
             image_path = frame_info['output']
-            write_image_queue.put({'image_data': img0, 'image_path': image_path})
-
-            '''
             try:
-                result = self.predict(img0, img1, ratio = 0.5, iterations = 1)
+                result = self.predict(img0, img1, ratio = ratio, iterations = 1)
                 write_image_queue.put({'image_data': result, 'image_path': image_path})
             except Exception as e:
                 print (f'{e}')
-            '''
 
         write_image_queue.put({'image_data': None, 'image_path': None})
         write_thread.join()
@@ -639,10 +635,10 @@ class Timewarp():
                     iterations = iterations
                     )
 
-                result = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
-                result = result[0].clone().cpu().detach().numpy().transpose(1, 2, 0).astype(np.float16)
-                del img0, img1, img0_ref, img1_ref, flow_list, mask_list, merged, incoming_data, outgoing_data
-                return result
+                result_torch = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
+                result = result_torch[0].clone().cpu().detach().numpy().transpose(1, 2, 0).astype(np.float16)
+                del img0, img1, img0_ref, img1_ref, flow_list, mask_list, merged, incoming_data, outgoing_data, result_torch
+                return result.copy()
 
     def bake_flame_tw_setup(self, tw_setup_string):
         # parses tw setup from flame and returns dictionary
