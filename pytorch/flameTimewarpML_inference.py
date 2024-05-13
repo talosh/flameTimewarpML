@@ -595,9 +595,9 @@ class Timewarp():
 
         with torch.no_grad():
             if ratio == 0:
-                return incoming_data.copy()
+                return incoming_data
             elif ratio == 1:
-                return outgoing_data.copy()
+                return outgoing_data
             else:
                 img0 = torch.from_numpy(incoming_data.copy())
                 if 'mps' not in str(device):
