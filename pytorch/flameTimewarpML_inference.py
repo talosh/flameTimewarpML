@@ -600,17 +600,17 @@ class Timewarp():
                 return outgoing_data
             else:
                 img0 = torch.from_numpy(incoming_data.copy())
-                if 'mps' not in str(device):
-                    img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
-                else:
+                if 'mps' in str(device):
                     img0 = img0.to(device = device, dtype = torch.float32, non_blocking = True)
+                else:
+                    img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
                 img0 = img0.permute(2, 0, 1).unsqueeze(0)
 
                 img1 = torch.from_numpy(outgoing_data.copy())
-                if 'mps' not in str(device):
-                    img1 = img1.to(device = device, dtype = torch.float16, non_blocking = True)
-                else:
+                if 'mps' in str(device):
                     img1 = img1.to(device = device, dtype = torch.float32, non_blocking = True)
+                else:
+                    img1 = img1.to(device = device, dtype = torch.float16, non_blocking = True)
                 img1 = img1.permute(2, 0, 1).unsqueeze(0)
 
                 img0_ref = normalize(img0)
@@ -632,7 +632,7 @@ class Timewarp():
                     )
 
                 # result = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
-                result = merged[3]
+                result = merged[3][:, :3, :h, :w]
                 return result[0].clone().cpu().detach().numpy().transpose(1, 2, 0).astype(np.float16)
                 # del img0, img1, img0_ref, img1_ref, flow_list, mask_list, merged, incoming_data, outgoing_data, result_torch
                 # return result
