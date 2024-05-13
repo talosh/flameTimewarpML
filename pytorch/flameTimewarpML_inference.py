@@ -462,7 +462,13 @@ class Timewarp():
         read_thread.start()
 
         print(f'rendering {len(frame_info_list)} frames to {self.target_folder}')
-        self.pbar = tqdm(total=len(frame_info_list), unit='frame')
+        self.pbar = tqdm(total=len(frame_info_list), 
+                         unit='frame',
+                         file=sys.stdout,
+                         bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}',
+                         ascii=f' {chr(0x2588)}',
+                         ncols=50
+                         )
 
         def write_images(write_image_queue):
             while True:
