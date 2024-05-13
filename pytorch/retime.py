@@ -622,7 +622,6 @@ def main():
                     img1 = img1.to(device = device, dtype = torch.float16, non_blocking = True)
                 else:
                     img1 = img1.to(device = device, dtype = torch.float32, non_blocking = True)
-
                 img1 = img1.permute(2, 0, 1).unsqueeze(0)
 
                 img0_ref = normalize(img0)
