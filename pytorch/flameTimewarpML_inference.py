@@ -398,6 +398,7 @@ class Timewarp():
         self.settings = self.json_info.get('settings')
         print('Initializing TimewarpML from Flame setup...')
         self.model_path = self.json_info.get('model_path')
+        print (f'model path: {self.model_path}')
         # self.model = self.find_and_import_model(self.model_path)
 
     '''
