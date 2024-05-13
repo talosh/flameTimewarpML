@@ -9,6 +9,7 @@ try:
     from tqdm import tqdm
     import queue
     import threading
+    import platform
 
 except Exception as e:
     python_executable_path = sys.executable
@@ -396,16 +397,20 @@ class Timewarp():
         self.clip_name = self.json_info.get('clip_name')
         self.settings = self.json_info.get('settings')
         print('Initializing TimewarpML from Flame setup...')
+        import torch
+        self.device = torch.device("mps") if platform.system() == 'Darwin' else torch.device('cuda')
         self.model_path = self.json_info.get('model_path')
         self.model = self.find_and_import_model(self.model_path)
         if not self.model:
             print (f'Unable to import model from file {self.model_path}')
 
     def find_and_import_model(self, model_file_path):
-
-        print (self.model_path)
         import importlib
         import torch
+
+        checkpoint = torch.load(model_file_path, map_location=self.device)
+        model_info = checkpoint.get('model_info')
+
         model_file = os.path.basename(model_file_path)
         module_name = model_file[:-3]  # Remove '.py' from filename to get module name
         module_path = f"models.{module_name}"
