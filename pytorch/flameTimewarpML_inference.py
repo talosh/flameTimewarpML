@@ -450,7 +450,7 @@ class Timewarp():
         src_files_list.sort()
         src_files = {x:os.path.join(self.source_folder, file_path) for x, file_path in enumerate(src_files_list, start=start_frame)}
 
-        frame_info_dict = {}
+        frame_info_list = []
         output_frame_number = 1
 
         # print (f'{frame_value_map}')
@@ -458,12 +458,14 @@ class Timewarp():
             frame_info = {}
             incoming_frame_number = int(frame_value_map[frame_number])
 
+            print (incoming_frame_number)
+
             if incoming_frame_number < 1:
                 frame_info['incoming'] = src_files.get(1)
                 frame_info['outgoing'] = None
                 frame_info['ratio'] = 0
                 frame_info['output'] = os.path.join(self.target_folder, f'{self.clip_name}.{output_frame_number:08}.exr')
-                frame_info_dict[output_frame_number] = frame_info
+                frame_info_list.append(frame_info)
                 output_frame_number += 1
                 continue
 
@@ -472,7 +474,7 @@ class Timewarp():
                 frame_info['outgoing'] = None
                 frame_info['ratio'] = 0
                 frame_info['output'] = os.path.join(self.target_folder, f'{self.clip_name}.{output_frame_number:08}.exr')
-                frame_info_dict[output_frame_number] = frame_info
+                frame_info_list.append(frame_info)
                 output_frame_number += 1
                 continue
 
@@ -480,35 +482,31 @@ class Timewarp():
             frame_info['outgoing'] = src_files.get(incoming_frame_number + 1)
             frame_info['ratio'] = frame_value_map[frame_number] - int(frame_value_map[frame_number])
             frame_info['output'] = os.path.join(self.target_folder, f'{self.clip_name}.{output_frame_number:08}.exr')
-            frame_info_dict[output_frame_number] = frame_info
+            frame_info_list.append(frame_info)
 
             # print (f'fr: {output_frame_number}, inc:{incoming_frame_number}, out: {incoming_frame_number + 1}, r: {frame_info["ratio"]}')
 
             output_frame_number += 1
 
-        def read_images(read_image_queue, frame_info_dict):
-            for out_frame_number in sorted(frame_info_dict.keys()):
-                frame_info = frame_info_dict[out_frame_number]
+        def read_images(read_image_queue, frame_info_list):
+            for frame_info in frame_info_list:
                 frame_info['incoming_image_data'] = read_openexr_file(frame_info['incoming'])
                 frame_info['outgoing_image_data'] = read_openexr_file(frame_info['outgoing'])
                 read_image_queue.put(frame_info)
 
         read_image_queue = queue.Queue(maxsize=9)
-        read_thread = threading.Thread(target=read_images, args=(read_image_queue, frame_info_dict))
+        read_thread = threading.Thread(target=read_images, args=(read_image_queue, frame_info_list))
         read_thread.daemon = True
         read_thread.start()
 
-        print(f'rendering {len(frame_info_dict.keys())} frames to {self.target_folder}')
-
-        '''
-        self.pbar = tqdm(total=len(frame_info_dict.keys()), 
+        print(f'rendering {len(frame_info_list)} frames to {self.target_folder}')
+        self.pbar = tqdm(total=len(frame_info_list), 
                          unit='frame',
                          file=sys.stdout,
                          bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]',
                          ascii=f' {chr(0x2588)}',
                          ncols=80
                          )
-        '''
 
         def write_images(write_image_queue):
             while True:
@@ -521,7 +519,7 @@ class Timewarp():
                         print ('finishing write thread')
                         break
                     write_exr(image_data, image_path)
-                    # self.pbar.update(1)
+                    self.pbar.update(1)
                 except queue.Empty:
                     time.sleep(1e-4)
                 except Exception as e:
@@ -532,7 +530,7 @@ class Timewarp():
         write_thread.daemon = True
         write_thread.start()
 
-        for idx in range(len(frame_info_dict.keys())):
+        for idx in range(len(frame_info_list)):
             frame_info = read_image_queue.get()
             # print (f'frame {idx + 1} of {len(frame_info_list)}')
             img0 = frame_info['incoming_image_data']['image_data']
@@ -547,14 +545,12 @@ class Timewarp():
 
         write_image_queue.put({'image_data': None, 'image_path': None})
         write_thread.join()
-        # self.pbar.close()
+        self.pbar.close()
         return True
 
     def predict(self, incoming_data, outgoing_data, ratio = 0.5, iterations = 1):
         import numpy as np
         import torch
-
-        ratio = 0.1
 
         device = self.device
 
