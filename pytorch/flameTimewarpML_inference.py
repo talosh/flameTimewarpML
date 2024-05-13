@@ -587,14 +587,14 @@ class Timewarp():
 
             return result.detach().to(device=input_device, dtype=input_dtype)
 
-        return outgoing_data
-
         with torch.no_grad():
             if ratio == 0:
-                result = incoming_data
+                return incoming_data
             elif ratio == 1:
-                result = outgoing_data
+                return outgoing_data
             else:
+                return outgoing_data
+            
                 img0 = torch.from_numpy(incoming_data.copy())
                 if 'mps' not in str(device):
                     img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
