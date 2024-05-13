@@ -541,7 +541,8 @@ class Timewarp():
             image_path = frame_info['output']
             try:
                 result = self.predict(img0, img1, ratio = ratio, iterations = 1)
-                write_image_queue.put({'image_data': result, 'image_path': image_path})
+                write_image_queue.put({'image_data': result.copy(), 'image_path': image_path})
+                del result
             except Exception as e:
                 print (f'{e}')
 
@@ -638,7 +639,7 @@ class Timewarp():
                 result_torch = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
                 result = result_torch[0].clone().cpu().detach().numpy().transpose(1, 2, 0).astype(np.float16)
                 del img0, img1, img0_ref, img1_ref, flow_list, mask_list, merged, incoming_data, outgoing_data, result_torch
-                return result.copy()
+                return result
 
     def bake_flame_tw_setup(self, tw_setup_string):
         # parses tw setup from flame and returns dictionary
