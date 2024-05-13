@@ -554,7 +554,7 @@ class Timewarp():
         import numpy as np
         import torch
 
-        print (ratio)
+        ratio = 0.1
 
         device = self.device
 
