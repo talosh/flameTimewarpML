@@ -344,7 +344,7 @@ class ApplyModelDialog():
             json_info['input'] = source_clip_folder
             json_info['output'] = result_folder
             json_info['clip_name'] = tw_clip_name
-            json_info['model_path'] = None #self.fw.prefs.get('model_path')
+            json_info['model_path'] = self.fw.prefs.get('model_path')
             json_info['setup'] = tw_setup_string
             json_info['record_in'] = record_in
             json_info['record_out'] = record_out
