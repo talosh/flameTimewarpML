@@ -535,7 +535,7 @@ class Timewarp():
             ratio = frame_info['ratio']
             image_path = frame_info['output']
             try:
-                result = self.predict(img0, img1, ratio = 0, iterations = 1)
+                result = self.predict(img0, img1, ratio = 1, iterations = 1)
                 write_image_queue.put({'image_data': result.copy(), 'image_path': image_path})
                 del result
             except Exception as e:
