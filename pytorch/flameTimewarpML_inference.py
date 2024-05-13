@@ -1117,8 +1117,7 @@ def main():
 
             tw = Timewarp(json_info)
             result = tw.process()
-            print (f'process finished - emmiting self.result.emit({result}, '')')
-            self.result.emit(result, '')
+            # self.result.emit(result, '')
 
             '''
             for i in tqdm(range(100),
