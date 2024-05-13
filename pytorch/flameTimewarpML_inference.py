@@ -525,15 +525,108 @@ class Timewarp():
         for idx in range(len(frame_info_list)):
             frame_info = read_image_queue.get()
             # print (f'frame {idx + 1} of {len(frame_info_list)}')
-            image_data = frame_info['incoming_image_data']['image_data']
+            img0 = frame_info['incoming_image_data']['image_data']
+            img1 = frame_info['outgoing_image_data']['image_data']
+            ratio = frame_info['ratio']
+            result = self.predict(img0, img1, ratio = ratio, iterations = 1)
             image_path = frame_info['output']
-            write_image_queue.put({'image_data': image_data, 'image_path': image_path})
+            write_image_queue.put({'image_data': result, 'image_path': image_path})
 
         write_image_queue.put({'image_data': None, 'image_path': None})
         write_thread.join()
         self.pbar.close()
         return True
-   
+
+    def predict(self, incoming_data, outgoing_data, ratio = 0.5, iterations = 1):
+        import numpy as np
+        import torch
+
+        device = self.device
+
+        def normalize(image_array) :
+            def custom_bend(x):
+                linear_part = x
+                exp_bend = torch.sign(x) * torch.pow(torch.abs(x), 1 / 4 )
+                return torch.where(x > 1, exp_bend, torch.where(x < -1, exp_bend, linear_part))
+            image_array = (image_array * 2) - 1
+            input_device = image_array.device
+            if 'mps' in str(input_device):
+                image_array = custom_bend(image_array.detach().to(device=torch.device('cpu'))).to(device=input_device)
+            else:
+                image_array = custom_bend(image_array)
+            image_array = torch.tanh(image_array)
+            image_array = (image_array + 1) / 2
+            return image_array
+
+        def warp(tenInput, tenFlow):
+            input_device = tenInput.device
+            input_dtype = tenInput.dtype
+            if 'mps' in str(input_device):
+                tenInput = tenInput.detach().to(device=torch.device('cpu'), dtype=torch.float32)
+                tenFlow = tenFlow.detach().to(device=torch.device('cpu'), dtype=torch.float32)
+
+            backwarp_tenGrid = {}
+            k = (str(tenFlow.device), str(tenFlow.size()))
+            if k not in backwarp_tenGrid:
+                tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+                tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+                backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
+            tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
+
+            g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+            result = torch.nn.functional.grid_sample(
+                input=tenInput, 
+                grid=g, 
+                mode='bilinear', 
+                padding_mode='border', 
+                align_corners=True
+                )
+
+            return result.detach().to(device=input_device, dtype=input_dtype)
+
+        with torch.no_grad():
+            if ratio == 0:
+                result = incoming_data
+            elif ratio == 1:
+                result = outgoing_data
+            else:
+                img0 = torch.from_numpy(incoming_data.copy())
+                if 'mps' not in str(device):
+                    img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
+                else:
+                    img0 = img0.to(device = device, dtype = torch.float32, non_blocking = True)
+                img0 = img0.permute(2, 0, 1).unsqueeze(0)
+
+                img1 = torch.from_numpy(outgoing_data.copy())
+                if 'mps' not in str(device):
+                    img1 = img1.to(device = device, dtype = torch.float16, non_blocking = True)
+                else:
+                    img1 = img1.to(device = device, dtype = torch.float32, non_blocking = True)
+                img1 = img1.permute(2, 0, 1).unsqueeze(0)
+
+                img0_ref = normalize(img0)
+                img1_ref = normalize(img1)
+
+                n, c, h, w = img0.shape
+                ph = ((h - 1) // 64 + 1) * 64
+                pw = ((w - 1) // 64 + 1) * 64
+                padding = (0, pw - w, 0, ph - h)
+                
+                img0_ref = torch.nn.functional.pad(img0_ref, padding)
+                img1_ref = torch.nn.functional.pad(img1_ref, padding)
+
+                flow_list, mask_list, merged = self.model(
+                    img0_ref, 
+                    img1_ref, 
+                    ratio, 
+                    iterations
+                    )
+
+                result = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
+                result = result[0].clone().cpu().detach().numpy().transpose(1, 2, 0).astype(np.float16)
+                del img0, img1, img0_ref, img1_ref, flow_list, mask_list, merged, incoming_data, outgoing_data
+                return result
+
     def bake_flame_tw_setup(self, tw_setup_string):
         # parses tw setup from flame and returns dictionary
         # with baked frame - value pairs
