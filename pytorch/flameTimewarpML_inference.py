@@ -535,7 +535,7 @@ class Timewarp():
             ratio = frame_info['ratio']
             image_path = frame_info['output']
             try:
-                result = self.predict(img0, img1, ratio = 1, iterations = 1)
+                result = self.predict(img0, img1, ratio = ratio, iterations = 1)
                 write_image_queue.put({'image_data': result.copy(), 'image_path': image_path})
                 del result
             except Exception as e:
@@ -631,7 +631,8 @@ class Timewarp():
                     iterations = iterations
                     )
 
-                result = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
+                # result = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
+                result = merged[3]
                 return result[0].clone().cpu().detach().numpy().transpose(1, 2, 0).astype(np.float16)
                 # del img0, img1, img0_ref, img1_ref, flow_list, mask_list, merged, incoming_data, outgoing_data, result_torch
                 # return result
