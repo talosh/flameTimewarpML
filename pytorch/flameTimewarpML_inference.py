@@ -461,6 +461,9 @@ class Timewarp():
         read_thread.daemon = True
         read_thread.start()
 
+        print(f'rendering {len(frame_info_list)} frames to {self.target_folder}')
+        self.pbar = tqdm(total=len(frame_info_list), unit='frame')
+
         def write_images(write_image_queue):
             while True:
                 image_path = ''
@@ -482,8 +485,6 @@ class Timewarp():
         write_thread.daemon = True
         write_thread.start()
 
-        print(f'rendering {len(frame_info_list)} frames to {self.target_folder}')
-
         for idx in range(len(frame_info_list)):
             frame_info = read_image_queue.get()
             print (f'frame {idx + 1} of {len(frame_info_list)}')
@@ -493,6 +494,7 @@ class Timewarp():
 
         write_image_queue.put({'image_data': None, 'image_path': None})
         write_thread.join()
+        self.pbar.close()
         return True
    
     def bake_flame_tw_setup(self, tw_setup_string):
