@@ -68,8 +68,6 @@ class ApplyModelDialog():
         self.fw.prefs['model_path'] = self.model_path
         self.fw.save_prefs()
 
-        print (f'Model path: {self.model_path}')
-
         self.verified_clips = self.verify_selection(selection, mode)
         if not self.verified_clips:
             return
@@ -197,15 +195,17 @@ class ApplyModelDialog():
             self.window.hide()
             import flame
 
-            self.model_path_dir = os.path.dirname(self.model_path)
+            model_path_dir = os.path.dirname(self.model_path)
 
             if not os.path.isdir(self.model_path_dir):
-                self.model_path_dir = os.path.join(os.path.dirname(__file__), 'models')
+                model_path_dir = os.path.join(os.path.dirname(__file__), 'models')
+
+            print (f'model_path_dir: {model_path_dir}')
 
             flame.browser.show(
                 title = 'Select flameTimewarpML Model:',
                 extension = 'pth',
-                default_path = os.path.dirname(self.model_path_dir),
+                default_path = os.path.dirname(model_path_dir),
                 multi_selection = False)
             if len(flame.browser.selection) > 0:
                 self.model_path = flame.browser.selection[0]
