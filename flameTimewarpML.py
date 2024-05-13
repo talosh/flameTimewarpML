@@ -195,16 +195,17 @@ class ApplyModelDialog():
             self.window.hide()
             import flame
 
-            model_path_dir = os.path.dirname(self.model_path)
-            if not os.path.isdir(model_path_dir):
-                model_path_dir = os.path.join(os.path.dirname(__file__), 'models')
-
-            print (f'model_path_dir: {model_path_dir}')
+            if not os.path.isfile(self.model_path):
+                self.model_path = os.path.join(
+                    os.path.dirname(__file__), 
+                    'models',
+                    'flownet4.pth'
+                    )
 
             flame.browser.show(
                 title = 'Select flameTimewarpML Model:',
                 extension = 'pth',
-                default_path = os.path.dirname(model_path_dir),
+                default_path = os.path.dirname(self.model_path),
                 multi_selection = False)
             if len(flame.browser.selection) > 0:
                 self.model_path = flame.browser.selection[0]
