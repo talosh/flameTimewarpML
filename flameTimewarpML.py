@@ -63,10 +63,12 @@ class ApplyModelDialog():
 
         self.model_path = self.fw.prefs.get(
             'model_path',
-            os.path.join(os.path.dirname(__file__), 'models', 'flameTWML_v2.4.pth')
+            os.path.join(os.path.dirname(__file__), 'models', 'flownet4.pth')
         )
         self.fw.prefs['model_path'] = self.model_path
         self.fw.save_prefs()
+
+        print (f'Model path: {self.model_path}')
 
         self.verified_clips = self.verify_selection(selection, mode)
         if not self.verified_clips:
