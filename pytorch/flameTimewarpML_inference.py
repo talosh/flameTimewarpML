@@ -410,15 +410,15 @@ class Timewarp():
 
         checkpoint = torch.load(model_file_path, map_location=self.device)
         model_info = checkpoint.get('model_info')
-
-        model_file = os.path.basename(model_file_path)
+        model_file = model_info.get('file')
         module_name = model_file[:-3]  # Remove '.py' from filename to get module name
         module_path = f"models.{module_name}"
 
         try:
             module = importlib.import_module(module_path)
             model_object = getattr(module, 'Model')
-            return model_object
+            model = model_object().get_model()().to(self.device)
+            return model
         except Exception as e:
             print ({e})
             return None
