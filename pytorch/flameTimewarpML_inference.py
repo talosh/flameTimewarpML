@@ -475,6 +475,7 @@ class Timewarp():
                         print ('finishing write thread')
                         break
                     write_exr(image_data, image_path)
+                    self.pbar.update(1)
                 except queue.Empty:
                     time.sleep(1e-4)
                 except Exception as e:
@@ -487,7 +488,7 @@ class Timewarp():
 
         for idx in range(len(frame_info_list)):
             frame_info = read_image_queue.get()
-            print (f'frame {idx + 1} of {len(frame_info_list)}')
+            # print (f'frame {idx + 1} of {len(frame_info_list)}')
             image_data = frame_info['incoming_image_data']['image_data']
             image_path = frame_info['output']
             write_image_queue.put({'image_data': image_data, 'image_path': image_path})
