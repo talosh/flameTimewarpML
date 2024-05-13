@@ -587,6 +587,8 @@ class Timewarp():
 
             return result.detach().to(device=input_device, dtype=input_dtype)
 
+        return outgoing_data
+
         with torch.no_grad():
             if ratio == 0:
                 result = incoming_data
