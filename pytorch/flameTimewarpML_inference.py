@@ -595,8 +595,10 @@ class Timewarp():
 
         with torch.no_grad():
             if ratio == 0:
+                print('incoming_data')
                 return incoming_data
             elif ratio == 1:
+                print('outgoing_data')
                 return outgoing_data
             else:
                 ratio = 0.1
