@@ -513,7 +513,7 @@ class Timewarp():
                     image_data = write_data['image_data']
                     image_path = write_data['image_path']
                     if image_data is None:
-                        print ('finishing write thread')
+                        # print ('finishing write thread')
                         break
                     write_exr(image_data, image_path)
                     self.pbar.update(1)
