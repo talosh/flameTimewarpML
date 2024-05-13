@@ -396,7 +396,6 @@ class Timewarp():
         self.target_folder = self.json_info.get('output')
         self.clip_name = self.json_info.get('clip_name')
         self.settings = self.json_info.get('settings')
-        print (self.source_folder)
         print('Initializing TimewarpML from Flame setup...')
 
     def process(self):
