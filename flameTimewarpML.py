@@ -209,9 +209,9 @@ class ApplyModelDialog():
                 multi_selection = False)
             if len(flame.browser.selection) > 0:
                 self.model_path = flame.browser.selection[0]
+                self.model_path_entry.setText(self.model_path)
                 self.fw.prefs['model_path'] = self.model_path
                 self.fw.save_prefs()
-                self.model_path_entry.setText(self.model_path)
             self.window.show()
 
         # Create export and apply window
