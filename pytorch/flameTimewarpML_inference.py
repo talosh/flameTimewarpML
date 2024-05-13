@@ -491,8 +491,7 @@ class Timewarp():
             image_path = frame_info['output']
             write_image_queue.put({'image_data': image_data, 'image_path': image_path})
 
-        print ('finished - waiting for write thread')
-
+        write_image_queue.put({'image_data': None, 'image_path': None})
         write_thread.join()
         return True
    
