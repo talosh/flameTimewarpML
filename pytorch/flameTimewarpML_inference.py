@@ -397,9 +397,12 @@ class Timewarp():
 
     def process(self):
         tw_setup_string = self.json_info.get('setup')
+        '''
         for k in self.json_info.keys():
             print (k)
         print (f'{self.json_info}')
+        '''
+
         src_files_list = [file for file in os.listdir(self.source_folder) if file.endswith('.exr')]
         input_duration = len(src_files_list)
         if not input_duration:
@@ -479,7 +482,7 @@ class Timewarp():
 
         for idx in range(len(frame_info_list)):
             frame_info = read_image_queue.get()
-            # print (f'frame {idx + 1} of {len(frame_info_list)}')
+            print (f'frame {idx + 1} of {len(frame_info_list)}')
             image_data = frame_info['incoming_image_data']['image_data']
             image_path = frame_info['output']
             write_image_queue.put({'image_data': image_data, 'image_path': image_path})
