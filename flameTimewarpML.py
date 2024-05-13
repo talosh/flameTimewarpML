@@ -196,10 +196,10 @@ class ApplyModelDialog():
             import flame
 
             model_path_dir = os.path.dirname(self.model_path)
-            print (f'model_path_dir: {model_path_dir}')
-
             if not os.path.isdir(model_path_dir):
                 model_path_dir = os.path.join(os.path.dirname(__file__), 'models')
+
+            print (f'model_path_dir: {model_path_dir}')
 
             flame.browser.show(
                 title = 'Select flameTimewarpML Model:',
