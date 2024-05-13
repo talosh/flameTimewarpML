@@ -10,9 +10,6 @@ try:
     import queue
     import threading
 
-    import numpy as np
-    import torch
-
 except Exception as e:
     python_executable_path = sys.executable
     if '.miniconda' in python_executable_path:
@@ -400,14 +397,15 @@ class Timewarp():
         self.settings = self.json_info.get('settings')
         print('Initializing TimewarpML from Flame setup...')
         self.model_path = self.json_info.get('model_path')
-        # self.model = self.find_and_import_model(self.model_path)
+        self.model = self.find_and_import_model(self.model_path)
 
-    '''
     def find_and_import_model(self, model_file_path):
 
         print (self.model_path)
-
         import importlib
+        import torch
+
+        return
 
         model_file = os.path.basename(model_file_path)
         module_name = model_file[:-3]  # Remove '.py' from filename to get module name
@@ -415,7 +413,6 @@ class Timewarp():
         module = importlib.import_module(module_path)
         model_object = getattr(module, 'Model')
         return model_object
-    '''
 
     def process(self):
         tw_setup_string = self.json_info.get('setup')
