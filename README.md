@@ -88,7 +88,7 @@ conda install numpy
 conda install conda-pack
 ```
 
-* Install pytorch. Please look up exact commands depending on OS and Cuda versions at <>
+* Install pytorch. Please look up exact commands depending on OS and Cuda versions
 
 * Linux example
 ```bash
