@@ -488,6 +488,7 @@ class Timewarp():
             write_image_queue.put({'image_data': image_data, 'image_path': image_path})
 
         write_thread.join()
+        return True
    
     def bake_flame_tw_setup(self, tw_setup_string):
         # parses tw setup from flame and returns dictionary
