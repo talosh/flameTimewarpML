@@ -194,10 +194,16 @@ class ApplyModelDialog():
         def open_model_browser():
             self.window.hide()
             import flame
+
+            self.model_path_dir = os.path.dirname(self.model_path)
+
+            if not os.path.isdir(self.model_path_dir):
+                self.model_path_dir = os.path.join(os.path.dirname(__file__), 'models')
+
             flame.browser.show(
                 title = 'Select flameTimewarpML Model:',
                 extension = 'pth',
-                default_path = os.path.dirname(self.model_path),
+                default_path = os.path.dirname(self.model_path_dir),
                 multi_selection = False)
             if len(flame.browser.selection) > 0:
                 self.model_path = flame.browser.selection[0]
@@ -501,7 +507,6 @@ class ApplyModelDialog():
                         self.log('Error removing %s: %s' % (import_path, e))
                 break
             time.sleep(0.1)
-
 
     def export_clip(self, clip, export_dir, export_preset = None):
         import flame
