@@ -399,6 +399,7 @@ class Timewarp():
         tw_setup_string = self.json_info.get('setup')
         for k in self.json_info.keys():
             print (k)
+            print (f'{self.json_info}')
         src_files_list = [file for file in os.listdir(self.source_folder) if file.endswith('.exr')]
         input_duration = len(src_files_list)
         if not input_duration:
