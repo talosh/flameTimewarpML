@@ -592,9 +592,7 @@ class Timewarp():
                 return incoming_data
             elif ratio == 1:
                 return outgoing_data
-            else:
-                return outgoing_data
-            
+            else:            
                 img0 = torch.from_numpy(incoming_data.copy())
                 if 'mps' not in str(device):
                     img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
@@ -608,6 +606,8 @@ class Timewarp():
                 else:
                     img1 = img1.to(device = device, dtype = torch.float32, non_blocking = True)
                 img1 = img1.permute(2, 0, 1).unsqueeze(0)
+
+                return outgoing_data
 
                 img0_ref = normalize(img0)
                 img1_ref = normalize(img1)
