@@ -607,8 +607,6 @@ class Timewarp():
                     img1 = img1.to(device = device, dtype = torch.float32, non_blocking = True)
                 img1 = img1.permute(2, 0, 1).unsqueeze(0)
 
-                return outgoing_data
-
                 img0_ref = normalize(img0)
                 img1_ref = normalize(img1)
 
@@ -619,6 +617,8 @@ class Timewarp():
                 
                 img0_ref = torch.nn.functional.pad(img0_ref, padding)
                 img1_ref = torch.nn.functional.pad(img1_ref, padding)
+
+                return outgoing_data
 
                 flow_list, mask_list, merged = self.model(
                     img0_ref, 
