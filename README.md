@@ -103,7 +103,7 @@ conda install pytorch::pytorch torchvision -c pytorch
 
 * Install rest of the dependencies
 ```bash
-pip install -r requirements.txt
+pip install -r {flameTimewarpML folder}/requirements.txt
 ```
 
 * Pack append environment into a portable tar file
