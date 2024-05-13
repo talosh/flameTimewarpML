@@ -459,8 +459,6 @@ class Timewarp():
             frame_info = {}
             incoming_frame_number = int(frame_value_map[frame_number])
 
-            print (f'inc: {incoming_frame_number}')
-
             if incoming_frame_number < 1:
                 frame_info['incoming'] = src_files.get(1)
                 frame_info['outgoing'] = None
@@ -485,7 +483,7 @@ class Timewarp():
             frame_info['output'] = os.path.join(self.target_folder, f'{self.clip_name}.{output_frame_number:08}.exr')
             frame_info_list.append(frame_info)
 
-            print (f'inc: {output_frame_number}')
+            print (f'inc: {incoming_frame_number}, out: {output_frame_number}, r: {frame_info["ratio"]}')
 
             output_frame_number += 1
 
