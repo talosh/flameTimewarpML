@@ -469,7 +469,6 @@ class Timewarp():
                 except Exception as e:
                     print (f'error writing file: {image_path}: {e}')
 
-
         write_image_queue = queue.Queue(maxsize=9)
         write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
         write_thread.daemon = True
@@ -477,12 +476,11 @@ class Timewarp():
 
         for idx in range(len(frame_info_list)):
             frame_info = read_image_queue.get()
-            print (f'frame {idx + 1} of {len(frame_info_list)}')
+            # print (f'frame {idx + 1} of {len(frame_info_list)}')
             image_data = frame_info['incoming_image_data']['image_data']
             image_path = frame_info['output']
             write_image_queue.put({'image_data': image_data, 'image_path': image_path})
 
-        write_image_queue.put({'image_data': None, 'image_path': None})
         write_thread.join()
    
     def bake_flame_tw_setup(self, tw_setup_string):
