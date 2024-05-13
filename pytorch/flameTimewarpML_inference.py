@@ -534,12 +534,13 @@ class Timewarp():
             img0 = frame_info['incoming_image_data']['image_data']
             img1 = frame_info['outgoing_image_data']['image_data']
             ratio = frame_info['ratio']
+            image_path = frame_info['output']
             try:
                 result = self.predict(img0, img1, ratio = ratio, iterations = 1)
+                print(image_path)
+                write_image_queue.put({'image_data': result, 'image_path': image_path})
             except Exception as e:
                 print (f'{e}')
-            image_path = frame_info['output']
-            write_image_queue.put({'image_data': result, 'image_path': image_path})
 
         write_image_queue.put({'image_data': None, 'image_path': None})
         write_thread.join()
@@ -599,7 +600,6 @@ class Timewarp():
             elif ratio == 1:
                 return outgoing_data
             else:
-                ratio = 0.2
                 img0 = torch.from_numpy(incoming_data.copy())
                 if 'mps' not in str(device):
                     img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
