@@ -516,6 +516,7 @@ class Timewarp():
                     if image_data is None:
                         print ('finishing write thread')
                         break
+                    print(image_path)
                     write_exr(image_data, image_path)
                     self.pbar.update(1)
                 except queue.Empty:
@@ -537,7 +538,6 @@ class Timewarp():
             image_path = frame_info['output']
             try:
                 result = self.predict(img0, img1, ratio = ratio, iterations = 1)
-                print(image_path)
                 write_image_queue.put({'image_data': result, 'image_path': image_path})
             except Exception as e:
                 print (f'{e}')
