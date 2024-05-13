@@ -92,7 +92,7 @@ conda install conda-pack
 
 * Linux example
 ```bash
-conda install pytorch pytorch-cuda=11.8 -c pytorch -c nvidia
+conda install pytorch torchvision pytorch-cuda=11.8 -c pytorch -c nvidia
 ```
 
 * MacOS example:
