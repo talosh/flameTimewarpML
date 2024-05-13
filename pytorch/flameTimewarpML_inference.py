@@ -485,7 +485,7 @@ class Timewarp():
 
             # print (f'fr: {output_frame_number}, inc:{incoming_frame_number}, out: {incoming_frame_number + 1}, r: {frame_info["ratio"]}')
 
-            print ('f{frame_info}')
+            print (f'{frame_info}')
 
             output_frame_number += 1
 
