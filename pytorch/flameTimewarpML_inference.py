@@ -458,8 +458,6 @@ class Timewarp():
             frame_info = {}
             incoming_frame_number = int(frame_value_map[frame_number])
 
-            print (incoming_frame_number)
-
             if incoming_frame_number < 1:
                 frame_info['incoming'] = src_files.get(1)
                 frame_info['outgoing'] = None
