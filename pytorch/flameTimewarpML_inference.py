@@ -538,9 +538,6 @@ class Timewarp():
             img0 = frame_info['incoming_image_data']['image_data']
             img1 = frame_info['outgoing_image_data']['image_data']
             ratio = frame_info['ratio']
-
-            print (ratio)
-
             try:
                 result = self.predict(img0, img1, ratio = ratio, iterations = 1)
             except Exception as e:
@@ -556,6 +553,8 @@ class Timewarp():
     def predict(self, incoming_data, outgoing_data, ratio = 0.5, iterations = 1):
         import numpy as np
         import torch
+
+        print (ratio)
 
         device = self.device
 
