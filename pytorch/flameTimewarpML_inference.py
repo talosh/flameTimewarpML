@@ -600,7 +600,10 @@ class Timewarp():
                 return incoming_data
             elif ratio == 1:
                 return outgoing_data
-            else:            
+            else:
+                
+                ratio = 0.1
+
                 img0 = torch.from_numpy(incoming_data.copy())
                 if 'mps' not in str(device):
                     img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
