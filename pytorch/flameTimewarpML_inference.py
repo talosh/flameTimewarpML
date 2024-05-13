@@ -418,6 +418,8 @@ class Timewarp():
             module = importlib.import_module(module_path)
             model_object = getattr(module, 'Model')
             model = model_object().get_model()().to(self.device)
+            model.load_state_dict(checkpoint['flownet_state_dict'])
+            model.eval()
             return model
         except Exception as e:
             print ({e})
