@@ -452,10 +452,6 @@ class Timewarp():
 
         frame_info_list = []
         output_frame_number = 1
-
-        print (f'{frame_value_map}')
-        print (f'{self.record_in}')
-        print (f'{self.record_out + 1}')
         
         for frame_number in range(self.record_in, self.record_out + 1):
             frame_info = {}
@@ -519,7 +515,6 @@ class Timewarp():
                     if image_data is None:
                         print ('finishing write thread')
                         break
-                    print(image_path)
                     write_exr(image_data, image_path)
                     self.pbar.update(1)
                 except queue.Empty:
