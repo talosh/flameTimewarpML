@@ -12,7 +12,11 @@ try:
     import importlib
 
 except Exception as e:
-    print (f'Exception: {e}')
+    python_executable_path = sys.executable
+    if '.miniconda' in python_executable_path:
+        print (f'Exception: {e}')
+        print (f'Using {python_executable_path} python interpreter')
+        sys.exit()
 
 class MinExrReader:
     '''Minimal, standalone OpenEXR reader for single-part, uncompressed scan line files.
