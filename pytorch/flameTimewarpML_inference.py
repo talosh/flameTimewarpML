@@ -467,7 +467,7 @@ class Timewarp():
                          file=sys.stdout,
                          bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]',
                          ascii=f' {chr(0x2588)}',
-                         ncols=150
+                         ncols=80
                          )
 
         def write_images(write_image_queue):
