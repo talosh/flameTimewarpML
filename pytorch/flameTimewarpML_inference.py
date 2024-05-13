@@ -397,6 +397,7 @@ class Timewarp():
         self.clip_name = self.json_info.get('clip_name')
         self.settings = self.json_info.get('settings')
         print('Initializing TimewarpML from Flame setup...')
+        self.model_path = self.json_info.get('model_path')
 
     def process(self):
         tw_setup_string = self.json_info.get('setup')
