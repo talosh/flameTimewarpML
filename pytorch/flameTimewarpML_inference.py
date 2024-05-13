@@ -499,6 +499,8 @@ class Timewarp():
         read_thread.start()
 
         print(f'rendering {len(frame_info_dict.keys())} frames to {self.target_folder}')
+
+        '''
         self.pbar = tqdm(total=len(frame_info_dict.keys()), 
                          unit='frame',
                          file=sys.stdout,
@@ -506,6 +508,7 @@ class Timewarp():
                          ascii=f' {chr(0x2588)}',
                          ncols=80
                          )
+        '''
 
         def write_images(write_image_queue):
             while True:
@@ -518,7 +521,7 @@ class Timewarp():
                         print ('finishing write thread')
                         break
                     write_exr(image_data, image_path)
-                    self.pbar.update(1)
+                    # self.pbar.update(1)
                 except queue.Empty:
                     time.sleep(1e-4)
                 except Exception as e:
@@ -529,12 +532,15 @@ class Timewarp():
         write_thread.daemon = True
         write_thread.start()
 
-        for idx in range(len(frame_info_list)):
+        for idx in range(len(frame_info_dict.keys())):
             frame_info = read_image_queue.get()
             # print (f'frame {idx + 1} of {len(frame_info_list)}')
             img0 = frame_info['incoming_image_data']['image_data']
             img1 = frame_info['outgoing_image_data']['image_data']
             ratio = frame_info['ratio']
+
+            print (ratio)
+
             try:
                 result = self.predict(img0, img1, ratio = ratio, iterations = 1)
             except Exception as e:
@@ -544,7 +550,7 @@ class Timewarp():
 
         write_image_queue.put({'image_data': None, 'image_path': None})
         write_thread.join()
-        self.pbar.close()
+        # self.pbar.close()
         return True
 
     def predict(self, incoming_data, outgoing_data, ratio = 0.5, iterations = 1):
