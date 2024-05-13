@@ -16,10 +16,6 @@ except:
         print (f'Using {python_executable_path} python interpreter')
         sys.exit()
 
-from pprint import pprint
-
-device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda')
-
 class MinExrReader:
     '''Minimal, standalone OpenEXR reader for single-part, uncompressed scan line files.
 
