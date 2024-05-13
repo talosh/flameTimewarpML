@@ -618,13 +618,11 @@ class Timewarp():
                 img0_ref = torch.nn.functional.pad(img0_ref, padding)
                 img1_ref = torch.nn.functional.pad(img1_ref, padding)
 
-                return outgoing_data
-
                 flow_list, mask_list, merged = self.model(
                     img0_ref, 
                     img1_ref, 
                     ratio, 
-                    iterations
+                    iterations = iterations
                     )
 
                 result = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
