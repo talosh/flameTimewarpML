@@ -461,7 +461,6 @@ class Timewarp():
             frame_info = {}
             incoming_frame_number = int(frame_value_map[frame_number])
 
-            '''
             if incoming_frame_number < 1:
                 frame_info['incoming'] = src_files.get(1)
                 frame_info['outgoing'] = None
@@ -479,7 +478,6 @@ class Timewarp():
                 frame_info_list.append(frame_info)
                 output_frame_number += 1
                 continue
-            '''
 
             frame_info['incoming'] = src_files.get(incoming_frame_number)
             frame_info['outgoing'] = src_files.get(incoming_frame_number + 1)
@@ -541,11 +539,15 @@ class Timewarp():
             img1 = frame_info['outgoing_image_data']['image_data']
             ratio = frame_info['ratio']
             image_path = frame_info['output']
+            write_image_queue.put({'image_data': img0, 'image_path': image_path})
+
+            '''
             try:
                 result = self.predict(img0, img1, ratio = 0.5, iterations = 1)
                 write_image_queue.put({'image_data': result, 'image_path': image_path})
             except Exception as e:
                 print (f'{e}')
+            '''
 
         write_image_queue.put({'image_data': None, 'image_path': None})
         write_thread.join()
