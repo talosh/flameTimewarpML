@@ -493,7 +493,7 @@ class ApplyModelDialog():
                     flame.schedule_idle_event(import_flame_clip)
 
                 # clean-up source files used
-                print('Cleaning up temporary files used: %s' % pformat(folders_to_cleanup))
+                print(f'Cleaning up temporary files used: {folders_to_cleanup}')
                 for folder in folders_to_cleanup:
                     cmd = 'rm -f "' + os.path.abspath(folder) + '/"*'
                     self.log('Executing command: %s' % cmd)
