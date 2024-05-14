@@ -539,7 +539,7 @@ class Timewarp():
 
             if idx == 0:
                 if 'mps' in str(self.device):
-                    ratio = ratio + 1e-6
+                    ratio = 1e-6
                     result = self.predict(img0.copy(), img1.copy(), ratio = ratio, iterations = 1)
                     del result
             try:
