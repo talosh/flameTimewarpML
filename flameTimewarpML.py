@@ -482,6 +482,8 @@ class ApplyModelDialog():
             if not os.path.isfile(lockfile):
                 print('Importing result from: %s' % import_path)
                 file_names = [f for f in os.listdir(import_path) if f.endswith('.exr')]
+                print (file_names)
+
                 if file_names:
                     file_names.sort()
                     first_frame, ext = os.path.splitext(file_names[0])
