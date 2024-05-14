@@ -527,6 +527,8 @@ class Timewarp():
         write_thread.daemon = True
         write_thread.start()
 
+        warmup = True
+
         for idx in range(len(frame_info_list)):
             frame_info = read_image_queue.get()
             # print (f'frame {idx + 1} of {len(frame_info_list)}')
@@ -535,6 +537,9 @@ class Timewarp():
             ratio = frame_info['ratio']
             image_path = frame_info['output']
             try:
+                if warmup:
+                    self.predict(img0, img1, ratio = ratio, iterations = 1)
+                    warmup = False
                 result = self.predict(img0, img1, ratio = ratio, iterations = 1)
                 write_image_queue.put({'image_data': result.copy(), 'image_path': image_path})
                 del result
@@ -632,8 +637,8 @@ class Timewarp():
                     iterations = iterations
                     )
 
-                # result = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
-                result = merged[0][:, :3, :h, :w]
+                result = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
+                # result = merged[0][:, :3, :h, :w]
                 return result[0].clone().cpu().detach().numpy().transpose(1, 2, 0).astype(np.float16)
                 # del img0, img1, img0_ref, img1_ref, flow_list, mask_list, merged, incoming_data, outgoing_data, result_torch
                 # return result
