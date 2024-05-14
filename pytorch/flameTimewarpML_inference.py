@@ -551,6 +551,7 @@ class Timewarp():
         import torch
 
         device = self.device
+        self.model.eval()
 
         def normalize(image_array) :
             def custom_bend(x):
