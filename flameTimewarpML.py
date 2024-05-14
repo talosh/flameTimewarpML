@@ -481,7 +481,7 @@ class ApplyModelDialog():
 
         while self.threads:
             if not os.path.isfile(lockfile):
-                self.log('Importing result from: %s' % import_path)
+                print('Importing result from: %s' % import_path)
                 file_names = [f for f in os.listdir(import_path) if f.endswith('.exr')]
                 if file_names:
                     file_names.sort()
@@ -493,7 +493,7 @@ class ApplyModelDialog():
                     flame.schedule_idle_event(import_flame_clip)
 
                 # clean-up source files used
-                self.log('Cleaning up temporary files used: %s' % pformat(folders_to_cleanup))
+                print('Cleaning up temporary files used: %s' % pformat(folders_to_cleanup))
                 for folder in folders_to_cleanup:
                     cmd = 'rm -f "' + os.path.abspath(folder) + '/"*'
                     self.log('Executing command: %s' % cmd)
