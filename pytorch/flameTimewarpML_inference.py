@@ -537,11 +537,6 @@ class Timewarp():
             ratio = frame_info['ratio']
             image_path = frame_info['output']
             try:
-                if warmup:
-                    result = self.predict(img0, img1, ratio = ratio, iterations = 1)
-                    write_image_queue.put({'image_data': result.copy(), 'image_path': image_path})
-                    del result
-                    warmup = False
                 result = self.predict(img0, img1, ratio = ratio, iterations = 1)
                 write_image_queue.put({'image_data': result.copy(), 'image_path': image_path})
                 del result
