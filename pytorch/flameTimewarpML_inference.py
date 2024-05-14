@@ -420,8 +420,8 @@ class Timewarp():
             model = model_object().get_model()().to(self.device)
             model.load_state_dict(checkpoint['flownet_state_dict'])
             model.eval()
-            if 'mps' not in str(self.device):
-                model.half()
+            # if 'mps' not in str(self.device):
+            #    model.half()
             return model
         except Exception as e:
             print ({e})
@@ -602,18 +602,20 @@ class Timewarp():
                 return outgoing_data
             else:
                 img0 = torch.from_numpy(incoming_data.copy())
-                if 'mps' in str(device):
-                    img0 = img0.to(device = device, dtype = torch.float32, non_blocking = True)
-                else:
-                    img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
+                img0 = img0.to(device = device, dtype = torch.float32, non_blocking = True)
+                # if 'mps' in str(device):
+                #    img0 = img0.to(device = device, dtype = torch.float32, non_blocking = True)
+                #else:
+                #    img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
 
                 img0 = img0.permute(2, 0, 1).unsqueeze(0)
 
                 img1 = torch.from_numpy(outgoing_data.copy())
-                if 'mps' in str(device):
-                    img1 = img1.to(device = device, dtype = torch.float32, non_blocking = True)
-                else:
-                    img1 = img1.to(device = device, dtype = torch.float16, non_blocking = True)
+                img1 = img1.to(device = device, dtype = torch.float32, non_blocking = True)
+                #if 'mps' in str(device):
+                #    img1 = img1.to(device = device, dtype = torch.float32, non_blocking = True)
+                #else:
+                #    img1 = img1.to(device = device, dtype = torch.float16, non_blocking = True)
                     
                 img1 = img1.permute(2, 0, 1).unsqueeze(0)
 
