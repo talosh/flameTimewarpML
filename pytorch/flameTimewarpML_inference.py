@@ -637,6 +637,13 @@ class Timewarp():
                     iterations = iterations
                     )
 
+                flow_list, mask_list, merged = self.model(
+                    img0_ref, 
+                    img1_ref, 
+                    ratio, 
+                    iterations = iterations
+                    )
+
                 result = warp(img0, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(img1, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
                 # result = merged[0][:, :3, :h, :w]
                 return result[0].clone().cpu().detach().numpy().transpose(1, 2, 0).astype(np.float16)
