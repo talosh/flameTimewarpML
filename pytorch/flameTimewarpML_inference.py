@@ -536,12 +536,20 @@ class Timewarp():
             img1 = frame_info['outgoing_image_data']['image_data']
             ratio = frame_info['ratio']
             image_path = frame_info['output']
+
+            if idx == 0:
+                if 'mps' in str(self.device):
+                    ratio = ratio + 1e-6
+
             try:
                 result = self.predict(img0, img1, ratio = ratio, iterations = 1)
                 write_image_queue.put({'image_data': result.copy(), 'image_path': image_path})
                 del result
             except Exception as e:
                 print (f'{e}')
+
+
+        
 
         write_image_queue.put({'image_data': None, 'image_path': None})
         write_thread.join()
