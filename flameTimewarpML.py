@@ -480,6 +480,18 @@ class ApplyModelDialog():
 
         while self.threads:
             if not os.path.isfile(lockfile):
+
+                # clean-up source files used
+                print(f'Cleaning up temporary files used: {folders_to_cleanup}')
+                for folder in folders_to_cleanup:
+                    cmd = 'rm -f "' + os.path.abspath(folder) + '/"*'
+                    print('Executing command: %s' % cmd)
+                    os.system(cmd)
+                    try:
+                        os.rmdir(folder)
+                    except Exception as e:
+                        print('Error removing %s: %s' % (folder, e))
+            
                 print('Importing result from: %s' % import_path)
                 flame_friendly_path = import_path
                 flame.schedule_idle_event(import_flame_clip)
@@ -501,17 +513,7 @@ class ApplyModelDialog():
                     flame.schedule_idle_event(import_flame_clip)
                 '''
 
-                # clean-up source files used
-                print(f'Cleaning up temporary files used: {folders_to_cleanup}')
-                for folder in folders_to_cleanup:
-                    cmd = 'rm -f "' + os.path.abspath(folder) + '/"*'
-                    print('Executing command: %s' % cmd)
-                    os.system(cmd)
-                    try:
-                        os.rmdir(folder)
-                    except Exception as e:
-                        print('Error removing %s: %s' % (folder, e))
-
+                '''
                 if os.getenv('FLAMETWML_HARDCOMMIT') == 'True':
                     time.sleep(1)
                     cmd = 'rm -f "' + os.path.abspath(import_path) + '/"*'
@@ -521,6 +523,7 @@ class ApplyModelDialog():
                         os.rmdir(import_path)
                     except Exception as e:
                         print('Error removing %s: %s' % (import_path, e))
+                '''
                 break
             time.sleep(0.1)
 
