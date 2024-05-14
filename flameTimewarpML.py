@@ -495,6 +495,7 @@ class ApplyModelDialog():
                 print('Importing result from: %s' % import_path)
                 flame_friendly_path = import_path
                 flame.schedule_idle_event(import_flame_clip)
+                
                 '''
                 file_names = [f for f in os.listdir(import_path) if f.endswith('.exr')]
                 print (file_names)
