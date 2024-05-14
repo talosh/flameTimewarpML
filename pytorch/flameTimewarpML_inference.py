@@ -1333,7 +1333,7 @@ def main():
             central_widget.setLayout(layout)
             self.setCentralWidget(central_widget)
             
-            self.setGeometry(300, 300, 600, 400)
+            self.setGeometry(300, 300, 800, 400)
             self.setWindowTitle('TimewarpML')
             self.show()
 
