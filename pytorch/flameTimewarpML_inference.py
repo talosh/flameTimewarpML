@@ -401,8 +401,8 @@ class Timewarp():
         self.device = torch.device("mps") if platform.system() == 'Darwin' else torch.device('cuda')
         self.model_path = self.json_info.get('model_path')
         self.model = self.find_and_import_model(self.model_path)
-        if not self.model:
-            print (f'Unable to import model from file {self.model_path}')
+        # if not self.model:
+        #    print (f'Unable to import model from file {self.model_path}')
 
     def find_and_import_model(self, model_file_path):
         import importlib
@@ -616,20 +616,20 @@ class Timewarp():
                 return outgoing_data
             else:
                 img0 = torch.from_numpy(incoming_data.copy())
-                # img0 = img0.to(device = device, dtype = torch.float32, non_blocking = True)
-                if 'mps' in str(device):
-                    img0 = img0.to(device = device, dtype = torch.float32, non_blocking = True)
-                else:
-                    img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
+                img0 = img0.to(device = device, dtype = torch.float32, non_blocking = True)
+                # if 'mps' in str(device):
+                #    img0 = img0.to(device = device, dtype = torch.float32, non_blocking = True)
+                #else:
+                #    img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
 
                 img0 = img0.permute(2, 0, 1).unsqueeze(0)
 
                 img1 = torch.from_numpy(outgoing_data.copy())
                 img1 = img1.to(device = device, dtype = torch.float32, non_blocking = True)
-                if 'mps' in str(device):
-                    img1 = img1.to(device = device, dtype = torch.float32, non_blocking = True)
-                else:
-                    img1 = img1.to(device = device, dtype = torch.float16, non_blocking = True)
+                # if 'mps' in str(device):
+                #    img1 = img1.to(device = device, dtype = torch.float32, non_blocking = True)
+                #else:
+                #    img1 = img1.to(device = device, dtype = torch.float16, non_blocking = True)
                     
                 img1 = img1.permute(2, 0, 1).unsqueeze(0)
 
