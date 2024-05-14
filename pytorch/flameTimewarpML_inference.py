@@ -554,7 +554,7 @@ class Timewarp():
 
         device = self.device
 
-        def normalize(image_array) :
+        def normalize_(image_array) :
             def custom_bend(x):
                 linear_part = x
                 exp_bend = torch.sign(x) * torch.pow(torch.abs(x), 1 / 4 )
@@ -568,6 +568,26 @@ class Timewarp():
             image_array = torch.tanh(image_array)
             image_array = (image_array + 1) / 2
             return image_array
+
+        def normalize(image_array_torch):
+            import numpy as np
+
+            image_array = image_array_torch.clone().cpu().detach().numpy()
+
+            def custom_bend(x):
+                linear_part = x
+                exp_bend = np.sign(x) * np.power(np.abs(x), 1 / 4)
+                return np.where(x > 1, exp_bend, np.where(x < -1, exp_bend, linear_part))
+
+            # Transfer (0.0 - 1.0) onto (-1.0 - 1.0) for tanh
+            image_array = (image_array * 2) - 1
+            # Bend values below -1.0 and above 1.0 exponentially so they are not larger than (-4.0 - 4.0)
+            image_array = custom_bend(image_array)
+            # Bend everything to fit -1.0 - 1.0 with hyperbolic tangent
+            image_array = np.tanh(image_array)
+            # Move it to 0.0 - 1.0 range
+            image_array = (image_array + 1) / 2
+
 
         def warp(tenInput, tenFlow):
             input_device = tenInput.device
