@@ -543,17 +543,19 @@ class Timewarp():
                 # so we need to run it once as dummy
                 if 'mps' in str(self.device):
                     ratio = 1e-4
-                    result = self.predict(img0.copy(), img1.copy(), ratio = ratio, iterations = 1)
-                    del result
+                    try:
+                        result = self.predict(img0.copy(), img1.copy(), ratio = ratio, iterations = 1)
+                        del result
+                    except Exception as e:
+                        print (f'{e}')
+                        return False
             try:
                 result = self.predict(img0, img1, ratio = ratio, iterations = 1)
                 write_image_queue.put({'image_data': result.copy(), 'image_path': image_path})
                 del result
             except Exception as e:
                 print (f'{e}')
-
-
-        
+                return False
 
         write_image_queue.put({'image_data': None, 'image_path': None})
         write_thread.join()
