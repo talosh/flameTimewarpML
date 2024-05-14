@@ -599,7 +599,46 @@ class Model:
 
                 return flow_list, mask_list, merged
 
-        self.model = FlownetCas
+        class FlownetMem(Module):
+            def __init__(self):
+                super().__init__()
+                self.block0 = Flownet(7+16, c=192)
+                self.block1 = Flownet(8+4+16, c=128)
+                self.block2 = Flownet(8+4+16, c=96)
+                self.block3 = Flownet(8+4+16, c=64)
+                self.encode = Head()
+
+            def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
+                img0 = img0
+                img1 = img1
+
+                flow_list = [None] * 4
+                mask_list = [None] * 4
+                merged = [None] * 4
+                flow, mask = self.block0(img0, img1, timestep, None, None, scale=scale[0])
+
+                for iteration in range(iterations):
+                    flow_d, mask = self.block1(img0, img1, timestep, mask, flow, scale=scale[1])
+                    flow += flow_d
+                    del flow_d
+
+                for iteration in range(iterations):
+                    flow_d, mask = self.block2(img0, img1, timestep, mask, flow, scale=scale[2])
+                    flow += flow_d
+                    del flow_d
+
+                for iteration in range(iterations):
+                    flow_d, mask = self.block3(img0, img1, timestep, mask, flow, scale=scale[3])
+                    flow += flow_d
+                    del flow_d
+
+                flow_list[3] = flow
+                mask_list[3] = torch.sigmoid(mask)
+                # merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
+
+                return flow_list, mask_list, merged
+
+        self.model = FlownetMem
         self.training_model = FlownetCas
 
     @staticmethod
