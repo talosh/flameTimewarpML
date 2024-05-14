@@ -10,6 +10,7 @@ import os
 import sys
 import importlib
 from pprint import pprint
+import threading
 
 try:
     from PySide6 import QtWidgets, QtCore, QtGui
