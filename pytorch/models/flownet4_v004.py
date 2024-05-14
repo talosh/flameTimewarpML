@@ -637,7 +637,7 @@ class Model:
                 # merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 del img0, img1
-                
+
                 return flow_list, mask_list, merged
 
         self.model = FlownetMem
@@ -654,7 +654,7 @@ class Model:
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v001'
+        return 'TWML_Flownet_v004'
 
     @staticmethod
     def input_channels(model_state_dict):
