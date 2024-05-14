@@ -1222,6 +1222,7 @@ def main():
         def __init__(self, argv, parent=None):
             super(Worker, self).__init__(parent)
             self.argv = argv
+            self.lockfile = self.argv[1]
 
         def run(self):
             if len(self.argv) < 2:
@@ -1255,7 +1256,9 @@ def main():
 
             tw = Timewarp(json_info)
             result = tw.process()
-            # self.result.emit(result, '')
+            if os.path.isfile(self.lockfile):
+                os.remove(self.lockfile)
+            self.result.emit(result, '')
 
             '''
             for i in tqdm(range(100),
