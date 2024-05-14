@@ -10,16 +10,16 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 ### Status
 
 * Training script and Flownet4 tested in production on Linux with constant speed retime
-* Flownet2 tested on MacOS Apple Silicon with Pytorch 2.2.2
+* Flownet2 tested on MacOS Apple Silicon with Pytorch 2.3
 
     #### Todo for v0.4.5 dev 001
 
 * (done) ~~Add generalization logic to training script~~
 * (done) ~~Refine batch retime script~~
-* Share pre-trained weights for Flownet4 to enable using it in prod with command line.
+* Share pre-trained weights for Flownet4 to enable using it in prod with command line and limited interface.
 * Optimize memory usage for Flownet4
 * Add Fluidmorph and Interpolate logic to new Flame script.
-* Add "Allow paint-in" switch for inference.
+* Test on Intel Mac with Pytorch 2.2.2 (Latest version avaliable for x86 Macs)
 
 ### Training
 
