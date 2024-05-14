@@ -496,22 +496,22 @@ class ApplyModelDialog():
                 print(f'Cleaning up temporary files used: {folders_to_cleanup}')
                 for folder in folders_to_cleanup:
                     cmd = 'rm -f "' + os.path.abspath(folder) + '/"*'
-                    self.log('Executing command: %s' % cmd)
+                    print('Executing command: %s' % cmd)
                     os.system(cmd)
                     try:
                         os.rmdir(folder)
                     except Exception as e:
-                        self.log('Error removing %s: %s' % (folder, e))
+                        print('Error removing %s: %s' % (folder, e))
 
                 if os.getenv('FLAMETWML_HARDCOMMIT') == 'True':
                     time.sleep(1)
                     cmd = 'rm -f "' + os.path.abspath(import_path) + '/"*'
-                    self.log('Executing command: %s' % cmd)
+                    print('Executing command: %s' % cmd)
                     os.system(cmd)
                     try:
                         os.rmdir(import_path)
                     except Exception as e:
-                        self.log('Error removing %s: %s' % (import_path, e))
+                        print('Error removing %s: %s' % (import_path, e))
                 break
             time.sleep(0.1)
 
