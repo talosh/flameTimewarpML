@@ -552,8 +552,8 @@ class Timewarp():
 
         device = self.device
         self.model.eval()
-        # if 'mps' not in str(device):
-        #    self.model.half()
+        if 'mps' not in str(device):
+            self.model.half()
 
         def normalize(image_array) :
             def custom_bend(x):
@@ -608,7 +608,6 @@ class Timewarp():
                 else:
                     img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
 
-                img0 = img0.to(device = device, dtype = torch.float32, non_blocking = True)
                 img0 = img0.permute(2, 0, 1).unsqueeze(0)
 
                 img1 = torch.from_numpy(outgoing_data.copy())
@@ -617,7 +616,6 @@ class Timewarp():
                 else:
                     img1 = img1.to(device = device, dtype = torch.float16, non_blocking = True)
                     
-                img1 = img1.to(device = device, dtype = torch.float32, non_blocking = True)
                 img1 = img1.permute(2, 0, 1).unsqueeze(0)
 
                 img0_ref = normalize(img0)
