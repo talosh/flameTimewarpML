@@ -408,20 +408,19 @@ class Timewarp():
         import importlib
         import torch
 
-        checkpoint = torch.load(model_file_path, map_location=self.device)
-        model_info = checkpoint.get('model_info')
-        model_file = model_info.get('file')
-        module_name = model_file[:-3]  # Remove '.py' from filename to get module name
-        module_path = f"models.{module_name}"
-
         try:
+            checkpoint = torch.load(model_file_path, map_location=self.device)
+            model_info = checkpoint.get('model_info')
+            model_file = model_info.get('file')
+            module_name = model_file[:-3]  # Remove '.py' from filename to get module name
+            module_path = f"models.{module_name}"
             module = importlib.import_module(module_path)
             model_object = getattr(module, 'Model')
             model = model_object().get_model()().to(self.device)
             model.load_state_dict(checkpoint['flownet_state_dict'])
             model.eval()
-            if 'mps' not in str(self.device):
-                model.half()
+            # if 'mps' not in str(self.device):
+            #    model.half()
             return model
         except Exception as e:
             print ({e})
