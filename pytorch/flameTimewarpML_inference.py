@@ -1334,7 +1334,7 @@ def main():
             self.setCentralWidget(central_widget)
             
             self.setGeometry(300, 300, 600, 400)
-            self.setWindowTitle('Capture tqdm Output')
+            self.setWindowTitle('TimewarpML')
             self.show()
 
         def onUpdateText(self, text):
