@@ -641,11 +641,8 @@ class Timewarp():
                     
                 img1 = img1.permute(2, 0, 1).unsqueeze(0)
 
-                # img0_ref = normalize(img0)
-                # img1_ref = normalize(img1)
-
-                img0_ref = img0
-                img1_ref = img1
+                img0_ref = normalize(img0)
+                img1_ref = normalize(img1)
 
                 n, c, h, w = img0.shape
                 ph = ((h - 1) // 64 + 1) * 64
