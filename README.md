@@ -23,6 +23,26 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 
 ### Training
 
+#### Finetune for specific shot or set of shots
+Export as Linear ACEScg (AP1) Uncompressed OpenEXR sequence.
+Export your shots so each shot are in separate folder.
+Copy pre-trained model file (large or lite) to the file to train with.
+If motion is fast place the whole shot or its parts with fast motion to "fast" folder.
+
+```bash
+cd {flameTimewarpML folder}
+./train.sh --state_file {Path to copied state file}/MyShot001.pth --generalize 1 --lr 4e-6 --acescc 0 --onecycle 1000 {Path to shot}/{fast}/
+```
+
+Change number after "--onecycle" to set number of runs.
+Use "--acescc 0" to train in Linear or to retain input colourspace, "--acescc 100" to convert all samples to Log.
+
+#### Train your own model
+```bash
+cd {flameTimewarpML folder}
+./train.sh --state_file {Path to MyModel}/MyModel001.pth {Path to Dataset}/
+```
+
 #### Dataset preparation
 Training script will scan all the folders under a given path and will compose training samples out of folders where .exr files are found.
 Only Uncompressed OpenEXR files are supported at the moment.
