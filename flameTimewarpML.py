@@ -461,6 +461,7 @@ class ApplyModelDialog():
                 new_clip = new_clips[0]
                 if new_clip:
                     new_clip.name.set_value(new_clip_name)
+                    new_clip.commit()
             try:
                 flame.execute_shortcut('Refresh Thumbnails')
             except:
