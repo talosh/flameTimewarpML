@@ -464,7 +464,6 @@ class ApplyModelDialog():
                 new_clip = new_clips[0]
                 if new_clip:
                     new_clip.name.set_value(new_clip_name)
-                    new_clip.commit()
             try:
                 flame.execute_shortcut('Refresh Thumbnails')
             except:
@@ -488,6 +487,8 @@ class ApplyModelDialog():
                     first_frame, ext = os.path.splitext(file_names[0])
                     last_frame, ext = os.path.splitext(file_names[-1])
                     flame_friendly_path = os.path.join(import_path, '[' + first_frame + '-' + last_frame + ']' + '.exr')
+
+                    print (flame_friendly_path)
 
                     import flame
                     flame.schedule_idle_event(import_flame_clip)
