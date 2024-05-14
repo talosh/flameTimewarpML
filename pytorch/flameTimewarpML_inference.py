@@ -498,7 +498,7 @@ class Timewarp():
         read_thread.daemon = True
         read_thread.start()
 
-        print(f'rendering {len(frame_info_list)} frames to {self.target_folder}')
+        print(f'rendering {len(frame_info_list)} frames to:\n{self.target_folder}')
         self.pbar = tqdm(total=len(frame_info_list), 
                          unit='frame',
                          file=sys.stdout,
