@@ -374,7 +374,7 @@ class ApplyModelDialog():
                 args=(
                     result_folder, 
                     new_clip_name, 
-                    clip.parent, 
+                    clip, 
                     [source_clip_folder],
                     lockfile_path
                     )
