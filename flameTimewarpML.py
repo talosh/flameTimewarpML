@@ -481,23 +481,25 @@ class ApplyModelDialog():
         while self.threads:
             if not os.path.isfile(lockfile):
                 print('Importing result from: %s' % import_path)
-                flame_friendly_path = import_path
-                flame.schedule_idle_event(import_flame_clip)
-                '''
+                # flame_friendly_path = import_path
+                # flame.schedule_idle_event(import_flame_clip)
+                # '''
                 file_names = [f for f in os.listdir(import_path) if f.endswith('.exr')]
                 print (file_names)
 
                 if file_names:
                     file_names.sort()
-                    first_frame, ext = os.path.splitext(file_names[0])
-                    last_frame, ext = os.path.splitext(file_names[-1])
+                    first_name, ext = os.path.splitext(file_names[0])
+                    last_name, ext = os.path.splitext(file_names[-1])
+                    first_frame = first_name.split('.')[-1]
+                    last_frame = last_name.split('.')[-1]
                     flame_friendly_path = os.path.join(import_path, '[' + first_frame + '-' + last_frame + ']' + '.exr')
 
                     print (flame_friendly_path)
 
                     import flame
                     flame.schedule_idle_event(import_flame_clip)
-                '''
+                # '''
 
                 # clean-up source files used
                 print(f'Cleaning up temporary files used: {folders_to_cleanup}')
