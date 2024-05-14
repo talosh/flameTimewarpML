@@ -554,7 +554,7 @@ class Timewarp():
 
         device = self.device
 
-        def normalize_(image_array) :
+        def normalize(image_array) :
             def custom_bend(x):
                 linear_part = x
                 exp_bend = torch.sign(x) * torch.pow(torch.abs(x), 1 / 4 )
@@ -569,7 +569,7 @@ class Timewarp():
             image_array = (image_array + 1) / 2
             return image_array
 
-        def normalize(image_array_torch):
+        def normalize_np(image_array_torch):
             import numpy as np
 
             image_array = image_array_torch.clone().cpu().detach().numpy()
@@ -641,8 +641,11 @@ class Timewarp():
                     
                 img1 = img1.permute(2, 0, 1).unsqueeze(0)
 
-                img0_ref = normalize(img0)
-                img1_ref = normalize(img1)
+                # img0_ref = normalize(img0)
+                # img1_ref = normalize(img1)
+
+                img0_ref = img0
+                img1_ref = img1
 
                 n, c, h, w = img0.shape
                 ph = ((h - 1) // 64 + 1) * 64
