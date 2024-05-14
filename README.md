@@ -16,7 +16,7 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 
 * (done) ~~Add generalization logic to training script~~
 * (done) ~~Refine batch retime script~~
-* Share pre-trained weights for Flownet4 to enable using it in prod with command line and limited interface.
+* (done) ~~Share pre-trained weights for Flownet4 to enable using it in prod with command line and limited interface.~~
 * Optimize memory usage for Flownet4
 * Add Fluidmorph and Interpolate logic to new Flame script.
 * Test on Intel Mac with Pytorch 2.2.2 (Latest version avaliable for x86 Macs)
