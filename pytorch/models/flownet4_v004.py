@@ -612,6 +612,8 @@ class Model:
                 img0 = img0
                 img1 = img1
 
+                iterations = 4
+
                 flow_list = [None] * 4
                 mask_list = [None] * 4
                 merged = [None] * 4
