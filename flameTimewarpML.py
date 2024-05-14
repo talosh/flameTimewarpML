@@ -11,6 +11,7 @@ import sys
 import importlib
 from pprint import pprint
 import threading
+import time
 
 try:
     from PySide6 import QtWidgets, QtCore, QtGui
@@ -74,6 +75,7 @@ class ApplyModelDialog():
             return
 
         self.loops = []
+        self.threads = True
         
         self.main_window()
 
