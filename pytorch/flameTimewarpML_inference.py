@@ -588,6 +588,8 @@ class Timewarp():
             # Move it to 0.0 - 1.0 range
             image_array = (image_array + 1) / 2
 
+            return torch.from_numpy(image_array.copy())
+
 
         def warp(tenInput, tenFlow):
             input_device = tenInput.device
