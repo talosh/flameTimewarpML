@@ -538,6 +538,9 @@ class Timewarp():
             image_path = frame_info['output']
 
             if idx == 0:
+                # due to some glich? in pytorch mps
+                # first run result always comes as zeroes
+                # so we need to run it once as dummy
                 if 'mps' in str(self.device):
                     ratio = 1e-4
                     result = self.predict(img0.copy(), img1.copy(), ratio = ratio, iterations = 1)
