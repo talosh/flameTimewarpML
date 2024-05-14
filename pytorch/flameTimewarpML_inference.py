@@ -527,8 +527,6 @@ class Timewarp():
         write_thread.daemon = True
         write_thread.start()
 
-        warmup = True
-
         for idx in range(len(frame_info_list)):
             frame_info = read_image_queue.get()
             # print (f'frame {idx + 1} of {len(frame_info_list)}')
@@ -554,6 +552,8 @@ class Timewarp():
 
         device = self.device
         self.model.eval()
+        if 'mps' not in str(device):
+            self.model.half()
 
         def normalize(image_array) :
             def custom_bend(x):
