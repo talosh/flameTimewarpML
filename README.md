@@ -77,6 +77,18 @@ Samples for training are 3 frames and ratio. The model is given the first and th
 
 ### Installation
 
+#### Installing from package - Linux
+* Download parts and run
+```bash
+cat miniconda.tar.part-* > miniconda.tar
+tar -xvf miniconda.tar
+``` 
+* Place "flameTimewarpML" folder into Flame python hooks path.
+
+#### Installing from package - MacOS
+* Unpack and run fix-xattr.command
+* Place "flameTimewarpML" folder into Flame python hooks path.
+
 ### Installing and configuring python environment manually
 
 * pre-configured miniconda environment should be placed into hidden "packages/.miniconda" folder
