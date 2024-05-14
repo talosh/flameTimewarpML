@@ -576,10 +576,18 @@ def get_media_panel_custom_ui_actions():
         ApplyModelDialog(selection, mode='timewarp')
 
     def fluidmorph(selection):
-        ApplyModelDialog(selection, mode='fluidmorph')
+        dialog = flame.messages.show_in_dialog(
+            title = f'{settings["app_name"]}',
+            message = f'Not yet implemented in {settings["version"]}',
+            type = 'error',
+            buttons = ['Ok'])
 
     def deduplicate(selection):
-        ApplyModelDialog(selection, mode='deduplicate')
+        dialog = flame.messages.show_in_dialog(
+            title = f'{settings["app_name"]}',
+            message = f'Not yet implemented in {settings["version"]}',
+            type = 'error',
+            buttons = ['Ok'])
 
     menu = [
         {
