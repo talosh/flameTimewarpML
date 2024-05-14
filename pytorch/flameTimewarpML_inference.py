@@ -421,7 +421,7 @@ class Timewarp():
             model.load_state_dict(checkpoint['flownet_state_dict'])
             model.eval()
             if 'mps' not in str(self.device):
-                self.model.half()
+                model.half()
             return model
         except Exception as e:
             print ({e})
