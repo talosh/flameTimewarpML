@@ -38,8 +38,8 @@ class Model:
             input_device = tenInput.device
             input_dtype = tenInput.dtype
             if 'mps' in str(input_device):
-                tenInput = tenInput.detach().to(device=torch.device('cpu'), dtype=torch.float32)
-                tenFlow = tenFlow.detach().to(device=torch.device('cpu'), dtype=torch.float32)
+                tenInput = tenInput.to(device=torch.device('cpu'), dtype=torch.float32)
+                tenFlow = tenFlow.to(device=torch.device('cpu'), dtype=torch.float32)
 
             backwarp_tenGrid = {}
             k = (str(tenFlow.device), str(tenFlow.size()))
@@ -58,7 +58,7 @@ class Model:
                 align_corners=True
                 )
 
-            return result.detach().to(device=input_device, dtype=input_dtype)
+            return result.to(device=input_device, dtype=input_dtype)
 
 
         class Conv2d(Module):
