@@ -292,6 +292,30 @@ class ApplyModelDialog():
     def apply(self):
         self.window.hide()
 
+        working_folder = self.fw.prefs.get('working_folder')
+        if not os.path.isdir(working_folder):
+            import flame
+            dialog = flame.messages.show_in_dialog(
+                title = f'{self.settings["app_name"]}',
+                message = f'Unable to find working folder: {working_folder}',
+                type = 'error',
+                buttons = ['Ok']
+            )
+            self.window.show()
+            return
+
+        model_file = self.fw.prefs.get('model_path')
+        if not os.path.isfile(model_file):
+            import flame
+            dialog = flame.messages.show_in_dialog(
+                title = f'{self.settings["app_name"]}',
+                message = f'Unable to find model state file: {model_file}',
+                type = 'error',
+                buttons = ['Ok']
+            )
+            self.window.show()
+            return
+
         if self.mode == 'timewarp':
             self.apply_timewarp()
             
