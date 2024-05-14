@@ -540,7 +540,8 @@ class Timewarp():
             if idx == 0:
                 if 'mps' in str(self.device):
                     ratio = ratio + 1e-6
-
+                    result = self.predict(img0, img1, ratio = ratio, iterations = 1)
+                    del result
             try:
                 result = self.predict(img0, img1, ratio = ratio, iterations = 1)
                 write_image_queue.put({'image_data': result.copy(), 'image_path': image_path})
