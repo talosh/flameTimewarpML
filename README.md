@@ -85,7 +85,7 @@ Samples for training are 3 frames and ratio. The model is given the first and th
 #### Installing from package - Linux
 * Download parts and run
 ```bash
-cat flameTimewarpML_v0.4.5-dev001.Linux.tar.gz.tar.part-* > flameTimewarpML_v0.4.5-dev001.Linux.tar.gz
+cat flameTimewarpML_v0.4.5-dev001.Linux.tar.gz.part-* > flameTimewarpML_v0.4.5-dev001.Linux.tar.gz
 tar -xvf flameTimewarpML_v0.4.5-dev001.Linux.tar.gz
 ``` 
 * Place "flameTimewarpML" folder into Flame python hooks path.
