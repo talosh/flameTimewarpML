@@ -367,7 +367,7 @@ class ApplyModelDialog():
                     buttons = ['Ok'])
                 return False
 
-            '''
+            # '''
             new_clip_name = clip_name + '_TWML'
             watcher = threading.Thread(
                 target=self.import_watcher, 
@@ -382,7 +382,7 @@ class ApplyModelDialog():
             watcher.daemon = True
             watcher.start()
             self.loops.append(watcher)
-            '''
+            # '''
 
             self.run_inference(lockfile_path)
 
