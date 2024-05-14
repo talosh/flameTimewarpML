@@ -398,7 +398,7 @@ class Timewarp():
         self.settings = self.json_info.get('settings')
         print('Initializing TimewarpML from Flame setup...')
         import torch
-        self.device = torch.device("cpu") if platform.system() == 'Darwin' else torch.device('cuda')
+        self.device = torch.device("mps") if platform.system() == 'Darwin' else torch.device('cuda')
         self.model_path = self.json_info.get('model_path')
         self.model = self.find_and_import_model(self.model_path)
         if not self.model:
