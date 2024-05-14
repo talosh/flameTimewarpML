@@ -34,8 +34,11 @@ cd {flameTimewarpML folder}
 ./train.sh --state_file {Path to copied state file}/MyShot001.pth --generalize 1 --lr 4e-6 --acescc 0 --onecycle 1000 {Path to shot}/{fast}/
 ```
 
-Change number after "--onecycle" to set number of runs.
-Use "--acescc 0" to train in Linear or to retain input colourspace, "--acescc 100" to convert all samples to Log.
+* Change number after "--onecycle" to set number of runs.
+* Use "--acescc 0" to train in Linear or to retain input colourspace, "--acescc 100" to convert all samples to Log.
+* Use "--frame_size" to modify training samples size
+* Preview last 9 training patches in "{Path to shot}/preview" folder
+* Use "--preview" to modify how frequently preview files are saved
 
 #### Train your own model
 ```bash
