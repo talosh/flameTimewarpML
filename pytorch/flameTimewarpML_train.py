@@ -1672,15 +1672,17 @@ def main():
         x2_lpips = torch.mean(loss_fn_alex(x2_output * 2 - 1, x2_orig * 2 - 1))
         loss_x2 = criterion_huber(x2_output, x2_orig) + lpips_weight * x2_lpips
 
-        x1_lipis = torch.mean(loss_fn_alex(x2_output * 2 - 1, x2_orig * 2 - 1))
-        loss_x1 = criterion_huber(restore_normalized_values(output), img1_orig) + lpips_weight * x1_lipis
+        x1_output = restore_normalized_values(merged[3])
+        x1_orig = img1_orig
+        x1_lipis = torch.mean(loss_fn_alex(x1_output * 2 - 1, x1_orig * 2 - 1))
+        loss_x1 = criterion_huber(x1_output, x1_orig) + lpips_weight * x1_lipis
 
         loss = 0.28 * loss_x8 + 0.12 * loss_x4 + 0.12 * loss_x2 + 0.48 * loss_x1
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
 
-        loss_LPIPS_ = loss_fn_alex(output * 2 - 1, img1_orig * 2 - 1)
+        loss_LPIPS_ = loss_fn_alex(x1_output * 2 - 1, x1_orig * 2 - 1)
 
         epoch_loss.append(float(loss_l1.item()))
         steps_loss.append(float(loss_l1.item()))
