@@ -1693,7 +1693,7 @@ def main():
         x1_lipis = torch.mean(loss_fn_alex(x1_output * 2 - 1, x1_orig * 2 - 1))
         loss_x1 = pm_weight * criterion_huber(x1_output, x1_orig) + lpips_weight * x1_lipis
 
-        loss = 0.2 * loss_x8 + 0.2 * loss_x4 + 0.2 * loss_x2 + 0.4 * loss_x1
+        loss = 0.24 * loss_x8 + 0.24 * loss_x4 + 0.24 * loss_x2 + 0.28 * loss_x1
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
