@@ -1449,7 +1449,7 @@ def main():
         print (f'\nMissing keys:\n{missing_keys}\n')
         print (f'\nUnexpected keys:\n{unexpected_keys}\n')
 
-        # '''
+        '''
         # copy encoder weights for flownet4_v004 to separate encoders on each pass
         if model_info.get('name') == 'Flownet4_v004':
             flownet.block0.encode01[0].load_state_dict(flownet.encode.cnn0.state_dict())
@@ -1471,7 +1471,7 @@ def main():
             flownet.block3.encode01[2].load_state_dict(flownet.encode.cnn1.state_dict())
             flownet.block3.encode01[4].load_state_dict(flownet.encode.cnn2.state_dict())
             flownet.block3.encode01[6].load_state_dict(flownet.encode.cnn3.state_dict())
-        # '''
+        '''
 
     # LPIPS Init
 
@@ -1510,6 +1510,7 @@ def main():
             param.requires_grad = False
         '''
 
+        '''
         for param in flownet.block0.conv0.parameters():
             param.requires_grad = False
         for param in flownet.block1.conv0.parameters():
@@ -1518,6 +1519,7 @@ def main():
             param.requires_grad = False
         for param in flownet.block3.conv0.parameters():
             param.requires_grad = False
+        '''
 
         for param in flownet.block0.convblock.parameters():
             param.requires_grad = False
@@ -1528,7 +1530,7 @@ def main():
         for param in flownet.block3.convblock.parameters():
             param.requires_grad = False
 
-        '''
+        #'''
         for param in flownet.block0.convblock[-1].parameters():
             param.requires_grad = True
         for param in flownet.block1.convblock[-1].parameters():
@@ -1537,7 +1539,7 @@ def main():
             param.requires_grad = True
         for param in flownet.block3.convblock[-1].parameters():
             param.requires_grad = True
-        '''
+        #'''
 
         '''
         for param in flownet.block0.conv0.parameters():
@@ -1654,33 +1656,31 @@ def main():
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
 
-        loss_x8 = criterion_huber(
-            torch.nn.functional.interpolate(restore_normalized_values(merged[0]), scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False),
-            torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
-        )
+        lpips_weight = 4e-6
+        x8_output = torch.nn.functional.interpolate(restore_normalized_values(merged[0]), scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
+        x8_orig = torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
+        x8_lpips = torch.mean(loss_fn_alex(x8_output * 2 - 1, x8_orig * 2 - 1))
+        loss_x8 = criterion_huber(x8_output, x8_orig) + lpips_weight * x8_lpips
 
-        loss_x4 = criterion_huber(
-            torch.nn.functional.interpolate(restore_normalized_values(merged[1]), scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False),
-            torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
-        )
-        
-        loss_x2 = criterion_huber(
-            torch.nn.functional.interpolate(restore_normalized_values(merged[2]), scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False),
-            torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
-        )
+        x4_output = torch.nn.functional.interpolate(restore_normalized_values(merged[1]), scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
+        x4_orig = torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
+        x4_lpips = torch.mean(loss_fn_alex(x4_output * 2 - 1, x4_orig * 2 - 1))
+        loss_x4 = criterion_huber(x4_output, x4_orig) + lpips_weight * x4_lpips
 
-        loss_x1 = criterion_huber(restore_normalized_values(output), img1_orig)
-        # loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
+        x2_output = torch.nn.functional.interpolate(restore_normalized_values(merged[2]), scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
+        x2_orig = torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
+        x2_lpips = torch.mean(loss_fn_alex(x2_output * 2 - 1, x2_orig * 2 - 1))
+        loss_x2 = criterion_huber(x2_output, x2_orig) + lpips_weight * x2_lpips
 
-        # loss_x1 = criterion_huber(output, img1)
-        loss_LPIPS_ = loss_fn_alex(output * 2 - 1, img1 * 2 - 1)
-        loss_LPIPS = torch.mean(loss_LPIPS_)
+        x1_lipis = torch.mean(loss_fn_alex(x2_output * 2 - 1, x2_orig * 2 - 1))
+        loss_x1 = criterion_huber(restore_normalized_values(output), img1_orig) + lpips_weight * x1_lipis
 
-        loss_deep = 0.28 * loss_x8 + 0.12 * loss_x4 + 0.12 * loss_x2 + 0.48 * loss_x1
-        loss = loss_deep + 4e-6 * loss_LPIPS # + loss_FM + loss_Adv
+        loss = 0.28 * loss_x8 + 0.12 * loss_x4 + 0.12 * loss_x2 + 0.48 * loss_x1
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
+
+        loss_LPIPS_ = loss_fn_alex(output * 2 - 1, img1_orig * 2 - 1)
 
         epoch_loss.append(float(loss_l1.item()))
         steps_loss.append(float(loss_l1.item()))
