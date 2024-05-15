@@ -44,7 +44,7 @@ cd {flameTimewarpML folder}
 #### Train your own model
 ```bash
 cd {flameTimewarpML folder}
-./train.sh --state_file {Path to MyModel}/MyModel001.pth {Path to Dataset}/
+./train.sh --state_file {Path to MyModel}/MyModel001.pth --model flownet4_v004 --batch_size 4 {Path to Dataset}/
 ```
 
 #### Dataset preparation
