@@ -744,6 +744,7 @@ class Timewarp():
                 '''
 
             class HermiteSegment(LinearSegment):
+                '''
                 def __init__(self, from_frame, to_frame, value1, value2, tangent1, tangent2):
                     self.start_frame, self.end_frame = from_frame, to_frame
                     self._mode = 'hermite'
@@ -778,8 +779,9 @@ class Timewarp():
                     h11 = t**3 - t**2          # Compute basis function 4
 
                     return h00 * P0 + h10 * T0 + h01 * P1 + h11 * T1
-
                 '''
+
+                # '''
                 def __init__(self, from_frame, to_frame, value1, value2, tangent1, tangent2):
                     self.start_frame, self.end_frame = from_frame, to_frame
                     frame_interval = self.end_frame - self.start_frame
@@ -820,7 +822,7 @@ class Timewarp():
                     # P[s_] = S[s].h.CC
                     interpolated_scalar = np.dot(self.basis, multipliers_vec)
                     return interpolated_scalar
-                '''
+                # '''
 
             class BezierSegment(LinearSegment):
                 class Pt:
