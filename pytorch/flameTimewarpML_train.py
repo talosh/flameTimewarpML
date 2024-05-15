@@ -1545,6 +1545,17 @@ def main():
             param.requires_grad = True
         # '''
 
+        # '''
+        for param in flownet.block0.convblock[-2].parameters():
+            param.requires_grad = True
+        for param in flownet.block1.convblock[-2].parameters():
+            param.requires_grad = True
+        for param in flownet.block2.convblock[-2].parameters():
+            param.requires_grad = True
+        for param in flownet.block3.convblock[-2].parameters():
+            param.requires_grad = True
+        # '''
+
         '''
         for param in flownet.block0.conv0.parameters():
             param.requires_grad = False
