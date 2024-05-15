@@ -1173,6 +1173,8 @@ class Timewarp():
         end_frame = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
         # TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
 
+        print (f'Start frame: {start_frame}, End frame: {end_frame}')
+
         # TW_SpeedTiming_size = tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size']
         TW_RetimerMode = tw_setup['Setup']['State'][0]['TW_RetimerMode']
 
