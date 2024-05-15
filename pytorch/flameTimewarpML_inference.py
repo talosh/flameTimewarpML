@@ -784,8 +784,7 @@ class Timewarp():
                     t = (frame - self.start_frame) / (self.end_frame - self.start_frame)
 
                     # S[s_] = {s^3, s^2, s^1, s^0}
-                    # multipliers_vec = np.array([t ** 3, t ** 2, t ** 1, t ** 0])
-                    multipliers_vec = np.array([t ** 3, t ** 2, t, 1])
+                    multipliers_vec = np.array([t ** 3, t ** 2, t ** 1, t ** 0])
 
                     # P[s_] = S[s].h.CC
                     interpolated_scalar = np.dot(self.basis, multipliers_vec)
