@@ -1312,6 +1312,9 @@ def main():
 
     weight_decay = 10 ** (0.07 * args.generalize - 9) if args.generalize > 1 else 1e-9
 
+    if args.weight_decay != -1:
+        weight_decay = args.weight_decay
+
     if args.generalize == 0:
         print (f'Disabling agumentation and setting weight decay to {weight_decay:.2e}')
     elif args.generalize == 1:
@@ -1319,7 +1322,7 @@ def main():
     else:
         print (f'Setting agumentation rate to {args.generalize}% and weight decay to {weight_decay:.2e}')
 
-    optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=9e-4)
+    optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=weight_decay)
     # optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
 
     train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
