@@ -1041,7 +1041,7 @@ class Timewarp():
                         key.get('Value'), 
                         next_key.get('Value'),
                         key_right_tangent, 
-                        next_key_left_tangent,
+                        next_key_left_tangent
                         )
                 elif (key.get('CurveMode') in ['natural', 'hermite']) and (key.get('CurveOrder') == 'quartic'):
                     return FlameChannellInterpolator.HermiteSegment(
@@ -1050,7 +1050,7 @@ class Timewarp():
                         key.get('Value'), 
                         next_key.get('Value'),
                         key_right_tangent, 
-                        next_key_left_tangent,
+                        next_key_left_tangent
                         )
                 elif key.get('CurveMode') == 'constant':
                     return FlameChannellInterpolator.ConstantSegment(
@@ -1281,8 +1281,8 @@ def main():
 
             tw = Timewarp(json_info)
             result = tw.process()
-            # if os.path.isfile(self.lockfile):
-            #    os.remove(self.lockfile)
+            if os.path.isfile(self.lockfile):
+                os.remove(self.lockfile)
             self.result.emit(result, '')
 
             '''
