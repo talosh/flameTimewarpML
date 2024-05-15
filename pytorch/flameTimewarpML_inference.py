@@ -740,6 +740,15 @@ class Timewarp():
 
             class HermiteSegment(LinearSegment):
                 def __init__(self, from_frame, to_frame, value1, value2, tangent1, tangent2):
+                    
+                    print (f'from_frame {from_frame}')
+                    print (f'to_frame {to_frame}')
+                    print (f'value1 {value1}')
+                    print (f'value2 {value2}')
+                    print (f'tangent1 {tangent1}')
+                    print (f'tangent2 {tangent2}')
+
+
                     self.start_frame, self.end_frame = from_frame, to_frame
                     frame_interval = (self.end_frame - self.start_frame)
                     self._mode = 'hermite'
@@ -1058,9 +1067,6 @@ class Timewarp():
                         )
 
         def approximate_speed_curve(tw_setup_string, start, end, tw_channel):
-            
-            print ('hello from approximate flame curve')
-
             from xml.dom import minidom
             xml = minidom.parseString(tw_setup_string)  
             tw_speed_timing = {}
@@ -1133,7 +1139,7 @@ class Timewarp():
 
                 def hermite_curve(t):
                     P0, P1 = 0, 1
-                    T0, T1 = 1, 1
+                    T0, T1 = 8, 1.8 # this values are made by hand to get approximation closer to flame
                     h00 = 2*t**3 - 3*t**2 + 1  # Compute basis function 1
                     h10 = t**3 - 2*t**2 + t    # Compute basis function 2
                     h01 = -2*t**3 + 3*t**2     # Compute basis function 3
@@ -1146,8 +1152,7 @@ class Timewarp():
                 ratio = 0
                 rstep = 1 / len(work_range)
                 for frame_number in sorted(work_range):
-                    frame_value_map[frame_number] = forward_pass[frame_number]
-                    # frame_value_map[frame_number] = forward_pass[frame_number] * (1 - hermite_curve(ratio)) + backward_pass[frame_number] * hermite_curve(ratio)
+                    frame_value_map[frame_number] = forward_pass[frame_number] * (1 - hermite_curve(ratio)) + backward_pass[frame_number] * hermite_curve(ratio)
                     ratio += rstep
 
             last_key_index = list(sorted(tw_speed_timing.keys()))[-1]
@@ -1176,6 +1181,8 @@ class Timewarp():
         start_frame = int(tw_setup['Setup']['Base'][0]['Range'][0]['Start'])
         end_frame = int(tw_setup['Setup']['Base'][0]['Range'][0]['End'])
         # TW_Timing_size = int(tw_setup['Setup']['State'][0]['TW_Timing'][0]['Channel'][0]['Size'][0]['_text'])
+
+        print (f'Start frame: {start_frame}, End frame: {end_frame}')
 
         # TW_SpeedTiming_size = tw_setup['Setup']['State'][0]['TW_SpeedTiming'][0]['Channel'][0]['Size']
         TW_RetimerMode = tw_setup['Setup']['State'][0]['TW_RetimerMode']
