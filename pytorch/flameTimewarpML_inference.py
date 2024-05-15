@@ -747,7 +747,7 @@ class Timewarp():
                 def __init__(self, from_frame, to_frame, value1, value2, tangent1, tangent2):
                     self.start_frame, self.end_frame = from_frame, to_frame
                     self._mode = 'hermite'
-                    
+
                     self.from_frame = from_frame
                     self.to_frame = to_frame
                     self.value1 = value1
@@ -756,7 +756,6 @@ class Timewarp():
                     self.tangent2 = tangent2
 
                 def value_at(self, frame):
-                    return self.value1
                     if frame == self.start_frame:
                         return self.value1
                     t = frame / (self.to_frame - self.from_frame)
