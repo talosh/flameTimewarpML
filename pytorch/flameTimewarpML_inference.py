@@ -752,7 +752,7 @@ class Timewarp():
                     frame_interval = self.end_frame - self.start_frame
                     self._mode = 'hermite'
 
-                    HERMATRIX = np.array([
+                    self.HERMATRIX = np.array([
                         [2, -3,  0,  1],
                         [-2, 3,  0,  0],
                         [1, -2,  1,  0],
