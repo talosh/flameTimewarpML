@@ -740,14 +740,38 @@ class Timewarp():
 
             class HermiteSegment(LinearSegment):
                 def __init__(self, from_frame, to_frame, value1, value2, tangent1, tangent2):
-                    
-                    print (f'from_frame {from_frame}')
-                    print (f'to_frame {to_frame}')
-                    print (f'value1 {value1}')
-                    print (f'value2 {value2}')
-                    print (f'tangent1 {tangent1}')
-                    print (f'tangent2 {tangent2}')
+                    self.from_frame = from_frame
+                    self.to_frame = to_frame
+                    self.value1 = value1
+                    self.value2 = value2
+                    self.tangent1 = tangent1
+                    self.tangent2 = tangent2
 
+                def value_at(self, frame):
+                    if frame == self.start_frame:
+                        return self.value1
+                    t = frame / (self.to_frame - self.from_frame)
+                    P0, P1 = self.value1, self.value2
+                    T0, T1 = self.tangent1, self.tangent2
+                    h00 = 2*t**3 - 3*t**2 + 1  # Compute basis function 1
+                    h10 = t**3 - 2*t**2 + t    # Compute basis function 2
+                    h01 = -2*t**3 + 3*t**2     # Compute basis function 3
+                    h11 = t**3 - t**2          # Compute basis function 4
+
+                    return h00 * P0 + h10 * T0 + h01 * P1 + h11 * T1
+
+                def hermite_curve(t):
+                    P0, P1 = 0, 1
+                    T0, T1 = 8, 1.8 # this values are made by hand to get approximation closer to flame
+                    h00 = 2*t**3 - 3*t**2 + 1  # Compute basis function 1
+                    h10 = t**3 - 2*t**2 + t    # Compute basis function 2
+                    h01 = -2*t**3 + 3*t**2     # Compute basis function 3
+                    h11 = t**3 - t**2          # Compute basis function 4
+
+                    return h00 * P0 + h10 * T0 + h01 * P1 + h11 * T1
+
+                '''
+                def __init__(self, from_frame, to_frame, value1, value2, tangent1, tangent2):
                     self.start_frame, self.end_frame = from_frame, to_frame
                     frame_interval = self.end_frame - self.start_frame
                     self._mode = 'hermite'
@@ -759,15 +783,13 @@ class Timewarp():
                         [1, -1,  0,  0]
                     ]).T
 
-                    '''
-                    self.HERMATRIX = np.array([
-                        [0,  0,  0,  1],
-                        [1,  1,  1,  1],
-                        [0,  0,  1,  0],
-                        [3,  2,  1,  0]
-                    ])
-                    self.HERMATRIX = np.linalg.inv(self.HERMATRIX)
-                    '''
+                    #self.HERMATRIX = np.array([
+                    #    [0,  0,  0,  1],
+                    #    [1,  1,  1,  1],
+                    #    [0,  0,  1,  0],
+                    #    [3,  2,  1,  0]
+                    #])
+                    #self.HERMATRIX = np.linalg.inv(self.HERMATRIX)
 
                     # Default tangents in flame are 0, so when we do None.to_f this is what we will get
                     # CC = {P1, P2, T1, T2}
@@ -789,6 +811,7 @@ class Timewarp():
                     # P[s_] = S[s].h.CC
                     interpolated_scalar = np.dot(self.basis, multipliers_vec)
                     return interpolated_scalar
+                '''
 
             class BezierSegment(LinearSegment):
                 class Pt:
