@@ -748,7 +748,6 @@ class Timewarp():
                     self.tangent2 = tangent2
 
                 def value_at(self, frame):
-                    return self.value1
                     if frame == self.start_frame:
                         return self.value1
                     t = frame / (self.to_frame - self.from_frame)
