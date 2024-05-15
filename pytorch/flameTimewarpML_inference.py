@@ -1058,6 +1058,9 @@ class Timewarp():
                         )
 
         def approximate_speed_curve(tw_setup_string, start, end, tw_channel):
+            
+            print ('hello from approximate flame curve')
+
             from xml.dom import minidom
             xml = minidom.parseString(tw_setup_string)  
             tw_speed_timing = {}
