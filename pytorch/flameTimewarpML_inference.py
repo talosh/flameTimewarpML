@@ -1143,7 +1143,8 @@ class Timewarp():
                 ratio = 0
                 rstep = 1 / len(work_range)
                 for frame_number in sorted(work_range):
-                    frame_value_map[frame_number] = forward_pass[frame_number] * (1 - hermite_curve(ratio)) + backward_pass[frame_number] * hermite_curve(ratio)
+                    frame_value_map[frame_number] = forward_pass[frame_number]
+                    # frame_value_map[frame_number] = forward_pass[frame_number] * (1 - hermite_curve(ratio)) + backward_pass[frame_number] * hermite_curve(ratio)
                     ratio += rstep
 
             last_key_index = list(sorted(tw_speed_timing.keys()))[-1]
