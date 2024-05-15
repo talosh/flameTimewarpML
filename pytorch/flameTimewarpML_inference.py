@@ -748,7 +748,6 @@ class Timewarp():
                     print (f'tangent1 {tangent1}')
                     print (f'tangent2 {tangent2}')
 
-
                     self.start_frame, self.end_frame = from_frame, to_frame
                     frame_interval = (self.end_frame - self.start_frame)
                     self._mode = 'hermite'
