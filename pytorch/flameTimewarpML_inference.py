@@ -445,7 +445,12 @@ class Timewarp():
             return False
         self.record_in = self.json_info.get('record_in', 1)
         self.record_out = self.json_info.get('record_out', input_duration)
-        frame_value_map = self.bake_flame_tw_setup(tw_setup_string)
+
+        try:
+            frame_value_map = self.bake_flame_tw_setup(tw_setup_string)
+        except Exception as e:
+            print ({e})
+            return False
 
         start_frame = 1
         src_files_list.sort()
