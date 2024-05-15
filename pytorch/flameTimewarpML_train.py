@@ -1496,8 +1496,8 @@ def main():
         # '''
         # Freeze predictors - its custom hard-coded depending on a task
 
-        for param in flownet.encode.parameters():
-            param.requires_grad = False
+        # for param in flownet.encode.parameters():
+        #    param.requires_grad = False
 
         '''
         for param in flownet.block0.encode01.parameters():
@@ -1530,7 +1530,7 @@ def main():
         for param in flownet.block3.convblock.parameters():
             param.requires_grad = False
 
-        #'''
+        '''
         for param in flownet.block0.convblock[-1].parameters():
             param.requires_grad = True
         for param in flownet.block1.convblock[-1].parameters():
@@ -1539,7 +1539,7 @@ def main():
             param.requires_grad = True
         for param in flownet.block3.convblock[-1].parameters():
             param.requires_grad = True
-        #'''
+        '''
 
         '''
         for param in flownet.block0.conv0.parameters():
