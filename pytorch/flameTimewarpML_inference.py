@@ -453,6 +453,9 @@ class Timewarp():
 
         frame_info_list = []
         output_frame_number = 1
+
+        print (f'frame value map: {frame_value_map}')
+        return False
         
         for frame_number in range(self.record_in, self.record_out + 1):
             frame_info = {}
