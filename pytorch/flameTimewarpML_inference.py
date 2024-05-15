@@ -752,6 +752,14 @@ class Timewarp():
                     frame_interval = (self.end_frame - self.start_frame)
                     self._mode = 'hermite'
 
+                    HERMATRIX = np.array([
+                        [2, -3,  0,  1],
+                        [-2, 3,  0,  0],
+                        [1, -2,  1,  0],
+                        [1, -1,  0,  0]
+                    ]).T
+
+                    '''
                     self.HERMATRIX = np.array([
                         [0,  0,  0,  1],
                         [1,  1,  1,  1],
@@ -759,6 +767,7 @@ class Timewarp():
                         [3,  2,  1,  0]
                     ])
                     self.HERMATRIX = np.linalg.inv(self.HERMATRIX)
+                    '''
 
                     # Default tangents in flame are 0, so when we do None.to_f this is what we will get
                     # CC = {P1, P2, T1, T2}
