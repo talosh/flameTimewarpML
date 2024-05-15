@@ -1656,7 +1656,7 @@ def main():
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
 
-        pm_weight = 0.9
+        pm_weight = 0
         lpips_weight = 0.1
         x8_output = torch.nn.functional.interpolate(restore_normalized_values(merged[0]), scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
         x8_orig = torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
