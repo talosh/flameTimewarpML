@@ -1272,8 +1272,8 @@ def main():
 
             tw = Timewarp(json_info)
             result = tw.process()
-            if os.path.isfile(self.lockfile):
-                os.remove(self.lockfile)
+            # if os.path.isfile(self.lockfile):
+            #    os.remove(self.lockfile)
             self.result.emit(result, '')
 
             '''
