@@ -761,7 +761,7 @@ class Timewarp():
                         return self.value1
                     t = frame - self.start_frame / self.frame_interval
                     P0, P1 = self.value1, self.value2
-                    T0, T1 = self.tangent1, self.tangent2
+                    T0, T1 = self.tangent1 * self.frame_interval, self.tangent2 * self.frame_interval
                     h00 = 2*t**3 - 3*t**2 + 1  # Compute basis function 1
                     h10 = t**3 - 2*t**2 + t    # Compute basis function 2
                     h01 = -2*t**3 + 3*t**2     # Compute basis function 3
