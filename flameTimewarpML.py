@@ -218,12 +218,12 @@ class ApplyModelDialog():
             self.window.show()
 
         def cpu():
-            print (self.cpu_button.isChecked())
-            # self.fw.prefs['cpu'] = True
-            # self.fw.save_prefs()
+            self.fw.prefs['cpu'] = self.cpu_button.isChecked()
+            self.fw.save_prefs()
         
         def half():
-            pass
+            self.fw.prefs['half'] = self.half_button.isChecked()
+            self.fw.save_prefs()
 
         # Create export and apply window
         self.window = PyFlameQDialog(
