@@ -1487,7 +1487,7 @@ def main():
 
     import lpips
     os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
-    loss_fn_alex = lpips.LPIPS(net='alex')
+    loss_fn_alex = lpips.LPIPS(net='alex', lpips=False)
     loss_fn_alex.to(device)
     loss_fn_lpips = loss_fn_alex
     # loss_fn_lpips = lpips.LPIPS(net='vgg')
