@@ -264,13 +264,13 @@ class ApplyModelDialog():
         self.cpu_button = PyFlamePushButton(
             text='CPU',
             button_checked = self.fw.prefs.get('cpu', False),
-            connect=self.apply,
+            connect=cpu,
         )
 
         self.half_button = PyFlamePushButton(
             text='16 Bit',
             button_checked = self.fw.prefs.get('half', False),
-            connect=self.apply,
+            connect=half,
         )
 
         self.export_and_apply_button = PyFlameButton(
@@ -299,10 +299,10 @@ class ApplyModelDialog():
         grid_layout.addWidget(self.model_path_entry, 1, 1, 1, 4)
         grid_layout.addWidget(self.model_browse_button, 1, 5)
 
-        grid_layout.addWidget(self.half_button, 2, 4)
-        grid_layout.addWidget(self.cpu_button, 2, 5)
-        grid_layout.addWidget(self.cancel_button, 3, 4)
-        grid_layout.addWidget(self.export_and_apply_button, 3, 5)
+        grid_layout.addWidget(self.half_button, 2, 0)
+        grid_layout.addWidget(self.cpu_button, 2, 1)
+        grid_layout.addWidget(self.cancel_button, 2, 4)
+        grid_layout.addWidget(self.export_and_apply_button, 2, 5)
 
         # Add layout to window
         self.window.add_layout(grid_layout)
