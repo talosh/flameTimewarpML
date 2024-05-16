@@ -1713,7 +1713,7 @@ def main():
         loss_x1 = pm_weight * criterion_huber(x1_output, x1_orig) + lpips_weight * x1_lipis
 
         loss = 0.24 * loss_x8 + 0.24 * loss_x4 + 0.24 * loss_x2 + 0.28 * loss_x1
-        loss.backward()
+        loss.mean().backward()
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
