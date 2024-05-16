@@ -1489,7 +1489,7 @@ def main():
     os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
     loss_fn_alex = lpips.LPIPS(net='alex')
     loss_fn_alex.to(device)
-    for param in loss_fn_lpips.parameters():
+    for param in loss_fn_alex.parameters():
         param.requires_grad = False
 
     loss_fn_lpips = lpips.LPIPS(net='vgg')
