@@ -242,7 +242,6 @@ class ApplyModelDialog():
 
         # Create export and apply window
         window_title = f'{settings["app_name"]} <small>{settings["version"]}'
-        
         if self.mode == 'timewarp':
             window_title += '\t[Timewarp from Flame]'
         elif self.mode == 'fluidmorph':
@@ -251,7 +250,7 @@ class ApplyModelDialog():
         self.window = PyFlameQDialog(
             width=800,
             height=256,
-            title=f'{settings["app_name"]} <small>{settings["version"]}',
+            title=window_title
         )
 
         # Labels
