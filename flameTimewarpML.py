@@ -293,13 +293,15 @@ class ApplyModelDialog():
         grid_layout.setRowMinimumHeight(1, 30)
         grid_layout.setRowMinimumHeight(2, 30)
         grid_layout.setRowMinimumHeight(3, 30)
-
+        
+        grid_layout.setColumnMinimumWidth(0, 150)
+        grid_layout.setColumnMinimumWidth(1, 150)
         grid_layout.setColumnMinimumWidth(2, 150)
         grid_layout.setColumnMinimumWidth(3, 150)
 
         grid_layout.addWidget(self.options_label, 0, 0)
         grid_layout.addWidget(self.half_button, 0, 1)
-        # grid_layout.addWidget(self.cpu_button, 0, 2)
+        grid_layout.addWidget(self.cpu_button, 0, 2)
 
         grid_layout.addWidget(self.export_path_label, 1, 0)
         grid_layout.addWidget(self.export_path_entry, 1, 1, 1, 4)
