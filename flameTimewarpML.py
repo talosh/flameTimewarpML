@@ -287,30 +287,28 @@ class ApplyModelDialog():
             text='Cancel',
             connect=self.window.close,
         )
-        self.cancel_button.setStyleSheet("margin: 10px; padding: 10px;")
         # Window layout
         grid_layout = QtWidgets.QGridLayout()
-
         grid_layout.setRowMinimumHeight(1, 30)
         grid_layout.setColumnMinimumWidth(2, 150)
         grid_layout.setColumnMinimumWidth(3, 150)
-        grid_layout.setHorizontalSpacing(30)  # Set horizontal spacing between columns
-        grid_layout.setVerticalSpacing(30)    # Set vertical spacing between rows
+        # grid_layout.setHorizontalSpacing(30)  # Set horizontal spacing between columns
+        # grid_layout.setVerticalSpacing(30)    # Set vertical spacing between rows
 
         # grid_layout.addWidget(self.options_label, 0, 0)
         # grid_layout.addWidget(self.half_button, 0, 1)
         # grid_layout.addWidget(self.cpu_button, 0, 2)
 
-        grid_layout.addWidget(self.export_path_label, 0, 0)
-        grid_layout.addWidget(self.export_path_entry, 0, 1, 1, 4)
-        grid_layout.addWidget(self.path_browse_button, 0, 5)
+        grid_layout.addWidget(self.export_path_label, 1, 0)
+        grid_layout.addWidget(self.export_path_entry, 1, 1, 1, 4)
+        grid_layout.addWidget(self.path_browse_button, 1, 5)
  
-        grid_layout.addWidget(self.model_path_label, 1, 0)
-        grid_layout.addWidget(self.model_path_entry, 1, 1, 1, 4)
-        grid_layout.addWidget(self.model_browse_button, 1, 5)
+        grid_layout.addWidget(self.model_path_label, 2, 0)
+        grid_layout.addWidget(self.model_path_entry, 2, 1, 1, 4)
+        grid_layout.addWidget(self.model_browse_button, 2, 5)
 
-        grid_layout.addWidget(self.cancel_button, 2, 4)
-        grid_layout.addWidget(self.export_and_apply_button, 2, 5)
+        grid_layout.addWidget(self.cancel_button, 3, 4)
+        grid_layout.addWidget(self.export_and_apply_button, 3, 5)
 
         # Add layout to window
         self.window.add_layout(grid_layout)
