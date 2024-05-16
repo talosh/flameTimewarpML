@@ -295,7 +295,7 @@ class ApplyModelDialog():
         grid_layout.setColumnMinimumWidth(2, 150)
         grid_layout.setColumnMinimumWidth(3, 150)
         grid_layout.setHorizontalSpacing(8)  # Set horizontal spacing between columns
-        grid_layout.setVerticalSpacing(8)    # Set vertical spacing between rows
+        grid_layout.setVerticalSpacing(30)    # Set vertical spacing between rows
 
         # grid_layout.addWidget(self.options_label, 0, 0)
         # grid_layout.addWidget(self.half_button, 0, 1)
