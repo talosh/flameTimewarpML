@@ -301,7 +301,7 @@ class ApplyModelDialog():
 
         grid_layout.addWidget(self.options_label, 0, 0)
         grid_layout.addWidget(self.half_button, 0, 1)
-        grid_layout.addWidget(self.cpu_button, 0, 2)
+        grid_layout.addWidget(self.cpu_button, 0, 3)
 
         grid_layout.addWidget(self.export_path_label, 1, 0)
         grid_layout.addWidget(self.export_path_entry, 1, 1, 1, 4)
@@ -311,7 +311,7 @@ class ApplyModelDialog():
         grid_layout.addWidget(self.model_path_entry, 2, 1, 1, 4)
         grid_layout.addWidget(self.model_browse_button, 2, 5)
 
-        grid_layout.addWidget(self.cancel_button, 3, 4)
+        grid_layout.addWidget(self.cancel_button, 3, 3)
         grid_layout.addWidget(self.export_and_apply_button, 3, 5)
 
         # Add layout to window
