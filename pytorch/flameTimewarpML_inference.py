@@ -1139,7 +1139,7 @@ class Timewarp():
 
                 def hermite_curve(t):
                     P0, P1 = 0, 1
-                    T0, T1 = 8, 1.8 # this values are made by hand to get approximation closer to flame
+                    T0, T1 = 0, 0
                     h00 = 2*t**3 - 3*t**2 + 1  # Compute basis function 1
                     h10 = t**3 - 2*t**2 + t    # Compute basis function 2
                     h01 = -2*t**3 + 3*t**2     # Compute basis function 3
