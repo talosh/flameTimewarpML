@@ -257,13 +257,13 @@ class ApplyModelDialog():
 
         self.cpu_button = PyFlamePushButton(
             text='CPU',
-            button_checked = self.fw.prefs.get('cpu')
+            button_checked = self.fw.prefs.get('cpu'),
             connect=self.apply,
         )
 
         self.half_button = PyFlamePushButton(
             text='16 Bit',
-            button_checked = self.fw.prefs.get('half')
+            button_checked = self.fw.prefs.get('half'),
             connect=self.apply,
         )
 
