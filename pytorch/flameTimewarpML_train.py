@@ -1489,6 +1489,8 @@ def main():
     os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
     loss_fn_alex = lpips.LPIPS(net='alex')
     loss_fn_alex.to(device)
+    loss_fn_lpips = lpips.LPIPS(net='alex', spatial=True)
+    loss_fn_lpips.to(device)
 
     warnings.resetwarnings()
 
@@ -1689,25 +1691,26 @@ def main():
         lpips_weight = 0.2
         x8_output = torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
         x8_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
-        x8_lpips = torch.mean(loss_fn_alex(x8_output * 2 - 1, x8_orig * 2 - 1))
+        x8_lpips = loss_fn_lpips.forward(x8_output * 2 - 1, x8_orig * 2 - 1)
         loss_x8 = pm_weight * criterion_huber(x8_output, x8_orig) + lpips_weight * x8_lpips
 
         x4_output = torch.nn.functional.interpolate(merged[1], scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
         x4_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
-        x4_lpips = torch.mean(loss_fn_alex(x4_output * 2 - 1, x4_orig * 2 - 1))
+        x4_lpips = loss_fn_lpips.forward(x4_output * 2 - 1, x4_orig * 2 - 1)
         loss_x4 = pm_weight * criterion_huber(x4_output, x4_orig) + lpips_weight * x4_lpips
 
         x2_output = torch.nn.functional.interpolate(merged[2], scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
         x2_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
-        x2_lpips = torch.mean(loss_fn_alex(x2_output * 2 - 1, x2_orig * 2 - 1))
+        x2_lpips = loss_fn_lpips.forward(x2_output * 2 - 1, x2_orig * 2 - 1)
         loss_x2 = pm_weight * criterion_huber(x2_output, x2_orig) + lpips_weight * x2_lpips
 
         x1_output = merged[3]
         x1_orig = img1
-        x1_lipis = torch.mean(loss_fn_alex(x1_output * 2 - 1, x1_orig * 2 - 1))
+        x1_lipis = loss_fn_lpips.forward(x1_output * 2 - 1, x1_orig * 2 - 1)
         loss_x1 = pm_weight * criterion_huber(x1_output, x1_orig) + lpips_weight * x1_lipis
 
         loss = 0.24 * loss_x8 + 0.24 * loss_x4 + 0.24 * loss_x2 + 0.28 * loss_x1
+        loss.backward()
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
@@ -1732,7 +1735,6 @@ def main():
         smoothed_loss = float(np.mean(moving_average(epoch_loss, 9)))
         lpips_val = float(np.array(lpips_list).mean())
 
-        loss.backward()
 
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 0.9)
 
