@@ -255,6 +255,16 @@ class ApplyModelDialog():
             connect=open_model_browser,
         )
 
+        self.cpu_button = PyFlamePushButton(
+            text='CPU',
+            connect=self.apply,
+        )
+
+        self.half_button = PyFlamePushButton(
+            text='16 Bit',
+            connect=self.apply,
+        )
+
         self.export_and_apply_button = PyFlameButton(
             text='Export and Apply',
             connect=self.apply,
@@ -281,6 +291,8 @@ class ApplyModelDialog():
         grid_layout.addWidget(self.model_path_entry, 1, 1, 1, 4)
         grid_layout.addWidget(self.model_browse_button, 1, 5)
 
+        grid_layout.addWidget(self.half_button, 2, 2)
+        grid_layout.addWidget(self.cpu_button, 2, 3)
         grid_layout.addWidget(self.cancel_button, 2, 4)
         grid_layout.addWidget(self.export_and_apply_button, 2, 5,)
 
