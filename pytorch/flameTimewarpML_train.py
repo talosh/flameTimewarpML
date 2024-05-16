@@ -1723,12 +1723,12 @@ def main():
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
 
-        # loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
+        loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
 
         epoch_loss.append(float(loss_l1.item()))
         steps_loss.append(float(loss_l1.item()))
-        # lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
-        lpips_list.append(1.)
+        lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
+        # lpips_list.append(1.)
         psnr_list.append(float(psnr_torch(output, img1)))
 
         if len(epoch_loss) < 9999:
