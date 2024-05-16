@@ -426,7 +426,7 @@ class Timewarp():
             model.load_state_dict(checkpoint['flownet_state_dict'])
             model.eval()
             if self.json_info.get('half'):
-                print('Using half-precision')
+                print('Using Half Precision')
                 model.half()
             return model
         except Exception as e:
