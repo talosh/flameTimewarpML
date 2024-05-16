@@ -299,7 +299,7 @@ class ApplyModelDialog():
         grid_layout.setColumnMinimumWidth(0, 150)
         grid_layout.setColumnMinimumWidth(1, 150)
         grid_layout.setColumnMinimumWidth(2, 150)
-        grid_layout.setColumnMinimumWidth(3, 150)
+        grid_layout.setColumnMinimumWidth(4, 150)
 
         grid_layout.addWidget(self.options_label, 0, 0)
         grid_layout.addWidget(self.half_button, 0, 3)
@@ -313,8 +313,8 @@ class ApplyModelDialog():
         grid_layout.addWidget(self.model_path_entry, 2, 1, 1, 4)
         grid_layout.addWidget(self.model_browse_button, 2, 5)
 
-        grid_layout.addWidget(self.cancel_button, 3, 3)
-        grid_layout.addWidget(self.export_and_apply_button, 3, 5)
+        grid_layout.addWidget(self.cancel_button, 4, 3)
+        grid_layout.addWidget(self.export_and_apply_button, 4, 5)
 
         # Add layout to window
         self.window.add_layout(grid_layout)
