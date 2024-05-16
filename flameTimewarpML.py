@@ -471,7 +471,53 @@ class ApplyModelDialog():
             self.run_inference(lockfile_path)
 
     def apply_fluidmorph(self):
-        pass
+            json_info = {}
+            json_info['mode'] = 'fluidmorph'
+            json_info['incoming'] = self.verified_clips[0]
+            json_info['outgoing'] = self.verified_clips[1]
+            json_info['output'] = result_folder
+            json_info['clip_name'] = tw_clip_name
+            json_info['model_path'] = self.fw.prefs.get('model_path')
+            json_info['setup'] = tw_setup_string
+            json_info['settings'] = self.settings
+            json_info['cpu'] = self.fw.prefs.get('cpu')
+            json_info['half'] = self.fw.prefs.get('half')
+
+            lockfile_path = os.path.join(
+                result_folder,
+                f'{tw_clip_name}.json'
+            )
+
+            try:
+                import json
+                with open(lockfile_path, 'w') as json_file:
+                    json.dump(json_info, json_file, indent=4)
+            except Exception as e:
+                dialog = flame.messages.show_in_dialog(
+                    title = f'{settings["app_name"]}',
+                    message = f'Unable to save {lockfile_path}: {e}',
+                    type = 'error',
+                    buttons = ['Ok'])
+                return False
+
+            # '''
+            new_clip_name = clip_name + '_TWML'
+            watcher = threading.Thread(
+                target=self.import_watcher, 
+                args=(
+                    result_folder, 
+                    new_clip_name, 
+                    clip, 
+                    [source_clip_folder],
+                    lockfile_path
+                    )
+                )
+            watcher.daemon = True
+            watcher.start()
+            self.loops.append(watcher)
+            # '''
+
+            self.run_inference(lockfile_path)
 
     def run_inference(self, lockfile_path):
         import platform
