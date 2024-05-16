@@ -310,6 +310,7 @@ class ApplyModelDialog():
         grid_layout.addWidget(self.model_browse_button, 1, 5)
 
         grid_layout.addWidget(self.cancel_button, 2, 4)
+        grid_layout.setColumnStretch(5, 1)
         grid_layout.addWidget(self.export_and_apply_button, 2, 5)
 
         # Add layout to window
