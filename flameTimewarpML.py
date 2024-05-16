@@ -34,7 +34,7 @@ settings = {
     'bundle_folder': os.getenv('FLAMETWML_BUNDLE'),
     'packages_folder': os.getenv('FLAMETWML_PACKAGES'),
     'temp_folder': os.getenv('FLAMETWML_TEMP'),
-    'version': 'v0.4.5 dev 001a',
+    'version': 'v0.4.5 dev 002',
 }
 
 class ApplyModelDialog():
