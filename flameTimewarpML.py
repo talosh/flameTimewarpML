@@ -218,7 +218,8 @@ class ApplyModelDialog():
             self.window.show()
 
         def cpu():
-            pass
+            self.fw.prefs['cpu'] = True
+            self.fw.save_prefs()
         
         def half():
             pass
