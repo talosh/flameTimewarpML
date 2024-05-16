@@ -172,6 +172,20 @@ class ApplyModelDialog():
             os.remove(temp_setup_path)
             return verified_clips
 
+        elif mode == 'fluidmorph':
+            clips = []
+            for item in selection:
+                if isinstance(item, (flame.PyClip)):
+                    clips.append(item)
+
+            if len(clips) != 2:
+                dialog = flame.messages.show_in_dialog(
+                title = f'{settings["app_name"]}',
+                message = 'Please select two clips of the same dimentions and length',
+                type = 'error',
+                buttons = ['Ok'])
+                return
+
         return []
 
     def main_window(self):
