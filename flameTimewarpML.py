@@ -289,6 +289,7 @@ class ApplyModelDialog():
         )
         # Window layout
         grid_layout = QtWidgets.QGridLayout()
+        grid_layout.setRowMinimumHeight(0, 30)
         grid_layout.setRowMinimumHeight(1, 30)
         grid_layout.setColumnMinimumWidth(2, 150)
         grid_layout.setColumnMinimumWidth(3, 150)
