@@ -1403,6 +1403,8 @@ def main():
             print (f'epoch: {current_epoch + 1}')
         except Exception as e:
             print (f'unable to set step and epoch: {e}')
+
+        '''
         try:
             steps_loss = checkpoint['steps_loss']
             print (f'loaded loss statistics for step: {step}')
@@ -1410,6 +1412,7 @@ def main():
             print (f'loaded loss statistics for epoch: {current_epoch + 1}')
         except Exception as e:
             print (f'unable to load step and epoch loss statistics: {e}')
+        '''
 
     else:
         traned_model_name = 'flameTWML_model_' + create_timestamp_uid() + '.pth'
