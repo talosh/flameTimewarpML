@@ -47,6 +47,12 @@ cd {flameTimewarpML folder}
 ./train.sh --state_file {Path to MyModel}/MyModel001.pth --model flownet4_v004 --batch_size 4 {Path to Dataset}/
 ```
 
+#### Batch size and learning rate
+The batch size and learning rate are two crucial hyperparameters that significantly affect the training process and empirical tuning is necessary here.
+When the batch size is increased, the learning rate can often be increased as well. A common heuristic is the linear scaling rule: when you multiply the batch size by a factor 
+k, you can also multiply the learning rate by k. Another approach is the square root scaling rule: when you multiply the batch size by k multiply the learning rate by sqrt(k)
+
+
 #### Dataset preparation
 Training script will scan all the folders under a given path and will compose training samples out of folders where .exr files are found.
 Only Uncompressed OpenEXR files are supported at the moment.
