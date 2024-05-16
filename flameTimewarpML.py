@@ -226,7 +226,7 @@ class ApplyModelDialog():
         # Create export and apply window
         self.window = PyFlameQDialog(
             width=800,
-            height=200,
+            height=300,
             title=f'{settings["app_name"]} <small>{settings["version"]}',
         )
 
