@@ -218,8 +218,9 @@ class ApplyModelDialog():
             self.window.show()
 
         def cpu():
-            self.fw.prefs['cpu'] = True
-            self.fw.save_prefs()
+            print (self.cpu_button.isChecked())
+            # self.fw.prefs['cpu'] = True
+            # self.fw.save_prefs()
         
         def half():
             pass
