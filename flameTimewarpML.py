@@ -217,6 +217,12 @@ class ApplyModelDialog():
                 self.fw.save_prefs()
             self.window.show()
 
+        def cpu():
+            pass
+        
+        def half():
+            pass
+
         # Create export and apply window
         self.window = PyFlameQDialog(
             width=800,
@@ -293,10 +299,10 @@ class ApplyModelDialog():
         grid_layout.addWidget(self.model_path_entry, 1, 1, 1, 4)
         grid_layout.addWidget(self.model_browse_button, 1, 5)
 
-        grid_layout.addWidget(self.half_button, 2, 2)
-        grid_layout.addWidget(self.cpu_button, 2, 3)
-        grid_layout.addWidget(self.cancel_button, 2, 4)
-        grid_layout.addWidget(self.export_and_apply_button, 2, 5,)
+        grid_layout.addWidget(self.half_button, 2, 4)
+        grid_layout.addWidget(self.cpu_button, 2, 5)
+        grid_layout.addWidget(self.cancel_button, 3, 4)
+        grid_layout.addWidget(self.export_and_apply_button, 3, 5)
 
         # Add layout to window
         self.window.add_layout(grid_layout)
