@@ -1741,9 +1741,8 @@ def main():
         lpips_val = float(np.array(lpips_list).mean())
 
 
-        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 0.9)
-
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 0.9)
         optimizer_flownet.step()
         scheduler_flownet.step()
 
