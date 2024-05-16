@@ -425,8 +425,9 @@ class Timewarp():
             model = model_object().get_model()().to(self.device)
             model.load_state_dict(checkpoint['flownet_state_dict'])
             model.eval()
-            # if 'mps' not in str(self.device):
-            #    model.half()
+            if self.json_info.get('half'):
+                print('Using half-precision')
+                model.half()
             return model
         except Exception as e:
             print ({e})
