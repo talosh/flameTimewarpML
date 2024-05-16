@@ -173,10 +173,10 @@ class ApplyModelDialog():
             return verified_clips
 
         elif mode == 'fluidmorph':
-            clips = []
+            verified_clips = []
             for item in selection:
                 if isinstance(item, (flame.PyClip)):
-                    clips.append(item)
+                    verified_clips.append(item)
 
             if len(clips) != 2:
                 dialog = flame.messages.show_in_dialog(
@@ -185,6 +185,7 @@ class ApplyModelDialog():
                 type = 'error',
                 buttons = ['Ok'])
                 return
+            return verified_clips
 
         return []
 
