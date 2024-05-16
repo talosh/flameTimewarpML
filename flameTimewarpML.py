@@ -350,7 +350,9 @@ class ApplyModelDialog():
 
         if self.mode == 'timewarp':
             self.apply_timewarp()
-            
+        elif self.mode == 'fluidmorph':
+            self.apply_fluidmorph()
+
         # Close export and apply window
         self.window.close()
 
@@ -408,6 +410,8 @@ class ApplyModelDialog():
             json_info['record_in'] = record_in
             json_info['record_out'] = record_out
             json_info['settings'] = self.settings
+            json_info['cpu'] = self.fw.prefs.get('cpu')
+            json_info['half'] = self.fw.prefs.get('half')
 
             lockfile_path = os.path.join(
                 result_folder,
@@ -444,6 +448,9 @@ class ApplyModelDialog():
             # '''
 
             self.run_inference(lockfile_path)
+
+    def apply_fluidmorph(self):
+        pass
 
     def run_inference(self, lockfile_path):
         import platform
