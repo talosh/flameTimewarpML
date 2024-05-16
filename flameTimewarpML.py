@@ -178,7 +178,7 @@ class ApplyModelDialog():
                 if isinstance(item, (flame.PyClip)):
                     verified_clips.append(item)
 
-            if len(clips) != 2:
+            if len(verified_clips) != 2:
                 dialog = flame.messages.show_in_dialog(
                 title = f'{settings["app_name"]}',
                 message = 'Please select two clips of the same dimentions and length',
