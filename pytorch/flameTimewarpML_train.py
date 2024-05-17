@@ -464,7 +464,9 @@ def get_dataset(
             print ('reading first block of training data...')
             self.last_train_data = [self.frames_queue.get()]
             self.last_train_data_size = 9
+            self,new_sample_shown = False
             self.train_data_index = 0
+
 
             self.repeat_count = repeat
             self.repeat_counter = 0
@@ -686,13 +688,16 @@ def get_dataset(
                     new_data = self.frames_queue.get_nowait()
                     self.train_data_index = new_data['index']
                     self.last_train_data.append(new_data)
+                    self.new_sample_shown = False
                     del new_data
                     self.repeat_counter = 0
                 except queue.Empty:
                     pass
 
             self.repeat_counter += 1
-
+            if not self.new_sample_shown:
+                self.new_sample_shown = True
+                return self.last_train_data[-1]
             if random.uniform(0, 1) < 0.44:
                 return self.last_train_data[-1]
             else:
