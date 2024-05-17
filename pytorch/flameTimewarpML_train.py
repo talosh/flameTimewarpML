@@ -1177,6 +1177,111 @@ def closest_divisible(x):
     else:
         return lower
 
+def gaussian(window_size, sigma):
+    from math import exp
+    gauss = torch.Tensor([exp(-(x - window_size//2)**2/float(2*sigma**2)) for x in range(window_size)])
+    return gauss/gauss.sum()
+
+def create_window(window_size, channel):
+    _1D_window = gaussian(window_size, 1.5).unsqueeze(1)
+    _2D_window = _1D_window.mm(_1D_window.t()).float().unsqueeze(0).unsqueeze(0)
+    window = Variable(_2D_window.expand(channel, 1, window_size, window_size).contiguous())
+    return window
+
+def _ssim(img1, img2, window, window_size, channel, size_average = True, stride=None):
+    mu1 = F.conv2d(img1, window, padding = (window_size-1)//2, groups = channel, stride=stride)
+    mu2 = F.conv2d(img2, window, padding = (window_size-1)//2, groups = channel, stride=stride)
+
+    mu1_sq = mu1.pow(2)
+    mu2_sq = mu2.pow(2)
+    mu1_mu2 = mu1*mu2
+
+    sigma1_sq = F.conv2d(img1*img1, window, padding = (window_size-1)//2, groups = channel, stride=stride) - mu1_sq
+    sigma2_sq = F.conv2d(img2*img2, window, padding = (window_size-1)//2, groups = channel, stride=stride) - mu2_sq
+    sigma12 = F.conv2d(img1*img2, window, padding = (window_size-1)//2, groups = channel, stride=stride) - mu1_mu2
+
+    C1 = 0.01**2
+    C2 = 0.03**2
+
+    ssim_map = ((2*mu1_mu2 + C1)*(2*sigma12 + C2))/((mu1_sq + mu2_sq + C1)*(sigma1_sq + sigma2_sq + C2))
+
+    if size_average:
+        return ssim_map.mean()
+    else:
+        return ssim_map.mean(1).mean(1).mean(1)
+
+class SSIM(torch.nn.Module):
+    def __init__(self, window_size = 3, size_average = True, stride=3):
+        super(SSIM, self).__init__()
+        self.window_size = window_size
+        self.size_average = size_average
+        self.channel = 1
+        self.stride = stride
+        self.window = create_window(window_size, self.channel)
+
+    def forward(self, img1, img2):
+        """
+        img1, img2: torch.Tensor([b,c,h,w])
+        """
+        (_, channel, _, _) = img1.size()
+
+        if channel == self.channel and self.window.data.type() == img1.data.type():
+            window = self.window
+        else:
+            window = create_window(self.window_size, channel)
+
+            if img1.is_cuda:
+                window = window.cuda(img1.get_device())
+            window = window.type_as(img1)
+
+            self.window = window
+            self.channel = channel
+
+
+        return _ssim(img1, img2, window, self.window_size, channel, self.size_average, stride=self.stride)
+
+class MeanShift(torch.nn.Conv2d):
+    def __init__(self, data_mean, data_std, data_range=1, norm=True):
+        """norm (bool): normalize/denormalize the stats"""
+        c = len(data_mean)
+        super(MeanShift, self).__init__(c, c, kernel_size=1)
+        std = torch.Tensor(data_std)
+        self.weight.data = torch.eye(c).view(c, c, 1, 1)
+        if norm:
+            self.weight.data.div_(std.view(c, 1, 1, 1))
+            self.bias.data = -1 * data_range * torch.Tensor(data_mean)
+            self.bias.data.div_(std)
+        else:
+            self.weight.data.mul_(std.view(c, 1, 1, 1))
+            self.bias.data = data_range * torch.Tensor(data_mean)
+        self.requires_grad = False
+            
+class VGGPerceptualLoss(torch.nn.Module):
+    def __init__(self):
+        from torchvision import models
+        super(VGGPerceptualLoss, self).__init__()
+        blocks = []
+        pretrained = True
+        self.vgg_pretrained_features = models.vgg19(pretrained=pretrained).features
+        self.normalize = MeanShift([0.485, 0.456, 0.406], [0.229, 0.224, 0.225], norm=True).cuda()
+        for param in self.parameters():
+            param.requires_grad = False
+
+    def forward(self, X, Y, indices=None):
+        X = self.normalize(X)
+        Y = self.normalize(Y)
+        indices = [2, 7, 12, 21, 30]
+        weights = [1.0 / 32, 1.0 / 16, 1.0 / 8, 1.0 / 4, 1.0]
+        k = 0
+        loss = 0
+        for i in range(indices[-1]):
+            X = self.vgg_pretrained_features[i](X)
+            Y = self.vgg_pretrained_features[i](Y)
+            if (i+1) in indices:                
+                loss += weights[k] * (X - Y.detach()).abs().mean()
+                k += 1
+        return loss
+
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
@@ -1491,6 +1596,9 @@ def main():
     loss_fn_alex.to(device)
     loss_fn_lpips = lpips.LPIPS(net='vgg', lpips=False, spatial=True)
     loss_fn_lpips.to(device)
+
+    loss_fn_ssim = SSIM()
+    loss_fn_vgg = VGGPerceptualLoss().to(device)
 
     warnings.resetwarnings()
 
