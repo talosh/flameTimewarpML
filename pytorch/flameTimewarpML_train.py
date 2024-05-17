@@ -1867,7 +1867,7 @@ def main():
 
 
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 2)
+        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
         optimizer_flownet.step()
         scheduler_flownet.step()
 
