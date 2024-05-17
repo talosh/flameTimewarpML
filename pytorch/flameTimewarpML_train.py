@@ -1489,11 +1489,8 @@ def main():
     os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
     loss_fn_alex = lpips.LPIPS(net='alex')
     loss_fn_alex.to(device)
-    loss_fn_lpips = lpips.LPIPS(net='alex', lpips=False)
+    loss_fn_lpips = lpips.LPIPS(net='vgg', lpips=False)
     loss_fn_lpips.to(device)
-    
-    # loss_fn_lpips = lpips.LPIPS(net='vgg')
-    # loss_fn_lpips.to(device)
 
     warnings.resetwarnings()
 
@@ -1690,7 +1687,7 @@ def main():
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
 
-        pm_weight = 4e-2
+        pm_weight = 4e-5
         lpips_weight = 1e-5
         x8_output = torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
         x8_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
