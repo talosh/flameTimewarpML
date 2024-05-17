@@ -698,8 +698,8 @@ def get_dataset(
             if not self.new_sample_shown:
                 self.new_sample_shown = True
                 return self.last_train_data[-1]
-            if random.uniform(0, 1) < 0.44:
-                return self.last_train_data[-1]
+            # if random.uniform(0, 1) < 0.44:
+            #    return self.last_train_data[-1]
             else:
                 return self.last_train_data[random.randint(0, len(self.last_train_data) - 1)]
             # '''
