@@ -464,6 +464,7 @@ def get_dataset(
             print ('reading first block of training data...')
             self.last_train_data = [self.frames_queue.get()]
             self.last_train_data_size = 9
+            self.train_data_index = 0
 
             self.repeat_count = repeat
             self.repeat_counter = 0
@@ -683,6 +684,7 @@ def get_dataset(
                     elif len(self.last_train_data) == self.last_train_data_size:
                         self.last_train_data = self.last_train_data[:-(self.last_train_data_size - 1)]
                     new_data = self.frames_queue.get_nowait()
+                    self.train_data_index = new_data['index']
                     self.last_train_data.append(new_data)
                     del new_data
                     self.repeat_counter = 0
@@ -733,7 +735,7 @@ def get_dataset(
             imgh = train_data['h']
             imgw = train_data['w']
             ratio = train_data['ratio']
-            images_idx = train_data['index']
+            images_idx = self.train_data_index
 
             device = self.device
 
