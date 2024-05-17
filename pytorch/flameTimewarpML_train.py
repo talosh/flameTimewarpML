@@ -463,6 +463,7 @@ def get_dataset(
 
             print ('reading first block of training data...')
             self.last_train_data = [self.frames_queue.get()]
+            self.last_train_data_size = 9
 
             self.repeat_count = repeat
             self.repeat_counter = 0
@@ -673,19 +674,27 @@ def get_dataset(
             # '''
             if not self.last_train_data:
                 new_data = self.frames_queue.get_nowait()
-                self.last_train_data = new_data
+                self.last_train_data = [new_data]
                 del new_data
             if self.repeat_counter >= self.repeat_count:
                 try:
+                    if len(self.last_train_data) == self.last_train_data_size:
+                        self.last_train_data.pop(0)
+                    elif len(self.last_train_data) == self.last_train_data_size:
+                        self.last_train_data = self.last_train_data[:-(self.last_train_data_size - 1)]
                     new_data = self.frames_queue.get_nowait()
-                    self.last_train_data = new_data
+                    self.last_train_data.append(new_data)
                     del new_data
                     self.repeat_counter = 0
                 except queue.Empty:
                     pass
 
             self.repeat_counter += 1
-            return self.last_train_data
+
+            if random.uniform(0, 1) < 0.44:
+                return self.last_train_data[-1]
+            else:
+                return self.last_train_data[random.randint(0, len(self.last_train_data) - 1)]
             # '''
             # return self.frames_queue.get()
 
