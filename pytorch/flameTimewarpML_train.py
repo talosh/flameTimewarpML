@@ -1592,10 +1592,10 @@ def main():
 
     import lpips
     os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
-    loss_fn_alex = lpips.LPIPS(net='alex', spatial=True)
+    loss_fn_alex = lpips.LPIPS(net='alex')
     loss_fn_alex.to(device)
-    loss_fn_lpips = lpips.LPIPS(net='vgg', lpips=False, spatial=True)
-    loss_fn_lpips.to(device)
+    # loss_fn_lpips = lpips.LPIPS(net='vgg', lpips=False, spatial=True)
+    # loss_fn_lpips.to(device)
 
     loss_fn_ssim = SSIM()
     loss_fn_vgg = VGGPerceptualLoss().to(device)
@@ -1795,8 +1795,8 @@ def main():
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
 
-        pm_weight = 5e-2
-        lpips_weight = 1
+        pm_weight = 1
+        lpips_weight = 0
         # self.vgg(merged[3], gt).mean() - self.ss(merged[3], gt) * 0.1
 
         x8_output = torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
