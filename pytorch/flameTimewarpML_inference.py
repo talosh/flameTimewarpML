@@ -601,14 +601,14 @@ class Timewarp():
         for f in os.listdir(self.incoming_folder):
             name, ext = os.path.splitext(f)
             if ext in img_formats:
-                incoming_files_list.append(f)
+                incoming_files_list.append(os.path.join(self.incoming_folder, f))
         incoming_files_list = sorted(incoming_files_list)
 
         outgoing_files_list = []
         for f in os.listdir(self.outgoing_folder):
             name, ext = os.path.splitext(f)
             if ext in img_formats:
-                outgoing_files_list.append(f)
+                outgoing_files_list.append(os.path.join(self.outgoing_folder, f))
         outgoing_files_list = sorted(outgoing_files_list)
 
         def hermite_curve(t):
