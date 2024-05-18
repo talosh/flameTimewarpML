@@ -1822,7 +1822,7 @@ def main():
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
 
-        pm_weight = 1e-5
+        pm_weight = 8e-6
         lpips_weight = 1e-6
         # self.vgg(merged[3], gt).mean() - self.ss(merged[3], gt) * 0.1
 
