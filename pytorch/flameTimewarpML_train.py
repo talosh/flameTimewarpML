@@ -1775,7 +1775,7 @@ def main():
     import signal
     def create_graceful_exit(current_state_dict):
         def graceful_exit(signum, frame):
-            print(f'\nSaving current state to {current_state_dict['trained_model_path']}...')
+            print(f'\nSaving current state to {current_state_dict["trained_model_path"]}...')
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
             exit(0)
         return graceful_exit
