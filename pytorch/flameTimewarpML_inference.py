@@ -392,10 +392,6 @@ def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
 class Timewarp():
     def __init__(self, json_info):
         self.json_info = json_info
-        self.source_folder = self.json_info.get('input')
-        self.target_folder = self.json_info.get('output')
-        self.clip_name = self.json_info.get('clip_name')
-        self.settings = self.json_info.get('settings')
         print('Initializing TimewarpML from Flame setup...')
         import torch
 
@@ -434,6 +430,17 @@ class Timewarp():
             return None
 
     def process(self):
+        mode = self.json_info.get('mode')
+
+        if mode == 'timewarp':
+            return self.process_timewarp()
+        elif mode == 'fluidmorph':
+            return self.process_fluidmorph()
+        else:
+            print (f'Unknown processing mode: {mode}')
+            return False
+
+    def process_timewarp(self):
         if not self.model:
             print (f'Unable to import model from file {self.model_path}')
             return False
@@ -444,6 +451,11 @@ class Timewarp():
             print (k)
         print (f'{self.json_info}')
         '''
+
+        self.source_folder = self.json_info.get('input')
+        self.target_folder = self.json_info.get('output')
+        self.clip_name = self.json_info.get('clip_name')
+        self.settings = self.json_info.get('settings')
 
         src_files_list = [file for file in os.listdir(self.source_folder) if file.endswith('.exr')]
         input_duration = len(src_files_list)
@@ -572,6 +584,38 @@ class Timewarp():
         write_thread.join()
         self.pbar.close()
         return True
+
+    def process_fluidmorph(self):
+        if not self.model:
+            print (f'Unable to import model from file {self.model_path}')
+            return False
+  
+        self.incoming_folder = self.json_info.get('incoming')
+        self.outgoing_folder = self.json_info.get('outgoing')
+        self.target_folder = self.json_info.get('output')
+        self.clip_name = self.json_info.get('clip_name')
+        self.settings = self.json_info.get('settings')
+
+        img_formats = ['.exr',]
+        incoming_files_list = []
+        for f in os.listdir(self.incoming_folder):
+            name, ext = os.path.splitext(f)
+            if ext in img_formats:
+                incoming_files_list.append(f)
+
+        outgoing_files_list = []
+        for f in os.listdir(self.outgoing_folder):
+            name, ext = os.path.splitext(f)
+            if ext in img_formats:
+                outgoing_files_list.append(f)
+
+        frame_info_list = []
+
+        
+
+        incoming_input_duration = len(incoming_files_list)
+        outgoing_input_duration = len(outgoing_files_list)
+
 
     def predict(self, incoming_data, outgoing_data, ratio = 0.5, iterations = 1):
         import numpy as np
