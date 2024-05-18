@@ -23,6 +23,7 @@ except:
         print (f'Using {python_executable_path} python interpreter')
         sys.exit()
     else:
+        # make Flame happy on hooks scan
         class torch(object):
             class nn(object):
                 class Module(object):
