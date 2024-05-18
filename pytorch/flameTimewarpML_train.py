@@ -1430,7 +1430,7 @@ def main():
 
     criterion_mse = torch.nn.MSELoss()
     criterion_l1 = torch.nn.L1Loss()
-    criterion_huber = torch.nn.HuberLoss(delta=0.004)
+    criterion_huber = torch.nn.HuberLoss(delta=0.001)
 
     weight_decay = 10 ** (0.07 * args.generalize - 9) if args.generalize > 1 else 1e-9
 
