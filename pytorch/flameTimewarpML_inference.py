@@ -602,20 +602,114 @@ class Timewarp():
             name, ext = os.path.splitext(f)
             if ext in img_formats:
                 incoming_files_list.append(f)
+        incoming_files_list = sorted(incoming_files_list)
 
         outgoing_files_list = []
         for f in os.listdir(self.outgoing_folder):
             name, ext = os.path.splitext(f)
             if ext in img_formats:
                 outgoing_files_list.append(f)
+        outgoing_files_list = sorted(outgoing_files_list)
+
+        def hermite_curve(t):
+            P0, P1 = 0, 1
+            T0, T1 = 0.618, 0.618
+            h00 = 2*t**3 - 3*t**2 + 1  # Compute basis function 1
+            h10 = t**3 - 2*t**2 + t    # Compute basis function 2
+            h01 = -2*t**3 + 3*t**2     # Compute basis function 3
+            h11 = t**3 - t**2          # Compute basis function 4
+
+            return h00 * P0 + h10 * T0 + h01 * P1 + h11 * T1
+
 
         frame_info_list = []
+        output_frame_number = 1
+        length = len(incoming_files_list) - 1
 
-        
+        for frame_index in range(len(incoming_files_list)):
+            frame_info = {}
+            frame_info['incoming'] = incoming_files_list[frame_index]
+            frame_info['outgoing'] = outgoing_files_list[frame_index]
+            linear_ratio = frame_index / length if length > 0 else 0
+            frame_info['ratio'] = hermite_curve(linear_ratio)
+            frame_info['output'] = os.path.join(self.target_folder, f'{self.clip_name}.{output_frame_number:08}.exr')
+            frame_info_list.append(frame_info)
+            output_frame_number += 1
 
-        incoming_input_duration = len(incoming_files_list)
-        outgoing_input_duration = len(outgoing_files_list)
+        def read_images(read_image_queue, frame_info_list):
+            for frame_info in frame_info_list:
+                frame_info['incoming_image_data'] = read_openexr_file(frame_info['incoming'])
+                frame_info['outgoing_image_data'] = read_openexr_file(frame_info['outgoing'])
+                read_image_queue.put(frame_info)
 
+        read_image_queue = queue.Queue(maxsize=9)
+        read_thread = threading.Thread(target=read_images, args=(read_image_queue, frame_info_list))
+        read_thread.daemon = True
+        read_thread.start()
+
+        print(f'rendering {len(frame_info_list)} frames to:\n{self.target_folder}')
+        self.pbar = tqdm(total=len(frame_info_list), 
+                         unit='frame',
+                         file=sys.stdout,
+                         bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]',
+                         ascii=f' {chr(0x2588)}',
+                         ncols=80
+                         )
+
+        def write_images(write_image_queue):
+            while True:
+                image_path = ''
+                try:
+                    write_data = write_image_queue.get_nowait()
+                    image_data = write_data['image_data']
+                    image_path = write_data['image_path']
+                    if image_data is None:
+                        # print ('finishing write thread')
+                        break
+                    write_exr(image_data, image_path)
+                    self.pbar.update(1)
+                except queue.Empty:
+                    time.sleep(1e-4)
+                except Exception as e:
+                    print (f'error writing file: {image_path}: {e}')
+
+        write_image_queue = queue.Queue(maxsize=9)
+        write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
+        write_thread.daemon = True
+        write_thread.start()
+
+        for idx in range(len(frame_info_list)):
+            frame_info = read_image_queue.get()
+            # print (f'frame {idx + 1} of {len(frame_info_list)}')
+            img0 = frame_info['incoming_image_data']['image_data']
+            img1 = frame_info['outgoing_image_data']['image_data']
+            ratio = frame_info['ratio']
+            image_path = frame_info['output']
+
+            if idx == 0:
+                # due to some glich? in pytorch mps
+                # first run result always comes as zeroes
+                # so we need to run it once as dummy
+                if 'mps' in str(self.device):
+                    ratio = 1e-4
+                    try:
+                        result = self.predict(img0.copy(), img1.copy(), ratio = ratio, iterations = 1)
+                        del result
+                    except Exception as e:
+                        print (f'{e}')
+                        return False
+            try:
+                result = self.predict(img0, img1, ratio = ratio, iterations = 1)
+                write_image_queue.put({'image_data': result.copy(), 'image_path': image_path})
+                del result
+            except Exception as e:
+                print (f'{e}')
+                return False
+
+        write_image_queue.put({'image_data': None, 'image_path': None})
+        write_thread.join()
+        self.pbar.close()
+        return True
 
     def predict(self, incoming_data, outgoing_data, ratio = 0.5, iterations = 1):
         import numpy as np
