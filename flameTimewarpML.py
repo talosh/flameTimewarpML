@@ -486,14 +486,16 @@ class ApplyModelDialog():
 
             incoming_folder = os.path.join(result_folder, 'incoming')
             outgoing_folder = os.path.join(result_folder, 'outgoing')
+
+
             if incoming_clip.bit_depth == 32:
                 export_preset = os.path.join(os.path.dirname(__file__), 'presets', 'openexr32bit.xml')
-                self.export_clip(incoming_clip, incoming_folder, export_preset)
-                self.export_clip(outgoing_clip, outgoing_folder, export_preset)
+                self.export_clip(incoming_clip, incoming_folder, export_preset=export_preset)
+                self.export_clip(outgoing_clip, outgoing_folder, export_preset=export_preset)
             else:
                 export_preset = os.path.join(os.path.dirname(__file__), 'presets', 'openexr16bit.xml')
-                self.export_clip(incoming_clip, incoming_folder)
-                self.export_clip(outgoing_clip, outgoing_folder)
+                self.export_clip(incoming_clip, incoming_folder, export_preset=export_preset)
+                self.export_clip(outgoing_clip, outgoing_folder, export_preset=export_preset)
 
             json_info = {}
             json_info['mode'] = 'fluidmorph'
