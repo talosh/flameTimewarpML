@@ -471,6 +471,17 @@ class ApplyModelDialog():
             self.run_inference(lockfile_path)
 
     def apply_fluidmorph(self):
+
+            clip_name = self.verified_clips[0].name.get_value()
+            tw_clip_name = self.fw.sanitized(clip_name) + '_TWML' + '_' + self.fw.create_timestamp_uid()        
+    
+            result_folder = os.path.abspath(
+            os.path.join(
+                self.working_folder, 
+                tw_clip_name
+                )
+            )
+
             json_info = {}
             json_info['mode'] = 'fluidmorph'
             json_info['incoming'] = self.verified_clips[0]
@@ -478,7 +489,6 @@ class ApplyModelDialog():
             json_info['output'] = result_folder
             json_info['clip_name'] = tw_clip_name
             json_info['model_path'] = self.fw.prefs.get('model_path')
-            json_info['setup'] = tw_setup_string
             json_info['settings'] = self.settings
             json_info['cpu'] = self.fw.prefs.get('cpu')
             json_info['half'] = self.fw.prefs.get('half')
