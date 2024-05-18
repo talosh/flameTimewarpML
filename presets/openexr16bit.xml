@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<preset version="9">
+<preset version="14">
     <type>image</type>
     <comment>Creates 16-bit fp OpenEXR file sequence (Uncompressed) numbered based on the timecode of the selected clip.</comment>
     <video>
