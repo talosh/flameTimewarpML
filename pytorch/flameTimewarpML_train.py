@@ -1298,6 +1298,7 @@ class VGGPerceptualLoss(torch.nn.Module):
                 k += 1
         return loss
 
+
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
@@ -1756,6 +1757,16 @@ def main():
 
 
     print('\n\n')
+
+    import signal
+    def create_graceful_exit(flownet):
+        def graceful_exit(signum, frame):
+            print("\nGraceful exit. Cleaning up...")
+            # Access and use the shared_data here
+            # print(f"Shared data: {shared_data}")
+            exit(0)
+        return graceful_exit
+    signal.signal(signal.SIGINT, create_graceful_exit(flownet))
 
     while True:
         data_time = time.time() - time_stamp
