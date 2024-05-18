@@ -1844,7 +1844,7 @@ def main():
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
 
         pm_weight = 8e-6
-        lpips_weight = 1e-6
+        lpips_weight = 1e-8
         # self.vgg(merged[3], gt).mean() - self.ss(merged[3], gt) * 0.1
 
         x8_output = torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
