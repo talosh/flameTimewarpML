@@ -471,8 +471,10 @@ class ApplyModelDialog():
             self.run_inference(lockfile_path)
 
     def apply_fluidmorph(self):
+            incoming_clip = self.verified_clips[0]
+            outgoing_clip = self.verified_clips[1]
 
-            clip_name = self.verified_clips[0].name.get_value()
+            clip_name = incoming_clip.name.get_value()
             tw_clip_name = self.fw.sanitized(clip_name) + '_TWML' + '_' + self.fw.create_timestamp_uid()        
     
             result_folder = os.path.abspath(
@@ -482,10 +484,21 @@ class ApplyModelDialog():
                 )
             )
 
+            incoming_folder = os.path.join(result_folder, 'incoming')
+            outgoing_folder = os.path.join(result_folder, 'outgoing')
+            if incoming_clip.bit_depth == 32:
+                export_preset = os.path.join(os.path.dirname(__file__), 'presets', 'openexr32bit.xml')
+                self.export_clip(incoming_clip, incoming_folder, export_preset)
+                self.export_clip(outgoing_clip, outgoing_folder, export_preset)
+            else:
+                export_preset = os.path.join(os.path.dirname(__file__), 'presets', 'openexr16bit.xml')
+                self.export_clip(incoming_clip, incoming_folder)
+                self.export_clip(outgoing_clip, outgoing_folder)
+
             json_info = {}
             json_info['mode'] = 'fluidmorph'
-            json_info['incoming'] = self.verified_clips[0]
-            json_info['outgoing'] = self.verified_clips[1]
+            json_info['incoming'] = incoming_clip
+            json_info['outgoing'] = outgoing_clip
             json_info['output'] = result_folder
             json_info['clip_name'] = tw_clip_name
             json_info['model_path'] = self.fw.prefs.get('model_path')
@@ -517,8 +530,8 @@ class ApplyModelDialog():
                 args=(
                     result_folder, 
                     new_clip_name, 
-                    clip, 
-                    [source_clip_folder],
+                    incoming_clip, 
+                    [incoming_folder, outgoing_folder],
                     lockfile_path
                     )
                 )
