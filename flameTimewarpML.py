@@ -497,8 +497,8 @@ class ApplyModelDialog():
 
             json_info = {}
             json_info['mode'] = 'fluidmorph'
-            json_info['incoming'] = incoming_clip
-            json_info['outgoing'] = outgoing_clip
+            json_info['incoming'] = incoming_folder
+            json_info['outgoing'] = outgoing_folder
             json_info['output'] = result_folder
             json_info['clip_name'] = tw_clip_name
             json_info['model_path'] = self.fw.prefs.get('model_path')
