@@ -1758,15 +1758,28 @@ def main():
 
     print('\n\n')
 
+    current_state_dict = {
+        'step': step,
+        'steps_loss': steps_loss,
+        'epoch': epoch,
+        'epoch_loss': epoch_loss,
+        'start_timestamp': start_timestamp,
+        'lr': optimizer_flownet.param_groups[0]['lr'],
+        'model_info': model_info,
+        'flownet_state_dict': flownet.state_dict(),
+        # 'model_d_state_dict': model_D.state_dict(),
+        'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
+        'trained_model_path': trained_model_path
+    }
+
     import signal
-    def create_graceful_exit(flownet):
+    def create_graceful_exit(current_state_dict):
         def graceful_exit(signum, frame):
-            print("\nGraceful exit. Cleaning up...")
-            # Access and use the shared_data here
-            # print(f"Shared data: {shared_data}")
+            print("\nSaving current state...")
+            torch.save(current_state_dict, current_state_dict['trained_model_path'])
             exit(0)
         return graceful_exit
-    signal.signal(signal.SIGINT, create_graceful_exit(flownet))
+    signal.signal(signal.SIGINT, create_graceful_exit(current_state_dict))
 
     while True:
         data_time = time.time() - time_stamp
@@ -1884,6 +1897,21 @@ def main():
 
         train_time = time.time() - time_stamp
         time_stamp = time.time()
+
+        current_state_dict = {
+                'step': step,
+                'steps_loss': steps_loss,
+                'epoch': epoch,
+                'epoch_loss': epoch_loss,
+                'start_timestamp': start_timestamp,
+                'lr': optimizer_flownet.param_groups[0]['lr'],
+                'model_info': model_info,
+                'flownet_state_dict': flownet.state_dict(),
+                # 'model_d_state_dict': model_D.state_dict(),
+                'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
+                'trained_model_path': trained_model_path
+            }
+
 
         if step % args.preview == 1:
             rgb_source1 = img0_orig
