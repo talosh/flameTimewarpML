@@ -27,6 +27,8 @@ except:
             class nn(object):
                 class Module(object):
                     pass
+                class Conv2d(object):
+                    pass
 
 class MinExrReader:
     '''Minimal, standalone OpenEXR reader for single-part, uncompressed scan line files.
