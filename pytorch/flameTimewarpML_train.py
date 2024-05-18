@@ -23,7 +23,10 @@ except:
         print (f'Using {python_executable_path} python interpreter')
         sys.exit()
     else:
-        torch.nn.Module = object
+        class torch(object):
+            class nn(object):
+                class Module(object):
+                    pass
 
 class MinExrReader:
     '''Minimal, standalone OpenEXR reader for single-part, uncompressed scan line files.
