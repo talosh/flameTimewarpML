@@ -1263,23 +1263,24 @@ class SSIM(torch.nn.Module):
 
 
         return _ssim(img1, img2, window, self.window_size, channel, self.size_average, stride=self.stride)
-            
+
+class MeanShift(torch.nn.Conv2d):
+    def __init__(self, data_mean, data_std, data_range=1, norm=True):
+        """norm (bool): normalize/denormalize the stats"""
+        c = len(data_mean)
+        super(MeanShift, self).__init__(c, c, kernel_size=1)
+        std = torch.Tensor(data_std)
+        self.weight.data = torch.eye(c).view(c, c, 1, 1)
+        if norm:
+            self.weight.data.div_(std.view(c, 1, 1, 1))
+            self.bias.data = -1 * data_range * torch.Tensor(data_mean)
+            self.bias.data.div_(std)
+        else:
+            self.weight.data.mul_(std.view(c, 1, 1, 1))
+            self.bias.data = data_range * torch.Tensor(data_mean)
+        self.requires_grad = False
+
 class VGGPerceptualLoss(torch.nn.Module):
-    class MeanShift(torch.nn.Conv2d):
-        def __init__(self, data_mean, data_std, data_range=1, norm=True):
-            """norm (bool): normalize/denormalize the stats"""
-            c = len(data_mean)
-            super(MeanShift, self).__init__(c, c, kernel_size=1)
-            std = torch.Tensor(data_std)
-            self.weight.data = torch.eye(c).view(c, c, 1, 1)
-            if norm:
-                self.weight.data.div_(std.view(c, 1, 1, 1))
-                self.bias.data = -1 * data_range * torch.Tensor(data_mean)
-                self.bias.data.div_(std)
-            else:
-                self.weight.data.mul_(std.view(c, 1, 1, 1))
-                self.bias.data = data_range * torch.Tensor(data_mean)
-            self.requires_grad = False
 
     def __init__(self):
         from torchvision import models
