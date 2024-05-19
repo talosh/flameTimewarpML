@@ -1378,7 +1378,7 @@ def main():
     if not model_info.get('ratio_support'):
         max_dataset_window = 3
     
-    flownet_uncompiled = Flownet().get_training_model()()
+    flownet_uncompiled = Flownet().get_training_model()().to(device)
     flownet = torch.compile(flownet_uncompiled,mode='max-autotune')
     flownet.to(device)
     
