@@ -3,6 +3,7 @@ class Model:
         if torch is None:
             import torch
         Module = torch.nn.Module
+        backwarp_tenGrid = {}
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
@@ -20,7 +21,7 @@ class Model:
                 # torch.nn.SELU(inplace = True)
             )
 
-        '''
+        # '''
         def warp(tenInput, tenFlow):
             backwarp_tenGrid = {}
             k = (str(tenFlow.device), str(tenFlow.size()))
@@ -32,8 +33,9 @@ class Model:
 
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
-        '''
+        # '''
 
+        '''
         def warp(tenInput, tenFlow):
             input_device = tenInput.device
             input_dtype = tenInput.dtype
@@ -59,7 +61,7 @@ class Model:
                 )
 
             return result.detach().to(device=input_device, dtype=input_dtype)
-
+        '''
 
         class Conv2d(Module):
             def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1), bias=True):
