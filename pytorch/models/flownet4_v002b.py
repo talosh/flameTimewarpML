@@ -19,7 +19,7 @@ class Model:
                 torch.nn.LeakyReLU(0.2, True)
                 # torch.nn.SELU(inplace = True)
             )
-        
+
         '''
         def warp(tenInput, tenFlow):
             backwarp_tenGrid = {}
