@@ -179,7 +179,7 @@ class Model:
                     conv(c//2, c//2, 3, 1, 1),
                     torch.nn.ConvTranspose2d(c//2, c//4, 4, 2, 1),
                     conv(c//4, c//4, 3, 1, 1),
-                    torch.nn.Conv2d(c//4, 6, 3, 1, 1)
+                    torch.nn.Conv2d(c//4, 1, 3, 1, 1)
                 )
                 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
@@ -193,10 +193,9 @@ class Model:
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
-                tmp += self.lastconv2(feat)
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
                 flow = tmp[:, :4] * scale
-                mask = tmp [:, 4:5]
+                mask = tmp [:, 4:5] + (torch.sigmoid(self.lastconv2(feat)) * 2 - 1)
                 return flow, mask
 
         class FlownetCas(Module):
