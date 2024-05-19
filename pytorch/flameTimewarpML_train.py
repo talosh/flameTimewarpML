@@ -1764,7 +1764,6 @@ def main():
             if param.requires_grad:
                 print(name, param.requires_grad)
 
-
     print('\n\n')
 
     current_state_dict = {
