@@ -208,13 +208,11 @@ class Model:
                     conv(c//4, 5, 3, 1, 1),
                 )
 
-            def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
-                x = torch.cat((img0, img1, f0, f1, timestep), 1)
+            def forward(self, x, flow, scale=1):
                 x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 if flow is not None:
-                    mask = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
-                    x = torch.cat((x, mask, flow), 1)
+                    x = torch.cat((x, flow), 1)
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
                 tmp = self.lastconv2(feat)
@@ -243,7 +241,7 @@ class Model:
                 merged = [None] * 4
                 timestep = (img0[:, :1].clone() * 0 + 1) * timestep
 
-                flow, mask = self.block0(img0, img1, f0, f1, timestep, None, None, scale=scale[0])
+                flow, mask = self.block0(torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[0])
                 flow_list[0] = flow
                 mask_list[0] = torch.sigmoid(mask)
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
@@ -253,16 +251,7 @@ class Model:
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    flow_d, mask = self.block1(
-                        warped_img0, 
-                        warped_img1,
-                        warped_f0,
-                        warped_f1,
-                        timestep,
-                        mask,
-                        flow,
-                        scale=scale[1]
-                        )
+                    flow_d, mask = self.block1(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[1])
                     flow = flow + flow_d
 
                 flow_list[1] = flow
@@ -274,16 +263,7 @@ class Model:
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    flow_d, mask = self.block2(
-                        warped_img0, 
-                        warped_img1,
-                        warped_f0,
-                        warped_f1,
-                        timestep,
-                        mask,
-                        flow, 
-                        scale=scale[2]
-                        )
+                    flow_d, mask = self.block2(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[2])
                     flow = flow + flow_d
 
                 flow_list[2] = flow
@@ -295,16 +275,7 @@ class Model:
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    flow_d, mask = self.block3(
-                        warped_img0, 
-                        warped_img1,
-                        warped_f0,
-                        warped_f1,
-                        timestep,
-                        mask,
-                        flow, 
-                        scale=scale[3]
-                        )
+                    flow_d, mask = self.block3(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[3])
                     flow = flow + flow_d
 
                 flow_list[3] = flow
