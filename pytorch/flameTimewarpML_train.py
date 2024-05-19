@@ -1803,10 +1803,10 @@ def main():
         'trained_model_path': trained_model_path
     }
 
-    '''
     create_csv_file(
         f'{os.path.splitext(trained_model_path)[0]}.csv',
         [
+            'Epoch',
             'Step',
             'Min',
             'Avg',
@@ -1815,7 +1815,6 @@ def main():
             'LPIPS'
         ]
     )
-    '''
 
     import signal
     def create_graceful_exit(current_state_dict):
@@ -2015,6 +2014,34 @@ def main():
                 shutil.copy(trained_model_path, backup_file)
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
 
+        if step % args.csv == 1:
+            if len(epoch_loss) < args.csv:
+                csv_smoothed_window_loss = float(np.mean(moving_average(epoch_loss, 9)))
+                csv_window_min = min(epoch_loss)
+                csv_window_max = max(epoch_loss)
+                csv_psnr = float(np.array(psnr_list).mean())
+                csv_lpips_window_val = float(np.array(lpips_list).mean())
+            else:
+                csv_smoothed_window_loss = float(np.mean(moving_average(epoch_loss[-args.csv:], 9)))
+                csv_window_min = min(epoch_loss[-args.csv:])
+                csv_window_max = max(epoch_loss[-args.csv:])
+                csv_psnr = float(np.array(psnr_list[-args.csv:]).mean())
+                csv_lpips_window_val = float(np.array(lpips_list[-args.csv:]).mean())
+            rows_to_append = [
+                {
+                    'Epoch': epoch,
+                    'Step': step, 
+                    'Min': csv_window_min,
+                    'Avg': csv_smoothed_window_loss,
+                    'Max': csv_window_max,
+                    'PSNR': csv_psnr,
+                    'LPIPS': csv_lpips_window_val
+                 }
+            ]
+
+            for row in rows_to_append:
+                append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.csv', row)
+
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
         train_time_str = str(f'{train_time:.2f}')
@@ -2107,8 +2134,8 @@ def main():
                 except Exception as e:
                     print (f'{e}\n\n')
    
-            psnr = np.array(psnr_list).mean()
-            lpips_val = np.array(lpips_list).mean()
+            psnr = float(np.array(psnr_list).mean())
+            lpips_val = float(np.array(lpips_list).mean())
 
             epoch_time = time.time() - start_timestamp
             days = int(epoch_time // (24 * 3600))
