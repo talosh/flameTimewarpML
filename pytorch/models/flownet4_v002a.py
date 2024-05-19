@@ -170,7 +170,7 @@ class Model:
                     x = torch.cat((x, mask, flow), 1)
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
-                tmp = self.lastconv2(feat)
+                tmp = self.lastconv(feat)
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
                 flow = tmp[:, :4] * scale
                 mask = tmp[:, 4:5]
