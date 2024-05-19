@@ -1879,7 +1879,7 @@ def main():
         loss = 0.24 * loss_x8 + 0.24 * loss_x4 + 0.24 * loss_x2 + 0.28 * loss_x1
         '''
 
-        # '''
+        '''
         x8_output = torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
         x8_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
         loss_x8 = criterion_l1(x8_output, x8_orig)
@@ -1896,11 +1896,12 @@ def main():
         x1_orig = img1
         loss_x1 = criterion_l1(x1_output, x1_orig)
         loss = 0.04 * loss_x8 + 0.125 * loss_x4 + 0.25 * loss_x2 + 0.585 * loss_x1
-        # '''
+        '''
         
-        # x1_output = merged[3]
-        # x1_orig = img1
-        # loss = criterion_l1(x1_output, x1_orig)
+        x1_output = merged[3]
+        x1_orig = img1
+        vgg_loss = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
+        loss = criterion_l1(x1_output, x1_orig) + 0.1 * vgg_loss
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
