@@ -133,7 +133,6 @@ class Model:
                     warped_f1 = warp(f1, flow[:, 2:4])
                     flow_d, mask = self.block1(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[1])
                     flow += flow_d
-                    del flow_d
 
                 flow_list[1] = flow
                 mask_list[1] = torch.sigmoid(mask)
@@ -146,7 +145,6 @@ class Model:
                     warped_f1 = warp(f1, flow[:, 2:4])
                     flow_d, mask = self.block2(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[2])
                     flow += flow_d
-                    del flow_d
 
                 flow_list[2] = flow
                 mask_list[2] = torch.sigmoid(mask)
@@ -159,7 +157,6 @@ class Model:
                     warped_f1 = warp(f1, flow[:, 2:4])
                     flow_d, mask = self.block3(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[3])
                     flow += flow_d
-                    del flow_d
 
                 flow_list[3] = flow
                 mask_list[3] = torch.sigmoid(mask)
