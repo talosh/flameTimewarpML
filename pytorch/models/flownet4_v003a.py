@@ -82,8 +82,8 @@ class Model:
 
         class Encode01(Module):
             def __init__(self):
-                super(Head, self).__init__()
-                self.cnn0 = torch.nn.Conv2d(3+8, 32, 3, 2, 1)
+                super(Encode01, self).__init__()
+                self.cnn0 = torch.nn.Conv2d(3 + 8, 32, 3, 2, 1)
                 self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
@@ -111,64 +111,6 @@ class Model:
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
 
-        class LastConvBlock(Module):
-            def __init__(self, in_planes, c):
-                super().__init__()
-
-                self.lastconv2 = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
-                    conv(c//2, c//2, 3, 1, 1),
-                    torch.nn.ConvTranspose2d(c//2, c//4, 4, 2, 1),
-                    conv(c//4, 5, 3, 1, 1),
-                    # torch.nn.PixelShuffle(2)
-                )
-
-                # self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True) 
-                # self.downconv = conv(c+in_planes, (c+in_planes)*2, 3, 2, 1)
-                # self.multires_deep01 = MultiresblockRev((c+in_planes)*2, (c+in_planes)*2)
-                # self.upsample_deep01 = torch.nn.ConvTranspose2d((c+in_planes)*2, c, 4, 2, 1)
-                 #self.relu = torch.nn.LeakyReLU(0.2, True)
-
-                # self.multires01 = MultiresblockRevNoact(c, c)
-                # self.upsample01 = torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1)
-                # self.multires02 = MultiresblockRevNoact(c, c)
-                # self.upsample02 = torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1)
-                # self.multires03 = MultiresblockRevNoact(c//2+5, c//2+5, shortcut_bias=False)
-                # self.conv_final = Conv2d(c//2+5, 5, kernel_size = (3,3))
-
-            def forward(self, feat, x):
-                tmp_rife = self.lastconv2(feat)
-                return tmp_rife
-
-                tmp_deep = self.downconv(torch.cat([feat, x], dim=1))
-                tmp_deep = self.multires_deep01(tmp_deep)
-                tmp_deep = self.upsample_deep01(tmp_deep)
-
-                tmp_refine = self.multires01(feat)
-                tmp_refine = self.upsample01(torch.cat((tmp_refine, tmp_deep), dim=1))
-                tmp_refine = self.multires02(tmp_refine)
-                tmp_refine = self.upsample02(tmp_refine)
-
-                tmp_refine = self.multires03(torch.cat((tmp_rife, tmp_refine), dim=1))
-
-                out = self.conv_final(tmp_refine)
-
-                # feat = self.relu(tmp_deep * self.beta + feat)
-                # out = self.lastconv2(feat)
-
-                '''
-                
-                tmp_refine = self.upsample01(torch.cat((tmp_refine, tmp_deep), dim=1))
-                tmp_refine = self.multires02(tmp_refine)
-                tmp_refine = self.upsample02(tmp_refine)
-
-                tmp_refine = self.multires03(torch.cat((tmp_rife, tmp_refine), dim=1))
-                out = self.conv_final(tmp_refine)
-                '''
-
-                return out
-
-
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
@@ -186,14 +128,22 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                 )
-                self.lastconv2 = LastConvBlock(in_planes, c)
-                self.encode = Head()
+                self.lastconv2 = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
+                    conv(c//2, c//2, 3, 1, 1),
+                    torch.nn.ConvTranspose2d(c//2, c//4, 4, 2, 1),
+                    conv(c//4, 5, 3, 1, 1),
+                )
+                self.encode = Encode01()
 
-            def forward(self, img0, img1, timestep, mask, flow, scale=1):
+            def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
                 img0 = torch.nn.functional.interpolate(img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 img1 = torch.nn.functional.interpolate(img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                f0 = self.encode(img0)
-                f1 = self.encode(img1)
+
+                f0 = torch.nn.functional.interpolate(f0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                f1 = torch.nn.functional.interpolate(f1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                f0 = self.encode(torch.cat((img0, f0), 1))
+                f1 = self.encode(torch.cat((img1, f1), 1))
 
                 if flow is None:
                     timestep = (img0[:, :1].clone() * 0 + 1) * timestep
@@ -210,15 +160,10 @@ class Model:
 
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
-
-                x = torch.nn.functional.interpolate(x, scale_factor= 1 / 4, mode="bilinear", align_corners=False) * 1 / 4
-                x[:, :-4] *= 1 / 4
-                out = self.lastconv2(feat, x)
-
-                out = torch.nn.functional.interpolate(out, scale_factor=scale, mode="bilinear", align_corners=False)
-                flow = out[:, :4] * scale
-                mask = out[:, 4:5]
-
+                tmp = self.lastconv2(feat)
+                tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
+                flow = tmp[:, :4] * scale
+                mask = tmp[:, 4:5]
                 return flow, mask
 
         class FlownetCas(Module):
@@ -233,11 +178,13 @@ class Model:
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
                 img0 = img0
                 img1 = img1
+                f0 = self.encode(img0)
+                f1 = self.encode(img1)
 
                 flow_list = [None] * 4
                 mask_list = [None] * 4
                 merged = [None] * 4
-                flow, mask = self.block0(img0, img1, timestep, None, None, scale=scale[0])
+                flow, mask = self.block0(img0, img1, f0, f1, timestep, None, None, scale=scale[0])
 
                 flow_list[0] = flow
                 mask_list[0] = torch.sigmoid(mask)
@@ -247,6 +194,8 @@ class Model:
                     flow_d, mask = self.block1(
                         img0, 
                         img1,
+                        f0,
+                        f1,
                         timestep,
                         mask,
                         flow, 
@@ -262,6 +211,8 @@ class Model:
                     flow_d, mask = self.block2(
                         img0, 
                         img1,
+                        f0,
+                        f1,
                         timestep,
                         mask,
                         flow, 
@@ -277,6 +228,8 @@ class Model:
                     flow_d, mask = self.block3(
                         img0, 
                         img1,
+                        f0,
+                        f1,
                         timestep,
                         mask,
                         flow, 
