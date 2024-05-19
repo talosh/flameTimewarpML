@@ -87,7 +87,8 @@ class Model:
                     conv(c//4, 5, 3, 1, 1),
                 )
 
-            def forward(self, x, flow, scale=1):
+            def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
+                timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 if flow is not None:
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
@@ -119,18 +120,23 @@ class Model:
                 mask_list = [None] * 4
                 merged = [None] * 4
                 timestep = (img0[:, :1].clone() * 0 + 1) * timestep
-                flow, mask = self.block0(torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[0])
+                flow, mask = self.block0(img0, img1, f0, f1, timestep, None, None, scale=scale[0])
 
                 flow_list[0] = flow
                 mask_list[0] = torch.sigmoid(mask)
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
                 for iteration in range(iterations):
-                    warped_img0 = warp(img0, flow[:, :2])
-                    warped_img1 = warp(img1, flow[:, 2:4])
-                    warped_f0 = warp(f0, flow[:, :2])
-                    warped_f1 = warp(f1, flow[:, 2:4])
-                    flow_d, mask = self.block1(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[1])
+                    flow_d, mask = self.block1(
+                        warp(img0, flow[:, :2]), 
+                        warp(img1, flow[:, 2:4]),
+                        warp(f0, flow[:, :2]),
+                        warp(f1, flow[:, 2:4]),
+                        timestep,
+                        mask,
+                        flow, 
+                        scale=scale[1]
+                    )
                     flow += flow_d
 
                 flow_list[1] = flow
@@ -138,11 +144,16 @@ class Model:
                 merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
                 for iteration in range(iterations):
-                    warped_img0 = warp(img0, flow[:, :2])
-                    warped_img1 = warp(img1, flow[:, 2:4])
-                    warped_f0 = warp(f0, flow[:, :2])
-                    warped_f1 = warp(f1, flow[:, 2:4])
-                    flow_d, mask = self.block2(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[2])
+                    flow_d, mask = self.block2(
+                        warp(img0, flow[:, :2]), 
+                        warp(img1, flow[:, 2:4]),
+                        warp(f0, flow[:, :2]),
+                        warp(f1, flow[:, 2:4]),
+                        timestep,
+                        mask,
+                        flow, 
+                        scale=scale[2]
+                    )
                     flow += flow_d
 
                 flow_list[2] = flow
@@ -150,11 +161,16 @@ class Model:
                 merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
                 for iteration in range(iterations):
-                    warped_img0 = warp(img0, flow[:, :2])
-                    warped_img1 = warp(img1, flow[:, 2:4])
-                    warped_f0 = warp(f0, flow[:, :2])
-                    warped_f1 = warp(f1, flow[:, 2:4])
-                    flow_d, mask = self.block3(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[3])
+                    flow_d, mask = self.block3(
+                        warp(img0, flow[:, :2]), 
+                        warp(img1, flow[:, 2:4]),
+                        warp(f0, flow[:, :2]),
+                        warp(f1, flow[:, 2:4]),
+                        timestep,
+                        mask,
+                        flow, 
+                        scale=scale[3]
+                    )
                     flow += flow_d
 
                 flow_list[3] = flow
