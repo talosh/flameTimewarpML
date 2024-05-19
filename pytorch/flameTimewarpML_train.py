@@ -1380,7 +1380,7 @@ def main():
     
     flownet_uncompiled = Flownet().get_training_model()().to(device)
     flownet = torch.compile(flownet_uncompiled,mode='max-autotune')
-    flownet.to(device)
+    # flownet.to(device)
     
     if args.all_gpus:
         print ('Using nn.DataParallel')
