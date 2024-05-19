@@ -1900,8 +1900,8 @@ def main():
         
         x1_output = merged[3]
         x1_orig = img1
-        vgg_loss = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
-        loss = criterion_l1(x1_output, x1_orig) + 0.1 * vgg_loss
+        # vgg_loss = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
+        loss = criterion_l1(x1_output, x1_orig) # + 0.1 * vgg_loss
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
