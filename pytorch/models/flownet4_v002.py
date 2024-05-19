@@ -256,7 +256,7 @@ class Model:
                         flow, 
                         scale=scale[1]
                         )
-                    flow = flow + flow_d
+                    flow += flow_d
 
                 flow_list[1] = flow
                 mask_list[1] = torch.sigmoid(mask)
@@ -273,7 +273,7 @@ class Model:
                         flow, 
                         scale=scale[2]
                         )
-                    flow = flow + flow_d
+                    flow += flow_d
 
                 flow_list[2] = flow
                 mask_list[2] = torch.sigmoid(mask)
@@ -290,7 +290,7 @@ class Model:
                         flow, 
                         scale=scale[3]
                         )
-                    flow = flow + flow_d
+                    flow += flow_d
 
                 flow_list[3] = flow
                 mask_list[3] = torch.sigmoid(mask)
