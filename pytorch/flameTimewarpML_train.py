@@ -2014,9 +2014,10 @@ def main():
                 shutil.copy(trained_model_path, backup_file)
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
 
+        '''
         if step % args.csv == 1:
             if len(epoch_loss) < args.csv:
-                csv_smoothed_window_loss = float(np.mean(moving_average(epoch_loss, 9)))
+                csv_smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
                 csv_window_min = min(epoch_loss)
                 csv_window_max = max(epoch_loss)
                 csv_psnr = float(np.array(psnr_list).mean())
@@ -2041,6 +2042,7 @@ def main():
 
             for row in rows_to_append:
                 append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.csv', row)
+        '''
 
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
@@ -2060,33 +2062,6 @@ def main():
                 backup_file = trained_model_path.replace('.pth', '.backup.pth')
                 shutil.copy(trained_model_path, backup_file)
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
-            if len(epoch_loss) < args.csv:
-                csv_smoothed_window_loss = float(np.mean(moving_average(epoch_loss, 9)))
-                csv_window_min = min(epoch_loss)
-                csv_window_max = max(epoch_loss)
-                csv_psnr = float(np.array(psnr_list).mean())
-                csv_lpips_window_val = float(np.array(lpips_list).mean())
-            else:
-                csv_smoothed_window_loss = float(np.mean(moving_average(epoch_loss[-args.csv:], 9)))
-                csv_window_min = min(epoch_loss[-args.csv:])
-                csv_window_max = max(epoch_loss[-args.csv:])
-                csv_psnr = float(np.array(psnr_list[-args.csv:]).mean())
-                csv_lpips_window_val = float(np.array(lpips_list[-args.csv:]).mean())
-            rows_to_append = [
-                {
-                    'Epoch': epoch,
-                    'Step': step, 
-                    'Min': csv_window_min,
-                    'Avg': csv_smoothed_window_loss,
-                    'Max': csv_window_max,
-                    'PSNR': csv_psnr,
-                    'LPIPS': csv_lpips_window_val
-                 }
-            ]
-            for row in rows_to_append:
-                append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.csv', row)
-
-            psnr = 0
 
             if args.eval != -1:
                 psnr_list = []
@@ -2171,6 +2146,36 @@ def main():
             clear_lines(2)
             print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PNSR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
             print ('\n')
+
+            '''
+            if len(epoch_loss) < args.csv:
+                csv_smoothed_window_loss = float(np.mean(moving_average(epoch_loss, 9)))
+                csv_window_min = min(epoch_loss)
+                csv_window_max = max(epoch_loss)
+                csv_psnr = float(np.array(psnr_list).mean())
+                csv_lpips_window_val = float(np.array(lpips_list).mean())
+            else:
+                csv_smoothed_window_loss = float(np.mean(moving_average(epoch_loss[-args.csv:], 9)))
+                csv_window_min = min(epoch_loss[-args.csv:])
+                csv_window_max = max(epoch_loss[-args.csv:])
+                csv_psnr = float(np.array(psnr_list[-args.csv:]).mean())
+                csv_lpips_window_val = float(np.array(lpips_list[-args.csv:]).mean())
+            '''
+            rows_to_append = [
+                {
+                    'Epoch': epoch,
+                    'Step': step, 
+                    'Min': epoch_loss,
+                    'Avg': smoothed_loss,
+                    'Max': epoch_loss,
+                    'PSNR': psnr,
+                    'LPIPS': lpips_val
+                 }
+            ]
+            for row in rows_to_append:
+                append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.csv', row)
+
+            psnr = 0
 
             steps_loss = []
             epoch_loss = []
