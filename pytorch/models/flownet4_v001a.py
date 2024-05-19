@@ -117,47 +117,32 @@ class Model:
                 flow_list = [None] * 4
                 mask_list = [None] * 4
                 merged = [None] * 4
-                flow, mask = self.block0(img0, img1, f0, f1, timestep, None, None, scale=scale[0])
+                flow, mask = self.block0(torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[0])
 
                 for iteration in range(iterations):
-                    flow_d, mask = self.block1(
-                        warp(img0, flow[:, :2]), 
-                        warp(img1, flow[:, 2:4]),
-                        warp(f0, flow[:, :2]),
-                        warp(f1, flow[:, 2:4]),
-                        timestep,
-                        mask,
-                        flow, 
-                        scale=scale[1]
-                        )
+                    warped_img0 = warp(img0, flow[:, :2])
+                    warped_img1 = warp(img1, flow[:, 2:4])
+                    warped_f0 = warp(f0, flow[:, :2])
+                    warped_f1 = warp(f1, flow[:, 2:4])
+                    flow_d, mask = self.block1(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[1])
                     flow += flow_d
                     del flow_d
 
                 for iteration in range(iterations):
-                    flow_d, mask = self.block2(
-                        warp(img0, flow[:, :2]), 
-                        warp(img1, flow[:, 2:4]),
-                        warp(f0, flow[:, :2]),
-                        warp(f1, flow[:, 2:4]),
-                        timestep,
-                        mask,
-                        flow, 
-                        scale=scale[2]
-                        )
+                    warped_img0 = warp(img0, flow[:, :2])
+                    warped_img1 = warp(img1, flow[:, 2:4])
+                    warped_f0 = warp(f0, flow[:, :2])
+                    warped_f1 = warp(f1, flow[:, 2:4])
+                    flow_d, mask = self.block2(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[2])
                     flow += flow_d
                     del flow_d
 
                 for iteration in range(iterations):
-                    flow_d, mask = self.block3(
-                        warp(img0, flow[:, :2]), 
-                        warp(img1, flow[:, 2:4]),
-                        warp(f0, flow[:, :2]),
-                        warp(f1, flow[:, 2:4]),
-                        timestep,
-                        mask,
-                        flow, 
-                        scale=scale[3]
-                        )
+                    warped_img0 = warp(img0, flow[:, :2])
+                    warped_img1 = warp(img1, flow[:, 2:4])
+                    warped_f0 = warp(f0, flow[:, :2])
+                    warped_f1 = warp(f1, flow[:, 2:4])
+                    flow_d, mask = self.block3(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[3])
                     flow += flow_d
                     del flow_d
 
