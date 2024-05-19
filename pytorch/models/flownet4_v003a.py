@@ -80,6 +80,27 @@ class Model:
                     return [x0, x1, x2, x3]
                 return x3
 
+        class Encode01(Module):
+            def __init__(self):
+                super(Head, self).__init__()
+                self.cnn0 = torch.nn.Conv2d(3+8, 32, 3, 2, 1)
+                self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
+                self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
+                self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
+                self.relu = torch.nn.LeakyReLU(0.2, True)
+
+            def forward(self, x, feat=False):
+                x0 = self.cnn0(x)
+                x = self.relu(x0)
+                x1 = self.cnn1(x)
+                x = self.relu(x1)
+                x2 = self.cnn2(x)
+                x = self.relu(x2)
+                x3 = self.cnn3(x)
+                if feat:
+                    return [x0, x1, x2, x3]
+                return x3
+
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
