@@ -152,7 +152,7 @@ class Model:
                 flow = self.lastconv(feat)
                 flow = torch.nn.functional.interpolate(flow, scale_factor=scale, mode="bilinear", align_corners=False) * scale
                 mask = self.lastconv2(feat)
-                flow = torch.nn.functional.interpolate(mask, scale_factor=scale, mode="bilinear", align_corners=False)
+                mask = torch.nn.functional.interpolate(mask, scale_factor=scale, mode="bilinear", align_corners=False)
                 return flow, mask
 
         class FlownetCas(Module):
