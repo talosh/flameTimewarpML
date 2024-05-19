@@ -167,11 +167,9 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                 )
-                self.lastconv2 = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
-                    conv(c//2, c//2, 3, 1, 1),
-                    torch.nn.ConvTranspose2d(c//2, c//4, 4, 2, 1),
-                    conv(c//4, 5, 3, 1, 1),
+                self.lastconv = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    torch.nn.PixelShuffle(2)
                 )
                 self.encode = Encode01()
 
@@ -199,7 +197,7 @@ class Model:
 
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
-                tmp = self.lastconv2(feat)
+                tmp = self.lastconv(feat)
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
                 flow = tmp[:, :4] * scale
                 mask = tmp[:, 4:5]
