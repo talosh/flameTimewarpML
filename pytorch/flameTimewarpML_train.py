@@ -1201,6 +1201,24 @@ def closest_divisible(x):
     else:
         return lower
 
+def create_csv_file(file_name, fieldnames):
+    import csv
+    """
+    Creates a CSV file with the specified field names as headers.
+    """
+    with open(file_name, 'w', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+
+def append_row_to_csv(file_name, row):
+    import csv
+    """
+    Appends a single row to an existing CSV file.
+    """
+    with open(file_name, 'a', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=row.keys())
+        writer.writerow(row)
+
 def gaussian(window_size, sigma):
     from math import exp
     gauss = torch.Tensor([exp(-(x - window_size//2)**2/float(2*sigma**2)) for x in range(window_size)])
