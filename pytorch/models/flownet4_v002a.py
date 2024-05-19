@@ -136,8 +136,7 @@ class Model:
                 self.lastconv2 = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
                     conv(c//2, c//2, 3, 1, 1),
-                    torch.nn.ConvTranspose2d(c//2, c//4, 4, 2, 1),
-                    conv(c//4, 1, 3, 1, 1),
+                    torch.nn.ConvTranspose2d(c//2, 1, 4, 2, 1),
                 )
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
