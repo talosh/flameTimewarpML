@@ -108,7 +108,7 @@ class Model:
                 self.block3 = Flownet(8+4+16, c=64)
                 self.encode = Head()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
+            def forward(self, img0, img1, timestep=0.5, scale_list=[8, 4, 2, 1], iterations=1):
                 img0 = img0
                 img1 = img1
                 f0 = self.encode(img0)
@@ -117,7 +117,7 @@ class Model:
                 flow_list = [None] * 4
                 mask_list = [None] * 4
                 merged = [None] * 4
-                flow, mask = self.block0(img0, img1, f0, f1, timestep, None, None, scale=scale[0])
+                flow, mask = self.block0(img0, img1, f0, f1, timestep, None, None, scale=scale_list[0])
 
                 for iteration in range(iterations):
                     flow_d, mask = self.block1(
@@ -128,7 +128,7 @@ class Model:
                         timestep,
                         mask,
                         flow, 
-                        scale=scale[1]
+                        scale=scale_list[1]
                         )
                     flow += flow_d
                     del flow_d
@@ -142,7 +142,7 @@ class Model:
                         timestep,
                         mask,
                         flow, 
-                        scale=scale[2]
+                        scale=scale_list[2]
                         )
                     flow += flow_d
                     del flow_d
@@ -156,7 +156,7 @@ class Model:
                         timestep,
                         mask,
                         flow, 
-                        scale=scale[3]
+                        scale=scale_list[3]
                         )
                     flow += flow_d
                     del flow_d
