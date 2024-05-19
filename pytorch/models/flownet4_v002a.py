@@ -353,7 +353,7 @@ class Model:
                 return flow_list, mask_list, merged
 
 
-        self.model = FlownetCas
+        self.model = FlownetMem
         self.training_model = FlownetCas
 
     @staticmethod
