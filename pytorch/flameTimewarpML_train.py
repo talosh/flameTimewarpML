@@ -1803,6 +1803,18 @@ def main():
         'trained_model_path': trained_model_path
     }
 
+    create_csv_file(
+        f'{os.path.splitext(trained_model_path)[0]}.csv',
+        [
+            'Step',
+            'Min',
+            'Avg',
+            'Max',
+            'PSNR',
+            'LPIPS'
+        ]
+    )
+
     import signal
     def create_graceful_exit(current_state_dict):
         def graceful_exit(signum, frame):

@@ -155,9 +155,9 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv2 = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
-                    torch.nn.Conv2d(c//2, c//2, 3, 1, 1, bias=False),
-                    torch.nn.ConvTranspose2d(c//2, 5, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c, 4*8, 4, 2, 1),
+                    torch.nn.PixelShuffle(2),
+                    torch.nn.Conv2d(8, 5, 3, 1, 1, bias=False)
                 )
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
