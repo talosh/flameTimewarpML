@@ -63,96 +63,6 @@ class Model:
             return result.detach().to(device=input_device, dtype=input_dtype)
         '''
 
-        class Conv2d(Module):
-            def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1), bias=True):
-                super().__init__()
-                self.conv1 = torch.nn.Conv2d(
-                    in_channels=num_in_filters,
-                    out_channels=num_out_filters,
-                    kernel_size=kernel_size,
-                    stride=stride,
-                    padding = 'same',
-                    padding_mode = 'reflect',
-                    bias=False
-                    )
-                torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
-                # torch.nn.init.xavier_uniform_(self.conv1.weight, gain=torch.nn.init.calculate_gain('selu'))
-                # torch.nn.init.dirac_(self.conv1.weight)
-
-            def forward(self,x):
-                x = self.conv1(x)
-                return x
-
-        class Conv2d_ReLU(Module):
-            def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1)):
-                super().__init__()
-                self.conv1 = torch.nn.Conv2d(
-                    in_channels=num_in_filters,
-                    out_channels=num_out_filters,
-                    kernel_size=kernel_size,
-                    stride=stride,
-                    padding = 'same',
-                    padding_mode = 'reflect',
-                    bias=False
-                    )
-                self.act = torch.nn.LeakyReLU(0.2, True)
-                torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
-                # torch.nn.init.xavier_uniform_(self.conv1.weight, gain=torch.nn.init.calculate_gain('selu'))
-                # torch.nn.init.dirac_(self.conv1.weight)
-
-            def forward(self,x):
-                x = self.conv1(x)
-                x = self.act(x)
-                return x
-
-        class Multiresblock(Module):
-            '''
-            MultiRes Block
-            
-            Arguments:
-                num_in_channels {int} -- Number of channels coming into mutlires block
-                num_filters {int} -- Number of filters in a corrsponding UNet stage
-                alpha {float} -- alpha hyperparameter (default: 1.67)
-            
-            '''
-
-            def __init__(self, num_in_channels, num_filters, alpha=1.69):
-            
-                super().__init__()
-                self.alpha = alpha
-                self.W = num_filters * alpha
-                
-                filt_cnt_3x3 = int(self.W*0.167)
-                filt_cnt_5x5 = int(self.W*0.333)
-                filt_cnt_7x7 = int(self.W*0.5)
-                num_out_filters = filt_cnt_3x3 + filt_cnt_5x5 + filt_cnt_7x7
-                
-                self.shortcut = Conv2d(num_in_channels ,num_out_filters , kernel_size = (1,1))
-
-                self.conv_3x3 = Conv2d_ReLU(num_in_channels, filt_cnt_3x3, kernel_size = (3,3))
-
-                self.conv_5x5 = Conv2d_ReLU(filt_cnt_3x3, filt_cnt_5x5, kernel_size = (3,3))
-                
-                self.conv_7x7 = Conv2d_ReLU(filt_cnt_5x5, filt_cnt_7x7, kernel_size = (3,3))
-
-                self.act = torch.nn.LeakyReLU(0.2, True)
-
-            def forward(self,x):
-
-                shrtct = self.shortcut(x)
-                
-                a = self.conv_3x3(x)
-                b = self.conv_5x5(a)
-                c = self.conv_7x7(b)
-
-                x = torch.cat([a,b,c],axis=1)
-
-                x = x + shrtct
-                x = self.act(x)
-            
-                return x
-
-
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
@@ -243,6 +153,7 @@ class Model:
                 mask_list = [None] * 4
                 merged = [None] * 4
                 flow, mask = self.block0(img0, img1, f0, f1, timestep, None, None, scale=scale[0])
+
                 flow_list[0] = flow
                 mask_list[0] = torch.sigmoid(mask)
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
@@ -257,7 +168,7 @@ class Model:
                         mask,
                         flow, 
                         scale=scale[1]
-                        )
+                    )
                     flow += flow_d
 
                 flow_list[1] = flow
@@ -274,7 +185,7 @@ class Model:
                         mask,
                         flow, 
                         scale=scale[2]
-                        )
+                    )
                     flow += flow_d
 
                 flow_list[2] = flow
@@ -291,7 +202,7 @@ class Model:
                         mask,
                         flow, 
                         scale=scale[3]
-                        )
+                    )
                     flow += flow_d
 
                 flow_list[3] = flow

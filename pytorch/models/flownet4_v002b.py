@@ -121,7 +121,6 @@ class Model:
                 flow_list = [None] * 4
                 mask_list = [None] * 4
                 merged = [None] * 4
-                timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 flow, mask = self.block0(img0, img1, f0, f1, timestep, None, None, scale=scale[0])
 
                 flow_list[0] = flow
