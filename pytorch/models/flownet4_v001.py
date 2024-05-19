@@ -41,6 +41,23 @@ class Model:
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
+                torch.nn.init.kaiming_normal_(self.cnn0.weight, mode='fan_in', nonlinearity='relu')
+                self.cnn0.weight.data *= 1e-2
+                if self.cnn0.bias is not None:
+                    torch.nn.init.constant_(self.cnn0.bias, 0)
+                torch.nn.init.kaiming_normal_(self.cnn1.weight, mode='fan_in', nonlinearity='relu')
+                self.cnn1.weight.data *= 1e-2
+                if self.cnn1.bias is not None:
+                    torch.nn.init.constant_(self.cnn1.bias, 0)
+                torch.nn.init.kaiming_normal_(self.cnn2.weight, mode='fan_in', nonlinearity='relu')
+                self.cnn2.weight.data *= 1e-2
+                if self.cnn2.bias is not None:
+                    torch.nn.init.constant_(self.cnn2.bias, 0)
+                torch.nn.init.kaiming_normal_(self.cnn3.weight, mode='fan_in', nonlinearity='relu')
+                self.cnn3.weight.data *= 1e-2
+                if self.cnn3.bias is not None:
+                    torch.nn.init.constant_(self.cnn3.bias, 0)
+
             def forward(self, x, feat=False):
                 x0 = self.cnn0(x)
                 x = self.relu(x0)
@@ -59,7 +76,12 @@ class Model:
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.LeakyReLU(0.2, True) # torch.nn.SELU(inplace = True)
-                
+
+                torch.nn.init.kaiming_normal_(self.conv.weight, mode='fan_in', nonlinearity='relu')
+                self.conv.weight.data *= 1e-2
+                if self.conv.bias is not None:
+                    torch.nn.init.constant_(self.conv.bias, 0)
+
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
 
