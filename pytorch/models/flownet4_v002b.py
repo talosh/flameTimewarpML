@@ -80,7 +80,7 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                 )
-                self.lastconv = torch.nn.Sequential(
+                self.lastconv2 = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
                     conv(c//2, c//2, 3, 1, 1),
                     torch.nn.ConvTranspose2d(c//2, c//4, 4, 2, 1),
@@ -94,7 +94,7 @@ class Model:
                     x = torch.cat((x, flow), 1)
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
-                tmp = self.lastconv(feat)
+                tmp = self.lastconv2(feat)
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
                 flow = tmp[:, :4] * scale
                 mask = tmp[:, 4:5]
@@ -169,15 +169,15 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v001',
-            'file': 'flownet4_v001.py',
+            'name': 'Flownet4_v002b',
+            'file': 'flownet4_v002b.py',
             'ratio_support': True
         }
         return info
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v001'
+        return 'TWML_Flownet_v002b'
 
     @staticmethod
     def input_channels(model_state_dict):
@@ -198,9 +198,6 @@ class Model:
         return channels
 
     def get_model(self):
-        import platform
-        if platform.system() == 'Darwin':
-            return self.training_model
         return self.model
 
     def get_training_model(self):
