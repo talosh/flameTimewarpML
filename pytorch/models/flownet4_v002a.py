@@ -298,9 +298,6 @@ class Model:
         return channels
 
     def get_model(self):
-        # import platform
-        # if platform.system() == 'Darwin':
-        #     return self.training_model
         return self.model
 
     def get_training_model(self):
