@@ -125,7 +125,6 @@ class Model:
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
                     flow_d, mask = self.block1(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[1])
                     flow += flow_d
                     del flow_d
@@ -135,7 +134,6 @@ class Model:
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
                     flow_d, mask = self.block2(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[2])
                     flow += flow_d
                     del flow_d
@@ -145,7 +143,6 @@ class Model:
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
                     flow_d, mask = self.block3(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[3])
                     flow += flow_d
                     del flow_d
