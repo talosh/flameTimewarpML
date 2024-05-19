@@ -1848,6 +1848,7 @@ def main():
         lpips_weight = 1e-8
         # self.vgg(merged[3], gt).mean() - self.ss(merged[3], gt) * 0.1
 
+        '''
         x8_output = torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
         x8_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
         # x8_lpips = torch.mean(loss_fn_lpips.forward(x8_output * 2 - 1, x8_orig * 2 - 1))
@@ -1873,6 +1874,9 @@ def main():
         loss_x1 = pm_weight * criterion_huber(x1_output, x1_orig) + lpips_weight * x1_lpips
 
         loss = 0.24 * loss_x8 + 0.24 * loss_x4 + 0.24 * loss_x2 + 0.28 * loss_x1
+        '''
+
+        loss = criterion_huber(output, img1)
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
