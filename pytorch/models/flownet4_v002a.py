@@ -193,7 +193,7 @@ class Model:
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
-                tmp [:, 4:5] += (torch.sigmoid(self.lastconv2(feat)) * 2 - 1)
+                tmp [:, 4:5] += torch.sigmoid(self.lastconv2(feat))
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
                 flow = tmp[:, :4] * scale
                 mask = tmp [:, 4:5]
