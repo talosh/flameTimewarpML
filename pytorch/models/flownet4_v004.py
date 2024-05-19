@@ -60,7 +60,6 @@ class Model:
 
             return result.detach().to(device=input_device, dtype=input_dtype)
 
-
         class Conv2d(Module):
             def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1), padding = 'same', bias=True):
                 super().__init__()
