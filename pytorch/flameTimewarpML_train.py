@@ -1344,6 +1344,7 @@ def main():
     parser.add_argument('--save', type=int, default=1000, help='Save model state dict each N steps (default: 1000)')
     parser.add_argument('--repeat', type=int, default=1, help='Repeat each triade N times with augmentation (default: 1)')
     parser.add_argument('--iterations', type=int, default=1, help='Process each flow refinement N times (default: 1)')
+    parser.add_argument('--csv', type=int, default=1, help='Save training statisctics to csv file each N steps (default: 1000)')
 
     args = parser.parse_args()
 
@@ -1980,18 +1981,7 @@ def main():
             if os.path.isfile(trained_model_path):
                 backup_file = trained_model_path.replace('.pth', '.backup.pth')
                 shutil.copy(trained_model_path, backup_file)
-            torch.save({
-                'step': step,
-                'steps_loss': steps_loss,
-                'epoch': epoch,
-                'epoch_loss': epoch_loss,
-                'start_timestamp': start_timestamp,
-                'lr': optimizer_flownet.param_groups[0]['lr'],
-                'model_info': model_info,
-                'flownet_state_dict': flownet.state_dict(),
-                # 'model_d_state_dict': model_D.state_dict(),
-                'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
-            }, trained_model_path)
+        torch.save(current_state_dict, current_state_dict['trained_model_path'])
 
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
@@ -2010,19 +2000,7 @@ def main():
             if os.path.isfile(trained_model_path):
                 backup_file = trained_model_path.replace('.pth', '.backup.pth')
                 shutil.copy(trained_model_path, backup_file)
-            torch.save({
-                'step': step,
-                'steps_loss': steps_loss,
-                'epoch': epoch,
-                'epoch_loss': epoch_loss,
-                'start_timestamp': start_timestamp,
-                'lr': optimizer_flownet.param_groups[0]['lr'],
-                'model_info': model_info,
-                'flownet_state_dict': flownet.state_dict(),
-                # 'model_d_state_dict': model_D.state_dict(),
-                'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
-            }, trained_model_path)
-
+            torch.save(current_state_dict, current_state_dict['trained_model_path'])
             psnr = 0
 
             if args.eval != -1:
