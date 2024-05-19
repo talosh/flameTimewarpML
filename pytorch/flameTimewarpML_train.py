@@ -1875,7 +1875,10 @@ def main():
         loss = 0.24 * loss_x8 + 0.24 * loss_x4 + 0.24 * loss_x2 + 0.28 * loss_x1
         '''
 
-        loss = criterion_l1(restore_normalized_values(output), img1_orig)
+        x1_output = merged[3]
+        x1_orig = img1
+
+        loss = criterion_l1(x1_output, x1_orig)
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
