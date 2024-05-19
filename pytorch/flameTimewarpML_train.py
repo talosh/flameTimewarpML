@@ -1347,7 +1347,8 @@ def main():
 
     args = parser.parse_args()
 
-    device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
+    # device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
+    device = torch.device('cuda')
     if args.all_gpus:
         device = 'cuda'
 
@@ -1378,10 +1379,10 @@ def main():
     if not model_info.get('ratio_support'):
         max_dataset_window = 3
     
-    # flownet_uncompiled = Flownet().get_training_model()().to(device)
-    # flownet = torch.compile(flownet_uncompiled,mode='max-autotune')
-    # flownet.to(device)
-    flownet = Flownet().get_training_model()().to(device)
+    flownet_uncompiled = Flownet().get_training_model()().to(device)
+    flownet = torch.compile(flownet_uncompiled,mode='max-autotune')
+    flownet.to(device)
+    # flownet = Flownet().get_training_model()().to(device)
     
     if args.all_gpus:
         print ('Using nn.DataParallel')
