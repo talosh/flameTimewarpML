@@ -20,7 +20,7 @@ class Model:
                 # torch.nn.SELU(inplace = True)
             )
 
-        # '''
+        '''
         def warp(tenInput, tenFlow):
             backwarp_tenGrid = {}
             k = (str(tenFlow.device), str(tenFlow.size()))
@@ -32,9 +32,9 @@ class Model:
 
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
-        # '''
-
         '''
+
+        # '''
         def warp(tenInput, tenFlow):
             input_device = tenInput.device
             input_dtype = tenInput.dtype
@@ -60,7 +60,7 @@ class Model:
                 )
 
             return result.detach().to(device=input_device, dtype=input_dtype)
-        '''
+        # '''
 
 
         class Conv2d(Module):
