@@ -122,6 +122,10 @@ class Model:
                 timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 flow, mask = self.block0(torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[0])
 
+                flow_list[0] = flow
+                mask_list[0] = torch.sigmoid(mask)
+                merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
+
                 for iteration in range(iterations):
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
@@ -131,6 +135,10 @@ class Model:
                     flow += flow_d
                     del flow_d
 
+                flow_list[1] = flow
+                mask_list[1] = torch.sigmoid(mask)
+                merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
+
                 for iteration in range(iterations):
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
@@ -139,6 +147,10 @@ class Model:
                     flow_d, mask = self.block2(torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[2])
                     flow += flow_d
                     del flow_d
+
+                flow_list[2] = flow
+                mask_list[2] = torch.sigmoid(mask)
+                merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
                 for iteration in range(iterations):
                     warped_img0 = warp(img0, flow[:, :2])
