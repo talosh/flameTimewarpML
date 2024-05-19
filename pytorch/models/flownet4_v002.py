@@ -21,7 +21,7 @@ class Model:
                 # torch.nn.SELU(inplace = True)
             )
 
-        # '''
+        '''
         def warp(tenInput, tenFlow):
             k = (str(tenFlow.device), str(tenFlow.size()))
             if k not in backwarp_tenGrid:
@@ -32,9 +32,9 @@ class Model:
 
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
-        # '''
-
         '''
+
+        # '''
         def warp(tenInput, tenFlow):
             input_device = tenInput.device
             input_dtype = tenInput.dtype
@@ -42,7 +42,6 @@ class Model:
                 tenInput = tenInput.detach().to(device=torch.device('cpu'), dtype=torch.float32)
                 tenFlow = tenFlow.detach().to(device=torch.device('cpu'), dtype=torch.float32)
 
-            backwarp_tenGrid = {}
             k = (str(tenFlow.device), str(tenFlow.size()))
             if k not in backwarp_tenGrid:
                 tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
@@ -60,7 +59,7 @@ class Model:
                 )
 
             return result.detach().to(device=input_device, dtype=input_dtype)
-        '''
+        # '''
 
         class Head(Module):
             def __init__(self):
