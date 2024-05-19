@@ -21,6 +21,31 @@ class Model:
                 # torch.nn.SELU(inplace = True)
             )
 
+        class Conv2d(Module):
+            def __init__(self, num_in_filters, num_out_filters, kernel_size, stride = (1,1), padding='same', bias=True):
+                super().__init__()
+                self.conv1 = torch.nn.Conv2d(
+                    in_channels=num_in_filters,
+                    out_channels=num_out_filters,
+                    kernel_size=kernel_size,
+                    stride=stride,
+                    padding = padding,
+                    padding_mode = 'reflect',
+                    bias=bias
+                    )
+
+                torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
+                self.conv1.weight.data *= 1e-2
+                if self.conv1.bias is not None:
+                    torch.nn.init.constant_(self.conv1.bias, 0)
+                # torch.nn.init.xavier_uniform_(self.conv1.weight, gain=torch.nn.init.calculate_gain('selu'))
+                # torch.nn.init.dirac_(self.conv1.weight)
+
+            def forward(self,x):
+                x = self.conv1(x)
+                return x
+
+
         '''
         def warp(tenInput, tenFlow):
             k = (str(tenFlow.device), str(tenFlow.size()))
@@ -129,15 +154,11 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                 )
-                self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
-                    torch.nn.PixelShuffle(2),
-                    
-                )
                 self.lastconv2 = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
-                    conv(c//2, c//2, 3, 1, 1),
-                    torch.nn.ConvTranspose2d(c//2, 1, 4, 2, 1),
+                    Conv2d(c//2, c//2, 3, 1, 1, bias=False),
+                    torch.nn.ConvTranspose2d(c//2, c//4, 4, 2, 1),
+                    Conv2d(c//4, 5, 3, 1, 1, bias=False),
                 )
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
@@ -150,10 +171,10 @@ class Model:
                     x = torch.cat((x, mask, flow), 1)
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
-                flow = self.lastconv(feat)
-                flow = torch.nn.functional.interpolate(flow, scale_factor=scale, mode="bilinear", align_corners=False) * scale
-                mask = self.lastconv2(feat)
-                mask = torch.nn.functional.interpolate(mask, scale_factor=scale, mode="bilinear", align_corners=False)
+                tmp = self.lastconv2(feat)
+                tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
+                flow = tmp[:, :4] * scale
+                mask = tmp[:, 4:5]
                 return flow, mask
 
         class FlownetCas(Module):
