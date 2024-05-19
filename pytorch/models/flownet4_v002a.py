@@ -137,6 +137,22 @@ class Model:
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
 
+        class LastConvBlock(Module):
+            def __init__(self, in_planes, c):
+                super().__init__()
+
+                self.lastconv2 = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
+                    conv(c//2, c//2, 3, 1, 1),
+                    torch.nn.ConvTranspose2d(c//2, c//4, 4, 2, 1),
+                    conv(c//4, c//4, 3, 1, 1)
+                )
+                self.conv_final = Conv2d(c//4+6, 6, kernel_size = (3,3))                
+
+            def forward(self, feat, tmp, x):
+                lastconv = self.lastconv2(feat)
+                return self.conv_final(torch.cat((lastconv, tmp), dim=1))
+
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
@@ -156,9 +172,10 @@ class Model:
                 )
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
-                    torch.nn.PixelShuffle(2),
+                    torch.nn.PixelShuffle(2)
                 )
-
+                self.lastconv2 = LastConvBlock(in_planes, c)    
+                
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
                 timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 x = torch.cat((img0, img1, f0, f1, timestep), 1)
@@ -170,9 +187,12 @@ class Model:
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
-                tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
-                flow = tmp[:, :4] * scale
-                mask = tmp[:, 4:5] + (tmp[:, 5:6] * 2 - 1)
+
+                out = self.lastconv2(feat, tmp, None)
+
+                out = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
+                flow = out[:, :4] * scale
+                mask = out[:, 4:5]
                 return flow, mask
 
         class FlownetCas(Module):
