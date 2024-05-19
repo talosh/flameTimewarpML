@@ -792,7 +792,7 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                     img1 = img1.flip(0)
                     img2 = img2.flip(0)
 
-                # Exposure agumentation
+                # Exposure augmentation
                 exp = random.uniform(1 / 8, 2)
                 if random.uniform(0, 1) < 0.4:
                     img0 = img0 * exp
