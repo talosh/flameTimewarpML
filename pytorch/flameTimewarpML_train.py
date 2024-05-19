@@ -2165,9 +2165,9 @@ def main():
                 {
                     'Epoch': epoch,
                     'Step': step, 
-                    'Min': epoch_loss,
+                    'Min': min(epoch_loss),
                     'Avg': smoothed_loss,
-                    'Max': epoch_loss,
+                    'Max': max(epoch_loss),
                     'PSNR': psnr,
                     'LPIPS': lpips_val
                  }
