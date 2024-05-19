@@ -1379,7 +1379,7 @@ def main():
         max_dataset_window = 3
     
     flownet_uncompiled = Flownet().get_training_model()()
-    flownet = torch.compile(flownet_uncompiled,mode='default')
+    flownet = torch.compile(flownet_uncompiled,mode='max-autotune')
     flownet.to(device)
     
     if args.all_gpus:
