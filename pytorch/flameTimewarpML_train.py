@@ -2013,7 +2013,7 @@ def main():
             if os.path.isfile(trained_model_path):
                 backup_file = trained_model_path.replace('.pth', '.backup.pth')
                 shutil.copy(trained_model_path, backup_file)
-        torch.save(current_state_dict, current_state_dict['trained_model_path'])
+            torch.save(current_state_dict, current_state_dict['trained_model_path'])
 
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
