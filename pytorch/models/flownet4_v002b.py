@@ -89,10 +89,12 @@ class Model:
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
                 timestep = (img0[:, :1].clone() * 0 + 1) * timestep
+                x = torch.cat((img0, img1, f0, f1, timestep), 1)
                 x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 if flow is not None:
+                    mask = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
-                    x = torch.cat((x, flow), 1)
+                    x = torch.cat((x, mask, flow), 1)
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
                 tmp = self.lastconv2(feat)
