@@ -195,6 +195,7 @@ class Model:
                 tmp = self.lastconv(feat)
                 tmp2 = self.lastconv2(feat)
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
+                tmp2 = torch.nn.functional.interpolate(tmp2, scale_factor=scale, mode="bilinear", align_corners=False)
                 flow = tmp[:, :4] * scale
                 mask_conf_mix = torch.sigmoid(tmp[:, 5:6])
                 mask = tmp [:, 4:5] * mask_conf_mix + tmp2 * (1 - mask_conf_mix)
