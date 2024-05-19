@@ -179,7 +179,7 @@ class Model:
                     conv(c//2, c//2, 3, 1, 1),
                     torch.nn.ConvTranspose2d(c//2, c//4, 4, 2, 1),
                     conv(c//4, c//4, 3, 1, 1),
-                    torch.nn.Conv2d(c//4, 5, 3, 1, 1)
+                    torch.nn.Conv2d(c//4, 6, 3, 1, 1)
                 )
                 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
