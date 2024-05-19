@@ -1879,9 +1879,27 @@ def main():
         loss = 0.24 * loss_x8 + 0.24 * loss_x4 + 0.24 * loss_x2 + 0.28 * loss_x1
         '''
 
+        '''
+        x8_output = torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
+        x8_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
+        loss_x8 = criterion_l1(x8_output, x8_orig)
+
+        x4_output = torch.nn.functional.interpolate(merged[1], scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
+        x4_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
+        loss_x4 = criterion_l1(x4_output, x4_orig)
+
+        x2_output = torch.nn.functional.interpolate(merged[2], scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
+        x2_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
+        loss_x2 = criterion_l1(x2_output, x2_orig)
+
         x1_output = merged[3]
         x1_orig = img1
-
+        loss_x1 = criterion_l1(x1_output, x1_orig)
+        loss = 0.24 * loss_x8 + 0.24 * loss_x4 + 0.24 * loss_x2 + 0.28 * loss_x1
+        '''
+        
+        x1_output = merged[3]
+        x1_orig = img1
         loss = criterion_l1(x1_output, x1_orig)
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
