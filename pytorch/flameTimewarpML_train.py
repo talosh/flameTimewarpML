@@ -785,13 +785,13 @@ def get_dataset(
             for index in range(self.batch_size):
 
                 if self.generalize == 0:
-                    # No agumentaton
+                    # No augmentaton
                     img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
                     img0 = img0.permute(2, 0, 1)
                     img1 = img1.permute(2, 0, 1)
                     img2 = img2.permute(2, 0, 1)
                 elif self.generalize == 1:
-                    # Agument only scale and horizontal flip
+                    # Augment only scale and horizontal flip
                     q = random.uniform(0, 1)
                     if q < 0.25:
                         img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
@@ -860,7 +860,7 @@ def get_dataset(
                             img2 = img2.flip(0)
 
                     if random.uniform(0, 1) < (self.generalize / 100):
-                        # Exposure agumentation
+                        # Exposure augmentation
                         exp = random.uniform(1 / 8, 2)
                         if random.uniform(0, 1) < 0.4:
                             img0 = img0 * exp
@@ -1342,7 +1342,7 @@ def main():
     parser.add_argument('--weight_decay', type=float, default=-1, help='AdamW weight decay (default: calculated from --generalize value)')
     parser.add_argument('--preview', type=int, default=1000, help='Save preview each N steps (default: 1000)')
     parser.add_argument('--save', type=int, default=1000, help='Save model state dict each N steps (default: 1000)')
-    parser.add_argument('--repeat', type=int, default=1, help='Repeat each triade N times with agumentation (default: 1)')
+    parser.add_argument('--repeat', type=int, default=1, help='Repeat each triade N times with augmentation (default: 1)')
     parser.add_argument('--iterations', type=int, default=1, help='Process each flow refinement N times (default: 1)')
 
     args = parser.parse_args()
@@ -1447,11 +1447,11 @@ def main():
         weight_decay = args.weight_decay
 
     if args.generalize == 0:
-        print (f'Disabling agumentation and setting weight decay to {weight_decay:.2e}')
+        print (f'Disabling augmentation and setting weight decay to {weight_decay:.2e}')
     elif args.generalize == 1:
-        print (f'Setting agumentation to horizontal flip and scale only and weight decay to {weight_decay:.2e}')
+        print (f'Setting augmentation to horizontal flip and scale only and weight decay to {weight_decay:.2e}')
     else:
-        print (f'Setting agumentation rate to {args.generalize}% and weight decay to {weight_decay:.2e}')
+        print (f'Setting augmentation rate to {args.generalize}% and weight decay to {weight_decay:.2e}')
 
     optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=weight_decay)
     # optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
@@ -1809,7 +1809,7 @@ def main():
 
         optimizer_flownet.zero_grad()
 
-        # scale list agumentation
+        # scale list augmentation
         random_scales = [
             [4, 2, 1, 1],
             [2, 2, 1, 1],
