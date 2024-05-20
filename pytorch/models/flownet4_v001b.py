@@ -41,7 +41,7 @@ class Model:
                 self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
-                self.relu = torch.nn.SiLU(0.2, True)
+                self.relu = torch.nn.SiLU(True)
 
                 torch.nn.init.kaiming_normal_(self.cnn0.weight, mode='fan_in', nonlinearity='relu')
                 self.cnn0.weight.data *= 1e-2
