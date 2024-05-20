@@ -116,7 +116,7 @@ class Model:
                 if flow is not None:
                     mask = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
-                    x = torch.cat((x, flow), 1)
+                    x = torch.cat((x, mask, flow), 1)
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
