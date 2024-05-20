@@ -106,7 +106,7 @@ class Model:
                 if flow is not None:
                     x = torch.cat((x, mask, flow), 1)
                 feat = self.conv0(x)
-                feat = self.convblock(feat)
+                # feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
                 flow = tmp[:, :4] * scale
                 mask = tmp[:, 4:5]
