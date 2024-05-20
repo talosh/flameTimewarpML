@@ -1397,10 +1397,11 @@ def main():
     if not model_info.get('ratio_support'):
         max_dataset_window = 3
     
-    # flownet_uncompiled = Flownet().get_training_model()().to(device)
-    # flownet = torch.compile(flownet_uncompiled,mode='max-autotune')
-    # flownet.to(device)
-    flownet = Flownet().get_training_model()().to(device)
+    if args.compile:
+        flownet_uncompiled = Flownet().get_training_model()().to(torch.float32).cuda()
+        flownet = torch.compile(flownet_uncompiled,mode='reduce-overhead')
+    else:
+        flownet = Flownet().get_training_model()().to(device)
     
     if args.all_gpus:
         print ('Using nn.DataParallel')
