@@ -227,8 +227,8 @@ class Model:
                         flow, 
                         scale=scale[1]
                     )
-                    flow += flow_d
-                    mask += torch.sigmoid(mask_d) * 2 - 1
+                    flow = flow + flow_d
+                    mask = mask + torch.sigmoid(mask_d) * 2 - 1
 
                 flow_list[1] = flow
                 mask_list[1] = mask.clone()
@@ -245,8 +245,8 @@ class Model:
                         flow, 
                         scale=scale[2]
                     )
-                    flow += flow_d
-                    mask += torch.sigmoid(mask_d) * 2 - 1
+                    flow = flow + flow_d
+                    mask = mask + torch.sigmoid(mask_d) * 2 - 1
                 flow_list[2] = flow
                 mask_list[2] = mask.clone()
                 merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
@@ -262,8 +262,8 @@ class Model:
                         flow, 
                         scale=scale[3]
                     )
-                    flow += flow_d
-                    mask += torch.sigmoid(mask_d) * 2 - 1
+                    flow = flow + flow_d
+                    mask = mask + torch.sigmoid(mask_d) * 2 - 1
 
                 flow_list[3] = flow
                 mask_list[3] = mask
