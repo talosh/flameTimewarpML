@@ -266,7 +266,7 @@ class Model:
                     mask = mask + torch.sigmoid(mask_d) * 2 - 1
 
                 flow_list[3] = flow
-                mask_list[3] = mask
+                mask_list[3] = mask.clamp(0, 1)
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 return flow_list, mask_list, merged
