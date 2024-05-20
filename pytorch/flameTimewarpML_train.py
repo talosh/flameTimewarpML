@@ -1464,7 +1464,8 @@ def main():
     criterion_l1 = torch.nn.L1Loss()
     criterion_huber = torch.nn.HuberLoss(delta=0.001)
 
-    weight_decay = 10 ** (0.07 * args.generalize - 9) if args.generalize > 1 else 1e-9
+    # weight_decay = 10 ** (0.07 * args.generalize - 9) if args.generalize > 1 else 1e-9
+    weight_decay = 10 ** (-2 - 0.02 * (args.generalize - 1)) if args.generalize > 1 else 1e-4
 
     if args.weight_decay != -1:
         weight_decay = args.weight_decay
