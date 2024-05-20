@@ -1,4 +1,4 @@
-# Orig v001 changed to SiLU in Head() encoder
+# Orig v001 changed to SiLU everywhere
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -19,7 +19,7 @@ class Model:
                     padding_mode = 'reflect',
                     bias=True
                 ),
-                torch.nn.LeakyReLU(0.2, True)
+                torch.nn.SiLU(True)
                 # torch.nn.SELU(inplace = True)
             )
 
@@ -41,7 +41,7 @@ class Model:
                 self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
-                self.relu = torch.nn.SiLU(0.2, True)
+                self.relu = torch.nn.SiLU(True)
 
                 torch.nn.init.kaiming_normal_(self.cnn0.weight, mode='fan_in', nonlinearity='relu')
                 self.cnn0.weight.data *= 1e-2
@@ -77,7 +77,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-                self.relu = torch.nn.LeakyReLU(0.2, True) # torch.nn.SELU(inplace = True)
+                self.relu = torch.nn.SiLU(True) # torch.nn.SELU(inplace = True)
 
                 torch.nn.init.kaiming_normal_(self.conv.weight, mode='fan_in', nonlinearity='relu')
                 self.conv.weight.data *= 1e-2
