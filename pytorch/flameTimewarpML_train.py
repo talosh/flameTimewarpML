@@ -1840,9 +1840,9 @@ def main():
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
         img2_orig = img2.detach().clone()
-        img0 = normalize(img0)
-        img1 = normalize(img1)
-        img2 = normalize(img2)
+        # img0 = normalize(img0)
+        # img1 = normalize(img1)
+        # img2 = normalize(img2)
 
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
 
