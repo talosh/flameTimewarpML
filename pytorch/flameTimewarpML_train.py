@@ -1984,30 +1984,30 @@ def main():
             }
 
 
-        # if step % args.preview == 1:
-        rgb_source1 = img0_orig
-        rgb_source2 = img2_orig
-        rgb_target = img1_orig
-        rgb_output = restore_normalized_values(output)
-        rgb_output_mask = mask.repeat_interleave(3, dim=1)
-        # rgb_refine = refine_list[0] + refine_list[1] + refine_list[2] + refine_list[3]
-        # rgb_refine = (rgb_refine + 1) / 2
-        # sample_refine = rgb_refine[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+        if step % args.preview == 1:
+            rgb_source1 = img0_orig
+            rgb_source2 = img2_orig
+            rgb_target = img1_orig
+            rgb_output = restore_normalized_values(output)
+            rgb_output_mask = mask.repeat_interleave(3, dim=1)
+            # rgb_refine = refine_list[0] + refine_list[1] + refine_list[2] + refine_list[3]
+            # rgb_refine = (rgb_refine + 1) / 2
+            # sample_refine = rgb_refine[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
 
 
-        write_image_queue.put(
-            {
-                'preview_folder': os.path.join(args.dataset_path, 'preview'),
-                'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                'sample_output_mask': rgb_output_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
-            }
-        )
+            write_image_queue.put(
+                {
+                    'preview_folder': os.path.join(args.dataset_path, 'preview'),
+                    'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_output_mask': rgb_output_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+                }
+            )
 
-        del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
-        preview_index = preview_index + 1 # if preview_index < 9 else 0
+            del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
+            preview_index = preview_index + 1 if preview_index < 9 else 0
 
         if step % args.save == 1:
             if os.path.isfile(trained_model_path):
