@@ -1842,7 +1842,7 @@ def main():
         img1 = normalize(img1)
         img2 = normalize(img2)
 
-        current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.4e}')
+        current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
 
         optimizer_flownet.zero_grad()
 
