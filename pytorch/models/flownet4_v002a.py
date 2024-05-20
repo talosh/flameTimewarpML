@@ -174,11 +174,7 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
-                self.lastconv2 = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
-                    conv(c//2, c//2, 3, 1, 1),
-                    torch.nn.ConvTranspose2d(c//2, 1, 4, 2, 1),
-                )
+                self.maskconv = torch.nn.Conv2d(2, 1, 3, 1, 1)
                 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
                 timestep = (img0[:, :1].clone() * 0 + 1) * timestep
@@ -194,7 +190,7 @@ class Model:
                 tmp[:, 4:5] += self.lastconv2(feat)
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
                 flow = tmp[:, :4] * scale
-                mask = tmp [:, 4:5]
+                mask = self.maskconv(tmp [:, 4:6])
                 return flow, mask
 
         class FlownetCas(Module):
