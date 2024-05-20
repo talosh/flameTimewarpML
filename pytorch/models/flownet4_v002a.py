@@ -174,7 +174,6 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
-                self.maskconv = torch.nn.Conv2d(2, 1, 3, 1, 1)
                 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
                 timestep = (img0[:, :1].clone() * 0 + 1) * timestep
@@ -187,10 +186,9 @@ class Model:
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
-                mask = self.maskconv(tmp [:, 4:6])
-                mask = torch.nn.functional.interpolate(mask, scale_factor=scale, mode="bilinear", align_corners=False)
-                flow = torch.nn.functional.interpolate(tmp[:, :4], scale_factor=scale, mode="bilinear", align_corners=False)
-                flow *= scale
+                tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
+                flow = tmp[:, :4] * scale
+                mask = tmp [:, 4:5]
                 return flow, mask
 
         class FlownetCas(Module):
@@ -214,11 +212,12 @@ class Model:
                 flow, mask = self.block0(img0, img1, f0, f1, timestep, None, None, scale=scale[0])
 
                 flow_list[0] = flow
-                mask_list[0] = torch.sigmoid(mask)
+                mask = torch.sigmoid(mask)
+                mask_list[0] = mask.clone()
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
                 for iteration in range(iterations):
-                    flow_d, mask = self.block1(
+                    flow_d, mask_d = self.block1(
                         warp(img0, flow[:, :2]), 
                         warp(img1, flow[:, 2:4]),
                         warp(f0, flow[:, :2]),
@@ -229,13 +228,14 @@ class Model:
                         scale=scale[1]
                     )
                     flow += flow_d
+                    mask += torch.sigmoid(mask_d)
 
                 flow_list[1] = flow
-                mask_list[1] = torch.sigmoid(mask)
+                mask_list[1] = mask.clone()
                 merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
                 for iteration in range(iterations):
-                    flow_d, mask = self.block2(
+                    flow_d, mask_d = self.block2(
                         warp(img0, flow[:, :2]), 
                         warp(img1, flow[:, 2:4]),
                         warp(f0, flow[:, :2]),
@@ -246,13 +246,14 @@ class Model:
                         scale=scale[2]
                     )
                     flow += flow_d
+                    mask += torch.sigmoid(mask_d)
 
                 flow_list[2] = flow
-                mask_list[2] = torch.sigmoid(mask)
+                mask_list[2] = mask.clone()
                 merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
                 for iteration in range(iterations):
-                    flow_d, mask = self.block3(
+                    flow_d, mask_d = self.block3(
                         warp(img0, flow[:, :2]), 
                         warp(img1, flow[:, 2:4]),
                         warp(f0, flow[:, :2]),
@@ -263,9 +264,10 @@ class Model:
                         scale=scale[3]
                     )
                     flow += flow_d
+                    mask += torch.sigmoid(mask_d)
 
                 flow_list[3] = flow
-                mask_list[3] = torch.sigmoid(mask)
+                mask_list[3] = mask
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 return flow_list, mask_list, merged
