@@ -228,7 +228,7 @@ class Model:
                         scale=scale[1]
                     )
                     flow += flow_d
-                    mask += torch.sigmoid(mask_d)
+                    mask += torch.sigmoid(mask_d) * 2 - 1
 
                 flow_list[1] = flow
                 mask_list[1] = mask.clone()
