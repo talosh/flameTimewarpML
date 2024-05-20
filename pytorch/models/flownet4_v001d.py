@@ -134,9 +134,11 @@ class Model:
 
                 flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, scale=scale[0])
 
-                flow_list[0] = flow.clone()
-                mask_list[0] = torch.sigmoid(mask.clone())
-                merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
+                flow_list[3] = flow.clone()
+                mask_list[3] = torch.sigmoid(mask.clone())
+                merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
+
+                return flow_list, mask_list, merged
 
                 for iteration in range(iterations):
                     flow_d, mask, conf = self.block1(
