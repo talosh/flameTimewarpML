@@ -471,7 +471,7 @@ def get_dataset(
 
             print ('reading first block of training data...')
             self.last_train_data = [self.frames_queue.get()]
-            self.last_train_data_size = 11
+            self.last_train_data_size = self.batch_size * 8
             self.new_sample_shown = False
             self.train_data_index = 0
 
@@ -739,50 +739,50 @@ def get_dataset(
             return ACEScc
 
         def __getitem__(self, index):
-            train_data = self.getimg(index)
-            # src_img0 = train_data['pre_start']
-            np_img0 = train_data['start']
-            np_img1 = train_data['gt']
-            np_img2 = train_data['end']
-            # src_img4 = train_data['after_end']
-            imgh = train_data['h']
-            imgw = train_data['w']
-            ratio = train_data['ratio']
-            images_idx = self.train_data_index
-
-            device = self.device
-
-            src_img0 = torch.from_numpy(np_img0.copy())
-            src_img1 = torch.from_numpy(np_img1.copy())
-            src_img2 = torch.from_numpy(np_img2.copy())
-
-            del train_data, np_img0, np_img1, np_img2
-
-            src_img0 = src_img0.to(device = device, dtype = torch.float32)
-            src_img1 = src_img1.to(device = device, dtype = torch.float32)
-            src_img2 = src_img2.to(device = device, dtype = torch.float32)
-
-            rsz1_img0 = self.resize_image(src_img0, self.h)
-            rsz1_img1 = self.resize_image(src_img1, self.h)
-            rsz1_img2 = self.resize_image(src_img2, self.h)
-
-            rsz2_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
-            rsz2_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
-            rsz2_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
-
-            rsz3_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/5)))
-            rsz3_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/5)))
-            rsz3_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/5)))
-
-            rsz4_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
-            rsz4_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
-            rsz4_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
-
             batch_img0 = []
             batch_img1 = []
             batch_img2 = []
 
             for index in range(self.batch_size):
+
+                train_data = self.getimg(index)
+                # src_img0 = train_data['pre_start']
+                np_img0 = train_data['start']
+                np_img1 = train_data['gt']
+                np_img2 = train_data['end']
+                # src_img4 = train_data['after_end']
+                imgh = train_data['h']
+                imgw = train_data['w']
+                ratio = train_data['ratio']
+                images_idx = self.train_data_index
+
+                device = self.device
+
+                src_img0 = torch.from_numpy(np_img0.copy())
+                src_img1 = torch.from_numpy(np_img1.copy())
+                src_img2 = torch.from_numpy(np_img2.copy())
+
+                del train_data, np_img0, np_img1, np_img2
+
+                src_img0 = src_img0.to(device = device, dtype = torch.float32)
+                src_img1 = src_img1.to(device = device, dtype = torch.float32)
+                src_img2 = src_img2.to(device = device, dtype = torch.float32)
+
+                rsz1_img0 = self.resize_image(src_img0, self.h)
+                rsz1_img1 = self.resize_image(src_img1, self.h)
+                rsz1_img2 = self.resize_image(src_img2, self.h)
+
+                rsz2_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
+                rsz2_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
+                rsz2_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
+
+                rsz3_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/5)))
+                rsz3_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/5)))
+                rsz3_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/5)))
+
+                rsz4_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
+                rsz4_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
+                rsz4_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
 
                 if self.generalize == 0:
                     # No augmentaton
