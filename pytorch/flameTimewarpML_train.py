@@ -488,6 +488,8 @@ def get_dataset(
             else:
                 self.device = device
 
+            self.end_of_dataset_reached = False
+
             print (f'ACEScc rate: {self.acescc_rate}%')
 
         def reshuffle(self):
@@ -631,8 +633,11 @@ def get_dataset(
                         self.frames_queue.put(train_data)
                     except Exception as e:
                         del train_data
-                        print (e)           
-                time.sleep(timeout)
+                        print (e)
+                self.end_of_dataset_reached = True
+                # wait until someone sets it to Flase again:
+                while self.end_of_dataset_reached:
+                    time.sleep(timeout)
 
         def __len__(self):
             return len(self.train_descriptions)
@@ -2060,11 +2065,27 @@ def main():
         print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
         print(f'\r[Last 10K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
 
-        if ( idx + 1 ) == len(dataset):
+        # if ( idx + 1 ) == len(dataset):
+        if dataset.end_of_dataset_reached:
+            dataset.reshuffle()
+
+            # empty local queue leftovers
+            while True:
+                try:
+                    img0, img1, img2, ratio, idx = read_image_queue.get_nowait()
+                except queue.Empty:
+                    break
+            
+            # start dataset frame reading queue
+            dataset.end_of_dataset_reached = False
+
             if os.path.isfile(trained_model_path):
                 backup_file = trained_model_path.replace('.pth', '.backup.pth')
                 shutil.copy(trained_model_path, backup_file)
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
+
+            
+
 
             if args.eval != -1:
                 psnr_list = []
@@ -2186,10 +2207,6 @@ def main():
             lpips_list = []
             epoch = epoch + 1
             batch_idx = 0
-
-            while  ( idx + 1 ) == len(dataset):
-                img0, img1, img2, ratio, idx = read_image_queue.get()
-            dataset.reshuffle()
 
         batch_idx = batch_idx + 1
         step = step + 1
