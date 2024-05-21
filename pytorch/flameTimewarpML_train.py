@@ -464,14 +464,14 @@ def get_dataset(
             self.w = frame_size
             # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
-            self.frames_queue = queue.Queue(maxsize=self.batch_size * 8)
+            self.frames_queue = queue.Queue(maxsize=8)
             self.frame_read_thread = threading.Thread(target=self.read_frames_thread)
             self.frame_read_thread.daemon = True
             self.frame_read_thread.start()
 
             print ('reading first block of training data...')
             self.last_train_data = [self.frames_queue.get()]
-            self.last_train_data_size = self.batch_size * 11
+            self.last_train_data_size = 11
             self.new_sample_shown = False
             self.train_data_index = 0
 
@@ -487,8 +487,6 @@ def get_dataset(
                 self.device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda')
             else:
                 self.device = device
-
-            self.end_of_dataset_reached = False
 
             print (f'ACEScc rate: {self.acescc_rate}%')
 
@@ -633,11 +631,8 @@ def get_dataset(
                         self.frames_queue.put(train_data)
                     except Exception as e:
                         del train_data
-                        print (e)
-                self.end_of_dataset_reached = True
-                # wait until someone sets it to Flase again:
-                while self.end_of_dataset_reached:
-                    time.sleep(timeout)
+                        print (e)           
+                time.sleep(timeout)
 
         def __len__(self):
             return len(self.train_descriptions)
@@ -705,13 +700,7 @@ def get_dataset(
                     del new_data
                     self.repeat_counter = 0
                 except queue.Empty:
-                    # continue to feed batch from buffer
-                    if not self.new_sample_shown:
-                        self.new_sample_shown = True
-                        return self.last_train_data[-1]
-                    else:
-                        return self.last_train_data[random.randint(0, len(self.last_train_data) - 1)]
-
+                    pass
 
             self.repeat_counter += 1
             if not self.new_sample_shown:
@@ -750,50 +739,50 @@ def get_dataset(
             return ACEScc
 
         def __getitem__(self, index):
+            train_data = self.getimg(index)
+            # src_img0 = train_data['pre_start']
+            np_img0 = train_data['start']
+            np_img1 = train_data['gt']
+            np_img2 = train_data['end']
+            # src_img4 = train_data['after_end']
+            imgh = train_data['h']
+            imgw = train_data['w']
+            ratio = train_data['ratio']
+            images_idx = self.train_data_index
+
+            device = self.device
+
+            src_img0 = torch.from_numpy(np_img0.copy())
+            src_img1 = torch.from_numpy(np_img1.copy())
+            src_img2 = torch.from_numpy(np_img2.copy())
+
+            del train_data, np_img0, np_img1, np_img2
+
+            src_img0 = src_img0.to(device = device, dtype = torch.float32)
+            src_img1 = src_img1.to(device = device, dtype = torch.float32)
+            src_img2 = src_img2.to(device = device, dtype = torch.float32)
+
+            rsz1_img0 = self.resize_image(src_img0, self.h)
+            rsz1_img1 = self.resize_image(src_img1, self.h)
+            rsz1_img2 = self.resize_image(src_img2, self.h)
+
+            rsz2_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
+            rsz2_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
+            rsz2_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
+
+            rsz3_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/5)))
+            rsz3_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/5)))
+            rsz3_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/5)))
+
+            rsz4_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
+            rsz4_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
+            rsz4_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
+
             batch_img0 = []
             batch_img1 = []
             batch_img2 = []
 
             for index in range(self.batch_size):
-
-                train_data = self.getimg(index)
-                # src_img0 = train_data['pre_start']
-                np_img0 = train_data['start']
-                np_img1 = train_data['gt']
-                np_img2 = train_data['end']
-                # src_img4 = train_data['after_end']
-                imgh = train_data['h']
-                imgw = train_data['w']
-                ratio = train_data['ratio']
-                images_idx = self.train_data_index
-
-                device = self.device
-
-                src_img0 = torch.from_numpy(np_img0.copy())
-                src_img1 = torch.from_numpy(np_img1.copy())
-                src_img2 = torch.from_numpy(np_img2.copy())
-
-                del train_data, np_img0, np_img1, np_img2
-
-                src_img0 = src_img0.to(device = device, dtype = torch.float32)
-                src_img1 = src_img1.to(device = device, dtype = torch.float32)
-                src_img2 = src_img2.to(device = device, dtype = torch.float32)
-
-                rsz1_img0 = self.resize_image(src_img0, self.h)
-                rsz1_img1 = self.resize_image(src_img1, self.h)
-                rsz1_img2 = self.resize_image(src_img2, self.h)
-
-                rsz2_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
-                rsz2_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
-                rsz2_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
-
-                rsz3_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/5)))
-                rsz3_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/5)))
-                rsz3_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/5)))
-
-                rsz4_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
-                rsz4_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
-                rsz4_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
 
                 if self.generalize == 0:
                     # No augmentaton
@@ -2071,27 +2060,11 @@ def main():
         print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
         print(f'\r[Last 10K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
 
-        # if ( idx + 1 ) == len(dataset):
-        if dataset.end_of_dataset_reached:
-            dataset.reshuffle()
-
-            # empty local queue leftovers
-            while True:
-                try:
-                    img0, img1, img2, ratio, idx = read_image_queue.get_nowait()
-                except queue.Empty:
-                    break
-            
-            # start dataset frame reading queue
-            dataset.end_of_dataset_reached = False
-
+        if ( idx + 1 ) == len(dataset):
             if os.path.isfile(trained_model_path):
                 backup_file = trained_model_path.replace('.pth', '.backup.pth')
                 shutil.copy(trained_model_path, backup_file)
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
-
-            
-
 
             if args.eval != -1:
                 psnr_list = []
@@ -2213,6 +2186,10 @@ def main():
             lpips_list = []
             epoch = epoch + 1
             batch_idx = 0
+
+            while  ( idx + 1 ) == len(dataset):
+                img0, img1, img2, ratio, idx = read_image_queue.get()
+            dataset.reshuffle()
 
         batch_idx = batch_idx + 1
         step = step + 1
