@@ -475,6 +475,7 @@ def get_dataset(
             self.new_sample_shown = False
             self.train_data_index = 0
 
+            self.current_batch_data = []
 
             self.repeat_count = repeat
             self.repeat_counter = 0
@@ -762,27 +763,51 @@ def get_dataset(
             src_img1 = src_img1.to(device = device, dtype = torch.float32)
             src_img2 = src_img2.to(device = device, dtype = torch.float32)
 
-            rsz1_img0 = self.resize_image(src_img0, self.h)
-            rsz1_img1 = self.resize_image(src_img1, self.h)
-            rsz1_img2 = self.resize_image(src_img2, self.h)
+            train_sample_data = {}
 
-            rsz2_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
-            rsz2_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
-            rsz2_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
+            train_sample_data['rsz1_img0'] = self.resize_image(src_img0, self.h)
+            train_sample_data['rsz1_img1'] = self.resize_image(src_img1, self.h)
+            train_sample_data['rsz1_img2'] = self.resize_image(src_img2, self.h)
 
-            rsz3_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/5)))
-            rsz3_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/5)))
-            rsz3_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/5)))
+            train_sample_data['rsz2_img0'] = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
+            train_sample_data['rsz2_img1'] = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
+            train_sample_data['rsz2_img2'] = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
 
-            rsz4_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
-            rsz4_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
-            rsz4_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
+            train_sample_data['rsz3_img0'] = self.resize_image(src_img0, int(self.h * (1 + 1/5)))
+            train_sample_data['rsz3_img1'] = self.resize_image(src_img1, int(self.h * (1 + 1/5)))
+            train_sample_data['rsz3_img2'] = self.resize_image(src_img2, int(self.h * (1 + 1/5)))
+
+            train_sample_data['rsz4_img0'] = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
+            train_sample_data['rsz4_img1'] = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
+            train_sample_data['rsz4_img2'] = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
+
+            if len(self.current_batch_data) < self.batch_size:
+                self.current_batch_data = [train_sample_data] * self.batch_size
+            else:
+                old_data = self.current_batch_data.pop(0)
+                del old_data
+                self.current_batch_data.append(train_sample_data)
 
             batch_img0 = []
             batch_img1 = []
             batch_img2 = []
 
             for index in range(self.batch_size):
+                rsz1_img0 = self.current_batch_data[index]['rsz1_img0']
+                rsz1_img1 = self.current_batch_data[index]['rsz1_img1']
+                rsz1_img2 = self.current_batch_data[index]['rsz1_img2']
+
+                rsz2_img0 = self.current_batch_data[index]['rsz2_img0']
+                rsz2_img1 = self.current_batch_data[index]['rsz2_img1']
+                rsz2_img2 = self.current_batch_data[index]['rsz2_img2']
+
+                rsz3_img0 = self.current_batch_data[index]['rsz3_img0']
+                rsz3_img1 = self.current_batch_data[index]['rsz3_img1']
+                rsz3_img2 = self.current_batch_data[index]['rsz3_img2']
+
+                rsz4_img0 = self.current_batch_data[index]['rsz4_img0']
+                rsz4_img1 = self.current_batch_data[index]['rsz4_img1']
+                rsz4_img2 = self.current_batch_data[index]['rsz4_img2']
 
                 if self.generalize == 0:
                     # No augmentaton
