@@ -160,7 +160,7 @@ class Model:
                         warp(f1, flow[:, 2:4]),
                         timestep,
                         mask,
-                        conf,
+                        torch.tanh(conf),
                         flow, 
                         scale=scale[1]
                     )
@@ -178,7 +178,7 @@ class Model:
                         warp(f1, flow[:, 2:4]),
                         timestep,
                         mask,
-                        conf,
+                        torch.tanh(conf),
                         flow, 
                         scale=scale[2]
                     )
@@ -196,7 +196,7 @@ class Model:
                         warp(f1, flow[:, 2:4]),
                         timestep,
                         mask,
-                        conf,
+                        torch.tanh(conf),
                         flow, 
                         scale=scale[3]
                     )
@@ -214,8 +214,8 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v001a',
-            'file': 'flownet4_v001a.py',
+            'name': 'Flownet4_v002b',
+            'file': 'flownet4_v002b.py',
             'ratio_support': True
         }
         return info
