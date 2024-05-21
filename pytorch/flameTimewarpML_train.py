@@ -705,7 +705,13 @@ def get_dataset(
                     del new_data
                     self.repeat_counter = 0
                 except queue.Empty:
-                    pass
+                    # continue to feed batch from buffer
+                    if not self.new_sample_shown:
+                        self.new_sample_shown = True
+                        return self.last_train_data[-1]
+                    else:
+                        return self.last_train_data[random.randint(0, len(self.last_train_data) - 1)]
+
 
             self.repeat_counter += 1
             if not self.new_sample_shown:
