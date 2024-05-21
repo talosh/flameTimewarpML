@@ -766,7 +766,6 @@ class Timewarp():
                 img0 = torch.from_numpy(incoming_data.copy())
                 if self.json_info.get('half'):
                     img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
-                    print ('img0 half')
                 else:
                     img0 = img0.to(device = device, dtype = torch.float32, non_blocking = True)
 
@@ -791,10 +790,12 @@ class Timewarp():
                 img0_ref = torch.nn.functional.pad(img0_ref, padding)
                 img1_ref = torch.nn.functional.pad(img1_ref, padding)
 
+                print (f'img0 dtype{img0.dtype} img1 dtype{img1.dtype}')
+
                 flow_list, mask_list, merged = self.model(
-                    img0_ref, 
-                    img1_ref, 
-                    ratio, 
+                    img0_ref,
+                    img1_ref,
+                    ratio,
                     iterations = iterations
                     )
 
