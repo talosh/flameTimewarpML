@@ -790,7 +790,7 @@ class Timewarp():
                 img0_ref = torch.nn.functional.pad(img0_ref, padding)
                 img1_ref = torch.nn.functional.pad(img1_ref, padding)
 
-                print (f'img0 dtype{img0.dtype} img1 dtype{img1.dtype}')
+                # print (f'img0 dtype{img0.dtype} img1 dtype{img1.dtype}')
 
                 flow_list, mask_list, merged = self.model(
                     img0_ref,
