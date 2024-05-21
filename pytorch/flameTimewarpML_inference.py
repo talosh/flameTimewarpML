@@ -620,8 +620,7 @@ class Timewarp():
             h11 = t**3 - t**2          # Compute basis function 4
 
             return h00 * P0 + h10 * T0 + h01 * P1 + h11 * T1
-
-
+        
         frame_info_list = []
         output_frame_number = 1
         length = len(incoming_files_list) - 1
@@ -767,6 +766,7 @@ class Timewarp():
                 img0 = torch.from_numpy(incoming_data.copy())
                 if self.json_info.get('half'):
                     img0 = img0.to(device = device, dtype = torch.float16, non_blocking = True)
+                    print ('img0 half')
                 else:
                     img0 = img0.to(device = device, dtype = torch.float32, non_blocking = True)
 
