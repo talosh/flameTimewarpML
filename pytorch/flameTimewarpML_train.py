@@ -2082,6 +2082,44 @@ def main():
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
 
         if (args.eval > 0) and (step % args.eval) == 1:
+            preview_folder = os.path.join(args.dataset_path, 'preview')
+            eval_folder = os.path.join(
+                preview_folder,
+                'eval',
+                os.path.splitext(os.path.basename(trained_model_path))[0],
+                f'Step_{step:09}'
+                )
+            
+            descriptions = list(dataset.initial_train_descriptions)
+            if args.eval_samples > 0:
+                rng = random.Random(args.eval_seed)
+                descriptions = rng.sample(descriptions, args.eval_samples)
+
+            eval_loss = []
+            eval_pnsr = []
+            eval_lpips = []
+
+            with torch.no_grad():
+                for eval_idx, description in enumerate(descriptions):
+                    eval_img0 = read_openexr_file(description['start'])['image_data']
+                    eval_img1 = read_openexr_file(description['gt'])['image_data']
+                    eval_img2 = read_openexr_file(description['end'])['image_data']
+                    eval_ratio = description['ratio']
+
+                    img0_orig = img0.clone()
+                    img2_orig = img2.clone()
+                    img0 = normalize(img0)
+                    img2 = normalize(img2)
+
+                    flownet.eval()
+                    flow_list, mask_list, merged = flownet(
+                        eval_img0, 
+                        eval_img2, 
+                        eval_ratio, 
+                        iterations = args.iterations
+                        )
+
+
             rows_to_append = [
                 {
                     'Epoch': epoch,
@@ -2094,7 +2132,7 @@ def main():
                  }
             ]
             for row in rows_to_append:
-                append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.eval.csv', row)
+                append_row_to_csv(f'{os.path.splitext(os.path.basename(trained_model_path))[0]}.eval.csv', row)
 
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
