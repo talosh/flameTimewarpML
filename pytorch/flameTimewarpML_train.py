@@ -2107,6 +2107,10 @@ def main():
                 os.makedirs(eval_folder)
             
             descriptions = list(dataset.initial_train_descriptions)
+
+            for it in descriptions:
+                pprint (it)
+
             if args.eval_samples > 0:
                 rng = random.Random(args.eval_seed)
                 descriptions = rng.sample(descriptions, args.eval_samples)
