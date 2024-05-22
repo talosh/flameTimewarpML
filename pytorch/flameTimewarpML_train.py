@@ -2171,14 +2171,14 @@ def main():
                     # print (f'eval_img2 shape: {eval_img2.shape}')
 
                     flownet.eval()
-                    flow_list, mask_list, merged = flownet(
+                    eval_flow_list, eval_mask_list, eval_merged = flownet(
                         eval_img0, 
                         eval_img2, 
                         eval_ratio, 
                         iterations = args.iterations
                         )
                     
-                    eval_result = warp(eval_img0_orig, flow_list[3][:, :2, :eh, :ew]) * mask_list[3][:, :, :eh, :ew] + warp(eval_img2_orig, flow_list[3][:, 2:4, :eh, :ew]) * (1 - mask_list[3][:, :, :eh, :ew])
+                    eval_result = warp(eval_img0_orig, eval_flow_list[3][:, :2, :eh, :ew]) * eval_mask_list[3][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[3][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[3][:, :, :eh, :ew])
 
                     eval_loss_l1 = criterion_l1(eval_result, eval_img1)
                     eval_loss.append(float(eval_loss_l1.item()))
