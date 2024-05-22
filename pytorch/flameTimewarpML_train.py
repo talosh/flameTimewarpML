@@ -1263,13 +1263,9 @@ def append_row_to_csv(file_name, row):
     """
     Appends a single row to an existing CSV file.
     """
-
-    pprint (row)
-
     with open(file_name, 'a', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=row.keys())
         writer.writerow(row)
-    csvfile.close()
 
 def gaussian(window_size, sigma):
     from math import exp
@@ -2215,8 +2211,7 @@ def main():
             ]
 
             for eval_row in eval_rows_to_append:
-                print (f'{eval_row}')
-                append_row_to_csv(f'{os.path.splitext(os.path.basename(trained_model_path))[0]}.eval.csv', eval_row)
+                append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.eval.csv', eval_row)
 
         if ( idx + 1 ) == len(dataset):
             if os.path.isfile(trained_model_path):
