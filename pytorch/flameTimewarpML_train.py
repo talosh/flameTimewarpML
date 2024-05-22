@@ -2108,10 +2108,10 @@ def main():
             
             descriptions = list(dataset.initial_train_descriptions)
 
-            for it in descriptions:
-                star_folder = os.path.dirname(description['start'])
-                gt_folder = os.path.dirname(description['gt'])
-                end_folder = os.path.dirname(description['end'])
+            for itm in descriptions:
+                star_folder = os.path.dirname(itm['start'])
+                gt_folder = os.path.dirname(itm['gt'])
+                end_folder = os.path.dirname(itm['end'])
 
                 if len({star_folder, gt_folder, end_folder}) != 1:
                     pprint (it)
