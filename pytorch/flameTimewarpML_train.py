@@ -2117,7 +2117,7 @@ def main():
                     if eval_lpips:
                         eval_lpips_mean = float(np.array(eval_lpips).mean())
                     else:
-                        eval_lpips = -1
+                        eval_lpips_mean = -1
 
                     clear_lines(3)
                     print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
