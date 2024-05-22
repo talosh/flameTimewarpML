@@ -2152,22 +2152,23 @@ def main():
                     eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
                     eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
 
-                    print (f'eval_img0 shape: {eval_img0.shape}')
-                    print (f'eval_img1 shape: {eval_img1.shape}')
-                    print (f'eval_img2 shape: {eval_img2.shape}')
 
                     eval_img0_orig = img0.clone()
                     eval_img2_orig = img2.clone()
                     eval_img0 = normalize(img0)
                     eval_img2 = normalize(img2)
 
-                    n, c, h, w = eval_img0.shape
-                    ph = ((h - 1) // 64 + 1) * 64
-                    pw = ((w - 1) // 64 + 1) * 64
-                    padding = (0, pw - w, 0, ph - h)
+                    n, c, eh, ew = eval_img0.shape
+                    ph = ((eh - 1) // 64 + 1) * 64
+                    pw = ((ew - 1) // 64 + 1) * 64
+                    padding = (0, pw - ew, 0, ph - eh)
                     
                     eval_img0 = torch.nn.functional.pad(eval_img0, padding)
                     eval_img2 = torch.nn.functional.pad(eval_img2, padding)
+
+                    print (f'eval_img0 shape: {eval_img0.shape}')
+                    print (f'eval_img1 shape: {eval_img1.shape}')
+                    print (f'eval_img2 shape: {eval_img2.shape}')
 
                     flownet.eval()
                     flow_list, mask_list, merged = flownet(
@@ -2177,7 +2178,7 @@ def main():
                         iterations = args.iterations
                         )
                     
-                    eval_result = warp(eval_img0_orig, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(eval_img2_orig, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
+                    eval_result = warp(eval_img0_orig, flow_list[3][:, :2, :eh, :ew]) * mask_list[3][:, :, :eh, :ew] + warp(eval_img2_orig, flow_list[3][:, 2:4, :eh, :ew]) * (1 - mask_list[3][:, :, :eh, :ew])
 
                     eval_loss_l1 = criterion_l1(eval_result, eval_img1)
                     eval_loss.append(float(eval_loss_l1.item()))
