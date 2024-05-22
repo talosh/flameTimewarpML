@@ -2108,14 +2108,6 @@ def main():
             
             descriptions = list(dataset.initial_train_descriptions)
 
-            for itm in descriptions:
-                star_folder = os.path.dirname(itm['start'])
-                gt_folder = os.path.dirname(itm['gt'])
-                end_folder = os.path.dirname(itm['end'])
-
-                if len({star_folder, gt_folder, end_folder}) != 1:
-                    pprint (itm)
-
             if args.eval_samples > 0:
                 rng = random.Random(args.eval_seed)
                 descriptions = rng.sample(descriptions, args.eval_samples)
@@ -2181,13 +2173,17 @@ def main():
                     # print (f'eval_img1 shape: {eval_img1.shape}')
                     # print (f'eval_img2 shape: {eval_img2.shape}')
 
-                    flownet.eval()
-                    eval_flow_list, eval_mask_list, eval_merged = flownet(
-                        eval_img0, 
-                        eval_img2, 
-                        eval_ratio, 
-                        iterations = args.iterations
-                        )
+                    try:
+                        flownet.eval()
+                        eval_flow_list, eval_mask_list, eval_merged = flownet(
+                            eval_img0, 
+                            eval_img2, 
+                            eval_ratio, 
+                            iterations = args.iterations
+                            )
+                    except:
+                        pprint (description)
+                        sys.exit()
                     
                     eval_result = warp(eval_img0_orig, eval_flow_list[3][:, :2, :eh, :ew]) * eval_mask_list[3][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[3][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[3][:, :, :eh, :ew])
 
