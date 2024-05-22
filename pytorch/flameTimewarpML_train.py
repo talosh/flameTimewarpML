@@ -2198,7 +2198,7 @@ def main():
                     except Exception as e:
                         print (f'{e}\n\n')
 
-            rows_to_append = [
+            eval_rows_to_append = [
                 {
                     'Epoch': epoch,
                     'Step': step, 
@@ -2209,7 +2209,7 @@ def main():
                     'LPIPS': eval_lpips_mean
                  }
             ]
-            for row in rows_to_append:
+            for row in eval_rows_to_append:
                 print ('hello from append row to csv')
                 print (f'{os.path.splitext(os.path.basename(trained_model_path))[0]}.eval.csv')
                 append_row_to_csv(f'{os.path.splitext(os.path.basename(trained_model_path))[0]}.eval.csv', row)
