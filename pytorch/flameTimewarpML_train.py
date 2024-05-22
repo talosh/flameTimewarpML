@@ -2194,7 +2194,7 @@ def main():
                         write_exr(eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_outgoing.exr'))
                         write_exr(eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_target.exr'))
                         # write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
-                        write_exr(eval_result.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_output.exr'))
+                        write_exr(eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_output.exr'))
                     except Exception as e:
                         print (f'{e}\n\n')
 
