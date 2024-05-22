@@ -2177,7 +2177,6 @@ def main():
                     except Exception as e:
                         print (f'{e}\n\n')
 
-
             rows_to_append = [
                 {
                     'Epoch': epoch,
@@ -2210,7 +2209,7 @@ def main():
                 backup_file = trained_model_path.replace('.pth', '.backup.pth')
                 shutil.copy(trained_model_path, backup_file)
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
-               
+
             psnr = float(np.array(psnr_list).mean())
             lpips_val = float(np.array(lpips_list).mean())
 
