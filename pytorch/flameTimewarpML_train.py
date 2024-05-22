@@ -456,6 +456,9 @@ def get_dataset(
             for folder_index, folder_path in enumerate(sorted(self.folders_with_exr)):
                 print (f'\rReading headers and building training data from clip {folder_index + 1} of {len(self.folders_with_exr)}', end='')
                 self.train_descriptions.extend(self.create_dataset_descriptions(folder_path, max_window=self.max_window))
+
+            self.initial_train_descriptions = list(self.train_descriptions)
+
             print ('\nReshuffling training data indices...')
 
             self.reshuffle()
@@ -1396,7 +1399,11 @@ def main():
     parser.add_argument('--batch_size', type=int, default=2, help='Batch size (int) (default: 2)')
     parser.add_argument('--first_epoch', type=int, default=-1, help='Epoch (int) (default: Saved)')
     parser.add_argument('--epochs', type=int, default=-1, help='Number of epoch to run (int) (default: Unlimited)')
-    parser.add_argument('--eval', type=int, dest='eval', default=-1, help='Evaluate after each epoch for N samples')
+
+    parser.add_argument('--eval', type=int, dest='eval', default=-1, help='Evaluate after N steps')
+    parser.add_argument('--eval_samples', type=int, dest='eval_samples', default=-1, help='Evaluate N random training samples')
+    parser.add_argument('--eval_seed', type=int, dest='eval_seed', default=1, help='Random seed to select samples if --eval_samples set')
+
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
     parser.add_argument('--freeze', action='store_true', dest='freeze', default=False, help='Freeze RIFE parameters')
@@ -1407,7 +1414,6 @@ def main():
     parser.add_argument('--save', type=int, default=1000, help='Save model state dict each N steps (default: 1000)')
     parser.add_argument('--repeat', type=int, default=1, help='Repeat each triade N times with augmentation (default: 1)')
     parser.add_argument('--iterations', type=int, default=1, help='Process each flow refinement N times (default: 1)')
-    parser.add_argument('--csv', type=int, default=1, help='Save training statisctics to csv file each N steps (default: 1000)')
     parser.add_argument('--compile', action='store_true', dest='compile', default=False, help='Compile with torch.compile')
 
     args = parser.parse_args()
@@ -1864,6 +1870,19 @@ def main():
         ]
     )
 
+    create_csv_file(
+        f'{os.path.splitext(trained_model_path)[0]}.eval.csv',
+        [
+            'Epoch',
+            'Step',
+            'Min',
+            'Avg',
+            'Max',
+            'PSNR',
+            'LPIPS'
+        ]
+    )
+
     import signal
     def create_graceful_exit(current_state_dict):
         def graceful_exit(signum, frame):
@@ -2062,35 +2081,20 @@ def main():
                 shutil.copy(trained_model_path, backup_file)
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
 
-        '''
-        if step % args.csv == 1:
-            if len(epoch_loss) < args.csv:
-                csv_smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
-                csv_window_min = min(epoch_loss)
-                csv_window_max = max(epoch_loss)
-                csv_psnr = float(np.array(psnr_list).mean())
-                csv_lpips_window_val = float(np.array(lpips_list).mean())
-            else:
-                csv_smoothed_window_loss = float(np.mean(moving_average(epoch_loss[-args.csv:], 9)))
-                csv_window_min = min(epoch_loss[-args.csv:])
-                csv_window_max = max(epoch_loss[-args.csv:])
-                csv_psnr = float(np.array(psnr_list[-args.csv:]).mean())
-                csv_lpips_window_val = float(np.array(lpips_list[-args.csv:]).mean())
+        if (args.eval > 0) and (step % args.eval) == 1:
             rows_to_append = [
                 {
                     'Epoch': epoch,
                     'Step': step, 
-                    'Min': csv_window_min,
-                    'Avg': csv_smoothed_window_loss,
-                    'Max': csv_window_max,
-                    'PSNR': csv_psnr,
-                    'LPIPS': csv_lpips_window_val
+                    'Min': min(epoch_loss),
+                    'Avg': smoothed_loss,
+                    'Max': max(epoch_loss),
+                    'PSNR': psnr,
+                    'LPIPS': lpips_val
                  }
             ]
-
             for row in rows_to_append:
-                append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.csv', row)
-        '''
+                append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.eval.csv', row)
 
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
@@ -2195,20 +2199,6 @@ def main():
             print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PNSR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
             print ('\n')
 
-            '''
-            if len(epoch_loss) < args.csv:
-                csv_smoothed_window_loss = float(np.mean(moving_average(epoch_loss, 9)))
-                csv_window_min = min(epoch_loss)
-                csv_window_max = max(epoch_loss)
-                csv_psnr = float(np.array(psnr_list).mean())
-                csv_lpips_window_val = float(np.array(lpips_list).mean())
-            else:
-                csv_smoothed_window_loss = float(np.mean(moving_average(epoch_loss[-args.csv:], 9)))
-                csv_window_min = min(epoch_loss[-args.csv:])
-                csv_window_max = max(epoch_loss[-args.csv:])
-                csv_psnr = float(np.array(psnr_list[-args.csv:]).mean())
-                csv_lpips_window_val = float(np.array(lpips_list[-args.csv:]).mean())
-            '''
             rows_to_append = [
                 {
                     'Epoch': epoch,
