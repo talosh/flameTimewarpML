@@ -1106,7 +1106,7 @@ def blur(img, interations = 16):
         kernel = np.exp(-0.5 * (np.square(xx) + np.square(yy)) / np.square(sigma))
         return torch.tensor(kernel / np.sum(kernel))
 
-    class GaussianBlur(nn.Module):
+    class GaussianBlur(torch.nn.Module):
         def __init__(self, kernel_size, sigma):
             super(GaussianBlur, self).__init__()
             # Create a Gaussian kernel
@@ -1114,7 +1114,7 @@ def blur(img, interations = 16):
             self.kernel = self.kernel.view(1, 1, kernel_size, kernel_size)
             
             # Set up the convolutional layer, without changing the number of channels
-            self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=kernel_size, padding=kernel_size // 2, groups=1, bias=False, padding_mode='reflect')
+            self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=kernel_size, padding=kernel_size // 2, groups=1, bias=False, padding_mode='reflect')
             
             # Initialize the convolutional layer with the Gaussian kernel
             self.conv.weight.data = self.kernel
@@ -2100,16 +2100,57 @@ def main():
             eval_lpips = []
 
             with torch.no_grad():
-                for eval_idx, description in enumerate(descriptions):
+                for ev_item_index, description in enumerate(descriptions):
+                    
+                    if eval_loss:
+                        eval_loss_min = min(eval_loss)
+                        eval_loss_max = max(eval_loss)
+                        eval_loss_avg = float(np.array(eval_loss).mean())
+                    else:
+                        eval_loss_min = -1
+                        eval_loss_max = -1
+                        eval_loss_avg = -1
+                    if eval_pnsr:
+                        eval_psnr_mean = float(np.array(eval_pnsr).mean())
+                    else:
+                        eval_pnsr = -1
+                    if eval_lpips:
+                        eval_lpips_mean = float(np.array(eval_lpips).mean())
+                    else:
+                        eval_lpips = -1
+
+                    clear_lines(3)
+                    print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
+                    print (f'\rEvaluating {ev_item_index} of {len(descriptions)}...')
+                    print(f'\rMin: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f} LPIPS: {eval_lpips_mean:.4f} PNSR: {eval_psnr_mean:4f}')
+
                     eval_img0 = read_openexr_file(description['start'])['image_data']
                     eval_img1 = read_openexr_file(description['gt'])['image_data']
                     eval_img2 = read_openexr_file(description['end'])['image_data']
                     eval_ratio = description['ratio']
 
-                    img0_orig = img0.clone()
-                    img2_orig = img2.clone()
-                    img0 = normalize(img0)
-                    img2 = normalize(img2)
+                    eval_img0 = torch.from_numpy(eval_img0)
+                    eval_img1 = torch.from_numpy(eval_img1)
+                    eval_img2 = torch.from_numpy(eval_img2)
+                    eval_img0 = eval_img0.to(device = device, dtype = torch.float32, non_blocking = True)
+                    eval_img1 = eval_img1.to(device = device, dtype = torch.float32, non_blocking = True)
+                    eval_img2 = eval_img2.to(device = device, dtype = torch.float32, non_blocking = True)
+                    eval_img0 = eval_img0.permute(2, 0, 1).unsqueeze(0)
+                    eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
+                    eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
+
+                    eval_img0_orig = img0.clone()
+                    eval_img2_orig = img2.clone()
+                    eval_img0 = normalize(img0)
+                    eval_img2 = normalize(img2)
+
+                    n, c, h, w = eval_img0.shape
+                    ph = ((h - 1) // 64 + 1) * 64
+                    pw = ((w - 1) // 64 + 1) * 64
+                    padding = (0, pw - w, 0, ph - h)
+                    
+                    eval_img0 = torch.nn.functional.pad(eval_img0, padding)
+                    eval_img2 = torch.nn.functional.pad(eval_img2, padding)
 
                     flownet.eval()
                     flow_list, mask_list, merged = flownet(
@@ -2118,17 +2159,25 @@ def main():
                         eval_ratio, 
                         iterations = args.iterations
                         )
+                    
+                    eval_result = warp(eval_img0_orig, flow_list[3][:, :2, :h, :w]) * mask_list[3][:, :, :h, :w] + warp(eval_img2_orig, flow_list[3][:, 2:4, :h, :w]) * (1 - mask_list[3][:, :, :h, :w])
+
+                    eval_loss_l1 = criterion_l1(eval_result, eval_img1)
+                    eval_loss.append(float(eval_loss_l1.item()))
+                    eval_pnsr.append(float(psnr_torch(eval_result, eval_img1)))
+                    eval_loss_LPIPS_ = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
+                    eval_lpips.append(float(torch.mean(eval_loss_LPIPS_).item()))
 
 
             rows_to_append = [
                 {
                     'Epoch': epoch,
                     'Step': step, 
-                    'Min': min(epoch_loss),
-                    'Avg': smoothed_loss,
-                    'Max': max(epoch_loss),
-                    'PSNR': psnr,
-                    'LPIPS': lpips_val
+                    'Min': eval_loss_min,
+                    'Avg': eval_loss_avg,
+                    'Max': eval_loss_max,
+                    'PSNR': eval_psnr_mean,
+                    'LPIPS': eval_lpips_mean
                  }
             ]
             for row in rows_to_append:
