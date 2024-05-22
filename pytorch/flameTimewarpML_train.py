@@ -2210,7 +2210,7 @@ def main():
                  }
             ]
             for row in eval_rows_to_append:
-                print ('hello from append row to csv')
+                print ('\n\nhello from append row to csv')
                 print (f'{os.path.splitext(os.path.basename(trained_model_path))[0]}.eval.csv')
                 append_row_to_csv(f'{os.path.splitext(os.path.basename(trained_model_path))[0]}.eval.csv', row)
 
