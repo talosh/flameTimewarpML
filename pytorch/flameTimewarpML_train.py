@@ -2081,6 +2081,19 @@ def main():
                 shutil.copy(trained_model_path, backup_file)
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
 
+        data_time += time.time() - time_stamp
+        data_time_str = str(f'{data_time:.2f}')
+        train_time_str = str(f'{train_time:.2f}')
+
+        epoch_time = time.time() - start_timestamp
+        days = int(epoch_time // (24 * 3600))
+        hours = int((epoch_time % (24 * 3600)) // 3600)
+        minutes = int((epoch_time % 3600) // 60)
+
+        clear_lines(2)
+        print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
+        print(f'\r[Last 10K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
+
         if (args.eval > 0) and (step % args.eval) == 1:
             preview_folder = os.path.join(args.dataset_path, 'preview')
             eval_folder = os.path.join(
@@ -2190,19 +2203,6 @@ def main():
             ]
             for row in rows_to_append:
                 append_row_to_csv(f'{os.path.splitext(os.path.basename(trained_model_path))[0]}.eval.csv', row)
-
-        data_time += time.time() - time_stamp
-        data_time_str = str(f'{data_time:.2f}')
-        train_time_str = str(f'{train_time:.2f}')
-
-        epoch_time = time.time() - start_timestamp
-        days = int(epoch_time // (24 * 3600))
-        hours = int((epoch_time % (24 * 3600)) // 3600)
-        minutes = int((epoch_time % 3600) // 60)
-
-        clear_lines(2)
-        print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
-        print(f'\r[Last 10K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
 
         if ( idx + 1 ) == len(dataset):
             if os.path.isfile(trained_model_path):
