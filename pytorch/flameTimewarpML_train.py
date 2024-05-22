@@ -2152,6 +2152,10 @@ def main():
                     eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
                     eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
 
+                    print (f'eval_img0 shape: {eval_img0.shape}')
+                    print (f'eval_img1 shape: {eval_img1.shape}')
+                    print (f'eval_img2 shape: {eval_img2.shape}')
+
                     eval_img0_orig = img0.clone()
                     eval_img2_orig = img2.clone()
                     eval_img0 = normalize(img0)
