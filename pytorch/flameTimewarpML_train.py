@@ -2109,6 +2109,10 @@ def main():
             descriptions = list(dataset.initial_train_descriptions)
 
             for it in descriptions:
+                star_folder = os.path.dirname(description['start'])
+                gt_folder = os.path.dirname(description['gt'])
+                end_folder = os.path.dirname(description['end'])
+
                 pprint (it)
 
             if args.eval_samples > 0:
