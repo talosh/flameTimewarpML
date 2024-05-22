@@ -2155,8 +2155,8 @@ def main():
 
                     eval_img0_orig = eval_img0.clone()
                     eval_img2_orig = eval_img2.clone()
-                    eval_img0 = normalize(img0)
-                    eval_img2 = normalize(img2)
+                    eval_img0 = normalize(eval_img0)
+                    eval_img2 = normalize(eval_img2)
 
                     n, c, eh, ew = eval_img0.shape
                     ph = ((eh - 1) // 64 + 1) * 64
