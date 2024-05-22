@@ -2113,7 +2113,8 @@ def main():
                 gt_folder = os.path.dirname(description['gt'])
                 end_folder = os.path.dirname(description['end'])
 
-                pprint (it)
+                if len({star_folder, gt_folder, end_folder}) != 1:
+                    pprint (it)
 
             if args.eval_samples > 0:
                 rng = random.Random(args.eval_seed)
