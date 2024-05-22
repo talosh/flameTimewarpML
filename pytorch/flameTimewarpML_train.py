@@ -2168,6 +2168,15 @@ def main():
                     eval_loss_LPIPS_ = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
                     eval_lpips.append(float(torch.mean(eval_loss_LPIPS_).item()))
 
+                    try:
+                        write_exr(eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_incomng.exr'))
+                        write_exr(eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_outgoing.exr'))
+                        write_exr(eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_target.exr'))
+                        # write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
+                        write_exr(eval_result.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_output.exr'))
+                    except Exception as e:
+                        print (f'{e}\n\n')
+
 
             rows_to_append = [
                 {
@@ -2201,79 +2210,7 @@ def main():
                 backup_file = trained_model_path.replace('.pth', '.backup.pth')
                 shutil.copy(trained_model_path, backup_file)
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
-
-            if args.eval != -1:
-                psnr_list = []
-                lpips_list = []
-
-                try:
-                    for ev_item_index in range(args.eval):
-
-                        clear_lines(2)
-                        print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
-                        print (f'\rCalcualting PSNR on full-scale image {ev_item_index} of {args.eval}...')
-
-                        ev_item = dataset.frames_queue.get()
-                        ev_img0 = ev_item['start']
-                        ev_img1 = ev_item['gt']
-                        ev_img2 = ev_item['end']
-                        ev_ratio = ev_item['ratio']
-
-                        ev_img0 = torch.from_numpy(ev_img0.copy())
-                        ev_img1 = torch.from_numpy(ev_img1.copy())
-                        ev_img2 = torch.from_numpy(ev_img2.copy())
-                        ev_img0 = ev_img0.to(device = device, dtype = torch.float32)
-                        ev_img1 = ev_img1.to(device = device, dtype = torch.float32)
-                        ev_img2 = ev_img2.to(device = device, dtype = torch.float32)
-                        ev_img0 = ev_img0.permute(2, 0, 1).unsqueeze(0)
-                        ev_img1 = ev_img1.permute(2, 0, 1).unsqueeze(0)
-                        ev_img2 = ev_img2.permute(2, 0, 1).unsqueeze(0)
-                        evn_img0_orig = ev_img0
-                        evn_img1_orig = ev_img1
-                        evn_img2_orig = ev_img2
-                        evn_img0 = normalize(ev_img0)
-                        evn_img1 = normalize(ev_img1)
-                        evn_img2 = normalize(ev_img2)
-
-                        n, c, h, w = evn_img1.shape
-                        
-                        ph = ((h - 1) // 64 + 1) * 64
-                        pw = ((w - 1) // 64 + 1) * 64
-                        padding = (0, pw - w, 0, ph - h)
-                        evp_img0 = torch.nn.functional.pad(evn_img0, padding)
-                        evp_img1 = torch.nn.functional.pad(evn_img1, padding)
-                        evp_img2 = torch.nn.functional.pad(evn_img2, padding)
-
-                        with torch.no_grad():
-                            flownet.eval()
-                            _, _, merged = flownet(evp_img0, evp_img1, evp_img2, None, None, ev_ratio)
-                            evp_output = merged[3]
-                            psnr_list.append(psnr_torch(restore_normalized_values(evp_output)[:h, :w], evn_img1_orig))
-                            lpips_list.append(float(loss_fn_alex(restore_normalized_values(evp_output)[:h, :w] * 2 - 1, evn_img1_orig * 2 - 1).item()))
-
-                        preview_folder = os.path.join(args.dataset_path, 'preview')
-                        eval_folder = os.path.join(preview_folder, 'eval')
-                        if not os.path.isdir(eval_folder):
-                            try:
-                                os.makedirs(eval_folder)
-                            except Exception as e:
-                                print (e)
-
-                        evp_output = restore_normalized_values(evp_output)
-                        ev_output = evp_output[0].permute(1, 2, 0)[:h, :w]
-
-                        try:
-                            write_exr(evn_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
-                            write_exr(evn_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
-                            write_exr(evn_img1_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
-                            # write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
-                            write_exr(ev_output.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
-                        except Exception as e:
-                            print (f'{e}\n\n')      
-
-                except Exception as e:
-                    print (f'{e}\n\n')
-   
+               
             psnr = float(np.array(psnr_list).mean())
             lpips_val = float(np.array(lpips_list).mean())
 
