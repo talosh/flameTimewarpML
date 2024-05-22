@@ -2126,7 +2126,7 @@ def main():
                     if eval_pnsr:
                         eval_psnr_mean = float(np.array(eval_pnsr).mean())
                     else:
-                        eval_pnsr = -1
+                        eval_psnr_mean = -1
                     if eval_lpips:
                         eval_lpips_mean = float(np.array(eval_lpips).mean())
                     else:
