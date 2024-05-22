@@ -2103,6 +2103,9 @@ def main():
                 f'Step_{step:09}'
                 )
             
+            if not os.path.isdir(eval_folder):
+                os.makedirs(eval_folder)
+            
             descriptions = list(dataset.initial_train_descriptions)
             if args.eval_samples > 0:
                 rng = random.Random(args.eval_seed)
@@ -2132,7 +2135,7 @@ def main():
                     else:
                         eval_lpips_mean = -1
 
-                    clear_lines(3)
+                    clear_lines(2)
                     print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
                     print (f'\rEvaluating {ev_item_index} of {len(descriptions)}...')
                     print(f'\rMin: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f} LPIPS: {eval_lpips_mean:.4f} PNSR: {eval_psnr_mean:4f}')
