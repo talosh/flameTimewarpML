@@ -1266,6 +1266,7 @@ def append_row_to_csv(file_name, row):
     with open(file_name, 'a', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=row.keys())
         writer.writerow(row)
+    csvfile.close()
 
 def gaussian(window_size, sigma):
     from math import exp
