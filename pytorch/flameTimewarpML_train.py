@@ -511,9 +511,9 @@ def get_dataset(
 
             # Walk through all directories and files in the given path
             for root, dirs, files in os.walk(path):
-                if root.endswith('preview'):
+                if 'preview' in root:
                     continue
-                if root.endswith('eval'):
+                if 'eval' in root:
                     continue
                 for file in files:
                     if file.endswith('.exr'):
