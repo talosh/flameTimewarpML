@@ -2153,8 +2153,8 @@ def main():
                     eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
 
 
-                    eval_img0_orig = img0.clone()
-                    eval_img2_orig = img2.clone()
+                    eval_img0_orig = eval_img0.clone()
+                    eval_img2_orig = eval_img2.clone()
                     eval_img0 = normalize(img0)
                     eval_img2 = normalize(img2)
 
@@ -2166,9 +2166,9 @@ def main():
                     eval_img0 = torch.nn.functional.pad(eval_img0, padding)
                     eval_img2 = torch.nn.functional.pad(eval_img2, padding)
 
-                    print (f'eval_img0 shape: {eval_img0.shape}')
-                    print (f'eval_img1 shape: {eval_img1.shape}')
-                    print (f'eval_img2 shape: {eval_img2.shape}')
+                    # print (f'eval_img0 shape: {eval_img0.shape}')
+                    # print (f'eval_img1 shape: {eval_img1.shape}')
+                    # print (f'eval_img2 shape: {eval_img2.shape}')
 
                     flownet.eval()
                     flow_list, mask_list, merged = flownet(
