@@ -2209,11 +2209,8 @@ def main():
                     'LPIPS': eval_lpips_mean
                  }
             ]
-            for row in eval_rows_to_append:
-                print ('hello from append row to csv')
-                print (f'{os.path.splitext(os.path.basename(trained_model_path))[0]}.eval.csv')
-                print ('\n\n')
-                append_row_to_csv(f'{os.path.splitext(os.path.basename(trained_model_path))[0]}.eval.csv', row)
+            for eval_row in eval_rows_to_append:
+                append_row_to_csv(f'{os.path.splitext(os.path.basename(trained_model_path))[0]}.eval.csv', eval_row)
 
         if ( idx + 1 ) == len(dataset):
             if os.path.isfile(trained_model_path):
