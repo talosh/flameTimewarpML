@@ -2114,7 +2114,7 @@ def main():
                 end_folder = os.path.dirname(itm['end'])
 
                 if len({star_folder, gt_folder, end_folder}) != 1:
-                    pprint (it)
+                    pprint (itm)
 
             if args.eval_samples > 0:
                 rng = random.Random(args.eval_seed)
