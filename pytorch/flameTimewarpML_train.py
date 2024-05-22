@@ -2193,7 +2193,7 @@ def main():
                         write_exr(eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_outgoing.exr'))
                         write_exr(eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_target.exr'))
                         write_exr(eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_output.exr'))
-                        rgb_output_mask = eval_mask_list[3].repeat_interleave(3, dim=1)
+                        rgb_output_mask = eval_mask_list[3][:, :, :eh, :ew].repeat_interleave(3, dim=1)
                         write_exr(eval_mask_list[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_output_mask.exr'))
                     except Exception as e:
                         print (f'{e}\n\n')
