@@ -1499,7 +1499,7 @@ def main():
                 del write_data
             except:
             # except queue.Empty:
-                time.sleep(1e-8)
+                time.sleep(1e-2)
 
     def write_eval_images(write_eval_image_queue):
         while True:
@@ -1513,7 +1513,7 @@ def main():
                 del write_data
             except:
             # except queue.Empty:
-                time.sleep(1e-4)
+                time.sleep(1e-2)
 
     def write_model_state(write_model_state_queue):
         while True:
@@ -1525,7 +1525,7 @@ def main():
                     shutil.copy(trained_model_path, backup_file)
                 torch.save(current_state_dict, current_state_dict['trained_model_path'])
             except:
-                time.sleep(1e-4)
+                time.sleep(1e-2)
 
     read_thread = threading.Thread(target=read_images, args=(read_image_queue, dataset))
     read_thread.daemon = True
