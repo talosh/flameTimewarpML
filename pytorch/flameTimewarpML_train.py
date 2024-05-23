@@ -1994,7 +1994,19 @@ def main():
         loss.backward()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
         optimizer_flownet.step()
-        scheduler_flownet.step()
+
+        try:
+            scheduler_flownet.step()
+        except:
+            # if Onecycle is over due to variable number of steps per epoch
+            # fall back to Cosine
+            current_lr = float(optimizer_flownet.param_groups[0]["lr"])
+            scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optimizer_flownet, 
+                T_max=pulse_period, 
+                eta_min = current_lr - (( current_lr / 100 ) * pulse_dive)
+                )
+            scheduler_flownet.step()
 
         train_time = time.time() - time_stamp
         time_stamp = time.time()
@@ -2245,17 +2257,15 @@ def main():
 
         del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
 
-        if first_pass:
-            first_pass = False
-            if args.onecycle != -1:
+        if args.onecycle != -1:
+            if first_pass:
+                first_pass = False
                 train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
                     optimizer_flownet,
                     max_lr=args.lr, 
                     steps_per_epoch=step, 
                     epochs=args.onecycle
                     )
-                # print (f'setting OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.onecycle}')
-
         if epoch == args.epochs:
             sys.exit()
 
