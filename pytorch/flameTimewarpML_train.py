@@ -2193,6 +2193,20 @@ def main():
                     eval_loss_LPIPS_ = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
                     eval_lpips.append(float(torch.mean(eval_loss_LPIPS_).item()))
 
+                    eval_rgb_output_mask = eval_mask_list[3][:, :, :eh, :ew].repeat_interleave(3, dim=1)
+                    write_image_queue.put(
+                        {
+                            'preview_folder': eval_folder,
+                            'sample_source1': eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                            'sample_source2': eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                            'sample_target': eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                            'sample_output': eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                            'sample_output_mask': eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy()
+                        }
+                    )
+
+                    '''
+
                     try:
                         write_exr(eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_incomng.exr'))
                         write_exr(eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_outgoing.exr'))
@@ -2202,6 +2216,7 @@ def main():
                         write_exr(eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_output_mask.exr'))
                     except Exception as e:
                         print (f'{e}\n\n')
+                    '''
 
             eval_rows_to_append = [
                 {
