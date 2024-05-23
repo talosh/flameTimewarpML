@@ -418,7 +418,7 @@ def get_dataset(
         def __init__(   
                 self, 
                 data_root, 
-                batch_size = 8, 
+                batch_size = 4, 
                 device = None, 
                 frame_size=448, 
                 max_window=5,
@@ -467,7 +467,7 @@ def get_dataset(
             self.w = frame_size
             # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
-            self.frames_queue = queue.Queue(maxsize=8)
+            self.frames_queue = queue.Queue(maxsize=32)
             self.frame_read_thread = threading.Thread(target=self.read_frames_thread)
             self.frame_read_thread.daemon = True
             self.frame_read_thread.start()
