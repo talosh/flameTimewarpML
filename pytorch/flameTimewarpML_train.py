@@ -1498,13 +1498,13 @@ def main():
                 del write_data
             except:
             # except queue.Empty:
-                time.sleep(0.1)
+                time.sleep(1e-8)
 
     read_thread = threading.Thread(target=read_images, args=(read_image_queue, dataset))
     read_thread.daemon = True
     read_thread.start()
 
-    write_image_queue = queue.Queue(maxsize=512)
+    write_image_queue = queue.Queue(maxsize=48)
     write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
     write_thread.daemon = True
     write_thread.start()
