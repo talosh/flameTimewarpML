@@ -10,6 +10,7 @@ import queue
 import threading
 import time
 import platform
+from copy import deepcopy
 
 from pprint import pprint
 
@@ -1514,6 +1515,18 @@ def main():
             # except queue.Empty:
                 time.sleep(1e-4)
 
+    def write_model_state(write_model_state_queue):
+        while True:
+            try:
+                current_state_dict = write_model_state_queue.get_nowait()
+                trained_model_path = current_state_dict['trained_model_path']
+                if os.path.isfile(trained_model_path):
+                    backup_file = trained_model_path.replace('.pth', '.backup.pth')
+                    shutil.copy(trained_model_path, backup_file)
+                torch.save(current_state_dict, current_state_dict['trained_model_path'])
+            except:
+                time.sleep(1e-4)
+
     read_thread = threading.Thread(target=read_images, args=(read_image_queue, dataset))
     read_thread.daemon = True
     read_thread.start()
@@ -1527,6 +1540,11 @@ def main():
     write_eval_thread = threading.Thread(target=write_eval_images, args=(write_eval_image_queue, ))
     write_eval_thread.daemon = True
     write_eval_thread.start()
+
+    write_model_state_queue = queue.Queue(maxsize=2)
+    write_model_state_thread = threading.Thread(target=write_model_state, args=(write_model_state_queue, ))
+    write_model_state_thread.daemon = True
+    write_model_state_thread.start()
 
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
@@ -2075,10 +2093,7 @@ def main():
             preview_index = preview_index + 1 if preview_index < 9 else 0
 
         if step % args.save == 1:
-            if os.path.isfile(trained_model_path):
-                backup_file = trained_model_path.replace('.pth', '.backup.pth')
-                shutil.copy(trained_model_path, backup_file)
-            torch.save(current_state_dict, current_state_dict['trained_model_path'])
+            write_model_state_queue.put(deepcopy(current_state_dict))
 
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
@@ -2238,10 +2253,11 @@ def main():
                 append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.eval.csv', eval_row)
 
         if ( idx + 1 ) == len(dataset):
-            if os.path.isfile(trained_model_path):
-                backup_file = trained_model_path.replace('.pth', '.backup.pth')
-                shutil.copy(trained_model_path, backup_file)
-            torch.save(current_state_dict, current_state_dict['trained_model_path'])
+            write_model_state_queue.put(deepcopy(current_state_dict))
+            # if os.path.isfile(trained_model_path):
+            #    backup_file = trained_model_path.replace('.pth', '.backup.pth')
+            #    shutil.copy(trained_model_path, backup_file)
+            # torch.save(current_state_dict, current_state_dict['trained_model_path'])
 
             psnr = float(np.array(psnr_list).mean())
             lpips_val = float(np.array(lpips_list).mean())
