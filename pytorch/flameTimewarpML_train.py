@@ -2260,7 +2260,7 @@ def main():
         if args.onecycle != -1:
             if first_pass:
                 first_pass = False
-                train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
+                scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
                     optimizer_flownet,
                     max_lr=args.lr, 
                     steps_per_epoch=step, 
