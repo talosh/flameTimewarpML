@@ -1518,7 +1518,7 @@ def main():
     read_thread.daemon = True
     read_thread.start()
 
-    write_image_queue = queue.Queue(maxsize=48)
+    write_image_queue = queue.Queue(maxsize=16)
     write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
     write_thread.daemon = True
     write_thread.start()
