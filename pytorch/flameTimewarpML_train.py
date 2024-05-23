@@ -1522,7 +1522,7 @@ def main():
     write_thread.daemon = True
     write_thread.start()
     
-    write_eval_image_queue = queue.Queue(maxsize=256)
+    write_eval_image_queue = queue.Queue(maxsize=384)
     write_eval_thread = threading.Thread(target=write_eval_images, args=(write_eval_image_queue, ))
     write_eval_thread.daemon = True
     write_eval_thread.start()
