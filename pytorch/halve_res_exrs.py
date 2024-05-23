@@ -440,6 +440,7 @@ def resize_image(tensor, new_h, new_w):
     return resized_tensor
 
 def halve(exr_file_path):
+    device = torch.device('cuda')
     exr_data = read_openexr_file(exr_file_path)
     h = exr_data['shape'][0]
     w = exr_data['shape'][1]
