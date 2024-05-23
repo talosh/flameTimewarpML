@@ -2088,7 +2088,7 @@ def main():
         print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
         print(f'\r[Last 10K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
 
-        if (args.eval > 0) and (step % args.eval) == 1:
+        if ((args.eval > 0) and (step % args.eval) == 1) or epoch == args.epochs:
             preview_folder = os.path.join(args.dataset_path, 'preview')
             eval_folder = os.path.join(
                 preview_folder,
@@ -2185,20 +2185,25 @@ def main():
 
                     eval_rgb_output_mask = eval_mask_list[3][:, :, :eh, :ew].repeat_interleave(3, dim=1)
 
-                    '''
-                    write_image_queue.put(
+                    # '''
+                    write_eval_image_queue.put(
                         {
                             'preview_folder': eval_folder,
                             'sample_source1': eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                            'sample_source1_name': f'{ev_item_index:08}_incomng.exr',
                             'sample_source2': eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                            'sample_source2_name': f'{ev_item_index:08}_outgoing.exr',
                             'sample_target': eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                            'sample_target_name': f'{ev_item_index:08}_target.exr',
                             'sample_output': eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                            'sample_output_mask': eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy()
+                            'sample_output_name': f'{ev_item_index:08}_output.exr',
+                            'sample_output_mask': eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                            'sample_output_mask_name': f'{ev_item_index:08}_output_mask.exr'
                         }
                     )
-                    '''
-
                     # '''
+
+                    '''
 
                     try:
                         write_exr(eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_incomng.exr'))
@@ -2209,7 +2214,7 @@ def main():
                         write_exr(eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_output_mask.exr'))
                     except Exception as e:
                         print (f'{e}\n\n')
-                    # '''
+                    '''
 
             eval_rows_to_append = [
                 {
