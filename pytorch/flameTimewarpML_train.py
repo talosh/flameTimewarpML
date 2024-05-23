@@ -2281,7 +2281,7 @@ def main():
                         total_steps= step * args.onecycle, 
                         )
                     optimizer_flownet.load_state_dict(optimizer_state_dict)
-                print (f'setting OneCycleLR after first cycle with max_lr={args.lr}, total_steps={step * args.onecycle}\n\n')
+                print (f'setting OneCycleLR after first cycle with max_lr={args.lr}, steps={step}\n\n')
 
             steps_loss = []
             epoch_loss = []
