@@ -1499,6 +1499,20 @@ def main():
             # except queue.Empty:
                 time.sleep(1e-8)
 
+    def write_eval_images(write_eval_image_queue):
+        while True:
+            try:
+                write_data = write_eval_image_queue.get_nowait()
+                write_exr(write_data['sample_source1'], os.path.join(write_data['preview_folder'], write_data['sample_source1_name']))
+                write_exr(write_data['sample_source2'], os.path.join(write_data['preview_folder'], write_data['sample_source2_name']))
+                write_exr(write_data['sample_target'], os.path.join(write_data['preview_folder'], write_data['sample_target_name']))
+                write_exr(write_data['sample_output'], os.path.join(write_data['preview_folder'], write_data['sample_output_name']))
+                write_exr(write_data['sample_output_mask'], os.path.join(write_data['preview_folder'], write_data['sample_output_mask_name']))
+                del write_data
+            except:
+            # except queue.Empty:
+                time.sleep(1e-4)
+
     read_thread = threading.Thread(target=read_images, args=(read_image_queue, dataset))
     read_thread.daemon = True
     read_thread.start()
@@ -1508,6 +1522,11 @@ def main():
     write_thread.daemon = True
     write_thread.start()
     
+    write_eval_image_queue = queue.Queue(maxsize=256)
+    write_eval_thread = threading.Thread(target=write_eval_images, args=(write_eval_image_queue, ))
+    write_eval_thread.daemon = True
+    write_eval_thread.start()
+
     pulse_dive = args.pulse_amplitude
     pulse_period = args.pulse
     lr = args.lr
