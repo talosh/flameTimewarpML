@@ -1390,7 +1390,6 @@ def main():
     parser.add_argument('--type', type=int, default=1, help='Model type (int): 1 - MultiresNet, 2 - MultiresNet 4 (default: 1)')
     parser.add_argument('--pulse', type=float, default=9999, help='Period in steps to pulse learning rate (float) (default: 10K)')
     parser.add_argument('--pulse_amplitude', type=float, default=25, help='Learning rate pulse amplitude (percentage) (default: 25)')
-    parser.add_argument('--onecyclelr', action='store_true', default=False, help='Use OneCycleLR strategy. If number of epochs is not set cycle is set to single epoch.')
     parser.add_argument('--onecycle', type=int, default=-1, help='Train one cycle for N epochs (default: None)')
     parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
     parser.add_argument('--model', type=str, default=None, help='Model name (optional)')
@@ -1534,23 +1533,6 @@ def main():
     # optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
 
     train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
-
-    if args.onecyclelr:
-        if args.epochs == -1:
-            train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
-                optimizer_flownet, 
-                max_lr=args.lr, 
-                total_steps=len(dataset)*dataset.repeat_count
-                )
-            print (f'setting repeating OneCycleLR with max_lr={args.lr}, total_steps={len(dataset)*dataset.repeat_count}')
-        else:
-            train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
-                optimizer_flownet, 
-                max_lr=args.lr, 
-                steps_per_epoch=len(dataset)*dataset.repeat_count, 
-                epochs=args.epochs
-                )
-            print (f'setting repeating OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.epochs}')
 
     if args.onecycle != -1:
         train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
@@ -2168,10 +2150,6 @@ def main():
                     
                     eval_img0 = torch.nn.functional.pad(eval_img0, padding)
                     eval_img2 = torch.nn.functional.pad(eval_img2, padding)
-
-                    # print (f'eval_img0 shape: {eval_img0.shape}')
-                    # print (f'eval_img1 shape: {eval_img1.shape}')
-                    # print (f'eval_img2 shape: {eval_img2.shape}')
 
                     try:
                         flownet.eval()
