@@ -1542,6 +1542,7 @@ def main():
             epochs=args.onecycle
             )
         print (f'setting OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.onecycle}')
+        args.epochs = args.onecycle
 
     # train_scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, mode='min', factor=0.1, patience=2)
     # lambda_function = lambda epoch: 1
@@ -1553,6 +1554,7 @@ def main():
     loaded_step = 0
     current_epoch = 0
     preview_index = 0
+    first_pass = True
 
     steps_loss = []
     epoch_loss = []
@@ -1959,25 +1961,6 @@ def main():
 
         loss = 0.24 * loss_x8 + 0.24 * loss_x4 + 0.24 * loss_x2 + 0.28 * loss_x1
         '''
-
-        '''
-        x8_output = torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
-        x8_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
-        loss_x8 = criterion_l1(x8_output, x8_orig)
-
-        x4_output = torch.nn.functional.interpolate(merged[1], scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
-        x4_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
-        loss_x4 = criterion_l1(x4_output, x4_orig)
-
-        x2_output = torch.nn.functional.interpolate(merged[2], scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
-        x2_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
-        loss_x2 = criterion_l1(x2_output, x2_orig)
-
-        x1_output = merged[3]
-        x1_orig = img1
-        loss_x1 = criterion_l1(x1_output, x1_orig)
-        loss = 0.04 * loss_x8 + 0.125 * loss_x4 + 0.25 * loss_x2 + 0.585 * loss_x1
-        '''
         
         x1_output = merged[3]
         x1_orig = img1
@@ -2008,7 +1991,6 @@ def main():
         smoothed_loss = float(np.mean(moving_average(epoch_loss, 9)))
         lpips_val = float(np.array(lpips_list).mean())
 
-
         loss.backward()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
         optimizer_flownet.step()
@@ -2030,7 +2012,6 @@ def main():
                 'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
                 'trained_model_path': trained_model_path
             }
-
 
         if step % args.preview == 1:
             rgb_source1 = img0_orig
@@ -2263,14 +2244,20 @@ def main():
         step = step + 1
 
         del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
-        # import gc
-        # gc.collect()
-        # continue
+
+        if first_pass:
+            first_pass = False
+            if args.onecycle != -1:
+                train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
+                    optimizer_flownet,
+                    max_lr=args.lr, 
+                    steps_per_epoch=step, 
+                    epochs=args.onecycle
+                    )
+                # print (f'setting OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.onecycle}')
 
         if epoch == args.epochs:
             sys.exit()
-
-
 
 if __name__ == "__main__":
     main()
