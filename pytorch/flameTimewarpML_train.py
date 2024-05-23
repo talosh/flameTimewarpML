@@ -1402,7 +1402,7 @@ def main():
     parser.add_argument('--eval', type=int, dest='eval', default=-1, help='Evaluate after N steps')
     parser.add_argument('--eval_samples', type=int, dest='eval_samples', default=-1, help='Evaluate N random training samples')
     parser.add_argument('--eval_seed', type=int, dest='eval_seed', default=1, help='Random seed to select samples if --eval_samples set')
-    parser.add_argument('--eval_write_buffer', type=int, dest='eval_write_buffer', default=8, help='Write buffer size for evaluated images')
+    parser.add_argument('--eval_buffer', type=int, dest='eval_buffer', default=8, help='Write buffer size for evaluated images')
 
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
@@ -1523,7 +1523,7 @@ def main():
     write_thread.daemon = True
     write_thread.start()
     
-    write_eval_image_queue = queue.Queue(maxsize=args.eval_write_buffer)
+    write_eval_image_queue = queue.Queue(maxsize=args.eval_buffer)
     write_eval_thread = threading.Thread(target=write_eval_images, args=(write_eval_image_queue, ))
     write_eval_thread.daemon = True
     write_eval_thread.start()
@@ -2217,7 +2217,7 @@ def main():
                         print (f'{e}\n\n')
                     '''
             flownet.train()
-            
+
             eval_rows_to_append = [
                 {
                     'Epoch': epoch,
