@@ -108,8 +108,8 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
-                    torch.nn.Conv2d(c, 4*6, 3, 1, 1, padding_mode = 'reflect'),
+                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
+                    torch.nn.Conv2d(c//2, 4*6, 3, 1, 1, padding_mode = 'reflect'),
                     torch.nn.PixelShuffle(2)
                 )
 
