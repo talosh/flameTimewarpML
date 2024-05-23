@@ -1467,7 +1467,7 @@ def main():
     if frame_size != args.frame_size:
         print (f'Frame size should be divisible by 64 for training. Using {frame_size}')
 
-    read_image_queue = queue.Queue(maxsize=8)
+    read_image_queue = queue.Queue(maxsize=16)
     dataset = get_dataset(
         args.dataset_path, 
         batch_size=args.batch_size, 
