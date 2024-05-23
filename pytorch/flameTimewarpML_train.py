@@ -2110,7 +2110,8 @@ def main():
             eval_loss = []
             eval_pnsr = []
             eval_lpips = []
-
+            
+            flownet.eval()
             with torch.no_grad():
                 for ev_item_index, description in enumerate(descriptions):
                     
@@ -2165,7 +2166,6 @@ def main():
                     eval_img2 = torch.nn.functional.pad(eval_img2, padding)
 
                     try:
-                        flownet.eval()
                         eval_flow_list, eval_mask_list, eval_merged = flownet(
                             eval_img0, 
                             eval_img2, 
@@ -2216,7 +2216,8 @@ def main():
                     except Exception as e:
                         print (f'{e}\n\n')
                     '''
-
+            flownet.train()
+            
             eval_rows_to_append = [
                 {
                     'Epoch': epoch,
