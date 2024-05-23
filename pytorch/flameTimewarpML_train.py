@@ -2013,20 +2013,24 @@ def main():
 
         loss.backward()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
+
         optimizer_flownet.step()
 
         try:
             scheduler_flownet.step()
-        except:
+        except Exception as e:
             # if Onecycle is over due to variable number of steps per epoch
             # fall back to Cosine
+
+            print (f'switching to CosineAnnealingLR scheduler:')
+            print (f'{e}\n\n')
+
             current_lr = float(optimizer_flownet.param_groups[0]["lr"])
             scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(
                 optimizer_flownet, 
                 T_max=pulse_period, 
                 eta_min = current_lr - (( current_lr / 100 ) * pulse_dive)
                 )
-            scheduler_flownet.step()
 
         train_time = time.time() - time_stamp
         time_stamp = time.time()
