@@ -2255,9 +2255,11 @@ def main():
             for eval_row in eval_rows_to_append:
                 append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.eval.csv', eval_row)
 
-            if not args.eval_keep_all:
-                if prev_eval_folder:
-                    os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')
+            # if not args.eval_keep_all:
+            print (f'prev folder: {prev_eval_folder}\n\n')
+            if prev_eval_folder:
+                print (f'exec "rm -rf {os.path.abspath(prev_eval_folder)}"\n\n')
+                os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')
             prev_eval_folder = eval_folder
 
         if ( idx + 1 ) == len(dataset):
