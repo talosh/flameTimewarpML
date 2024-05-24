@@ -2121,7 +2121,7 @@ def main():
                 )
             if not args.eval_keep_all:
                 if prev_eval_folder:
-                    os.system(f'rm -rf {prev_eval_folder}')
+                    os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')
 
             if not os.path.isdir(eval_folder):
                 os.makedirs(eval_folder)
