@@ -2,6 +2,7 @@
 # SiLU in Encoder
 # Warps moved to flownet forward
 # Replaced ResBlocks with CBAM blocks
+# Replaced 7x7 conv with 4 3x3 conv and 1x1 conv
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -113,7 +114,7 @@ class Model:
             def __init__(self, kernel_size=3):
                 super(SpatialAttention, self).__init__()
                 self.conv1 = torch.nn.Conv2d(2, 2, kernel_size, padding=1, bias=False, padding_mode='reflect')
-                self.conv2 = torch.nn.Conv2d(2, 1, kernel_size, padding=1, bias=False, padding_mode='reflect')
+                self.conv2 = torch.nn.Conv2d(2, 1, 1, padding=1, bias=False, padding_mode='reflect')
                 self.sigmoid = torch.nn.Sigmoid()
 
             def forward(self, x):
@@ -290,15 +291,15 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v002g',
-            'file': 'flownet4_v002g.py',
+            'name': 'Flownet4_v002h',
+            'file': 'flownet4_v002h.py',
             'ratio_support': True
         }
         return info
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v002g'
+        return 'TWML_Flownet_v002h'
 
     @staticmethod
     def input_channels(model_state_dict):
