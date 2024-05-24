@@ -1404,6 +1404,7 @@ def main():
     parser.add_argument('--eval_samples', type=int, dest='eval_samples', default=-1, help='Evaluate N random training samples')
     parser.add_argument('--eval_seed', type=int, dest='eval_seed', default=1, help='Random seed to select samples if --eval_samples set')
     parser.add_argument('--eval_buffer', type=int, dest='eval_buffer', default=8, help='Write buffer size for evaluated images')
+    parser.add_argument('--eval_save_each', action='store_true', dest='eval_save_each', default=False, help='Save eval results for each eval step separately')
 
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
@@ -2110,13 +2111,18 @@ def main():
 
         if ((args.eval > 0) and (step % args.eval) == 1) or epoch == args.epochs:
             preview_folder = os.path.join(args.dataset_path, 'preview')
+
+            prev_eval_folder = None
             eval_folder = os.path.join(
                 preview_folder,
                 'eval',
                 os.path.splitext(os.path.basename(trained_model_path))[0],
                 f'Step_{step:09}'
                 )
-            
+            if not args.eval_save_each:
+                if prev_eval_folder:
+                    os.system(f'rm -rf {prev_eval_folder}')
+
             if not os.path.isdir(eval_folder):
                 os.makedirs(eval_folder)
             
@@ -2251,6 +2257,8 @@ def main():
 
             for eval_row in eval_rows_to_append:
                 append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.eval.csv', eval_row)
+
+            prev_eval_folder = eval_folder
 
         if ( idx + 1 ) == len(dataset):
             write_model_state_queue.put(deepcopy(current_state_dict))
