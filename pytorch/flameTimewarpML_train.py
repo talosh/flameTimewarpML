@@ -2112,7 +2112,10 @@ def main():
         if ((args.eval > 0) and (step % args.eval) == 1) or epoch == args.epochs:
             preview_folder = os.path.join(args.dataset_path, 'preview')
 
-            prev_eval_folder = None
+            try:
+                prev_eval_folder
+            except:
+                prev_eval_folder = None
             eval_folder = os.path.join(
                 preview_folder,
                 'eval',
@@ -2255,11 +2258,11 @@ def main():
             for eval_row in eval_rows_to_append:
                 append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.eval.csv', eval_row)
 
-            # if not args.eval_keep_all:
-            print (f'prev folder: {prev_eval_folder}\n\n')
-            if prev_eval_folder:
-                print (f'exec "rm -rf {os.path.abspath(prev_eval_folder)}"\n\n')
-                os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')
+            if not args.eval_keep_all:
+            # print (f'prev folder: {prev_eval_folder}\n\n')
+                if prev_eval_folder:
+                    # print (f'exec "rm -rf {os.path.abspath(prev_eval_folder)}"\n\n')
+                    os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')
             prev_eval_folder = eval_folder
 
         if ( idx + 1 ) == len(dataset):
