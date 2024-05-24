@@ -1,7 +1,7 @@
 # Orig v001 changed to v002 main flow and signatures
 # SiLU in Encoder
 # Warps moved to flownet forward
-# Increased filters in blocks
+# Replaced ResBlocks with CBAM blocks
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -203,10 +203,10 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = Flownet(7+16, c=224)
-                self.block1 = Flownet(8+4+16, c=192)
-                self.block2 = Flownet(8+4+16, c=128)
-                self.block3 = Flownet(8+4+16, c=96)
+                self.block0 = Flownet(7+16, c=192)
+                self.block1 = Flownet(8+4+16, c=128)
+                self.block2 = Flownet(8+4+16, c=96)
+                self.block3 = Flownet(8+4+16, c=64)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
@@ -284,15 +284,15 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v002e',
-            'file': 'flownet4_v002e.py',
+            'name': 'Flownet4_v002g',
+            'file': 'flownet4_v002g.py',
             'ratio_support': True
         }
         return info
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v002e'
+        return 'TWML_Flownet_v002g'
 
     @staticmethod
     def input_channels(model_state_dict):
