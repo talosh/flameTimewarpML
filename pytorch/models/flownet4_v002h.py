@@ -104,6 +104,11 @@ class Model:
                 
                 self.sigmoid = torch.nn.Sigmoid()
 
+                torch.nn.init.kaiming_normal_(self.fc1.weight, mode='fan_in', nonlinearity='relu')
+                self.fc1.weight.data *= 1e-2
+                torch.nn.init.kaiming_normal_(self.fc2.weight, mode='fan_in', nonlinearity='relu')
+                self.fc2.weight.data *= 1e-2
+
             def forward(self, x):
                 avg_out = self.fc2(self.relu1(self.fc1(self.avg_pool(x))))
                 max_out = self.fc2(self.relu1(self.fc1(self.max_pool(x))))
@@ -116,6 +121,11 @@ class Model:
                 self.conv1 = torch.nn.Conv2d(2, 2, kernel_size, padding=1, bias=False, padding_mode='reflect')
                 self.conv2 = torch.nn.Conv2d(2, 1, 1, padding=1, bias=False, padding_mode='reflect')
                 self.sigmoid = torch.nn.Sigmoid()
+
+                torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
+                self.conv1.weight.data *= 1e-2
+                torch.nn.init.kaiming_normal_(self.conv2.weight, mode='fan_in', nonlinearity='relu')
+                self.conv2.weight.data *= 1e-2
 
             def forward(self, x):
                 avg_out = torch.mean(x, dim=1, keepdim=True)
@@ -138,13 +148,21 @@ class Model:
                 
                 self.ca = ChannelAttention(out_channels, reduction)
                 self.sa = SpatialAttention()
+
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)    
                 
                 self.downsample = downsample
                 if stride != 1 or in_channels != out_channels:
                     self.downsample = torch.nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=True, padding_mode='reflect')
 
+                torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
+                self.conv1.weight.data *= 1e-2
+                if self.conv1.bias is not None:
+                    torch.nn.init.constant_(self.conv1.bias, 0)
+
+
             def forward(self, x):
-                residual = x if self.downsample is None else self.downsample(x)
+                # residual = x if self.downsample is None else self.downsample(x)
                 
                 out = self.conv1(x)
                 out = self.relu(out)
@@ -154,8 +172,8 @@ class Model:
                 out = self.ca(x) * out
                 out = self.sa(x) * out
                 
-                out += residual
-                out = self.relu(out)
+                # out += residual
+                out = self.relu(out * self.beta + x)
                 
                 return out
 
