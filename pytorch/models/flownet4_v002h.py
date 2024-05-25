@@ -3,7 +3,7 @@
 # Warps moved to flownet forward
 # Replaced ResBlocks with CBAM blocks
 # Replaced 7x7 conv with 4 3x3 conv and 1x1 conv
-# Different layout in CBAM block
+# Resblock with Spatial awareness only
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -150,8 +150,7 @@ class Model:
                 self.ca = ChannelAttention(out_channels, reduction)
                 self.sa = SpatialAttention()
 
-                self.beta1 = torch.nn.Parameter(torch.ones((1, in_channels, 1, 1)), requires_grad=True)    
-                self.beta2 = torch.nn.Parameter(torch.ones((1, in_channels, 1, 1)), requires_grad=True)    
+                self.beta = torch.nn.Parameter(torch.ones((1, in_channels, 1, 1)), requires_grad=True)    
 
                 self.downsample = downsample
                 if stride != 1 or in_channels != out_channels:
@@ -166,8 +165,8 @@ class Model:
             def forward(self, x):
                 # residual = x if self.downsample is None else self.downsample(x)
                 
-                ca_out =  self.relu(self.conv1(x * self.ca(x)) * self.beta1 + x)
-                sa_out =  self.relu(self.conv2(ca_out * self.sa(ca_out)) * self.beta2 + x)
+                # ca_out =  self.relu(self.conv1(x * self.ca(x)) * self.beta1 + x)
+                sa_out =  self.relu(self.conv2(x * self.sa(x)) * self.beta + x)
 
                 return sa_out
 
