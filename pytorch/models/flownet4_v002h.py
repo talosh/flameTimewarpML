@@ -150,8 +150,9 @@ class Model:
                 self.ca = ChannelAttention(out_channels, reduction)
                 self.sa = SpatialAttention()
 
-                self.beta = torch.nn.Parameter(torch.ones((1, in_channels, 1, 1)), requires_grad=True)    
-                
+                self.beta1 = torch.nn.Parameter(torch.ones((1, in_channels, 1, 1)), requires_grad=True)    
+                self.beta2 = torch.nn.Parameter(torch.ones((1, in_channels, 1, 1)), requires_grad=True)    
+
                 self.downsample = downsample
                 if stride != 1 or in_channels != out_channels:
                     self.downsample = torch.nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=True, padding_mode='reflect')
@@ -165,14 +166,10 @@ class Model:
             def forward(self, x):
                 # residual = x if self.downsample is None else self.downsample(x)
                 
-                xatt =  x * self.ca(x)
-                xatt = xatt * self.sa(x) 
+                ca_out =  self.relu(self.conv1(x * self.ca(x)) * self.beta1 + x)
+                sa_out =  self.relu(self.conv2(ca_out * self.sa(ca_out)) * self.beta2 + x)
 
-                # out = self.relu(out)                
-                # out += residual
-                out = self.relu(self.conv1(xatt) * self.beta + x)
-                
-                return out
+                return sa_out
 
 
         class Flownet(Module):
