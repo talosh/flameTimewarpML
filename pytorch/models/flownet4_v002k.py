@@ -2,8 +2,7 @@
 # SiLU in Encoder
 # Warps moved to flownet forward
 # Replaced ResBlocks with CBAM blocks
-# Resblock with Spatial awareness only
-# Spatial kernel set to 5
+# Resblock with Channel awareness halved
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -291,15 +290,15 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v002h',
-            'file': 'flownet4_v002h.py',
+            'name': 'Flownet4_v002k',
+            'file': 'flownet4_v002k.py',
             'ratio_support': True
         }
         return info
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v002h'
+        return 'TWML_Flownet_v002k'
 
     @staticmethod
     def input_channels(model_state_dict):
