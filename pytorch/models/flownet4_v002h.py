@@ -3,6 +3,7 @@
 # Warps moved to flownet forward
 # Replaced ResBlocks with CBAM blocks
 # Resblock with Spatial awareness only
+# Spatial kernel set to 5
 
 class Model:
     def __init__(self, status = dict(), torch = None):
