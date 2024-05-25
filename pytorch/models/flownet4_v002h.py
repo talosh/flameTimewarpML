@@ -166,7 +166,7 @@ class Model:
                 # residual = x if self.downsample is None else self.downsample(x)
                 
                 xatt = self.ca(x) * x
-                xatt = self.sa(xatt) * xatt
+                xatt = self.sa(x) * xatt
 
                 # out = self.relu(out)                
                 # out += residual
