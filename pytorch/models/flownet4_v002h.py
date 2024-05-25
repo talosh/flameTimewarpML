@@ -149,7 +149,7 @@ class Model:
                 self.ca = ChannelAttention(out_channels, reduction)
                 self.sa = SpatialAttention()
 
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)    
+                self.beta = torch.nn.Parameter(torch.ones((1, in_channels, 1, 1)), requires_grad=True)    
                 
                 self.downsample = downsample
                 if stride != 1 or in_channels != out_channels:
