@@ -3,6 +3,7 @@
 # Warps moved to flownet forward
 # Replaced ResBlocks with CBAM blocks
 # Replaced 7x7 conv with 4 3x3 conv and 1x1 conv
+# Different layout in CBAM block
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -165,7 +166,7 @@ class Model:
                 # residual = x if self.downsample is None else self.downsample(x)
                 
                 xatt = self.ca(x) * x
-                xatt = self.sa(x) * x
+                xatt = self.sa(xatt) * xatt
 
                 # out = self.relu(out)                
                 # out += residual
