@@ -2,7 +2,6 @@
 # SiLU in Encoder
 # Warps moved to flownet forward
 # Replaced ResBlocks with CBAM blocks
-# Replaced 7x7 conv with 4 3x3 conv and 1x1 conv
 # Resblock with Spatial awareness only
 
 class Model:
@@ -117,27 +116,16 @@ class Model:
                 return self.sigmoid(out)
 
         class SpatialAttention(torch.nn.Module):
-            def __init__(self, kernel_size=3):
+            def __init__(self, kernel_size=9):
                 super(SpatialAttention, self).__init__()
-                self.conv1 = torch.nn.Conv2d(2, 2, kernel_size, padding=1, bias=False, padding_mode='reflect')
-                self.conv2 = torch.nn.Conv2d(2, 1, 1, padding='same', bias=False, padding_mode='reflect')
+                self.conv1 = torch.nn.Conv2d(2, 1, kernel_size, padding=(kernel_size-1)//2, bias=False, padding_mode='reflect')
                 self.sigmoid = torch.nn.Sigmoid()
-
-                torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
-                self.conv1.weight.data *= 1e-2
-                torch.nn.init.kaiming_normal_(self.conv2.weight, mode='fan_in', nonlinearity='relu')
-                self.conv2.weight.data *= 1e-2
 
             def forward(self, x):
                 avg_out = torch.mean(x, dim=1, keepdim=True)
                 max_out, _ = torch.max(x, dim=1, keepdim=True)
                 x = torch.cat([avg_out, max_out], dim=1)
                 x = self.conv1(x)
-                x = self.conv1(x)
-                x = self.conv1(x)
-                x = self.conv1(x)
-                x = self.conv2(x)
-
                 return self.sigmoid(x)
 
         class CBAMResBlock(torch.nn.Module):
