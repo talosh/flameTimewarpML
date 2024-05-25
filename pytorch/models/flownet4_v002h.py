@@ -149,10 +149,10 @@ class Model:
                 out = self.conv1(x)
                 out = self.relu(out)
                 
-                out = self.conv2(out)
+                # out = self.conv2(out)
                 
-                out = self.ca(out) * out
-                out = self.sa(out) * out
+                out = self.ca(x) * out
+                out = self.sa(x) * out
                 
                 out += residual
                 out = self.relu(out)
