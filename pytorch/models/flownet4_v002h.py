@@ -165,8 +165,8 @@ class Model:
             def forward(self, x):
                 # residual = x if self.downsample is None else self.downsample(x)
                 
-                xatt = self.ca(x) * x
-                xatt = self.sa(x) * xatt
+                xatt =  x * self.ca(x)
+                xatt = xatt * self.sa(x) 
 
                 # out = self.relu(out)                
                 # out += residual
