@@ -116,7 +116,7 @@ class Model:
                 return self.sigmoid(out)
 
         class SpatialAttention(torch.nn.Module):
-            def __init__(self, kernel_size=9):
+            def __init__(self, kernel_size=5):
                 super(SpatialAttention, self).__init__()
                 self.conv1 = torch.nn.Conv2d(2, 1, kernel_size, padding=(kernel_size-1)//2, bias=False, padding_mode='reflect')
                 self.sigmoid = torch.nn.Sigmoid()
