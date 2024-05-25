@@ -119,7 +119,7 @@ class Model:
             def __init__(self, kernel_size=3):
                 super(SpatialAttention, self).__init__()
                 self.conv1 = torch.nn.Conv2d(2, 2, kernel_size, padding=1, bias=False, padding_mode='reflect')
-                self.conv2 = torch.nn.Conv2d(2, 1, 1, padding=1, bias=False, padding_mode='reflect')
+                self.conv2 = torch.nn.Conv2d(2, 1, 1, padding='same', bias=False, padding_mode='reflect')
                 self.sigmoid = torch.nn.Sigmoid()
 
                 torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
