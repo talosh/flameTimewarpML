@@ -1,7 +1,7 @@
 # Orig v001 changed to v002 main flow and signatures
 # SiLU in Encoder
 # Warps moved to flownet forward
-# Group conv at tail
+# 4 Groups conv at Tail
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -108,6 +108,11 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
+                    torch.nn.Conv2d(c, c * 2, kernel_size=3, padding=1, padding_mode = 'reflect', groups=4, bias=False),
+                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.Conv2d(c * 2, c * 4, kernel_size=3, padding=1, padding_mode = 'reflect', groups=4, bias=False),
+                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.Conv2d(c * 4, c, kernel_size=1, stride=1, padding=0, bias=True),
                     torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
                     torch.nn.Conv2d(c//2, c//2, 3, 1, 1, groups=c//2, bias=False, padding_mode = 'reflect'),
                     torch.nn.Conv2d(c//2, c//2, kernel_size=1, stride=1, padding=0, bias=True),
