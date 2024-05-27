@@ -112,9 +112,11 @@ class Model:
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
                     torch.nn.Conv2d(c, c, 5, 1, 2, bias=False, padding_mode = 'reflect'),
+                    torch.nn.LeakyReLU(0.2, True),
                     torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
                     torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
                     torch.nn.Conv2d(c, c, 5, 1, 2, bias=False, padding_mode = 'reflect'),
+                    torch.nn.LeakyReLU(0.2, True),
                     torch.nn.ConvTranspose2d(c, 6, 4, 2, 1),
                     # torch.nn.PixelShuffle(2)
                 )
