@@ -3,6 +3,7 @@
 # Warps moved to flownet forward
 # 1x1 conv at tail
 # Second pass has "c" number of filters instead of "c//2" in v002la
+# Added two 5x5 conv after 1x1 conv
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -110,10 +111,10 @@ class Model:
                 )
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
-                    torch.nn.Conv2d(c, c, 3, 1, 1, bias=False, padding_mode = 'reflect'),
+                    torch.nn.Conv2d(c, c, 5, 1, 2, bias=False, padding_mode = 'reflect'),
                     torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
                     torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
-                    torch.nn.Conv2d(c, c, 3, 1, 1, bias=False, padding_mode = 'reflect'),
+                    torch.nn.Conv2d(c, c, 5, 1, 2, bias=False, padding_mode = 'reflect'),
                     torch.nn.ConvTranspose2d(c, 6, 4, 2, 1),
                     # torch.nn.PixelShuffle(2)
                 )
@@ -227,15 +228,15 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v002lb',
-            'file': 'flownet4_v002lb.py',
+            'name': 'Flownet4_v002lc',
+            'file': 'flownet4_v002lc.py',
             'ratio_support': True
         }
         return info
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v002lb'
+        return 'TWML_Flownet_v002lc'
 
     @staticmethod
     def input_channels(model_state_dict):
