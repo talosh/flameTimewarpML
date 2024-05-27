@@ -2,6 +2,7 @@
 # SiLU in Encoder
 # Warps moved to flownet forward
 # 1x1 conv at tail
+# Second pass has "c" number of filters instead of "c//2" in v002la
 
 class Model:
     def __init__(self, status = dict(), torch = None):
