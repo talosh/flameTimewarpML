@@ -2322,7 +2322,8 @@ def main():
             # print (f'prev folder: {prev_eval_folder}\n\n')
                 if prev_eval_folder:
                     # print (f'exec "rm -rf {os.path.abspath(prev_eval_folder)}"\n\n')
-                    os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')
+                    clean_thread = threading.Thread(target=lambda: os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')).start()
+                    # os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')
             prev_eval_folder = eval_folder
 
         batch_idx = batch_idx + 1
