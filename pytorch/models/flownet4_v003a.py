@@ -105,6 +105,7 @@ class Model:
                 self.cnn2 = torch.nn.Conv2d(48, 48, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(48, 8, 4, 2, 1)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
+                self.cnn4 = torch.nn.Conv2d(16, 8, 1, 1, 1)
 
                 torch.nn.init.kaiming_normal_(self.cnn0.weight, mode='fan_in', nonlinearity='relu')
                 self.cnn0.weight.data *= 1e-2
@@ -124,6 +125,8 @@ class Model:
                     torch.nn.init.constant_(self.cnn3.bias, 0)
 
             def forward(self, x, feat=False):
+                f = x[:, -8:, :, :]
+
                 x0 = self.cnn0(x)
                 x = self.relu(x0)
                 x1 = self.cnn1(x)
@@ -131,9 +134,12 @@ class Model:
                 x2 = self.cnn2(x)
                 x = self.relu(x2)
                 x3 = self.cnn3(x)
+
+                x4 = self.cnn4(torch.cat([x3, f], 1))
+
                 if feat:
                     return [x0, x1, x2, x3]
-                return x3
+                return x4
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
