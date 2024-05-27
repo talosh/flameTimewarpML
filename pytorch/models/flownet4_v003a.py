@@ -135,7 +135,7 @@ class Model:
                 x = self.relu(x2)
                 x3 = self.cnn3(x)
 
-                x4 = self.cnn4(torch.cat([x3, f], 1))
+                x4 = self.cnn4(torch.cat((x3, f), 1))
 
                 if feat:
                     return [x0, x1, x2, x3]
