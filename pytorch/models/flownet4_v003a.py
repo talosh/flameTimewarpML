@@ -100,10 +100,10 @@ class Model:
         class Encode01(Module):
             def __init__(self):
                 super(Encode01, self).__init__()
-                self.cnn0 = torch.nn.Conv2d(3 + 8, 32, 3, 2, 1)
-                self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-                self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-                self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
+                self.cnn0 = torch.nn.Conv2d(3 + 8, 48, 3, 2, 1)
+                self.cnn1 = torch.nn.Conv2d(48, 48, 3, 1, 1)
+                self.cnn2 = torch.nn.Conv2d(48, 48, 3, 1, 1)
+                self.cnn3 = torch.nn.ConvTranspose2d(48, 8, 4, 2, 1)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
                 torch.nn.init.kaiming_normal_(self.cnn0.weight, mode='fan_in', nonlinearity='relu')
