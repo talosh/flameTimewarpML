@@ -1,11 +1,10 @@
 # Orig v001 changed to v002 main flow and signatures
 # SiLU in Encoder
 # Warps moved to flownet forward
-# 1x1 conv at tail with c*2 outputs
-# first TrasposeConv at tail goes from c*2 to c
-# Second pass has "c" number of filters instead of "c//2" in v002la
-# Second TransposeConv at tail goes from c to c//2 instead of directly to 6
-# Another 1x1 mix at the very end of the Tail chain to get c//2 down to 6
+# Replaced ResBlocks with CBAM blocks
+# Resblock with Spatial awareness only
+# Spatial kernel set to 5
+# inverse compression-like attention mechanism to hush prominent features
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -44,9 +43,9 @@ class Model:
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
-                self.cnn0 = torch.nn.Conv2d(3, 32, 3, 2, 1)
-                self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-                self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
+                self.cnn0 = torch.nn.Conv2d(3, 32, 3, 2, 1, padding_mode = 'reflect')
+                self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect')
+                self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect')
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 self.relu = torch.nn.SiLU(True)
 
@@ -94,6 +93,74 @@ class Model:
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
 
+
+        class ChannelAttention(torch.nn.Module):
+            def __init__(self, in_planes, reduction=16):
+                super(ChannelAttention, self).__init__()
+                self.avg_pool = torch.nn.AdaptiveAvgPool2d(1)
+                self.max_pool = torch.nn.AdaptiveMaxPool2d(1)
+                
+                self.fc1 = torch.nn.Conv2d(in_planes, in_planes // reduction, 1, bias=False, padding_mode='reflect')
+                self.relu1 = torch.nn.LeakyReLU(0.2, inplace=True)
+                self.fc2 = torch.nn.Conv2d(in_planes // reduction, in_planes, 1, bias=False, padding_mode='reflect')
+                
+                self.sigmoid = torch.nn.Sigmoid()
+
+                torch.nn.init.kaiming_normal_(self.fc1.weight, mode='fan_in', nonlinearity='relu')
+                self.fc1.weight.data *= 1e-2
+                torch.nn.init.kaiming_normal_(self.fc2.weight, mode='fan_in', nonlinearity='relu')
+                self.fc2.weight.data *= 1e-2
+
+            def forward(self, x):
+                avg_out = self.fc2(self.relu1(self.fc1(self.avg_pool(x))))
+                max_out = self.fc2(self.relu1(self.fc1(self.max_pool(x))))
+                out = avg_out + max_out
+                return self.sigmoid(out)
+
+        class SpatialAttention(torch.nn.Module):
+            def __init__(self, kernel_size=5):
+                super(SpatialAttention, self).__init__()
+                self.conv1 = torch.nn.Conv2d(2, 1, kernel_size, padding=(kernel_size-1)//2, bias=False, padding_mode='reflect')
+                self.sigmoid = torch.nn.Sigmoid()
+
+            def forward(self, x):
+                avg_out = torch.mean(x, dim=1, keepdim=True)
+                max_out, _ = torch.max(x, dim=1, keepdim=True)
+                x = torch.cat([avg_out, max_out], dim=1)
+                x = self.conv1(x)
+                return self.sigmoid(x)
+
+        class CBAMResBlock(torch.nn.Module):
+            def __init__(self, in_channels, out_channels, stride=1, reduction=16, downsample=None):
+                super(CBAMResBlock, self).__init__()
+                self.conv1 = torch.nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=True, padding_mode='reflect')
+                self.relu = torch.nn.LeakyReLU(0.2, inplace=True)
+                self.conv2 = torch.nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=True, padding_mode='reflect')
+                
+                self.ca = ChannelAttention(out_channels, reduction)
+                self.sa = SpatialAttention()
+
+                self.beta = torch.nn.Parameter(torch.ones((1, in_channels, 1, 1)), requires_grad=True)    
+
+                self.downsample = downsample
+                if stride != 1 or in_channels != out_channels:
+                    self.downsample = torch.nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=True, padding_mode='reflect')
+
+                torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
+                self.conv1.weight.data *= 1e-2
+                if self.conv1.bias is not None:
+                    torch.nn.init.constant_(self.conv1.bias, 0)
+
+
+            def forward(self, x):
+                # residual = x if self.downsample is None else self.downsample(x)
+                
+                # ca_out =  self.relu(self.conv1(x * self.ca(x)) * self.beta1 + x)
+                sa_out =  self.relu(self.conv2(x * (1 - self.sa(x) / 4)) * self.beta + x)
+
+                return sa_out
+
+
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
@@ -102,21 +169,18 @@ class Model:
                     conv(c//2, c, 3, 2, 1),
                     )
                 self.convblock = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    CBAMResBlock(c, c),
+                    CBAMResBlock(c, c),
+                    CBAMResBlock(c, c),
+                    CBAMResBlock(c, c),
+                    CBAMResBlock(c, c),
+                    CBAMResBlock(c, c),
+                    CBAMResBlock(c, c),
+                    CBAMResBlock(c, c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c*2, kernel_size=1, stride=1, padding=0, bias=True),
-                    torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
-                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
-                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
-                    torch.nn.Conv2d(c//2, 6, kernel_size=1, stride=1, padding=0, bias=True)
+                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    torch.nn.PixelShuffle(2)
                 )
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
@@ -228,15 +292,15 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v002ld',
-            'file': 'flownet4_v002ld.py',
+            'name': 'Flownet4_v002h',
+            'file': 'flownet4_v002h.py',
             'ratio_support': True
         }
         return info
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v002ld'
+        return 'TWML_Flownet_v002h'
 
     @staticmethod
     def input_channels(model_state_dict):
