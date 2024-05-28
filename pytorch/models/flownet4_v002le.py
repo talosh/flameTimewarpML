@@ -1,7 +1,7 @@
 # Orig v001 changed to v002 main flow and signatures
 # SiLU in Encoder
 # Warps moved to flownet forward
-# 1x1 conv at tail
+# 2 times 8x8 ConvTranspose in Tail
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -222,15 +222,15 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v002la',
-            'file': 'flownet4_v002la.py',
+            'name': 'Flownet4_v002le',
+            'file': 'flownet4_v002le.py',
             'ratio_support': True
         }
         return info
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v002la'
+        return 'TWML_Flownet_v002le'
 
     @staticmethod
     def input_channels(model_state_dict):
