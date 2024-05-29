@@ -1,9 +1,7 @@
 # Orig v001 changed to v002 main flow and signatures
 # SiLU in Encoder
 # Warps moved to flownet forward
-# 1x1 convs at tail
-# Second pass has "c" number of filters instead of "c//2" in v002la
-# 1st ConvTranspose set to 6x6 kernel
+# Same as "le" but second convTranspose is 6x6
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -110,10 +108,8 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
-                    torch.nn.ConvTranspose2d(c, c, 6, 2, 2),
-                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
-                    torch.nn.ConvTranspose2d(c, 6, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c, c//2, 8, 2, 3),
+                    torch.nn.ConvTranspose2d(c//2, 6, 6, 2, 2),
                     # torch.nn.PixelShuffle(2)
                 )
 
