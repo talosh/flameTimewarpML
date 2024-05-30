@@ -1,11 +1,7 @@
 # Orig v001 changed to v002 main flow and signatures
 # SiLU in Encoder
 # Warps moved to flownet forward
-# 1x1 convs at tail
-# Second pass has "c" number of filters instead of "c//2" in v002la
-# 1st ConvTranspose set to 8x8 kernel, second to 6x6,
-# all convs are in c channels exept the last 1x1 one
-
+# Tail is ConvTr 6x6, conv 1x1, ConvTr 4x4, conv 1x1
 class Model:
     def __init__(self, status = dict(), torch = None):
         if torch is None:
@@ -111,10 +107,9 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
-                    torch.nn.ConvTranspose2d(c, c, 8, 2, 3),
-                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
                     torch.nn.ConvTranspose2d(c, c, 6, 2, 2),
+                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
+                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
                     torch.nn.Conv2d(c, 6, kernel_size=1, stride=1, padding=0, bias=True),
                     # torch.nn.PixelShuffle(2)
                 )
