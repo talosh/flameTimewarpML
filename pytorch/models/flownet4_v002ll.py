@@ -4,7 +4,7 @@
 # 1x1 convs at tail
 # Second pass has "c" number of filters instead of "c//2" in v002la
 # 1st ConvTranspose set to 6x6 kernel
-# ResConvShrtcut changed x to conv1x1(x)
+# Extended lh as best visual result adding one more 1x1 conv in front of ContTrans2d
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -128,10 +128,11 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
+                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
                     torch.nn.ConvTranspose2d(c, c, 6, 2, 2),
-                    ResConvShrtct(c),
-                    torch.nn.ConvTranspose2d(c, 6, 4, 2, 1),
-                    # torch.nn.PixelShuffle(2)
+                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
+                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
+                    torch.nn.Conv2d(c, 6, kernel_size=1, stride=1, padding=0, bias=True),
                 )
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
