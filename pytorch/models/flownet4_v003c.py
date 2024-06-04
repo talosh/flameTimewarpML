@@ -1,5 +1,5 @@
 # SiLU in encoders
-# Identical to ref just to check flow changes
+# Identical to ref with warping images and features performed on scaled tensors to check arch
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -362,15 +362,15 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v003d',
-            'file': 'flownet4_v003d.py',
+            'name': 'Flownet4_v003c',
+            'file': 'flownet4_v003c.py',
             'ratio_support': True
         }
         return info
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v003d'
+        return 'TWML_Flownet_v003c'
 
     @staticmethod
     def input_channels(model_state_dict):
