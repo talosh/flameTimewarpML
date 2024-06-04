@@ -1,5 +1,5 @@
 # SiLU in encoders
-# Identical to ref just to check flow changes
+# Identical to ref with warping images and features performed on scaled tensors to check arch
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -181,24 +181,30 @@ class Model:
                 self.encode = Encode01()
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
-                img0 = torch.nn.functional.interpolate(img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                img1 = torch.nn.functional.interpolate(img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-
-                f0 = torch.nn.functional.interpolate(f0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                f1 = torch.nn.functional.interpolate(f1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 # f0 = self.encode(torch.cat((img0, f0), 1))
                 # f1 = self.encode(torch.cat((img1, f1), 1))
 
                 if flow is None:
+                    img0 = torch.nn.functional.interpolate(img0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    img1 = torch.nn.functional.interpolate(img1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    f0 = torch.nn.functional.interpolate(f0, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    f1 = torch.nn.functional.interpolate(f1, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                     x = torch.cat((img0, img1, f0, f1, timestep), 1)
                 else:
+                    img0_warped = warp(img0, flow[:, :2])
+                    img1_warped = warp(img1, flow[:, 2:4])
+                    f0_warped = warp(f0, flow[:, :2])
+                    f1_warped = warp(f1, flow[:, 2:4])
+
+                    img0_warped = torch.nn.functional.interpolate(img0_warped, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    img1_warped = torch.nn.functional.interpolate(img1_warped, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+
+                    f0_warped = torch.nn.functional.interpolate(f0_warped, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    f1_warped = torch.nn.functional.interpolate(f1_warped, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+
                     mask = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
-                    img0 = warp(img0, flow[:, :2])
-                    img1 = warp(img1, flow[:, 2:4])
-                    f0 = warp(f0, flow[:, :2])
-                    f1 = warp(f1, flow[:, 2:4])
                     timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                     x = torch.cat((img0, img1, f0, f1, timestep, mask, flow), 1)
 
@@ -362,15 +368,15 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v003d',
-            'file': 'flownet4_v003d.py',
+            'name': 'Flownet4_v003c',
+            'file': 'flownet4_v003c.py',
             'ratio_support': True
         }
         return info
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v003d'
+        return 'TWML_Flownet_v003c'
 
     @staticmethod
     def input_channels(model_state_dict):
