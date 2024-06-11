@@ -104,11 +104,6 @@ class Model:
                 
                 self.sigmoid = torch.nn.Sigmoid()
 
-                torch.nn.init.kaiming_normal_(self.fc1.weight, mode='fan_in', nonlinearity='relu')
-                self.fc1.weight.data *= 1e-2
-                torch.nn.init.kaiming_normal_(self.fc2.weight, mode='fan_in', nonlinearity='relu')
-                self.fc2.weight.data *= 1e-2
-
             def forward(self, x):
                 avg_out = self.fc2(self.relu1(self.fc1(self.avg_pool(x))))
                 max_out = self.fc2(self.relu1(self.fc1(self.max_pool(x))))
