@@ -2,6 +2,7 @@
 # Back from SiLU to LeakyReLU to test data flow
 # Warps moved to flownet forward
 # Different Tail from flownet 2lh (ConvTr 6x6, conv 1x1, ConvTr 4x4, conv 1x1)
+# Head encoder int filetrs set to 48 and added Channel Attention
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -37,21 +38,40 @@ class Model:
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
+        class ChannelAttention(torch.nn.Module):
+            def __init__(self, in_planes, reduction=16):
+                super(ChannelAttention, self).__init__()
+                self.avg_pool = torch.nn.AdaptiveAvgPool2d(1)
+                self.max_pool = torch.nn.AdaptiveMaxPool2d(1)
+                
+                self.fc1 = torch.nn.Conv2d(in_planes, in_planes // reduction, 1, bias=False, padding_mode='reflect')
+                self.relu1 = torch.nn.LeakyReLU(0.2, inplace=True)
+                self.fc2 = torch.nn.Conv2d(in_planes // reduction, in_planes, 1, bias=False, padding_mode='reflect')
+                
+                self.sigmoid = torch.nn.Sigmoid()
+
+            def forward(self, x):
+                avg_out = self.fc2(self.relu1(self.fc1(self.avg_pool(x))))
+                max_out = self.fc2(self.relu1(self.fc1(self.max_pool(x))))
+                out = avg_out + max_out
+                return self.sigmoid(out)
+
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
-                self.cnn0 = torch.nn.Conv2d(3, 32, 3, 2, 1)
-                self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-                self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-                self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
+                self.cnn0 = torch.nn.Conv2d(3, 48, 3, 2, 1)
+                self.cnn1 = torch.nn.Conv2d(32, 48, 3, 1, 1)
+                self.cnn2 = torch.nn.Conv2d(32, 48, 3, 1, 1)
+                self.cnn3 = torch.nn.ConvTranspose2d(48, 8, 4, 2, 1)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
+                self.ca = ChannelAttention(48, 8)
 
             def forward(self, x, feat=False):
                 x0 = self.cnn0(x)
                 x = self.relu(x0)
-                x1 = self.cnn1(x)
+                x1 = self.cnn1(x) * self.ca(x)
                 x = self.relu(x1)
-                x2 = self.cnn2(x)
+                x2 = self.cnn2(x) * self.ca(x)
                 x = self.relu(x2)
                 x3 = self.cnn3(x)
                 if feat:
@@ -206,15 +226,15 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v001eb',
-            'file': 'flownet4_v001eb.py',
+            'name': 'Flownet4_v001ec',
+            'file': 'flownet4_v001ec.py',
             'ratio_support': True
         }
         return info
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v001eb'
+        return 'TWML_Flownet_v001ec'
 
     @staticmethod
     def input_channels(model_state_dict):
