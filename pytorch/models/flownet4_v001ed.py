@@ -123,8 +123,8 @@ class Model:
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
-                self.cnn0 = torch.nn.Conv2d(3, 48, 3, 2, 1)
-                self.cnn1 = Multiresblock(48, 48)
+                self.cnn0 = Multiresblock(3, 32)
+                self.cnn1 = torch.nn.Conv2d(32, 48, 3, 2, 1)
                 self.cnn2 = Multiresblock(48, 48)
                 self.cnn3 = torch.nn.ConvTranspose2d(48, 8, 4, 2, 1)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
