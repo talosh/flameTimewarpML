@@ -1492,6 +1492,7 @@ def main():
         while True:
             try:
                 write_data = write_image_queue.get_nowait()
+                preview_index = write_data.get('preview_index', 0)
                 write_exr(write_data['sample_source1'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'))
                 write_exr(write_data['sample_source2'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_outgoing.exr'))
                 write_exr(write_data['sample_target'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_target.exr'))
@@ -2079,10 +2080,12 @@ def main():
             # rgb_refine = (rgb_refine + 1) / 2
             # sample_refine = rgb_refine[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
 
+            preview_index = preview_index + 1 if preview_index < 9 else 0
 
             write_image_queue.put(
                 {
                     'preview_folder': os.path.join(args.dataset_path, 'preview'),
+                    'preview_index': int(preview_index),
                     'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                     'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                     'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
@@ -2092,7 +2095,6 @@ def main():
             )
 
             del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
-            preview_index = preview_index + 1 if preview_index < 9 else 0
 
         if step % args.save == 1:
             write_model_state_queue.put(deepcopy(current_state_dict))
