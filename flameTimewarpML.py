@@ -425,7 +425,7 @@ class ApplyModelDialog():
         )
 
         self.src_model_path_label = PyFlameLabel(
-            text='Source Model Weights',
+            text='Original Model Weights',
         )
 
         self.res_model_path_label = PyFlameLabel(
@@ -439,6 +439,11 @@ class ApplyModelDialog():
         )
 
         self.src_model_path_entry = PyFlameLineEdit(
+            text=self.model_path,
+            max_width=1000,
+        )
+
+        self.res_model_path_entry = PyFlameLineEdit(
             text=self.model_path,
             max_width=1000,
         )
@@ -493,7 +498,9 @@ class ApplyModelDialog():
         grid_layout.addWidget(self.src_model_path_entry, 2, 1, 1, 4)
         grid_layout.addWidget(self.src_model_browse_button, 2, 5)
 
-
+        grid_layout.addWidget(self.res_model_path_label, 3, 0)
+        grid_layout.addWidget(self.res_model_path_entry, 3, 1, 1, 4)
+        grid_layout.addWidget(self.src_model_browse_button, 3, 5)
 
         grid_layout.addWidget(self.cancel_button, 4, 3)
         grid_layout.addWidget(self.export_and_apply_button, 4, 5)
