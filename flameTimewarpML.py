@@ -204,7 +204,6 @@ class ApplyModelDialog():
         return []
 
     def main_window(self):
-        print ('hello from main window')
 
         def open_browser():
             """
@@ -262,8 +261,158 @@ class ApplyModelDialog():
         elif self.mode == 'fluidmorph':
             window_title += ' [Fluidmorph]'
         elif self.mode == 'finetune':
-            print ('hellopppp finetune')
-            window_title += ' [Finetune]'
+            return self.main_window_finetune()
+
+        self.window = PyFlameQDialog(
+            width=800,
+            height=256,
+            title=window_title
+        )
+
+        # Labels
+        self.options_label = PyFlameLabel(
+            text='Options',
+        )
+
+        self.export_path_label = PyFlameLabel(
+            text='Export Path',
+        )
+
+        self.model_path_label = PyFlameLabel(
+            text='Model Path',
+        )
+
+        # Entries
+        self.export_path_entry = PyFlameLineEdit(
+            text=self.working_folder,
+            max_width=1000,
+        )
+
+        self.model_path_entry = PyFlameLineEdit(
+            text=self.model_path,
+            max_width=1000,
+        )
+
+        # Buttons
+        self.path_browse_button = PyFlameButton(
+            text='Browse',
+            connect=open_browser,
+        )
+
+        self.model_browse_button = PyFlameButton(
+            text='Browse',
+            connect=open_model_browser,
+        )
+
+        self.cpu_button = PyFlamePushButton(
+            text='CPU',
+            button_checked = self.fw.prefs.get('cpu', False),
+            connect=cpu
+        )
+
+        self.half_button = PyFlamePushButton(
+            text='16 Bit',
+            button_checked = self.fw.prefs.get('half', False),
+            connect=half
+        )
+
+        self.export_and_apply_button = PyFlameButton(
+            text='Export and Apply',
+            connect=self.apply,
+            color=Color.BLUE,
+        )
+
+        self.cancel_button = PyFlameButton(
+            text='Cancel',
+            connect=self.window.close,
+        )
+        # Window layout
+        grid_layout = QtWidgets.QGridLayout()
+        grid_layout.setRowMinimumHeight(0, 30)
+        grid_layout.setRowMinimumHeight(1, 30)
+        grid_layout.setRowMinimumHeight(2, 30)
+        grid_layout.setRowMinimumHeight(3, 30)
+        
+        grid_layout.setColumnMinimumWidth(0, 150)
+        grid_layout.setColumnMinimumWidth(1, 150)
+        grid_layout.setColumnMinimumWidth(2, 150)
+        grid_layout.setColumnMinimumWidth(3, 150)
+
+        grid_layout.addWidget(self.options_label, 0, 0)
+        grid_layout.addWidget(self.half_button, 0, 3)
+        grid_layout.addWidget(self.cpu_button, 0, 5)
+
+        grid_layout.addWidget(self.export_path_label, 1, 0)
+        grid_layout.addWidget(self.export_path_entry, 1, 1, 1, 4)
+        grid_layout.addWidget(self.path_browse_button, 1, 5)
+ 
+        grid_layout.addWidget(self.model_path_label, 2, 0)
+        grid_layout.addWidget(self.model_path_entry, 2, 1, 1, 4)
+        grid_layout.addWidget(self.model_browse_button, 2, 5)
+
+        grid_layout.addWidget(self.cancel_button, 3, 3)
+        grid_layout.addWidget(self.export_and_apply_button, 3, 5)
+
+        # Add layout to window
+        self.window.add_layout(grid_layout)
+
+        self.window.show()   
+
+    def main_window_finetune(self):
+        print ('hello from main window finetune')
+
+        def open_browser():
+            """
+            Open Flame file browser to choose export path.
+            """
+
+            path = pyflame.file_browser(
+                path=self.export_path_entry.text(),
+                title='Choose export path',
+                select_directory=True,
+                window_to_hide=[self.window],
+            )
+
+            if path:
+                self.export_path_entry.setText(path)
+                self.working_folder = path
+                self.fw.prefs['working_folder'] = self.working_folder
+                self.fw.save_prefs()
+
+        def open_model_browser():
+            self.window.hide()
+            import flame
+
+            if not os.path.isfile(self.model_path):
+                self.model_path = os.path.join(
+                    os.path.dirname(__file__), 
+                    'models',
+                    'flownet4.pth'
+                    )
+
+            flame.browser.show(
+                title = 'Select flameTimewarpML Model:',
+                extension = 'pth',
+                default_path = os.path.dirname(self.model_path),
+                multi_selection = False)
+            if len(flame.browser.selection) > 0:
+                self.model_path = flame.browser.selection[0]
+                self.model_path_entry.setText(self.model_path)
+                self.fw.prefs['model_path'] = self.model_path
+                self.fw.save_prefs()
+            self.window.show()
+
+        def cpu():
+            self.fw.prefs['cpu'] = self.cpu_button.isChecked()
+            self.fw.save_prefs()
+        
+        def half():
+            self.fw.prefs['half'] = self.half_button.isChecked()
+            self.fw.save_prefs()
+
+        # Create export and apply window
+        window_title = f'{settings["app_name"]} <small>{settings["version"]}'
+        window_title += ' [Finetune]'
 
         self.window = PyFlameQDialog(
             width=800,
