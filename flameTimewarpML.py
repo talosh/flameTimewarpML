@@ -464,12 +464,12 @@ class ApplyModelDialog():
 
         self.src_model_browse_button = PyFlameButton(
             text='Browse',
-            connect=open_model_browser,
+            connect=open_src_model_browser,
         )
 
         self.res_model_browse_button = PyFlameButton(
             text='Browse',
-            connect=open_model_browser,
+            connect=open_src_model_browser,
         )
 
         self.cpu_button = PyFlamePushButton(
