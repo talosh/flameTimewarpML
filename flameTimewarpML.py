@@ -421,7 +421,7 @@ class ApplyModelDialog():
         )
 
         self.export_path_label = PyFlameLabel(
-            text='Shots Export Path',
+            text='Finetune Shots Export Path',
         )
 
         self.src_model_path_label = PyFlameLabel(
@@ -455,6 +455,11 @@ class ApplyModelDialog():
         )
 
         self.src_model_browse_button = PyFlameButton(
+            text='Browse',
+            connect=open_model_browser,
+        )
+
+        self.res_model_browse_button = PyFlameButton(
             text='Browse',
             connect=open_model_browser,
         )
@@ -500,7 +505,7 @@ class ApplyModelDialog():
 
         grid_layout.addWidget(self.res_model_path_label, 3, 0)
         grid_layout.addWidget(self.res_model_path_entry, 3, 1, 1, 4)
-        grid_layout.addWidget(self.src_model_browse_button, 3, 5)
+        grid_layout.addWidget(self.res_model_browse_button, 3, 5)
 
         grid_layout.addWidget(self.cancel_button, 4, 3)
         grid_layout.addWidget(self.export_and_apply_button, 4, 5)
