@@ -1444,6 +1444,13 @@ def main():
             model_info = checkpoint.get('model_info')
             model_file = model_info.get('file')
             Flownet = find_and_import_model(model_file=model_file)
+        else:
+            if not args.state_file:
+                print ('prase specify model or model state file')
+                return
+            if not os.path.isfile(args.state_file):
+                print (f'Model state file {args.state_file} does not exist and --model flag is not set to start clean')
+                return
 
     if Flownet is None:
         print (f'Unable to load model {args.model}')
