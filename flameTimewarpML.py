@@ -750,7 +750,7 @@ def get_media_panel_custom_ui_actions():
     def fluidmorph(selection):
         ApplyModelDialog(selection, mode='fluidmorph')
 
-    def timewarp(selection):
+    def finetune(selection):
         ApplyModelDialog(selection, mode='finetune')
 
     def deduplicate(selection):
