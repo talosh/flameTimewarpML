@@ -2198,7 +2198,7 @@ def main():
 
         if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
             if step == 2:
-                pass
+                continue
             preview_folder = os.path.join(args.dataset_path, 'preview')
 
             try:
