@@ -2197,9 +2197,11 @@ def main():
             dataset.reshuffle()
 
         if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
+            if step == 2:
                 batch_idx = batch_idx + 1
                 step = step + 1
-                pass
+                continue
+            
             preview_folder = os.path.join(args.dataset_path, 'preview')
 
             try:
