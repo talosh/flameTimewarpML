@@ -1424,26 +1424,29 @@ def main():
     if args.all_gpus:
         device = 'cuda'
 
-    # Find and initialize model
-    if args.state_file and os.path.isfile(args.state_file):
-        trained_model_path = args.state_file
-        try:
-            checkpoint = torch.load(trained_model_path, map_location=device)
-            print('loaded previously saved model checkpoint')
-        except Exception as e:
-            print (f'unable to load saved model checkpoint: {e}')
-            sys.exit()
 
-        model_info = checkpoint.get('model_info')
-        model_file = model_info.get('file')
-        Flownet = find_and_import_model(model_file=model_file)
-    else:
+    if args.model:
         model_name = args.model
-        Flownet = find_and_import_model(base_name='flownet', model_name=model_name)
+        Flownet = find_and_import_model(base_name='flownet', model_name=model_name)            
+    else:
+        # Find and initialize model
+        if args.state_file and os.path.isfile(args.state_file):
+            trained_model_path = args.state_file
+            try:
+                checkpoint = torch.load(trained_model_path, map_location=device)
+                print('loaded previously saved model checkpoint')
+            except Exception as e:
+                print (f'unable to load saved model checkpoint: {e}')
+                sys.exit()
+
+            model_info = checkpoint.get('model_info')
+            model_file = model_info.get('file')
+            Flownet = find_and_import_model(model_file=model_file)
 
     if Flownet is None:
         print (f'Unable to load model {args.model}')
         return
+    
     model_info = Flownet.get_info()
     print ('Model info:')
     pprint (model_info)
@@ -2128,7 +2131,7 @@ def main():
             minutes = int((epoch_time % 3600) // 60)
 
             clear_lines(2)
-            print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PNSR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
+            print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PSNR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
             print ('\n')
 
             rows_to_append = [
@@ -2196,7 +2199,7 @@ def main():
                 descriptions = rng.sample(descriptions, args.eval_samples)
 
             eval_loss = []
-            eval_pnsr = []
+            eval_psnr = []
             eval_lpips = []
             
             flownet.eval()
@@ -2211,8 +2214,8 @@ def main():
                         eval_loss_min = -1
                         eval_loss_max = -1
                         eval_loss_avg = -1
-                    if eval_pnsr:
-                        eval_psnr_mean = float(np.array(eval_pnsr).mean())
+                    if eval_psnr:
+                        eval_psnr_mean = float(np.array(eval_psnr).mean())
                     else:
                         eval_psnr_mean = -1
                     if eval_lpips:
@@ -2222,7 +2225,7 @@ def main():
 
                     clear_lines(2)
                     print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
-                    print (f'\rEvaluating {ev_item_index} of {len(descriptions)}: Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f} LPIPS: {eval_lpips_mean:.4f} PNSR: {eval_psnr_mean:4f}')
+                    print (f'\rEvaluating {ev_item_index} of {len(descriptions)}: Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f} LPIPS: {eval_lpips_mean:.4f} PSNR: {eval_psnr_mean:4f}')
 
                     eval_img0 = read_openexr_file(description['start'])['image_data']
                     eval_img1 = read_openexr_file(description['gt'])['image_data']
@@ -2268,7 +2271,7 @@ def main():
 
                     eval_loss_l1 = criterion_l1(eval_result, eval_img1)
                     eval_loss.append(float(eval_loss_l1.item()))
-                    eval_pnsr.append(float(psnr_torch(eval_result, eval_img1)))
+                    eval_psnr.append(float(psnr_torch(eval_result, eval_img1)))
                     eval_loss_LPIPS_ = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
                     eval_lpips.append(float(torch.mean(eval_loss_LPIPS_).item()))
 
