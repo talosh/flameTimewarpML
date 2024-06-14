@@ -246,6 +246,8 @@ class ApplyModelDialog():
             window_title += ' [Timewarp from Flame]'
         elif self.mode == 'fluidmorph':
             window_title += ' [Fluidmorph]'
+        elif self.mode == 'finetune':
+            window_title += ' [Finetune]'
 
         self.window = PyFlameQDialog(
             width=800,
@@ -373,6 +375,8 @@ class ApplyModelDialog():
             self.apply_timewarp()
         elif self.mode == 'fluidmorph':
             self.apply_fluidmorph()
+        elif self.mode == 'finetune':
+            self.apply_finetune()
 
         # Close export and apply window
         self.window.close()
