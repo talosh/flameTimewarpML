@@ -45,9 +45,6 @@ class ApplyModelDialog():
 
         self.selection = selection
         self.mode = mode
-
-        print (f'mode: {self.mode}')
-
         self.settings = settings
 
         try:
@@ -189,6 +186,9 @@ class ApplyModelDialog():
                 buttons = ['Ok'])
                 return
             return verified_clips
+        
+        elif mode == 'finetune':
+            print (f'verify mode: {self.mode}')
 
         return []
 
