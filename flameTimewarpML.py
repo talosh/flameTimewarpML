@@ -451,7 +451,7 @@ class ApplyModelDialog():
         )
 
         self.cpu_button = PyFlamePushButton(
-            text='Fast motion',
+            text='Motion is fast',
             button_checked = self.fw.prefs.get('finetune_fast', False),
             connect=fast
         )
