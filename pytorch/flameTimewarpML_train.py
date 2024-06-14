@@ -1424,26 +1424,30 @@ def main():
     if args.all_gpus:
         device = 'cuda'
 
-    # Find and initialize model
-    if args.state_file and os.path.isfile(args.state_file):
-        trained_model_path = args.state_file
-        try:
-            checkpoint = torch.load(trained_model_path, map_location=device)
-            print('loaded previously saved model checkpoint')
-        except Exception as e:
-            print (f'unable to load saved model checkpoint: {e}')
-            sys.exit()
 
-        model_info = checkpoint.get('model_info')
-        model_file = model_info.get('file')
-        Flownet = find_and_import_model(model_file=model_file)
+    if not args.model:
+        # Find and initialize model
+        if args.state_file and os.path.isfile(args.state_file):
+            trained_model_path = args.state_file
+            try:
+                checkpoint = torch.load(trained_model_path, map_location=device)
+                print('loaded previously saved model checkpoint')
+            except Exception as e:
+                print (f'unable to load saved model checkpoint: {e}')
+                sys.exit()
+
+            model_info = checkpoint.get('model_info')
+            model_file = model_info.get('file')
+            Flownet = find_and_import_model(model_file=model_file)
+
     else:
         model_name = args.model
-        Flownet = find_and_import_model(base_name='flownet', model_name=model_name)
+        Flownet = find_and_import_model(base_name='flownet', model_name=model_name)            
 
     if Flownet is None:
         print (f'Unable to load model {args.model}')
         return
+    
     model_info = Flownet.get_info()
     print ('Model info:')
     pprint (model_info)
