@@ -425,7 +425,7 @@ class ApplyModelDialog():
         )
 
         self.src_model_path_label = PyFlameLabel(
-            text='Original Model Weights',
+            text='Source Model Weights',
         )
 
         self.res_model_path_label = PyFlameLabel(
