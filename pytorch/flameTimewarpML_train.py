@@ -1449,7 +1449,7 @@ def main():
                 print ('prase specify model or model state file')
                 return
             if not os.path.isfile(args.state_file):
-                print (f'Model state file {args.state_file} does not exist and --model flag is not set to start clean')
+                print (f'Model state file {args.state_file} does not exist and "--model" flag is not set to start from scratch')
                 return
 
     if Flownet is None:
