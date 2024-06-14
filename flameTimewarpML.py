@@ -360,7 +360,7 @@ class ApplyModelDialog():
 
     def main_window_finetune(self):
         if not self.verified_clips:
-            continue
+            return
 
         src_model_path = self.model_path
         res_model_path = os.path.join(
