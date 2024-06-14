@@ -1425,6 +1425,8 @@ def main():
         device = 'cuda'
 
 
+    Flownet = None
+
     if args.model:
         model_name = args.model
         Flownet = find_and_import_model(base_name='flownet', model_name=model_name)            
