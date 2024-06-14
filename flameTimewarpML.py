@@ -203,6 +203,7 @@ class ApplyModelDialog():
         return []
 
     def main_window(self):
+        print ('hello from main window')
 
         def open_browser():
             """
