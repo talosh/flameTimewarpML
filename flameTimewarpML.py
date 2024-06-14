@@ -411,7 +411,6 @@ class ApplyModelDialog():
 
         def open_dest_model_browser():
             self.window.hide()
-            import 
 
             if not os.path.isfile(res_model_path):
                 import shutil
