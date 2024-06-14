@@ -421,7 +421,7 @@ class ApplyModelDialog():
         )
 
         self.export_path_label = PyFlameLabel(
-            text='Finetune Shots Path',
+            text='Finetune Shot(s) Path',
         )
 
         self.src_model_path_label = PyFlameLabel(
