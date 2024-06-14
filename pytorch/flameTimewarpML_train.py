@@ -1195,6 +1195,8 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None, 
         )
     )
 
+    print (f'models_abs_path: {models_abs_path}')
+
     # List all files in the models directory
     try:
         files = os.listdir(models_abs_path)
@@ -1428,7 +1430,6 @@ def main():
     if args.model:
         model_name = args.model
         Flownet = find_and_import_model(base_name='flownet', model_name=model_name)            
-
     else:
         # Find and initialize model
         if args.state_file and os.path.isfile(args.state_file):
