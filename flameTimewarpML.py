@@ -421,7 +421,7 @@ class ApplyModelDialog():
         )
 
         self.export_path_label = PyFlameLabel(
-            text='Finetune Shot(s) Path',
+            text='Shot(s) Path',
         )
 
         self.src_model_path_label = PyFlameLabel(
@@ -429,7 +429,7 @@ class ApplyModelDialog():
         )
 
         self.res_model_path_label = PyFlameLabel(
-            text='Finetuned Model Weights',
+            text='New Model Weights',
         )
 
         # Entries
