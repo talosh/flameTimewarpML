@@ -543,10 +543,9 @@ class ApplyModelDialog():
             # '''
 
             self.run_inference(lockfile_path)
-        pprint (self.verified_clips)
 
     def apply_finetune(self):
-
+        pprint (self.verified_clips)
 
     def run_inference(self, lockfile_path):
         import platform
