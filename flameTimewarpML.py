@@ -359,6 +359,9 @@ class ApplyModelDialog():
         self.window.show()   
 
     def main_window_finetune(self):
+        
+        src_model_path = self.model_path
+        res_model_path = self.model_path
 
         def open_browser():
             """
@@ -439,12 +442,12 @@ class ApplyModelDialog():
         )
 
         self.src_model_path_entry = PyFlameLineEdit(
-            text=self.model_path,
+            text=src_model_path,
             max_width=1000,
         )
 
         self.res_model_path_entry = PyFlameLineEdit(
-            text=self.model_path,
+            text=res_model_path,
             max_width=1000,
         )
 
