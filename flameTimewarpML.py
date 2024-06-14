@@ -188,7 +188,17 @@ class ApplyModelDialog():
             return verified_clips
         
         elif mode == 'finetune':
-            print (f'verify mode: {self.mode}')
+            for item in selection:
+                if isinstance(item, (flame.PyClip)):
+                    verified_clips.append(item)
+            if not verified_clips:
+                dialog = flame.messages.show_in_dialog(
+                title = f'{settings["app_name"]}',
+                message = 'Please select at least one clip to fine-tune',
+                type = 'error',
+                buttons = ['Ok'])
+                return
+            return verified_clips
 
         return []
 
