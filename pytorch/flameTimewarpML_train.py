@@ -1399,7 +1399,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=2, help='Batch size (int) (default: 2)')
     parser.add_argument('--first_epoch', type=int, default=-1, help='Epoch (int) (default: Saved)')
     parser.add_argument('--epochs', type=int, default=-1, help='Number of epoch to run (int) (default: Unlimited)')
-    parser.add_argument('--reset_stats', action='store_true', dest='reset_stats', default=False, help='Reset saved step and epoch')
+    parser.add_argument('--reset_stats', action='store_true', dest='reset_stats', default=False, help='Reset saved step, epoch and loss stats')
 
     parser.add_argument('--eval', type=int, dest='eval', default=-1, help='Evaluate after N steps')
     parser.add_argument('--eval_samples', type=int, dest='eval_samples', default=-1, help='Evaluate N random training samples')
@@ -1730,6 +1730,11 @@ def main():
         loaded_step = 0
         current_epoch = 0
         preview_index = 0
+        steps_loss = []
+        epoch_loss = []
+        psnr_list = []
+        lpips_list = []
+
 
     # LPIPS Init
 
