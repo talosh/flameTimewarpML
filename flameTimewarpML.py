@@ -751,6 +751,7 @@ class ApplyModelDialog():
             self.run_inference(lockfile_path)
 
     def apply_finetune(self):
+        print (f'apply finetune')
         pass
 
     def run_inference(self, lockfile_path):
