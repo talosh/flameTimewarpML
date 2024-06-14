@@ -1425,7 +1425,11 @@ def main():
         device = 'cuda'
 
 
-    if not args.model:
+    if args.model:
+        model_name = args.model
+        Flownet = find_and_import_model(base_name='flownet', model_name=model_name)            
+
+    else:
         # Find and initialize model
         if args.state_file and os.path.isfile(args.state_file):
             trained_model_path = args.state_file
@@ -1439,10 +1443,6 @@ def main():
             model_info = checkpoint.get('model_info')
             model_file = model_info.get('file')
             Flownet = find_and_import_model(model_file=model_file)
-
-    else:
-        model_name = args.model
-        Flownet = find_and_import_model(base_name='flownet', model_name=model_name)            
 
     if Flownet is None:
         print (f'Unable to load model {args.model}')
