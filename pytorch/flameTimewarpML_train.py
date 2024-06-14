@@ -2197,10 +2197,12 @@ def main():
             dataset.reshuffle()
 
         if step == 2:
+            print ('here we are:')
             batch_idx = batch_idx + 1
             step = step + 1
 
         if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
+            print (f'batch_idx: {batch_idx}, step: {step}, args.eval: {args.eval}, step % args.eval {step % args.eval}, epoch {args.epochs}')
 
             preview_folder = os.path.join(args.dataset_path, 'preview')
 
