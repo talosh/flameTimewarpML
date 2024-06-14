@@ -417,6 +417,9 @@ class ApplyModelDialog():
                 import shutil
                 shutil.copy(self.model_path, res_model_path)
 
+            if os.path.isfile(res_model_path):0
+                print ('hurray')
+
             flame.browser.show(
                 title = 'Select flameTimewarpML Model:',
                 extension = 'pth',
