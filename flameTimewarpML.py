@@ -359,9 +359,14 @@ class ApplyModelDialog():
         self.window.show()   
 
     def main_window_finetune(self):
-        
+        if not self.verified_clips:
+            continue
+
         src_model_path = self.model_path
-        res_model_path = self.model_path
+        res_model_path = os.path.join(
+            os.path.dirname(self.model_path),
+            self.verified_clips[0].name.get_value()
+        )
 
         def open_browser():
             """
