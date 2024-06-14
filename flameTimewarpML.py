@@ -458,7 +458,7 @@ class ApplyModelDialog():
 
         # Buttons
         self.path_browse_button = PyFlameButton(
-            text='Browse',
+            text='Browse Folder',
             connect=open_browser,
         )
 
