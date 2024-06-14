@@ -424,8 +424,12 @@ class ApplyModelDialog():
             text='Shots Export Path',
         )
 
-        self.model_path_label = PyFlameLabel(
-            text='Source Model Path',
+        self.src_model_path_label = PyFlameLabel(
+            text='Source Model Weights',
+        )
+
+        self.res_model_path_label = PyFlameLabel(
+            text='Finetuned Model Weights',
         )
 
         # Entries
@@ -434,7 +438,7 @@ class ApplyModelDialog():
             max_width=1000,
         )
 
-        self.model_path_entry = PyFlameLineEdit(
+        self.src_model_path_entry = PyFlameLineEdit(
             text=self.model_path,
             max_width=1000,
         )
@@ -445,7 +449,7 @@ class ApplyModelDialog():
             connect=open_browser,
         )
 
-        self.model_browse_button = PyFlameButton(
+        self.src_model_browse_button = PyFlameButton(
             text='Browse',
             connect=open_model_browser,
         )
@@ -485,12 +489,14 @@ class ApplyModelDialog():
         grid_layout.addWidget(self.export_path_entry, 1, 1, 1, 4)
         grid_layout.addWidget(self.path_browse_button, 1, 5)
  
-        grid_layout.addWidget(self.model_path_label, 2, 0)
-        grid_layout.addWidget(self.model_path_entry, 2, 1, 1, 4)
-        grid_layout.addWidget(self.model_browse_button, 2, 5)
+        grid_layout.addWidget(self.src_model_path_label, 2, 0)
+        grid_layout.addWidget(self.src_model_path_entry, 2, 1, 1, 4)
+        grid_layout.addWidget(self.src_model_browse_button, 2, 5)
 
-        grid_layout.addWidget(self.cancel_button, 3, 3)
-        grid_layout.addWidget(self.export_and_apply_button, 3, 5)
+
+
+        grid_layout.addWidget(self.cancel_button, 4, 3)
+        grid_layout.addWidget(self.export_and_apply_button, 4, 5)
 
         # Add layout to window
         self.window.add_layout(grid_layout)
