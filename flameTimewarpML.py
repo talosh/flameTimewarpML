@@ -45,6 +45,9 @@ class ApplyModelDialog():
 
         self.selection = selection
         self.mode = mode
+
+        print (f'mode: {self.mode}')
+
         self.settings = settings
 
         try:
