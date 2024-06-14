@@ -359,7 +359,6 @@ class ApplyModelDialog():
         self.window.show()   
 
     def main_window_finetune(self):
-        print ('hello from main window finetune')
 
         def open_browser():
             """
@@ -402,14 +401,10 @@ class ApplyModelDialog():
                 self.fw.save_prefs()
             self.window.show()
 
-        def cpu():
-            self.fw.prefs['cpu'] = self.cpu_button.isChecked()
+        def fast():
+            self.fw.prefs['finetune_fast'] = self.cpu_button.isChecked()
             self.fw.save_prefs()
         
-        def half():
-            self.fw.prefs['half'] = self.half_button.isChecked()
-            self.fw.save_prefs()
-
         # Create export and apply window
         window_title = f'{settings["app_name"]} <small>{settings["version"]}'
         window_title += ' [Finetune]'
@@ -456,15 +451,9 @@ class ApplyModelDialog():
         )
 
         self.cpu_button = PyFlamePushButton(
-            text='CPU',
-            button_checked = self.fw.prefs.get('cpu', False),
-            connect=cpu
-        )
-
-        self.half_button = PyFlamePushButton(
-            text='16 Bit',
-            button_checked = self.fw.prefs.get('half', False),
-            connect=half
+            text='Fast motion',
+            button_checked = self.fw.prefs.get('finetune_fast', False),
+            connect=fast
         )
 
         self.export_and_apply_button = PyFlameButton(
