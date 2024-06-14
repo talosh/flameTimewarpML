@@ -188,6 +188,7 @@ class ApplyModelDialog():
             return verified_clips
         
         elif mode == 'finetune':
+            verified_clips = []
             for item in selection:
                 if isinstance(item, (flame.PyClip)):
                     verified_clips.append(item)
