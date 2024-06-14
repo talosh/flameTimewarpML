@@ -411,20 +411,21 @@ class ApplyModelDialog():
 
         def open_dest_model_browser():
             self.window.hide()
-            import flame
+            import 
 
             if not os.path.isfile(res_model_path):
-                
+                import shutil
+                shutil.copy(src_model_path, res_model_path)
 
             flame.browser.show(
                 title = 'Select flameTimewarpML Model:',
                 extension = 'pth',
-                default_path = os.path.dirname(self.model_path),
+                default_path = os.path.dirname(res_model_path),
                 multi_selection = False)
             if len(flame.browser.selection) > 0:
                 src_model_path = flame.browser.selection[0]
-                self.src_model_path_entry.setText(src_model_path)
-                self.fw.prefs['model_path'] = src_model_path
+                self.res_model_path_entry.setText(res_model_path)
+                self.fw.prefs['model_path'] = res_model_path
                 self.fw.save_prefs()
             self.window.show()
 
