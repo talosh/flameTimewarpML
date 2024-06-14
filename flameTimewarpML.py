@@ -409,6 +409,26 @@ class ApplyModelDialog():
                 self.fw.save_prefs()
             self.window.show()
 
+        def open_dest_model_browser():
+            self.window.hide()
+            import flame
+
+            if not os.path.isfile(res_model_path):
+                
+
+            flame.browser.show(
+                title = 'Select flameTimewarpML Model:',
+                extension = 'pth',
+                default_path = os.path.dirname(self.model_path),
+                multi_selection = False)
+            if len(flame.browser.selection) > 0:
+                src_model_path = flame.browser.selection[0]
+                self.src_model_path_entry.setText(src_model_path)
+                self.fw.prefs['model_path'] = src_model_path
+                self.fw.save_prefs()
+            self.window.show()
+
+
         def fast():
             self.fw.prefs['finetune_fast'] = self.cpu_button.isChecked()
             self.fw.save_prefs()
@@ -458,7 +478,7 @@ class ApplyModelDialog():
 
         # Buttons
         self.path_browse_button = PyFlameButton(
-            text='Browse Folder',
+            text='Browse',
             connect=open_browser,
         )
 
@@ -469,7 +489,7 @@ class ApplyModelDialog():
 
         self.res_model_browse_button = PyFlameButton(
             text='Browse',
-            connect=open_src_model_browser,
+            connect=open_dest_model_browser,
         )
 
         self.cpu_button = PyFlamePushButton(
