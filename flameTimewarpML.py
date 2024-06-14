@@ -417,7 +417,7 @@ class ApplyModelDialog():
                 import shutil
                 shutil.copy(self.model_path, res_model_path)
 
-            if os.path.isfile(res_model_path):0
+            if os.path.isfile(res_model_path):
                 print ('hurray')
 
             flame.browser.show(
