@@ -432,7 +432,6 @@ class ApplyModelDialog():
                 self.fw.save_prefs()
             self.window.show()
 
-
         def fast():
             self.fw.prefs['finetune_fast'] = self.cpu_button.isChecked()
             self.fw.save_prefs()
@@ -442,7 +441,7 @@ class ApplyModelDialog():
         window_title += ' [Finetune]'
 
         self.window = PyFlameQDialog(
-            width=800,
+            width=940,
             height=256,
             title=window_title
         )
@@ -938,7 +937,6 @@ class ApplyModelDialog():
                     break
 
         exporter.export(clip, export_preset, export_dir, hooks=ExportHooks())
-
 
 def get_media_panel_custom_ui_actions():
     def scope_clip(selection):
