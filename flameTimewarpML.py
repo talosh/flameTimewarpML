@@ -549,7 +549,7 @@ class ApplyModelDialog():
             self.run_inference(lockfile_path)
 
     def apply_finetune(self):
-        pprint (self.verified_clips)
+        pass
 
     def run_inference(self, lockfile_path):
         import platform
