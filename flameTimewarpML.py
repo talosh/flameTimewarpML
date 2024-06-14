@@ -386,7 +386,7 @@ class ApplyModelDialog():
                 self.fw.prefs['working_folder'] = self.working_folder
                 self.fw.save_prefs()
 
-        def open_model_browser():
+        def open_src_model_browser():
             self.window.hide()
             import flame
 
@@ -403,9 +403,9 @@ class ApplyModelDialog():
                 default_path = os.path.dirname(self.model_path),
                 multi_selection = False)
             if len(flame.browser.selection) > 0:
-                self.model_path = flame.browser.selection[0]
-                self.model_path_entry.setText(self.model_path)
-                self.fw.prefs['model_path'] = self.model_path
+                src_model_path = flame.browser.selection[0]
+                self.src_model_path_entry.setText(src_model_path)
+                self.fw.prefs['model_path'] = src_model_path
                 self.fw.save_prefs()
             self.window.show()
 
