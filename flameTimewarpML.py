@@ -365,7 +365,6 @@ class ApplyModelDialog():
         src_model_path = self.model_path
         res_model_path = os.path.join(
             os.path.dirname(self.model_path),
-            'huipizda',
             self.verified_clips[0].name.get_value()
         )
 
