@@ -247,7 +247,7 @@ class ApplyModelDialog():
         elif self.mode == 'fluidmorph':
             window_title += ' [Fluidmorph]'
         elif self.mode == 'finetune':
-            print ('hello finetune')
+            print ('hellopppp finetune')
             window_title += ' [Finetune]'
 
         self.window = PyFlameQDialog(
