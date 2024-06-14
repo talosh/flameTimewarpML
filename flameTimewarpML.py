@@ -758,6 +758,7 @@ def get_media_panel_custom_ui_actions():
         ApplyModelDialog(selection, mode='fluidmorph')
 
     def finetune(selection):
+        print ('hello finetune')
         ApplyModelDialog(selection, mode='finetune')
 
     def deduplicate(selection):
