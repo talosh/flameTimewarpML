@@ -2196,13 +2196,16 @@ def main():
                 img0, img1, img2, ratio, idx = read_image_queue.get()
             dataset.reshuffle()
 
-        if step == 2:
             print ('here we are:\n\n')
             batch_idx = batch_idx + 1
             step = step + 1
 
         if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
-            print (f'batch_idx: {batch_idx}, step: {step}, args.eval: {args.eval}, step % args.eval {step % args.eval}, epoch {args.epochs}\n\n')
+            if step == 1:
+                batch_idx = batch_idx + 1
+                step = step + 1
+                print (f'batch_idx: {batch_idx}, step: {step}, args.eval: {args.eval}, step % args.eval {step % args.eval}, epoch {args.epochs}\n\n')
+                continue
 
             preview_folder = os.path.join(args.dataset_path, 'preview')
 
