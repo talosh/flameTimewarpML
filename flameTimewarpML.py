@@ -386,6 +386,25 @@ class ApplyModelDialog():
                 self.fw.prefs['working_folder'] = self.working_folder
                 self.fw.save_prefs()
 
+        def open_dest_browser():
+            """
+            Open Flame file browser to choose export path.
+            """
+
+            path = pyflame.file_browser(
+                path=self.res_model_path_entry.text(),
+                title='Choose export path',
+                select_directory=True,
+                window_to_hide=[self.window],
+            )
+
+            if path:
+                self.res_model_path_entry.setText(path)
+                res_model_path = os.path.join(
+                    os.path.dirname(self.model_path),
+                    f'{self.verified_clips[0].name.get_value()}.pth'
+                )
+
         def open_src_model_browser():
             self.window.hide()
             import flame
@@ -417,16 +436,19 @@ class ApplyModelDialog():
                 import shutil
                 shutil.copy(self.model_path, res_model_path)
 
-            flame.browser.show(
-                title = 'Select flameTimewarpML Model:',
-                extension = 'pth',
-                default_path = os.path.dirname(res_model_path),
-                multi_selection = False)
-            if len(flame.browser.selection) > 0:
-                src_model_path = flame.browser.selection[0]
-                self.res_model_path_entry.setText(res_model_path)
-                self.fw.prefs['model_path'] = res_model_path
-                self.fw.save_prefs()
+            if not os.path.isfile(res_model_path):
+                open_dest_browser()
+            else:
+                flame.browser.show(
+                    title = 'Select flameTimewarpML Model:',
+                    extension = 'pth',
+                    default_path = os.path.dirname(res_model_path),
+                    multi_selection = False)
+                if len(flame.browser.selection) > 0:
+                    src_model_path = flame.browser.selection[0]
+                    self.res_model_path_entry.setText(res_model_path)
+                    self.fw.prefs['model_path'] = res_model_path
+                    self.fw.save_prefs()
             self.window.show()
 
         def fast():
