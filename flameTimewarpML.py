@@ -421,11 +421,11 @@ class ApplyModelDialog():
         )
 
         self.export_path_label = PyFlameLabel(
-            text='Export Path',
+            text='Shots Export Path',
         )
 
         self.model_path_label = PyFlameLabel(
-            text='Model Path',
+            text='Source Model Path',
         )
 
         # Entries
