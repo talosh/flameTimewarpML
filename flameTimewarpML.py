@@ -414,7 +414,7 @@ class ApplyModelDialog():
 
             if not os.path.isfile(res_model_path):
                 import shutil
-                shutil.copy(src_model_path, res_model_path)
+                shutil.copy(self.model_path, res_model_path)
 
             flame.browser.show(
                 title = 'Select flameTimewarpML Model:',
