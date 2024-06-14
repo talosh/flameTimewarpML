@@ -2196,12 +2196,12 @@ def main():
                 img0, img1, img2, ratio, idx = read_image_queue.get()
             dataset.reshuffle()
 
+        if step == 2:
+            batch_idx = batch_idx + 1
+            step = step + 1
+
         if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
-            if step == 2:
-                batch_idx = batch_idx + 1
-                step = step + 1
-                continue
-            
+
             preview_folder = os.path.join(args.dataset_path, 'preview')
 
             try:
