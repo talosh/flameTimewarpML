@@ -34,7 +34,7 @@ settings = {
     'bundle_folder': os.getenv('FLAMETWML_BUNDLE'),
     'packages_folder': os.getenv('FLAMETWML_PACKAGES'),
     'temp_folder': os.getenv('FLAMETWML_TEMP'),
-    'version': 'v0.4.5 dev 002',
+    'version': 'v0.4.5 dev 003',
 }
 
 class ApplyModelDialog():
@@ -750,6 +750,9 @@ def get_media_panel_custom_ui_actions():
     def fluidmorph(selection):
         ApplyModelDialog(selection, mode='fluidmorph')
 
+    def timewarp(selection):
+        ApplyModelDialog(selection, mode='finetune')
+
     def deduplicate(selection):
         dialog = flame.messages.show_in_dialog(
             title = f'{settings["app_name"]}',
@@ -776,6 +779,12 @@ def get_media_panel_custom_ui_actions():
                 {
                     'name': "Timewarp from Flame's TW effect",
                     'execute': timewarp,
+                    'isVisible': scope_clip,
+                    'waitCursor': False,
+                },
+                {
+                    'name': "Fine-tune model on selected clips",
+                    'execute': finetune,
                     'isVisible': scope_clip,
                     'waitCursor': False,
                 },
