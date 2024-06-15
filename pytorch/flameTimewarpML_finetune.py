@@ -1622,6 +1622,8 @@ def main():
 
         def keyPressEvent(self, event):
             sys.stdout.write('keypress:')
+            super().keyPressEvent(event)
+            '''
             if event.key() == Qt.Key_Control:
                 self.ctrl_pressed = True
             elif event.key() == Qt.Key_C and self.ctrl_pressed:
@@ -1630,12 +1632,14 @@ def main():
                 # self.close()
             else:
                 super().keyPressEvent(event)
+            '''
 
         def keyReleaseEvent(self, event):
             sys.stdout.write('keyrelease:')
-            if event.key() == Qt.Key_Control:
-                self.ctrl_pressed = False
             super().keyReleaseEvent(event)
+
+            # if event.key() == Qt.Key_Control:
+            #     self.ctrl_pressed = False
 
         def handleWorkerResult(self, status, message):
             self.worker_status = status
