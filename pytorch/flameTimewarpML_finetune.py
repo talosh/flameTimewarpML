@@ -1489,7 +1489,7 @@ def main():
             if args.freeze:
                 print ('\nFreezing parameters')
 
-            print('\n\n')
+            print (f'using {args.frame_size}x{args.frame_size} patch')
 
             current_state_dict = {
                 'step': step,
@@ -1533,7 +1533,7 @@ def main():
                 ]
             )
 
-            print (f'using {args.frame_size}x{args.frame_size} patch')
+            print('\n\n')
 
             while True:
                 if not self.running:
