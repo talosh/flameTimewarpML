@@ -1425,9 +1425,9 @@ def main():
 
                 try:
                     loaded_step = checkpoint['step']
-                    print (f'loaded step: {loaded_step}')
+                    # print (f'loaded step: {loaded_step}')
                     current_epoch = checkpoint['epoch']
-                    print (f'epoch: {current_epoch + 1}')
+                    # print (f'epoch: {current_epoch + 1}')
                 except Exception as e:
                     print (f'unable to set step and epoch: {e}')
 
