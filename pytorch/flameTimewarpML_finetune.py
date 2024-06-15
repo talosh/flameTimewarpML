@@ -592,6 +592,7 @@ def main():
             self.setWindowTitle('TimewarpML Finetune')
             self.show()
 
+        '''
         def onUpdateText(self, text):
             cursor = self.text_edit.textCursor()
             cursor.movePosition(QTextCursor.End)
@@ -621,9 +622,10 @@ def main():
 
             self.text_edit.setTextCursor(cursor)
             self.text_edit.ensureCursorVisible()
-
         '''
+
         def onUpdateText(self, text):
+            import re
             # text = text.rstrip('\n')
             # Check for carriage return indicating a progress update
             if '\r' in text:
@@ -647,10 +649,13 @@ def main():
 
             cursor = self.text_edit.textCursor()
             cursor.movePosition(QTextCursor.End)
+
+            clear_line_pattern = re.compile(r'\x1b\[2K')
+            cursor_up_pattern = re.compile(r'\x1b\[1A')
+
             cursor.insertText(text)  # Insert the text at the end
             self.text_edit.setTextCursor(cursor)
             self.text_edit.ensureCursorVisible()
-        '''
 
         def keyPressEvent(self, event):        
             # Check if Ctrl+C was pressed
