@@ -463,7 +463,6 @@ class ApplyModelDialog():
             self.fw.save_prefs()
 
         def large_patch():
-            print (f'large_patch: {self.large_patch_button.isChecked()}')
             self.fw.prefs['finetune_1k_patch'] = self.large_patch_button.isChecked()
             self.fw.save_prefs()
 
