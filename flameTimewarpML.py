@@ -749,7 +749,6 @@ class ApplyModelDialog():
             incoming_folder = os.path.join(result_folder, 'incoming')
             outgoing_folder = os.path.join(result_folder, 'outgoing')
 
-
             if incoming_clip.bit_depth == 32:
                 export_preset = self.create_export_preset(
                         os.path.join(
