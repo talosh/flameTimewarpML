@@ -1121,6 +1121,15 @@ def main():
                     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                     writer.writeheader()
 
+            def append_row_to_csv(file_name, row):
+                import csv
+                """
+                Appends a single row to an existing CSV file.
+                """
+                with open(file_name, 'a', newline='') as csvfile:
+                    writer = csv.DictWriter(csvfile, fieldnames=row.keys())
+                    writer.writerow(row)
+
             def normalize(image_array) :
                 def custom_bend(x):
                     linear_part = x
@@ -1664,9 +1673,70 @@ def main():
                 hours = int((epoch_time % (24 * 3600)) // 3600)
                 minutes = int((epoch_time % 3600) // 60)
 
+                if not self.running:
+                    self.stopped = True
+                    break
+
                 clear_lines(1)
                 print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
                 print(f'\r[Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
+
+                if ( idx + 1 ) == len(dataset):
+                    write_model_state_queue.put(deepcopy(current_state_dict))
+
+                    psnr = float(np.array(psnr_list).mean())
+                    lpips_val = float(np.array(lpips_list).mean())
+
+                    epoch_time = time.time() - start_timestamp
+                    days = int(epoch_time // (24 * 3600))
+                    hours = int((epoch_time % (24 * 3600)) // 3600)
+                    minutes = int((epoch_time % 3600) // 60)
+
+                    clear_lines(2)
+                    print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PSNR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
+                    print ('\n')
+
+                    rows_to_append = [
+                        {
+                            'Epoch': epoch,
+                            'Step': step, 
+                            'Min': min(epoch_loss),
+                            'Avg': smoothed_loss,
+                            'Max': max(epoch_loss),
+                            'PSNR': psnr,
+                            'LPIPS': lpips_val
+                        }
+                    ]
+                    for row in rows_to_append:
+                        append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.csv', row)
+
+                    psnr = 0
+
+                    '''
+                    if args.onecycle != -1:
+                        if first_pass:
+                            first_pass = False
+                            optimizer_state_dict = optimizer_flownet.state_dict()
+                            scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
+                                optimizer_flownet,
+                                max_lr=args.lr, 
+                                total_steps= step * args.onecycle, 
+                                )
+                            optimizer_flownet.load_state_dict(optimizer_state_dict)
+                        print (f'setting OneCycleLR after first cycle with max_lr={args.lr}, steps={step}\n\n')
+                    '''
+
+                    steps_loss = []
+                    epoch_loss = []
+                    psnr_list = []
+                    lpips_list = []
+                    epoch = epoch + 1
+                    batch_idx = 0
+
+                    while  ( idx + 1 ) == len(dataset):
+                        img0, img1, img2, ratio, idx = read_image_queue.get()
+                    dataset.reshuffle()
+
 
                 batch_idx = batch_idx + 1
                 step = step + 1
