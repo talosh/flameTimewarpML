@@ -442,13 +442,6 @@ def main():
                     sys.stdout.write(CURSOR_UP_ONE)
                     sys.stdout.write(ERASE_LINE)
 
-            print (f'Initializing PyTorch...')
-
-            import numpy as np
-            import torch
-
-            clear_lines(1)
-
             if len(self.argv) < 2:
                 message = f'Missing input arguments:\n{self.argv}'
                 print (message)
@@ -466,8 +459,14 @@ def main():
                 return
             
             args = DynamicAttributes(json_info)
-
             self.window.setWindowTitle(f'TimewarpML Finetune {args.state_file}')
+
+            print (f'Initializing PyTorch...')
+
+            import numpy as np
+            import torch
+
+            clear_lines(1)
 
             device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
             if args.all_gpus:
