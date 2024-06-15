@@ -1036,6 +1036,7 @@ class ApplyModelDialog():
 
                 # Find the <preset> element and update its version attribute
                 for preset in root.findall('.//preset'):
+                    print (f'preset.attrib {preset.attrib}')
                     if 'version' in preset.attrib:
                         preset.set('version', str(new_version))
 
