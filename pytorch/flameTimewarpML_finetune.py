@@ -664,7 +664,6 @@ def main():
                 if cursor_up_pattern.search(line):
                     # Move the cursor up one line
                     cursor.movePosition(QTextCursor.Up)
-                    cursor.movePosition(QTextCursor.Up)
 
                 # Clean the line from escape sequences and insert it
                 clean_line = clear_line_pattern.sub('', line)
