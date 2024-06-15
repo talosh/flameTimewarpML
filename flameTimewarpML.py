@@ -540,7 +540,7 @@ class ApplyModelDialog():
         self.large_patch_button = PyFlamePushButton(
             text='1K Training Patch',
             button_checked = self.fw.prefs.get('finetune_1k_patch', False),
-            connect=generalize
+            connect=large_patch
         )
 
         self.export_and_apply_button = PyFlameButton(
@@ -818,6 +818,31 @@ class ApplyModelDialog():
             self.run_inference(lockfile_path)
 
     def apply_finetune(self):
+        
+        print (f'export path: {self.export_path_entry.text}')
+
+        '''
+        for clip in self.verified_clips:
+            if clip.bit_depth == 32:
+                export_preset = self.create_export_preset(
+                        os.path.join(
+                            os.path.dirname(__file__), 
+                            'presets', 
+                            'source_export32.xml'
+                        )
+                    )
+            else:
+                export_preset = self.create_export_preset(
+                        os.path.join(
+                            os.path.dirname(__file__), 
+                            'presets', 
+                            'source_export.xml'
+                        )
+                    )
+            
+            self.export_clip(clip, source_clip_folder, export_preset=export_preset)
+        '''
+
         print (f'verified clips: {self.verified_clips}')
         pass
 
