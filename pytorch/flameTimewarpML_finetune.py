@@ -1533,6 +1533,8 @@ def main():
                 ]
             )
 
+            print (f'using {args.frame_size}x{args.frame_size} patch')
+
             while True:
                 if not self.running:
                     break
