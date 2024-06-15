@@ -1632,6 +1632,7 @@ def main():
                 super().keyPressEvent(event)
 
         def keyReleaseEvent(self, event):
+            sys.stdout.write('keyrelease:')
             if event.key() == Qt.Key_Control:
                 self.ctrl_pressed = False
             super().keyReleaseEvent(event)
