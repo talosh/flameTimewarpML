@@ -593,6 +593,7 @@ def main():
             self.show()
 
         def onUpdateText(self, text):
+            import re
             cursor = self.text_edit.textCursor()
             cursor.movePosition(QTextCursor.End)
 
