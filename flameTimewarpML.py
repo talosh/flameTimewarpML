@@ -819,7 +819,7 @@ class ApplyModelDialog():
 
     def apply_finetune(self):
         
-        print (f'export path: {self.export_path_entry.text}')
+        print (f'export path: {self.export_path_entry.text()}')
 
         '''
         for clip in self.verified_clips:
