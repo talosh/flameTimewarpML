@@ -507,6 +507,28 @@ def main():
                     print(f"Model not found: {base_name or model_name}")
                     return None
 
+            def closest_divisible(x):
+                """
+                Find the closest integer divisible by 64 to the given number x.
+
+                Args:
+                x (int or float): The number to find the closest divisible value for.
+
+                Returns:
+                int: Closest number divisible by 64.
+                """
+                # Round down to the nearest multiple of 64
+                lower = (x // 64) * 64
+                
+                # Round up to the nearest multiple of 64
+                upper = lower + 64
+
+                # Check which one is closer to x
+                if x - lower > upper - x:
+                    return upper
+                else:
+                    return lower
+
             # ----------------------
 
             if len(self.argv) < 2:
