@@ -424,6 +424,7 @@ def main():
             self.lockfile = self.argv[1]
             self.window = window
             self.running = True
+            self.stopped = False
 
         def run(self):
             import os
@@ -1465,10 +1466,12 @@ def main():
                 ]
             )
 
-            while self.running:
+            while True:
+                if not self.running:
+                    time.sleep(1)
+                    self.stopped = True
+                    break
                 time.sleep(0.1)
-
-
 
             '''
             print ('Initializing PyTorch...')
@@ -1502,6 +1505,8 @@ def main():
 
         def graceful_exit(self):
             self.running = False
+            while not self.stopped:
+                time.sleep(0.1)
             import torch
             sys.stdout.write(f'\nSaving current state to {self.current_state_dict["trained_model_path"]}...')
             torch.save(self.current_state_dict, self.current_state_dict['trained_model_path'])
