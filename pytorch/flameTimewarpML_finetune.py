@@ -456,8 +456,10 @@ def main():
                 CURSOR_UP_ONE = '\x1b[1A'
                 ERASE_LINE = '\x1b[2K'
                 for _ in range(n):
-                    sys.stdout.write(CURSOR_UP_ONE)
-                    sys.stdout.write(ERASE_LINE)
+                    print (CURSOR_UP_ONE)
+                    print (ERASE_LINE)
+                    # sys.stdout.write(CURSOR_UP_ONE)
+                    # sys.stdout.write(ERASE_LINE)
 
             print (f'Initializing PyTorch...')
 
