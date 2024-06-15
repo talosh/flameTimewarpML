@@ -998,7 +998,7 @@ class ApplyModelDialog():
     def create_export_preset(self, export_preset_path):
         import flame
 
-        def find_files_with_path_patterns(directory, patterns):
+        def find_files_with_all_path_patterns(directory, patterns):
             import os
             import fnmatch
 
@@ -1006,17 +1006,15 @@ class ApplyModelDialog():
             for root, dirnames, filenames in os.walk(directory):
                 for filename in filenames:
                     full_path = os.path.join(root, filename)
-                    for pattern in patterns:
-                        if fnmatch.fnmatch(full_path, pattern):
-                            matches.append(full_path)
-                            break  # Avoid checking other patterns once a match is found
+                    if all(fnmatch.fnmatch(full_path, pattern) for pattern in patterns):
+                        matches.append(full_path)
             return matches
 
         flame_presets_location = flame.PyExporter.get_presets_base_dir(
                     flame.PyExporter.PresetVisibility.Autodesk
                 )
         
-        matching_files = find_files_with_path_patterns(flame_presets_location, ['*OpenEXR*.xml', '*file*', '*sequence*'])
+        matching_files = find_files_with_all_path_patterns(flame_presets_location, ['*OpenEXR*.xml', '*file*', '*sequence*'])
 
         print (f'matching_files: {matching_files}')
 
