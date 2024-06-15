@@ -606,6 +606,8 @@ class ApplyModelDialog():
 
         if self.mode == 'finetune':
             self.apply_finetune()
+            self.window.close()
+            return
 
         working_folder = self.fw.prefs.get('working_folder')
         if not os.path.isdir(working_folder):
