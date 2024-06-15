@@ -1543,8 +1543,9 @@ def main():
                 ]
             )
 
-            print('\n\n\n\n\n\n\n\n')
-
+            print('\n' * 8)
+            # print('\n\n\n\n\n\n\n\n')
+            
             while True:
                 if not self.running:
                     break
