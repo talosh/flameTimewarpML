@@ -430,7 +430,7 @@ class ApplyModelDialog():
 
         def open_dest_model_browser():
             self.window.hide()
-            
+
             if not os.path.isfile(res_model_path):
                 import shutil
                 shutil.copy(self.model_path, res_model_path)
@@ -444,16 +444,21 @@ class ApplyModelDialog():
                     default_path = os.path.dirname(res_model_path),
                     multi_selection = False)
                 if len(flame.browser.selection) > 0:
-                    src_model_path = flame.browser.selection[0]
+                    res_model_pathz = flame.browser.selection[0]
                     self.res_model_path_entry.setText(res_model_path)
                     self.fw.prefs['model_path'] = res_model_path
                     self.fw.save_prefs()
             self.window.show()
 
         def fast():
-            self.fw.prefs['finetune_fast'] = self.cpu_button.isChecked()
+            self.fw.prefs['finetune_fast'] = self.fast_button.isChecked()
             self.fw.save_prefs()
-        
+
+        def generalize():
+        self.fw.prefs['finetune_generalize'] = self.gen_button.isChecked()
+        self.fw.save_prefs()
+
+
         # Create export and apply window
         window_title = f'{settings["app_name"]} <small>{settings["version"]}'
         window_title += ' [Finetune]'
@@ -513,10 +518,16 @@ class ApplyModelDialog():
             connect=open_dest_model_browser,
         )
 
-        self.cpu_button = PyFlamePushButton(
+        self.fast_button = PyFlamePushButton(
             text='Shot(s) motion is fast',
             button_checked = self.fw.prefs.get('finetune_fast', False),
             connect=fast
+        )
+
+        self.gen_button = PyFlamePushButton(
+            text='Generalize',
+            button_checked = self.fw.prefs.get('finetune_generalize', False),
+            connect=generalize
         )
 
         self.export_and_apply_button = PyFlameButton(
