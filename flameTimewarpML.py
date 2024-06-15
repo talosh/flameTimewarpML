@@ -491,7 +491,7 @@ class ApplyModelDialog():
 
         # Entries
         self.export_path_entry = PyFlameLineEdit(
-            text=finetune_export_path,
+            text=self.finetune_export_path,
             max_width=1000,
         )
 
