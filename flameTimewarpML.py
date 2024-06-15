@@ -1034,7 +1034,7 @@ class ApplyModelDialog():
                 tree = ET.parse(src_path)
                 root = tree.getroot()
 
-                print (f'root {root}')
+                print (f'root {root.attrib}')
 
                 # Find the <preset> element and update its version attribute
                 for preset in root.findall('.//preset'):
