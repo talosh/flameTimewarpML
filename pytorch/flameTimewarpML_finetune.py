@@ -1372,6 +1372,19 @@ class Timewarp():
                     
         return frame_value_map
 
+class DynamicAttributes:
+    def __init__(self, data):
+        self.data = data
+
+    def __getattr__(self, name):
+        if name in self.data:
+            return self.data[name]
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+    def __repr__(self):
+        # Optional: Provide a string representation for the object
+        return f"DynamicAttributes({self.data})"
+
 def main():
     # Custom stream object to capture output
     class Stream(QObject):
