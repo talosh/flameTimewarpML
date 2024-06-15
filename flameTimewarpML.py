@@ -542,7 +542,7 @@ class ApplyModelDialog():
         )
 
         self.large_patch_button = PyFlamePushButton(
-            text='1K Training Patch',
+            text='1K Patch',
             button_checked = self.fw.prefs.get('finetune_1k_patch', False),
             connect=large_patch
         )
