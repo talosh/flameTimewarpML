@@ -576,9 +576,9 @@ class ApplyModelDialog():
         grid_layout.setColumnMinimumWidth(3, 150)
 
         grid_layout.addWidget(self.options_label, 0, 0)
-        grid_layout.addWidget(self.eval_button, 0, 1)
-        grid_layout.addWidget(self.large_patch_button, 0, 2)
-        grid_layout.addWidget(self.gen_button, 0, 3)
+        grid_layout.addWidget(self.large_patch_button, 0, 1)
+        grid_layout.addWidget(self.gen_button, 0, 2)
+        grid_layout.addWidget(self.eval_button, 0, 3)
         grid_layout.addWidget(self.fast_button, 0, 5)
 
         grid_layout.addWidget(self.export_path_label, 1, 0)
