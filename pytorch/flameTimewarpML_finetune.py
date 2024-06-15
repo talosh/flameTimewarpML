@@ -447,7 +447,7 @@ def main():
             import numpy as np
             import torch
 
-            clear_lines()
+            clear_lines(1)
 
             if len(self.argv) < 2:
                 message = f'Missing input arguments:\n{self.argv}'
