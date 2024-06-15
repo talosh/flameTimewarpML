@@ -1054,6 +1054,9 @@ class ApplyModelDialog():
             
             matching_files = find_files_with_all_path_patterns(flame_presets_location, ['*OpenEXR*.xml', '*file*', '*sequence*'])
             new_version = find_version_in_file(matching_files[0])
+
+            print (f'new version: {new_version}')
+
             preset_path = update_version_in_file(
                 export_preset_path,
                 os.path.join(
