@@ -1543,7 +1543,7 @@ def main():
                 ]
             )
 
-            print(f'{'\n'*4}')
+            print('\n\n\n\n')
 
             while True:
                 if not self.running:
