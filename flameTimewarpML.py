@@ -1036,9 +1036,13 @@ class ApplyModelDialog():
                 with open(src_path, 'r', encoding='utf-8') as file:
                     content = file.read()
                 
+                print (f'content: {content}')
+
                 # Replace the version number
                 updated_content = version_pattern.sub(r'\g<1>' + str(new_version) + r'\g<3>', content)
                 
+                print (f'updated content: {updated_content}')
+
                 # Write the updated content to the destination file
                 with open(dest_path, 'w', encoding='utf-8') as file:
                     file.write(updated_content)
