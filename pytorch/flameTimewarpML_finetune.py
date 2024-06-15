@@ -595,9 +595,9 @@ def main():
         def onUpdateText(self, text):
             import re
             cursor = self.text_edit.textCursor()
-            cursor.movePosition(QTextCursor.End)
-            self.text_edit.setTextCursor(cursor)
             self.text_edit.ensureCursorVisible()
+            self.text_edit.setTextCursor(cursor)
+            cursor.movePosition(QTextCursor.End)
 
             clear_line_pattern = re.compile(r'\x1b\[2K')
             cursor_up_pattern = re.compile(r'\x1b\[1A')
