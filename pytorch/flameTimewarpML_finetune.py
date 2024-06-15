@@ -1723,7 +1723,7 @@ def main():
                     minutes = int((epoch_time % 3600) // 60)
 
                     clear_lines(3)
-                    msg = f'Epoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PSNR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}\n\n\n\n\n\n'
+                    msg = f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PSNR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}\n\n\n\n\n\n'
                     sys.stdout.write(msg)
 
                     rows_to_append = [
