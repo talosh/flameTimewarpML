@@ -1543,7 +1543,7 @@ def main():
                 ]
             )
 
-            print('\n\n\n\n\n\n')
+            print('\n\n\n\n\n\n\n\n')
 
             while True:
                 if not self.running:
