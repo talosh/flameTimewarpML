@@ -2058,8 +2058,10 @@ def main():
             cursor.movePosition(QTextCursor.End)
             cursor.insertText(text)  # Insert the text at the end
             self.text_edit.setTextCursor(cursor)
-            self.text_edit.setUpdatesEnabled(True)
             self.text_edit.ensureCursorVisible()
+            
+            self.text_edit.setUpdatesEnabled(True)
+
 
         def keyPressEvent(self, event):
             if event.key() == Qt.Key_Control:
