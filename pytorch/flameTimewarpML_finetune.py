@@ -593,15 +593,13 @@ def main():
             self.show()
 
         def onUpdateText(self, text):
-            import re
             cursor = self.text_edit.textCursor()
             cursor.movePosition(QTextCursor.End)
 
-            # Handle special escape sequences for cursor movement and line clearing
             clear_line_pattern = re.compile(r'\x1b\[2K')
             cursor_up_pattern = re.compile(r'\x1b\[1A')
 
-            parts = re.split('(\x1b\[2K|\x1b\[1A)', text)
+            parts = re.split('(\x1b\[2K|\x1b\[1A|\r)', text)
 
             for part in parts:
                 if part == '\x1b[2K':
@@ -610,7 +608,10 @@ def main():
                     cursor.deletePreviousChar()  # Remove newline left after text removal
                 elif part == '\x1b[1A':
                     cursor.movePosition(QTextCursor.Up)
-                    print ('cursor up')
+                elif part == '\r':
+                    cursor.movePosition(QTextCursor.StartOfLine)
+                    cursor.movePosition(QTextCursor.End, QTextCursor.KeepAnchor)
+                    cursor.removeSelectedText()
                 else:
                     clean_part = clear_line_pattern.sub('', part)
                     clean_part = cursor_up_pattern.sub('', clean_part)
@@ -618,7 +619,7 @@ def main():
                     cursor.insertText('\n')
 
             self.text_edit.setTextCursor(cursor)
-            self.text_edit.ensureCursorVisible()        
+            self.text_edit.ensureCursorVisible()
 
         '''
         def onUpdateText(self, text):
