@@ -605,7 +605,6 @@ class ApplyModelDialog():
         self.window.hide()
 
         if self.mode == 'finetune':
-            print (f'self.src_model_path: {self.src_model_path}')
             self.apply_finetune()
             self.window.close()
             return
