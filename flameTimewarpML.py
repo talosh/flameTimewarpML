@@ -462,6 +462,10 @@ class ApplyModelDialog():
             self.fw.prefs['finetune_generalize'] = self.gen_button.isChecked()
             self.fw.save_prefs()
 
+        def large_patch():
+            self.fw.prefs['finetune_1k_patch'] = self.gen_button.isChecked()
+            self.fw.save_prefs()
+
         # Create export and apply window
         window_title = f'{settings["app_name"]} <small>{settings["version"]}'
         window_title += ' [Finetune]'
@@ -533,6 +537,12 @@ class ApplyModelDialog():
             connect=generalize
         )
 
+        self.large_patch_button = PyFlamePushButton(
+            text='1K Training Patch',
+            button_checked = self.fw.prefs.get('finetune_1k_patch', False),
+            connect=generalize
+        )
+
         self.export_and_apply_button = PyFlameButton(
             text='Export and Apply',
             connect=self.apply,
@@ -556,6 +566,7 @@ class ApplyModelDialog():
         grid_layout.setColumnMinimumWidth(3, 150)
 
         grid_layout.addWidget(self.options_label, 0, 0)
+        grid_layout.addWidget(self.large_patch_button, 0, 1)
         grid_layout.addWidget(self.gen_button, 0, 3)
         grid_layout.addWidget(self.fast_button, 0, 5)
 
