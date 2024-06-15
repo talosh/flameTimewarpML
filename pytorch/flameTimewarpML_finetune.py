@@ -1564,7 +1564,7 @@ def main():
             central_widget.setLayout(layout)
             self.setCentralWidget(central_widget)
             
-            self.setGeometry(300, 300, 900, 400)
+            self.setGeometry(300, 300, 1000, 600)
             self.setWindowTitle('TimewarpML Finetune')
             self.show()
 
