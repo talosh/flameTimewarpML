@@ -1622,13 +1622,19 @@ def main():
 
         def keyPressEvent(self, event):
             sys.stdout.write('keypress:')
-            # Check if Ctrl+C was pressed
-            if event.key() == Qt.Key_C and event.modifiers():
-                sys.stdout.write('ctrl+c')
+            if event.key() == Qt.Key_Control:
+                self.ctrl_pressed = True
+            elif event.key() == Qt.Key_C and self.ctrl_pressed:
+                sys.stdout.write('ctrl+c\n')
                 # self.worker.graceful_exit()
                 # self.close()
             else:
                 super().keyPressEvent(event)
+
+        def keyReleaseEvent(self, event):
+            if event.key() == Qt.Key_Control:
+                self.ctrl_pressed = False
+            super().keyReleaseEvent(event)
 
         def handleWorkerResult(self, status, message):
             self.worker_status = status
