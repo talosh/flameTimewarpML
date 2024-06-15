@@ -1509,7 +1509,7 @@ def main():
             self.text_edit.setStyleSheet("""
                 QTextEdit {
                     color: rgb(188, 188, 188); 
-                    background-color: #45676F;
+                    background-color: #45696F;
                     border: 1px solid #474747;
                 }
             """)
