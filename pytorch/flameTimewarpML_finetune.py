@@ -1465,7 +1465,7 @@ def main():
                 ]
             )
 
-            while True:
+            while self.running:
                 time.sleep(0.1)
 
 
@@ -1503,7 +1503,7 @@ def main():
         def graceful_exit(self):
             self.running = False
             import torch
-            print(f'\nSaving current state to {self.current_state_dict["trained_model_path"]}...')
+            sys.stdout.write(f'\nSaving current state to {self.current_state_dict["trained_model_path"]}...')
             torch.save(self.current_state_dict, self.current_state_dict['trained_model_path'])
 
     # Main window class
@@ -1621,7 +1621,6 @@ def main():
             self.text_edit.ensureCursorVisible()
 
         def keyPressEvent(self, event):
-            sys.stdout.write('keypress:')
             if event.key() == Qt.Key_Control:
                 self.ctrl_pressed = True
             super().keyPressEvent(event)
@@ -1635,11 +1634,11 @@ def main():
             '''
 
         def keyReleaseEvent(self, event):
-            sys.stdout.write('keyrelease:')
             if event.key() == Qt.Key_Control:
                 self.ctrl_pressed = False
             elif event.key() == Qt.Key_C and self.ctrl_pressed:
-                sys.stdout.write('ctrl+c\n')
+                self.worker.graceful_exit()
+                # self.close()
             super().keyReleaseEvent(event)
 
         def handleWorkerResult(self, status, message):
