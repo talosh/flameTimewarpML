@@ -1061,12 +1061,17 @@ class ApplyModelDialog():
 
             print (f'new version: {new_version}')
 
-            preset_path = update_version_in_file(
-                export_preset_path,
-                os.path.join(
+            dest_preset_path = os.path.join(
                     '/var/tmp',
                     os.path.basename(export_preset_path)
-                ),
+                )
+            
+            if os.path.isfile(dest_preset_path):
+                os.remove(dest_preset_path)
+
+            preset_path = update_version_in_file(
+                export_preset_path,
+                dest_preset_path,
                 new_version
             )
 
