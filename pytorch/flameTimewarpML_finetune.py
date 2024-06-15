@@ -453,8 +453,8 @@ def main():
                 CURSOR_UP_ONE = '\x1b[1A'
                 ERASE_LINE = '\x1b[2K'
                 for _ in range(n):
-                    # sys.stdout.write(CURSOR_UP_ONE)
-                    sys.stdout.write(ERASE_LINE)
+                    sys.stdout.write(CURSOR_UP_ONE)
+                    # sys.stdout.write(ERASE_LINE)
 
             def find_and_import_model(models_dir='models', base_name=None, model_name=None, model_file=None):
                 """
