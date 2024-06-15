@@ -451,10 +451,20 @@ def main():
             import time
             import platform
 
+            def clear_lines(n=2):
+                """Clears a specified number of lines in the terminal."""
+                CURSOR_UP_ONE = '\x1b[1A'
+                ERASE_LINE = '\x1b[2K'
+                for _ in range(n):
+                    sys.stdout.write(CURSOR_UP_ONE)
+                    sys.stdout.write(ERASE_LINE)
+
             print (f'Initializing PyTorch...')
 
             import numpy as np
             import torch
+
+            clear_lines(1)
 
             if len(self.argv) < 2:
                 message = f'Missing input arguments:\n{self.argv}'

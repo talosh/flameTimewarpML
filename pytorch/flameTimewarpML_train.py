@@ -1374,7 +1374,6 @@ class VGGPerceptualLoss(torch.nn.Module):
                 k += 1
         return loss
 
-
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
 
