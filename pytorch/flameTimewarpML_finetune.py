@@ -1622,7 +1622,7 @@ def main():
             # Check if Ctrl+C was pressed
             if event.key() == Qt.Key_C and event.modifiers():
                 sys.stdout.write('ctrl+c')
-                self.worker.graceful_exit()
+                # self.worker.graceful_exit()
                 # self.close()
             else:
                 super().keyPressEvent(event)
