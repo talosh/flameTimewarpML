@@ -819,7 +819,14 @@ class ApplyModelDialog():
 
     def apply_finetune(self):
         
-        print (f'export path: {self.export_path_entry.text()}')
+        export_root_path = self.export_path_entry.text()
+        if self.fw.prefs.get('finetune_fast'):
+            export_root_path = os.path.join(
+                export_root_path,
+                'fast'
+            )
+
+        print (f'export_root_path: {export_root_path}')
 
         '''
         for clip in self.verified_clips:
