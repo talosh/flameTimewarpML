@@ -1120,6 +1120,23 @@ def main():
                     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                     writer.writeheader()
 
+            def normalize(image_array) :
+                def custom_bend(x):
+                    linear_part = x
+                    exp_bend = torch.sign(x) * torch.pow(torch.abs(x), 1 / 4 )
+                    return torch.where(x > 1, exp_bend, torch.where(x < -1, exp_bend, linear_part))
+
+                # transfer (0.0 - 1.0) onto (-1.0 - 1.0) for tanh
+                image_array = (image_array * 2) - 1
+                # bend values below -1.0 and above 1.0 exponentially so they are not larger then (-4.0 - 4.0)
+                image_array = custom_bend(image_array)
+                # bend everything to fit -1.0 - 1.0 with hyperbolic tanhent
+                image_array = torch.tanh(image_array)
+                # move it to 0.0 - 1.0 range
+                image_array = (image_array + 1) / 2
+
+                return image_array
+
             # ----------------------
 
             if len(self.argv) < 2:
@@ -1468,10 +1485,24 @@ def main():
 
             while True:
                 if not self.running:
-                    time.sleep(1)
                     self.stopped = True
                     break
-                time.sleep(0.1)
+                
+                data_time = time.time() - time_stamp
+                time_stamp = time.time()
+
+                img0, img1, img2, ratio, idx = read_image_queue.get()
+
+                img0 = img0.to(device, non_blocking = True)
+                img1 = img1.to(device, non_blocking = True)
+                img2 = img2.to(device, non_blocking = True)
+                img0_orig = img0.detach().clone()
+                img1_orig = img1.detach().clone()
+                img2_orig = img2.detach().clone()
+                img0 = normalize(img0)
+                img1 = normalize(img1)
+                img2 = normalize(img2)
+
 
             '''
             print ('Initializing PyTorch...')
