@@ -1619,6 +1619,7 @@ def main():
             self.text_edit.ensureCursorVisible()
 
         def keyPressEvent(self, event):
+            sys.stdout.write('keypress:')
             # Check if Ctrl+C was pressed
             if event.key() == Qt.Key_C and event.modifiers():
                 sys.stdout.write('ctrl+c')
