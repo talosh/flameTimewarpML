@@ -1194,6 +1194,84 @@ def main():
                 repeat=args.repeat
                 )
 
+            def read_images(read_image_queue, dataset):
+                while True:
+                    for batch_idx in range(len(dataset)):
+                        img0, img1, img2, ratio, idx = dataset[batch_idx]
+                        read_image_queue.put((img0, img1, img2, ratio, idx))
+                        del img0, img1, img2, ratio, idx
+
+            def write_images(write_image_queue):
+                while True:
+                    try:
+                        write_data = write_image_queue.get_nowait()
+                        preview_index = write_data.get('preview_index', 0)
+                        write_exr(write_data['sample_source1'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'), half_float = True)
+                        write_exr(write_data['sample_source2'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_outgoing.exr'), half_float = True)
+                        write_exr(write_data['sample_target'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_target.exr'), half_float = True)
+                        write_exr(write_data['sample_output'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_output.exr'), half_float = True)
+                        write_exr(write_data['sample_output_mask'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_output_mask.exr'), half_float = True)
+                        del write_data
+                    except:
+                    # except queue.Empty:
+                        time.sleep(1e-2)
+
+            def write_eval_images(write_eval_image_queue):
+                while True:
+                    try:
+                        write_data = write_eval_image_queue.get_nowait()
+                        write_exr(write_data['sample_source1'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_source1_name']), half_float = True)
+                        write_exr(write_data['sample_source2'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_source2_name']), half_float = True)
+                        write_exr(write_data['sample_target'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_target_name']), half_float = True)
+                        write_exr(write_data['sample_output'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_output_name']), half_float = True)
+                        write_exr(write_data['sample_output_mask'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_output_mask_name']), half_float = True)
+                        del write_data
+                    except:
+                    # except queue.Empty:
+                        time.sleep(1e-2)
+
+            def write_model_state(write_model_state_queue):
+                while True:
+                    try:
+                        current_state_dict = write_model_state_queue.get_nowait()
+                        trained_model_path = current_state_dict['trained_model_path']
+                        if os.path.isfile(trained_model_path):
+                            backup_file = trained_model_path.replace('.pth', '.backup.pth')
+                            shutil.copy(trained_model_path, backup_file)
+                        torch.save(current_state_dict, current_state_dict['trained_model_path'])
+                    except:
+                        time.sleep(1e-2)
+
+            read_thread = threading.Thread(target=read_images, args=(read_image_queue, dataset))
+            read_thread.daemon = True
+            read_thread.start()
+
+            write_image_queue = queue.Queue(maxsize=16)
+            write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
+            write_thread.daemon = True
+            write_thread.start()
+            
+            write_eval_image_queue = queue.Queue(maxsize=args.eval_buffer)
+            write_eval_thread = threading.Thread(target=write_eval_images, args=(write_eval_image_queue, ))
+            write_eval_thread.daemon = True
+            write_eval_thread.start()
+
+            write_model_state_queue = queue.Queue(maxsize=2)
+            write_model_state_thread = threading.Thread(target=write_model_state, args=(write_model_state_queue, ))
+            write_model_state_thread.daemon = True
+            write_model_state_thread.start()
+
+            pulse_dive = args.pulse_amplitude
+            pulse_period = args.pulse
+            lr = args.lr
+
+            criterion_mse = torch.nn.MSELoss()
+            criterion_l1 = torch.nn.L1Loss()
+            criterion_huber = torch.nn.HuberLoss(delta=0.001)
+
+            # weight_decay = 10 ** (0.07 * args.generalize - 9) if args.generalize > 1 else 1e-9
+            weight_decay = 10 ** (-2 - 0.02 * (args.generalize - 1)) if args.generalize > 1 else 1e-4
+
 
             '''
             print ('Initializing PyTorch...')
