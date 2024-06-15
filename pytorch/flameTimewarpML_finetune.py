@@ -451,6 +451,8 @@ def main():
             import time
             import platform
 
+            print (f'Initializing PyTorch...')
+
             import numpy as np
             import torch
 
