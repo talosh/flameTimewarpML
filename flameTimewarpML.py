@@ -1026,30 +1026,27 @@ class ApplyModelDialog():
                 return None
 
         def update_version_in_file(src_path, dest_path, new_version):
-            version_pattern = re.compile(r'(<preset version=")(\d+)(">.*</preset>)')
+            import os
+            import xml.etree.ElementTree as ET
 
             try:
-                if os.path.isfile(dest_path):
-                    os.remove(dest_path)
+                # Parse the source XML file
+                tree = ET.parse(src_path)
+                root = tree.getroot()
 
-                # Read the source file
-                with open(src_path, 'r', encoding='utf-8') as file:
-                    content = file.read()
-                
-                print (f'content: {content}')
+                # Find the <preset> element and update its version attribute
+                for preset in root.findall('.//preset'):
+                    if 'version' in preset.attrib:
+                        preset.set('version', str(new_version))
 
-                # Replace the version number
-                updated_content = version_pattern.sub(r'\g<1>' + str(new_version) + r'\g<3>', content)
-                
-                print (f'updated content: {updated_content}')
+                # Write the updated XML to the destination file
+                tree.write(dest_path, encoding='utf-8', xml_declaration=True)
 
-                # Write the updated content to the destination file
-                with open(dest_path, 'w', encoding='utf-8') as file:
-                    file.write(updated_content)
-                
                 print(f"Updated version in file saved to {dest_path}")
-
                 return dest_path
+            except ET.ParseError as e:
+                print(f"Error parsing XML file {src_path}: {e}")
+                return None
             except (IOError, OSError) as e:
                 print(f"Error processing file: {e}")
                 return None
