@@ -751,11 +751,23 @@ class ApplyModelDialog():
 
 
             if incoming_clip.bit_depth == 32:
-                export_preset = os.path.join(os.path.dirname(__file__), 'presets', 'openexr32bit.xml')
+                export_preset = self.create_export_preset(
+                        os.path.join(
+                            os.path.dirname(__file__), 
+                            'presets', 
+                            'openexr32bit.xml'
+                        )
+                    )
                 self.export_clip(incoming_clip, incoming_folder, export_preset=export_preset)
                 self.export_clip(outgoing_clip, outgoing_folder, export_preset=export_preset)
             else:
-                export_preset = os.path.join(os.path.dirname(__file__), 'presets', 'openexr16bit.xml')
+                export_preset = self.create_export_preset(
+                        os.path.join(
+                            os.path.dirname(__file__), 
+                            'presets', 
+                            'openexr16bit.xml'
+                        )
+                    )
                 self.export_clip(incoming_clip, incoming_folder, export_preset=export_preset)
                 self.export_clip(outgoing_clip, outgoing_folder, export_preset=export_preset)
 
@@ -1040,7 +1052,7 @@ class ApplyModelDialog():
                 # Write the updated XML to the destination file
                 tree.write(dest_path, encoding='utf-8', xml_declaration=True)
 
-                print(f"Updated version in file saved to {dest_path}")
+                # print(f"Updated version in file saved to {dest_path}")
                 return dest_path
             except ET.ParseError as e:
                 print(f"Error parsing XML file {src_path}: {e}")
@@ -1057,7 +1069,7 @@ class ApplyModelDialog():
             matching_files = find_files_with_all_path_patterns(flame_presets_location, ['*OpenEXR*.xml', '*file*', '*sequence*'])
             new_version = find_version_in_file(matching_files[0])
 
-            print (f'new version: {new_version}')
+            # print (f'new version: {new_version}')
 
             dest_preset_path = os.path.join(
                     '/var/tmp',
@@ -1065,7 +1077,7 @@ class ApplyModelDialog():
                 )
             
             if os.path.isfile(dest_preset_path):
-                print (f'removing {dest_preset_path}')
+                # print (f'removing {dest_preset_path}')
                 os.remove(dest_preset_path)
 
             preset_path = update_version_in_file(
