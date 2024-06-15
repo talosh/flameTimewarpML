@@ -998,16 +998,18 @@ class ApplyModelDialog():
     def create_export_preset(self, export_preset_path):
         import flame
 
-        def find_files_with_name_patterns(directory, patterns):
+        def find_files_with_path_patterns(directory, patterns):
             import os
             import fnmatch
+
             matches = []
             for root, dirnames, filenames in os.walk(directory):
-                for pattern in patterns:
-                    for filename in fnmatch.filter(filenames, pattern):
-                        file_path = os.path.join(root, filename)
-                        if file_path not in matches:  # Avoid duplicate entries
-                            matches.append(file_path)
+                for filename in filenames:
+                    full_path = os.path.join(root, filename)
+                    for pattern in patterns:
+                        if fnmatch.fnmatch(full_path, pattern):
+                            matches.append(full_path)
+                            break  # Avoid checking other patterns once a match is found
             return matches
 
         flame_presets_location = flame.PyExporter.get_presets_base_dir(
