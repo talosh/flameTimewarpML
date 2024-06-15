@@ -662,8 +662,8 @@ def main():
                     cursor.deletePreviousChar()  # Remove newline left after text removal
 
                 if cursor_up_pattern.search(line):
-                    print(f'cursor up')
                     # Move the cursor up one line
+                    cursor.movePosition(QTextCursor.Up)
                     cursor.movePosition(QTextCursor.Up)
 
                 # Clean the line from escape sequences and insert it
