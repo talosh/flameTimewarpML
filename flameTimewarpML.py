@@ -501,7 +501,7 @@ class ApplyModelDialog():
         )
 
         self.res_model_path_entry = PyFlameLineEdit(
-            text=res_model_path,
+            text=self.res_model_path,
             max_width=1000,
         )
 
