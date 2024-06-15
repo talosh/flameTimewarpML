@@ -998,28 +998,23 @@ class ApplyModelDialog():
     def create_export_preset(self, export_preset_path):
         import flame
 
-        def find_xml_files_with_text(directory, text):
+        def find_files_with_name_patterns(directory, patterns):
             import os
             import fnmatch
-
             matches = []
             for root, dirnames, filenames in os.walk(directory):
-                for filename in fnmatch.filter(filenames, '*.xml'):
-                    file_path = os.path.join(root, filename)
-                    try:
-                        with open(file_path, 'r', encoding='utf-8') as file:
-                            content = file.read()
-                            if text in content:
-                                matches.append(file_path)
-                    except (IOError, OSError) as e:
-                        print(f"Error reading file {file_path}: {e}")
+                for pattern in patterns:
+                    for filename in fnmatch.filter(filenames, pattern):
+                        file_path = os.path.join(root, filename)
+                        if file_path not in matches:  # Avoid duplicate entries
+                            matches.append(file_path)
             return matches
 
         flame_presets_location = flame.PyExporter.get_presets_base_dir(
                     flame.PyExporter.PresetVisibility.Autodesk
                 )
         
-        matching_files = find_xml_files_with_text(flame_presets_location, 'OpenEXR')
+        matching_files = find_files_with_name_patterns(flame_presets_location, ['*OpenEXR*.xml', '*sequence*'])
 
         print (f'matching_files: {matching_files}')
 
