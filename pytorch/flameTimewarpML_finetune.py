@@ -592,8 +592,8 @@ def main():
             self.setWindowTitle('TimewarpML Finetune')
             self.show()
 
-        '''
         def onUpdateText(self, text):
+            import re
             cursor = self.text_edit.textCursor()
             cursor.movePosition(QTextCursor.End)
 
@@ -622,8 +622,8 @@ def main():
 
             self.text_edit.setTextCursor(cursor)
             self.text_edit.ensureCursorVisible()
-        '''
 
+        '''
         def onUpdateText(self, text):
             import re
             # text = text.rstrip('\n')
@@ -649,32 +649,10 @@ def main():
 
             cursor = self.text_edit.textCursor()
             cursor.movePosition(QTextCursor.End)
-
-            clear_line_pattern = re.compile(r'\x1b\[2K')
-            cursor_up_pattern = re.compile(r'\x1b\[1A')
-
-            lines = text.split('\n')
-            for line in lines:
-                if cursor_up_pattern.search(line):
-                    # Move the cursor up one line
-                    cursor.movePosition(QTextCursor.Up)
-                elif clear_line_pattern.search(line):
-                    # Move to the start of the line and clear it
-                    cursor.movePosition(QTextCursor.StartOfLine, QTextCursor.KeepAnchor)
-                    cursor.removeSelectedText()
-                    cursor.deletePreviousChar()  # Remove newline left after text removal
-                else:
-                    cursor.insertText(line)
-                    cursor.insertText('\n')
-
-
-                # Clean the line from escape sequences and insert it
-                # clean_line = clear_line_pattern.sub('', line)
-                # clean_line = cursor_up_pattern.sub('', clean_line)
-
-            # cursor.insertText(text)  # Insert the text at the end
+            cursor.insertText(text)  # Insert the text at the end
             self.text_edit.setTextCursor(cursor)
             self.text_edit.ensureCursorVisible()
+        '''
 
         def keyPressEvent(self, event):        
             # Check if Ctrl+C was pressed
