@@ -1069,6 +1069,7 @@ class ApplyModelDialog():
                 )
             
             if os.path.isfile(dest_preset_path):
+                print (f'removing {dest_preset_path}')
                 os.remove(dest_preset_path)
 
             preset_path = update_version_in_file(
