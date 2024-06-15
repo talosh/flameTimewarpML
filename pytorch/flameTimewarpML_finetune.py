@@ -1638,6 +1638,8 @@ def main():
             sys.stdout.write('keyrelease:')
             if event.key() == Qt.Key_Control:
                 self.ctrl_pressed = False
+            elif event.key() == Qt.Key_C and self.ctrl_pressed:
+                sys.stdout.write('ctrl+c\n')
             super().keyReleaseEvent(event)
 
         def handleWorkerResult(self, status, message):
