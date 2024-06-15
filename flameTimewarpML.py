@@ -662,9 +662,21 @@ class ApplyModelDialog():
             source_clip_folder = os.path.join(result_folder, 'source')
 
             if clip.bit_depth == 32:
-                export_preset = os.path.join(os.path.dirname(__file__), 'presets', 'source_export32.xml')
+                export_preset = self.create_export_preset(
+                        os.path.join(
+                            os.path.dirname(__file__), 
+                            'presets', 
+                            'source_export32.xml'
+                        )
+                    )
             else:
-                export_preset = os.path.join(os.path.dirname(__file__), 'presets', 'source_export.xml')
+                export_preset = self.create_export_preset(
+                        os.path.join(
+                            os.path.dirname(__file__), 
+                            'presets', 
+                            'source_export.xml'
+                        )
+                    )
             
             self.export_clip(clip, source_clip_folder, export_preset=export_preset)
 
@@ -982,6 +994,17 @@ class ApplyModelDialog():
                     break
 
         exporter.export(clip, export_preset, export_dir, hooks=ExportHooks())
+
+    def create_export_preset(self, export_preset_path):
+        import flame
+
+        flame_presets_location = flame.PyExporter.get_presets_base_dir(
+                    flame.PyExporter.PresetVisibility.Autodesk
+                )
+        
+        print (f'flame_presets_location: {flame_presets_location}')
+
+        return export_preset_path
 
 def get_media_panel_custom_ui_actions():
     def scope_clip(selection):
