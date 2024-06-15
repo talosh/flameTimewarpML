@@ -653,7 +653,26 @@ def main():
             clear_line_pattern = re.compile(r'\x1b\[2K')
             cursor_up_pattern = re.compile(r'\x1b\[1A')
 
-            cursor.insertText(text)  # Insert the text at the end
+            lines = text.split('\n')
+            for line in lines:
+                if clear_line_pattern.search(line):
+                    # Move to the start of the line and clear it
+                    cursor.movePosition(QTextCursor.StartOfLine, QTextCursor.KeepAnchor)
+                    cursor.removeSelectedText()
+                    cursor.deletePreviousChar()  # Remove newline left after text removal
+
+                if cursor_up_pattern.search(line):
+                    # Move the cursor up one line
+                    cursor.movePosition(QTextCursor.Up)
+
+                # Clean the line from escape sequences and insert it
+                clean_line = clear_line_pattern.sub('', line)
+                clean_line = cursor_up_pattern.sub('', clean_line)
+
+                cursor.insertText(clean_line)
+                cursor.insertText('\n')
+
+            # cursor.insertText(text)  # Insert the text at the end
             self.text_edit.setTextCursor(cursor)
             self.text_edit.ensureCursorVisible()
 
