@@ -1159,6 +1159,12 @@ def main():
             def moving_average(data, window_size):
                 return np.convolve(data, np.ones(window_size)/window_size, mode='valid')
 
+            def psnr_torch(imageA, imageB, max_pixel=1.0):
+                mse = torch.mean((imageA.cpu().detach().data - imageB.cpu().detach().data) ** 2)
+                if mse == 0:
+                    return torch.tensor(float('inf'))
+                return 20 * torch.log10(max_pixel / torch.sqrt(mse))
+
             # ----------------------
 
             if len(self.argv) < 2:
@@ -1661,8 +1667,6 @@ def main():
                 clear_lines(2)
                 print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
                 print(f'\r[Last 10K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
-
-
 
                 batch_idx = batch_idx + 1
                 step = step + 1
