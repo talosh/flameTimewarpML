@@ -435,6 +435,7 @@ def main():
             import threading
             import time
             import platform
+            from copy import deepcopy
             from pprint import pprint
 
             def clear_lines(n=2):
@@ -1137,6 +1138,27 @@ def main():
 
                 return image_array
 
+            def restore_normalized_values(image_array):
+                def custom_de_bend(x):
+                    linear_part = x
+                    exp_deband = torch.sign(x) * torch.pow(torch.abs(x), 4 )
+                    return torch.where(x > 1, exp_deband, torch.where(x < -1, exp_deband, linear_part))
+
+                epsilon = torch.tensor(4e-8, dtype=torch.float32).to(image_array.device)
+                # clamp image befor arctanh
+                image_array = torch.clamp((image_array * 2) - 1, -1.0 + epsilon, 1.0 - epsilon)
+                # restore values from tanh  s-curve
+                image_array = torch.arctanh(image_array)
+                # restore custom bended values
+                image_array = custom_de_bend(image_array)
+                # move it to 0.0 - 1.0 range
+                image_array = ( image_array + 1.0) / 2.0
+
+                return image_array
+
+            def moving_average(data, window_size):
+                return np.convolve(data, np.ones(window_size)/window_size, mode='valid')
+
             # ----------------------
 
             if len(self.argv) < 2:
@@ -1502,6 +1524,150 @@ def main():
                 img0 = normalize(img0)
                 img1 = normalize(img1)
                 img2 = normalize(img2)
+
+                current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
+                optimizer_flownet.zero_grad()
+
+                # scale list augmentation
+                random_scales = [
+                    [4, 2, 1, 1],
+                    [2, 2, 1, 1],
+                    [2, 1, 1, 1],
+                    [1, 1, 1, 1],
+                ]
+
+                if random.uniform(0, 1) < 0.44:
+                    training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
+                else:
+                    training_scale = [8, 4, 2, 1]
+
+                flownet.train()
+                n_iterations = random.randint(1, 4) if args.iterations == -1 else args.iterations
+                flow_list, mask_list, merged = flownet(
+                    img0, 
+                    img2, 
+                    ratio, 
+                    scale=training_scale,
+                    iterations = n_iterations
+                    )
+                
+                mask = mask_list[3]
+                output = merged[3]
+
+                x1_output = merged[3]
+                x1_orig = img1
+                loss = criterion_l1(x1_output, x1_orig)
+
+                loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
+                loss_l1_str = str(f'{loss_l1.item():.6f}')
+
+                loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
+
+                epoch_loss.append(float(loss_l1.item()))
+                steps_loss.append(float(loss_l1.item()))
+                lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
+                # lpips_list.append(1.)
+                psnr_list.append(float(psnr_torch(output, img1)))
+
+                if len(epoch_loss) < 9999:
+                    smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
+                    window_min = min(epoch_loss)
+                    window_max = max(epoch_loss)
+                    lpips_window_val = float(np.array(lpips_list).mean())
+                else:
+                    smoothed_window_loss = np.mean(moving_average(epoch_loss[-9999:], 9))
+                    window_min = min(epoch_loss[-9999:])
+                    window_max = max(epoch_loss[-9999:])
+                    lpips_window_val = float(np.array(lpips_list[-9999:]).mean())
+                smoothed_loss = float(np.mean(moving_average(epoch_loss, 9)))
+                lpips_val = float(np.array(lpips_list).mean())
+
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
+
+                optimizer_flownet.step()
+
+                try:
+                    scheduler_flownet.step()
+                except Exception as e:
+                    # if Onecycle is over due to variable number of steps per epoch
+                    # fall back to Cosine
+
+                    print (f'switching to CosineAnnealingLR scheduler:')
+                    print (f'{e}\n\n')
+
+                    current_lr = float(optimizer_flownet.param_groups[0]["lr"])
+                    scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(
+                        optimizer_flownet, 
+                        T_max=pulse_period, 
+                        eta_min = current_lr - (( current_lr / 100 ) * pulse_dive)
+                        )
+
+                train_time = time.time() - time_stamp
+                time_stamp = time.time()
+
+                current_state_dict = {
+                        'step': step,
+                        'steps_loss': steps_loss,
+                        'epoch': epoch,
+                        'epoch_loss': epoch_loss,
+                        'start_timestamp': start_timestamp,
+                        'lr': optimizer_flownet.param_groups[0]['lr'],
+                        'model_info': model_info,
+                        'flownet_state_dict': flownet.state_dict(),
+                        # 'model_d_state_dict': model_D.state_dict(),
+                        'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
+                        'trained_model_path': trained_model_path
+                    }
+
+                if step % args.preview == 1:
+                    rgb_source1 = img0_orig
+                    rgb_source2 = img2_orig
+                    rgb_target = img1_orig
+                    rgb_output = restore_normalized_values(output)
+                    rgb_output_mask = mask.repeat_interleave(3, dim=1)
+                    # rgb_refine = refine_list[0] + refine_list[1] + refine_list[2] + refine_list[3]
+                    # rgb_refine = (rgb_refine + 1) / 2
+                    # sample_refine = rgb_refine[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+
+                    preview_index = preview_index + 1 if preview_index < 9 else 0
+
+                    write_image_queue.put(
+                        {
+                            'preview_folder': os.path.join(args.dataset_path, 'preview'),
+                            'preview_index': int(preview_index),
+                            'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                            'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                            'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                            'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                            'sample_output_mask': rgb_output_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+                        }
+                    )
+
+                    del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
+
+                if step % args.save == 1:
+                    write_model_state_queue.put(deepcopy(current_state_dict))
+
+                data_time += time.time() - time_stamp
+                data_time_str = str(f'{data_time:.2f}')
+                train_time_str = str(f'{train_time:.2f}')
+
+                epoch_time = time.time() - start_timestamp
+                days = int(epoch_time // (24 * 3600))
+                hours = int((epoch_time % (24 * 3600)) // 3600)
+                minutes = int((epoch_time % 3600) // 60)
+
+                clear_lines(2)
+                print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
+                print(f'\r[Last 10K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
+
+
+
+                batch_idx = batch_idx + 1
+                step = step + 1
+
+                del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
 
 
             '''
