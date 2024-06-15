@@ -427,6 +427,16 @@ def main():
             self.stopped = False
 
         def run(self):
+            try:
+                self.run_training()
+            except Exception as e:
+                sys.stdout.write(f'Error while training: {e}\n')
+                self.running = False
+                self.stopped = True
+                self.graceful_exit()
+                self.result.emit(False, '')
+
+        def run_training(self):
             import os
             import sys
             import random
