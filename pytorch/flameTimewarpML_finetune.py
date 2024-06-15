@@ -423,6 +423,7 @@ def main():
             self.argv = argv
             self.lockfile = self.argv[1]
             self.window = window
+            self.running = True
 
         def run(self):
             import os
@@ -1498,6 +1499,7 @@ def main():
             '''
 
         def graceful_exit(self):
+            self.running = False
             import torch
             print(f'\nSaving current state to {self.current_state_dict["trained_model_path"]}...')
             torch.save(self.current_state_dict, self.current_state_dict['trained_model_path'])
