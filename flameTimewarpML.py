@@ -825,6 +825,12 @@ class ApplyModelDialog():
                 export_root_path,
                 'fast'
             )
+        else:
+            export_root_path = os.path.join(
+                export_root_path,
+                'normal'
+            )
+
 
         print (f'export_root_path: {export_root_path}')
 
