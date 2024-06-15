@@ -437,7 +437,7 @@ class ApplyModelDialog():
 
             if not os.path.isfile(self.res_model_path):
                 import shutil
-                shutil.copy(self.model_path, self.res_model_path)
+                shutil.copy(self.src_model_path, self.res_model_path)
 
             if not os.path.isfile(self.res_model_path):
                 open_dest_browser()
@@ -832,6 +832,11 @@ class ApplyModelDialog():
             self.run_inference(lockfile_path)
 
     def apply_finetune(self):
+        
+        if not os.path.isfile(self.res_model_path):
+            import shutil
+            shutil.copy(self.src_model_path, self.res_model_path)
+
         export_root_path = self.export_path_entry.text()
         if self.fw.prefs.get('finetune_fast'):
             export_root_path = os.path.join(
