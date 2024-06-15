@@ -1436,6 +1436,8 @@ def main():
                 'trained_model_path': trained_model_path
             }
 
+            self.current_state_dict = current_state_dict
+
             create_csv_file(
                 f'{os.path.splitext(trained_model_path)[0]}.csv',
                 [
@@ -1461,7 +1463,6 @@ def main():
                     'LPIPS'
                 ]
             )
-
 
 
 
@@ -1495,6 +1496,11 @@ def main():
                 time.sleep(0.1)  # Simulate work
             self.result.emit(True, '')
             '''
+
+        def graceful_exit(self):
+            import torch
+            print(f'\nSaving current state to {self.current_state_dict["trained_model_path"]}...')
+            torch.save(self.current_state_dict, self.current_state_dict['trained_model_path'])
 
     # Main window class
     class MainWindow(QMainWindow):
@@ -1605,6 +1611,7 @@ def main():
         def keyPressEvent(self, event):        
             # Check if Ctrl+C was pressed
             if event.key() == Qt.Key_C and event.modifiers():
+                self.worker.graceful_exit()
                 self.close()
             else:
                 super().keyPressEvent(event)
