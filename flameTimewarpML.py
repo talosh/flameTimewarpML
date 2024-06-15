@@ -818,7 +818,7 @@ class ApplyModelDialog():
             self.run_inference(lockfile_path)
 
     def apply_finetune(self):
-        print (f'apply finetune')
+        print (f'verified clips: {self.verified_clips}')
         pass
 
     def run_inference(self, lockfile_path):
