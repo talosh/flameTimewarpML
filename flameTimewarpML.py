@@ -880,7 +880,7 @@ class ApplyModelDialog():
         json_info['legacy_model'] = None # 'Model name (optional)'
         json_info['device'] = 0 # 'Graphics card index (default: 0)'
         json_info['batch_size'] = 4 if self.fw.prefs.get('finetune_generalize') else 2 # 'Batch size (int) (default: 2)'
-        json_info['first_epoch'] = 0 # 'Epoch (int) (default: Saved)'
+        json_info['first_epoch'] = -1 # 'Epoch (int) (default: Saved)'
         json_info['epochs'] = -1 # 'Number of epoch to run (int) (default: Unlimited)'
         json_info['reset_stats'] = True # 'Reset saved step, epoch and loss stats'
         json_info['eval'] = 9999 if self.fw.prefs.get('finetune_eval') else -1 # 'Evaluate after N steps'
