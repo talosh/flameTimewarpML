@@ -466,6 +466,10 @@ class ApplyModelDialog():
             self.fw.prefs['finetune_1k_patch'] = self.gen_button.isChecked()
             self.fw.save_prefs()
 
+        def evaluate():
+            self.fw.prefs['finetune_eval'] = self.gen_button.isChecked()
+            self.fw.save_prefs()
+
         # Create export and apply window
         window_title = f'{settings["app_name"]} <small>{settings["version"]}'
         window_title += ' [Finetune]'
@@ -543,6 +547,12 @@ class ApplyModelDialog():
             connect=large_patch
         )
 
+        self.eval_button = PyFlamePushButton(
+            text='Evaluate',
+            button_checked = self.fw.prefs.get('finetune_eval', False),
+            connect=evaluate
+        )
+
         self.export_and_apply_button = PyFlameButton(
             text='Export and Apply',
             connect=self.apply,
@@ -566,6 +576,7 @@ class ApplyModelDialog():
         grid_layout.setColumnMinimumWidth(3, 150)
 
         grid_layout.addWidget(self.options_label, 0, 0)
+        grid_layout.addWidget(self.eval_button, 0, 1)
         grid_layout.addWidget(self.large_patch_button, 0, 2)
         grid_layout.addWidget(self.gen_button, 0, 3)
         grid_layout.addWidget(self.fast_button, 0, 5)
@@ -855,6 +866,15 @@ class ApplyModelDialog():
                     clip.name.get_value()
                 ), 
                 export_preset=export_preset)
+
+            json_info = {}
+            json_info['mode'] = 'finetune'
+            json_info['dataset'] = export_root_path
+            json_info['model_path'] = self.fw.prefs.get('model_path')
+            json_info['settings'] = self.settings
+            json_info['cpu'] = self.fw.prefs.get('cpu')
+            json_info['half'] = self.fw.prefs.get('half')
+
 
     def run_inference(self, lockfile_path):
         import platform
