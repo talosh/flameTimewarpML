@@ -1010,15 +1010,17 @@ class ApplyModelDialog():
                         matches.append(full_path)
             return matches
 
-        flame_presets_location = flame.PyExporter.get_presets_base_dir(
-                    flame.PyExporter.PresetVisibility.Autodesk
-                )
+        try:
+            flame_presets_location = flame.PyExporter.get_presets_base_dir(
+                        flame.PyExporter.PresetVisibility.Autodesk
+                    )
+            
+            matching_files = find_files_with_all_path_patterns(flame_presets_location, ['*OpenEXR*.xml', '*file*', '*sequence*'])
+
+            print (f'matching_files: {matching_files}')
         
-        matching_files = find_files_with_all_path_patterns(flame_presets_location, ['*OpenEXR*.xml', '*file*', '*sequence*'])
-
-        print (f'matching_files: {matching_files}')
-
-        return export_preset_path
+        except:
+            return export_preset_path
 
 def get_media_panel_custom_ui_actions():
     def scope_clip(selection):
