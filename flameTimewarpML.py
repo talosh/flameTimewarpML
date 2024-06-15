@@ -362,10 +362,14 @@ class ApplyModelDialog():
         if not self.verified_clips:
             return
 
-        src_model_path = self.model_path
-        res_model_path = os.path.join(
+        self.src_model_path = self.model_path
+        self.res_model_path = os.path.join(
             os.path.dirname(self.model_path),
             f'{self.verified_clips[0].name.get_value()}.pth'
+        )
+        self.finetune_export_path = os.path.join(
+            self.working_folder,
+            f'{self.verified_clips[0].name.get_value()}_TW_FINETUNE'
         )
 
         def open_browser():
@@ -400,7 +404,7 @@ class ApplyModelDialog():
 
             if path:
                 self.res_model_path_entry.setText(path)
-                res_model_path = os.path.join(
+                self.res_model_path = os.path.join(
                     os.path.dirname(self.model_path),
                     f'{self.verified_clips[0].name.get_value()}.pth'
                 )
@@ -422,31 +426,31 @@ class ApplyModelDialog():
                 default_path = os.path.dirname(self.model_path),
                 multi_selection = False)
             if len(flame.browser.selection) > 0:
-                src_model_path = flame.browser.selection[0]
-                self.src_model_path_entry.setText(src_model_path)
-                self.fw.prefs['model_path'] = src_model_path
+                self.src_model_path = flame.browser.selection[0]
+                self.src_model_path_entry.setText(self.src_model_path)
+                self.fw.prefs['finetune_src_model_path'] = self.src_model_path
                 self.fw.save_prefs()
             self.window.show()
 
         def open_dest_model_browser():
             self.window.hide()
 
-            if not os.path.isfile(res_model_path):
+            if not os.path.isfile(self.res_model_path):
                 import shutil
-                shutil.copy(self.model_path, res_model_path)
+                shutil.copy(self.model_path, self.res_model_path)
 
-            if not os.path.isfile(res_model_path):
+            if not os.path.isfile(self.res_model_path):
                 open_dest_browser()
             else:
                 flame.browser.show(
                     title = 'Select flameTimewarpML Model:',
                     extension = 'pth',
-                    default_path = os.path.dirname(res_model_path),
+                    default_path = os.path.dirname(self.res_model_path),
                     multi_selection = False)
                 if len(flame.browser.selection) > 0:
-                    res_model_pathz = flame.browser.selection[0]
-                    self.res_model_path_entry.setText(res_model_path)
-                    self.fw.prefs['model_path'] = res_model_path
+                    self.res_model_path = flame.browser.selection[0]
+                    self.res_model_path_entry.setText(self.res_model_path)
+                    self.fw.prefs['finetune_res_model_path'] = self.res_model_path
                     self.fw.save_prefs()
             self.window.show()
 
@@ -487,12 +491,12 @@ class ApplyModelDialog():
 
         # Entries
         self.export_path_entry = PyFlameLineEdit(
-            text=self.working_folder,
+            text=finetune_export_path,
             max_width=1000,
         )
 
         self.src_model_path_entry = PyFlameLineEdit(
-            text=src_model_path,
+            text=self.src_model_path,
             max_width=1000,
         )
 
