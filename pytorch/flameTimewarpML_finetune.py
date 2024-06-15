@@ -1712,20 +1712,6 @@ def main():
 
                     psnr = 0
 
-                    '''
-                    if args.onecycle != -1:
-                        if first_pass:
-                            first_pass = False
-                            optimizer_state_dict = optimizer_flownet.state_dict()
-                            scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
-                                optimizer_flownet,
-                                max_lr=args.lr, 
-                                total_steps= step * args.onecycle, 
-                                )
-                            optimizer_flownet.load_state_dict(optimizer_state_dict)
-                        print (f'setting OneCycleLR after first cycle with max_lr={args.lr}, steps={step}\n\n')
-                    '''
-
                     steps_loss = []
                     epoch_loss = []
                     psnr_list = []
