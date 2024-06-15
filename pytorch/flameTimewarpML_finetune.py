@@ -1390,6 +1390,24 @@ def main():
                 psnr_list = []
                 lpips_list = []
 
+            # LPIPS Init
+
+            import warnings
+            warnings.filterwarnings('ignore', category=UserWarning)
+
+            import lpips
+            os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
+            loss_fn_alex = lpips.LPIPS(net='alex')
+            loss_fn_alex.to(device)
+
+            warnings.resetwarnings()
+
+            start_timestamp = time.time()
+            time_stamp = time.time()
+            epoch = current_epoch if args.first_epoch == -1 else args.first_epoch
+            step = loaded_step if args.first_epoch == -1 else step
+            batch_idx = 0
+
 
 
             '''
