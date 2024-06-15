@@ -1426,7 +1426,6 @@ def main():
     if args.all_gpus:
         device = 'cuda'
 
-
     Flownet = None
 
     if args.model:
