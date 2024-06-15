@@ -1499,7 +1499,7 @@ def main():
             if args.freeze:
                 print ('\nFreezing parameters')
 
-            print (f'using {args.frame_size}x{args.frame_size} patch')
+            print (f'using {args.frame_size}x{args.frame_size} patch for training')
 
             current_state_dict = {
                 'step': step,
