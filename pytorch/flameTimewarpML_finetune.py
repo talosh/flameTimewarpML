@@ -1091,6 +1091,24 @@ def main():
                     repeat=repeat
                     )
 
+            def create_timestamp_uid(self):
+                import random
+                import uuid
+                from datetime import datetime
+
+                def number_to_letter(number):
+                    # Map each digit to a letter
+                    mapping = {
+                        '0': 'A', '1': 'B', '2': 'C', '3': 'D', '4': 'E',
+                        '5': 'F', '6': 'G', '7': 'H', '8': 'I', '9': 'J'
+                    }
+                    return ''.join(mapping.get(char, char) for char in number)
+
+                uid = ((str(uuid.uuid4()).replace('-', '')).upper())
+                uid = ''.join(random.sample(number_to_letter(uid), 4))
+                timestamp = (datetime.now()).strftime('%Y%b%d_%H%M').upper()
+                return f'{timestamp}_{uid}'
+
             # ----------------------
 
             if len(self.argv) < 2:
@@ -1269,8 +1287,109 @@ def main():
             criterion_l1 = torch.nn.L1Loss()
             criterion_huber = torch.nn.HuberLoss(delta=0.001)
 
-            # weight_decay = 10 ** (0.07 * args.generalize - 9) if args.generalize > 1 else 1e-9
             weight_decay = 10 ** (-2 - 0.02 * (args.generalize - 1)) if args.generalize > 1 else 1e-4
+
+            if args.weight_decay != -1:
+                weight_decay = args.weight_decay
+
+            if args.generalize == 0:
+                print (f'Disabling augmentation and setting weight decay to {weight_decay:.2e}')
+            elif args.generalize == 1:
+                print (f'Setting augmentation to horizontal flip and scale only and weight decay to {weight_decay:.2e}')
+            else:
+                print (f'Setting augmentation rate to {args.generalize}% and weight decay to {weight_decay:.2e}')
+
+            optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=weight_decay)
+
+            train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+
+            if args.onecycle != -1:
+                train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
+                    optimizer_flownet,
+                    max_lr=args.lr, 
+                    steps_per_epoch=len(dataset)*dataset.repeat_count, 
+                    epochs=args.onecycle
+                    )
+                print (f'setting OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.onecycle}')
+                args.epochs = args.onecycle
+
+            scheduler_flownet = train_scheduler_flownet
+
+            step = 0
+            loaded_step = 0
+            current_epoch = 0
+            preview_index = 0
+            first_pass = True
+
+            steps_loss = []
+            epoch_loss = []
+            psnr_list = []
+            lpips_list = []
+
+            if args.state_file:
+                trained_model_path = args.state_file
+
+                try:
+                    checkpoint = torch.load(trained_model_path, map_location=device)
+                    print('loaded previously saved model checkpoint')
+                except Exception as e:
+                    print (f'unable to load saved model: {e}')
+
+                try:
+                    missing_keys, unexpected_keys = flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
+                    print('loaded previously saved Flownet state')
+                    if missing_keys:
+                        print (f'\nMissing keys:\n{missing_keys}\n')
+                    if unexpected_keys:
+                        print (f'\nUnexpected keys:\n{unexpected_keys}\n')
+                except Exception as e:
+                    print (f'unable to load Flownet state: {e}')
+
+                try:
+                    loaded_step = checkpoint['step']
+                    print (f'loaded step: {loaded_step}')
+                    current_epoch = checkpoint['epoch']
+                    print (f'epoch: {current_epoch + 1}')
+                except Exception as e:
+                    print (f'unable to set step and epoch: {e}')
+
+            else:
+                traned_model_name = 'flameTWML_model_' + create_timestamp_uid() + '.pth'
+                if platform.system() == 'Darwin':
+                    trained_model_dir = os.path.join(
+                        os.path.expanduser('~'),
+                        'Documents',
+                        'flameTWML_models')
+                else:
+                    trained_model_dir = os.path.join(
+                        os.path.expanduser('~'),
+                        'flameTWML_models')
+                if not os.path.isdir(trained_model_dir):
+                    os.makedirs(trained_model_dir)
+                trained_model_path = os.path.join(trained_model_dir, traned_model_name)
+
+            if args.legacy_model:
+                rife_state_dict = torch.load(args.legacy_model)
+                def convert(param):
+                    return {
+                        k.replace("module.", ""): v
+                        for k, v in param.items()
+                        if "module." in k
+                    }
+                missing_keys, unexpected_keys = flownet.load_state_dict(convert(rife_state_dict), strict=False)
+                print (f'\nMissing keys:\n{missing_keys}\n')
+                print (f'\nUnexpected keys:\n{unexpected_keys}\n')
+
+            if args.reset_stats:
+                step = 0
+                loaded_step = 0
+                current_epoch = 0
+                preview_index = 0
+                steps_loss = []
+                epoch_loss = []
+                psnr_list = []
+                lpips_list = []
+
 
 
             '''
