@@ -430,8 +430,7 @@ class ApplyModelDialog():
 
         def open_dest_model_browser():
             self.window.hide()
-            print (f'res_model_path {res_model_path}')
-
+            
             if not os.path.isfile(res_model_path):
                 import shutil
                 shutil.copy(self.model_path, res_model_path)

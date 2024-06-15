@@ -1402,6 +1402,7 @@ def main():
     parser.add_argument('--reset_stats', action='store_true', dest='reset_stats', default=False, help='Reset saved step, epoch and loss stats')
 
     parser.add_argument('--eval', type=int, dest='eval', default=-1, help='Evaluate after N steps')
+    parser.add_argument('--eval_first', action='store_true', dest='eval_first', default=False, help='Reset saved step, epoch and loss stats')
     parser.add_argument('--eval_samples', type=int, dest='eval_samples', default=-1, help='Evaluate N random training samples')
     parser.add_argument('--eval_seed', type=int, dest='eval_seed', default=1, help='Random seed to select samples if --eval_samples set')
     parser.add_argument('--eval_buffer', type=int, dest='eval_buffer', default=8, help='Write buffer size for evaluated images')
@@ -2197,12 +2198,11 @@ def main():
             dataset.reshuffle()
 
         if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
-            '''
-            if step == 1:
-                batch_idx = batch_idx + 1
-                step = step + 1
-                continue
-            '''
+            if not args.eval_first:
+                if step == 1:
+                    batch_idx = batch_idx + 1
+                    step = step + 1
+                    continue
 
             preview_folder = os.path.join(args.dataset_path, 'preview')
 
