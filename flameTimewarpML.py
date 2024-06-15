@@ -1034,12 +1034,8 @@ class ApplyModelDialog():
                 tree = ET.parse(src_path)
                 root = tree.getroot()
 
-                print (f'root {root.attrib}')
-
-                # Find the <preset> element and update its version attribute
-                for preset in root.findall('.//preset'):
-                    if 'version' in preset.attrib:
-                        preset.set('version', str(new_version))
+                if 'version' in root.attrib:
+                    root.set('version', str(new_version))
 
                 # Write the updated XML to the destination file
                 tree.write(dest_path, encoding='utf-8', xml_declaration=True)
