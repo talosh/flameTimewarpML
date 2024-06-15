@@ -1025,15 +1025,49 @@ class ApplyModelDialog():
                 print(f"Error reading file {file_path}: {e}")
                 return None
 
+        def update_version_in_file(src_path, dest_path, new_version):
+            version_pattern = re.compile(r'(<preset version=")(\d+)(">.*</preset>)')
+            
+            try:
+                # Read the source file
+                with open(src_path, 'r', encoding='utf-8') as file:
+                    content = file.read()
+                
+                # Replace the version number
+                updated_content = version_pattern.sub(r'\g<1>' + str(new_version) + r'\g<3>', content)
+                
+                # Write the updated content to the destination file
+                with open(dest_path, 'w', encoding='utf-8') as file:
+                    file.write(updated_content)
+                
+                print(f"Updated version in file saved to {dest_path}")
+
+                return dest_path
+            except (IOError, OSError) as e:
+                print(f"Error processing file: {e}")
+                return None
+
         try:
             flame_presets_location = flame.PyExporter.get_presets_base_dir(
                         flame.PyExporter.PresetVisibility.Autodesk
                     )
             
             matching_files = find_files_with_all_path_patterns(flame_presets_location, ['*OpenEXR*.xml', '*file*', '*sequence*'])
-            version = find_version_in_file(matching_files[0])
-            print (f'version: {version}')
-        
+            new_version = find_version_in_file(matching_files[0])
+            preset_path = update_version_in_file(
+                export_preset_path,
+                os.path.join(
+                    '/var/tmp',
+                    os.path.basename(export_preset_path)
+                ),
+                new_version
+            )
+
+            if preset_path:
+                return preset_path
+            else:
+                return export_preset_path
+
         except:
             return export_preset_path
 
