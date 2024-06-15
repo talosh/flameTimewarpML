@@ -1027,8 +1027,11 @@ class ApplyModelDialog():
 
         def update_version_in_file(src_path, dest_path, new_version):
             version_pattern = re.compile(r'(<preset version=")(\d+)(">.*</preset>)')
-            
+
             try:
+                if os.path.isfile(dest_path):
+                    os.remove(dest_path)
+
                 # Read the source file
                 with open(src_path, 'r', encoding='utf-8') as file:
                     content = file.read()
