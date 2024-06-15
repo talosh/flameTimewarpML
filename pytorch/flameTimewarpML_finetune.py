@@ -1174,6 +1174,19 @@ def main():
                     return torch.tensor(float('inf'))
                 return 20 * torch.log10(max_pixel / torch.sqrt(mse))
 
+            def warp(tenInput, tenFlow):
+                backwarp_tenGrid = {}
+                k = (str(tenFlow.device), str(tenFlow.size()))
+                if k not in backwarp_tenGrid:
+                    tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+                    tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+                    backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device = tenInput.device, dtype = tenInput.dtype)
+                    # end
+                tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
+
+                g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+                return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+
             # ----------------------
 
             if len(self.argv) < 2:
@@ -1692,7 +1705,7 @@ def main():
                     hours = int((epoch_time % (24 * 3600)) // 3600)
                     minutes = int((epoch_time % 3600) // 60)
 
-                    clear_lines(2)
+                    clear_lines(1)
                     print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PSNR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
                     print ('\n')
 
@@ -1723,13 +1736,163 @@ def main():
                         img0, img1, img2, ratio, idx = read_image_queue.get()
                     dataset.reshuffle()
 
+                if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
+                    if not args.eval_first:
+                        if step == 1:
+                            batch_idx = batch_idx + 1
+                            step = step + 1
+                            continue
+
+                    preview_folder = os.path.join(args.dataset_path, 'preview')
+
+                    try:
+                        prev_eval_folder
+                    except:
+                        prev_eval_folder = None
+                    eval_folder = os.path.join(
+                        preview_folder,
+                        'eval',
+                        os.path.splitext(os.path.basename(trained_model_path))[0],
+                        f'Step_{step:09}'
+                        )
+
+                    if not os.path.isdir(eval_folder):
+                        os.makedirs(eval_folder)
+                    
+                    descriptions = list(dataset.initial_train_descriptions)
+
+                    if args.eval_samples > 0:
+                        rng = random.Random(args.eval_seed)
+                        descriptions = rng.sample(descriptions, args.eval_samples)
+
+                    eval_loss = []
+                    eval_psnr = []
+                    eval_lpips = []
+                    
+                    flownet.eval()
+                    with torch.no_grad():
+                        for ev_item_index, description in enumerate(descriptions):
+
+                            if not self.running:
+                                break
+
+                            if eval_loss:
+                                eval_loss_min = min(eval_loss)
+                                eval_loss_max = max(eval_loss)
+                                eval_loss_avg = float(np.array(eval_loss).mean())
+                            else:
+                                eval_loss_min = -1
+                                eval_loss_max = -1
+                                eval_loss_avg = -1
+                            if eval_psnr:
+                                eval_psnr_mean = float(np.array(eval_psnr).mean())
+                            else:
+                                eval_psnr_mean = -1
+                            if eval_lpips:
+                                eval_lpips_mean = float(np.array(eval_lpips).mean())
+                            else:
+                                eval_lpips_mean = -1
+
+                            clear_lines(1)
+                            print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
+                            print (f'\rEvaluating {ev_item_index} of {len(descriptions)}: Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f} LPIPS: {eval_lpips_mean:.4f} PSNR: {eval_psnr_mean:4f}')
+
+                            eval_img0 = read_openexr_file(description['start'])['image_data']
+                            eval_img1 = read_openexr_file(description['gt'])['image_data']
+                            eval_img2 = read_openexr_file(description['end'])['image_data']
+                            eval_ratio = description['ratio']
+
+                            eval_img0 = torch.from_numpy(eval_img0)
+                            eval_img1 = torch.from_numpy(eval_img1)
+                            eval_img2 = torch.from_numpy(eval_img2)
+                            eval_img0 = eval_img0.to(device = device, dtype = torch.float32, non_blocking = True)
+                            eval_img1 = eval_img1.to(device = device, dtype = torch.float32, non_blocking = True)
+                            eval_img2 = eval_img2.to(device = device, dtype = torch.float32, non_blocking = True)
+                            eval_img0 = eval_img0.permute(2, 0, 1).unsqueeze(0)
+                            eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
+                            eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
+
+
+                            eval_img0_orig = eval_img0.clone()
+                            eval_img2_orig = eval_img2.clone()
+                            eval_img0 = normalize(eval_img0)
+                            eval_img2 = normalize(eval_img2)
+
+                            n, c, eh, ew = eval_img0.shape
+                            ph = ((eh - 1) // 64 + 1) * 64
+                            pw = ((ew - 1) // 64 + 1) * 64
+                            padding = (0, pw - ew, 0, ph - eh)
+                            
+                            eval_img0 = torch.nn.functional.pad(eval_img0, padding)
+                            eval_img2 = torch.nn.functional.pad(eval_img2, padding)
+
+                            try:
+                                eval_flow_list, eval_mask_list, eval_merged = flownet(
+                                    eval_img0, 
+                                    eval_img2, 
+                                    eval_ratio, 
+                                    iterations = args.iterations
+                                    )
+                            except:
+                                pprint (description)
+                                break
+                            
+                            eval_result = warp(eval_img0_orig, eval_flow_list[3][:, :2, :eh, :ew]) * eval_mask_list[3][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[3][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[3][:, :, :eh, :ew])
+
+                            eval_loss_l1 = criterion_l1(eval_result, eval_img1)
+                            eval_loss.append(float(eval_loss_l1.item()))
+                            eval_psnr.append(float(psnr_torch(eval_result, eval_img1)))
+                            eval_loss_LPIPS_ = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
+                            eval_lpips.append(float(torch.mean(eval_loss_LPIPS_).item()))
+
+                            eval_rgb_output_mask = eval_mask_list[3][:, :, :eh, :ew].repeat_interleave(3, dim=1)
+
+                            write_eval_image_queue.put(
+                                {
+                                    'preview_folder': eval_folder,
+                                    'sample_source1': eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                    'sample_source1_name': f'{ev_item_index:08}_incomng.exr',
+                                    'sample_source2': eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                    'sample_source2_name': f'{ev_item_index:08}_outgoing.exr',
+                                    'sample_target': eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                    'sample_target_name': f'{ev_item_index:08}_target.exr',
+                                    'sample_output': eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                    'sample_output_name': f'{ev_item_index:08}_output.exr',
+                                    'sample_output_mask': eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                    'sample_output_mask_name': f'{ev_item_index:08}_output_mask.exr'
+                                }
+                            )
+
+                    flownet.train()
+
+                    eval_rows_to_append = [
+                        {
+                            'Epoch': epoch,
+                            'Step': step, 
+                            'Min': eval_loss_min,
+                            'Avg': eval_loss_avg,
+                            'Max': eval_loss_max,
+                            'PSNR': eval_psnr_mean,
+                            'LPIPS': eval_lpips_mean
+                        }
+                    ]
+
+                    for eval_row in eval_rows_to_append:
+                        append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.eval.csv', eval_row)
+
+                    if not args.eval_keep_all:
+                        if prev_eval_folder:
+                            clean_thread = threading.Thread(target=lambda: os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')).start()
+                    prev_eval_folder = eval_folder
+
 
                 batch_idx = batch_idx + 1
                 step = step + 1
 
                 del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
 
-
+            
+            self.stopped = True
             self.result.emit(False, '')
 
             '''
