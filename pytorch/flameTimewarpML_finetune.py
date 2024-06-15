@@ -1674,6 +1674,8 @@ def main():
                 del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
 
 
+            self.result.emit(False, '')
+
             '''
             print ('Initializing PyTorch...')
             import torch
