@@ -1026,7 +1026,7 @@ class ApplyModelDialog():
                 return None
 
         def update_version_in_file(src_path, dest_path, new_version):
-            version_pattern = re.compile(r'(<preset version=")(\d+)(">)')
+            version_pattern = re.compile(r'(<preset version=")(\d+)(">.*</preset>)')
 
             try:
                 if os.path.isfile(dest_path):
@@ -1039,7 +1039,7 @@ class ApplyModelDialog():
                 print (f'content: {content}')
 
                 # Replace the version number
-                updated_content = version_pattern.sub(r'\1' + str(new_version) + r'\3', content)
+                updated_content = version_pattern.sub(r'\g<1>' + str(new_version) + r'\g<3>', content)
                 
                 print (f'updated content: {updated_content}')
 
