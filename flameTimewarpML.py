@@ -604,6 +604,9 @@ class ApplyModelDialog():
     def apply(self):
         self.window.hide()
 
+        if self.mode == 'finetune':
+            self.apply_finetune()
+
         working_folder = self.fw.prefs.get('working_folder')
         if not os.path.isdir(working_folder):
             import flame
@@ -632,8 +635,6 @@ class ApplyModelDialog():
             self.apply_timewarp()
         elif self.mode == 'fluidmorph':
             self.apply_fluidmorph()
-        elif self.mode == 'finetune':
-            self.apply_finetune()
 
         # Close export and apply window
         self.window.close()
