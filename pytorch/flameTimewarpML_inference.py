@@ -1513,13 +1513,10 @@ def main():
             self.show()
 
         def onUpdateText(self, text):
-            # text = text.rstrip('\n')
             # Check for carriage return indicating a progress update
             if '\r' in text:
                 text.replace('\n', '')
                 text.replace('\r', '')
-                # text = text.rstrip('\n')
-                # text = text.rstrip('\r')
                 if self.last_progress_line is not None:
                     # Remove the last progress update
                     self.text_edit.moveCursor(QTextCursor.StartOfLine, QTextCursor.KeepAnchor)
@@ -1529,10 +1526,6 @@ def main():
                 self.last_progress_line = text
             else:
                 pass
-                # text = text + '\n'
-                # Not a progress line, so append normally and reset progress tracking
-                # self.last_progress_line = None
-                # text = text + '\n'  # Add newline for regular prints
 
             cursor = self.text_edit.textCursor()
             cursor.movePosition(QTextCursor.End)
