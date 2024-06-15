@@ -1515,9 +1515,17 @@ def main():
             sys.stderr = Stream(newText=self.onUpdateText)
 
             self.worker_status = False
+
+            self.worker_thread = QThread()
             self.worker = Worker(sys.argv, window=self)
+            self.worker.moveToThread(self.worker_thread)
+
+            self.worker_thread.started.connect(self.worker.run)
             self.worker.result.connect(self.handleWorkerResult)
             self.worker.finished.connect(self.onWorkerFinished)
+            self.worker.finished.connect(self.worker_thread.quit)
+            self.worker.finished.connect(self.worker.deleteLater)
+            self.worker_thread.finished.connect(self.worker_thread.deleteLater)
             self.worker.start()
 
             self.last_progress_line = None  # Keep track of the last progress line
