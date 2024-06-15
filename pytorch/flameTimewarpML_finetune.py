@@ -456,10 +456,8 @@ def main():
                 CURSOR_UP_ONE = '\x1b[1A'
                 ERASE_LINE = '\x1b[2K'
                 for _ in range(n):
-                    print (CURSOR_UP_ONE)
-                    print (ERASE_LINE)
-                    # sys.stdout.write(CURSOR_UP_ONE)
-                    # sys.stdout.write(ERASE_LINE)
+                    sys.stdout.write(CURSOR_UP_ONE)
+                    sys.stdout.write(ERASE_LINE)
 
             print (f'Initializing PyTorch...')
 
@@ -657,22 +655,22 @@ def main():
 
             lines = text.split('\n')
             for line in lines:
-                if clear_line_pattern.search(line):
+                if cursor_up_pattern.search(line):
+                    # Move the cursor up one line
+                    cursor.movePosition(QTextCursor.Up)
+                elif clear_line_pattern.search(line):
                     # Move to the start of the line and clear it
                     cursor.movePosition(QTextCursor.StartOfLine, QTextCursor.KeepAnchor)
                     cursor.removeSelectedText()
                     cursor.deletePreviousChar()  # Remove newline left after text removal
+                else:
+                    cursor.insertText(line)
+                    cursor.insertText('\n')
 
-                if cursor_up_pattern.search(line):
-                    # Move the cursor up one line
-                    cursor.movePosition(QTextCursor.Up)
 
                 # Clean the line from escape sequences and insert it
-                clean_line = clear_line_pattern.sub('', line)
-                clean_line = cursor_up_pattern.sub('', clean_line)
-
-                cursor.insertText(clean_line)
-                cursor.insertText('\n')
+                # clean_line = clear_line_pattern.sub('', line)
+                # clean_line = cursor_up_pattern.sub('', clean_line)
 
             # cursor.insertText(text)  # Insert the text at the end
             self.text_edit.setTextCursor(cursor)
