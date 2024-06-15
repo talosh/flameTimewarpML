@@ -867,14 +867,92 @@ class ApplyModelDialog():
                 ), 
                 export_preset=export_preset)
 
-            json_info = {}
-            json_info['mode'] = 'finetune'
-            json_info['dataset'] = export_root_path
-            json_info['model_path'] = self.fw.prefs.get('model_path')
-            json_info['settings'] = self.settings
-            json_info['cpu'] = self.fw.prefs.get('cpu')
-            json_info['half'] = self.fw.prefs.get('half')
+        json_info = {}
+        json_info['mode'] = 'finetune'
 
+        json_info['dataset_path'] = export_root_path # 'Path to the dataset'
+        json_info['lr'] = 1e-6 if self.fw.prefs.get('finetune_generalize') else 4e-6 # 'Learning rate (default: 1e-6)'
+        json_info['pulse'] = 9999 # 'Period in steps to pulse learning rate (float) (default: 10K)'
+        json_info['pulse_amplitude'] = 25 # 'Learning rate pulse amplitude (percentage) (default: 25)'
+        json_info['onecycle'] = -1 # 'Train one cycle for N epochs (default: None)'
+        json_info['state_file'] = self.res_model_path # 'Path to the pre-trained model state dict file (optional)'
+        json_info['model'] = None # 'Model name (optional)'
+        json_info['legacy_model'] = None # 'Model name (optional)'
+        json_info['device'] = 0 # 'Graphics card index (default: 0)'
+        json_info['batch_size'] = 4 if self.fw.prefs.get('finetune_generalize') else 2 # 'Batch size (int) (default: 2)'
+        json_info['first_epoch'] = 1 # 'Epoch (int) (default: Saved)'
+        json_info['epochs'] = -1 # 'Number of epoch to run (int) (default: Unlimited)'
+        json_info['reset_stats'] = True # 'Reset saved step, epoch and loss stats'
+        json_info['eval'] = 9999 if self.fw.prefs.get('finetune_eval') else -1 # 'Evaluate after N steps'
+        json_info['eval_first'] = True
+        json_info['eval_samples'] = -1 # 'Evaluate N random training samples'
+        json_info['eval_seed'] = -1 # 'Random seed to select samples if --eval_samples set'
+        json_info['eval_buffer'] = 8 # 'Write buffer size for evaluated images'
+        json_info['eval_keep_all'] = False # 'Keep eval results for each eval step'
+        json_info['frame_size'] = 1024 if self.fw.prefs.get('finetune_1k_patch') else 448 # 'Frame size in pixels (default: 448)'
+        json_info['all_gpus'] = False
+        json_info['freeze'] = False
+        json_info['acescc'] = 0 # 'Percentage of ACEScc encoded frames (default: 40))'
+        json_info['generalize'] = 85 if self.fw.prefs.get('finetune_generalize') else 1 # 'Generalization level (0 - 100) (default: 85)'
+        json_info['weight_decay'] = -1 # 'AdamW weight decay (default: calculated from --generalize value)'
+        json_info['preview'] = 1000 # 'Save preview each N steps (default: 1000)'
+        json_info['save'] = 1000 # 'Save model state dict each N steps (default: 1000)'
+        json_info['repeat'] = 1 # 'Repeat each triade N times with augmentation (default: 1)'
+        json_info['iterations'] = 1 # 'Run each flow refinement N times (default: 1)'
+        json_info['compile'] = False # 'Compile with torch.compile'
+
+        json_file_path = os.path.join(
+            export_root_path,
+            f'{self.verified_clips[0].name.get_value()}.json'
+        )
+
+        try:
+            import json
+            with open(json_file_path, 'w') as json_file:
+                json.dump(json_info, json_file, indent=4)
+        except Exception as e:
+            dialog = flame.messages.show_in_dialog(
+                title = f'{settings["app_name"]}',
+                message = f'Unable to save {json_file_path}: {e}',
+                type = 'error',
+                buttons = ['Ok'])
+            return False
+        
+        self.run_finetune(json_file_path)
+
+    def run_finetune(self, json_file_path):
+        import platform
+
+        conda_env_path = os.path.join(
+            os.path.dirname(__file__),
+            'packages',
+            '.miniconda',
+            'appenv'
+        )
+
+        conda_python_path = os.path.join(
+            conda_env_path,
+            'bin',
+            'python'
+            )
+
+        inference_script_path = os.path.join(
+            os.path.dirname(__file__),
+            'pytorch',
+            'flameTimewarpML_finetune.py'
+        )
+
+        env = os.environ.copy()
+        env['QT_QPA_PLATFORM_PLUGIN_PATH'] = os.path.join(
+            conda_env_path,
+            'plugins',
+            'platforms'
+        )
+
+        # print (f'command: {conda_python_path} {inference_script_path} {lockfile_path}')
+
+        import subprocess
+        subprocess.Popen([conda_python_path, inference_script_path, json_file_path], env=env)
 
     def run_inference(self, lockfile_path):
         import platform
