@@ -2047,10 +2047,10 @@ def main():
                 self.last_progress_line = text
             elif '\x1b[1A' in text:
                 self.text_edit.moveCursor(QTextCursor.Up)
-                # self.text_edit.moveCursor(QTextCursor.StartOfLine, QTextCursor.KeepAnchor)
+                self.text_edit.moveCursor(QTextCursor.StartOfLine, QTextCursor.KeepAnchor)
                 # self.text_edit.textCursor().removeSelectedText()
                 # self.text_edit.moveCursor(QTextCursor.End)
-                # self.text_edit.textCursor().deletePreviousChar()
+                self.text_edit.textCursor().deletePreviousChar()
                 text = ''
             elif '\x1b[2K' in text:
                 self.text_edit.moveCursor(QTextCursor.StartOfLine, QTextCursor.KeepAnchor)
