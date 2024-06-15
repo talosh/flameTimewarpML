@@ -1535,7 +1535,6 @@ def main():
 
             while True:
                 if not self.running:
-                    self.stopped = True
                     break
                 
                 data_time = time.time() - time_stamp
@@ -1687,7 +1686,6 @@ def main():
                 minutes = int((epoch_time % 3600) // 60)
 
                 if not self.running:
-                    self.stopped = True
                     break
 
                 clear_lines(1)
@@ -1884,7 +1882,6 @@ def main():
                         if prev_eval_folder:
                             clean_thread = threading.Thread(target=lambda: os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')).start()
                     prev_eval_folder = eval_folder
-
 
                 batch_idx = batch_idx + 1
                 step = step + 1
