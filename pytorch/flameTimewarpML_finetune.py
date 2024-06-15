@@ -433,6 +433,7 @@ def main():
             import threading
             import time
             import platform
+            from pprint import pprint
 
             def clear_lines(n=2):
                 """Clears a specified number of lines in the terminal."""
@@ -441,6 +442,72 @@ def main():
                 for _ in range(n):
                     sys.stdout.write(CURSOR_UP_ONE)
                     sys.stdout.write(ERASE_LINE)
+
+            def find_and_import_model(models_dir='models', base_name=None, model_name=None, model_file=None):
+                """
+                Dynamically imports the latest version of a model based on the base name,
+                or a specific model if the model name/version is given, and returns the Model
+                object named after the base model name.
+
+                :param models_dir: Relative path to the models directory.
+                :param base_name: Base name of the model to search for.
+                :param model_name: Specific name/version of the model (optional).
+                :return: Imported Model object or None if not found.
+                """
+
+                import os
+                import re
+                import importlib
+
+                if model_file:
+                    module_name = model_file[:-3]  # Remove '.py' from filename to get module name
+                    module_path = f"models.{module_name}"
+                    module = importlib.import_module(module_path)
+                    model_object = getattr(module, 'Model')
+                    return model_object
+
+                # Resolve the absolute path of the models directory
+                models_abs_path = os.path.abspath(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        models_dir
+                    )
+                )
+
+                # List all files in the models directory
+                try:
+                    files = os.listdir(models_abs_path)
+                except FileNotFoundError:
+                    print(f"Directory not found: {models_abs_path}")
+                    return None
+
+                # Filter files based on base_name or model_name
+                if model_name:
+                    # Look for a specific model version
+                    filtered_files = [f for f in files if f == f"{model_name}.py"]
+                else:
+                    # Find all versions of the model and select the latest one
+                    # regex_pattern = fr"{base_name}_v(\d+)\.py"
+                    # versions = [(f, int(m.group(1))) for f in files if (m := re.match(regex_pattern, f))]
+                    versions = [f for f in files if f.endswith('.py')]
+                    if versions:
+                        # Sort by version number (second item in tuple) and select the latest one
+                        # latest_version_file = sorted(versions, key=lambda x: x[1], reverse=True)[0][0]
+                        latest_version_file = sorted(versions, reverse=True)[0]
+                        filtered_files = [latest_version_file]
+
+                # Import the module and return the Model object
+                if filtered_files:
+                    module_name = filtered_files[0][:-3]  # Remove '.py' from filename to get module name
+                    module_path = f"models.{module_name}"
+                    module = importlib.import_module(module_path)
+                    model_object = getattr(module, 'Model')
+                    return model_object
+                else:
+                    print(f"Model not found: {base_name or model_name}")
+                    return None
+
+            # ----------------------
 
             if len(self.argv) < 2:
                 message = f'Missing input arguments:\n{self.argv}'
@@ -471,6 +538,65 @@ def main():
             device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
             if args.all_gpus:
                 device = 'cuda'
+
+            Flownet = None
+
+            if args.model:
+                model_name = args.model
+                Flownet = find_and_import_model(base_name='flownet', model_name=model_name)            
+            else:
+                # Find and initialize model
+                if args.state_file and os.path.isfile(args.state_file):
+                    trained_model_path = args.state_file
+                    try:
+                        checkpoint = torch.load(trained_model_path, map_location=device)
+                        print('loaded previously saved model checkpoint')
+                    except Exception as e:
+                        print (f'unable to load saved model checkpoint: {e}')
+                        sys.exit()
+
+                    model_info = checkpoint.get('model_info')
+                    model_file = model_info.get('file')
+                    Flownet = find_and_import_model(model_file=model_file)
+                else:
+                    if not args.state_file:
+                        print ('prase specify model or model state file')
+                        return
+                    if not os.path.isfile(args.state_file):
+                        print (f'Model state file {args.state_file} does not exist and "--model" flag is not set to start from scratch')
+                        return
+
+            if Flownet is None:
+                print (f'Unable to load model {args.model}')
+                return
+            
+            model_info = Flownet.get_info()
+            print ('Model info:')
+            pprint (model_info)
+            max_dataset_window = 9
+            if not model_info.get('ratio_support'):
+                max_dataset_window = 3
+            
+            if args.compile:
+                flownet_uncompiled = Flownet().get_training_model()().to(torch.float32).cuda()
+                flownet = torch.compile(flownet_uncompiled,mode='reduce-overhead')
+            else:
+                flownet = Flownet().get_training_model()().to(device)
+            
+            if args.all_gpus:
+                print ('Using nn.DataParallel')
+                flownet = torch.nn.DataParallel(flownet)
+                flownet.to(device)
+
+            if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
+                os.makedirs(os.path.join(args.dataset_path, 'preview'))
+
+            frame_size = closest_divisible(abs(int(args.frame_size)))
+            if frame_size != args.frame_size:
+                print (f'Frame size should be divisible by 64 for training. Using {frame_size}')
+
+            read_image_queue = queue.Queue(maxsize=16)
+
 
             '''
             print ('Initializing PyTorch...')
