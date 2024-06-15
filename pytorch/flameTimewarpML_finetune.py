@@ -557,6 +557,8 @@ def main():
 
             clear_lines(1)
 
+            print (f'Loading model...')
+
             device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
             if args.all_gpus:
                 device = 'cuda'
