@@ -389,23 +389,6 @@ def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
                 f.write(channel_data[channel][y].tobytes())
         f.close
 
-class Timewarp():
-    def __init__(self, json_info):
-        self.json_info = json_info
-        print('Initializing TimewarpML from Flame setup...')
-        import torch
-
-        if self.json_info.get('cpu'):
-            print('Processing on CPU (Slow)')
-            self.device = torch.device("cpu")
-        else:
-            self.device = torch.device("mps") if platform.system() == 'Darwin' else torch.device('cuda')
-
-        self.model_path = self.json_info.get('model_path')
-        self.model = self.find_and_import_model(self.model_path)
-        # if not self.model:
-        #    print (f'Unable to import model from file {self.model_path}')
-
 class DynamicAttributes:
     def __init__(self, data):
         self.data = data
@@ -594,46 +577,9 @@ def main():
 
         def onUpdateText(self, text):
             import re
-            cursor = self.text_edit.textCursor()
-            self.text_edit.ensureCursorVisible()
-            self.text_edit.setTextCursor(cursor)
-            cursor.movePosition(QTextCursor.End)
-
-            clear_line_pattern = re.compile(r'\x1b\[2K')
-            cursor_up_pattern = re.compile(r'\x1b\[1A')
-
-            parts = re.split('(\x1b\[2K|\x1b\[1A|\r)', text)
-
-            for part in parts:
-                if part == '\x1b[2K':
-                    cursor.movePosition(QTextCursor.StartOfLine, QTextCursor.KeepAnchor)
-                    cursor.removeSelectedText()
-                    cursor.deletePreviousChar()  # Remove newline left after text removal
-                elif part == '\x1b[1A':
-                    cursor.movePosition(QTextCursor.Up)
-                elif part == '\r':
-                    cursor.movePosition(QTextCursor.StartOfLine)
-                    cursor.movePosition(QTextCursor.End, QTextCursor.KeepAnchor)
-                    cursor.removeSelectedText()
-                else:
-                    clean_part = clear_line_pattern.sub('', part)
-                    clean_part = cursor_up_pattern.sub('', clean_part)
-                    cursor.insertText(clean_part)
-                    cursor.insertText('\n')
-
-            self.text_edit.setTextCursor(cursor)
-            self.text_edit.ensureCursorVisible()
-
-        '''
-        def onUpdateText(self, text):
-            import re
-            # text = text.rstrip('\n')
-            # Check for carriage return indicating a progress update
             if '\r' in text:
                 text.replace('\n', '')
                 text.replace('\r', '')
-                # text = text.rstrip('\n')
-                # text = text.rstrip('\r')
                 if self.last_progress_line is not None:
                     # Remove the last progress update
                     self.text_edit.moveCursor(QTextCursor.StartOfLine, QTextCursor.KeepAnchor)
@@ -643,17 +589,12 @@ def main():
                 self.last_progress_line = text
             else:
                 pass
-                # text = text + '\n'
-                # Not a progress line, so append normally and reset progress tracking
-                # self.last_progress_line = None
-                # text = text + '\n'  # Add newline for regular prints
 
             cursor = self.text_edit.textCursor()
             cursor.movePosition(QTextCursor.End)
             cursor.insertText(text)  # Insert the text at the end
             self.text_edit.setTextCursor(cursor)
             self.text_edit.ensureCursorVisible()
-        '''
 
         def keyPressEvent(self, event):        
             # Check if Ctrl+C was pressed
