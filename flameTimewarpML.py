@@ -1014,7 +1014,7 @@ class ApplyModelDialog():
                     flame.PyExporter.PresetVisibility.Autodesk
                 )
         
-        matching_files = find_files_with_name_patterns(flame_presets_location, ['*OpenEXR*.xml', '*sequence*'])
+        matching_files = find_files_with_name_patterns(flame_presets_location, ['*OpenEXR*.xml', '*file*', '*sequence*'])
 
         print (f'matching_files: {matching_files}')
 
