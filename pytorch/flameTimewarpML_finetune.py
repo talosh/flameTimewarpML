@@ -2013,6 +2013,7 @@ def main():
             if font:
                 self.text_edit.setFont(font)
 
+            self.text_edit.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
             layout.addWidget(self.text_edit)
             
             central_widget = QWidget()
@@ -2024,7 +2025,6 @@ def main():
             self.show()
 
         def onUpdateText(self, text):
-            scroll_position = self.text_edit.verticalScrollBar().value()
             import re
             if '\r' in text:
                 text.replace('\n', '')
@@ -2056,8 +2056,7 @@ def main():
             cursor.movePosition(QTextCursor.End)
             cursor.insertText(text)  # Insert the text at the end
             self.text_edit.setTextCursor(cursor)
-            self.text_edit.verticalScrollBar().setValue(scroll_position)
-            # self.text_edit.ensureCursorVisible()
+            self.text_edit.ensureCursorVisible()
 
         def keyPressEvent(self, event):
             if event.key() == Qt.Key_Control:
