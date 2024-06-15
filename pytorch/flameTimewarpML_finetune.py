@@ -1508,7 +1508,7 @@ def main():
             while not self.stopped:
                 time.sleep(0.1)
             import torch
-            sys.stdout.write(f'\nSaving current state to {self.current_state_dict["trained_model_path"]}...')
+            sys.stdout.write(f'\nSaving current state to {self.current_state_dict["trained_model_path"]}...\n')
             torch.save(self.current_state_dict, self.current_state_dict['trained_model_path'])
             sys.stdout.write('Exited training loop. You can close this window.')
 
