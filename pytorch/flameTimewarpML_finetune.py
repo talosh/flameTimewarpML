@@ -1109,6 +1109,15 @@ def main():
                 timestamp = (datetime.now()).strftime('%Y%b%d_%H%M').upper()
                 return f'{timestamp}_{uid}'
 
+            def create_csv_file(file_name, fieldnames):
+                import csv
+                """
+                Creates a CSV file with the specified field names as headers.
+                """
+                with open(file_name, 'w', newline='') as csvfile:
+                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                    writer.writeheader()
+
             # ----------------------
 
             if len(self.argv) < 2:
@@ -1407,6 +1416,53 @@ def main():
             epoch = current_epoch if args.first_epoch == -1 else args.first_epoch
             step = loaded_step if args.first_epoch == -1 else step
             batch_idx = 0
+
+            if args.freeze:
+                print ('\nFreezing parameters')
+
+            print('\n\n')
+
+            current_state_dict = {
+                'step': step,
+                'steps_loss': steps_loss,
+                'epoch': epoch,
+                'epoch_loss': epoch_loss,
+                'start_timestamp': start_timestamp,
+                'lr': optimizer_flownet.param_groups[0]['lr'],
+                'model_info': model_info,
+                'flownet_state_dict': flownet.state_dict(),
+                # 'model_d_state_dict': model_D.state_dict(),
+                'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
+                'trained_model_path': trained_model_path
+            }
+
+            create_csv_file(
+                f'{os.path.splitext(trained_model_path)[0]}.csv',
+                [
+                    'Epoch',
+                    'Step',
+                    'Min',
+                    'Avg',
+                    'Max',
+                    'PSNR',
+                    'LPIPS'
+                ]
+            )
+
+            create_csv_file(
+                f'{os.path.splitext(trained_model_path)[0]}.eval.csv',
+                [
+                    'Epoch',
+                    'Step',
+                    'Min',
+                    'Avg',
+                    'Max',
+                    'PSNR',
+                    'LPIPS'
+                ]
+            )
+
+
 
 
 
