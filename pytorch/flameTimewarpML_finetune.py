@@ -610,6 +610,7 @@ def main():
                     cursor.deletePreviousChar()  # Remove newline left after text removal
                 elif part == '\x1b[1A':
                     cursor.movePosition(QTextCursor.Up)
+                    print ('cursor up')
                 else:
                     clean_part = clear_line_pattern.sub('', part)
                     clean_part = cursor_up_pattern.sub('', clean_part)
