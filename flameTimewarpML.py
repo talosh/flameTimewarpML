@@ -818,7 +818,6 @@ class ApplyModelDialog():
             self.run_inference(lockfile_path)
 
     def apply_finetune(self):
-        
         export_root_path = self.export_path_entry.text()
         if self.fw.prefs.get('finetune_fast'):
             export_root_path = os.path.join(
@@ -831,10 +830,6 @@ class ApplyModelDialog():
                 'normal'
             )
 
-
-        print (f'export_root_path: {export_root_path}')
-
-        '''
         for clip in self.verified_clips:
             if clip.bit_depth == 32:
                 export_preset = self.create_export_preset(
@@ -853,11 +848,13 @@ class ApplyModelDialog():
                         )
                     )
             
-            self.export_clip(clip, source_clip_folder, export_preset=export_preset)
-        '''
-
-        print (f'verified clips: {self.verified_clips}')
-        pass
+            self.export_clip(
+                clip, 
+                os.path.join(
+                    export_root_path,
+                    clip.name.get_value()
+                ), 
+                export_preset=export_preset)
 
     def run_inference(self, lockfile_path):
         import platform
