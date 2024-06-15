@@ -1010,14 +1010,29 @@ class ApplyModelDialog():
                         matches.append(full_path)
             return matches
 
+        def find_version_in_file(file_path):
+            import os
+            import re
+            version_pattern = re.compile(r'<preset version="(\d+)">')
+            try:
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    for line in file:
+                        match = version_pattern.search(line)
+                        if match:
+                            return match.group(1)
+                return None
+            except (IOError, OSError) as e:
+                print(f"Error reading file {file_path}: {e}")
+                return None
+
         try:
             flame_presets_location = flame.PyExporter.get_presets_base_dir(
                         flame.PyExporter.PresetVisibility.Autodesk
                     )
             
             matching_files = find_files_with_all_path_patterns(flame_presets_location, ['*OpenEXR*.xml', '*file*', '*sequence*'])
-
-            print (f'matching_files: {matching_files}')
+            version = find_version_in_file(matching_files[0])
+            print (f'version: {version}')
         
         except:
             return export_preset_path
