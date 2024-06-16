@@ -751,7 +751,7 @@ class Timewarp():
                 input=tenInput, 
                 grid=g, 
                 mode='bilinear', 
-                padding_mode='border', 
+                padding_mode='reflection', 
                 align_corners=True
                 )
 
