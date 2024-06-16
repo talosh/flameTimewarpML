@@ -832,9 +832,6 @@ class ApplyModelDialog():
             self.run_inference(lockfile_path)
 
     def apply_finetune(self):
-    
-        print ('hello from apply finetune')
-
         self.src_model_path = self.src_model_path_entry.text()
 
         if not os.path.isfile(self.src_model_path):
@@ -847,8 +844,6 @@ class ApplyModelDialog():
             )
             self.window.show()
             return
-
-        print ('past model path warning')
 
         self.res_model_path = self.res_model_path_entry.text()
         
@@ -979,6 +974,8 @@ class ApplyModelDialog():
         )
 
         # print (f'command: {conda_python_path} {inference_script_path} {lockfile_path}')
+
+        print ('hello from run finetune')
 
         import subprocess
         subprocess.Popen([conda_python_path, inference_script_path, json_file_path], env=env)
