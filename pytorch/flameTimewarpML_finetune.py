@@ -1148,12 +1148,17 @@ def main():
 
                 # transfer (0.0 - 1.0) onto (-1.0 - 1.0) for tanh
                 image_array = (image_array * 2) - 1
+
                 # bend values below -1.0 and above 1.0 exponentially so they are not larger then (-4.0 - 4.0)
+                # transfer to CPU if on Mac MPS cause it used to have difficulties with this function
+                # This should be checked and removed when Pytorch fixes it for MPS
+
                 input_device = image_array.device
                 if 'mps' in str(input_device):
                     image_array = custom_bend(image_array.detach().to(device=torch.device('cpu'))).to(device=input_device)
                 else:
                     image_array = custom_bend(image_array)
+
                 # bend everything to fit -1.0 - 1.0 with hyperbolic tanhent
                 image_array = torch.tanh(image_array)
                 # move it to 0.0 - 1.0 range
@@ -1172,7 +1177,10 @@ def main():
                 image_array = torch.clamp((image_array * 2) - 1, -1.0 + epsilon, 1.0 - epsilon)
                 # restore values from tanh  s-curve
                 image_array = torch.arctanh(image_array)
+
                 # restore custom bended values
+                # transfer to CPU if on Mac MPS cause it used to have difficulties with this function
+                # This should be checked and removed when Pytorch fixes it for MPS
 
                 input_device = image_array.device
                 if 'mps' in str(input_device):
