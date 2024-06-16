@@ -10,7 +10,7 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 ### Status
 
 * Training script and Flownet4 tested in production on Linux
-* Flownet2 tested on MacOS Apple Silicon with Pytorch 2.3.1
+* Flownet4 tested on MacOS Apple Silicon with Pytorch 2.3.1
 
     #### Todo for v0.4.5 dev 004
 
