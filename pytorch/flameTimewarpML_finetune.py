@@ -1985,7 +1985,7 @@ def main():
             sys.stderr = Stream(newText=self.onUpdateText)
 
             self.worker_status = False
-            self.worker = Worker(sys.argv)
+            self.worker = Worker(sys.argv, window=self)
             self.worker.result.connect(self.handleWorkerResult)
             self.worker.finished.connect(self.onWorkerFinished)
             self.worker.start()
