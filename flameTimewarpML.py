@@ -833,6 +833,8 @@ class ApplyModelDialog():
 
     def apply_finetune(self):
 
+        print ('hello from apply finetune')
+
         self.src_model_path = self.src_model_path_entry.text()
 
         if not os.path.isfile(self.src_model_path):
