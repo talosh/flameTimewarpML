@@ -26,8 +26,8 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 #### Installing from package - Linux
 * Download parts and run
 ```bash
-cat flameTimewarpML_v0.4.5-dev001.Linux.tar.gz.part-* > flameTimewarpML_v0.4.5-dev001.Linux.tar.gz
-tar -xvf flameTimewarpML_v0.4.5-dev001.Linux.tar.gz
+cat flameTimewarpML_v0.4.5-dev003.Linux.tar.gz.part-* > flameTimewarpML_v0.4.5-dev003.Linux.tar.gz
+tar -xvf flameTimewarpML_v0.4.5-dev003.Linux.tar.gz
 ``` 
 * Place "flameTimewarpML" folder into Flame python hooks path.
 
