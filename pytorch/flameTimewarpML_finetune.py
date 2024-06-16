@@ -1530,6 +1530,8 @@ def main():
                 ]
             )
 
+            print (f'Saving training statistics to: {os.path.splitext(trained_model_path)[0]}.csv')
+
             create_csv_file(
                 f'{os.path.splitext(trained_model_path)[0]}.eval.csv',
                 [
@@ -1543,9 +1545,10 @@ def main():
                 ]
             )
 
+
             print('\n' * 8)
             # print('\n\n\n\n\n\n\n\n')
-            
+
             while True:
                 if not self.running:
                     break
