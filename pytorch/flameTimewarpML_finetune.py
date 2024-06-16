@@ -1546,7 +1546,7 @@ def main():
             )
 
 
-            print('\n' * 8)
+            print('\n' * 7)
             # print('\n\n\n\n\n\n\n\n')
 
             while True:
@@ -1704,11 +1704,13 @@ def main():
                 if not self.running:
                     break
 
+                psnr_val = float(np.array(psnr_list).mean())
+
                 clear_lines(2)
                 msg = '\n'
                 msg += f'Epoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}'
                 msg += '\n'
-                msg += f'[Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}'
+                msg += f'[Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} , PSNR: {psnr_val:.4f}, LPIPS: {lpips_val:.4f}'
                 msg += '\n'
                 sys.stdout.write(msg)
 
