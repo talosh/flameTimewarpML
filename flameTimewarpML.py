@@ -852,7 +852,9 @@ class ApplyModelDialog():
             import shutil
             shutil.copy(self.src_model_path, self.res_model_path)
 
-        export_root_path = self.export_path_entry.text()
+        dataset_root_path = self.export_path_entry.text()
+        export_root_path = dataset_root_path
+
         if self.fw.prefs.get('finetune_fast'):
             export_root_path = os.path.join(
                 export_root_path,
@@ -893,7 +895,7 @@ class ApplyModelDialog():
         json_info = {}
         json_info['mode'] = 'finetune'
 
-        json_info['dataset_path'] = os.path.dirname(export_root_path) # 'Path to the dataset'
+        json_info['dataset_path'] = dataset_root_path # 'Path to the dataset'
         json_info['lr'] = 1e-6 if self.fw.prefs.get('finetune_generalize') else 4e-6 # 'Learning rate (default: 1e-6)'
         json_info['pulse'] = 9999 # 'Period in steps to pulse learning rate (float) (default: 10K)'
         json_info['pulse_amplitude'] = 25 # 'Learning rate pulse amplitude (percentage) (default: 25)'
