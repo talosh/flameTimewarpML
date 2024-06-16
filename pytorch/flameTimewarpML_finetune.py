@@ -417,12 +417,12 @@ def main():
     class Worker(QThread):
 
         result = pyqtSignal(bool, str)
+        set_title = pyqtSignal(bool, str)
 
-        def __init__(self, argv, parent=None, window = None):
+        def __init__(self, argv, parent=None):
             super(Worker, self).__init__(parent)
             self.argv = argv
             self.lockfile = self.argv[1]
-            self.window = window
             self.running = True
             self.stopped = False
 
@@ -433,7 +433,7 @@ def main():
                 sys.stdout.write(f'Error while training: {e}\n')
                 self.running = False
                 self.stopped = True
-                # self.graceful_exit()
+                self.graceful_exit()
                 self.result.emit(False, '')
 
         def run_training(self):
@@ -1234,7 +1234,8 @@ def main():
                 return
             
             args = DynamicAttributes(json_info)
-            self.window.setWindowTitle(f'TimewarpML Finetune {args.state_file}')
+            self.set_title.emit(True, f'TimewarpML Finetune {args.state_file}')
+            # self.window.setWindowTitle(f'TimewarpML Finetune {args.state_file}')
 
             print (f'Initializing PyTorch...')
 
@@ -1985,8 +1986,9 @@ def main():
             sys.stderr = Stream(newText=self.onUpdateText)
 
             self.worker_status = False
-            self.worker = Worker(sys.argv, window=self)
+            self.worker = Worker(sys.argv)
             self.worker.result.connect(self.handleWorkerResult)
+            self.worker.set_title.connect(self.onSetWindowTitle)
             self.worker.finished.connect(self.onWorkerFinished)
             self.worker.start()
 
@@ -2101,7 +2103,6 @@ def main():
             self.text_edit.setUpdatesEnabled(True)
             self.text_edit.ensureCursorVisible()
 
-
         def keyPressEvent(self, event):
             if event.key() == Qt.Key_Control:
                 self.ctrl_pressed = True
@@ -2135,6 +2136,9 @@ def main():
             sys.stderr = sys.__stderr__
             if self.worker_status:
                 self.close()
+
+        def onSetWindowTitle(self, status, message):
+            self.setWindowTitle(message)
 
     app = QApplication(sys.argv)
     window = MainWindow()
