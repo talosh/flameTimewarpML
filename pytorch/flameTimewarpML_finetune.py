@@ -1986,6 +1986,13 @@ def main():
 
             self.worker_status = False
 
+            self.worker_status = False
+            self.worker = Worker(sys.argv)
+            self.worker.result.connect(self.handleWorkerResult)
+            self.worker.finished.connect(self.onWorkerFinished)
+            self.worker.start()
+
+            '''
             self.worker_thread = QThread()
             self.worker = Worker(sys.argv, window=self)
             self.worker.moveToThread(self.worker_thread)
@@ -1997,6 +2004,7 @@ def main():
             self.worker.finished.connect(self.worker.deleteLater)
             self.worker_thread.finished.connect(self.worker_thread.deleteLater)
             self.worker.start()
+            '''
 
             self.last_progress_line = None  # Keep track of the last progress line
 

@@ -975,8 +975,6 @@ class ApplyModelDialog():
 
         # print (f'command: {conda_python_path} {inference_script_path} {lockfile_path}')
 
-        print ('hello from run finetune')
-
         import subprocess
         subprocess.Popen([conda_python_path, inference_script_path, json_file_path], env=env)
 
