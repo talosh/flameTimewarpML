@@ -602,6 +602,8 @@ class ApplyModelDialog():
         self.window.show()   
 
     def apply(self):
+        print ('hello from apply')
+
         self.window.hide()
 
         if self.mode == 'finetune':
@@ -832,9 +834,6 @@ class ApplyModelDialog():
             self.run_inference(lockfile_path)
 
     def apply_finetune(self):
-
-        print ('hello from apply finetune')
-
         self.src_model_path = self.src_model_path_entry.text()
 
         if not os.path.isfile(self.src_model_path):
