@@ -433,7 +433,10 @@ def main():
                 sys.stdout.write(f'Error while training: {e}\n')
                 self.running = False
                 self.stopped = True
-                self.graceful_exit()
+                try:
+                    self.graceful_exit()
+                except:
+                    pass
                 self.result.emit(False, '')
 
         def run_training(self):
