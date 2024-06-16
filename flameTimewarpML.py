@@ -834,6 +834,18 @@ class ApplyModelDialog():
     def apply_finetune(self):
 
         self.src_model_path = self.src_model_path_entry.text()
+
+        if not os.path.isfile(self.src_model_path):
+            import flame
+            dialog = flame.messages.show_in_dialog(
+                title = f'{self.settings["app_name"]}',
+                message = f'Unable to find initial model state file: {self.src_model_path}',
+                type = 'error',
+                buttons = ['Ok']
+            )
+            self.window.show()
+            return
+
         self.res_model_path = self.res_model_path_entry.text()
         
         if not os.path.isfile(self.res_model_path):
