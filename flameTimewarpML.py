@@ -832,6 +832,8 @@ class ApplyModelDialog():
             self.run_inference(lockfile_path)
 
     def apply_finetune(self):
+
+        self.res_model_path = self.res_model_path_entry.text()
         
         if not os.path.isfile(self.res_model_path):
             import shutil
@@ -903,7 +905,7 @@ class ApplyModelDialog():
         json_info['acescc'] = 0 # 'Percentage of ACEScc encoded frames (default: 40))'
         json_info['generalize'] = 85 if self.fw.prefs.get('finetune_generalize') else 1 # 'Generalization level (0 - 100) (default: 85)'
         json_info['weight_decay'] = -1 # 'AdamW weight decay (default: calculated from --generalize value)'
-        json_info['preview'] = 1000 # 'Save preview each N steps (default: 1000)'
+        json_info['preview'] = 100 # 'Save preview each N steps (default: 1000)'
         json_info['save'] = 1000 # 'Save model state dict each N steps (default: 1000)'
         json_info['repeat'] = 1 # 'Repeat each triade N times with augmentation (default: 1)'
         json_info['iterations'] = 1 # 'Run each flow refinement N times (default: 1)'
