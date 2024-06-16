@@ -1548,7 +1548,7 @@ def main():
                 ]
             )
 
-            print (f'Saving model training statistics to: {os.path.splitext(trained_model_path)[0]}.csv')
+            print (f'Saving model training statistics to {os.path.splitext(trained_model_path)[0]}.csv')
 
             create_csv_file(
                 f'{os.path.splitext(trained_model_path)[0]}.eval.csv',
