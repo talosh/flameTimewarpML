@@ -1482,7 +1482,7 @@ def main():
         print (f'Frame size should be divisible by 64 for training. Using {frame_size}')
 
     read_image_queue = queue.Queue(maxsize=16)
-    
+
     dataset = get_dataset(
         args.dataset_path, 
         batch_size=args.batch_size, 
@@ -1748,8 +1748,8 @@ def main():
     # loss_fn_lpips = lpips.LPIPS(net='vgg', lpips=False, spatial=True)
     # loss_fn_lpips.to(device)
 
-    loss_fn_ssim = SSIM()
-    loss_fn_vgg = VGGPerceptualLoss().to(device)
+    # loss_fn_ssim = SSIM()
+    # loss_fn_vgg = VGGPerceptualLoss().to(device)
 
     warnings.resetwarnings()
 
