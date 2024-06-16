@@ -4,88 +4,22 @@ Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/
 
 ## Table of Contents
 - [Status](#status)
-- [Training](#training)
 - [Installation](#installation)
+- [Training](#training)
 
 ### Status
 
-* Training script and Flownet4 tested in production on Linux with constant speed retime
-* Flownet2 tested on MacOS Apple Silicon with Pytorch 2.3
+* Training script and Flownet4 tested in production on Linux
+* Flownet2 tested on MacOS Apple Silicon with Pytorch 2.3.1
 
-    #### Todo for v0.4.5 dev 001
+    #### Todo for v0.4.5 dev 004
 
 * (done) ~~Add generalization logic to training script~~
 * (done) ~~Refine batch retime script~~
 * (done) ~~Share pre-trained weights for Flownet4 to enable using it in prod with command line and limited interface.~~
 * Optimize memory usage for Flownet4
-* Add Fluidmorph and Interpolate logic to new Flame script.
+* Add ~~Fluidmorph and~~ Interpolate logic to new Flame script.
 * Test on Intel Mac with Pytorch 2.2.2 (Latest version avaliable for x86 Macs)
-
-
-### Training
-
-#### Finetune for specific shot or set of shots
-Export as Linear ACEScg (AP1) Uncompressed OpenEXR sequence.
-Export your shots so each shot are in separate folder.
-Copy pre-trained model file (large or lite) to the file to train with.
-If motion is fast place the whole shot or its parts with fast motion to "fast" folder.
-
-```bash
-cd {flameTimewarpML folder}
-./train.sh --state_file {Path to copied state file}/MyShot001.pth --generalize 1 --lr 4e-6 --acescc 0 --onecycle 1000 {Path to shot}/{fast}/
-```
-
-* Change number after "--onecycle" to set number of runs.
-* Use "--acescc 0" to train in Linear or to retain input colourspace, "--acescc 100" to convert all samples to Log.
-* Use "--frame_size" to modify training samples size
-* Preview last 9 training patches in "{Path to shot}/preview" folder
-* Use "--preview" to modify how frequently preview files are saved
-
-#### Train your own model
-```bash
-cd {flameTimewarpML folder}
-./train.sh --state_file {Path to MyModel}/MyModel001.pth --model flownet4_v004 --batch_size 4 {Path to Dataset}/
-```
-
-#### Batch size and learning rate
-The batch size and learning rate are two crucial hyperparameters that significantly affect the training process and empirical tuning is necessary here.
-When the batch size is increased, the learning rate can often be increased as well. A common heuristic is the linear scaling rule: when you multiply the batch size by a factor 
-k, you can also multiply the learning rate by k. Another approach is the square root scaling rule: when you multiply the batch size by k multiply the learning rate by sqrt(k)
-
-
-#### Dataset preparation
-Training script will scan all the folders under a given path and will compose training samples out of folders where .exr files are found.
-Only Uncompressed OpenEXR files are supported at the moment.
-
-Export your shots so each shot are in separate folder.
-There are two magic words in shot path: "fast" and "slow"
-When "fast" is in path 3-frame window will be used for those shots.
-When "slow" is in path 9-frame window will be used.
-Default window size is 5 frames.
-Put shots with fast motion in "fast" folder and shots where motion are slow and continious to "slow" folder to let the model learn more intermediae ratios.
-
-- Scene001/
-    - slow/
-        - Shot001/
-            - Shot001.001.exr
-            - Shot001.002.exr
-            - ...
-    - fast/
-        - Shot002
-            - Shot002.001.exr
-            - Shot002.002.exr
-            - ...
-    - normal/
-        - Shot003
-            - Shot003.001.exr
-            - Shot003.002.exr
-            - ...
-
-#### Window size
-Samples for training are 3 frames and ratio. The model is given the first and the last frame and tries to re-create middle frame at given ratio.
-
-[TODO] - add documentation
-
 
 ### Installation
 
@@ -168,3 +102,73 @@ tar xvf appenv.tar.gz -C {flameTimewarpML folder}/packages/.miniconda/appenv/
 ```bash
 rm appenv.tar.gz
 ```
+
+### Training
+
+
+
+#### Finetune for specific shot or set of shots
+Finetune option is avaliable as a menu item starting from 0.4.5 dev 003
+
+#### Finetune using command line script
+
+Export as Linear ACEScg (AP1) Uncompressed OpenEXR sequence.
+Export your shots so each shot are in separate folder.
+Copy pre-trained model file (large or lite) to the file to train with.
+If motion is fast place the whole shot or its parts with fast motion to "fast" folder.
+
+```bash
+cd {flameTimewarpML folder}
+./train.sh --state_file {Path to copied state file}/MyShot001.pth --generalize 1 --lr 4e-6 --acescc 0 --onecycle 1000 {Path to shot}/{fast}/
+```
+
+* Change number after "--onecycle" to set number of runs.
+* Use "--acescc 0" to train in Linear or to retain input colourspace, "--acescc 100" to convert all samples to Log.
+* Use "--frame_size" to modify training samples size
+* Preview last 9 training patches in "{Path to shot}/preview" folder
+* Use "--preview" to modify how frequently preview files are saved
+
+#### Train your own model
+```bash
+cd {flameTimewarpML folder}
+./train.sh --state_file {Path to MyModel}/MyModel001.pth --model flownet4_v004 --batch_size 4 {Path to Dataset}/
+```
+
+#### Batch size and learning rate
+The batch size and learning rate are two crucial hyperparameters that significantly affect the training process and empirical tuning is necessary here.
+When the batch size is increased, the learning rate can often be increased as well. A common heuristic is the linear scaling rule: when you multiply the batch size by a factor 
+k, you can also multiply the learning rate by k. Another approach is the square root scaling rule: when you multiply the batch size by k multiply the learning rate by sqrt(k)
+
+
+#### Dataset preparation
+Training script will scan all the folders under a given path and will compose training samples out of folders where .exr files are found.
+Only Uncompressed OpenEXR files are supported at the moment.
+
+Export your shots so each shot are in separate folder.
+There are two magic words in shot path: "fast" and "slow"
+When "fast" is in path 3-frame window will be used for those shots.
+When "slow" is in path 9-frame window will be used.
+Default window size is 5 frames.
+Put shots with fast motion in "fast" folder and shots where motion are slow and continious to "slow" folder to let the model learn more intermediae ratios.
+
+- Scene001/
+    - slow/
+        - Shot001/
+            - Shot001.001.exr
+            - Shot001.002.exr
+            - ...
+    - fast/
+        - Shot002
+            - Shot002.001.exr
+            - Shot002.002.exr
+            - ...
+    - normal/
+        - Shot003
+            - Shot003.001.exr
+            - Shot003.002.exr
+            - ...
+
+#### Window size
+Samples for training are 3 frames and ratio. The model is given the first and the last frame and tries to re-create middle frame at given ratio.
+
+[TODO] - add documentation
