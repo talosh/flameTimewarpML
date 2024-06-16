@@ -427,6 +427,10 @@ def main():
             self.stopped = False
 
         def run(self):
+            print ('hello')
+            self.result.emit(False, '')
+
+            '''
             try:
                 self.run_training()
             except Exception as e:
@@ -435,6 +439,7 @@ def main():
                 self.stopped = True
                 self.graceful_exit()
                 self.result.emit(False, '')
+            '''
 
         def run_training(self):
             import os
@@ -1983,8 +1988,6 @@ def main():
             # Redirect sys.stdout and sys.stderr
             sys.stdout = Stream(newText=self.onUpdateText)
             sys.stderr = Stream(newText=self.onUpdateText)
-
-            self.worker_status = False
 
             self.worker_status = False
             self.worker = Worker(sys.argv)
