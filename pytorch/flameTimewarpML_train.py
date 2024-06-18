@@ -1906,31 +1906,33 @@ def main():
         'trained_model_path': trained_model_path
     }
 
-    create_csv_file(
-        f'{os.path.splitext(trained_model_path)[0]}.csv',
-        [
-            'Epoch',
-            'Step',
-            'Min',
-            'Avg',
-            'Max',
-            'PSNR',
-            'LPIPS'
-        ]
-    )
+    if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.csv'):
+        create_csv_file(
+            f'{os.path.splitext(trained_model_path)[0]}.csv',
+            [
+                'Epoch',
+                'Step',
+                'Min',
+                'Avg',
+                'Max',
+                'PSNR',
+                'LPIPS'
+            ]
+        )
 
-    create_csv_file(
-        f'{os.path.splitext(trained_model_path)[0]}.eval.csv',
-        [
-            'Epoch',
-            'Step',
-            'Min',
-            'Avg',
-            'Max',
-            'PSNR',
-            'LPIPS'
-        ]
-    )
+    if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.eval.csv'):
+        create_csv_file(
+            f'{os.path.splitext(trained_model_path)[0]}.eval.csv',
+            [
+                'Epoch',
+                'Step',
+                'Min',
+                'Avg',
+                'Max',
+                'PSNR',
+                'LPIPS'
+            ]
+        )
 
     import signal
     def create_graceful_exit(current_state_dict):
@@ -2026,16 +2028,18 @@ def main():
 
         loss = 0.24 * loss_x8 + 0.24 * loss_x4 + 0.24 * loss_x2 + 0.28 * loss_x1
         '''
-        
+
+
         x1_output = merged[3]
         x1_orig = img1
+
         # vgg_loss = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
-        loss = criterion_l1(x1_output, x1_orig) # + 0.1 * vgg_loss
+
+        loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
+        loss = criterion_l1(x1_output, x1_orig) + lpips_weight * float(torch.mean(loss_LPIPS_).item())
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
-
-        loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
 
         epoch_loss.append(float(loss_l1.item()))
         steps_loss.append(float(loss_l1.item()))
