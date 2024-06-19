@@ -2323,7 +2323,7 @@ def main():
                         )
 
                     except Exception as e:
-                        pprint (f'\nerror while evaluating: {e}\n{description}\n\n)
+                        pprint (f'\nerror while evaluating: {e}\n{description}\n\n')
 
                     # '''
 
