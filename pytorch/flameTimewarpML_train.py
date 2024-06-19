@@ -1978,7 +1978,7 @@ def main():
             training_scale = [8, 4, 2, 1]
 
         if random.uniform(0, 1) < 0.44:
-            training_scale = [0.5 if x == 1 else x / 2 for x in training_scale]
+            training_scale = [1/2 if x == 1 else x / 2 for x in training_scale]
 
         flownet.train()
         
