@@ -1736,7 +1736,6 @@ def main():
         psnr_list = []
         lpips_list = []
 
-
     # LPIPS Init
 
     import warnings
@@ -1894,15 +1893,14 @@ def main():
     print('\n\n')
 
     current_state_dict = {
-        'step': step,
-        'steps_loss': steps_loss,
-        'epoch': epoch,
-        'epoch_loss': epoch_loss,
+        'step': int(step),
+        'steps_loss': list(steps_loss),
+        'epoch': int(epoch),
+        'epoch_loss': list(epoch_loss),
         'start_timestamp': start_timestamp,
         'lr': optimizer_flownet.param_groups[0]['lr'],
         'model_info': model_info,
         'flownet_state_dict': flownet.state_dict(),
-        # 'model_d_state_dict': model_D.state_dict(),
         'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
         'trained_model_path': trained_model_path
     }
@@ -2097,10 +2095,10 @@ def main():
         time_stamp = time.time()
 
         current_state_dict = {
-                'step': step,
-                'steps_loss': steps_loss,
-                'epoch': epoch,
-                'epoch_loss': epoch_loss,
+                'step': int(step),
+                'steps_loss': dict(steps_loss),
+                'epoch': int(epoch),
+                'epoch_loss': dict(epoch_loss),
                 'start_timestamp': start_timestamp,
                 'lr': optimizer_flownet.param_groups[0]['lr'],
                 'model_info': model_info,
