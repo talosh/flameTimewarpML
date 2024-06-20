@@ -1966,7 +1966,7 @@ def main():
 
         # scale list augmentation
         random_scales = [
-            [8, 4, 2, 1]
+            [8, 4, 2, 1],
             [4, 2, 1, 1],
             [2, 2, 1, 1],
             [2, 1, 1, 1],
