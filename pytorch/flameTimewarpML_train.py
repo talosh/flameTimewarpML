@@ -2253,10 +2253,9 @@ def main():
                 rng = random.Random(args.eval_seed)
                 descriptions = rng.sample(descriptions, args.eval_samples)
 
-                for ev_item_index, description in enumerate(descriptions):
-                    print (os.path.dirname(description['start']))
-                
-                sys.exit()
+                # for ev_item_index, description in enumerate(descriptions):
+                #    print (os.path.dirname(description['start']))
+                # sys.exit()
 
 
             eval_loss = []
