@@ -1374,7 +1374,10 @@ class VGGPerceptualLoss(torch.nn.Module):
                 k += 1
         return loss
 
+current_state_dict = {}
+
 def main():
+    global current_state_dict
     parser = argparse.ArgumentParser(description='Training script.')
 
     def check_range_percent(value):
@@ -1406,6 +1409,7 @@ def main():
     parser.add_argument('--eval_seed', type=int, dest='eval_seed', default=1, help='Random seed to select samples if --eval_samples set')
     parser.add_argument('--eval_buffer', type=int, dest='eval_buffer', default=8, help='Write buffer size for evaluated images')
     parser.add_argument('--eval_keep_all', action='store_true', dest='eval_keep_all', default=False, help='Keep eval results for each eval step')
+    parser.add_argument('--eval_folder', type=str, default=None, help='Folder with clips for evaluation')
 
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
@@ -1493,6 +1497,21 @@ def main():
         generalize=args.generalize,
         repeat=args.repeat
         )
+    
+    if args.eval_folder:
+        print (f'Scanning data for evaluation:')
+        eval_dataset = get_dataset(
+        args.dataset_path, 
+        batch_size=args.batch_size, 
+        device=device, 
+        frame_size=frame_size,
+        max_window=max_dataset_window,
+        acescc_rate=args.acescc,
+        generalize=args.generalize,
+        repeat=args.repeat
+        )
+    else:
+        eval_dataset = dataset
 
     def read_images(read_image_queue, dataset):
         while True:
@@ -1735,7 +1754,6 @@ def main():
         psnr_list = []
         lpips_list = []
 
-
     # LPIPS Init
 
     import warnings
@@ -1892,50 +1910,50 @@ def main():
 
     print('\n\n')
 
-    current_state_dict = {
-        'step': step,
-        'steps_loss': steps_loss,
-        'epoch': epoch,
-        'epoch_loss': epoch_loss,
-        'start_timestamp': start_timestamp,
-        'lr': optimizer_flownet.param_groups[0]['lr'],
-        'model_info': model_info,
-        'flownet_state_dict': flownet.state_dict(),
-        # 'model_d_state_dict': model_D.state_dict(),
-        'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
-        'trained_model_path': trained_model_path
-    }
+    current_state_dict['step'] = int(step)
+    current_state_dict['steps_loss'] = list(steps_loss)
+    current_state_dict['epoch'] = int(epoch)
+    current_state_dict['epoch_loss'] = list(epoch_loss)
+    current_state_dict['start_timestamp'] = start_timestamp
+    current_state_dict['lr'] = optimizer_flownet.param_groups[0]['lr']
+    current_state_dict['model_info'] = model_info
+    current_state_dict['flownet_state_dict'] = flownet.state_dict()
+    current_state_dict['optimizer_flownet_state_dict'] = optimizer_flownet.state_dict()
+    current_state_dict['trained_model_path'] = trained_model_path
 
-    create_csv_file(
-        f'{os.path.splitext(trained_model_path)[0]}.csv',
-        [
-            'Epoch',
-            'Step',
-            'Min',
-            'Avg',
-            'Max',
-            'PSNR',
-            'LPIPS'
-        ]
-    )
+    if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.csv'):
+        create_csv_file(
+            f'{os.path.splitext(trained_model_path)[0]}.csv',
+            [
+                'Epoch',
+                'Step',
+                'Min',
+                'Avg',
+                'Max',
+                'PSNR',
+                'LPIPS'
+            ]
+        )
 
-    create_csv_file(
-        f'{os.path.splitext(trained_model_path)[0]}.eval.csv',
-        [
-            'Epoch',
-            'Step',
-            'Min',
-            'Avg',
-            'Max',
-            'PSNR',
-            'LPIPS'
-        ]
-    )
+    if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.eval.csv'):
+        create_csv_file(
+            f'{os.path.splitext(trained_model_path)[0]}.eval.csv',
+            [
+                'Epoch',
+                'Step',
+                'Min',
+                'Avg',
+                'Max',
+                'PSNR',
+                'LPIPS'
+            ]
+        )
 
     import signal
     def create_graceful_exit(current_state_dict):
         def graceful_exit(signum, frame):
             print(f'\nSaving current state to {current_state_dict["trained_model_path"]}...')
+            print (f'Epoch: {current_state_dict["epoch"]}, Step: {current_state_dict["step"]}')
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
             exit(0)
         return graceful_exit
@@ -1963,6 +1981,7 @@ def main():
 
         # scale list augmentation
         random_scales = [
+            [8, 4, 2, 1],
             [4, 2, 1, 1],
             [2, 2, 1, 1],
             [2, 1, 1, 1],
@@ -1972,7 +1991,17 @@ def main():
         if random.uniform(0, 1) < 0.44:
             training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
         else:
-            training_scale = [8, 4, 2, 1]
+            training_scale = [16, 8, 4, 1]
+
+        # if random.uniform(0, 1) < 0.22:
+        #    training_scale = [1 if x == 1 else x / 2 for x in training_scale]
+
+        '''    
+        if random.uniform(0, 1) < 0.165:
+            training_scale = [x * 2 for x in training_scale]
+        elif random.uniform(0, 1) < 0.33:
+            training_scale = [1/2 if x == 1 else x / 2 for x in training_scale]
+        '''
 
         flownet.train()
         
@@ -2026,16 +2055,18 @@ def main():
 
         loss = 0.24 * loss_x8 + 0.24 * loss_x4 + 0.24 * loss_x2 + 0.28 * loss_x1
         '''
-        
+
+
         x1_output = merged[3]
         x1_orig = img1
+
         # vgg_loss = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
-        loss = criterion_l1(x1_output, x1_orig) # + 0.1 * vgg_loss
+
+        loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
+        loss = criterion_l1(x1_output, x1_orig) + lpips_weight * (float(torch.mean(loss_LPIPS_).item()) ** 1.2)
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
-
-        loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
 
         epoch_loss.append(float(loss_l1.item()))
         steps_loss.append(float(loss_l1.item()))
@@ -2080,19 +2111,16 @@ def main():
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        current_state_dict = {
-                'step': step,
-                'steps_loss': steps_loss,
-                'epoch': epoch,
-                'epoch_loss': epoch_loss,
-                'start_timestamp': start_timestamp,
-                'lr': optimizer_flownet.param_groups[0]['lr'],
-                'model_info': model_info,
-                'flownet_state_dict': flownet.state_dict(),
-                # 'model_d_state_dict': model_D.state_dict(),
-                'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
-                'trained_model_path': trained_model_path
-            }
+        current_state_dict['step'] = int(step)
+        current_state_dict['steps_loss'] = list(steps_loss)
+        current_state_dict['epoch'] = int(epoch)
+        current_state_dict['epoch_loss'] = list(epoch_loss)
+        current_state_dict['start_timestamp'] = start_timestamp
+        current_state_dict['lr'] = optimizer_flownet.param_groups[0]['lr']
+        current_state_dict['model_info'] = model_info
+        current_state_dict['flownet_state_dict'] = flownet.state_dict()
+        current_state_dict['optimizer_flownet_state_dict'] = optimizer_flownet.state_dict()
+        current_state_dict['trained_model_path'] = trained_model_path
 
         if step % args.preview == 1:
             rgb_source1 = img0_orig
@@ -2133,7 +2161,7 @@ def main():
         minutes = int((epoch_time % 3600) // 60)
 
         clear_lines(2)
-        print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
+        print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {step} Batch: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
         print(f'\r[Last 10K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
 
         if ( idx + 1 ) == len(dataset):
@@ -2219,11 +2247,16 @@ def main():
             if not os.path.isdir(eval_folder):
                 os.makedirs(eval_folder)
             
-            descriptions = list(dataset.initial_train_descriptions)
+            descriptions = list(eval_dataset.initial_train_descriptions)
 
             if args.eval_samples > 0:
                 rng = random.Random(args.eval_seed)
                 descriptions = rng.sample(descriptions, args.eval_samples)
+
+                # for ev_item_index, description in enumerate(descriptions):
+                #    print (os.path.dirname(description['start']))
+                # sys.exit()
+
 
             eval_loss = []
             eval_psnr = []
@@ -2254,72 +2287,72 @@ def main():
                     print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
                     print (f'\rEvaluating {ev_item_index} of {len(descriptions)}: Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f} LPIPS: {eval_lpips_mean:.4f} PSNR: {eval_psnr_mean:4f}')
 
-                    eval_img0 = read_openexr_file(description['start'])['image_data']
-                    eval_img1 = read_openexr_file(description['gt'])['image_data']
-                    eval_img2 = read_openexr_file(description['end'])['image_data']
-                    eval_ratio = description['ratio']
-
-                    eval_img0 = torch.from_numpy(eval_img0)
-                    eval_img1 = torch.from_numpy(eval_img1)
-                    eval_img2 = torch.from_numpy(eval_img2)
-                    eval_img0 = eval_img0.to(device = device, dtype = torch.float32, non_blocking = True)
-                    eval_img1 = eval_img1.to(device = device, dtype = torch.float32, non_blocking = True)
-                    eval_img2 = eval_img2.to(device = device, dtype = torch.float32, non_blocking = True)
-                    eval_img0 = eval_img0.permute(2, 0, 1).unsqueeze(0)
-                    eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
-                    eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
-
-
-                    eval_img0_orig = eval_img0.clone()
-                    eval_img2_orig = eval_img2.clone()
-                    eval_img0 = normalize(eval_img0)
-                    eval_img2 = normalize(eval_img2)
-
-                    n, c, eh, ew = eval_img0.shape
-                    ph = ((eh - 1) // 64 + 1) * 64
-                    pw = ((ew - 1) // 64 + 1) * 64
-                    padding = (0, pw - ew, 0, ph - eh)
-                    
-                    eval_img0 = torch.nn.functional.pad(eval_img0, padding)
-                    eval_img2 = torch.nn.functional.pad(eval_img2, padding)
-
                     try:
+                        eval_img0 = read_openexr_file(description['start'])['image_data']
+                        eval_img1 = read_openexr_file(description['gt'])['image_data']
+                        eval_img2 = read_openexr_file(description['end'])['image_data']
+                        eval_ratio = description['ratio']
+
+                        eval_img0 = torch.from_numpy(eval_img0)
+                        eval_img1 = torch.from_numpy(eval_img1)
+                        eval_img2 = torch.from_numpy(eval_img2)
+                        eval_img0 = eval_img0.to(device = device, dtype = torch.float32, non_blocking = True)
+                        eval_img1 = eval_img1.to(device = device, dtype = torch.float32, non_blocking = True)
+                        eval_img2 = eval_img2.to(device = device, dtype = torch.float32, non_blocking = True)
+                        eval_img0 = eval_img0.permute(2, 0, 1).unsqueeze(0)
+                        eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
+                        eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
+
+                        eval_img0_orig = eval_img0.clone()
+                        eval_img2_orig = eval_img2.clone()
+                        eval_img0 = normalize(eval_img0)
+                        eval_img2 = normalize(eval_img2)
+
+                        n, c, eh, ew = eval_img0.shape
+                        ph = ((eh - 1) // 64 + 1) * 64
+                        pw = ((ew - 1) // 64 + 1) * 64
+                        padding = (0, pw - ew, 0, ph - eh)
+                        
+                        eval_img0 = torch.nn.functional.pad(eval_img0, padding)
+                        eval_img2 = torch.nn.functional.pad(eval_img2, padding)
+
                         eval_flow_list, eval_mask_list, eval_merged = flownet(
                             eval_img0, 
                             eval_img2, 
                             eval_ratio, 
                             iterations = args.iterations
                             )
-                    except:
-                        pprint (description)
-                        sys.exit()
-                    
-                    eval_result = warp(eval_img0_orig, eval_flow_list[3][:, :2, :eh, :ew]) * eval_mask_list[3][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[3][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[3][:, :, :eh, :ew])
+                        
+                        eval_result = warp(eval_img0_orig, eval_flow_list[3][:, :2, :eh, :ew]) * eval_mask_list[3][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[3][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[3][:, :, :eh, :ew])
 
-                    eval_loss_l1 = criterion_l1(eval_result, eval_img1)
-                    eval_loss.append(float(eval_loss_l1.item()))
-                    eval_psnr.append(float(psnr_torch(eval_result, eval_img1)))
-                    eval_loss_LPIPS_ = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
-                    eval_lpips.append(float(torch.mean(eval_loss_LPIPS_).item()))
+                        eval_loss_l1 = criterion_l1(eval_result, eval_img1)
+                        eval_loss.append(float(eval_loss_l1.item()))
+                        eval_psnr.append(float(psnr_torch(eval_result, eval_img1)))
+                        eval_loss_LPIPS_ = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
+                        eval_lpips.append(float(torch.mean(eval_loss_LPIPS_).item()))
 
-                    eval_rgb_output_mask = eval_mask_list[3][:, :, :eh, :ew].repeat_interleave(3, dim=1)
+                        eval_rgb_output_mask = eval_mask_list[3][:, :, :eh, :ew].repeat_interleave(3, dim=1)
 
-                    # '''
-                    write_eval_image_queue.put(
-                        {
-                            'preview_folder': eval_folder,
-                            'sample_source1': eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                            'sample_source1_name': f'{ev_item_index:08}_incomng.exr',
-                            'sample_source2': eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                            'sample_source2_name': f'{ev_item_index:08}_outgoing.exr',
-                            'sample_target': eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                            'sample_target_name': f'{ev_item_index:08}_target.exr',
-                            'sample_output': eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                            'sample_output_name': f'{ev_item_index:08}_output.exr',
-                            'sample_output_mask': eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                            'sample_output_mask_name': f'{ev_item_index:08}_output_mask.exr'
-                        }
-                    )
+                        # '''
+                        write_eval_image_queue.put(
+                            {
+                                'preview_folder': eval_folder,
+                                'sample_source1': eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                'sample_source1_name': f'{ev_item_index:08}_incomng.exr',
+                                'sample_source2': eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                'sample_source2_name': f'{ev_item_index:08}_outgoing.exr',
+                                'sample_target': eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                'sample_target_name': f'{ev_item_index:08}_target.exr',
+                                'sample_output': eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                'sample_output_name': f'{ev_item_index:08}_output.exr',
+                                'sample_output_mask': eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                'sample_output_mask_name': f'{ev_item_index:08}_output_mask.exr'
+                            }
+                        )
+
+                    except Exception as e:
+                        pprint (f'\nerror while evaluating: {e}\n{description}\n\n')
+
                     # '''
 
                     '''
