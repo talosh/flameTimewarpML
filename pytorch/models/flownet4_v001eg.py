@@ -134,7 +134,7 @@ class Model:
                 self.encode = Head()
                 self.encode_refines = Head()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
+            def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1):
                 img0 = img0
                 img1 = img1
                 f0 = self.encode(img0)
