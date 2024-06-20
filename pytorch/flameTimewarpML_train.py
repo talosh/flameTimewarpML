@@ -2025,7 +2025,7 @@ def main():
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
 
         pm_weight = 1
-        lpips_weight = 1e-8
+        lpips_weight = 1e-9
         # self.vgg(merged[3], gt).mean() - self.ss(merged[3], gt) * 0.1
 
         '''
