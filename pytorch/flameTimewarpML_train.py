@@ -1497,6 +1497,21 @@ def main():
         generalize=args.generalize,
         repeat=args.repeat
         )
+    
+    if args.eval_folder:
+        print (f'Scanning data for evaluation:')
+        eval_dataset = get_dataset(
+        args.dataset_path, 
+        batch_size=args.batch_size, 
+        device=device, 
+        frame_size=frame_size,
+        max_window=max_dataset_window,
+        acescc_rate=args.acescc,
+        generalize=args.generalize,
+        repeat=args.repeat
+        )
+    else:
+        eval_dataset = dataset
 
     def read_images(read_image_queue, dataset):
         while True:
@@ -2232,7 +2247,7 @@ def main():
             if not os.path.isdir(eval_folder):
                 os.makedirs(eval_folder)
             
-            descriptions = list(dataset.initial_train_descriptions)
+            descriptions = list(eval_dataset.initial_train_descriptions)
 
             if args.eval_samples > 0:
                 rng = random.Random(args.eval_seed)
