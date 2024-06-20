@@ -1374,7 +1374,10 @@ class VGGPerceptualLoss(torch.nn.Module):
                 k += 1
         return loss
 
+current_state_dict = {}
+
 def main():
+    global current_state_dict
     parser = argparse.ArgumentParser(description='Training script.')
 
     def check_range_percent(value):
@@ -1892,18 +1895,16 @@ def main():
 
     print('\n\n')
 
-    current_state_dict = {
-        'step': int(step),
-        'steps_loss': list(steps_loss),
-        'epoch': int(epoch),
-        'epoch_loss': list(epoch_loss),
-        'start_timestamp': start_timestamp,
-        'lr': optimizer_flownet.param_groups[0]['lr'],
-        'model_info': model_info,
-        'flownet_state_dict': flownet.state_dict(),
-        'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
-        'trained_model_path': trained_model_path
-    }
+    current_state_dict['step'] = int(step)
+    current_state_dict['steps_loss'] = list(steps_loss)
+    current_state_dict['epoch'] = int(epoch)
+    current_state_dict['epoch_loss'] = list(epoch_loss)
+    current_state_dict['start_timestamp'] = start_timestamp
+    current_state_dict['lr'] = optimizer_flownet.param_groups[0]['lr']
+    current_state_dict['model_info'] = model_info
+    current_state_dict['flownet_state_dict'] = deepcopy(flownet.state_dict())
+    current_state_dict['optimizer_flownet_state_dict'] = deepcopy(optimizer_flownet.state_dict())
+    current_state_dict['trained_model_path'] = trained_model_path
 
     if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.csv'):
         create_csv_file(
@@ -1936,9 +1937,9 @@ def main():
     import signal
     def create_graceful_exit(current_state_dict):
         def graceful_exit(signum, frame):
-            # print(f'\nSaving current state to {current_state_dict["trained_model_path"]}...')
-            # print (f'Epoch: {current_state_dict["epoch"]}, Step: {current_state_dict["step"]}')
-            # torch.save(current_state_dict, current_state_dict['trained_model_path'])
+            print(f'\nSaving current state to {current_state_dict["trained_model_path"]}...')
+            print (f'Epoch: {current_state_dict["epoch"]}, Step: {current_state_dict["step"]}')
+            torch.save(current_state_dict, current_state_dict['trained_model_path'])
             exit(0)
         return graceful_exit
     signal.signal(signal.SIGINT, create_graceful_exit(current_state_dict))
@@ -2095,19 +2096,16 @@ def main():
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        current_state_dict = {
-                'step': int(step),
-                'steps_loss': list(steps_loss),
-                'epoch': int(epoch),
-                'epoch_loss': list(epoch_loss),
-                'start_timestamp': start_timestamp,
-                'lr': optimizer_flownet.param_groups[0]['lr'],
-                'model_info': model_info,
-                'flownet_state_dict': flownet.state_dict(),
-                # 'model_d_state_dict': model_D.state_dict(),
-                'optimizer_flownet_state_dict': optimizer_flownet.state_dict(),
-                'trained_model_path': trained_model_path
-            }
+        current_state_dict['step'] = int(step)
+        current_state_dict['steps_loss'] = list(steps_loss)
+        current_state_dict['epoch'] = int(epoch)
+        current_state_dict['epoch_loss'] = list(epoch_loss)
+        current_state_dict['start_timestamp'] = start_timestamp
+        current_state_dict['lr'] = optimizer_flownet.param_groups[0]['lr']
+        current_state_dict['model_info'] = model_info
+        current_state_dict['flownet_state_dict'] = deepcopy(flownet.state_dict())
+        current_state_dict['optimizer_flownet_state_dict'] = deepcopy(optimizer_flownet.state_dict())
+        current_state_dict['trained_model_path'] = trained_model_path
 
         if step % args.preview == 1:
             rgb_source1 = img0_orig
