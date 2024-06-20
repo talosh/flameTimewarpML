@@ -1902,8 +1902,8 @@ def main():
     current_state_dict['start_timestamp'] = start_timestamp
     current_state_dict['lr'] = optimizer_flownet.param_groups[0]['lr']
     current_state_dict['model_info'] = model_info
-    current_state_dict['flownet_state_dict'] = deepcopy(flownet.state_dict())
-    current_state_dict['optimizer_flownet_state_dict'] = deepcopy(optimizer_flownet.state_dict())
+    current_state_dict['flownet_state_dict'] = flownet.state_dict()
+    current_state_dict['optimizer_flownet_state_dict'] = optimizer_flownet.state_dict()
     current_state_dict['trained_model_path'] = trained_model_path
 
     if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.csv'):
@@ -2103,8 +2103,8 @@ def main():
         current_state_dict['start_timestamp'] = start_timestamp
         current_state_dict['lr'] = optimizer_flownet.param_groups[0]['lr']
         current_state_dict['model_info'] = model_info
-        current_state_dict['flownet_state_dict'] = deepcopy(flownet.state_dict())
-        current_state_dict['optimizer_flownet_state_dict'] = deepcopy(optimizer_flownet.state_dict())
+        current_state_dict['flownet_state_dict'] = flownet.state_dict()
+        current_state_dict['optimizer_flownet_state_dict'] = optimizer_flownet.state_dict()
         current_state_dict['trained_model_path'] = trained_model_path
 
         if step % args.preview == 1:
