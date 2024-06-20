@@ -2096,9 +2096,9 @@ def main():
 
         current_state_dict = {
                 'step': int(step),
-                'steps_loss': dict(steps_loss),
+                'steps_loss': list(steps_loss),
                 'epoch': int(epoch),
-                'epoch_loss': dict(epoch_loss),
+                'epoch_loss': list(epoch_loss),
                 'start_timestamp': start_timestamp,
                 'lr': optimizer_flownet.param_groups[0]['lr'],
                 'model_info': model_info,
