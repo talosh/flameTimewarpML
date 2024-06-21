@@ -2063,7 +2063,7 @@ def main():
         # vgg_loss = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
 
         loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
-        loss = criterion_l1(x1_output, x1_orig) + lpips_weight * (float(torch.mean(loss_LPIPS_).item()) ** 1.1)
+        loss = criterion_l1(x1_output, x1_orig) # + lpips_weight * (float(torch.mean(loss_LPIPS_).item()) ** 1.1)
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
