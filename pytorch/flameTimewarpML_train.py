@@ -1953,7 +1953,7 @@ def main():
     def create_graceful_exit(current_state_dict):
         def graceful_exit(signum, frame):
             print(f'\nSaving current state to {current_state_dict["trained_model_path"]}...')
-            print (f'Epoch: {current_state_dict["epoch"]}, Step: {current_state_dict["step"]}')
+            print (f'Epoch: {current_state_dict["epoch"]}, Step: {current_state_dict["step"]:11}')
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
             exit(0)
         return graceful_exit
@@ -2161,7 +2161,7 @@ def main():
         minutes = int((epoch_time % 3600) // 60)
 
         clear_lines(2)
-        print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {step} Batch: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
+        print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {step:11} Batch: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
         print(f'\r[Last 10K steps] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
 
         if ( idx + 1 ) == len(dataset):
@@ -2180,7 +2180,7 @@ def main():
             minutes = int((epoch_time % 3600) // 60)
 
             clear_lines(2)
-            print(f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PSNR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
+            print(f'\rEpoch [{epoch + 1} (Step {step:11} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PSNR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
             print ('\n')
 
             rows_to_append = [
@@ -2284,7 +2284,7 @@ def main():
                         eval_lpips_mean = -1
 
                     clear_lines(2)
-                    print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
+                    print (f'\rEpoch [{epoch + 1} - {days:02}d {hours:02}:{minutes:02}], Time:{data_time_str} + {train_time_str}, Batch [Step: {step:11} Batch: {batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
                     print (f'\rEvaluating {ev_item_index} of {len(descriptions)}: Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f} LPIPS: {eval_lpips_mean:.4f} PSNR: {eval_psnr_mean:4f}')
 
                     try:
