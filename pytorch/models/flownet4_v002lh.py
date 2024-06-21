@@ -2,6 +2,7 @@
 # SiLU in Encoder
 # Warps moved to flownet forward
 # Tail is ConvTr 6x6, conv 1x1, ConvTr 4x4, conv 1x1
+
 class Model:
     def __init__(self, status = dict(), torch = None):
         if torch is None:
