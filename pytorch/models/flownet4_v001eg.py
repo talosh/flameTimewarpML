@@ -213,15 +213,15 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v001eb',
-            'file': 'flownet4_v001eb.py',
+            'name': 'Flownet4_v001eg',
+            'file': 'flownet4_v001eg.py',
             'ratio_support': True
         }
         return info
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v001eb'
+        return 'TWML_Flownet_v001eg'
 
     @staticmethod
     def input_channels(model_state_dict):
