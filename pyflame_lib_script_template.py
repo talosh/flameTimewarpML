@@ -1,10 +1,10 @@
 """
 Script Name: PyFlame Custom Library
-Version: 2.1.6
+Version: 2.2.0
 Written by: Michael Vaglienty
 With contributions from: Kieran Hanrahan
 Creation Date: 10.31.20
-Update Date: 01.31.24
+Update Date: 04.30.24
 
 This file contains a library various custom UI widgets that can be used to build QT windows similar to the look of Flame along with some other useful functions.
 
@@ -29,6 +29,77 @@ Usage:
         ...
 
 Updates:
+
+    v2.2.0 04.30.24
+
+        Added new class:
+
+            PyFlamePresetManager - This class allows for saving/editing/deleting of presets for scritps. Presets can be assigned to specific projects or be global.
+
+    v2.1.16 04.29.24
+
+        Added BatchGroupName token to resolve_path_tokens function. A PyBatch object must be passed as the flame_pyobject argument.
+
+        PyFlameDialogWindow - Updated window layout to fix alignment issues with lines.
+
+    v2.1.15 04.23.24
+
+        PyFlameLineEdit: Added argument for setting tooltip text.
+
+    v2.1.14 04.16.24
+
+        PyFlameConfig: Added new method: get_config_values. This method returns the values of a config file at the supplied path as a dictionary.
+
+    v2.1.13 04.01.24
+
+        PyFlameConfig: Config file is now saved if it doesn't exist when loading the default config values.
+
+    v2.1.12 03.08.24
+
+        PyFlamePushButtonMenu: Added new argument: enabled - enabled or disable button state. Default is True.
+
+        PyFlamePushButton: Added new argument: enabled - enabled or disable button state. Default is True.
+
+    v2.1.11 03.03.24
+
+        PyFlameTokenPushButtonMenu: Fixed menu sizing to be consistent with other menus.
+
+        PyFlamePushButtonMenu: Menu text is now left aligned.
+
+    v2.1.10 02.29.24
+
+        Added new layout classes:
+            PyFlameGridLayout
+            PyFlameHBoxLayout
+            PyFlameVBoxLayout
+
+            These classes adjust values for margins, spacing, and minimum size for the layout using pyflame.gui_resize method
+            so the layout looks consistent across different screen resolutions. Removes need to use pyflame.gui_resize inside
+            of main script.
+
+        Added new class:
+            PyFlameColorPushButtonMenu - Push Button Menu with color options. Returns selected color as a tuple of normalized RGB values.
+
+        Added arguments to turn off/on menu indicators for PyFlamePushButtonMenu and PyFlameColorPushButtonMenu. Default is off.
+
+        Improved argument validations for all widgets.
+
+    v2.1.9 02.17.24
+
+        Fixed all widget tooltip text color. Color is now set to white instead of red.
+
+        Fixed all widget tooltip border. Is now set to 1px solid black.
+
+    v2.1.8 02.11.24
+
+        Improvements to UI/code for PyFlameMessage, PyFlameProgress, and PyFlamePassword windows.
+
+    v2.1.7 02.09.24
+
+        Fixed: Config values not printing in terminal when loading config file.
+
+        Added argument to pyflame.get_flame_python_packages_path to enable/disable printing path to terminal.
+        Default is True.
 
     v2.1.6 01.31.24
 
@@ -90,6 +161,7 @@ import datetime
 import os
 import platform
 import re
+import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 from enum import Enum
@@ -103,14 +175,18 @@ import flame
 # ------------------------------------------------------ #
 
 try:
+    # Try importing from PySide6
     from PySide6 import QtCore, QtGui, QtWidgets
+    from PySide6.QtGui import QAction
 except ImportError:
+    # Fallback to PySide2 if PySide6 is not available
     from PySide2 import QtCore, QtGui, QtWidgets
+    QAction = QtWidgets.QAction
 
 if QtCore.__version_info__[0] < 6:
     main_window_res = QtWidgets.QDesktopWidget()
 else:
-    main_window_res = QtGui.QGuiApplication().primaryScreen()
+    main_window_res = QtGui.QGuiApplication.primaryScreen()
 
 # ------------------------------------------------------ #
 
@@ -139,7 +215,7 @@ class Style(Enum):
     """
     Enum for PyFlameLabel style options.
 
-    Parameters:
+    Options:
         NORMAL (int): Standard label without any additional styling. Text is left aligned by default.
         UNDERLINE (int): Text is underlined. Text is centered by default.
         BACKGROUND (int): Adds a darker background to the label. Text is left aligned by default.
@@ -157,21 +233,21 @@ class Align(Enum):
     """
     Enum for PyFlameLabel and PyFlamePushButtonMenu text alignment.
 
-    Parameters:
-        LEFT (int): Align text to the left.
-        RIGHT (int): Align text to the right.
-        CENTER (int): Align text to the center.
+    Options:
+        LEFT (str): Align text to the left.
+        RIGHT (str): Align text to the right.
+        CENTER (str): Align text to the center.
     """
 
-    LEFT = 1
-    RIGHT = 2
-    CENTER = 3
+    LEFT = 'left'
+    RIGHT = 'right'
+    CENTER = 'center'
 
 class MessageType(Enum):
     """
     Enum for PyFlameMessageWindow and pyflame.message_print message types.
 
-    Parameters:
+    Options:
         INFO (int): Information message type.
         OPERATION_COMPLETE (int): Operation complete message type.
         CONFIRM (int): Confirmation message type.
@@ -188,7 +264,7 @@ class LineColor(Enum):
     """
     Enum for PyFlameWindow side bar color options.
 
-    Parameters:
+    Options:
         GRAY (int): For gray line.
         BLUE (int): For blue line.
         RED (int): For red line.
@@ -208,7 +284,7 @@ class BrowserType(Enum):
     """
     Enum for PyFlameLineEditFileBrowser browser type options.
 
-    Parameters:
+    Options:
         FILE (int): File browser.
         DIRECTORY (int): Directory browser.
     """
@@ -232,11 +308,16 @@ class PyFlameFunctions():
     """
 
     @staticmethod
-    def message_print(message: str, script_name: str='PYTHON HOOKS', type=MessageType.INFO, time: int=3) -> None:
+    def message_print(
+        message: str,
+        script_name: str='PYTHON HOOKS',
+        type=MessageType.INFO,
+        time: int=3,
+        ) -> None:
         """
         Prints messages to terminal and Flame message area(2023.1+).
 
-        Parameters:
+        Args:
             message (str): Message to print.
             script_name (str): Name of script. This is displayed in the Flame message area.
                 Default: PYTHON HOOKS
@@ -245,7 +326,8 @@ class PyFlameFunctions():
                 -MessageType.ERROR: Error message. Text in terminal will be yellow.
                 -MessageType.WARNING: Warning message. Text in terminal will be red.
                 Default: MessageType.INFO
-            time (int): Amount of time to display message for in seconds. Default is 3 seconds.
+            time (int): Amount of time to display message for in seconds.
+                Default: 3
 
         Returns:
             None: The method does not return a value.
@@ -256,14 +338,14 @@ class PyFlameFunctions():
 
         # Validate arguments
         if not isinstance(message, str):
-            raise TypeError('Pyflame Message Print: message must be a string.')
+            raise TypeError(f'PyFlame message_print: Invalid message type: {message}. message must be of type str.')
         elif not isinstance(script_name, str):
-            raise TypeError('Pyflame Message Print: script_name must be a string.')
+            raise TypeError(f'Pyflame message_print: Invalid script_name type: {script_name}. script_name must be of type str.')
         valid_message_types = {MessageType.INFO, MessageType.ERROR, MessageType.WARNING}
         if type not in valid_message_types:
-            raise ValueError(f'PyFlame Message Print: Invalid message type: {type}. Accepted types: INFO, ERROR, WARNING.')
+            raise ValueError(f'PyFlame message_print: Invalid message type: {type}. Accepted types: MessageType.INFO, MessageType.ERROR, MessageType.WARNING.')
         elif not isinstance(time, int):
-            raise TypeError('Pyflame Message Print: time must be an integer.')
+            raise TypeError(f'Pyflame message_print: Invalid time type. time must be of type int.')
 
         # Print to terminal/shell
         if type == MessageType.INFO:
@@ -289,35 +371,39 @@ class PyFlameFunctions():
 
     @staticmethod
     def get_flame_version() -> float:
-            """
-            Gets version of flame and returns float value.
+        """
+        Gets version of flame and returns float value.
 
-            Example:
-                flame_version = pyflame.get_flame_version()
+        Example:
+            flame_version = pyflame.get_flame_version()
 
-            Returns:
-                flame_version (float): 2022.0
-                    2022 -> 2022.0
-                    2022.1.1 -> 2022.1
-                    2022.1.pr145 -> 2022.1
-            """
+        Returns:
+            flame_version (float): 2022.0
+                2022 -> 2022.0
+                2022.1.1 -> 2022.1
+                2022.1.pr145 -> 2022.1
+        """
 
-            flame_version = flame.get_version()
+        flame_version = flame.get_version()
 
-            if 'pr' in flame_version:
-                flame_version = flame_version.rsplit('.pr', 1)[0]
-            if len(flame_version) > 6:
-                flame_version = flame_version[:6]
-            flame_version = float(flame_version)
+        if 'pr' in flame_version:
+            flame_version = flame_version.rsplit('.pr', 1)[0]
+        if len(flame_version) > 6:
+            flame_version = flame_version[:6]
+        flame_version = float(flame_version)
 
-            print('Flame Version:', flame_version, '\n')
+        print('Flame Version:', flame_version, '\n')
 
-            return flame_version
+        return flame_version
 
     @staticmethod
-    def get_flame_python_packages_path() -> str:
+    def get_flame_python_packages_path(print_path: bool=True) -> str:
         """
         Get path to Flame's python packages folder.
+
+        Args:
+            print_path (bool): Print path to terminal.
+                Default is True.
 
         Returns:
             python_packages_path (str): Path to Flame's python packages folder.
@@ -329,27 +415,39 @@ class PyFlameFunctions():
             python_packages_path = pyflame.pyflame_get_flame_python_packages_path()
         """
 
-        flame_version = flame.get_version()
+        # Validate argument types
+        if not isinstance(print_path, bool):
+            raise TypeError(f'Pyflame get_flame_python_packages_path: Invalid print_path type: {print_path}. print_path must be of type bool.')
 
-        python_lib_path = f'/opt/Autodesk/python/{flame_version}/lib'
+        flame_version = flame.get_version() # Get flame version
+
+        python_lib_path = f'/opt/Autodesk/python/{flame_version}/lib' # Path to Flame's python lib folder
 
         # Find the folder in the python lib path that starts with 'python3.'
         for folder in os.listdir(python_lib_path):
             if folder.startswith('python3.'):
                 python_package_folder = os.path.join(python_lib_path, folder, 'site-packages')
-                print('Flame Python Packages Folder:', python_package_folder, '\n')
+                if print_path:
+                    print('Flame Python Packages Folder:', python_package_folder, '\n')
                 return python_package_folder
 
         raise FileNotFoundError('No python3.* folder found in the python lib path.')
 
     @staticmethod
-    def file_browser(path: str='/opt/Autodesk', title: Optional[str]=None, extension: Optional[List[str]]=None, select_directory: bool=False,
-                     multi_selection: bool=False, include_resolution: bool=False, use_flame_browser: bool=True,
-                     window_to_hide=None) -> Optional[Union[str, list]]:
+    def file_browser(
+        path: str='/opt/Autodesk',
+        title: Optional[str]=None,
+        extension: Optional[List[str]]=None,
+        select_directory: bool=False,
+        multi_selection: bool=False,
+        include_resolution: bool=False,
+        use_flame_browser: bool=True,
+        window_to_hide: Optional[List[QtWidgets.QWidget]]=None,
+        ) -> Optional[Union[str, list]]:
         """
         Opens QT file browser window(Flame 2022 - Flame 2023). Flame's file browser is used 2023.1 and later.
 
-        Parameters:
+        Args:
             title (str): File browser window title.
             extension (list) File extension filter. None to list directories.
                 Default: None
@@ -363,35 +461,39 @@ class PyFlameFunctions():
                 Default: False
             use_flame_browser (bool): Use Flame's file browser if using Flame 2023.1 or later.
                 Default: True
-            window_to_hide (list[QWidget.QWindow]): Hide Qt window while file browser window is open. window is restored when browser is closed.
+            window_to_hide (list[QtWidgets.QWidget]): Hide Qt window while Flame file browser window is open. Window is restored when browser is closed.
                 Default: None
-
-        Example:
-            path = pyflame_file_browser('Load Undistort ST Map(EXR)', ['exr'], self.undistort_map_path)
 
         Returns:
             path (str, list): Path to selected file or directory.
                 When Multi Selection is enabled, the file browser will return a list.
                 Otherwise it will return a string.
+
+        Example:
+            path = pyflame_file_browser(
+                path=self.undistort_map_path,
+                title='Load Undistort ST Map(EXR)',
+                extension=['exr'],
+                )
         """
 
         # Check argument values
         if not isinstance(path, str):
-            raise TypeError('Pyflame File Browser: path must be a string.')
+            raise TypeError(f'Pyflame file_browser: Invalid path type: {path}. path must be of type str.')
         elif title is not None and not isinstance(title, str):
-            raise TypeError('Pyflame File Browser: title must be None or a string.')
+            raise TypeError(f'Pyflame file_browser: Invalid title type: {title}. title must be of type str or None.')
         elif extension is not None and not isinstance(extension, list):
-            raise TypeError('Pyflame File Browser: extension must None or a list.')
+            raise TypeError(f'Pyflame file_browser: Invalid extension type: {extension}. extension must be of type list or None.')
         elif not isinstance(select_directory, bool):
-            raise TypeError('Pyflame File Browser: select_directory must be a boolean.')
+            raise TypeError(f'Pyflame file_browser: Invalid select_directory type: {select_directory}. select_directory must be of type bool.')
         elif not isinstance(multi_selection, bool):
-            raise TypeError('Pyflame File Browser: multi_selection must be a boolean.')
+            raise TypeError(f'Pyflame file_browser: Invalid multi_selection type: {multi_selection}. multi_selection must be of type bool.')
         elif not isinstance(include_resolution, bool):
-            raise TypeError('Pyflame File Browser: include_resolution must be a boolean.')
+            raise TypeError(f'Pyflame file_browser: Invalid include_resolution type: {include_resolution}. include_resolution must be of type bool.')
         if not isinstance(use_flame_browser, bool):
-            raise TypeError('Pyflame File Browser: use_flame_browser must be a boolean.')
+            raise TypeError(f'Pyflame file_browser: Invalid use_flame_browser type: {use_flame_browser}. use_flame_browser must be of type bool.')
         if window_to_hide is not None and not isinstance(window_to_hide, list):
-            raise TypeError('Pyflame File Browser: window_to_hide must be None or a list.')
+            raise TypeError(f'Pyflame file_browser: Invalid window_to_hide type: {window_to_hide}. window_to_hide must be of type list or None.')
 
         if not title and not extension:
             title = 'Select Directory'
@@ -457,19 +559,22 @@ class PyFlameFunctions():
         """
         Open path in System Finder
 
-        Parameters:
+        Args:
             path (str): Path to open in Finder
         """
 
         # Validate argument types
         if not isinstance(path, str):
-            raise TypeError('Pyflame Open In Finder: Path must be a string')
+            raise TypeError(f'Pyflame open_in_finder: Invalid path type: {path}. path must be of type str.')
 
         if not os.path.exists(path):
-            pyflame.message_print(message=f'Path does not exist: {path}', type=MessageType.ERROR)
+            pyflame.message_print(
+                message=f'Path does not exist: {path}',
+                type=MessageType.ERROR,
+            )
             return
 
-        # Open path in Finder
+        # Open path in Finder or File Explorer
         if platform.system() == 'Darwin':
             subprocess.Popen(['open', path])
         else:
@@ -480,7 +585,7 @@ class PyFlameFunctions():
         """
         Refresh python hooks and print message to terminal and Flame message window
 
-        Parameters:
+        Args:
             script_name: (str) Name of script.
                 This is displayed in the Flame message area.
                 Default: PYTHON HOOKS
@@ -493,24 +598,28 @@ class PyFlameFunctions():
             pyflame.refresh_hooks(script_name='SCRIPT NAME')
         """
 
+        # Validate argument types
         if not isinstance(script_name, str):
-            raise TypeError('Pyflame Refresh Hooks: script_name must be a string')
+            raise TypeError(f'Pyflame refresh_hooks: Invalid script_name type: {script_name}. script_name must be of type str.')
 
-        # Refresh python hooks
-        flame.execute_shortcut('Rescan Python Hooks')
+        flame.execute_shortcut('Rescan Python Hooks') # Refresh python hooks
 
         # Print message to terminal and Flame message area
         pyflame.message_print(
             message='Python hooks refreshed.',
             script_name=script_name,
-            )
+        )
 
     @staticmethod
-    def resolve_path_tokens(tokenized_path: str, flame_pyobject=None, date=None) -> str:
+    def resolve_path_tokens(
+        tokenized_path: str,
+        flame_pyobject=None,
+        date=None,
+        ) -> str:
         """
         Resolves paths with tokens.
 
-        Parameters:
+        Args:
             tokenized_path (str): Path with tokens to be translated.
             flame_pyobject (flame.PyClip, optional) Flame PyClip/PySegment/PyBatch Object.
             date: (datetime, optional) Date/time to use for token translation. Default is None. If None is passed datetime value will be gotten each time function is run.
@@ -518,11 +627,11 @@ class PyFlameFunctions():
         Supported tokens are:
             <ProjectName>, <ProjectNickName>, <UserName>, <UserNickName>, <YYYY>, <YY>, <MM>, <DD>, <Hour>, <Minute>, <AMPM>, <ampm>
 
-        Tokens aviailble for Flame PyObjects:
+        Tokens available when Flame PyObjects as passed in the flame_pyobject argument:
             PyClip and PySegment:
                 <ShotName>, <SeqName>, <SEQNAME>, <ClipName>, <Resolution>, <ClipHeight>, <ClipWidth>, <TapeName>
             PyBatch:
-                <ShotName>, <SeqName>, <SEQNAME>
+                <BatchGroupName>, <ShotName>, <SeqName>, <SEQNAME>
 
         Returns:
             resolved_path (str): Resolved path.
@@ -535,21 +644,21 @@ class PyFlameFunctions():
                 )
         """
 
+        # Validate argument types
         if not isinstance(tokenized_path, str):
-            raise TypeError('Pyflame Translate Path Tokens: tokenized_path must be a string')
+            raise TypeError(f'PyFlame resolve_path_tokens: Invalid tokenized_path type: {tokenized_path}. tokenized_path must be of type str.')
 
         def get_seq_name(name):
-
-            # Get sequence name abreviation from shot name
+            """
+            Get sequence name abreviation from shot name
+            """
 
             seq_name = re.split('[^a-zA-Z]', name)[0]
-
             return seq_name
 
         print('Tokenized path to resolve:', tokenized_path)
 
         # Get time values for token conversion
-
         if not date:
             date = datetime.datetime.now()
 
@@ -565,7 +674,6 @@ class PyFlameFunctions():
         ampm = str(date.strftime('%p')).lower()
 
         # Replace tokens in path
-
         resolved_path = re.sub('<ProjectName>', flame.project.current_project.name, tokenized_path)
         resolved_path = re.sub('<ProjectNickName>', flame.project.current_project.nickname, resolved_path)
         resolved_path = re.sub('<UserName>', flame.users.current_user.name, resolved_path)
@@ -579,16 +687,17 @@ class PyFlameFunctions():
         resolved_path = re.sub('<AMPM>', ampm_caps, resolved_path)
         resolved_path = re.sub('<ampm>', ampm, resolved_path)
 
-        if flame_pyobject:
+        # Get Batch Group Name - Only works when a PyBatch object is passed as the flame_pyobject argument.
+        if '<BatchGroupName>' in tokenized_path and isinstance(flame_pyobject, flame.PyBatch):
+            resolved_path = re.sub('<BatchGroupName>', str(flame_pyobject.name)[1:-1], resolved_path)
 
+        if flame_pyobject:
             if isinstance(flame_pyobject, flame.PyClip):
 
                 clip = flame_pyobject
-
-                clip_name = str(clip.name)[1:-1]
+                clip_name = str(clip.name)[1:-1] # Get clip name
 
                 # Get shot name from clip
-
                 try:
                     if clip.versions[0].tracks[0].segments[0].shot_name != '':
                         shot_name = str(clip.versions[0].tracks[0].segments[0].shot_name)[1:-1]
@@ -598,18 +707,14 @@ class PyFlameFunctions():
                     shot_name = ''
 
                 # Get tape name from clip
-
                 try:
-                    tape_name = str(clip.versions[0].tracks[0].segments[0].tape_name)
+                    tape_name = str(clip.versions[0].tracks[0].segments[0].tape_name) # Get tape name
                 except:
                     tape_name = ''
 
-                # Get Seq Name from shot name
-
-                seq_name = get_seq_name(shot_name)
+                seq_name = get_seq_name(shot_name) # Get Seq Name from shot name
 
                 # Replace clip tokens in path
-
                 resolved_path = re.sub('<ShotName>', shot_name, resolved_path)
                 resolved_path = re.sub('<SeqName>', seq_name, resolved_path)
                 resolved_path = re.sub('<SEQNAME>', seq_name.upper(), resolved_path)
@@ -626,7 +731,6 @@ class PyFlameFunctions():
                 segment_name = str(segment.name)[1:-1]
 
                 # Get shot name from clip
-
                 try:
                     if segment.shot_name != '':
                         shot_name = str(segment.shot_name)[1:-1]
@@ -636,18 +740,14 @@ class PyFlameFunctions():
                     shot_name = ''
 
                 # Get tape name from segment
-
                 try:
                     tape_name = str(segment.tape_name)
                 except:
                     tape_name = ''
 
-                # Get Seq Name from shot name
-
-                seq_name = get_seq_name(shot_name)
+                seq_name = get_seq_name(shot_name) # Get Seq Name from shot name
 
                 # Replace segment tokens in path
-
                 resolved_path = re.sub('<ShotName>', shot_name, resolved_path)
                 resolved_path = re.sub('<SeqName>', seq_name, resolved_path)
                 resolved_path = re.sub('<SEQNAME>', seq_name.upper(), resolved_path)
@@ -672,10 +772,9 @@ class PyFlameFunctions():
                 if not shot_name:
                     shot_name = pyflame.resolve_shot_name(str(batch.name)[1:-1])
 
-                # Get Seq Name from shot name
+                seq_name = get_seq_name(shot_name) # Get Seq Name from shot name
 
-                seq_name = get_seq_name(shot_name)
-
+                # Replace tokens in path
                 resolved_path = re.sub('<ShotName>', shot_name, resolved_path)
                 resolved_path = re.sub('<SeqName>', seq_name, resolved_path)
                 resolved_path = re.sub('<SEQNAME>', seq_name.upper(), resolved_path)
@@ -691,7 +790,7 @@ class PyFlameFunctions():
         two formats: a camera source name like 'A010C0012' or a standard name where the
         shot name precedes other identifiers (e.g. 'pyt_0010_comp').
 
-        Parameters:
+        Args:
             name (str): The name to be resolved into a shot name.
 
         Returns:
@@ -710,10 +809,9 @@ class PyFlameFunctions():
                 print(shot_name)  # Outputs: pyt_0010
         """
 
-
         # Validate argument types
         if not isinstance(name, str):
-            raise TypeError('Pyflame Resolve Shot Name: name must be a string.')
+            raise TypeError(f'Pyflame resolve_shot_name: Invalid name type: {name}. name must be of type str.')
 
         # Check if the name follows the format of a camera source (e.g. A010C0012).
         # If so, take the first 8 characters as the shot name.
@@ -743,11 +841,15 @@ class PyFlameFunctions():
         return shot_name
 
     @staticmethod
-    def untar(tar_file_path: str, untar_path: str, sudo_password: Optional[str]=None) -> bool:
+    def untar(
+        tar_file_path: str,
+        untar_path: str,
+        sudo_password: Optional[str]=None,
+        ) -> bool:
         """
         Untar a tar file.
 
-        Parameters:
+        Args:
             tar_file_path (str): Path to tar file to untar including filename.tgz/tar.
             untar_path (str): Untar destination path.
             sudo_password (bool, optional): Password for sudo.
@@ -760,10 +862,12 @@ class PyFlameFunctions():
         """
 
         # Validate arguments
+        if not isinstance(tar_file_path, str):
+            raise TypeError(f'Pyflame untar: Invalid tar_file_path type: {tar_file_path}. tar_file_path must be of type str.')
         if not isinstance(untar_path, str):
-            raise TypeError('pyflame.untar: untar_path must be a string')
+            raise TypeError(f'Pyflame untar: Invalid untar_path type: {untar_path}. untar_path must be of type str.')
         if sudo_password is not None and not isinstance(sudo_password, str):
-            raise TypeError('pyflame.untar: sudo must be a string or None')
+            raise TypeError(f'pyflame.untar: Invalid sudo_password type: {sudo_password}. sudo_password must be of type str or None.')
 
         # Untar
         untar_command = f'tar -xvf {tar_file_path} -C {untar_path}'
@@ -774,7 +878,6 @@ class PyFlameFunctions():
             stdout, stderr = process.communicate(sudo_password + '\n')
             if stderr:
                 print(stderr)
-
         else:
             process = Popen(untar_command, stdin=PIPE, stderr=PIPE, universal_newlines=True)
 
@@ -799,7 +902,7 @@ class PyFlameFunctions():
         relative to a standard height of 3190 pixels(HighDPI(Retina) resolution of
         Mac Studio Display).
 
-        Parameters:
+        Args:
             value (int): Value to be scaled.
 
         Returns:
@@ -811,7 +914,7 @@ class PyFlameFunctions():
 
         # Validate argument type
         if not isinstance(value, int):
-            raise TypeError('gui_resize: Value must be an integer.')
+            raise TypeError(f'Pyflame gui_resize: Invalid value type: {value}. value must be of type int.')
 
         # Baseline resolution from mac studio display
         base_screen_height = 3190
@@ -846,7 +949,7 @@ class PyFlameFunctions():
         display the the value is scaled further by 0.8 so fonts don't
         appear to big.
 
-        Parameters:
+        Args:
             value (int): Value to be scaled.
 
         Returns:
@@ -858,7 +961,7 @@ class PyFlameFunctions():
 
         # Validate argument types
         if not isinstance(value, int):
-            raise ValueError('PyFlameButton: Value must be an integer.')
+            raise TypeError(f'Pyflame font_resize: Invalid value type: {value}. value must be of type int.')
 
         # Scale font size through gui_resize method
         scaled_size = pyflame.gui_resize(value)
@@ -870,7 +973,7 @@ class PyFlameFunctions():
             return int(scaled_size * 0.8)
 
     @staticmethod
-    def get_export_preset_version(preset_path: str) -> (str, str):
+    def get_export_preset_version(preset_path: str) -> Tuple[str, str]:
         """
         Get current export preset version and current Flame preset export version.
         This should be updated with each new version of Flame.
@@ -880,7 +983,7 @@ class PyFlameFunctions():
             SynthEyes Export
             Create Shot
 
-        Parameters:
+        Args:
             preset_path (str): Path of preset to check/update.
 
         Returns:
@@ -888,9 +991,15 @@ class PyFlameFunctions():
             export_version (str): Export preset version for currernt version of Flame.
         """
 
+        # Validate argument types
+        if not isinstance(preset_path, str):
+            raise TypeError(f'Pyflame get_export_preset_version: Invalid preset_path type: {preset_path}. preset_path must be of type str.')
+
         print('Checking export preset version...')
 
-        def get_current_export_version() -> str:
+        print('    Export preset path:', preset_path)
+
+        def get_current_export_version(preset_path) -> str:
             """
             Get export version for current export preset XML.
             """
@@ -902,7 +1011,7 @@ class PyFlameFunctions():
             # Get version export preset is currently set to
             for setting in root.iter('preset'):
                 current_export_version = setting.get('version')
-                print(f'Current export preset version: {current_export_version}')
+                print(f'    Current export preset version: {current_export_version}')
 
             return current_export_version
 
@@ -919,18 +1028,18 @@ class PyFlameFunctions():
             preset_path = os.path.join(
                 preset_dir, "Jpeg", "Jpeg (8-bit).xml"
             )
-
             preset_xml_tree = ET.parse(preset_path)
             root = preset_xml_tree.getroot()
 
             # Get version default export preset is currently set to
             for setting in root.iter('preset'):
                 default_export_version = setting.get('version')
-                print(f'Flame default export preset version: {default_export_version}')
+                print(f'    Flame default export preset version: {default_export_version}')
+                print('\n', end='')
 
             return default_export_version
 
-        current_export_version = get_current_export_version()
+        current_export_version = get_current_export_version(preset_path)
         export_version = get_export_version()
 
         return current_export_version, export_version
@@ -940,9 +1049,13 @@ class PyFlameFunctions():
         """
         Update export preset file version to match current version of flame being used.
 
-        Parameters:
+        Args:
             preset_path (str): Path of preset to check/update.
         """
+
+        # Validate argument types
+        if not isinstance(preset_path, str):
+            raise TypeError(f'Pyflame update_export_preset: Invalid preset_path type: {preset_path}. preset_path must be of type str.')
 
         current_export_version, export_version = pyflame.get_export_preset_version(
             preset_path=preset_path,
@@ -950,14 +1063,13 @@ class PyFlameFunctions():
 
         # If preset version if different than current export version then update preset xml
         if current_export_version != export_version:
-
-            # Open preset XML file
-            export_preset_xml_tree = ET.parse(preset_path)
+            export_preset_xml_tree = ET.parse(preset_path) # Open preset XML file
             root = export_preset_xml_tree.getroot()
 
             # Update preset version in preset XML
             for element in root.iter('preset'):
                 element.set('version', export_version)
+
             # Write out updated preset XML file
             export_preset_xml_tree.write(preset_path)
 
@@ -976,7 +1088,7 @@ class PyFlameConfig():
     If a config file doesn't exist, attributes will be set from the provided config_values dict.
     If a config file does exist, attributes will be set from the config file and config_values dict will be ignored.
 
-    Parameters:
+    Args:
         script_name (str): The name of the script for which the configuration is being set. This name is used in
             creating or updating the XML config file.
         script_path (str): The absolute path to the script. This is used to locate the XML config file.
@@ -984,7 +1096,7 @@ class PyFlameConfig():
             These will be used to create attributes for the class instance.
         config_xml_path (str, optional): The absolute path of the configuration XML file if it is different from the
             default (script_path + 'config/config.xml').
-            In most cases, this should not be passed.
+            In most cases, this does not need to be used.
 
     Returns:
         instance: Returns an instance of the PyFlameConfig class with attributes set as per the configuration values.
@@ -1034,24 +1146,24 @@ class PyFlameConfig():
         # Validate argument types
 
         if not isinstance(script_name, str):
-            raise TypeError('script_name: script_name must be a string.')
+            raise TypeError(f'PyFlameConfig: Invalid type for script_name: {script_name}. Must be of type str.')
         if not isinstance(script_path, str):
-            raise TypeError('script_path: script_path must be a string.')
+            raise TypeError(f'PyFlameConfig: Invalid type for script_path: {script_path}. Must be of type str.')
         elif not isinstance(config_values, dict):
-            raise TypeError('config_values: config_values must be a dict.')
+            raise TypeError(f'PyFlameConfig: Invalid type for config_values: {config_values}. Must be of type dict.')
         for key, value in config_values.items():
             if not isinstance(key, str):
-                raise TypeError('config_keys: config_values keys must be strings.')
+                raise TypeError(f'PyFlameConfig: Invalid type for config_values keys: {key}. Must be of type str.')
             if value is not None and not isinstance(value, str):
-                raise TypeError('config_values: config_values values must be strings.')
+                raise TypeError(f'PyFlameConfig: Invalid type for config_values values: {value}. Must be of type str.')
         if config_xml_path and not isinstance(config_xml_path, str):
-            raise TypeError('config_xml_path: config_xml_path must be a string.')
+            raise TypeError(f'PyFlameConfig: Invalid type for config_xml_path: {config_xml_path}. Must be of type str.')
 
     def _convert_value_type(self, value: str) -> Union[str, bool, int, float, List, Dict]:
         """
         Convert string to bool, list, dict, int, or float if needed
 
-        Parameters:
+        Args:
             value (str): String representation of the value to be converted.
 
         Returns:
@@ -1093,7 +1205,7 @@ class PyFlameConfig():
         If config file exists, attributes will be set from the config file.
         New config values can be added to the config_values dict that may not exist in the config file. These will be added to the config file when it is saved using save_config.
 
-        Parameters:
+        Args:
             script_name (str): Name of script.
             script_path (str): Path to script.
             config_values (dict): Default config values. Keys and values must be strings.
@@ -1103,8 +1215,9 @@ class PyFlameConfig():
             None: The method does not return a value. It sets the config as attributes of the instance.
         """
 
-        # If config_xml_path is not specified, set it to default
+        print('Loading config...\n')
 
+        # If config_xml_path is not specified, set it to default
         if not config_xml_path:
             config_xml_path = os.path.join(script_path, 'config/config.xml')
         print(f'    Config xml path: {config_xml_path}\n')
@@ -1134,17 +1247,22 @@ class PyFlameConfig():
 
         for key, value in config_values.items():
             value = self._convert_value_type(value) # Convert value to correct type
+            print(f'        {key}: {value}')
             setattr(self, key, value)
-        print('\n')
+        print('\n', end='')
 
-        pyflame.message_print(message='Config loaded.', script_name=script_name)
+        if not os.path.isfile(config_xml_path):
+            print('    Config file not found. Creating new config file.\n')
+            self.save_config(script_name, script_path, config_values, config_xml_path)
+        else:
+            pyflame.message_print(message='Config loaded.', script_name=script_name)
 
     def save_config(self, script_name: str, script_path: str, config_values: Dict[str, str], config_xml_path: Optional[str]=None):
         """
         Save config file. If config_xml_path is not specified, it will be set to the default.
         Only values in the config_values dict will be saved/updated to the config file.
 
-        Parameters:
+        Args:
             script_name (str): Name of script.
             script_path (str): Path to script.
             config_values (dict): Config values. Keys and values must be strings.
@@ -1223,7 +1341,7 @@ class PyFlameConfig():
                     xml_value.text = value
                     print(f'        updated: {key}: {value}')
 
-            print('\n')
+            print('\n', end='')
 
             xml_tree.write(config_xml_path)
 
@@ -1254,13 +1372,45 @@ class PyFlameConfig():
 
         pyflame.message_print(message='Config saved.', script_name=script_name)
 
+    def get_config_values(xml_path: str):
+        """
+        Get config settings as a dictionary from a config file.
+
+        Args:
+            xml_path (str): Path to config file.
+
+        Returns:
+            settings_dict (dict): Dictionary of config settings.
+
+        Example:
+            settings_dict = PyFlameConfig.get_config_values(xml_path='/path/to/config.xml')
+        """
+
+        print('Creating config settings dictionary from config file...\n')
+
+        # Read in preset xml file with xml.etree.ElementTree and create a dictionary
+        xml_tree = ET.parse(xml_path)
+        root = xml_tree.getroot()
+
+        # Assign values from config file to variables
+        settings_dict = {}
+        for setting in root.iter():
+            for child in setting:
+                settings_dict[child.tag] = child.text
+
+        print('Config settings:')
+        for key, value in settings_dict.items():
+            print(f'    {key}: {value}')
+        print('\n', end='')
+
+        return settings_dict
 # -------------------------------- PyFlame Widget Classes -------------------------------- #
 
 class PyFlameButton(QtWidgets.QPushButton):
     """
-    Custom Qt Flame Button Widget.
+    Custom Qt Flame Button Widget Subclass
 
-    Parameters:
+    Args:
         text (str): Text shown on button.
         connect (callable): Function to execute when clicked.
         width (int): Button width.
@@ -1315,22 +1465,22 @@ class PyFlameButton(QtWidgets.QPushButton):
 
         # Validate argument types
         if not isinstance(text, str):
-            raise TypeError('PyFlameButton: text must be a string.')
+            raise TypeError(f'PyFlameButton: Invalid text argument: {text} Must be of type str.')
         elif not callable(connect):
-            raise TypeError('PyFlameButton: connect must be a callable function or method.')
-        elif not isinstance(width, int) or width <= 0:
-            raise ValueError('PyFlameButton: width must be a positive integer.')
-        elif not isinstance(height, int) or height <= 0:
-            raise ValueError('PyFlameButton: height must be a positive integer.')
+            raise TypeError(f'PyFlameButton: Invalid connect argument: {connect} Must be a callable function.')
+        elif not isinstance(width, int):
+            raise TypeError(f'PyFlameButton: Invalid width argument: {width}. Must be of type int.')
+        elif not isinstance(height, int):
+            raise TypeError(f'PyFlameButton: Invalid height argument: {height}. Must be of type int.')
         elif not isinstance(color, Color):
-            raise ValueError('PyFlameButton: color must be an instance of Color Enum. '
-                            'Options are: Color.GRAY, Color.BLUE, or Color.RED.')
+            raise ValueError(f'PyFlameButton: Invalid color argument: {color}. Must be an instance of Color Enum.'
+                             'Options are: Color.GRAY, Color.BLUE, or Color.RED.')
         elif not isinstance(font, str):
-            raise TypeError('PyFlameButton: font must be a string')
-        elif not (isinstance(font_size, int) and font_size > 0):
-            raise ValueError('PyFlameButton: font_size must be a positive integer.')
+            raise TypeError(f'PyFlameButton: Invalid font argument: {font}. Must be of type str.')
+        elif not isinstance(font_size, int):
+            raise ValueError(f'PyFlameButton: Invalid font_size argument: {font_size}. Must be of type int.')
         elif tooltip is not None and not isinstance(tooltip, str):
-            raise TypeError('PyFlameButton: tooltip must be a string, or None.')
+            raise TypeError(f'PyFlameButton: Invalid tooltip argument: {tooltip}. Must be of type str.')
 
         # Set button font
         font = QtGui.QFont(font)
@@ -1360,7 +1510,7 @@ class PyFlameButton(QtWidgets.QPushButton):
         if color == Color.GRAY:
             self.setStyleSheet("""
                 QPushButton {
-                    color: rgb(190, 190, 190);
+                    color: rgb(165, 165, 165);
                     background-color: rgb(58, 58, 58);
                     border: none;
                     }
@@ -1368,7 +1518,7 @@ class PyFlameButton(QtWidgets.QPushButton):
                     border: 1px solid rgb(90, 90, 90);
                     }
                 QPushButton:pressed{
-                    color: rgb(159, 159, 159);
+                    color: rgb(210, 210, 210);
                     background-color: rgb(66, 66, 66);
                     border: 1px solid rgb(90, 90, 90);
                     }
@@ -1382,16 +1532,16 @@ class PyFlameButton(QtWidgets.QPushButton):
                     subcontrol-position: center right;
                     }
                 QToolTip{
-                    color: rgb(170, 170, 170);
+                    color: rgb(255, 255, 255); /* Tooltip text color */
                     background-color: rgb(71, 71, 71);
-                    border: 10px solid rgb(71, 71, 71);
+                    border: 1px solid rgb(0, 0, 0); /* Tooltip border color */
                     }
                 """)
 
         elif color == Color.BLUE:
             self.setStyleSheet("""
                 QPushButton{
-                    color: rgb(190, 190, 190);
+                    color: rgb(185, 185, 185);
                     background-color: rgb(0, 110, 175);
                     border: none;
                     }
@@ -1399,7 +1549,7 @@ class PyFlameButton(QtWidgets.QPushButton):
                     border: 1px solid rgb(90, 90, 90);
                     }
                 QPushButton:pressed{
-                    color: rgb(159, 159, 159);
+                    color: rgb(210, 210, 210);
                     border: 1px solid rgb(90, 90, 90);
                     }
                 QPushButton:disabled{
@@ -1408,16 +1558,16 @@ class PyFlameButton(QtWidgets.QPushButton):
                     border: none;
                     }
                 QToolTip{
-                    color: rgb(170, 170, 170);
+                    color: rgb(255, 255, 255); /* Tooltip text color */
                     background-color: rgb(71, 71, 71);
-                    border: 10px solid rgb(71, 71, 71)
+                    border: 1px solid rgb(0, 0, 0); /* Tooltip border color */
                     }
                 """)
 
         elif color == Color.RED:
             self.setStyleSheet("""
                 QPushButton{
-                    color: rgb(190, 190, 190);
+                    color: rgb(185, 185, 185);
                     background-color: rgb(200, 29, 29);
                     border: none;
                     }
@@ -1425,7 +1575,7 @@ class PyFlameButton(QtWidgets.QPushButton):
                     border: 1px solid rgb(90, 90, 90);
                     }
                 QPushButton:pressed{
-                    color: rgb(159, 159, 159);
+                    color: rgb(210, 210, 210);
                     border: 1px solid rgb(90, 90, 90);
                     }
                 QPushButton:disabled{
@@ -1434,17 +1584,17 @@ class PyFlameButton(QtWidgets.QPushButton):
                     border: none;
                     }
                 QToolTip{
-                    color: rgb(170, 170, 170);
+                    color: rgb(255, 255, 255); /* Tooltip text color */
                     background-color: rgb(71, 71, 71);
-                    border: 10px solid rgb(71, 71, 71);
+                    border: 1px solid rgb(0, 0, 0); /* Tooltip border color */
                     }
                 """)
 
 class PyFlameLabel(QtWidgets.QLabel):
     """
-    Custom Qt Flame Label Widget
+    Custom Qt Flame Label Widget Subclass
 
-    Parameters:
+    Args:
         text (str): Label text.
         style (Style): Select from different styles.
             -Style.NORMAL: Standard label without any additional styling. Text is left aligned.
@@ -1458,15 +1608,20 @@ class PyFlameLabel(QtWidgets.QLabel):
             -Align.CENTER: Centers text within the label.
             Default: None
         height (int): Label height.
-            Default: 25
+            Default: 28
         width (int): Label width.
             Default: 150
-        max_width (int, optional): Maximum label width. Use if width is being set by layout.
-            Default: 0
-        max_height (int, optional): Maximum label height. Use if height is being set by layout.
-            Default: 0
-        underline_color (tuple): Color of underline when using Style.UNDERLINE. Tuple must contain 4 values.
-            The fourth value is the alpha value which is a float between 0 and 1.
+        max_width (bool, optional): Set label to maximum width.
+            Use if width is being set by layout.
+            No need to set width if this is used.
+            Default: False
+        max_height (bool, optional): Set label to maximum height.
+            Use if height is being set by layout.
+            No need to set height if this is used.
+            Default: False
+        underline_color (tuple): Color of underline when using Style.UNDERLINE.
+            Tuple must contain 4 values (Red, Green, Blue, Alpha).
+            The fourth value (alpha) is a float number between 0 and 1.
             Default: (40, 40, 40, 1)
         font (str): Label font.
             Default: PYFLAME_FONT
@@ -1496,8 +1651,8 @@ class PyFlameLabel(QtWidgets.QLabel):
                  align: Optional[Align]=None,
                  width: int=150,
                  height: int=28,
-                 max_width: Optional[int]=0,
-                 max_height: Optional[int]=0,
+                 max_width: Optional[bool]=False,
+                 max_height: Optional[bool]=False,
                  underline_color: tuple=(40, 40, 40, 1),
                  font: str=PYFLAME_FONT,
                  font_size: int=PYFLAME_FONT_SIZE,
@@ -1506,28 +1661,28 @@ class PyFlameLabel(QtWidgets.QLabel):
 
         # Validate argument types
         if not isinstance(text, str):
-            raise TypeError('PyFlameLabel: text must be a string')
+            raise TypeError(f'PyFlameLabel: Invalid text argument: {text}. Must be of type str.')
         elif not isinstance(style, Style):
-            raise TypeError('PyFlameLabel: style must be an instance of Style Enum. '
-                            'Style.NORMAL, Style.UNDERLINE, Style.BACKGROUND, or Style.BORDER.')
+            raise TypeError(f'PyFlameLabel: Invalid style argument: {style}. Must be an instance of Style Enum. '
+                            'Options are: Style.NORMAL, Style.UNDERLINE, Style.BACKGROUND, or Style.BORDER.')
         elif align is not None and not isinstance(align, Align):
-            raise TypeError('PyFlameLabel: align must be an instance of Align Enum, or None. '
+            raise TypeError(f'PyFlameLabel: Invalid align argument: {align}. Must be an instance of Align Enum, or None. '
                             'Options are: Align.LEFT, Align.RIGHT, Align.CENTER, or None.')
-        elif not isinstance(width, int) or width <= 0:
-            raise ValueError('PyFlameLabel: width must be a positive integer.')
-        elif not isinstance(height, int) or height <= 0:
-            raise ValueError('PyFlameLabel: height must be a positive integer.')
-        elif not isinstance(max_width, int) or max_width < 0:
-            raise ValueError('PyFlameLabel: max_width must be a positive integer.')
-        elif not isinstance(max_height, int) or max_height < 0:
-            raise ValueError('PyFlameLabel: max_height must be a positive integer.')
+        elif not isinstance(width, int):
+            raise ValueError(f'PyFlameLabel: Invalid width argument: {width}. Must be of type int.')
+        elif not isinstance(height, int):
+            raise ValueError(f'PyFlameLabel: Invalid height argument: {height}. Must be of type int.')
+        elif not isinstance(max_width, bool):
+            raise ValueError(f'PyFlameLabel: Invalid max_width argument: {max_width}. Must be of type bool.')
+        elif not isinstance(max_height, bool):
+            raise ValueError(f'PyFlameLabel: Invalid max_height argument: {max_height}. Must be of type bool.')
         elif not isinstance(underline_color, tuple) or len(underline_color) != 4:
-            raise TypeError('PyFlameLabel: underline_color must be a rgba value tuple. The tuple must contain 4 values.'
-                            'Such as: (40, 40, 40, 0.5).')
+            raise TypeError(f'PyFlameLabel: Invalid underline_color argument: {underline_color}. '
+                            'underline_color must be a rgba value tuple. The tuple must contain 4 values. Such as: (40, 40, 40, 0.5).')
         elif not isinstance(font, str):
-            raise TypeError('PyFlameLabel: font must be a string.')
-        elif not (isinstance(font_size, int) and font_size > 0):
-            raise ValueError('PyFlameLabel: font_size must be a positive integer.')
+            raise TypeError(f'PyFlameLabel: Invalid font argument: {font}. Must be of type str.')
+        elif not (isinstance(font_size, int)):
+            raise TypeError(f'PyFlameLabel: Invalid font_size argument: {font_size}. Must be of type int.')
 
         self.underline_color = underline_color
 
@@ -1540,9 +1695,9 @@ class PyFlameLabel(QtWidgets.QLabel):
         self.setText(text)
         self.setFixedSize(pyflame.gui_resize(width), pyflame.gui_resize(height))
         if max_width:
-            self.setMaximumWidth(pyflame.gui_resize(max_width))
+            self.setMaximumWidth(pyflame.gui_resize(3000))
         if max_height:
-            self.setMaximumHeight(pyflame.gui_resize(max_height))
+            self.setMaximumHeight(pyflame.gui_resize(3000))
         self.setFocusPolicy(QtCore.Qt.NoFocus)
 
         # Set label stylesheet based on style
@@ -1565,7 +1720,7 @@ class PyFlameLabel(QtWidgets.QLabel):
         if style == Style.NORMAL:
             self.setStyleSheet("""
                 QLabel{
-                    color: rgb(190, 190, 190);
+                    color: rgb(154, 154, 154);
                     }
                 QLabel:disabled{
                     color: rgb(106, 106, 106);
@@ -1574,7 +1729,7 @@ class PyFlameLabel(QtWidgets.QLabel):
         elif style == Style.UNDERLINE:
             self.setStyleSheet(f"""
                 QLabel{{
-                    color: rgb(190, 190, 190);
+                    color: rgb(154, 154, 154);
                     border-bottom: 1px inset rgba{self.underline_color};
                     }}
                 QLabel:disabled{{
@@ -1584,7 +1739,7 @@ class PyFlameLabel(QtWidgets.QLabel):
         elif style == Style.BACKGROUND:
             self.setStyleSheet("""
                 QLabel{
-                    color: rgb(190, 190, 190);
+                    color: rgb(154, 154, 154);
                     background-color: rgb(30, 30, 30);
                     padding-left: 5px;
                     }
@@ -1595,7 +1750,7 @@ class PyFlameLabel(QtWidgets.QLabel):
         elif style == Style.BORDER:
             self.setStyleSheet("""
                 QLabel{
-                    color: rgb(190, 190, 190);
+                    color: rgb(154, 154, 154);
                     border: 1px solid rgb(64, 64, 64);
                     }
                 QLabel:disabled{
@@ -1605,16 +1760,18 @@ class PyFlameLabel(QtWidgets.QLabel):
 
 class PyFlameLineEdit(QtWidgets.QLineEdit):
     """
-    Custom Qt Flame Line Edit Widget
+    Custom Qt Flame Line Edit Widget Subclass
 
-    Parameters:
+    Args:
         text (str): Line edit text.
         width (int): Width of lineedit widget.
             Default: 150
         height (int): Height of lineedit widget.
             Default: 28
-        max_width (int, optional): Maximum width of widget. Use if width is being set by layout.
-            Default: 0
+        max_width (bool, optional): Set to lineedit maximum width.
+            Use if width is being set by layout.
+            No need to set width if this is used.
+            Default: False
         text_changed (callable, optional): Function to call when text is changed.
             Default: None
         placeholder_text (str, optional): Temporary text to display when line edit is empty.
@@ -1650,9 +1807,10 @@ class PyFlameLineEdit(QtWidgets.QLineEdit):
                  text: str,
                  width: int=150,
                  height: int=28,
-                 max_width: Optional[int]=0,
+                 max_width: Optional[bool]=False,
                  text_changed: Optional[Callable]=None,
                  placeholder_text: Optional[str]=None,
+                 tooltip: Optional[str]=None,
                  read_only: bool=False,
                  font: str=PYFLAME_FONT,
                  font_size: int=PYFLAME_FONT_SIZE,
@@ -1661,25 +1819,27 @@ class PyFlameLineEdit(QtWidgets.QLineEdit):
 
         # Validate argument types
         if not isinstance(text, str) and not isinstance(text, int):
-            raise TypeError('PyFlameLineEdit: text must be string or int.')
-        elif not isinstance(width, int) or width <= 0:
-            raise ValueError('PyFlameLineEdit: width must be a positive integer.')
-        elif not isinstance(height, int) or height <= 0:
-            raise ValueError('PyFlameLineEdit: height must be a positive integer.')
-        elif not isinstance(max_width, int) or max_width < 0:
-            raise TypeError('PyFlameLineEdit: max_width must be a positive integer.')
+            raise TypeError(f'PyFlameLineEdit: Invalid text argument: {text}. Must be of type str or int.')
+        elif not isinstance(width, int):
+            raise ValueError(f'PyFlameLineEdit: Invalid width argument: {width}. Must be of type int.')
+        elif not isinstance(height, int):
+            raise ValueError(f'PyFlameLineEdit: Invalid height argument: {height}. Must be of type int.')
+        elif not isinstance(max_width, bool):
+            raise ValueError(f'PyFlameLineEdit: Invalid max_width argument: {max_width}. Must be of type bool.')
         elif text_changed is not None and not callable(text_changed):
-            raise TypeError('PyFlameLineEdit: text_changed must be a callable function or method, or None.')
+            raise TypeError(f'PyFlameLineEdit: Invalid text_changed argument: {text_changed}. Must be a callable function or method, or None.')
         elif placeholder_text is not None and not isinstance(placeholder_text, str):
-            raise TypeError('PyFlameLineEdit: placeholder_text must be a string, or None.')
+            raise TypeError(f'PyFlameLineEdit: Invalid placeholder_text argument: {placeholder_text}. Must be of type str or None.')
         if not isinstance(read_only, bool):
-            raise TypeError('PyFlameLineEdit: read_only must be a boolean (True or False).')
+            raise TypeError(f'PyFlameLineEdit: Invalid read_only argument: {read_only}. Must be of type bool.')
         elif not isinstance(font, str):
-            raise TypeError('PyFlameLineEdit: font must be a string.')
-        elif not isinstance(font_size, int) or font_size <= 0:
-            raise TypeError('PyFlameLineEdit: font_size must be a positive integer.')
+            raise TypeError(f'PyFlameLineEdit: Invalid font argument: {font}. Must be of type str.')
+        elif not isinstance(font_size, int):
+            raise ValueError(f'PyFlameLineEdit: Invalid font_size argument: {font_size}. Must be of type int.')
 
         self.read_only = read_only
+
+        self.setToolTip(tooltip)
 
         # Set font
         font = QtGui.QFont(font)
@@ -1690,7 +1850,7 @@ class PyFlameLineEdit(QtWidgets.QLineEdit):
         self.setText(str(text))
         self.setFixedSize(pyflame.gui_resize(width), pyflame.gui_resize(height))
         if max_width:
-            self.setMaximumWidth(pyflame.gui_resize(max_width))
+            self.setMaximumWidth(pyflame.gui_resize(3000))
         self.setFocusPolicy(QtCore.Qt.ClickFocus)
 
         if text_changed is not None:
@@ -1712,24 +1872,25 @@ class PyFlameLineEdit(QtWidgets.QLineEdit):
         if self.read_only:
             self.setStyleSheet("""
                 QLineEdit{
-                    color: rgb(190, 190, 190);
+                    color: rgb(154, 154, 154);
                     background-color: rgb(30, 30, 30);
-                    padding-left: 5px;
+                    border: 1px solid rgb(30, 30, 30);
+                    padding-left: 1px;
                     }
                 QLineEdit:hover{
                     border: 1px solid rgb(90, 90, 90);
-                    padding-left: 6px;
+                    padding-left: 1px;
                     }
                 QLineEdit:disabled{
                     color: rgb(106, 106, 106);
                     background-color: rgb(55, 55, 55);
                     border: 1px solid rgb(55, 55, 55);
-                    padding-left: 5px;
+                    padding-left: 1px;
                     }
                 QToolTip{
-                    color: rgb(170, 170, 170);
+                    color: rgb(255, 255, 255); /* Tooltip text color */
                     background-color: rgb(71, 71, 71);
-                    border: none;
+                    border: 1px solid rgb(0, 0, 0); /* Tooltip border color */
                     }
                 """)
         else:
@@ -1740,26 +1901,26 @@ class PyFlameLineEdit(QtWidgets.QLineEdit):
                     selection-color: rgb(38, 38, 38);
                     selection-background-color: rgb(184, 177, 167);
                     border: 1px solid rgb(55, 65, 75);
-                    padding-left: 5px;
+                    padding-left: 1px;
                     }
                 QLineEdit:focus{
                     background-color: rgb(73, 86, 99);
-                    padding-left: 5px;
+                    padding-left: 1px;
                     }
                 QLineEdit:hover{
                     border: 1px solid rgb(90, 90, 90);
-                    padding-left: 5px;
+                    padding-left: 1px;
                     }
                 QLineEdit:disabled{
                     color: rgb(106, 106, 106);
                     background-color: rgb(55, 55, 55);
                     border: 1px solid rgb(55, 55, 55);
-                    padding-left: 5px;
+                    padding-left: 1px;
                     }
                 QToolTip{
-                    color: rgb(170, 170, 170);
+                    color: rgb(255, 255, 255); /* Tooltip text color */
                     background-color: rgb(71, 71, 71);
-                    border: none;
+                    border: 1px solid rgb(0, 0, 0); /* Tooltip border color */
                     }
                 """)
 
@@ -1789,18 +1950,20 @@ class PyFlameLineEdit(QtWidgets.QLineEdit):
 
 class PyFlameLineEditFileBrowser(QtWidgets.QLineEdit):
     """
-    Custom Qt Flame Line Edit File Browser Widget
+    Custom Qt Flame Line Edit File Browser Widget Subclass
 
     Line Edit widget that opens a Flame file browser when clicked on.
 
-    Parameters:
+    Args:
         text (str): Line edit text.
         width: (int) Width of widget.
             Default: 150
         height: (int) Height of widget.
             Default: 28
-        max_width (int, optional): Maximum width of widget. Use if width is being set by layout.
-            Default: 0
+        max_width (bool, optional): Set to maximum width.
+            Use if width is being set by layout.
+            No need to set width if this is used.
+            Default: False
         placeholder_text (str, optional): Temporary text to display when line edit is empty.
             Default: None
         browser_type: BrowserType=BrowserType.FILE,
@@ -1858,7 +2021,7 @@ class PyFlameLineEditFileBrowser(QtWidgets.QLineEdit):
                  text: str,
                  width: int=150,
                  height: int=28,
-                 max_width: Optional[int]=0,
+                 max_width: Optional[bool]=True,
                  placeholder_text: Optional[str]=None,
                  browser_type: BrowserType=BrowserType.FILE,
                  browser_ext: List[str]=[],
@@ -1869,6 +2032,33 @@ class PyFlameLineEditFileBrowser(QtWidgets.QLineEdit):
                  font_size: int=PYFLAME_FONT_SIZE,
                  ):
         super().__init__()
+
+        # Validate argument types
+        if not isinstance(text, str):
+            raise TypeError(f'PyFlameLineEditFileBrowser: Invalid text argument: {text}. Must be of type str.')
+        elif not isinstance(width, int):
+            raise ValueError(f'PyFlameLineEditFileBrowser: Invalid width argument: {width}. Must be of type int.')
+        elif not isinstance(height, int):
+            raise ValueError(f'PyFlameLineEditFileBrowser: Invalid height argument: {height}. Must be of type int.')
+        elif not isinstance(max_width, bool):
+            raise ValueError(f'PyFlameLineEditFileBrowser: Invalid max_width argument: {max_width}. Must be of type bool.')
+        elif placeholder_text is not None and not isinstance(placeholder_text, str):
+            raise TypeError(f'PyFlameLineEditFileBrowser: Invalid placeholder_text argument: {placeholder_text}. Must be of type str or None.')
+        elif not isinstance(browser_type, BrowserType):
+            raise TypeError(f'PyFlameLineEditFileBrowser: Invalid browser_type argument: {browser_type}. Must be an instance of BrowserType Enum. '
+                            'Options are: BrowserType.FILE or BrowserType.DIRECTORY.')
+        elif not isinstance(browser_ext, list):
+            raise TypeError(f'PyFlameLineEditFileBrowser: Invalid browser_ext argument: {browser_ext}. Must be of type list.')
+        elif not isinstance(browser_title, str):
+            raise TypeError(f'PyFlameLineEditFileBrowser: Invalid browser_title argument: {browser_title}. Must be of type str.')
+        elif not isinstance(browser_window_to_hide, list):
+            raise TypeError(f'PyFlameLineEditFileBrowser: Invalid browser_window_to_hide argument: {browser_window_to_hide}. Must be of type list.')
+        elif not callable(connect):
+            raise TypeError(f'PyFlameLineEditFileBrowser: Invalid connect argument: {connect}. Must be a callable function or method, or None.')
+        elif not isinstance(font, str):
+            raise TypeError(f'PyFlameLineEditFileBrowser: Invalid font argument: {font}. Must be of type str.')
+        elif not isinstance(font_size, int):
+            raise ValueError(f'PyFlameLineEditFileBrowser: Invalid font_size argument: {font_size}. Must be of type int.')
 
         self.path = self.text()
 
@@ -1881,7 +2071,7 @@ class PyFlameLineEditFileBrowser(QtWidgets.QLineEdit):
         self.setText(text)
         self.setFixedSize(pyflame.gui_resize(width), pyflame.gui_resize(height))
         if max_width:
-            self.setMaximumWidth(pyflame.gui_resize(max_width))
+            self.setMaximumWidth(pyflame.gui_resize(3000))
         self.setReadOnly(True)
         self.setFocusPolicy(QtCore.Qt.NoFocus)
 
@@ -1949,10 +2139,10 @@ class PyFlameLineEditFileBrowser(QtWidgets.QLineEdit):
                 border: 1px solid rgb(55, 55, 55);
             }
             QToolTip{
-                color: rgb(170, 170, 170);
+                color: rgb(255, 255, 255); /* Tooltip text color */
                 background-color: rgb(71, 71, 71);
-                border: none;
-            }
+                border: 1px solid rgb(0, 0, 0); /* Tooltip border color */
+                }
         """)
 
     def mousePressEvent(self, event):
@@ -1973,17 +2163,21 @@ class PyFlameLineEditFileBrowser(QtWidgets.QLineEdit):
 
 class PyFlameListWidget(QtWidgets.QListWidget):
     """
-    Custom Qt Flame List Widget
+    Custom Qt Flame List Widget Subclass
 
-    Parameters:
+    Args:
         width (int): Widget width.
             Default: 200
         height (int): Widget height.
             Default: 250
-        max_width (int, optional): Widget maximum width. Use if width is being set by layout.
-            Default: 0
-        max_height (int, optional): Widget maximum height. Use if height is being set by layout.
-            Default: 0
+        max_width (bool, optional): Set to maximum width.
+            Use if width is being set by layout.
+            No need to set width if this is used.
+            Default: False
+        max_height (bool, optional): Set to maximum height.
+            Use if height is being set by layout.
+            No need to set height if this is used.
+            Default: False
         font (str): List widget font.
             Default: PYFLAME_FONT
         font_size (int): List widget font size.
@@ -2010,8 +2204,8 @@ class PyFlameListWidget(QtWidgets.QListWidget):
     def __init__(self: 'PyFlameListWidget',
                  width: int=200,
                  height: int=250,
-                 max_width: Optional[int]=0,
-                 max_height: Optional[int]=0,
+                 max_width: Optional[bool]=False,
+                 max_height: Optional[bool]=False,
                  tooltip: Optional[str]=None,
                  font: str=PYFLAME_FONT,
                  font_size: int=PYFLAME_FONT_SIZE,
@@ -2019,20 +2213,20 @@ class PyFlameListWidget(QtWidgets.QListWidget):
         super().__init__()
 
         # Validate argument types
-        if not isinstance(width, int) or width <= 0:
-            raise TypeError('PyFlameListWidget: width must be a positive integer.')
-        elif not isinstance(height, int) or height <= 0:
-            raise TypeError('PyFlameListWidget: height must be a positive integer.')
-        elif not isinstance(max_width, int) or max_width < 0:
-            raise TypeError('PyFlameListWidget: max_width must be a positive integer.')
-        elif not isinstance(max_height, int) or max_height < 0:
-            raise TypeError('PyFlameListWidget: max_height must be a positive integer.')
+        if not isinstance(width, int):
+            raise TypeError(f'PyFlameListWidget: Invalid width argument: {width}. Must be of type int.')
+        elif not isinstance(height, int):
+            raise TypeError(f'PyFlameListWidget: Invalid height argument: {height}. Must be of type int.')
+        elif not isinstance(max_width, bool):
+            raise TypeError(f'PyFlameListWidget: Invalid max_width argument: {max_width}. Must be of type bool.')
+        elif not isinstance(max_height, bool):
+            raise TypeError(f'PyFlameListWidget: Invalid max_height argument: {max_height}. Must be of type bool.')
         elif tooltip is not None and not isinstance(tooltip, str):
-            raise TypeError('PyFlameListWidget: tooltip must be a string, or None.')
+            raise TypeError(f'PyFlameListWidget: Invalid tooltip argument: {tooltip}. Must be of type str or None.')
         elif not isinstance(font, str):
-            raise TypeError('PyFlameListWidget: font must be a string.')
-        elif not isinstance(font_size, int) or font_size <= 0:
-            raise TypeError('PyFlameListWidget: font_size must be a positive integer.')
+            raise TypeError(f'PyFlameListWidget: Invalid font argument: {font}. Must be of type str.')
+        elif not isinstance(font_size, int):
+            raise TypeError(f'PyFlameListWidget: Invalid font_size argument: {font_size}. Must be of type int.')
 
         # Set label font
         font = QtGui.QFont(font)
@@ -2042,9 +2236,9 @@ class PyFlameListWidget(QtWidgets.QListWidget):
         # Build list widget
         self.setFixedSize(pyflame.gui_resize(width), pyflame.gui_resize(height))
         if max_width:
-            self.setMaximumWidth(pyflame.gui_resize(max_width))
+            self.setMaximumWidth(pyflame.gui_resize(3000))
         if max_height:
-            self.setMaximumHeight(pyflame.gui_resize(max_height))
+            self.setMaximumHeight(pyflame.gui_resize(3000))
         self.spacing()
         self.setUniformItemSizes(True)
         self.setFocusPolicy(QtCore.Qt.NoFocus)
@@ -2062,7 +2256,7 @@ class PyFlameListWidget(QtWidgets.QListWidget):
             """
             Add a list of strings to the list widget.
 
-            Parameters:
+            Args:
                 items (List[str]): The list of strings to be added.
             """
             if not isinstance(items, list):
@@ -2100,17 +2294,17 @@ class PyFlameListWidget(QtWidgets.QListWidget):
                 height: {pyflame.gui_resize(20)}px;  /* Adjust the height of the horizontal scrollbar */
                 }}
             QToolTip{{
-                color: rgb(170, 170, 170);
+                color: rgb(255, 255, 255); /* Tooltip text color */
                 background-color: rgb(71, 71, 71);
-                border: 10px solid rgb(71, 71, 71);
+                border: 1px solid rgb(0, 0, 0); /* Tooltip border color */
                 }}
             """)
 
 class PyFlamePushButton(QtWidgets.QPushButton):
     """
-    Custom Qt Flame Push Button Widget
+    Custom Qt Flame Push Button Widget Subclass
 
-    Parameters:
+    Args:
         text (str): Text displayed on button.
         button_checked (bool): True or False.
         connect (callable, optional): Function to be called when button is pressed.
@@ -2119,8 +2313,12 @@ class PyFlamePushButton(QtWidgets.QPushButton):
             Default: 28
         width (int): Button width.
             Default: 150
-        max_width (int, optional): Maximum button width. Use if width is being set by layout.
-            Default: 0
+        max_width (bool, optional): Set to maximum width.
+            Use if width is being set by layout.
+            No need to set width if this is used.
+            Default: False
+        enabled (bool): Set button to be enabled or disbaled.
+            Default: True
         tooltip (str, optional): Button tooltip text.
             Default: None
         font (str): Button font.
@@ -2151,7 +2349,8 @@ class PyFlamePushButton(QtWidgets.QPushButton):
                  connect: Optional[Callable[..., None]]=None,
                  width: int=150,
                  height: int=28,
-                 max_width: Optional[int]=0,
+                 max_width: Optional[bool]=False,
+                 enabled: bool=True,
                  tooltip: Optional[str]=None,
                  font: str=PYFLAME_FONT,
                  font_size: int=PYFLAME_FONT_SIZE,
@@ -2159,25 +2358,26 @@ class PyFlamePushButton(QtWidgets.QPushButton):
         super().__init__()
 
         # Validate argument types
-
         if not isinstance(text, str):
-            raise TypeError('PyFlamePushButton: text must be string.')
+            raise TypeError(f'PyFlamePushButton: Invalid text argument: {text}. Must be of type str.')
         elif not isinstance(button_checked, bool):
-            raise TypeError('PyFlamePushButton: button_checked must be bool.')
+            raise TypeError(f'PyFlamePushButton: Invalid button_checked argument: {button_checked}. Must be of type bool.')
         elif connect is not None and not callable(connect):
-            raise TypeError('PyFlamePushButton: connect must be a callable function or method, or None.')
-        elif not isinstance(width, int) or width <= 0:
-            raise TypeError('PyFlamePushButton: width must be a positive integer.')
-        elif not isinstance(height, int) or height <= 0:
-            raise TypeError('PyFlamePushButton: height must be a positive integer.')
-        elif not isinstance(max_width, int) or max_width < 0:
-            raise TypeError('PyFlamePushButton: max_width must be a positive integer.')
+            raise TypeError(f'PyFlamePushButton: Invalid connect argument: {connect}. Must be a callable function or method, or None.')
+        elif not isinstance(width, int):
+            raise ValueError(f'PyFlamePushButton: Invalid width argument: {width}. Must be of type int.')
+        elif not isinstance(height, int):
+            raise ValueError(f'PyFlamePushButton: Invalid height argument: {height}. Must be of type int.')
+        elif not isinstance(max_width, bool):
+            raise ValueError(f'PyFlamePushButton: Invalid max_width argument: {max_width}. Must be of type bool.')
+        elif not isinstance(enabled, bool):
+            raise TypeError(f'PyFlamePushButton: Invalid enabled argument: {enabled}. Must be of type bool.')
         elif tooltip is not None and not isinstance(tooltip, str):
-            raise TypeError('PyFlamePushButton: tooltip must be a string, or None.')
+            raise TypeError(f'PyFlamePushButton: Invalid tooltip argument: {tooltip}. Must be of type str or None.')
         elif not isinstance(font, str):
-            raise TypeError('PyFlamePushButton: font must be string.')
-        elif not isinstance(font_size, int) or font_size <= 0:
-            raise TypeError('PyFlamePushButton: font_size must be a positive integer.')
+            raise TypeError(f'PyFlamePushButton: Invalid font argument: {font}. Must be of type str.')
+        elif not isinstance(font_size, int):
+            raise ValueError(f'PyFlamePushButton: Invalid font_size argument: {font_size}. Must be of type int.')
 
         # Set button font
         font = QtGui.QFont(font)
@@ -2190,11 +2390,14 @@ class PyFlamePushButton(QtWidgets.QPushButton):
         self.setChecked(button_checked)
         self.setFixedSize(pyflame.gui_resize(width), pyflame.gui_resize(height))
         if max_width:
-            self.setMaximumWidth(pyflame.gui_resize(max_width))
+            self.setMaximumWidth(pyflame.gui_resize(3000))
         self.setFocusPolicy(QtCore.Qt.NoFocus)
         self.clicked.connect(connect)
         if tooltip is not None:
             self.setToolTip(tooltip)
+
+        # Set button to be enabled or disabled
+        self.setEnabled(enabled)
 
         self._set_stylesheet()
 
@@ -2203,7 +2406,7 @@ class PyFlamePushButton(QtWidgets.QPushButton):
         # Push button stylesheet
         self.setStyleSheet("""
             QPushButton{
-                color: rgb(190, 190, 190);
+                color: rgb(154, 154, 154);
                 background-color: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: .93 rgb(58, 58, 58), stop: .94 rgb(44, 54, 68));
                 text-align: left;
                 border-top: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: .93 rgb(58, 58, 58), stop: .94 rgb(44, 54, 68));
@@ -2233,32 +2436,31 @@ class PyFlamePushButton(QtWidgets.QPushButton):
                 border: none;
                 }
             QToolTip{
-                color: rgb(170, 170, 170);
+                color: rgb(255, 255, 255); /* Tooltip text color */
                 background-color: rgb(71, 71, 71);
-                border: 10px solid rgb(71, 71, 71);
+                border: 1px solid rgb(0, 0, 0); /* Tooltip border color */
                 }
             """)
 
 class PyFlamePushButtonMenu(QtWidgets.QPushButton):
     """
-    Custom Qt Flame Menu Push Button Widget
+    Custom Qt Flame Menu Push Button Widget Subclass
 
-    Parameters:
+    Args:
         text (str): Text displayed on button.
         menu_options (list): Options shown in menu when button is pressed.
         width (int): Button width.
             Default: 150
         height (int): Button height.
             Default: 28
-        max_width (int, optional): Button maximum width. Use if width is being set by layout.
-            Default: 0
+        max_width (bool, optional): Set to maximum width.
+            Use if width is being set by layout.
+            No need to set width if this is used.
+            Default: False
         connect (callable, optional): Function to be called when button is changed.
             Default: None
-        align (Align): Align text to left, center or right.
-            -Align.LEFT: Aligns the text to the left side of the label.
-            -Align.RIGHT: Aligns the text to the right side of the label.
-            -Align.CENTER: Centers the text within the label.
-            Default: Align.CENTER
+        menu_indicator (bool): Show menu indicator arrow.
+            Default: False
         font (str): Button font.
             Default: PYFLAME_FONT
         font_size (int): Button font size.
@@ -2268,16 +2470,15 @@ class PyFlamePushButtonMenu(QtWidgets.QPushButton):
         update_menu(text, menu_options, connect): Use to update an existing button menu.
 
     Example:
-        item_options = [
+        menu_push_button = PyFlamePushButtonMenu(
+            text='push_button_name',
+            menu_options=[
             'Item 1',
             'Item 2',
             'Item 3',
             'Item 4'
-            ]
-        menu_push_button = PyFlamePushButtonMenu(
-            text='push_button_name',
-            menu_options=item_options,
-            align=Align.LEFT
+            ],
+            align=Align.LEFT,
             )
 
     Usage:
@@ -2285,14 +2486,10 @@ class PyFlamePushButtonMenu(QtWidgets.QPushButton):
             menu_push_button.text()
 
         To update an existing button menu:
-            PyFlamePushButtonMenu.update_menu(
+            menu_push_button.update_menu(
                 text='Current Menu Selection',
                 menu_options=item_options
                 )
-
-        To enable/disable list widget:
-            list_widget.setEnabled(True)
-            list_widget.setEnabled(False)
     """
 
     def __init__(self: 'PyFlamePushButtonMenu',
@@ -2300,9 +2497,10 @@ class PyFlamePushButtonMenu(QtWidgets.QPushButton):
                  menu_options: List[str],
                  width: int=150,
                  height: int=28,
-                 max_width: Optional[int]=0,
+                 max_width: Optional[bool]=False,
                  connect: Optional[Callable[..., None]]=None,
-                 align: Align=Align.CENTER,
+                 enabled: bool=True,
+                 menu_indicator: bool=False,
                  font: str=PYFLAME_FONT,
                  font_size: int=PYFLAME_FONT_SIZE,
                  ) -> None:
@@ -2310,24 +2508,25 @@ class PyFlamePushButtonMenu(QtWidgets.QPushButton):
 
         # Validate argument types
         if not isinstance(text, str):
-            raise TypeError(f'PyFlamePushButtonMenu: text must be string.')
+            raise TypeError(f'PyFlamePushButtonMenu: Invalid text argument: {text}. Must be of type str.')
         elif not isinstance(menu_options, list):
-            raise TypeError('PyFlamePushButtonMenu: menu_options must be list.')
-        elif not isinstance(width, int) or width <= 0:
-            raise ValueError('PyFlamePushButtonMenu: width must be a positive integer.')
-        elif not isinstance(height, int) or height <= 0:
-            raise ValueError('PyFlamePushButtonMenu: height must be a positive integer.')
-        elif not isinstance(max_width, int) or max_width < 0:
-            raise TypeError('PyFlamePushButtonMenu: max_width must be a positive integer.')
+            raise TypeError(f'PyFlamePushButtonMenu: Invalid menu_options argument: {menu_options}. Must be of type list.')
+        elif not isinstance(width, int):
+            raise ValueError(f'PyFlamePushButtonMenu: Invalid width argument: {width}. Must be of type int.')
+        elif not isinstance(height, int):
+            raise ValueError(f'PyFlamePushButtonMenu: Invalid height argument: {height}. Must be of type int.')
+        elif not isinstance(max_width, bool):
+            raise ValueError(f'PyFlamePushButtonMenu: Invalid max_width argument: {max_width}. Must be of type bool.')
         elif connect is not None and not callable(connect):
-            raise TypeError('PyFlamePushButtonMenu: connect must be a callable function or method, or None.')
-        elif not isinstance(align, Align):
-            raise TypeError('PyFlamePushButtonMenu: align must be an instance of Align Enum. '
-                            'Options are: Align.LEFT, Align.RIGHT, Align.CENTER.')
+            raise TypeError(f'PyFlamePushButtonMenu: Invalid connect argument: {connect}. Must be a callable function or method, or None.')
+        elif not isinstance(enabled, bool):
+            raise TypeError(f'PyFlamePushButtonMenu: Invalid enabled argument: {enabled}. Must be of type bool.')
+        elif not isinstance(menu_indicator, bool):
+            raise TypeError(f'PyFlamePushButtonMenu: Invalid menu_indicator argument: {menu_indicator}. Must be of type bool.')
         elif not isinstance(font, str):
-            raise TypeError('PyFlamePushButtonMenu: font must be string.')
-        elif not isinstance(font_size, int) or font_size <= 0:
-            raise TypeError('PyFlamePushButtonMenu: font_size must be a positive integer.')
+            raise TypeError(f'PyFlamePushButtonMenu: Invalid font argument: {font}. Must be of type str.')
+        elif not isinstance(font_size, int):
+            raise ValueError(f'PyFlamePushButtonMenu: Invalid font_size argument: {font_size}. Must be of type int.')
 
         # Set button font
         self.font_size = pyflame.font_resize(font_size)
@@ -2337,17 +2536,17 @@ class PyFlamePushButtonMenu(QtWidgets.QPushButton):
         self.font = font
 
         # Build push button menu
-        self.setText(text)
+        self.setText(' ' + text) # Add space to text to create padding. Space is removed when text is returned.
         self.setFixedSize(pyflame.gui_resize(width), pyflame.gui_resize(height))
         if max_width:
-            self.setMaximumWidth(pyflame.gui_resize(max_width))
+            self.setMaximumWidth(pyflame.gui_resize(3000))
         self.setFocusPolicy(QtCore.Qt.NoFocus)
 
         # Create menus
         self.pushbutton_menu = QtWidgets.QMenu(self)
         self.pushbutton_menu.setFocusPolicy(QtCore.Qt.NoFocus)
         self.pushbutton_menu.aboutToShow.connect(self._match_push_button_width) # Match menu width to button width
-        self.pushbutton_menu.setMinimumWidth(width)
+        self.pushbutton_menu.setMinimumWidth(pyflame.gui_resize(width))
 
         # Menu stylesheet
         self._set_menu_stylesheet()
@@ -2358,17 +2557,36 @@ class PyFlamePushButtonMenu(QtWidgets.QPushButton):
 
         self.setMenu(self.pushbutton_menu)
 
-        self._set_button_stylesheet(align)
+        # Set button to be enabled or disabled
+        self.setEnabled(enabled)
 
-    def _set_button_stylesheet(self, align: Align) -> None:
+        self._set_button_stylesheet(menu_indicator)
+
+    def _set_button_stylesheet(self, menu_indicator) -> None:
+
+        # Set menu indicator to show or hide
+        if menu_indicator:
+            menu_indicator_style = f"""
+            QPushButton::menu-indicator{{
+                subcontrol-origin: padding;
+                subcontrol-position: right center;
+                width: {pyflame.gui_resize(15)}px;
+                height: {pyflame.gui_resize(15)}px;
+                right: {pyflame.gui_resize(10)}px;
+            }}
+            """
+        else:
+            menu_indicator_style = f"""
+            QPushButton::menu-indicator{{
+                image: none;
+            }}"""
 
         self.setStyleSheet(f"""
             QPushButton{{
-                color: rgb(190, 190, 190);
+                color: rgb(154, 154, 154);
                 background-color: rgb(45, 55, 68);
                 border: none;
-                text-align:{align.value};
-                padding-left: 10px;
+                text-align: left;
                 }}
             QPushButton:disabled{{
                 color: rgb(116, 116, 116);
@@ -2378,21 +2596,19 @@ class PyFlamePushButtonMenu(QtWidgets.QPushButton):
             QPushButton:hover{{
                 border: 1px solid rgb(90, 90, 90);
                 }}
-            QPushButton::menu-indicator{{
-                image: none;
-                }}
             QToolTip{{
-                color: rgb(170, 170, 170);
+                color: rgb(255, 255, 255);
                 background-color: rgb(71, 71, 71);
-                border: 10px solid rgb(71, 71, 71);
+                border: 1px solid rgb(0, 0, 0);
                 }}
+                {menu_indicator_style} # Insert menu indicator style
             """)
 
     def _set_menu_stylesheet(self) -> None:
 
         self.pushbutton_menu.setStyleSheet(f"""
             QMenu{{
-                color: rgb(190, 190, 190);
+                color: rgb(154, 154, 154);
                 background-color: rgb(45, 55, 68);
                 border: none;
                 font: {self.font_size}px "Discreet";
@@ -2409,8 +2625,9 @@ class PyFlamePushButtonMenu(QtWidgets.QPushButton):
 
     def _create_menu(self, menu, connect):
 
-        self.setText(menu)
+        self.setText(' ' + menu) # Add space to text to create padding. Space is removed when text is returned.
 
+        # Add connect to menu
         if connect:
             connect()
 
@@ -2419,18 +2636,278 @@ class PyFlamePushButtonMenu(QtWidgets.QPushButton):
         Use to update an existing button menu.
         """
 
-        self.setText(text)
+        self.setText(' ' + text) # Add space to text to create padding. Space is removed when text is returned.
 
         self.pushbutton_menu.clear()
 
         for menu in menu_options:
             self.pushbutton_menu.addAction(menu, partial(self._create_menu, menu, connect))
 
+    def setText(self, text: str) -> None:
+        """
+        Set the button's text with a space added to the beginning to create padding.
+
+        Args:
+            text (str): The text to set the button's text to.
+        """
+
+        text = text.strip()
+
+        super().setText(' ' + text)
+
+    def text(self) -> str:
+        """
+        Returns the button's text with the first character (space that is added to button text) removed.
+
+        Returns:
+            str: The button's text without the first character.
+        """
+
+        current_text = super().text()
+        return current_text[1:] if current_text else ''
+
+class PyFlameColorPushButtonMenu(QtWidgets.QPushButton):
+    """
+    Custom Qt Flame Color Push Button Menu Widget Subclass
+
+    Args:
+        text (str): Text displayed on button.
+        menu_options (list): Options shown in menu when button is pressed.
+        width (int): Button width.
+            Default: 150
+        height (int): Button height.
+            Default: 28
+        max_width (bool, optional): Set to maximum width.
+            Use if width is being set by layout.
+            No need to set width if this is used.
+            Default: False
+        color_options (dict): Color options and their normalized RGB values. Values must be in the range of 0.0 to 1.0.
+            When None is passed, the default color options are used.
+            Default: None
+        menu_indicator (bool): Show menu indicator arrow.
+            Default: False
+        font (str): Button font.
+            Default: PYFLAME_FONT
+        font_size (int): Button font size.
+            Default: PYFLAME_FONT_SIZE
+
+    Methods:
+        color_value(): Return normalized RGB color value of selected color.
+
+    Example:
+        color_pushbutton = PyFlameColorPushButtonMenu(
+            text='Red',
+            )
+
+    Usage:
+        To get current color value:
+            color_pushbutton.color_value()
+
+        To get current menu text:
+            color_pushbutton.text()
+    """
+
+    def __init__(self,
+                 text: str,
+                 width: int=150,
+                 height: int=28,
+                 max_width: Optional[bool]=False,
+                 color_options: Optional[Dict[str, Tuple[float, float, float]]] = None,
+                 menu_indicator: bool=False,
+                 font: str=PYFLAME_FONT,
+                 font_size: int=PYFLAME_FONT_SIZE,
+                 ) -> None:
+        super().__init__()
+
+        if color_options is None:  # Initialize with default if None
+            color_options = {
+                'Red': (0.310, 0.078, 0.078),
+                'Green': (0.125, 0.224, 0.165),
+                'Bright Green': (0.118, 0.396, 0.196),
+                'Blue': (0.176, 0.227, 0.322),
+                'Light Blue': (0.227, 0.325, 0.396),
+                'Purple': (0.318, 0.263, 0.424),
+                'Orange': (0.467, 0.290, 0.161),
+                'Gold': (0.380, 0.380, 0.235),
+                'Yellow': (0.592, 0.592, 0.180),
+                'Grey': (0.537, 0.537, 0.537),
+                'Black': (0.0, 0.0, 0.0),
+                }
+
+        # Validate argument types
+        if text not in color_options:
+            raise ValueError(f'PyFlameColorPushButtonMenu: Invalid text argument: {text}. Must be one of the following: {", ".join(color_options.keys())}')
+        elif not isinstance(width, int):
+            raise TypeError(f'PyFlameColorPushButtonMenu: Invalid width argument: {width}. Must be of type int.')
+        elif not isinstance(height, int):
+            raise TypeError(f'PyFlameColorPushButtonMenu: Invalid height argument: {height}. Must be of type int.')
+        elif not isinstance(max_width, bool):
+            raise TypeError(f'PyFlameColorPushButtonMenu: Invalid max_width argument: {max_width}. Must be of type bool.')
+        elif color_options is None and not isinstance(color_options, dict):
+            raise TypeError(f'PyFlameColorPushButtonMenu: Invalid color_options argument: {color_options}. Must be of type dict.')
+        elif not isinstance(menu_indicator, bool):
+            raise TypeError(f'PyFlamePushButtonMenu: Invalid menu_indicator argument: {menu_indicator}. Must be of type bool.')
+        elif not isinstance(font, str):
+            raise TypeError(f'PyFlameColorPushButtonMenu: Invalid font argument: {font}. Must be of type str.')
+        elif not isinstance(font_size, int):
+            raise TypeError(f'PyFlameColorPushButtonMenu: Invalid font_size argument: {font_size}. Must be of type int.')
+        for color, rgb_values in color_options.items():
+            if not isinstance(rgb_values, tuple) or len(rgb_values) != 3:
+                raise ValueError(f"Color '{color}' does not have a valid RGB value tuple of length 3.")
+            if not all(isinstance(value, (float, int)) and 0.0 <= value <= 1.0 for value in rgb_values):
+                raise ValueError(f"RGB values for '{color}' must be floats or ints between 0.0 and 1.0. Got: {rgb_values}")
+
+        # Color options and their RGB values
+        self.color_options = color_options
+
+        # Set button font
+        self.font_size = pyflame.font_resize(font_size)
+        font = QtGui.QFont(font)
+        font.setPointSize(self.font_size)
+        self.setFont(font)
+        self.font = font
+
+        # Generate and set the initial color icon based on the provided text
+        initial_color_value = self.color_options[text]
+        self.setIcon(self._generate_color_icon(initial_color_value))
+        self.setIconSize(QtCore.QSize(self.font_size, self.font_size))  # Adjust size as needed
+
+        # Build push button menu
+        self.setText(text)
+        self.setFixedSize(pyflame.gui_resize(width), pyflame.gui_resize(height))
+        if max_width:
+            self.setMaximumWidth(pyflame.gui_resize(3000))
+        self.setFocusPolicy(QtCore.Qt.NoFocus)
+
+        # Create push button menu
+        self.pushbutton_menu = QtWidgets.QMenu(self)
+        self.pushbutton_menu.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.pushbutton_menu.setMinimumWidth(width)
+
+        # Add color menu options
+        for color_name, color_value in self.color_options.items():
+            icon = self._generate_color_icon(color_value)
+            action = QAction(icon, color_name, self)
+            action.triggered.connect(partial(self._create_menu, color_name))
+            self.pushbutton_menu.addAction(action)
+
+        self.setMenu(self.pushbutton_menu)
+
+        # Set widget stylesheet
+        self._set_button_stylesheet(menu_indicator)
+
+        # Menu stylesheet
+        self._set_menu_stylesheet()
+
+    def color_value(self) -> Tuple[float, float, float]:
+        """
+        Return RGB color value of selected color.
+
+        Returns:
+            Tuple[float, float, float]: The RGB color value as a tuple.
+
+        Raises:
+            ValueError: If the current text of the button does not correspond to any color option.
+        """
+
+        current_text = self.text()
+        if current_text in self.color_options:
+            return self.color_options[current_text]
+        else:
+            # Handle the error case where the button's text does not match any color option
+            raise ValueError(f'"{current_text}" is not a valid color option.')
+
+    def _generate_color_icon(self, color_value: Tuple[float, float, float]) -> QtGui.QIcon:
+        """
+        Generates a color icon based on the given color value.
+        The size of the icon is based on the widget font size.
+
+        Args:
+            color_value (Tuple[float, float, float]): The RGB color value.
+
+        Returns:
+            QtGui.QIcon: The generated color icon.
+        """
+
+        pixmap = QtGui.QPixmap(self.font_size, self.font_size)  # Size of the color square
+        pixmap.fill(QtGui.QColor(*[int(c * 255) for c in color_value]))  # Convert color values to 0-255 range
+        return QtGui.QIcon(pixmap)
+
+    def _create_menu(self, color_name) -> None:
+        """
+        Update the button's text and icon to reflect the selected color.
+        """
+
+        self.setText(color_name)
+        icon = self._generate_color_icon(self.color_options[color_name])
+        self.setIcon(icon)
+        self.setIconSize(QtCore.QSize(self.font_size, self.font_size))
+
+    def _set_button_stylesheet(self, menu_indicator) -> None:
+
+        # Set menu indicator style
+        if menu_indicator:
+            menu_indicator_style =f"""
+            QPushButton::menu-indicator{{
+                subcontrol-origin: padding;
+                subcontrol-position: right center;
+                width: {pyflame.gui_resize(15)}px;
+                height: {pyflame.gui_resize(15)}px;
+                right: {pyflame.gui_resize(10)}px;
+            }}
+            """
+        else:
+            # Hide the menu indicator by setting its image to none
+            menu_indicator_style = """
+            QPushButton::menu-indicator{
+                image: none;
+                }"""
+
+        self.setStyleSheet(f"""
+            QPushButton{{
+                color: rgb(154, 154, 154);
+                background-color: rgb(45, 55, 68);
+                border: none;
+                text-align: left;
+                left: {10}px;
+                }}
+            QPushButton:disabled{{
+                color: rgb(116, 116, 116);
+                background-color: rgb(45, 55, 68);
+                border: none;
+                }}
+            QPushButton:hover{{
+                border: 1px solid rgb(90, 90, 90);
+                }}
+            QToolTip{{
+                color: rgb(255, 255, 255); /* Tooltip text color */
+                background-color: rgb(71, 71, 71);
+                border: 1px solid rgb(0, 0, 0); /* Tooltip border color */
+                }}
+            {menu_indicator_style} # Insert menu indicator style
+            """)
+
+    def _set_menu_stylesheet(self) -> None:
+
+        self.pushbutton_menu.setStyleSheet(f"""
+            QMenu{{
+                color: rgb(154, 154, 154);
+                background-color: rgb(45, 55, 68);
+                text-align: center;
+                border: none;
+                font: {self.font_size}px "Discreet";
+                }}
+            QMenu::item:selected{{
+                color: rgb(217, 217, 217);
+                background-color: rgb(58, 69, 81);
+                }}
+            """)
+
 class PyFlameSlider(QtWidgets.QLineEdit):
     """
-    Custom Qt Flame Slider Widget
+    Custom Qt Flame Slider Widget Subclass
 
-    Parameters:
+    Args:
         start_value (int or float): Initial value of the slider.
         min_value (int or float): Minimum value of the slider.
         max_value (int or float): Maximum value of the slider.
@@ -2487,27 +2964,27 @@ class PyFlameSlider(QtWidgets.QLineEdit):
 
         # Validate argument types
         if not isinstance(start_value, (int, float)):
-            raise TypeError('PyFlameSlider: start_value must be integer or float.')
+            raise TypeError(f'PyFlameSlider: Invalid start_value argument: {start_value}. Must be of type int or float.')
         elif not isinstance(min_value, (int, float)):
-            raise TypeError('PyFlameSlider: min_value must be integer or float.')
+            raise TypeError(f'PyFlameSlider: Invalid min_value argument: {min_value}. Must be of type int or float.')
         elif not isinstance(max_value, (int, float)):
-            raise TypeError('PyFlameSlider: max_value must be integer or float.')
+            raise TypeError(f'PyFlameSlider: Invalid max_value argument: {max_value}. Must be of type int or float.')
         elif not isinstance(value_is_float, bool):
-            raise TypeError('PyFlameSlider: value_is_float must be a boolean.')
+            raise TypeError(f'PyFlameSlider: Invalid value_is_float argument: {value_is_float}. Must be of type bool.')
         elif not isinstance(rate, (int, float)) or rate < 1 or rate > 10:
-            raise TypeError('PyFlameSlider: rate must be an integer or float between 1 and 10.')
-        elif not isinstance(width, int) or width <= 0:
-            raise TypeError('PyFlameSlider: width must be a positive integer.')
-        elif not isinstance(height, int) or height <= 0:
-            raise TypeError('PyFlameSlider: height must be a positive integer.')
+            raise TypeError(f'PyFlameSlider: Invalid rate argument: {rate}. Must be of type int or float between 1 and 10.')
+        elif not isinstance(width, int):
+            raise TypeError(f'PyFlameSlider: Invalid width argument: {width}. Must be of type int.')
+        elif not isinstance(height, int):
+            raise TypeError(f'PyFlameSlider: Invalid height argument: {height}. Must be of type int.')
         elif connect is not None and not callable(connect):
-            raise TypeError('PyFlameSlider: connect must be a callable function or method, or None.')
+            raise TypeError(f'PyFlameSlider: Invalid connect argument: {connect}. Must be a callable function or method, or None.')
         elif not isinstance(font, str):
-            raise TypeError('PyFlameSlider: font must be a string.')
-        elif not isinstance(font_size, int) or font_size <= 0:
-            raise TypeError('PyFlameSlider: font_size must be a positive integer.')
+            raise TypeError(f'PyFlameSlider: Invalid font argument: {font}. Must be of type str.')
+        elif not isinstance(font_size, int):
+            raise TypeError(f'PyFlameSlider: Invalid font_size argument: {font_size}. Must be of type int.')
         elif tooltip is not None and not isinstance(tooltip, str):
-            raise TypeError('PyFlameSlider: tooltip must be a string, or None.')
+            raise TypeError(f'PyFlameSlider: Invalid tooltip argument: {tooltip}. Must be of type str or None.')
 
         # Set slider font
         font = QtGui.QFont(font)
@@ -2618,9 +3095,9 @@ class PyFlameSlider(QtWidgets.QLineEdit):
                 background-color: rgb(55, 65, 75);
                 }
             QToolTip{
-                color: rgb(170, 170, 170);
+                color: rgb(255, 255, 255); /* Tooltip text color */
                 background-color: rgb(71, 71, 71);
-                border: 10px solid rgb(71, 71, 71);
+                border: 1px solid rgb(0, 0, 0); /* Tooltip border color */
                 }
             """)
 
@@ -3094,18 +3571,22 @@ class PyFlameSlider(QtWidgets.QLineEdit):
 
 class PyFlameTextEdit(QtWidgets.QTextEdit):
     """
-    Custom Qt Flame Text Edit Widget
+    Custom Qt Flame Text Edit Widget Subclass
 
-    Parameters:
+    Args:
         text (str): Text to be displayed.
         width (int): Width of text edit.
             Default: 300
         height (int): Height of text edit.
             Default: 100
-        max_width (int, optional): Maximum width of text edit. Use if width is being set by layout.
-            Default: 0
-        max_height (int, optional): Maximum height of text edit. Use if height is being set by layout.
-            Default: 0
+        max_width (bool, optional): Set to maximum width.
+            Use if width is being set by layout.
+            No need to set width if this is used.
+            Default: False
+        max_height (bool, optional): Set to maximum height.
+            Use if height is being set by layout.
+            No need to set height if this is used.
+            Default: False
         read_only (bool): Make text in window read only.
             Default: False
         font (str): Text font.
@@ -3142,8 +3623,8 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
                  text: str,
                  width: int=300,
                  height: int=100,
-                 max_width: Optional[int]=0,
-                 max_height: Optional[int]=0,
+                 max_width: Optional[bool]=False,
+                 max_height: Optional[bool]=False,
                  read_only: bool=False,
                  font: str=PYFLAME_FONT,
                  font_size: int=PYFLAME_FONT_SIZE,
@@ -3152,21 +3633,21 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
 
         # Validate argument types
         if not isinstance(text, str):
-            raise TypeError('PyFlameTextEdit: text must be a string.')
-        elif not isinstance(width, int) or width <= 0:
-            raise ValueError('PyFlameTextEdit: width must be a positive integer.')
-        elif not isinstance(height, int) or height <= 0:
-            raise ValueError('PyFlameTextEdit: height must be a positive integer.')
-        elif not isinstance(max_width, int) or max_width < 0:
-            raise TypeError('PyFlameTextEdit: max_width must be a positive integer.')
-        elif not isinstance(max_height, int) or max_height < 0:
-            raise TypeError('PyFlameTextEdit: max_height must be a positive integer.')
+            raise TypeError(f'PyFlameTextEdit: Invalid text argument: {text}. Must be of type str.')
+        elif not isinstance(width, int):
+            raise TypeError(f'PyFlameTextEdit: Invalid width argument: {width}. Must be of type int.')
+        elif not isinstance(height, int):
+            raise TypeError(f'PyFlameTextEdit: Invalid height argument: {height}. Must be of type int.')
+        elif not isinstance(max_width, bool):
+            raise TypeError(f'PyFlameTextEdit: Invalid max_width argument: {max_width}. Must be of type bool.')
+        elif not isinstance(max_height, bool):
+            raise TypeError(f'PyFlameTextEdit: Invalid max_height argument: {max_height}. Must be of type bool.')
         elif not isinstance(read_only, bool):
-            raise TypeError('PyFlameTextEdit: read_only must be a boolean.')
+            raise TypeError(f'PyFlameTextEdit: Invalid read_only argument: {read_only}. Must be of type bool.')
         elif not isinstance(font, str):
-            raise TypeError('PyFlameTextEdit: font must be a string.')
-        elif not isinstance(font_size, int) or font_size <= 0:
-            raise TypeError('PyFlameTextEdit: font_size must be a positive integer.')
+            raise TypeError(f'PyFlameTextEdit: Invalid font argument: {font}. Must be of type str.')
+        elif not isinstance(font_size, int):
+            raise TypeError(f'PyFlameTextEdit: Invalid font_size argument: {font_size}. Must be of type int.')
 
         # Set font
         font = QtGui.QFont(font)
@@ -3176,9 +3657,9 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         # Build text edit
         self.setFixedSize(pyflame.gui_resize(width), pyflame.gui_resize(height))
         if max_width:
-            self.setMaximumWidth(pyflame.gui_resize(max_width))
+            self.setMaximumWidth(pyflame.gui_resize(3000))
         if max_height:
-            self.setMaximumHeight(pyflame.gui_resize(max_height))
+            self.setMaximumHeight(pyflame.gui_resize(3000))
         self.setText(text)
         self.setReadOnly(read_only)
         self.setFocusPolicy(QtCore.Qt.ClickFocus)
@@ -3242,7 +3723,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         """
         Sets the text in the text edit.
 
-        Parameters:
+        Args:
             text (str): Text to be added to TextEdit.
         """
 
@@ -3250,9 +3731,9 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
 
 class PyFlameTokenPushButton(QtWidgets.QPushButton):
     """
-    Custom Qt Flame Token Push Button Widget
+    Custom Qt Flame Token Push Button Widget Subclass
 
-    Parameters:
+    Args:
         text (str): Text displayed on button.
             Default: 'Add Token'
         token_dict (dict): Dictionary defining tokens. {'Token Name': '<Token>'}.
@@ -3265,8 +3746,10 @@ class PyFlameTokenPushButton(QtWidgets.QPushButton):
             Default: 150
         height (int): Button height.
             Default: 28
-        max_width (int, optional): Button max width. Use if width is being set by layout.
-            Default: 0
+        max_width (bool, optional): Set to maximum width.
+            Use if width is being set by layout.
+            No need to set width if this is used.
+            Default: False
         font (str): Button font.
             Default: PYFLAME_FONT
         font_size (int): Button font size.
@@ -3302,41 +3785,44 @@ class PyFlameTokenPushButton(QtWidgets.QPushButton):
                  token_dest: QtWidgets.QLineEdit=None,
                  clear_dest: bool=False,
                  width: int=150,
-                 max_width: Optional[int]=0,
+                 max_width: Optional[bool]=False,
                  height: int=28,
                  font: str=PYFLAME_FONT,
                  font_size: int=PYFLAME_FONT_SIZE,
                  ) -> None:
         super().__init__()
 
-        # Validate argument types
+        # Validate arguments types
         if not isinstance(text, str):
-            raise TypeError('PyFlameTokenPushButton: text must be a string.')
+            raise TypeError(f'PyFlameTokenPushButton: Invalid text argument: {text}. Must be of type str.')
         elif not isinstance(token_dict, dict):
-            raise TypeError('PyFlameTokenPushButton: token_dict must be a dictionary.')
+            raise TypeError(f'PyFlameTokenPushButton: Invalid token_dict argument: {token_dict}. Must be of type dict.')
         elif not isinstance(token_dest, QtWidgets.QLineEdit):
-            raise TypeError('PyFlameTokenPushButton: token_dest must be a QtWidgets.QLineEdit.')
-        elif not isinstance(width, int) or width <= 0:
-            raise ValueError('PyFlameTokenPushButton: width must be a positive integer.')
-        elif not isinstance(height, int) or height <= 0:
-            raise ValueError('PyFlameTokenPushButton: height must be a positive integer.')
-        elif not isinstance(max_width, int) or max_width < 0:
-            raise TypeError('PyFlameTokenPushButton: max_width must be a positive integer.')
+            raise TypeError(f'PyFlameTokenPushButton: Invalid token_dest argument: {token_dest}. Must be of type QtWidgets.QLineEdit.')
+        elif not isinstance(clear_dest, bool):
+            raise TypeError(f'PyFlameTokenPushButton: Invalid clear_dest argument: {clear_dest}. Must be of type bool.')
+        elif not isinstance(width, int):
+            raise TypeError(f'PyFlameTokenPushButton: Invalid width argument: {width}. Must be of type int.')
+        elif not isinstance(height, int):
+            raise TypeError(f'PyFlameTokenPushButton: Invalid height argument: {height}. Must be of type int.')
+        elif not isinstance(max_width, bool):
+            raise TypeError(f'PyFlameTokenPushButton: Invalid max_width argument: {max_width}. Must be of type bool.')
         elif not isinstance(font, str):
-            raise TypeError('PyFlameTokenPushButton: font must be a string.')
-        elif not isinstance(font_size, int) or font_size <= 0:
-            raise TypeError('PyFlameTokenPushButton: font_size must be a positive integer.')
+            raise TypeError(f'PyFlameTokenPushButton: Invalid font argument: {font}. Must be of type str.')
+        elif not isinstance(font_size, int):
+            raise TypeError(f'PyFlameTokenPushButton: Invalid font_size argument: {font_size}. Must be of type int.')
 
         # Set button font
+        self.font_size = pyflame.font_resize(font_size)
         font = QtGui.QFont(font)
-        font.setPointSize(pyflame.font_resize(font_size))
+        font.setPointSize(self.font_size)
         self.setFont(font)
 
         # Build token push button
         self.setText(text)
         self.setFixedSize(pyflame.gui_resize(width), pyflame.gui_resize(height))
         if max_width:
-            self.setMaximumWidth(pyflame.gui_resize(max_width))
+            self.setMaximumWidth(pyflame.gui_resize(3000))
         self.setFocusPolicy(QtCore.Qt.NoFocus)
 
         # Create the token menu
@@ -3368,50 +3854,54 @@ class PyFlameTokenPushButton(QtWidgets.QPushButton):
 
     def _set_stylesheet(self):
 
-        self.setStyleSheet("""
-            QPushButton{
+        self.setStyleSheet(f"""
+            QPushButton{{
                 color: rgb(154, 154, 154);
                 background-color: rgb(45, 55, 68);
                 border: none;
-                }
-            QPushButton:hover{
+                }}
+            QPushButton:hover{{
                 border: 1px solid rgb(90, 90, 90);
-                }
-            QPushButton:disabled{
+                }}
+            QPushButton:disabled{{
                 color: rgb(106, 106, 106);
                 background-color: rgb(45, 55, 68);
                 border: none;
-                }
-            QPushButton::menu-indicator{
+                }}
+            QPushButton::menu-indicator{{
                 subcontrol-origin: padding;
                 subcontrol-position: center right;
-                }
-            QToolTip{
-                color: rgb(170, 170, 170);
+                width: {pyflame.gui_resize(15)}px;
+                height: {pyflame.gui_resize(15)}px;
+                right: {pyflame.gui_resize(10)}px;
+                }}
+            QToolTip{{
+                color: rgb(255, 255, 255); /* Tooltip text color */
                 background-color: rgb(71, 71, 71);
-                border: 10px solid rgb(71, 71, 71);
-                }
+                border: 1px solid rgb(0, 0, 0); /* Tooltip border color */
+                }}
             """)
 
     def _set_menu_style_sheet(self):
 
-        self.menu().setStyleSheet("""
-            QMenu{
+        self.menu().setStyleSheet(f"""
+            QMenu{{
                 color: rgb(154, 154, 154);
                 background-color: rgb(45, 55, 68);
                 border: none;
-                }
-            QMenu::item:selected{
+                font: {self.font_size}px "Discreet";
+                }}
+            QMenu::item:selected{{
                 color: rgb(217, 217, 217);
                 background-color: rgb(58, 69, 81);
-                }
+                }}
             """)
 
     def add_menu_options(self, new_options: Dict[str, str]):
             """
             Add new menu options to the existing token menu and clear old options.
 
-            Parameters:
+            Args:
                 new_options (dict): Dictionary of new token options to add. {'New Token Name': '<New Token>'}.
             """
             if not isinstance(new_options, dict):
@@ -3436,9 +3926,9 @@ class PyFlameTokenPushButton(QtWidgets.QPushButton):
 
 class PyFlameTreeWidget(QtWidgets.QTreeWidget):
     """
-    Custom Qt Flame Tree Widget
+    Custom Qt Flame Tree Widget Subclass
 
-    Parameters:
+    Args:
         column_names (list): List of names to be used for column names in tree.
         connect (callable, optional): Function to call when item in tree is clicked on.
             Default: None
@@ -3446,10 +3936,14 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             Default: 100
         height (int): Height of tree widget.
             Default: 100
-        max_width (int, optional): Maximum width of tree widget. Use if width is being set by layout.
-            Default: 0
-        max_height (int, optional): Maximum height of tree widget. Use if height is being set by layout.
-            Default: 0
+        max_width (bool, optional): Set to maximum width.
+            Use if width is being set by layout.
+            No need to set width if this is used.
+            Default: False
+        max_height (bool, optional): Set to maximum height.
+            Use if height is being set by layout.
+            No need to set height if this is used.
+            Default: False
         font (str): Tree widget font.
             Default: PYFLAME_FONT
         font_size (int):
@@ -3479,8 +3973,8 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
                  connect: Optional[Callable[..., None]]=None,
                  width: int=100,
                  height: int=100,
-                 max_width: Optional[int]=0,
-                 max_height: Optional[int]=0,
+                 max_width: Optional[bool]=False,
+                 max_height: Optional[bool]=False,
                  font: str=PYFLAME_FONT,
                  font_size: int=PYFLAME_FONT_SIZE,
                  ) -> None:
@@ -3488,21 +3982,21 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
 
         # Validate argument types
         if not isinstance(column_names, list):
-            raise TypeError('PyFlameTreeWidget: column_names must be a list.')
+            raise TypeError(f'PyFlameTreeWidget: Invalid column_names argument: {column_names}. Must be of type list.')
         elif connect is not None and not callable(connect):
-            raise TypeError('PyFlameLineEdit: text_changed must be a callable function or method, or None.')
-        elif not isinstance(width, int) or width <= 0:
-            raise ValueError('PyFlameTreeWidget: width must be a positive integer.')
-        elif not isinstance(height, int) or height <= 0:
-            raise ValueError('PyFlameTreeWidget: height must be a positive integer.')
-        elif not isinstance(max_width, int) or max_width < 0:
-            raise TypeError('PyFlameTreeWidget: max_width must be a positive integer.')
-        elif not isinstance(max_height, int) or max_height < 0:
-            raise TypeError('PyFlameTreeWidget: max_height must be a positive integer.')
+            raise TypeError(f'PyFlameTreeWidget: Invalid connect argument: {connect}. Must be a callable function or method, or None.')
+        elif not isinstance(width, int):
+            raise TypeError(f'PyFlameTreeWidget: Invalid width argument: {width}. Must be of type int.')
+        elif not isinstance(height, int):
+            raise TypeError(f'PyFlameTreeWidget: Invalid height argument: {height}. Must be of type int.')
+        elif not isinstance(max_width, bool):
+            raise TypeError(f'PyFlameTreeWidget: Invalid max_width argument: {max_width}. Must be of type bool.')
+        elif not isinstance(max_height, bool):
+            raise TypeError(f'PyFlameTreeWidget: Invalid max_height argument: {max_height}. Must be of type bool.')
         elif not isinstance(font, str):
-            raise TypeError('PyFlameTreeWidget: font must be a string.')
-        elif not isinstance(font_size, int) or font_size <= 0:
-            raise TypeError('PyFlameTreeWidget: font_size must be a positive integer.')
+            raise TypeError(f'PyFlameTreeWidget: Invalid font argument: {font}. Must be of type str.')
+        elif not isinstance(font_size, int):
+            raise TypeError(f'PyFlameTreeWidget: Invalid font_size argument: {font_size}. Must be of type int.')
 
         self.header_font = font
         self.header_font_size = pyflame.font_resize(font_size)
@@ -3515,9 +4009,9 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         # Build tree widget
         self.setFixedSize(pyflame.gui_resize(width), pyflame.gui_resize(height))
         if max_width:
-            self.setMaximumWidth(pyflame.gui_resize(max_width))
+            self.setMaximumWidth(pyflame.gui_resize(3000))
         if max_height:
-            self.setMaximumHeight(pyflame.gui_resize(max_height))
+            self.setMaximumHeight(pyflame.gui_resize(3000))
         self.setSortingEnabled(True)
         self.sortByColumn(0, QtCore.Qt.AscendingOrder)
         self.setAlternatingRowColors(True)
@@ -3536,8 +4030,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
 
         # Check if the item is a top-level item
         if self.indexOfTopLevelItem(item) != -1:
-            # Re-expand the top-level item
-            self.expandItem(item)
+            self.expandItem(item) # Re-expand the top-level item
 
     def _set_stylesheet(self):
 
@@ -3620,13 +4113,384 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             }}
             """)
 
+# -------------------------------- PyFlame Layout Classes -------------------------------- #
+
+class PyFlameGridLayout(QtWidgets.QGridLayout):
+    """
+    Custom Qt QGridLayout Subclass.
+
+    Values are adjusted for display scale using pyflame.gui_resize().
+
+    Args:
+        None
+
+    Methods:
+        setRowMinimumHeight(row, height) - Apply minimum height to row in grid layout adjusted for display scale using pyflame.gui_resize().
+        setColumnMinimumWidth(column, width) - Apply minimum width to column in grid layout adjusted for display scale using pyflame.gui_resize().
+        setSpacing(spacing) - Apply spacing between widgets in grid layout adjusted for display scale using pyflame.gui_resize().
+        setContentsMargins(left, top, right, bottom) - Apply margins to layout adjusted for display scale using pyflame.gui_resize().
+
+    Example:
+        grid_layout = PyFlameGridLayout()
+        grid_layout.addWidget(self.label_01, 1, 0)
+        grid_layout.addWidget(self.pushbutton_01, 1, 1)
+        grid_layout.setRowMinimumHeight(2, 30)
+        grid_layout.addWidget(self.label_02, 3, 2)
+        grid_layout.addWidget(self.pushbutton_02, 3, 3)
+        grid_layout.setRowMinimumHeight(4, 30)
+        grid_layout.addWidget(self.cancel_button, 5, 0)
+        grid_layout.addWidget(self.remove_color_button, 5, 2)
+    """
+
+    def __init__(self: 'PyFlameGridLayout') -> None:
+        super().__init__()
+
+    def setRowMinimumHeight(self, row: int, height: int) -> None:
+        """
+        Apply minimum height to row in grid layout adjusted for display scale using pyflame.gui_resize().
+
+        Args:
+            row (int): Row number.
+            height (int): Height in pixels.
+
+        Returns:
+            None
+
+        Example:
+            grid_layout.setRowMinimumHeight(0, 30)
+        """
+
+        # Validate argument types
+        if not isinstance(row, int):
+            raise TypeError(f'PyFlameGridLayout.setRowMinimumHeight: Invalid row argument: {row}. row must be of type int.')
+        elif not isinstance(height, int):
+            raise TypeError(f'PyFlameGridLayout.setRowMinimumHeight: Invalid height argument: {height}. height must be of type int.')
+
+        super().setRowMinimumHeight(row, pyflame.gui_resize(height))
+
+    def setColumnMinimumWidth(self, column: int, width: int) -> None:
+        """
+        Apply minimum width to column in grid layout adjusted for display scale using pyflame.gui_resize().
+
+        Args:
+            column (int): Column number.
+            width (int): Width in pixels.
+
+        Returns:
+            None
+
+        Example:
+            grid_layout.setColumnMinimumWidth(0, 150)
+        """
+
+        # Validate argument types
+        if not isinstance(column, int):
+            raise TypeError(f'PyFlameGridLayout.setColumnMinimumWidth: Invalid column argument: {column}. column must be of type int.')
+        elif not isinstance(width, int):
+            raise TypeError(f'PyFlameGridLayout.setColumnMinimumWidth: Invalid width argument: {width}. width must be of type int.')
+
+        super().setColumnMinimumWidth(column, pyflame.gui_resize(width))
+
+    def setSpacing(self, spacing: int) -> None:
+        """
+        Sets the spacing between widgets in the grid layout.
+        Spacing is adjusted for display scale using pyflame.gui_resize().
+
+        This method uniformly sets the distance between adjacent widgets in both
+        horizontal and vertical directions. The spacing is applied between the widgets
+        in the grid, affecting all rows and columns equally.
+
+        Args:
+            spacing (int): Spacing in pixels.
+
+        Returns:
+            None
+
+        Example:
+            grid_layout.setSpacing(10)
+        """
+
+        # Validate argument types
+        if not isinstance(spacing, int):
+            raise TypeError(f'PyFlameGridLayout.setSpacing: Invalid spacing argument: {spacing}. spacing must be of type int.')
+
+        super().setSpacing(pyflame.gui_resize(spacing))
+
+    def setContentsMargins(self, left: int, top: int, right: int, bottom: int) -> None:
+        """
+        Sets the margins around the contents of the layout.
+
+        Values are adjusted for display scale using pyflame.gui_resize().
+
+        This method specifies the size of the margins on each side of the layout container.
+        Margins are defined as the space between the outermost widgets in the layout and the
+        edges of the layout's container (e.g., a window).
+
+        Args:
+            left (int): Left margin in pixels.
+            top (int): Top margin in pixels.
+            right (int): Right margin in pixels.
+            bottom (int): Bottom margin in pixels.
+
+        Returns:
+            None
+
+        Example:
+            grid_layout.setContentsMargins(10, 10, 10, 10)
+        """
+
+        # Validate argument types
+        if not isinstance(left, int):
+            raise TypeError(f'PyFlameGridLayout.setContentsMargins: Invalid left argumnet: {left}. left must be of type int.')
+        elif not isinstance(top, int):
+            raise TypeError(f'PyFlameGridLayout.setContentsMargins: Invalid top argumnet: {top}. top must be of type int.')
+        elif not isinstance(right, int):
+            raise TypeError(f'PyFlameGridLayout.setContentsMargins: Invalid right argumnet: {right}. right must be of type int.')
+        elif not isinstance(bottom, int):
+            raise TypeError(f'PyFlameGridLayout.setContentsMargins: Invalid bottom argumnet: {bottom}. bottom must be of type int.')
+
+        super().setContentsMargins(
+            pyflame.gui_resize(left),
+            pyflame.gui_resize(top),
+            pyflame.gui_resize(right),
+            pyflame.gui_resize(bottom)
+            )
+
+class PyFlameHBoxLayout(QtWidgets.QHBoxLayout):
+    """
+    Custom Qt QHBoxLayout Subclass.
+
+    Values are adjusted for display scale using pyflame.gui_resize().
+
+    Args:
+        None
+
+    Methods:
+        setSpacing(spacing) - Apply spacing between widgets in layout adjusted for display scale using pyflame.gui_resize().
+        setContentsMargins(left, top, right, bottom) - Apply margins to layout adjusted for display scale using pyflame.gui_resize().
+
+    Example:
+        hbox_layout = PyFlameHBoxLayout()
+        hbox_layout.setSpacing(10)
+        hbox_layout.setContentsMargins(10, 10, 10, 10)
+    """
+
+    def __init__(self: 'PyFlameHBoxLayout') -> None:
+        super().__init__()
+
+    def setSpacing(self, spacing: int) -> None:
+        """
+        Adds a fixed amount of space between widgets in the layout.
+        Spacing is adjusted for display scale using pyflame.gui_resize().
+
+        The spacing affects all widgets added to the layout after the `setSpacing` call. It does not
+        alter the layout's margins—use `setContentsMargins` for margin adjustments. The spacing is
+        applied between the widgets themselves, not between widgets and the layout's border or between
+        widgets and any layout containers (e.g., windows) they may be in.
+
+        Args:
+            spacing (int): Spacing in pixels.
+
+        Returns:
+            None
+
+        Example:
+            hbox_layout.setSpacing(10)
+        """
+
+        # Validate argument types
+        if not isinstance(spacing, int):
+            raise TypeError(f'PyFlameHBoxLayout.setSpacing: Invalid spacing argument: {spacing}. spacing must be of type int.')
+
+        super().setSpacing(pyflame.gui_resize(spacing))
+
+    def addSpacing(self, spacing: int) -> None:
+        """
+        Inserts a fixed amount of non-stretchable space between widgets in the layout.
+        Spacing is adjusted for display scale using pyflame.gui_resize().
+
+        This method adds a spacer item of a specified size to the layout, effectively increasing
+        the distance between the widget that precedes the spacer and the widget that follows it.
+        The space is a one-time, non-adjustable gap that does not grow or shrink with the layout's
+        resizing, providing precise control over the spacing in the layout.
+
+        Args:
+            spacing (int): Spacing in pixels.
+
+        Returns:
+            None
+
+        Example:
+            hbox_layout.addSpacing(10)
+        """
+
+        # Validate argument types
+        if not isinstance(spacing, int):
+            raise TypeError(f'PyFlameHBoxLayout.addSpacing: Invalid spacing argument: {spacing}. spacing must be of type int.')
+
+        super().addSpacing(pyflame.gui_resize(spacing))
+
+    def setContentsMargins(self, left: int, top: int, right: int, bottom: int) -> None:
+        """
+        Sets the margins around the contents of the layout.
+
+        Values are adjusted for display scale using pyflame.gui_resize().
+
+        This method specifies the size of the margins on each side of the layout container.
+        Margins are defined as the space between the outermost widgets in the layout and the
+        edges of the layout's container (e.g., a window).
+
+        Args:
+            left (int): Left margin in pixels.
+            top (int): Top margin in pixels.
+            right (int): Right margin in pixels.
+            bottom (int): Bottom margin in pixels.
+
+        Returns:
+            None
+
+        Example:
+            hbox_layout.setContentsMargins(10, 10, 10, 10)
+        """
+
+        # Validate argument types
+        if not isinstance(left, int):
+            raise TypeError(f'PyFlameHBoxLayout.setContentsMargins: Invalid left argumnet: {left}. left must be of type int.')
+        elif not isinstance(top, int):
+            raise TypeError(f'PyFlameHBoxLayout.setContentsMargins: Invalid top argumnet: {top}. top must be of type int.')
+        elif not isinstance(right, int):
+            raise TypeError(f'PyFlameHBoxLayout.setContentsMargins: Invalid right argumnet: {right}. right must be of type int.')
+        elif not isinstance(bottom, int):
+            raise TypeError(f'PyFlameHBoxLayout.setContentsMargins: Invalid bottom argumnet: {bottom}. bottom must be of type int.')
+
+        super().setContentsMargins(
+            pyflame.gui_resize(left),
+            pyflame.gui_resize(top),
+            pyflame.gui_resize(right),
+            pyflame.gui_resize(bottom)
+            )
+
+class PyFlameVBoxLayout(QtWidgets.QVBoxLayout):
+    """
+    Custom Qt QVBoxLayout Subclass.
+
+    Values are adjusted for display scale using pyflame.gui_resize().
+
+    Args:
+        None
+
+    Methods:
+        setSpacing(spacing) - Apply spacing between widgets in layout adjusted for display scale using pyflame.gui_resize().
+        setContentsMargins(left, top, right, bottom) - Apply margins to layout adjusted for display scale using pyflame.gui_resize().
+
+    Example:
+        vbox_layout = PyFlameVBoxLayout()
+        vbox_layout.setSpacing(10)
+        vbox_layout.setContentsMargins(10, 10, 10, 10)
+    """
+
+    def __init__(self: 'PyFlameVBoxLayout') -> None:
+        super().__init__()
+
+    def setSpacing(self, spacing: int) -> None:
+        """
+        Adds a fixed amount of space between widgets in the layout.
+        Spacing is adjusted for display scale using pyflame.gui_resize().
+
+        The spacing affects all widgets added to the layout after the `setSpacing` call. It does not
+        alter the layout's margins—use `setContentsMargins` for margin adjustments. The spacing is
+        applied between the widgets themselves, not between widgets and the layout's border or between
+        widgets and any layout containers (e.g., windows) they may be in.
+
+        Args:
+            spacing (int): Spacing in pixels.
+
+        Returns:
+            None
+
+        Example:
+            vbox_layout.setSpacing(10)
+        """
+
+        # Validate argument types
+        if not isinstance(spacing, int):
+            raise TypeError(f'PyFlameVBoxLayout.setSpacing: Invalid spacing argument: {spacing}. spacing must be of type int.')
+
+        super().setSpacing(pyflame.gui_resize(spacing))
+
+    def addSpacing(self, spacing: int) -> None:
+        """
+        Inserts a fixed amount of non-stretchable space between widgets in the layout.
+        Spacing is adjusted for display scale using pyflame.gui_resize().
+
+        This method adds a spacer item of a specified size to the layout, effectively increasing
+        the distance between the widget that precedes the spacer and the widget that follows it.
+        The space is a one-time, non-adjustable gap that does not grow or shrink with the layout's
+        resizing, providing precise control over the spacing in the layout.
+
+        Args:
+            spacing (int): Spacing in pixels.
+
+        Returns:
+            None
+
+        Example:
+            vbox_layout.addSpacing(10)
+        """
+
+        # Validate argument types
+        if not isinstance(spacing, int):
+            raise TypeError(f'PyFlameVBoxLayout.addSpacing: Invalid spacing argument: {spacing}. spacing must be of type int.')
+
+        super().addSpacing(pyflame.gui_resize(spacing))
+
+    def setContentsMargins(self, left: int, top: int, right: int, bottom: int) -> None:
+        """
+        Sets the margins around the contents of the layout.
+
+        Values are adjusted for display scale using pyflame.gui_resize().
+
+        This method specifies the size of the margins on each side of the layout container.
+        Margins are defined as the space between the outermost widgets in the layout and the
+        edges of the layout's container (e.g., a window).
+
+        Args:
+            left (int): Left margin in pixels.
+            top (int): Top margin in pixels.
+            right (int): Right margin in pixels.
+            bottom (int): Bottom margin in pixels.
+
+        Returns:
+            None
+
+        Example:
+            vbox_layout.setContentsMargins(10, 10, 10, 10)
+        """
+
+        # Validate argument types
+        if not isinstance(left, int):
+            raise TypeError(f'PyFlameVBoxLayout.setContentsMargins: Invalid left argumnet: {left}. left must be of type int.')
+        elif not isinstance(top, int):
+            raise TypeError(f'PyFlameVBoxLayout.setContentsMargins: Invalid top argumnet: {top}. top must be of type int.')
+        elif not isinstance(right, int):
+            raise TypeError(f'PyFlameVBoxLayout.setContentsMargins: Invalid right argumnet: {right}. right must be of type int.')
+        elif not isinstance(bottom, int):
+            raise TypeError(f'PyFlameVBoxLayout.setContentsMargins: Invalid bottom argumnet: {bottom}. bottom must be of type int.')
+
+        super().setContentsMargins(
+            pyflame.gui_resize(left),
+            pyflame.gui_resize(top),
+            pyflame.gui_resize(right),
+            pyflame.gui_resize(bottom)
+            )
+
 # -------------------------------- PyFlame Window Classes -------------------------------- #
 
 class PyFlameMessageWindow(QtWidgets.QDialog):
     """
     Custom Qt Flame Message Window
 
-    Parameters:
+    Args:
         message (str): Text displayed in body of window.
         script_name (str, optional): Name of script. Used to set default window title.
             If set to None defaults for message type are used.
@@ -3785,10 +4649,8 @@ class PyFlameMessageWindow(QtWidgets.QDialog):
         self.setFont(font)
 
         # Set Window size for screen
-        width = 500
-        height = 330
-        self.width = pyflame.gui_resize(width)
-        self.height = pyflame.gui_resize(height)
+        self.width = pyflame.gui_resize(500)
+        self.height = pyflame.gui_resize(330)
 
         # Create message window
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint)
@@ -3805,49 +4667,47 @@ class PyFlameMessageWindow(QtWidgets.QDialog):
 
         self.grid = QtWidgets.QGridLayout()
 
-        self.main_label = PyFlameLabel(
+        self.title_label = PyFlameLabel(
             text=title,
-            width=width,
+            width=500,
             font_size=24,
             )
 
-        self.message_text_edit = QtWidgets.QTextEdit(message)
-        self.message_text_edit.setDisabled(True)
-        self.message_text_edit.setFont(font)
-        self.message_text_edit.setStyleSheet(f"""
+        self.message_text = QtWidgets.QTextEdit(message)
+        self.message_text.setDisabled(True)
+        self.message_text.setFont(font)
+        self.message_text.setStyleSheet(f"""
             QTextEdit{{
-                color: rgb(190, 190, 190);
+                color: rgb(154, 154, 154);
                 background-color: rgb(36, 36, 36);
                 selection-color: rgb(190, 190, 190);
                 selection-background-color: rgb(36, 36, 36);
                 border: none;
-                padding-left: 20px;
-                padding-right: 20px;
+                padding-left: {pyflame.gui_resize(10)}px;
+                padding-right: {pyflame.gui_resize(10)}px;
                 }}
             """)
 
         # Set layout for message window
         row_height = pyflame.gui_resize(pyflame.gui_resize(30))
 
-        self.grid.setContentsMargins(pyflame.gui_resize(10),
-                                     pyflame.gui_resize(12),
-                                     pyflame.gui_resize(10),
-                                     pyflame.gui_resize(10),
-                                     )
-
         if type == MessageType.CONFIRM or type == MessageType.WARNING:
-            self.cancel_button = PyFlameButton(text='Cancel', connect=self.cancel, width=110)
-            self.grid.addWidget(self.main_label, 0, 0)
+            self.cancel_button = PyFlameButton(
+                text='Cancel',
+                connect=self.cancel,
+                width=110,
+                )
+            self.grid.addWidget(self.title_label, 0, 0)
             self.grid.setRowMinimumHeight(1, row_height)
-            self.grid.addWidget(self.message_text_edit, 2, 0, 4, 8)
+            self.grid.addWidget(self.message_text, 2, 0, 4, 8)
             self.grid.setRowMinimumHeight(9, row_height)
             self.grid.addWidget(self.cancel_button, 10, 5)
             self.grid.addWidget(self.confirm_button, 10, 6)
             self.grid.setRowMinimumHeight(11, 30)
         else:
-            self.grid.addWidget(self.main_label, 0, 0)
+            self.grid.addWidget(self.title_label, 0, 0)
             self.grid.setRowMinimumHeight(1, row_height)
-            self.grid.addWidget(self.message_text_edit, 2, 0, 4, 8)
+            self.grid.addWidget(self.message_text, 2, 0, 4, 8)
             self.grid.setRowMinimumHeight(9, row_height)
             self.grid.addWidget(self.button, 10, 6)
             self.grid.setRowMinimumHeight(11, row_height)
@@ -3959,7 +4819,7 @@ class PyFlamePasswordWindow(QtWidgets.QDialog):
     """
     Custom Qt Flame Password Window
 
-    Parameters:
+    Args:
         message (str): Window message.
         title (str, optional): Text shown in top left of window. If set to None, either Enter Password or Enter Username and Password will be used.
             Default: None
@@ -4020,29 +4880,18 @@ class PyFlamePasswordWindow(QtWidgets.QDialog):
         self.username_value = ''
         self.password_value = ''
 
-        message_font = font
-
         # Set font
         font = QtGui.QFont(font)
         font.setPointSize(pyflame.font_resize(font_size))
         self.setFont(font)
 
         # Set Window size for screen
-        width = 500
-        height = 350
-        self.width = pyflame.gui_resize(width)
-        self.height = pyflame.gui_resize(height)
-        height_alt = pyflame.gui_resize(300)
+        self.width = pyflame.gui_resize(500)
+        self.height = pyflame.gui_resize(300)
 
         # Build password window
-
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint)
-        if user_name_prompt:
-            self.setMinimumSize(QtCore.QSize(self.width, self.height))
-            self.setMaximumSize(QtCore.QSize(self.width, self.height))
-        else:
-            self.setMinimumSize(QtCore.QSize(self.width, height_alt))
-            self.setMaximumSize(QtCore.QSize(self.width, height_alt))
+        self.setFixedSize(self.width, self.height)
         self.setStyleSheet("""
             background-color: rgb(36, 36, 36);
         """)
@@ -4053,71 +4902,92 @@ class PyFlamePasswordWindow(QtWidgets.QDialog):
 
         self.setParent(parent)
 
-        self.main_label = PyFlameLabel(
+        # Title Label
+        self.title_label = PyFlameLabel(
             text=title,
-            width=width,
+            width=500,
             font_size=24,
             )
 
-        self.message_label = QtWidgets.QTextEdit(message)
-        self.message_label.setMinimumWidth(self.width)
-        self.message_label.setDisabled(True)
-        self.message_label.setFont(font)
-        self.message_label.setStyleSheet(f"""
+        # Message Text
+        self.message_text = QtWidgets.QTextEdit(message)
+        self.message_text.setFixedWidth(self.width)
+        self.message_text.setDisabled(True)
+        self.message_text.setFont(font)
+        self.message_text.setStyleSheet(f"""
             QTextEdit{{
-                color: rgb(190, 190, 190);
+                color: rgb(154, 154, 154);
                 background-color: rgb(36, 36, 36);
                 selection-color: rgb(190, 190, 190);
                 selection-background-color: rgb(36, 36, 36);
                 border: none;
-                padding-left: 20px;
-                padding-right: 20px;
+                padding-left: {pyflame.gui_resize(10)}px;
+                padding-right: {pyflame.gui_resize(10)}px;
                 }}
             """)
 
-        self.password_label = PyFlameLabel(text='      Password', width=80)
-
-        if self.user_name_prompt:
-            self.password_entry = PyFlameLineEdit(text='', width=350, max_width=350)
-        else:
-            self.password_entry = PyFlameLineEdit(text='', width=350, max_width=350)
+        self.password_label = PyFlameLabel(
+            text='Password',
+            width=80,
+            )
+        self.password_entry = PyFlameLineEdit(
+            text='',
+            max_width=True,
+            )
         self.password_entry.setEchoMode(QtWidgets.QLineEdit.Password)
         self.password_entry.returnPressed.connect(self._set_password)
 
         if user_name_prompt:
-            self.username_label = PyFlameLabel(text='      Username', width=80)
-            self.username_entry = PyFlameLineEdit(text='', width=350)
+            self.username_label = PyFlameLabel(
+                text='Username',
+                width=80,
+                )
+            self.username_entry = PyFlameLineEdit(
+                text='',
+                max_width=True,
+                )
             self.username_entry.returnPressed.connect(self._set_username_password)
-            self.confirm_button = PyFlameButton(text='Confirm', connect=self._set_username_password, width=110, color=Color.BLUE)
+            self.confirm_button = PyFlameButton(
+                text='Confirm',
+                connect=self._set_username_password,
+                width=110,
+                color=Color.BLUE,
+                )
         else:
-            self.confirm_button = PyFlameButton(text='Confirm', connect=self._set_password, width=110, color=Color.BLUE)
+            self.confirm_button = PyFlameButton(
+                text='Confirm',
+                connect=self._set_password,
+                width=110,
+                color=Color.BLUE,
+                )
 
-        self.cancel_button = PyFlameButton(text='Cancel', connect=self._cancel, width=110)
+        self.cancel_button = PyFlameButton(
+            text='Cancel',
+            connect=self._cancel,
+            width=110,
+            )
 
         # UI Widget Layout
         self.grid = QtWidgets.QGridLayout()
+        self.grid.setColumnMinimumWidth(1, pyflame.gui_resize(150))
+        self.grid.setColumnMinimumWidth(2, pyflame.gui_resize(150))
+        self.grid.setColumnMinimumWidth(3, pyflame.gui_resize(150))
 
-        self.grid.setContentsMargins(pyflame.gui_resize(10),
-                                     pyflame.gui_resize(12),
-                                     pyflame.gui_resize(10),
-                                     pyflame.gui_resize(10),
-                                     )
-
-        self.grid.addWidget(self.main_label, 0, 0)
-        self.grid.setRowMinimumHeight(1, 30)
-        self.grid.addWidget(self.message_label, 2, 0, 1, 6)
-        self.grid.setRowMinimumHeight(3, 30)
+        self.grid.addWidget(self.title_label, 0, 0)
+        self.grid.setRowMinimumHeight(1, pyflame.gui_resize(20))
+        self.grid.addWidget(self.message_text, 2, 0, 1, 4)
+        self.grid.setRowMinimumHeight(3, pyflame.gui_resize(20))
 
         if user_name_prompt:
-            self.grid.addWidget(self.username_label, 4, 0)
-            self.grid.addWidget(self.username_entry, 4, 1)
+            self.grid.addWidget(self.username_label, 4, 0, 1, 3)
+            self.grid.addWidget(self.username_entry, 4, 1, 1, 3)
 
-        self.grid.addWidget(self.password_label, 5, 0)
-        self.grid.addWidget(self.password_entry, 5, 1)
-        self.grid.setRowMinimumHeight(9, 60)
-        self.grid.addWidget(self.cancel_button, 10, 5)
-        self.grid.addWidget(self.confirm_button, 10, 6)
-        self.grid.setRowMinimumHeight(11, 30)
+        self.grid.addWidget(self.password_label, 5, 0, 1, 3)
+        self.grid.addWidget(self.password_entry, 5, 1, 1, 3)
+        self.grid.setRowMinimumHeight(9, pyflame.gui_resize(20))
+        self.grid.addWidget(self.cancel_button, 10, 2)
+        self.grid.addWidget(self.confirm_button, 10, 3)
+        self.grid.setRowMinimumHeight(11, pyflame.gui_resize(20))
 
         message = message.replace('<br>', '')
         message = message.replace('<center>', '')
@@ -4140,6 +5010,10 @@ class PyFlamePasswordWindow(QtWidgets.QDialog):
         self.exec_()
 
     def _cancel(self):
+        """
+        Close window and return False when cancel button is pressed.
+        """
+
         self.close()
         print('--> Cancelled.\n')
         return False
@@ -4148,7 +5022,6 @@ class PyFlamePasswordWindow(QtWidgets.QDialog):
 
         if self.password_entry.text() and self.username_entry.text():
             self.close()
-
             self.username_value = self.username_entry.text()
             self.password_value = self.password_entry.text()
             return
@@ -4172,7 +5045,7 @@ class PyFlamePasswordWindow(QtWidgets.QDialog):
                     return
                 else:
                     print('Sudo password is incorrect.')
-                    self.message_label.setText('Password incorrect, try again.')
+                    self.message_text.setText('Password incorrect, try again.')
             except Exception as e:
                 print('Error occurred while testing sudo password:', str(e))
 
@@ -4214,6 +5087,7 @@ class PyFlamePasswordWindow(QtWidgets.QDialog):
         painter.drawLine(0, 0, 0, self.height)
 
     def mousePressEvent(self, event):
+
         self.oldPosition = event.globalPos()
 
     def mouseMoveEvent(self, event):
@@ -4229,7 +5103,7 @@ class PyFlameProgressWindow(QtWidgets.QDialog):
     """
     Custom Qt Flame Progress Window
 
-    Parameters:
+    Args:
         num_to_do (int): total number of operations to do.
         title (str, optional): text shown in top left of window ie. Rendering...
             Default: None
@@ -4316,10 +5190,8 @@ class PyFlameProgressWindow(QtWidgets.QDialog):
         self.setFont(font)
 
         # Set Window size for screen
-        width = 500
-        height = 330
-        self.window_width = pyflame.gui_resize(width)
-        self.window_height = pyflame.gui_resize(height)
+        self.window_width = pyflame.gui_resize(500)
+        self.window_height = pyflame.gui_resize(330)
 
         # Build window
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint)
@@ -4337,27 +5209,27 @@ class PyFlameProgressWindow(QtWidgets.QDialog):
 
         self.grid = QtWidgets.QGridLayout()
 
-        self.main_label = PyFlameLabel(
+        self.title_label = PyFlameLabel(
             text=title,
-            width=width,
+            width=500,
             font_size=24,
             )
 
-        self.message_text_edit = QtWidgets.QTextEdit('')
-        self.message_text_edit.setDisabled(True)
-        self.message_text_edit.setFont(font)
-        self.message_text_edit.setStyleSheet(f"""
+        self.message_text = QtWidgets.QTextEdit('')
+        self.message_text.setDisabled(True)
+        self.message_text.setFont(font)
+        self.message_text.setStyleSheet(f"""
             QTextEdit{{
                 color: rgb(154, 154, 154);
                 background-color: rgb(36, 36, 36);
                 selection-color: rgb(190, 190, 190);
                 selection-background-color: rgb(36, 36, 36);
                 border: none;
-                padding-left: 20px;
-                padding-right: 20px;
+                padding-left: {pyflame.gui_resize(10)}px;
+                padding-right: {pyflame.gui_resize(10)}px;
                 }}
             """)
-        self.message_text_edit.setText(text)
+        self.message_text.setText(text)
 
         # Progress bar
         bar_max_height = pyflame.gui_resize(5)
@@ -4388,15 +5260,9 @@ class PyFlameProgressWindow(QtWidgets.QDialog):
         # Layout
         row_height = pyflame.gui_resize(30)
 
-        self.grid.setContentsMargins(pyflame.gui_resize(10),
-                                     pyflame.gui_resize(12),
-                                     pyflame.gui_resize(10),
-                                     pyflame.gui_resize(10),
-                                     )
-
-        self.grid.addWidget(self.main_label, 0, 0)
+        self.grid.addWidget(self.title_label, 0, 0)
         self.grid.setRowMinimumHeight(1, row_height)
-        self.grid.addWidget(self.message_text_edit, 2, 0, 1, 4)
+        self.grid.addWidget(self.message_text, 2, 0, 1, 4)
         self.grid.addWidget(self.progress_bar, 8, 0, 1, 7)
         self.grid.setRowMinimumHeight(9, row_height)
         self.grid.addWidget(self.done_button, 10, 6)
@@ -4411,17 +5277,17 @@ class PyFlameProgressWindow(QtWidgets.QDialog):
         """
         Use to set the text of the message text edit widget to the specified text.
 
-        Parameters:
+        Args:
             text (str): The text to set in the message text edit widget.
         """
 
-        self.message_text_edit.setText(text)
+        self.message_text.setText(text)
 
     def set_progress_value(self, value):
         """
         Use to set the value of the progress bar.
 
-        Parameters:
+        Args:
             value (int): The value to set the progress bar to.
         """
 
@@ -4432,7 +5298,7 @@ class PyFlameProgressWindow(QtWidgets.QDialog):
         """
         Use to enable or disable the done button.
 
-        Parameters:
+        Args:
             value (bool): True to enable done button, False to disable done button.
         """
 
@@ -4511,239 +5377,36 @@ class PyFlameProgressWindow(QtWidgets.QDialog):
         if event.key() == QtCore.Qt.Key_Return:
             self.close()
 
-class PyFlameQDialog(QtWidgets.QDialog):
+class _OverlayWidget(QtWidgets.QWidget):
     """
-    Custom Qt Flame QDialog Widget
+    Internal class, should not be used outside this module.
 
-    Parameters:
-        width (int): Width of window.
-        height (int): Height of window.
-        title (str): Text displayed in top left corner of window.
-            Default: Python Script
-        line_color (LineColor): Color of bar on left side of window.
-            -LineColor.GRAY: For gray line.
-            -LineColor.BLUE: For blue line.
-            -LineColor.RED: For red line.
-            -LineColor.GREEN: For green line.
-            -LineColor.YELLOW: For yellow line.
-            -LineColor.TEAL: For teal line.
-            Default: LineColor.BLUE
-        return_pressed (callable, optional): Function to be called when return key is pressed.
-            Default: None
-        font (str): Font to be used in window.
-            Default: PYFLAME_FONT
-        font_size (int): Size of font.
-            Default: PYFLAME_FONT_SIZE
-
-    Public Methods:
-        add_layout(layout): Add layout to window.
-
-    Examples:
-        To create a window:
-            window = PyFlameQDialog(
-                width=400,
-                height=200,
-                title=f'{SCRIPT_NAME} <small>{SCRIPT_VERSION},
-                return_pressed=confirm,
-                )
-        To add a qlayout to the window:
-            window.add_layout(layout)
+    This class is used to help add the vertical and horizontal colored lines to the
+    PyFlameDialogWindow and PyFlameMessageWindow windows. It draws a blue vertical line
+    along the left edge of the parent widget.
     """
 
-    def __init__(self: 'PyFlameQDialog',
-                 width: int,
-                 height: int,
-                 title: str='Python Script',
-                 line_color: LineColor=LineColor.BLUE,
-                 return_pressed: Optional[Callable]=None,
-                 font: str=PYFLAME_FONT,
-                 font_size: int=PYFLAME_FONT_SIZE,
-                 ) -> None:
-        super().__init__()
-
-        # Validate argument types
-        if not isinstance(width, int) or width <= 0:
-            raise ValueError('PyFlameWindow: width must be a positive integer.')
-        elif not isinstance(height, int) or height <= 0:
-            raise ValueError('PyFlameWindow: height must be a positive integer.')
-        elif not isinstance(title, str):
-            raise TypeError('PyFlameWindow: title must be a string.')
-        elif not isinstance(line_color, LineColor):
-            raise ValueError('PyFlameWindow: color must be an instance of LineColor Enum. '
-                             'Options are: LineColor.GRAY, LineColor.BLUE, LineColor.RED, '
-                             'LineColor.GREEN, LineColor.YELLOW, LineColor.TEAL.')
-        elif return_pressed is not None and not callable(return_pressed):
-            raise TypeError('PyFlameWindow: return_pressed must be a callable function or None.')
-        elif not isinstance(font, str):
-            raise TypeError('PyFlameWindow: font must be a string.')
-        elif not isinstance(font_size, int) or font_size <= 0:
-            raise ValueError('PyFlameWindow: font_size must be a positive integer.')
-
-        self.line_color = line_color
-
-        self.font_size = pyflame.font_resize(font_size)
-
-        # Scale window size for screen resolution
-        self.width = pyflame.gui_resize(width)
-        self.height = pyflame.gui_resize(height)
-        self.line = pyflame.gui_resize(45)
-
-        # Build window
-        self.setFixedSize(self.width, self.height)
-        self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint)
-        self.setFocusPolicy(QtCore.Qt.StrongFocus)
-        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-
-        # Set return pressed function
-        self.return_pressed = return_pressed
-
-        # Center window in linux
-        resolution = main_window_res.screenGeometry()
-        self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
-                  (resolution.height() / 2) - (self.frameSize().height() / 2))
-
-        # Set font
-        font = QtGui.QFont(font)
-        font.setPointSize(pyflame.font_resize(font_size))
-        self.setFont(font)
-
-        # Window title label
-        title_label = PyFlameLabel(
-            text='<span style="white-space: pre;">  ' + title, # Add space to title using CSS code. This pushes the title to the right one space.
-            style=Style.UNDERLINE,
-            align=Align.LEFT,
-            width=width,
-            underline_color=(0, 43, 66, 0.5),
-            height=40,
-            font_size=24,
-            )
-
-        # Window layout
-        # -------------
-
-        # Main layout
-        main_layout = QtWidgets.QVBoxLayout()
-        main_layout.addWidget(title_label, alignment=QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
-        main_layout.addSpacing(pyflame.gui_resize(7))
-
-        # Center layout - script layout added to this layout
-        self.center_layout = QtWidgets.QGridLayout()
-
-        # Create widget to hold the center layout
-        center_widget = QtWidgets.QWidget()
-        center_widget.setLayout(self.center_layout)
-
-        # Add the center layout to the main layout
-        main_layout.addWidget(center_widget, alignment=QtCore.Qt.AlignCenter)
-
-        # Add stretchable space below the center layout
-        main_layout.addStretch()
-
-        # Set main window layout
-        self.setLayout(main_layout)
-
-        # After setting the main window layout:
-        self.setLayout(main_layout)
-
-
-
-
-
-        self._set_stylesheet(font)
-
-    def add_layout(self, layout):
-        """
-        Add layout from script to the main window.
-        """
-
-        self.center_layout.addLayout(layout, 1, 0)
-
-    def _set_stylesheet(self, font):
-
-        # Window stylesheet - Double brackets required below due to f-string
-        self.setStyleSheet(f"""
-            QWidget{{
-                background-color: rgb(36, 36, 36);
-                }}
-            QTabWidget{{
-                background-color: rgb(36, 36, 36);
-                border: none;
-                }}
-            QTabWidget::tab-bar{{
-                alignment: center;
-                }}
-            QTabBar::tab{{
-                color: rgb(190, 190, 190);
-                background-color: rgb(36, 36, 36);
-                min-width: 20ex;
-                padding: 5px;
-                }}
-            QTabBar::tab:selected{{
-                color: rgb(186, 186, 186);
-                background-color: rgb(31, 31, 31);
-                border: 1px solid rgb(31, 31, 31);
-                border-bottom: 1px solid rgb(0, 110, 176);
-                }}
-            QTabBar::tab:!selected{{
-                color: rgb(186, 186, 186);
-                background-color: rgb(36, 36, 36);
-                border: none;
-                }}
-            QTabWidget::pane{{
-                border-top: 1px solid rgb(49, 49, 49);
-                }}
-            """)
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setPalette(QtGui.QPalette(QtCore.Qt.transparent))
+        self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
 
     def paintEvent(self, event):
-
         painter = QtGui.QPainter(self)
+        painter.setPen(QtGui.QPen(QtGui.QColor(0, 110, 176), pyflame.gui_resize(2)))
+        painter.drawLine(0, 0, 0, 1000)
 
-        if self.line_color == LineColor.GRAY:
-            color = QtGui.QColor(71, 71, 71)
-        elif self.line_color == LineColor.BLUE:
-            color = QtGui.QColor(0, 110, 176)
-        elif self.line_color == LineColor.RED:
-            color = QtGui.QColor(200, 29, 29)
-        elif self.line_color == LineColor.GREEN:
-            color = QtGui.QColor(0, 180, 13)
-        elif self.line_color == LineColor.YELLOW:
-            color = QtGui.QColor(251, 181, 73)
-        elif self.line_color == LineColor.TEAL:
-            color = QtGui.QColor(14, 110, 106)
-
-        # Draw bar on left side of window
-        painter.setPen(QtGui.QPen(color, pyflame.gui_resize(4), QtCore.Qt.SolidLine))
-        painter.drawLine(0, 0, 0, self.height)
-
-    def mousePressEvent(self, event):
-
-        self.oldPosition = event.globalPos()
-
-    def mouseMoveEvent(self, event):
-
-        try:
-            delta = QtCore.QPoint(event.globalPos() - self.oldPosition)
-            self.move(self.x() + delta.x(), self.y() + delta.y())
-            self.oldPosition = event.globalPos()
-        except:
-            pass
-
-    def keyPressEvent(self, event):
-        if event.key() == QtCore.Qt.Key_Return and self.return_pressed is not None:
-            self.return_pressed()
-
-    def resizeOverlay(self, event): #added for overlay
-        self.overlay.resize(event.size())
-
-class PyFlameWindow(QtWidgets.QWidget):
+class PyFlameDialogWindow(QtWidgets.QDialog):
     """
-    Custom Qt Flame Window Widget
+    Custom Qt Flame Dialog Window Widget
 
-    Parameters:
-        width (int): Width of window.
-        height (int): Height of window.
+    Args:
         title (str): Text displayed in top left corner of window.
             Default: Python Script
+        width (int, optional): Set minimum width of window.
+            Default: None
+        height (int, optional): Set minimum height of window.
+            Default: None
         line_color (LineColor): Color of bar on left side of window.
             -LineColor.GRAY: For gray line.
             -LineColor.BLUE: For blue line.
@@ -4764,9 +5427,7 @@ class PyFlameWindow(QtWidgets.QWidget):
 
     Example:
         To create a window:
-            window = PyFlameWindow(
-                width=400,
-                height=200,
+            window = PyFlameDialogWindow(
                 title=f'{SCRIPT_NAME} <small>{SCRIPT_VERSION},
                 return_pressed=confirm,
                 )
@@ -4774,10 +5435,10 @@ class PyFlameWindow(QtWidgets.QWidget):
             window.add_layout(layout)
     """
 
-    def __init__(self: 'PyFlameWindow',
-                 width: int,
-                 height: int,
+    def __init__(self: 'PyFlameDialogWindow',
                  title: str='Python Script',
+                 width: Optional[int]=None,
+                 height: Optional[int]=None,
                  line_color: LineColor=LineColor.BLUE,
                  return_pressed: Optional[Callable]=None,
                  font: str=PYFLAME_FONT,
@@ -4786,39 +5447,46 @@ class PyFlameWindow(QtWidgets.QWidget):
         super().__init__()
 
         # Validate argument types
-        if not isinstance(width, int) or width <= 0:
-            raise ValueError('PyFlameWindow: width must be a positive integer.')
-        elif not isinstance(height, int) or height <= 0:
-            raise ValueError('PyFlameWindow: height must be a positive integer.')
-        elif not isinstance(title, str):
-            raise TypeError('PyFlameWindow: title must be a string.')
+        if not isinstance(title, str):
+            raise TypeError(f'PyFlameDialogWindow: Invalid text argument: {title}. Must be of type str.')
+        elif not isinstance(width, int) and width is not None:
+            raise TypeError(f'PyFlameDialogWindow: Invalid width argument: {width}. Must be of type int.')
+        elif not isinstance(height, int) and height is not None:
+            raise TypeError(f'PyFlameDialogWindow: Invalid height argument: {height}. Must be of type int.')
+        # If width is set, height must also be set
+        elif width and not height:
+            raise ValueError('PyFlameDialogWindow: height must be set if width is set.')
+        # If height is set, width must also be set
+        elif height and not width:
+            raise ValueError('PyFlameDialogWindow: width must be set if height is set.')
         elif not isinstance(line_color, LineColor):
-            raise ValueError('PyFlameWindow: color must be an instance of LineColor Enum. '
-                             'Options are: LineColor.GRAY, LineColor.BLUE, LineColor.RED, '
-                             'LineColor.GREEN, LineColor.YELLOW, LineColor.TEAL.')
+            raise ValueError(f'PyFlameDialogWindow: Invalid text argument: {line_color}. Must be of type LineColor Enum. '
+                             'Options are: LineColor.GRAY, LineColor.BLUE, LineColor.RED, LineColor.GREEN, '
+                             'LineColor.YELLOW, LineColor.TEAL.')
         elif return_pressed is not None and not callable(return_pressed):
-            raise TypeError('PyFlameWindow: return_pressed must be a callable function or None.')
+            raise TypeError(f'PyFlameDialogWindow: Invalid text argument: {return_pressed}. Must be a callable function or None.')
         elif not isinstance(font, str):
-            raise TypeError('PyFlameWindow: font must be a string.')
-        elif not isinstance(font_size, int) or font_size <= 0:
-            raise ValueError('PyFlameWindow: font_size must be a positive integer.')
+            raise TypeError(f'PyFlameDialogWindow: Invalid text argument: {font}. Must be of type str.')
+        elif not isinstance(font_size, int):
+            raise TypeError(f'PyFlameDialogWindow: Invalid text argument: {font_size}. Must be of type int.')
 
         self.line_color = line_color
-
+        self.return_pressed = return_pressed
         self.font_size = pyflame.font_resize(font_size)
 
-        # Scale window size for screen resolution
-        self.width = pyflame.gui_resize(width)
-        self.height = pyflame.gui_resize(height)
+        # Set window size
+        if width and height:
+            self.width = pyflame.gui_resize(width)
+            self.height = pyflame.gui_resize(height)
+            self.setMinimumSize(QtCore.QSize(self.width, self.height))
+        else:
+            self.width = pyflame.gui_resize(150)
+            self.height = pyflame.gui_resize(30)
+            self.setMinimumSize(QtCore.QSize(self.width, self.height))
 
-        # Build window
-        self.setFixedSize(self.width, self.height)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint)
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-
-        # Set return pressed function
-        self.return_pressed = return_pressed
 
         # Center window in linux
         resolution = main_window_res.screenGeometry()
@@ -4835,7 +5503,7 @@ class PyFlameWindow(QtWidgets.QWidget):
             text='<span style="white-space: pre;">  ' + title, # Add space to title using CSS code. This pushes the title to the right one space.
             style=Style.UNDERLINE,
             align=Align.LEFT,
-            width=width,
+            max_width=True,
             underline_color=(0, 43, 66, 0.5),
             height=40,
             font_size=24,
@@ -4843,32 +5511,33 @@ class PyFlameWindow(QtWidgets.QWidget):
 
         # Window layout
         # -------------
-
-        # Title line HBox
-        title_text_hbox = QtWidgets.QHBoxLayout()
-        title_text_hbox.addSpacing(pyflame.gui_resize(3))
+        title_text_hbox = PyFlameHBoxLayout()
         title_text_hbox.addWidget(title_label)
+        title_text_hbox.setContentsMargins(0, 0, 0, 0)  # Remove margins around the title label
 
-        # Main layout
-        main_vbox = QtWidgets.QVBoxLayout()
-        main_vbox.setContentsMargins(0, 0, 0, 0)
-        main_vbox.addLayout(title_text_hbox)
-        main_vbox.addSpacing(pyflame.gui_resize(20))
         # Center layout - where main UI is added
-        self.center_layout = QtWidgets.QGridLayout()
-
+        self.center_layout = PyFlameGridLayout()
         # Create widget to hold the center layout
         center_widget = QtWidgets.QWidget()
         center_widget.setLayout(self.center_layout)
 
         # Add the center layout to the main layout
-        main_vbox.addWidget(center_widget, alignment=QtCore.Qt.AlignCenter)
-        main_vbox.addStretch()
-        main_vbox.addSpacing(pyflame.gui_resize(20))
+        main_vbox2 = PyFlameVBoxLayout()
+        main_vbox2.addWidget(center_widget, alignment=QtCore.Qt.AlignCenter)
+        main_vbox2.addStretch()
+        main_vbox2.setContentsMargins(15, 15, 15, 15) # Add margin around main UI
 
-        self.setLayout(main_vbox)
+        main_vbox3 = PyFlameVBoxLayout()
+        main_vbox3.addLayout(title_text_hbox)
+        main_vbox3.addLayout(main_vbox2)
+        main_vbox3.setContentsMargins(0, 0, 0, 0)  # Remove margins
+
+        self.setLayout(main_vbox3)
 
         self._set_stylesheet(font)
+
+        # Initialize and set up the overlay for blue line on left edge of window
+        self.overlay = _OverlayWidget(self)
 
     def add_layout(self, layout):
         """
@@ -4892,20 +5561,21 @@ class PyFlameWindow(QtWidgets.QWidget):
                 alignment: center;
                 }}
             QTabBar::tab{{
-                color: rgb(190, 190, 190);
+                color: rgb(154, 154, 154);
                 background-color: rgb(36, 36, 36);
                 min-width: 20ex;
+                width: 25px;
                 height: {pyflame.gui_resize(20)}px;
                 padding: 5px;
                 }}
             QTabBar::tab:selected{{
-                color: rgb(186, 186, 186);
+                color: rgb(200, 200, 200);
                 background-color: rgb(31, 31, 31);
                 border: 1px solid rgb(31, 31, 31);
                 border-bottom: 1px solid rgb(0, 110, 176);
                 }}
             QTabBar::tab:!selected{{
-                color: rgb(186, 186, 186);
+                color: rgb(154, 154, 154);
                 background-color: rgb(36, 36, 36);
                 border: none;
                 }}
@@ -4913,27 +5583,6 @@ class PyFlameWindow(QtWidgets.QWidget):
                 border-top: 1px solid rgb(49, 49, 49);
                 }}
             """)
-
-    def paintEvent(self, event):
-
-        painter = QtGui.QPainter(self)
-
-        if self.line_color == LineColor.GRAY:
-            color = QtGui.QColor(71, 71, 71)
-        elif self.line_color == LineColor.BLUE:
-            color = QtGui.QColor(0, 110, 176)
-        elif self.line_color == LineColor.RED:
-            color = QtGui.QColor(200, 29, 29)
-        elif self.line_color == LineColor.GREEN:
-            color = QtGui.QColor(0, 180, 13)
-        elif self.line_color == LineColor.YELLOW:
-            color = QtGui.QColor(251, 181, 73)
-        elif self.line_color == LineColor.TEAL:
-            color = QtGui.QColor(14, 110, 106)
-
-        # Draw bar on left side of window
-        painter.setPen(QtGui.QPen(color, pyflame.gui_resize(4), QtCore.Qt.SolidLine))
-        painter.drawLine(0, 0, 0, 5000)
 
     def mousePressEvent(self, event):
 
@@ -4951,3 +5600,1299 @@ class PyFlameWindow(QtWidgets.QWidget):
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Return and self.return_pressed is not None:
             self.return_pressed()
+
+    def resizeEvent(self, event):
+
+        # Ensure the left blue line overlay covers the whole window when resizing
+        self.overlay.setGeometry(0, 0, 100, 3000)
+        super().resizeEvent(event)
+
+class PyFlameWindow(QtWidgets.QWidget):
+    """
+    Custom Qt Flame Window Widget
+
+    Args:
+        title (str): Text displayed in top left corner of window.
+            Default: Python Script
+        width (int, optional): Set minimum width of window.
+            Default: None
+        height (int, optional): Set minimum height of window.
+            Default: None
+        line_color (LineColor): Color of bar on left side of window.
+            -LineColor.GRAY: For gray line.
+            -LineColor.BLUE: For blue line.
+            -LineColor.RED: For red line.
+            -LineColor.GREEN: For green line.
+            -LineColor.YELLOW: For yellow line.
+            -LineColor.TEAL: For teal line.
+            Default: LineColor.BLUE
+        return_pressed (callable, optional): Function to be called when return key is pressed.
+            Default: None
+        font (str): Font to be used in window.
+            Default: PYFLAME_FONT
+        font_size (int): Size of font.
+            Default: PYFLAME_FONT_SIZE
+
+    Public Methods:
+        add_layout(layout): Add layout to window.
+
+    Example:
+        To create a window:
+            window = PyFlameWindow(
+                title=f'{SCRIPT_NAME} <small>{SCRIPT_VERSION},
+                return_pressed=confirm,
+                )
+        To add a qlayout to the window:
+            window.add_layout(layout)
+    """
+
+    def __init__(self: 'PyFlameWindow',
+                 title: str='Python Script',
+                 width: Optional[int]=None,
+                 height: Optional[int]=None,
+                 line_color: LineColor=LineColor.BLUE,
+                 return_pressed: Optional[Callable]=None,
+                 font: str=PYFLAME_FONT,
+                 font_size: int=PYFLAME_FONT_SIZE,
+                 ) -> None:
+        super().__init__()
+
+        # Validate argument types
+        if not isinstance(title, str):
+            raise TypeError(f'PyFlameWindow: Invalid text argument: {title}. Must be of type str.')
+        elif not isinstance(width, int) and width is not None:
+            raise TypeError(f'PyFlameWindow: Invalid width argument: {width}. Must be of type int.')
+        elif not isinstance(height, int) and height is not None:
+            raise TypeError(f'PyFlameWindow: Invalid height argument: {height}. Must be of type int.')
+        # If width is set, height must also be set
+        elif width and not height:
+            raise ValueError('PyFlameWindow: height must be set if width is set.')
+        # If height is set, width must also be set
+        elif height and not width:
+            raise ValueError('PyFlameWindow: width must be set if height is set.')
+        elif not isinstance(line_color, LineColor):
+            raise ValueError(f'PyFlameWindow: Invalid text argument: {line_color}. Must be of type LineColor Enum. '
+                             'Options are: LineColor.GRAY, LineColor.BLUE, LineColor.RED, LineColor.GREEN, '
+                             'LineColor.YELLOW, LineColor.TEAL.')
+        elif return_pressed is not None and not callable(return_pressed):
+            raise TypeError(f'PyFlameWindow: Invalid text argument: {return_pressed}. Must be a callable function or None.')
+        elif not isinstance(font, str):
+            raise TypeError(f'PyFlameWindow: Invalid text argument: {font}. Must be of type str.')
+        elif not isinstance(font_size, int):
+            raise TypeError(f'PyFlameWindow: Invalid text argument: {font_size}. Must be of type int.')
+
+        self.line_color = line_color
+        self.return_pressed = return_pressed
+        self.font_size = pyflame.font_resize(font_size)
+
+        # Set window size
+        if width and height:
+            self.width = pyflame.gui_resize(width)
+            self.height = pyflame.gui_resize(height)
+            self.setMinimumSize(QtCore.QSize(self.width, self.height))
+        else:
+            self.width = pyflame.gui_resize(150)
+            self.height = pyflame.gui_resize(30)
+            self.setMinimumSize(QtCore.QSize(self.width, self.height))
+
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint)
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+
+        # Center window in linux
+        resolution = main_window_res.screenGeometry()
+        self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
+                  (resolution.height() / 2) - (self.frameSize().height() / 2))
+
+        # Set font
+        font = QtGui.QFont(font)
+        font.setPointSize(pyflame.font_resize(font_size))
+        self.setFont(font)
+
+        # Window title label
+        title_label = PyFlameLabel(
+            text='<span style="white-space: pre;">  ' + title, # Add space to title using CSS code. This pushes the title to the right one space.
+            style=Style.UNDERLINE,
+            align=Align.LEFT,
+            max_width=True,
+            underline_color=(0, 43, 66, 0.5),
+            height=40,
+            font_size=24,
+            )
+
+        # Window layout
+        # -------------
+        title_text_hbox = PyFlameHBoxLayout()
+        title_text_hbox.addWidget(title_label)
+        title_text_hbox.setContentsMargins(0, 0, 0, 0)  # Remove margins around the title label
+
+        # Center layout - where main UI is added
+        self.center_layout = PyFlameGridLayout()
+        # Create widget to hold the center layout
+        center_widget = QtWidgets.QWidget()
+        center_widget.setLayout(self.center_layout)
+
+        # Add the center layout to the main layout
+        main_vbox2 = PyFlameVBoxLayout()
+        main_vbox2.addWidget(center_widget, alignment=QtCore.Qt.AlignCenter)
+        main_vbox2.addStretch()
+        main_vbox2.setContentsMargins(15, 15, 15, 15) # Add margin around main UI
+
+        main_vbox3 = PyFlameVBoxLayout()
+        main_vbox3.addLayout(title_text_hbox)
+        main_vbox3.addLayout(main_vbox2)
+        main_vbox3.setContentsMargins(0, 0, 0, 0)  # Remove margins
+
+        self.setLayout(main_vbox3)
+
+        self._set_stylesheet(font)
+
+        # Initialize and set up the overlay for blue line on left edge of window
+        self.overlay = _OverlayWidget(self)
+
+    def add_layout(self, layout):
+        """
+        Add layout from script to the main window.
+        """
+
+        self.center_layout.addLayout(layout, 0, 0)
+
+    def _set_stylesheet(self, font):
+
+        # Window stylesheet
+        self.setStyleSheet(f"""
+            QWidget{{
+                background-color: rgb(36, 36, 36);
+                }}
+            QTabWidget{{
+                background-color: rgb(36, 36, 36);
+                border: none;
+                }}
+            QTabWidget::tab-bar{{
+                alignment: center;
+                }}
+            QTabBar::tab{{
+                color: rgb(154, 154, 154);
+                background-color: rgb(36, 36, 36);
+                min-width: 20ex;
+                width: 25px;
+                height: {pyflame.gui_resize(20)}px;
+                padding: 5px;
+                }}
+            QTabBar::tab:selected{{
+                color: rgb(200, 200, 200);
+                background-color: rgb(31, 31, 31);
+                border: 1px solid rgb(31, 31, 31);
+                border-bottom: 1px solid rgb(0, 110, 176);
+                }}
+            QTabBar::tab:!selected{{
+                color: rgb(154, 154, 154);
+                background-color: rgb(36, 36, 36);
+                border: none;
+                }}
+            QTabWidget::pane{{
+                border-top: 1px solid rgb(49, 49, 49);
+                }}
+            """)
+
+    def mousePressEvent(self, event):
+
+        self.oldPosition = event.globalPos()
+
+    def mouseMoveEvent(self, event):
+
+        try:
+            delta = QtCore.QPoint(event.globalPos() - self.oldPosition)
+            self.move(self.x() + delta.x(), self.y() + delta.y())
+            self.oldPosition = event.globalPos()
+        except:
+            pass
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Return and self.return_pressed is not None:
+            self.return_pressed()
+
+    def resizeEvent(self, event):
+
+        # Ensure the left blue line overlay covers the whole window when resizing
+        self.overlay.setGeometry(0, 0, 100, 3000)
+        super().resizeEvent(event)
+
+class PyFlamePresetManager():
+    """
+    Preset Manager Class - Handles management of presets for Flame python scripts.
+
+    Actions:
+        New:
+            Creates a new preset using default values that can be edited.
+
+        Edit:
+            Edit an existing preset from the preset list.
+
+        Duplicate:
+            Create a duplicate of the selected preset.
+
+        Delete:
+            Delete the selected preset.
+            If the selected preset is the default preset, the default preset will be set to the first preset in the preset list.
+            If the selected preset is a project preset, all project presets using the preset will be set to the default preset.
+            If the selected preset is both the default and project preset, the default preset will be set to the first preset in
+            the preset list and all project presets using the preset will be set to the default preset.
+
+        Set Default Preset:
+            Set the selected preset as the default preset.
+            The default preset will be used for all Flame projects unless a project preset is set.
+
+        Set Project Preset:
+            Set the selected preset as the project preset for the current project.
+            This will bypass the default preset.
+
+        Remove Project Preset:
+            Remove the preset assigned to the current project.
+            This will cause the current project to use the default preset.
+
+    Args:
+        script_name (str): Name of the script.
+        script_version (str): Version of the script.
+        script_path (str): Path to the script.
+        setup_script (callable): Setup window class/function.
+
+    Raises:
+        TypeError: If the type of script_name, script_version, script_path, or setup_script is not a string or callable function.
+
+    Example:
+        PyFlamePresetManager(
+            script_name=SCRIPT_NAME,
+            script_version=SCRIPT_VERSION,
+            script_path=SCRIPT_PATH,
+            setup_script=ScriptSetup,
+            )
+
+    Public Methods:
+        load_preset() -> PyFlameConfig:
+            Loads preset assigned to current project(Project or Default Preset) and returns preset settings as attributes.
+
+            Example:
+                self.settings = PyFlamePresetManager(
+                    script_name=SCRIPT_NAME,
+                    script_version=SCRIPT_VERSION,
+                    script_path=SCRIPT_PATH,
+                    setup_script=None,
+                    ).load_preset()
+    """
+
+    import typing
+
+    def __init__(
+        self,
+        script_name: str,
+        script_version: str,
+        script_path: str,
+        setup_script: typing.Callable[..., typing.Any] = None,
+        ):
+
+        # Check argument types
+        if not isinstance(script_name, str):
+            raise TypeError(f'PyFlamePresetManager: Invalid path type: {script_name}. script_name must be of type str.')
+        elif not isinstance(script_version, str):
+            raise TypeError(f'PyFlamePresetManager: Invalid path type: {script_version}. script_version must be of type str.')
+        elif not isinstance(script_path, str):
+            raise TypeError(f'PyFlamePresetManager: Invalid path type: {script_path}. script_path must be of type str.')
+        elif setup_script is not None and not callable(setup_script):
+            raise TypeError('Invalid argument type: setup_script must be a callable function or None.')
+
+        print('\n')
+        print('>' * 10, f'{script_name} Preset Manager {script_version}', '<' * 10, '\n')
+
+        # Initialize variables
+        self.default_preset_extension = ' (Default)'
+        self.project_preset_extension = ' (Project)'
+        self.script_name = script_name
+        self.script_version = script_version
+        self.script_path = script_path
+        self.setup_script = setup_script
+        self.flame_prj_name = flame.project.current_project.project_name
+        self.preset_settings_name = self.script_name.lower().replace(' ', '_') + '_preset_settings'
+
+        # Initialize paths
+        self.preset_config_xml = os.path.join(self.script_path, 'config', 'preset_manager_config.xml') # Preset Manager config file
+        self.preset_path = os.path.join(self.script_path, 'config', 'presets')
+        self.project_config_path = os.path.join(self.script_path, 'config', 'project_presets')
+
+        # Create preset folders if they do not exist
+        self.create_preset_folders()
+
+        # Check script path
+        if not self.check_script_path():
+            return
+
+        # Load/Create Preset Manager config file
+        self.settings = self.load_config()
+
+        if setup_script:
+            # Open preset window
+            self.preset_window()
+
+    def check_script_path(self) -> bool:
+        """
+        Check if script is installed in the correct location. If not, display error message.
+
+        Returns:
+            bool: True if script is installed in the correct location, False otherwise.
+        """
+
+        if os.path.dirname(os.path.abspath(__file__)) != self.script_path:
+            self.error_message('Script path is incorrect. Please reinstall script.<br><br>Script path should be:<br><br>' + self.script_path)
+            return False
+        return True
+
+    def load_config(self) -> PyFlameConfig:
+        """
+        Create/Load Preset Manager config values from config file.
+
+        Returns:
+            settings (PyFlameConfig): PyFlameConfig instance with loaded config values.
+        """
+
+        settings = PyFlameConfig(
+            script_name=self.script_name,
+            script_path=self.script_path,
+            config_values={
+                'default_preset': '',
+                },
+            config_xml_path=self.preset_config_xml
+            )
+
+        return settings
+
+    def save_config(self) -> None:
+        """
+        Save Preset Manager config values to config file.
+        """
+
+        self.settings.save_config(
+            script_name=self.script_name,
+            script_path=self.script_path,
+            config_values={
+                'default_preset': self.settings.default_preset,
+                },
+            config_xml_path=self.preset_config_xml
+            )
+
+    def message_print(self, message: str) -> None:
+        """
+        Print message to Flame message window and terminal/shell.
+
+        Args:
+            message (str): Message to print.
+        """
+
+        pyflame.message_print(
+            message=message,
+            script_name=self.script_name,
+            )
+
+    def info_message(self, message: str) -> None:
+        """
+        Open info message window using PyFlameMessageWindow.
+
+        Args:
+            message (str): The message to display.
+        """
+
+        PyFlameMessageWindow(
+            message=message,
+            script_name=self.script_name,
+            )
+
+    def error_message(self, message: str) -> None:
+        """
+        Open error message window using PyFlameMessageWindow.
+
+        Args:
+            message (str): The message to display.
+        """
+
+        PyFlameMessageWindow(
+            message=message,
+            script_name=self.script_name,
+            type=MessageType.ERROR,
+            )
+
+    def warning_message(self, message:str) -> bool:
+        """
+        Open warning message window using PyFlameMessageWindow.
+
+        Args:
+            message (str): The message to display.
+
+        Returns:
+            confirm (bool): User confirmation to proceed.
+        """
+
+        confirm = PyFlameMessageWindow(
+            message=message,
+            script_name=self.script_name,
+            type=MessageType.WARNING,
+            )
+
+        return confirm
+
+    def confirm_message(self, message: str) -> bool:
+        """
+        Open confirm message window using PyFlameMessageWindow.
+
+        Args:
+            message (str): The message to display.
+
+        Returns:
+            confirm (bool): User confirmation to proceed.
+        """
+
+        confirm = PyFlameMessageWindow(
+            message=message,
+            script_name=self.script_name,
+            type=MessageType.CONFIRM,
+            )
+
+        return confirm
+
+    def create_preset_folders(self) -> None:
+        """
+        Check for preset folders and create if they do not exist.
+        """
+
+        if not os.path.isdir(self.preset_path):
+            os.makedirs(self.preset_path)
+
+        if not os.path.isdir(self.project_config_path):
+            os.makedirs(self.project_config_path)
+
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    def preset_window(self) -> None:
+        """
+        Build Preset Manager window.
+        """
+
+        def close_window() -> None:
+            """
+            Close preset window
+            """
+
+            self.preset_window.close()
+            print('Done.\n')
+
+        # Build window
+        self.preset_window = PyFlameWindow(
+            title=f'{self.script_name} Preset Manager <small>{self.script_version}',
+            width=1050,
+            height=330,
+            return_pressed=close_window,
+            )
+
+        # Labels
+        self.current_project_preset_label = PyFlameLabel(
+            text='Current Project Preset',
+            )
+        self.presets_label = PyFlameLabel(
+            text='Presets',
+            )
+
+        # Entry Fields
+        self.current_project_preset_field = PyFlameLineEdit(
+            text='',
+            width=450,
+            placeholder_text='No presets available. Create a new preset.',
+            read_only=True,
+            )
+
+        # Push Button Menu
+        self.current_preset_menu_pushbutton = PyFlamePushButtonMenu(
+            text='',
+            menu_options=[],
+            width=450,
+            )
+
+        #  Buttons
+        self.new_button = PyFlameButton(
+            text='New',
+            connect=self.new_preset,
+            tooltip='Create new preset.',
+            )
+        self.set_as_default_button = PyFlameButton(
+            text='Set Default Preset',
+            connect=self.set_as_default_preset,
+            tooltip='Set selected preset as default preset. The default preset will be used for all Flame projects unless a different preset is set for the current project.',
+            )
+        self.edit_button = PyFlameButton(
+            text='Edit',
+            connect=self.edit_preset,
+            tooltip='Edit selected preset.',
+            )
+        self.set_project_preset_button = PyFlameButton(
+            text='Set Project Preset',
+            connect=self.set_preset_to_current_project,
+            tooltip='Set current preset as current project preset. This will bypass the default preset.',
+            )
+        self.remove_from_project_button = PyFlameButton(
+            text='Remove Project Preset',
+            connect=self.remove_preset_from_project,
+            tooltip='Remove preset assigned to current project.',
+            )
+        self.delete_button = PyFlameButton(
+            text='Delete',
+            connect=self.delete_preset,
+            tooltip='Delete selected preset.',
+            )
+        self.duplicate_button = PyFlameButton(
+            text='Duplicate',
+            connect=self.duplicate_preset,
+            tooltip='Duplicate selected preset.',
+            )
+
+        self.done_btn = PyFlameButton(
+            text='Done',
+            connect=close_window,
+            color=Color.BLUE,
+            )
+
+        # Get current project preset to display in current project preset field
+        self.update_ui()
+
+        # Preset Window layout
+        grid_layout = PyFlameGridLayout()
+
+        grid_layout.addWidget(self.current_project_preset_label, 5, 0)
+        grid_layout.addWidget(self.current_project_preset_field, 5, 1, 1, 4)
+        grid_layout.addWidget(self.presets_label, 6, 0)
+        grid_layout.addWidget(self.current_preset_menu_pushbutton, 6, 1, 1, 4)
+
+        grid_layout.addWidget(self.new_button, 6, 6)
+        grid_layout.addWidget(self.edit_button, 6, 7)
+
+        grid_layout.addWidget(self.duplicate_button, 7, 6)
+        grid_layout.addWidget(self.delete_button, 7, 7)
+
+        grid_layout.addWidget(self.set_as_default_button, 8, 6)
+
+        grid_layout.addWidget(self.set_project_preset_button, 9, 6)
+        grid_layout.addWidget(self.remove_from_project_button, 9, 7)
+
+        grid_layout.setRowMinimumHeight(10, 28)
+
+        grid_layout.addWidget(self.done_btn, 11, 7)
+
+        self.preset_window.add_layout(grid_layout)
+        self.preset_window.show()
+
+    # ---------------------------------------- #
+    # Button Functions
+    # ---------------------------------------- #
+
+    def new_preset(self) -> None:
+        """
+        Create a new preset.
+
+        This function creates a new preset by opening the setup window with default settings.
+        """
+
+        print('Creating new preset...\n')
+
+        new_preset_name = self.create_or_edit_preset()
+
+        if new_preset_name:
+            self.message_print(f'New preset created: {new_preset_name}')
+        else:
+            self.message_print('New preset creation cancelled.')
+
+    def edit_preset(self) -> None:
+        """
+        Edit the selected preset.
+
+        This function edits the currently selected preset by loading the setup window with the preset settings.
+        """
+
+        print('Editing selected preset...\n')
+
+        # Get config settings from selected preset
+        preset = self.get_current_preset_button_name()
+        preset_path = os.path.join(self.preset_path, preset + '.xml')
+        #print('Preset Path:', preset_path, '\n')
+
+        settings = PyFlameConfig.get_config_values(xml_path=preset_path)
+        #print('Settings Dict:', settings, '\n')
+
+        preset_config = PyFlameConfig(
+            script_name=self.script_name,
+            script_path=self.script_path,
+            config_values=settings,
+            config_xml_path=preset_path
+            )
+
+        # Load Setup window passing preset_config to load preset values.
+        preset_name = self.create_or_edit_preset(preset_path=preset_path, preset_config=preset_config)
+
+        if preset_name:
+            self.message_print(f'Edited preset: {preset_name}')
+        else:
+            self.message_print('Edit cancelled.')
+
+    def set_as_default_preset(self) -> None:
+        """
+        Set currently selected preset as the default preset.
+        Default preset will have ' (Default)' added to the end of the name.
+
+        Updates current Current Project Preset field, Preset button, Preset list, and config file.
+        """
+
+        print('Updating default preset...\n')
+
+        if self.current_preset_menu_pushbutton.text():
+            self.update_default_preset(self.current_preset_menu_pushbutton.text())# Set default preset in preset config xml
+            self.update_ui() # Update UI with new default preset
+            self.message_print(message=f'Default preset set to: {self.current_preset_menu_pushbutton.text()}')
+        else:
+            print('Default Preset not set. No preset selected.\n')
+
+    def set_preset_to_current_project(self) -> None:
+        """
+        Assigns the current preset to the current project.
+
+        This function sets the currently selected preset as the project preset for the current project.
+        If a project preset already exists for the current project, it will be deleted and replaced with the new preset.
+
+        If there is no preset currently selected, the function prints a message indicating that no preset was selected to set as the project preset.
+        """
+
+        print('Assigning preset to current project...')
+
+        if self.current_preset_menu_pushbutton.text():
+            preset_name_text = self.get_current_preset_button_name() # Get current preset button name
+            #print('Preset Name Text:', preset_name_text, '\n')
+
+            # Path for new preset file
+            preset_path = os.path.join(self.project_config_path, self.flame_prj_name + '.xml')
+
+            # If project preset already exists, delete it before creating new one.
+            if os.path.isfile(preset_path):
+                os.remove(preset_path)
+
+            # Create project preset
+            self.create_project_preset_xml(preset_name_text, preset_path)
+
+            # Update ui with new project preset name
+            self.update_ui() # Update UI with new preset
+
+            self.message_print(message=f'Preset set for this project: {preset_name_text}')
+        else:
+            print('No preset selected to set as Project Preset.\n')
+
+    def remove_preset_from_project(self) -> None:
+        """
+        Remove the preset from the current project.
+
+        This function unassigns the preset from the current project. If the preset is not set as the default preset,
+        it will no longer be associated with this project. The preset file itself will not be deleted, only its
+        association with the current project is removed.
+
+        Note:
+        - If the preset is also set as the default preset, it will remain associated with the project.
+        - This function updates the UI after removing the preset.
+        """
+
+        print('Removing preset from project...\n')
+
+        preset_name = self.get_current_preset_button_name() # Get current preset from push button
+        print('    Preset to be removed:', preset_name, '\n')
+
+        # Delete project preset xml file
+        project_preset_path = os.path.join(self.project_config_path, self.flame_prj_name + '.xml')
+        if os.path.isfile(project_preset_path):
+            os.remove(project_preset_path)
+            self.message_print(message=f'Preset removed from project: {preset_name}')
+        else:
+            print('No project preset found for current project.\n')
+
+        # Update UI
+        self.update_ui()
+
+    def duplicate_preset(self) -> None:
+        """
+        Create a duplicate of the currently selected preset.
+
+        This function duplicates the currently selected preset by creating a copy of its XML file with 'copy' appended to the end of its name.
+        If there are existing presets with the same name in the preset directory, 'copy' is incrementally appended until a unique name is found.
+
+        If there is no preset currently selected, the function prints a message indicating that no preset was selected for duplication.
+
+        Note:
+        - The duplicated preset maintains the same settings as the original.
+        - The duplicated preset is immediately added to the preset menu and displayed in the UI.
+        """
+
+        print('Duplicating preset...\n')
+
+        if self.current_preset_menu_pushbutton.text():
+            # Get list of existing saved presets
+            existing_presets = [f[:-4] for f in os.listdir(self.preset_path)]
+
+            # Get current preset name from push button
+            current_preset_name = self.get_current_preset_button_name()
+
+            # Set new preset name to current preset name
+            new_preset_name = current_preset_name
+
+            # If preset name already exists, add ' copy' to the end of the name until a unique name is found
+            while new_preset_name in existing_presets:
+                new_preset_name = new_preset_name  + ' copy'
+
+            # Duplicate preset xml file with new preset name
+            source_file = os.path.join(self.preset_path, current_preset_name + '.xml')
+            dest_file = os.path.join(self.preset_path, new_preset_name + '.xml')
+            shutil.copyfile(source_file, dest_file)
+
+            # Update preset name in new preset xml file
+            self.preset_xml_save_preset_name(
+                preset_path=dest_file,
+                preset_name=new_preset_name,
+                )
+
+            # Update UI
+            self.update_ui()
+            self.current_preset_menu_pushbutton.setText(new_preset_name)
+
+            self.message_print(message=f'Duplicate preset created: {new_preset_name}')
+        else:
+            print('No preset selected to duplicate.\n')
+
+    def delete_preset(self) -> None:
+        """
+        Deletes the currently selected preset.
+
+        This function ensures that the preset being deleted is not in use by any project preset or set as the default preset.
+        If the preset is the default preset, the preset at the top of the list will be set as the default preset until one is set.
+        If the preset is being used by other projects, the user will be prompted to confirm deletion. All project presets using the preset
+        being deleted will be set to the default preset.
+        """
+
+        def check_project_files():
+            """
+            Check all project config files for the current preset before deletion.
+            """
+
+            preset_names = []
+            preset_paths = []
+
+            if os.listdir(self.project_config_path):
+                for config_file in os.listdir(self.project_config_path):
+                    preset_path = os.path.join(self.project_config_path, config_file)
+                    saved_preset_name = self.get_project_preset_name_xml(preset_path)
+                    preset_names.append(saved_preset_name)
+                    preset_paths.append(preset_path)
+
+            if preset_names:
+                if preset_name.split(' (Project)')[0] in preset_names:
+                    return preset_paths # User confirmed deletion.
+                else:
+                    return True # Preset not used by other projects, can be deleted.
+            else:
+                return True # No project presets, can be deleted.
+
+        print('Deleting preset...\n')
+
+        if self.current_preset_menu_pushbutton.text():
+            preset_name = self.current_preset_menu_pushbutton.text() # Get current preset from push button
+            preset_path = os.path.join(self.preset_path, preset_name + '.xml') # Get path to preset xml file
+
+            project_files = check_project_files()
+
+            # If selected preset is not the default preset, confirm deletion, check to see if other projects are using preset, then delete preset, otherwise return.
+            if not preset_name.endswith(self.default_preset_extension) and not preset_name.endswith(self.project_preset_extension):
+                if self.warning_message(message=f'Delete preset: {preset_name}'):
+                    # Check all project config files for current preset before deleting.
+                    if project_files:
+                        os.remove(preset_path)
+                        self.update_ui() # Update UI with new default preset
+                        self.message_print(message=f'Preset deleted: {preset_name}')
+                        self.save_config()
+                    else:
+                        return
+                else:
+                    return
+
+            # If selected preset is the default preset, confirm that the user wants to delete it.
+            elif preset_name.endswith(self.default_preset_extension):
+                confirm_delete = self.warning_message(message=f'Selected preset is currently the default preset.<br><br>Deleting this preset will set the default preset to the first saved preset in the preset list.<br><br>Are you sure you want to delete this preset?')
+                if not confirm_delete:
+                    return
+
+            # If selected preset it the project preset, confirm that the user wants to delete it.
+            elif preset_name.endswith(self.project_preset_extension):
+                confirm_delete = self.warning_message(message=f'Selected preset is currently the project preset for one or more projects.<br><br>Deleting this preset will set all those projects to the default preset.<br><br>Are you sure you want to delete this preset?')
+                if not confirm_delete:
+                    return
+
+            # If user confirmed deletion, check all project config files for current preset before deleting.
+            if confirm_delete:
+                if project_files:
+                    # If confirmed, delete preset
+                    preset_path = os.path.join(self.preset_path, preset_name + '.xml')
+                    os.remove(os.path.join(self.preset_path, self.get_current_preset_button_name() + '.xml'))
+
+                    # Set new default preset to first preset in preset list if it exists, otherwise set to empty string
+                    if os.listdir(self.preset_path):
+                        new_preset = self.get_preset_list()[0]
+                    else:
+                        new_preset = ''
+
+                    # Delete all project presets using preset being deleted
+                    if isinstance(project_files, list):
+                        for path in project_files:
+                            os.remove(path)
+
+                    # Update UI and config file with new default preset
+                    self.update_default_preset(new_preset) # Update preset name
+                    self.update_ui() # Update UI with new default preset
+                    self.message_print(message=f'Preset deleted: {preset_name}')
+                    return
+        else:
+            print('No preset selected to delete.\n')
+
+    # ---------------------------------------- #
+    # Button Helper Functions
+    # ---------------------------------------- #
+
+    def create_or_edit_preset(self, preset_path: str=None, preset_config: PyFlameConfig=None) -> None:
+        """
+        Creates a new preset or edits an existing one.
+
+        This function handles the creation of a new preset or the modification of an existing one.
+        It hides the preset window during the modification process, then loads the setup window
+        to allow users to modify preset settings. After the modification is complete, it updates
+        the UI and returns the name of the modified or newly created preset.
+
+        Args:
+            preset_path (str, optional): The path to the existing preset XML file. If provided, the function
+                will edit the preset located at this path. Defaults to None.
+            preset_config (PyFlameConfig, optional): An instance of PyFlameConfig representing the existing preset
+                configuration. Defaults to None.
+
+        Returns:
+            str or None: The name of the modified or newly created preset, if successful. Returns None if the
+            preset modification or creation process is canceled.
+
+        Raises:
+            TypeError: If the type of new_preset.settings is not a dictionary.
+
+        Example:
+            Creating a new preset:
+                new_preset_name = self.create_or_edit_preset()
+
+            Editing an existing preset:
+                edited_preset_name = self.create_or_edit_preset(preset_path='/path/to/preset.xml', preset_config=preset_config)
+        """
+
+        # Hide preset window while creating new preset
+        self.preset_window.hide()
+
+        # Load Setup window passing preset_config to load preset values.
+        new_preset = self.setup_script(settings=preset_config)
+
+        # Restore preset window after creating new preset
+        self.preset_window.show()
+
+        # If preset name is changed during edit, update all project presets using preset with new preset name
+        if new_preset.settings:
+            # Check to make sure new_preset.settings is returning a dictionary
+            if not isinstance(new_preset.settings, dict):
+                raise TypeError(f'PyFlamePresetManager: Invalid new_preset.settings type: {new_preset.settings}. new_preset must be of type dict.')
+
+            # Remove old preset file if replacing preset
+            if preset_path:
+                os.remove(preset_path)
+
+            # Get preset_name value from new_preset.settings dictionary
+            new_preset_name = new_preset.settings['preset_name']
+
+            new_default_preset_name = ''
+
+            # If preset list is empty, set new preset as default preset
+            if not self.get_preset_list() or new_preset_name == self.settings.default_preset:
+                self.update_default_preset(new_preset_name)
+                new_default_preset_name += self.default_preset_extension
+
+            # Save new preset to file
+            PyFlameConfig(
+                script_name=self.script_name,
+                script_path=self.script_path,
+                config_values=new_preset.settings,
+                config_xml_path=os.path.join(os.path.join(self.script_path, 'config', 'presets'), new_preset_name + '.xml')
+                )
+
+            # Update UI with new preset name
+            self.update_ui()
+
+            if new_default_preset_name:
+                self.current_preset_menu_pushbutton.setText(new_preset_name + new_default_preset_name)
+            else:
+                self.current_preset_menu_pushbutton.setText(new_preset_name)
+
+            return new_preset_name
+
+        else:
+            return None
+
+    def create_project_preset_xml(self, preset_name: str, preset_path: str) -> None:
+        """
+        Creates a new project preset XML file with the specified preset name.
+
+        Args:
+            preset_name (str): The name of the preset.
+            preset_path (str): The path to the project preset XML file.
+        """
+
+        # Create project preset
+        preset_xml = f"""
+<settings>
+    <{self.preset_settings_name}>
+        <preset_name></preset_name>
+    </{self.preset_settings_name}>
+</settings>"""
+
+        # Create new preset file
+        with open(preset_path, 'a') as xml_file:
+            xml_file.write(preset_xml)
+
+        # Update and save new preset file with current preset name
+        self.preset_xml_save_preset_name(preset_path, preset_name)
+
+    def update_project_presets(self, old_preset_name: str, new_preset_name: str):
+        """
+        This function iterates through all project presets in the project config path. If it finds a project preset with the old preset name,
+        it updates the project preset to use the new preset name.
+
+        Args:
+            old_preset_name (str): The name of the preset to be replaced.
+            new_preset_name (str): The new name of the preset.
+        """
+
+        for project_preset_xml in os.listdir(self.project_config_path):
+            project_preset_xml_path = os.path.join(self.project_config_path, project_preset_xml)
+            project_preset_name = self.get_project_preset_name_xml(project_preset_xml_path)
+            if project_preset_name == old_preset_name:
+                self.preset_xml_save_preset_name(project_preset_xml_path, new_preset_name)
+
+        pyflame.message_print(
+            message=f'Updated project presets to new preset name: {new_preset_name}',
+            script_name=self.script_name,
+            )
+
+    def get_project_preset_name_xml(self, project_preset_path: str) -> str:
+        """
+        Get name of preset from project preset xml
+
+        Args:
+            project_preset_path (str): Path to project preset xml file.
+        """
+
+        # Load settings from project file
+        xml_tree = ET.parse(project_preset_path)
+        root = xml_tree.getroot()
+
+        # Assign values from config file to variables
+        for setting in root.iter(self.preset_settings_name):
+            preset_name = setting.find('preset_name').text
+
+        return preset_name
+
+    def get_preset_list(self) -> List[str]:
+        """
+        Builds list of presets from preset folder.
+        Adds (Default) to the end of the default preset name.
+        Sorts list alphabetically.
+
+        Returns:
+            preset_list (List[str]): List of preset names.
+        """
+
+        try:
+            presets = [file[:-4] for file in os.listdir(self.preset_path)]
+            if self.settings.default_preset in presets:
+                default_index = presets.index(self.settings.default_preset)
+                presets[default_index] += self.default_preset_extension
+        except Exception as e:
+            print(f"Error listing presets: {e}")
+            return []
+        else:
+            presets.sort()
+            return presets
+
+    def update_ui(self) -> None:
+        """
+        Updates Preset Manager UI based on the current preset settings.
+
+        This function updates UI elements such as the Current Project Preset field, Current Preset button, and Preset list
+        based on the current preset settings. It checks if a project preset exists for the current project. If a project preset
+        exists, it uses that preset. If no project preset exists, it uses the default preset. If no default preset exists, it
+        uses the first preset in the list of available presets. If no presets exist, the Current Project Preset field will
+        display 'No saved presets found.'
+        """
+
+        def get_project_preset_name() -> str:
+            """
+            Checks for an existing project preset and returns its name.
+
+            Returns:
+                str: The name of the project preset if found, else None.
+            """
+
+            # Check for existing project preset in project preset folder
+            try:
+                project_preset = [f[:-4] for f in os.listdir(self.project_config_path) if f[:-4] == self.flame_prj_name][0]
+            except:
+                project_preset = False
+
+            # If project preset is found, get preset name from project preset file. Else return None.
+            if project_preset:
+                project_preset_path = os.path.join(self.project_config_path, project_preset + '.xml')
+                preset_name = self.get_project_preset_name_xml(project_preset_path) # Get preset name from project preset xml file
+                preset_path = os.path.join(self.preset_path, preset_name + '.xml')
+
+                # If preset exists, return preset name adding (Default) if preset is default preset.
+                # Else preset does not exist, delete project preset xml and return None.
+                if os.path.isfile(preset_path):
+                    # If preset name is the default preset, add (Default) to the end of the name
+                    if preset_name == self.settings.default_preset:
+                        preset_name = preset_name + self.default_preset_extension
+                    return preset_name
+                else:
+                    os.remove(project_preset_path) # Delete project preset xml file
+                    return None
+            else:
+                return None
+
+        def update_buttons() -> None:
+            """
+            Update which buttons are enabled or disabled based on current preset field.
+            """
+
+            # Get text from current project preset field
+            current_preset = self.current_project_preset_field.text()
+
+            # If 'No saved presets found.' is in current preset field, disable buttons
+            if current_preset == 'No saved presets found.':
+                self.set_as_default_button.setEnabled(False)
+                self.edit_button.setEnabled(False)
+                self.set_project_preset_button.setEnabled(False)
+                self.remove_from_project_button.setEnabled(False)
+                self.delete_button.setEnabled(False)
+                self.duplicate_button.setEnabled(False)
+            else:
+                self.set_as_default_button.setEnabled(True)
+                self.edit_button.setEnabled(True)
+                self.set_project_preset_button.setEnabled(True)
+                self.delete_button.setEnabled(True)
+                self.duplicate_button.setEnabled(True)
+
+            # If ' (Project)' is not in current preset field, disable remove project preset button
+            if not current_preset.endswith(self.project_preset_extension):
+                self.remove_from_project_button.setEnabled(False)
+            else:
+                self.remove_from_project_button.setEnabled(True)
+
+        print('Updating Preset Manager UI....\n')
+
+        # Get list of existing presets
+        existing_presets = self.get_preset_list()
+        #print('EXISTING PRESETS:', existing_presets, '\n')
+
+        # Check for to see if a project preset is set for current project
+        preset = get_project_preset_name()
+        if preset:
+            new_preset_name = preset + self.project_preset_extension
+            #print('NEW PRESET NAME:', new_preset_name, '\n')
+            if new_preset_name.endswith(' (Default) (Project)'):
+                new_preset_name = new_preset_name.replace(' (Default) (Project)', ' (Project)')
+            # Add project preset extension to preset name in existing presets list
+            if preset in existing_presets:
+                existing_presets[existing_presets.index(preset)] = new_preset_name
+            # Add project preset extension to preset name
+            preset = new_preset_name
+            #print('Project Preset:', preset, '\n')
+
+        # If no project preset exists, try using the default preset, else set to first preset in list, if it exists, else set to 'No saved presets found.'
+        else:
+            preset = self.settings.default_preset
+            if os.path.isfile(os.path.join(self.preset_path, preset + '.xml')):
+                preset = preset + self.default_preset_extension
+            else:
+                presets = existing_presets
+                if presets:
+                    preset = presets[0]
+                    self.update_default_preset(preset)
+                else:
+                    preset = 'No saved presets found.'
+        #print('Current Project Preset:', preset, '\n')
+
+        # Update current preset push button and current project preset field
+        self.current_preset_menu_pushbutton.setText(preset)
+        self.current_project_preset_field.setText(preset)
+        self.current_preset_menu_pushbutton.update_menu(preset, existing_presets)
+
+        # Update which buttons are enabled or disabled based on current preset field
+        update_buttons()
+
+        print('Preset Manager UI Updated.\n')
+
+    def get_current_preset_button_name(self) -> str:
+        """
+        Get current preset button text. Remove ' (Default)' or '( Project)' if it exists in name.
+
+        Returns:
+            current_preset (str): Current preset name.
+        """
+
+        # Get current preset name from push button
+        current_preset = self.current_preset_menu_pushbutton.text()
+
+        # Remove ' (Default)' or '( Project)' from preset name if it exists
+        if current_preset.endswith(self.default_preset_extension):
+            current_preset = current_preset[:-10]
+        elif current_preset.endswith(self.project_preset_extension):
+            current_preset = current_preset[:-9]
+        current_preset = current_preset.strip()
+
+        return current_preset
+
+    def update_default_preset(self, new_default_preset: str) -> None:
+        """
+        Update default preset setting and write to config file.
+
+        Args:
+            new_default_preset (str): New default preset name.
+        """
+
+        # Remove ' (Default)' from preset name if it exists
+        if new_default_preset.endswith(self.default_preset_extension):
+            new_default_preset = new_default_preset[:-10]
+        #print('new_default_preset:', new_default_preset, '\n')
+
+        # Update default preset setting
+        self.settings.default_preset = new_default_preset
+
+        # Update config file with new default preset
+        self.save_config()
+
+        print(f'--> Updated default preset to: {new_default_preset}')
+
+    def preset_xml_save_preset_name(self, preset_path: str, preset_name: str) -> None:
+        """
+        Add preset name to project preset xml file.
+
+        Args:
+            preset_path (str): Path to project preset xml file.
+            preset_name (str): Name of preset.
+        """
+
+        xml_tree = ET.parse(preset_path)
+        root = xml_tree.getroot()
+
+        preset = root.find('.//preset_name')
+        preset.text = preset_name
+
+        xml_tree.write(preset_path)
+
+    # ---------------------------------------- #
+    # Public Methods
+    # ---------------------------------------- #
+
+    def load_preset(self) -> PyFlameConfig:
+        """
+        Load preset from preset xml file and return settings.
+
+        Returns:
+            settings: With preset values as attributes.
+        """
+
+        def get_project_preset() -> str:
+            """
+            Check for project preset. If found, return project preset path.
+
+            Returns:
+                project_preset (str): Path to project preset xml file.
+            """
+
+            print('Checking for project preset...')
+
+            try:
+                project_preset_list = [f[:-4] for f in os.listdir(self.project_config_path)]
+            except:
+                project_preset_list = []
+            #print('Project Preset List:', project_preset_list, '\n')
+
+            if self.flame_prj_name in project_preset_list:
+                # Get project preset name from project preset xml file
+                project_preset = os.path.join(self.project_config_path, self.flame_prj_name + '.xml')
+                project_preset_name = self.get_project_preset_name_xml(project_preset)
+                # Get path to preset set as project preset
+                project_preset = os.path.join(self.preset_path, project_preset_name + '.xml')
+                print('Project Preset found:', project_preset)
+            else:
+                project_preset = None
+                print('No Project Preset found.')
+
+            return project_preset
+
+        def get_default_preset() -> str:
+            """
+            Check for default preset. If found, return preset path.
+
+            Returns:
+                default_preset (str): Path to default preset xml file.
+            """
+
+            print('Checking for default preset...')
+
+            # Get list of existing presets
+            existing_presets = self.get_preset_list()
+
+            if self.settings.default_preset:
+                default_preset = os.path.join(self.preset_path, self.settings.default_preset + '.xml')
+                print('Default Preset found:', default_preset, '\n')
+            elif existing_presets:
+                default_preset = os.path.join(self.preset_path, existing_presets[0] + '.xml')
+                print('Default Preset not set, using first preset found:', default_preset, '\n')
+            else:
+                print('No Default Preset found.\n')
+                default_preset = None
+
+            return default_preset
+
+        print('Loading preset...')
+
+        # Check for project preset xml file
+        preset_path = get_project_preset()
+
+        # if no project preset is found, use default preset
+        if not preset_path:
+            preset_path = get_default_preset()
+
+        # if no default preset is found, give message to create new preset in script setup.
+        if not preset_path:
+            #print('No presets found. Open setup window to create new preset.\n')
+
+            self.info_message('No presets found.<br><br>Go to script setup to create new preset.<br><br>Flame Main Menu -> Logik -> Logik Portal Script Setup -> Uber Save Setup')
+
+            return
+
+        settings = PyFlameConfig(
+            script_name=self.script_name,
+            script_path=self.script_path,
+            config_values=PyFlameConfig.get_config_values(xml_path=preset_path),
+            config_xml_path=preset_path
+            )
+
+        return settings
+
+
