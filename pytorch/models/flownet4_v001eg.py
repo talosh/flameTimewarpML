@@ -48,7 +48,7 @@ class Model:
                 self.cnn2 = torch.nn.Conv2d(36, 36, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(36, 8, 4, 2, 1)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
-                self.enocde = torch.nn.Sequental(
+                self.enocde = torch.nn.Sequential(
                     self.cnn0,
                     self.relu,
                     self.cnn1,
@@ -213,15 +213,15 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v001eb',
-            'file': 'flownet4_v001eb.py',
+            'name': 'Flownet4_v001eg',
+            'file': 'flownet4_v001eg.py',
             'ratio_support': True
         }
         return info
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v001eb'
+        return 'TWML_Flownet_v001eg'
 
     @staticmethod
     def input_channels(model_state_dict):
