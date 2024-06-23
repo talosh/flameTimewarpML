@@ -448,6 +448,7 @@ def get_dataset(
                 self.train_descriptions.extend(self.create_dataset_descriptions(folder_path, max_window=self.max_window))
 
             self.initial_train_descriptions = list(self.train_descriptions)
+            print ('')
 
             # print ('\nReshuffling training data indices...')
 
