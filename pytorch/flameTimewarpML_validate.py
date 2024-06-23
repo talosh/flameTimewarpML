@@ -1345,6 +1345,8 @@ def main():
         print (f'epoch: {current_epoch + 1}')
     except Exception as e:
         print (f'unable to set step and epoch: {e}')
+        loaded_step = 1
+        current_epoch = 0
 
     '''
     try:
@@ -1385,7 +1387,7 @@ def main():
         preview_folder,
         'eval',
         os.path.splitext(os.path.basename(trained_model_path))[0],
-        f'Step_{step:09}'
+        f'Step_{loaded_step:09}'
         )
 
     if not os.path.isdir(eval_folder):
