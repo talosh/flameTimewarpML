@@ -1223,7 +1223,7 @@ def main():
     parser.add_argument('--model', type=str, default=None, help='Model name (optional)')
     parser.add_argument('--cpu', action='store_true', default=False, help='CPU only')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
-    parser.add_argument('--save_imgs', type=int, default=0, help='Graphics card index (default: 0)')
+    parser.add_argument('--save_imgs', action='store_true', dest='save_imgs', default=False, help='Save eval result images')
 
     args = parser.parse_args()
 
