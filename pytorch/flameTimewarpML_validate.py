@@ -449,7 +449,7 @@ def get_dataset(
 
             self.initial_train_descriptions = list(self.train_descriptions)
 
-            print ('\nReshuffling training data indices...')
+            # print ('\nReshuffling training data indices...')
 
             self.reshuffle()
 
@@ -462,7 +462,7 @@ def get_dataset(
             self.frame_read_thread.daemon = True
             self.frame_read_thread.start()
 
-            print ('reading first block of training data...')
+            # print ('reading first block of training data...')
             self.last_train_data = [self.frames_queue.get()]
             self.last_train_data_size = 11
             self.new_sample_shown = False
@@ -482,7 +482,7 @@ def get_dataset(
             else:
                 self.device = device
 
-            print (f'ACEScc rate: {self.acescc_rate}%')
+            # print (f'ACEScc rate: {self.acescc_rate}%')
 
         def reshuffle(self):
             random.shuffle(self.train_descriptions)
