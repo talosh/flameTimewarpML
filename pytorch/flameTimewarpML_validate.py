@@ -510,9 +510,6 @@ def get_dataset(
                         directories_with_exr.add(root)
                         break  # No need to check other files in the same directory
 
-            for d in directories_with_exr:
-                print (d)
-
             return directories_with_exr
 
         def scan_dataset_descriptions(self, folders, file_name='dataset_folder.json'):
