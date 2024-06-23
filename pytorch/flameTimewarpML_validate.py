@@ -1410,7 +1410,10 @@ def main():
     eval_loss = []
     eval_psnr = []
     eval_lpips = []
-    
+
+    if args.eval_half:
+        flownet.half()
+
     flownet.eval()
 
     with torch.no_grad():
@@ -1464,6 +1467,10 @@ def main():
                 
                 eval_img0 = torch.nn.functional.pad(eval_img0, padding)
                 eval_img2 = torch.nn.functional.pad(eval_img2, padding)
+
+                if args.eval_half:
+                    eval_img0 = eval_img0.half()
+                    eval_img2 = eval_img2.half()
 
                 eval_flow_list, eval_mask_list, eval_merged = flownet(
                     eval_img0, 

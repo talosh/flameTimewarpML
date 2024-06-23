@@ -1410,6 +1410,7 @@ def main():
     parser.add_argument('--eval_buffer', type=int, dest='eval_buffer', default=8, help='Write buffer size for evaluated images')
     parser.add_argument('--eval_keep_all', action='store_true', dest='eval_keep_all', default=False, help='Keep eval results for each eval step')
     parser.add_argument('--eval_folder', type=str, default=None, help='Folder with clips for evaluation')
+    parser.add_argument('--eval_half', type=str, default=None, help='Evaluate in half-precision')
 
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
@@ -2261,6 +2262,10 @@ def main():
             eval_loss = []
             eval_psnr = []
             eval_lpips = []
+
+            if args.eval_half:
+                original_float_state_dict = deepcopy(flownet.state_dict())
+                flownet.half()
             
             flownet.eval()
             with torch.no_grad():
@@ -2316,12 +2321,20 @@ def main():
                         eval_img0 = torch.nn.functional.pad(eval_img0, padding)
                         eval_img2 = torch.nn.functional.pad(eval_img2, padding)
 
+                        if args.eval_half:
+                            eval_img0 = eval_img0.half()
+                            eval_img2 = eval_img2.half()
+
                         eval_flow_list, eval_mask_list, eval_merged = flownet(
                             eval_img0, 
                             eval_img2, 
                             eval_ratio, 
                             iterations = args.iterations
                             )
+                        
+                        if args.eval_half:
+                            eval_flow_list[3] = eval_flow_list[3].float()
+                            eval_mask_list[3] = eval_mask_list[3].float()
                         
                         eval_result = warp(eval_img0_orig, eval_flow_list[3][:, :2, :eh, :ew]) * eval_mask_list[3][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[3][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[3][:, :, :eh, :ew])
 
@@ -2367,6 +2380,10 @@ def main():
                     except Exception as e:
                         print (f'{e}\n\n')
                     '''
+            if args.eval_half():
+                flownet.float()
+                flownet.load_state_dict(original_float_state_dict)
+
             flownet.train()
 
             eval_rows_to_append = [
