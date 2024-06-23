@@ -393,12 +393,34 @@ def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
                 f.write(channel_data[channel][y].tobytes())
         f.close
 
-def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_window=5, seed=42):
+def get_dataset(
+        data_root, 
+        batch_size = 8, 
+        device = None, 
+        frame_size=448, 
+        max_window=5,
+        acescc_rate = 40,
+        generalize = 80,
+        repeat = 1
+        ):
     class TimewarpMLDataset(torch.utils.data.Dataset):
-        def __init__(self, data_root, batch_size = 8, device = None, frame_size=448, max_window=5, seed = 42):
+        def __init__(   
+                self, 
+                data_root, 
+                batch_size = 4, 
+                device = None, 
+                frame_size=448, 
+                max_window=5,
+                acescc_rate = 40,
+                generalize = 80,
+                repeat = 1
+                ):
+            
             self.data_root = data_root
             self.batch_size = batch_size
             self.max_window = max_window
+            self.acescc_rate = acescc_rate
+            self.generalize = generalize
 
             print (f'scanning for exr files in {self.data_root}...')
             self.folders_with_exr = self.find_folders_with_exr(data_root)
@@ -421,24 +443,33 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
             self.train_descriptions = []
 
             for folder_index, folder_path in enumerate(sorted(self.folders_with_exr)):
-                print (f'\rBuilding training data from clip {folder_index + 1} of {len(self.folders_with_exr)}', end='')
+                print (f'\rReading headers and building training data from clip {folder_index + 1} of {len(self.folders_with_exr)}', end='')
                 self.train_descriptions.extend(self.create_dataset_descriptions(folder_path, max_window=self.max_window))
 
-            self.reshuffle(seed = seed)
+            self.initial_train_descriptions = list(self.train_descriptions)
+
+            print ('\nReshuffling training data indices...')
+
+            self.reshuffle()
 
             self.h = frame_size
             self.w = frame_size
             # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
-            self.frames_queue = queue.Queue(maxsize=12)
+            self.frames_queue = queue.Queue(maxsize=32)
             self.frame_read_thread = threading.Thread(target=self.read_frames_thread)
             self.frame_read_thread.daemon = True
             self.frame_read_thread.start()
 
             print ('reading first block of training data...')
-            self.last_train_data = self.frames_queue.get()
+            self.last_train_data = [self.frames_queue.get()]
+            self.last_train_data_size = 11
+            self.new_sample_shown = False
+            self.train_data_index = 0
 
-            self.repeat_count = 1
+            self.current_batch_data = []
+
+            self.repeat_count = repeat
             self.repeat_counter = 0
 
             # self.last_shuffled_index = -1
@@ -450,9 +481,10 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
             else:
                 self.device = device
 
-        def reshuffle(self, seed=42):
-            print ('\nReshuffling training data indices...')
-            random.Random(seed).shuffle(self.train_descriptions)
+            print (f'ACEScc rate: {self.acescc_rate}%')
+
+        def reshuffle(self):
+            random.shuffle(self.train_descriptions)
 
         def find_folders_with_exr(self, path):
             """
@@ -468,9 +500,9 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
 
             # Walk through all directories and files in the given path
             for root, dirs, files in os.walk(path):
-                if root.endswith('preview'):
+                if 'preview' in root:
                     continue
-                if root.endswith('eval'):
+                if 'eval' in root:
                     continue
                 for file in files:
                     if file.endswith('.exr'):
@@ -527,8 +559,8 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
             elif 'slow' in folder_path:
                 max_window = max_window
             else:
-                if max_window > 4:
-                    max_window = 4
+                if max_window > 5:
+                    max_window = 5
 
             try:
                 first_exr_file_header = read_openexr_file(exr_files[0], header_only = True)
@@ -591,7 +623,8 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
                         train_data['index'] = index
                         self.frames_queue.put(train_data)
                     except Exception as e:
-                        print (e)                
+                        del train_data
+                        print (e)           
                 time.sleep(timeout)
 
         def __len__(self):
@@ -642,25 +675,35 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
             return resized_tensor
 
         def getimg(self, index):
+            # '''
             if not self.last_train_data:
-                self.last_train_data = self.frames_queue.get()
-            '''
-            shuffled_index = self.indices[index // self.frame_multiplier]
-            if shuffled_index != self.last_shuffled_index:
-                self.last_source_image_data, self.last_target_image_data = self.frames_queue.get()
-                self.last_shuffled_index = shuffled_index
-            
-            return self.last_source_image_data, self.last_target_image_data
-            '''
+                new_data = self.frames_queue.get_nowait()
+                self.last_train_data = [new_data]
+                del new_data
             if self.repeat_counter >= self.repeat_count:
                 try:
-                    self.last_train_data = self.frames_queue.get_nowait()
+                    if len(self.last_train_data) == self.last_train_data_size:
+                        self.last_train_data.pop(0)
+                    elif len(self.last_train_data) == self.last_train_data_size:
+                        self.last_train_data = self.last_train_data[:-(self.last_train_data_size - 1)]
+                    new_data = self.frames_queue.get_nowait()
+                    self.train_data_index = new_data['index']
+                    self.last_train_data.append(new_data)
+                    self.new_sample_shown = False
+                    del new_data
                     self.repeat_counter = 0
                 except queue.Empty:
                     pass
 
             self.repeat_counter += 1
-            return self.last_train_data
+            if not self.new_sample_shown:
+                self.new_sample_shown = True
+                return self.last_train_data[-1]
+            # if random.uniform(0, 1) < 0.44:
+            #    return self.last_train_data[-1]
+            else:
+                return self.last_train_data[random.randint(0, len(self.last_train_data) - 1)]
+            # '''
             # return self.frames_queue.get()
 
         def srgb_to_linear(self, srgb_image):
@@ -671,71 +714,85 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
 
             return srgb_image
 
-        def apply_aces_logc(self, linear_image, middle_grey=0.18, min_exposure=-6.5, max_exposure=6.5):
-            """
-            Apply the ACES LogC curve to a linear image.
+        def apply_acescc(self, linear_image):
+            const_neg16 = torch.tensor(2**-16, dtype=linear_image.dtype, device=linear_image.device)
+            const_neg15 = torch.tensor(2**-15, dtype=linear_image.dtype, device=linear_image.device)
+            const_972 = torch.tensor(9.72, dtype=linear_image.dtype, device=linear_image.device)
+            const_1752 = torch.tensor(17.52, dtype=linear_image.dtype, device=linear_image.device)
+            
+            condition = linear_image < 0
+            value_if_true = (torch.log2(const_neg16) + const_972) / const_1752
+            value_if_false = (torch.log2(const_neg16 + linear_image * 0.5) + const_972) / const_1752
+            ACEScc = torch.where(condition, value_if_true, value_if_false)
 
-            Parameters:
-            linear_image (torch.Tensor): The linear image tensor.
-            middle_grey (float): The middle grey value. Default is 0.18.
-            min_exposure (float): The minimum exposure value. Default is -6.5.
-            max_exposure (float): The maximum exposure value. Default is 6.5.
+            condition = linear_image >= const_neg15
+            value_if_true = (torch.log2(linear_image) + const_972) / const_1752
+            ACEScc = torch.where(condition, value_if_true, ACEScc)
 
-            Returns:
-            torch.Tensor: The image with the ACES LogC curve applied.
-            """
-            # Constants for the ACES LogC curve
-            A = (max_exposure - min_exposure) * 0.18 / middle_grey
-            B = min_exposure
-            C = math.log2(middle_grey) / 0.18
-
-            # Apply the ACES LogC curve
-            logc_image = (torch.log2(linear_image * A + B) + C) / (max_exposure - min_exposure)
-
-            return logc_image
+            return ACEScc
 
         def __getitem__(self, index):
             train_data = self.getimg(index)
             # src_img0 = train_data['pre_start']
-            src_img0 = train_data['start']
-            src_img1 = train_data['gt']
-            src_img2 = train_data['end']
+            np_img0 = train_data['start']
+            np_img1 = train_data['gt']
+            np_img2 = train_data['end']
             # src_img4 = train_data['after_end']
             imgh = train_data['h']
             imgw = train_data['w']
             ratio = train_data['ratio']
-            images_idx = train_data['index']
+            images_idx = self.train_data_index
 
             device = self.device
 
-            src_img0 = torch.from_numpy(src_img0.copy())
-            src_img1 = torch.from_numpy(src_img1.copy())
-            src_img2 = torch.from_numpy(src_img2.copy())
-            #src_img3 = torch.from_numpy(src_img3.copy())
-            # src_img4 = torch.from_numpy(src_img4.copy())
+            src_img0 = torch.from_numpy(np_img0.copy())
+            src_img1 = torch.from_numpy(np_img1.copy())
+            src_img2 = torch.from_numpy(np_img2.copy())
+
+            del train_data, np_img0, np_img1, np_img2
+
             src_img0 = src_img0.to(device = device, dtype = torch.float32)
             src_img1 = src_img1.to(device = device, dtype = torch.float32)
             src_img2 = src_img2.to(device = device, dtype = torch.float32)
-            # src_img3 = src_img3.to(device = device, dtype = torch.float32)
-            # src_img4 = src_img4.to(device = device, dtype = torch.float32)
+
+            '''
+            train_sample_data = {}
+
+            train_sample_data['rsz1_img0'] = self.resize_image(src_img0, self.h)
+            train_sample_data['rsz1_img1'] = self.resize_image(src_img1, self.h)
+            train_sample_data['rsz1_img2'] = self.resize_image(src_img2, self.h)
+
+            train_sample_data['rsz2_img0'] = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
+            train_sample_data['rsz2_img1'] = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
+            train_sample_data['rsz2_img2'] = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
+
+            train_sample_data['rsz3_img0'] = self.resize_image(src_img0, int(self.h * (1 + 1/5)))
+            train_sample_data['rsz3_img1'] = self.resize_image(src_img1, int(self.h * (1 + 1/5)))
+            train_sample_data['rsz3_img2'] = self.resize_image(src_img2, int(self.h * (1 + 1/5)))
+
+            train_sample_data['rsz4_img0'] = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
+            train_sample_data['rsz4_img1'] = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
+            train_sample_data['rsz4_img2'] = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
+
+            if len(self.current_batch_data) < self.batch_size:
+                self.current_batch_data = [train_sample_data] * self.batch_size
+            else:
+                old_data = self.current_batch_data.pop(0)
+                del old_data
+                self.current_batch_data.append(train_sample_data)
+            '''
 
             rsz1_img0 = self.resize_image(src_img0, self.h)
             rsz1_img1 = self.resize_image(src_img1, self.h)
             rsz1_img2 = self.resize_image(src_img2, self.h)
-            # rsz1_img3 = self.resize_image(src_img3, self.h)
-            # rsz1_img4 = self.resize_image(src_img4, self.h)
 
             rsz2_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
             rsz2_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
             rsz2_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
-            # rsz2_img3 = self.resize_image(src_img3, int(self.h * (1 + 1/4)))
-            # rsz2_img4 = self.resize_image(src_img4, int(self.h * (1 + 1/4)))
 
             rsz3_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/5)))
             rsz3_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/5)))
             rsz3_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/5)))
-            # rsz3_img3 = self.resize_image(src_img3, int(self.h * (1 + 1/3)))
-            # rsz3_img4 = self.resize_image(src_img4, int(self.h * (1 + 1/3)))
 
             rsz4_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
             rsz4_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
@@ -746,77 +803,133 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
             batch_img2 = []
 
             for index in range(self.batch_size):
-                q = random.uniform(0, 1)
-                if q < 0.25:
+                '''
+                rsz1_img0 = self.current_batch_data[index]['rsz1_img0']
+                rsz1_img1 = self.current_batch_data[index]['rsz1_img1']
+                rsz1_img2 = self.current_batch_data[index]['rsz1_img2']
+
+                rsz2_img0 = self.current_batch_data[index]['rsz2_img0']
+                rsz2_img1 = self.current_batch_data[index]['rsz2_img1']
+                rsz2_img2 = self.current_batch_data[index]['rsz2_img2']
+
+                rsz3_img0 = self.current_batch_data[index]['rsz3_img0']
+                rsz3_img1 = self.current_batch_data[index]['rsz3_img1']
+                rsz3_img2 = self.current_batch_data[index]['rsz3_img2']
+
+                rsz4_img0 = self.current_batch_data[index]['rsz4_img0']
+                rsz4_img1 = self.current_batch_data[index]['rsz4_img1']
+                rsz4_img2 = self.current_batch_data[index]['rsz4_img2']
+                '''
+
+                if self.generalize == 0:
+                    # No augmentaton
                     img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
-                elif q < 0.5:
-                    img0, img1, img2 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, self.h, self.w)
-                elif q < 0.75:
-                    img0, img1, img2 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, self.h, self.w)
+                    img0 = img0.permute(2, 0, 1)
+                    img1 = img1.permute(2, 0, 1)
+                    img2 = img2.permute(2, 0, 1)
+                elif self.generalize == 1:
+                    # Augment only scale and horizontal flip
+                    q = random.uniform(0, 1)
+                    if q < 0.25:
+                        img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
+                    elif q < 0.5:
+                        img0, img1, img2 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, self.h, self.w)
+                    elif q < 0.75:
+                        img0, img1, img2 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, self.h, self.w)
+                    else:
+                        img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
+                    img0 = img0.permute(2, 0, 1)
+                    img1 = img1.permute(2, 0, 1)
+                    img2 = img2.permute(2, 0, 1)
+                    if random.uniform(0, 1) < 0.5:
+                        img0 = img0.flip(-1)
+                        img1 = img1.flip(-1)
+                        img2 = img2.flip(-1)
                 else:
-                    img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
+                    q = random.uniform(0, 1)
+                    if q < 0.25:
+                        img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
+                    elif q < 0.5:
+                        img0, img1, img2 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, self.h, self.w)
+                    elif q < 0.75:
+                        img0, img1, img2 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, self.h, self.w)
+                    else:
+                        img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
 
-                img0 = img0.permute(2, 0, 1)
-                img1 = img1.permute(2, 0, 1)
-                img2 = img2.permute(2, 0, 1)
+                    img0 = img0.permute(2, 0, 1)
+                    img1 = img1.permute(2, 0, 1)
+                    img2 = img2.permute(2, 0, 1)
 
-                p = random.uniform(0, 1)
-                if p < 0.25:
-                    img0 = torch.flip(img0.transpose(1, 2), [2])
-                    img1 = torch.flip(img1.transpose(1, 2), [2])
-                    img2 = torch.flip(img2.transpose(1, 2), [2])
-                elif p < 0.5:
-                    img0 = torch.flip(img0, [1, 2])
-                    img1 = torch.flip(img1, [1, 2])
-                    img2 = torch.flip(img2, [1, 2])
-                elif p < 0.75:
-                    img0 = torch.flip(img0.transpose(1, 2), [1])
-                    img1 = torch.flip(img1.transpose(1, 2), [1])
-                    img2 = torch.flip(img2.transpose(1, 2), [1])
+                    # Horizontal flip (reverse width)
+                    if random.uniform(0, 1) < 0.5:
+                        img0 = img0.flip(-1)
+                        img1 = img1.flip(-1)
+                        img2 = img2.flip(-1)
 
-                # Horizontal flip (reverse width)
-                if random.uniform(0, 1) < 0.5:
-                    img0 = img0.flip(-1)
-                    img1 = img1.flip(-1)
-                    img2 = img2.flip(-1)
+                    # Rotation
+                    if random.uniform(0, 1) < (self.generalize / 100):
+                        p = random.uniform(0, 1)
+                        if p < 0.25:
+                            img0 = torch.flip(img0.transpose(1, 2), [2])
+                            img1 = torch.flip(img1.transpose(1, 2), [2])
+                            img2 = torch.flip(img2.transpose(1, 2), [2])
+                        elif p < 0.5:
+                            img0 = torch.flip(img0, [1, 2])
+                            img1 = torch.flip(img1, [1, 2])
+                            img2 = torch.flip(img2, [1, 2])
+                        elif p < 0.75:
+                            img0 = torch.flip(img0.transpose(1, 2), [1])
+                            img1 = torch.flip(img1.transpose(1, 2), [1])
+                            img2 = torch.flip(img2.transpose(1, 2), [1])
 
-                # Vertical flip (reverse height)
-                if random.uniform(0, 1) < 0.5:
-                    img0 = img0.flip(-2)
-                    img1 = img1.flip(-2)
-                    img2 = img2.flip(-2)
+                    if random.uniform(0, 1) < (self.generalize / 100):
+                        # Vertical flip (reverse height)
+                        if random.uniform(0, 1) < 0.5:
+                            img0 = img0.flip(-2)
+                            img1 = img1.flip(-2)
+                            img2 = img2.flip(-2)
 
-                # Depth-wise flip (reverse channels)
-                if random.uniform(0, 1) < 0.28:
-                    img0 = img0.flip(0)
-                    img1 = img1.flip(0)
-                    img2 = img2.flip(0)
+                    if random.uniform(0, 1) < (self.generalize / 100):
+                        # Depth-wise flip (reverse channels)
+                        if random.uniform(0, 1) < 0.28:
+                            img0 = img0.flip(0)
+                            img1 = img1.flip(0)
+                            img2 = img2.flip(0)
 
-                # Exposure augmentation
-                exp = random.uniform(1 / 8, 2)
-                if random.uniform(0, 1) < 0.4:
-                    img0 = img0 * exp
-                    img1 = img1 * exp
-                    img2 = img2 * exp
-                
-                # add colour banace shift
-                delta = random.uniform(0, 0.69)
-                r = random.uniform(1-delta, 1+delta)
-                g = random.uniform(1-delta, 1+delta)
-                b = random.uniform(1-delta, 1+delta)
-                multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device)
-                img0 = img0 * multipliers
-                img1 = img1 * multipliers
-                img2 = img2 * multipliers
+                    if random.uniform(0, 1) < (self.generalize / 100):
+                        # Exposure augmentation
+                        exp = random.uniform(1 / 8, 2)
+                        if random.uniform(0, 1) < 0.4:
+                            img0 = img0 * exp
+                            img1 = img1 * exp
+                            img2 = img2 * exp
 
-                def gamma_up(img, gamma = 1.18):
-                    return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
+                    if random.uniform(0, 1) < (self.generalize / 100):
+                        # add colour banace shift
+                        delta = random.uniform(0, 0.49)
+                        r = random.uniform(1-delta, 1+delta)
+                        g = random.uniform(1-delta, 1+delta)
+                        b = random.uniform(1-delta, 1+delta)
+                        multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device)
+                        img0 = img0 * multipliers
+                        img1 = img1 * multipliers
+                        img2 = img2 * multipliers
 
-                if random.uniform(0, 1) < 0.44:
-                    gamma = random.uniform(1.01, 1.69)
-                    img0 = gamma_up(img0, gamma=gamma)
-                    img1 = gamma_up(img1, gamma=gamma)
-                    img2 = gamma_up(img2, gamma=gamma)
+                    def gamma_up(img, gamma = 1.18):
+                        return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
+
+                    if random.uniform(0, 1) < (self.generalize / 100):
+                        if random.uniform(0, 1) < 0.44:
+                            gamma = random.uniform(0.9, 1.9)
+                            img0 = gamma_up(img0, gamma=gamma)
+                            img1 = gamma_up(img1, gamma=gamma)
+                            img2 = gamma_up(img2, gamma=gamma)
+
+                # Convert to ACEScc
+                if random.uniform(0, 1) < (self.acescc_rate / 100):
+                    img0 = self.apply_acescc(img0)
+                    img1 = self.apply_acescc(img1)
+                    img2 = self.apply_acescc(img2)
 
                 batch_img0.append(img0)
                 batch_img1.append(img1)
@@ -837,7 +950,9 @@ def get_dataset(data_root, batch_size = 8, device = None, frame_size=448, max_wi
         device=device, 
         frame_size=frame_size, 
         max_window=max_window,
-        seed = seed
+        acescc_rate=acescc_rate,
+        generalize=generalize,
+        repeat=repeat
         )
 
 def normalize(image_array) :
@@ -1032,7 +1147,7 @@ def create_timestamp_uid():
     timestamp = (datetime.now()).strftime('%Y%b%d_%H%M').upper()
     return f'{timestamp}_{uid}'
 
-def find_and_import_model(models_dir='models', base_name=None, model_name=None):
+def find_and_import_model(models_dir='models', base_name=None, model_name=None, model_file=None):
     """
     Dynamically imports the latest version of a model based on the base name,
     or a specific model if the model name/version is given, and returns the Model
@@ -1047,6 +1162,13 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None):
     import os
     import re
     import importlib
+
+    if model_file:
+        module_name = model_file[:-3]  # Remove '.py' from filename to get module name
+        module_path = f"models.{module_name}"
+        module = importlib.import_module(module_path)
+        model_object = getattr(module, 'Model')
+        return model_object
 
     # Resolve the absolute path of the models directory
     models_abs_path = os.path.abspath(
@@ -1069,11 +1191,13 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None):
         filtered_files = [f for f in files if f == f"{model_name}.py"]
     else:
         # Find all versions of the model and select the latest one
-        regex_pattern = fr"{base_name}_v(\d+)\.py"
-        versions = [(f, int(m.group(1))) for f in files if (m := re.match(regex_pattern, f))]
+        # regex_pattern = fr"{base_name}_v(\d+)\.py"
+        # versions = [(f, int(m.group(1))) for f in files if (m := re.match(regex_pattern, f))]
+        versions = [f for f in files if f.endswith('.py')]
         if versions:
             # Sort by version number (second item in tuple) and select the latest one
-            latest_version_file = sorted(versions, key=lambda x: x[1], reverse=True)[0][0]
+            # latest_version_file = sorted(versions, key=lambda x: x[1], reverse=True)[0][0]
+            latest_version_file = sorted(versions, reverse=True)[0]
             filtered_files = [latest_version_file]
 
     # Import the module and return the Model object
@@ -1087,9 +1211,6 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None):
         print(f"Model not found: {base_name or model_name}")
         return None
 
-# def init_weights(m):
-#     if isinstance(m, torch.nn.Linear):
-
 
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
@@ -1100,11 +1221,8 @@ def main():
     # Optional arguments
     parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
     parser.add_argument('--model', type=str, default=None, help='Model name (optional)')
-    parser.add_argument('--legacy_model', type=str, default=None, help='Model name (optional)')
     parser.add_argument('--cpu', action='store_true', default=False, help='CPU only')
-    parser.add_argument('--seed', type=int, dest='seed', default=9, help='Random seed')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
-    parser.add_argument('--eval', type=int, dest='eval', default=999, help='Evaluate after each epoch for N samples')
 
     args = parser.parse_args()
 
@@ -1112,178 +1230,136 @@ def main():
     if args.cpu:
         device = torch.device('cpu')
     
-    # Find and initialize model
-    Flownet = find_and_import_model(base_name='flownet', model_name=args.model)
+    Flownet = None
+
+    if args.model:
+        model_name = args.model
+        Flownet = find_and_import_model(base_name='flownet', model_name=model_name)            
+    else:
+        # Find and initialize model
+        if args.state_file and os.path.isfile(args.state_file):
+            trained_model_path = args.state_file
+            try:
+                checkpoint = torch.load(trained_model_path, map_location=device)
+                print('loaded previously saved model checkpoint')
+            except Exception as e:
+                print (f'unable to load saved model checkpoint: {e}')
+                sys.exit()
+
+            model_info = checkpoint.get('model_info')
+            model_file = model_info.get('file')
+            Flownet = find_and_import_model(model_file=model_file)
+        else:
+            if not args.state_file:
+                print ('prase specify model or model state file')
+                return
+            if not os.path.isfile(args.state_file):
+                print (f'Model state file {args.state_file} does not exist and "--model" flag is not set to start from scratch')
+                return
+
     if Flownet is None:
         print (f'Unable to load model {args.model}')
         return
+    
     model_info = Flownet.get_info()
     print ('Model info:')
     pprint (model_info)
-    max_dataset_window = 9
-    if not model_info.get('ratio_support'):
-        max_dataset_window = 3
-    flownet = Flownet().get_training_model()().to(device)
     
+    flownet = Flownet().get_training_model()().to(device)
+    criterion_l1 = torch.nn.L1Loss()
+
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
-    read_image_queue = queue.Queue(maxsize=12)
-    dataset = get_dataset(
+    eval_dataset = get_dataset(
         args.dataset_path, 
-        batch_size=1, 
+        batch_size=args.batch_size, 
         device=device, 
-        frame_size=256,
-        max_window=max_dataset_window,
-        seed = args.seed
+        frame_size=448,
+        max_window=9,
+        acescc_rate=40,
+        generalize=1,
+        repeat=1
         )
 
-    def read_images(read_image_queue, dataset):
-        while True:
-            for batch_idx in range(len(dataset)):
-                img0, img1, img2, ratio, idx = dataset[batch_idx]
-                read_image_queue.put((img0, img1, img2, ratio, idx))
-
-    def write_images(write_image_queue):
+    def write_eval_images(write_eval_image_queue):
         while True:
             try:
-                write_data = write_image_queue.get_nowait()
-                write_exr(write_data['sample_source1'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'))
-                write_exr(write_data['sample_source2'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_outgoing.exr'))
-                write_exr(write_data['sample_target'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_target.exr'))
-                write_exr(write_data['sample_output'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_output.exr'))
-                write_exr(write_data['sample_output_mask'], os.path.join(write_data['preview_folder'], f'{preview_index:02}_output_mask.exr'))
+                write_data = write_eval_image_queue.get_nowait()
+                write_exr(write_data['sample_source1'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_source1_name']), half_float = True)
+                write_exr(write_data['sample_source2'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_source2_name']), half_float = True)
+                write_exr(write_data['sample_target'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_target_name']), half_float = True)
+                write_exr(write_data['sample_output'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_output_name']), half_float = True)
+                write_exr(write_data['sample_output_mask'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_output_mask_name']), half_float = True)
+                del write_data
             except:
             # except queue.Empty:
-                time.sleep(0.1)
+                time.sleep(1e-2)
 
-    read_thread = threading.Thread(target=read_images, args=(read_image_queue, dataset))
-    read_thread.daemon = True
-    read_thread.start()
-
-    write_image_queue = queue.Queue(maxsize=96)
-    write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
-    write_thread.daemon = True
-    write_thread.start()
-
-    step = 0
-    loaded_step = 0
-    current_epoch = 0
-    preview_index = 0
+    write_eval_image_queue = queue.Queue(maxsize=args.eval_buffer)
+    write_eval_thread = threading.Thread(target=write_eval_images, args=(write_eval_image_queue, ))
+    write_eval_thread.daemon = True
+    write_eval_thread.start()
 
     steps_loss = []
     epoch_loss = []
     psnr_list = []
+    lpips_list = []
 
-    if args.state_file:
-        trained_model_path = args.state_file
+    trained_model_path = args.state_file
 
-        try:
-            checkpoint = torch.load(trained_model_path, map_location=device)
-            print('loaded previously saved model checkpoint')
-        except Exception as e:
-            print (f'unable to load saved model: {e}')
+    try:
+        checkpoint = torch.load(trained_model_path, map_location=device)
+        print('loaded previously saved model checkpoint')
+    except Exception as e:
+        print (f'unable to load saved model: {e}')
 
-        '''
-        flownet_weights = {}
-        contextnet_weights = {}
-        fusion_weights = {}
-        for key in checkpoint['flownet_state_dict'].keys():
-            if 'flownet.' in key:
-                flownet_weights[key.replace('flownet.', '')] = checkpoint['flownet_state_dict'][key].to(device='mps')
-            if 'contextnet.' in key:
-                contextnet_weights[key.replace('contextnet.', '')] = checkpoint['flownet_state_dict'][key].to(device='cpu')
-            if 'fusionnet.' in key:
-                fusion_weights[key.replace('fusionnet.', '')] = checkpoint['flownet_state_dict'][key].to(device='cpu')
-
-        flownet.flownet.to(device='mps')
-        flownet.contextnet.to(device='cpu')
-        flownet.fusionnet.to(device='cpu')
-
-        flownet.flownet.load_state_dict(flownet_weights)
-        flownet.contextnet.load_state_dict(contextnet_weights)
-        flownet.fusionnet.load_state_dict(fusion_weights)
-        '''
-
-        # '''
-        try:
-            flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
-            print('loaded previously saved Flownet state')
-        except Exception as e:
-            print (f'unable to load Flownet state: {e}')
-        # '''
-
-        try:
-            loaded_step = checkpoint['step']
-            print (f'loaded step: {loaded_step}')
-            current_epoch = checkpoint['epoch']
-            print (f'epoch: {current_epoch + 1}')
-        except Exception as e:
-            print (f'unable to set step and epoch: {e}')
-        try:
-            steps_loss = checkpoint['steps_loss']
-            print (f'loaded loss statistics for step: {step}')
-            epoch_loss = checkpoint['epoch_loss']
-            print (f'loaded loss statistics for epoch: {current_epoch + 1}')
-        except Exception as e:
-            print (f'unable to load step and epoch loss statistics: {e}')
-
-    else:
-        traned_model_name = 'flameTWML_model_' + create_timestamp_uid() + '.pth'
-        if platform.system() == 'Darwin':
-            trained_model_dir = os.path.join(
-                os.path.expanduser('~'),
-                'Documents',
-                'flameTWML_models')
-        else:
-            trained_model_dir = os.path.join(
-                os.path.expanduser('~'),
-                'flameTWML_models')
-        if not os.path.isdir(trained_model_dir):
-            os.makedirs(trained_model_dir)
-        trained_model_path = os.path.join(trained_model_dir, traned_model_name)
-
-    if args.legacy_model:
-        '''
-        try:
-            Flownet().load_model(args.legacy_model, flownet)
-            print (f'loaded legacy model state: {args.legacy_model}')
-        except Exception as e:
-            print (f'unable to load legacy model: {e}')
-        '''
-        rife_state_dict = torch.load(args.legacy_model)
-        def convert(param):
-            return {
-                k.replace("module.", ""): v
-                for k, v in param.items()
-                if "module." in k
-            }
-        flownet.load_state_dict(convert(rife_state_dict))
-
+    try:
+        missing_keys, unexpected_keys = flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
+        print('loaded previously saved Flownet state')
+        if missing_keys:
+            print (f'\nMissing keys:\n{missing_keys}\n')
+        if unexpected_keys:
+            print (f'\nUnexpected keys:\n{unexpected_keys}\n')
+    except Exception as e:
+        print (f'unable to load Flownet state: {e}')
 
     '''
-    default_rife_model_path = os.path.join(
-        os.path.abspath(os.path.dirname(__file__)),
-        'models_data',
-        'flownet_v412.pkl'
-    )
-    rife_state_dict = torch.load(default_rife_model_path)
-    def convert(param):
-        return {
-            k.replace("module.", ""): v
-            for k, v in param.items()
-            if "module." in k
-        }
-    model_rife.load_state_dict(convert(rife_state_dict))
+    try:
+        model_D.load_state_dict(checkpoint['model_d_state_dict'], strict=False)
+        print('loaded previously saved Determinator state')
+    except Exception as e:
+        print (f'unable to load Determinator state: {e}')
+    '''
+
+    try:
+        loaded_step = checkpoint['step']
+        print (f'loaded step: {loaded_step}')
+        current_epoch = checkpoint['epoch']
+        print (f'epoch: {current_epoch + 1}')
+    except Exception as e:
+        print (f'unable to set step and epoch: {e}')
+
+    '''
+    try:
+        steps_loss = checkpoint['steps_loss']
+        print (f'loaded loss statistics for step: {step}')
+        epoch_loss = checkpoint['epoch_loss']
+        print (f'loaded loss statistics for epoch: {current_epoch + 1}')
+    except Exception as e:
+        print (f'unable to load step and epoch loss statistics: {e}')
     '''
 
     # LPIPS Init
+
     import warnings
     warnings.filterwarnings('ignore', category=UserWarning)
+
     import lpips
     os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
     loss_fn_alex = lpips.LPIPS(net='alex')
     loss_fn_alex.to(device)
+    warnings.resetwarnings()
 
     start_timestamp = time.time()
     print('\n\n')
@@ -1293,85 +1369,129 @@ def main():
     validate_loss_list = []
     lpips_list = []
 
-    args.eval = args.eval if args.eval < len(dataset) else len(dataset)
-
-    criterion_l1 = torch.nn.L1Loss()
+    preview_folder = os.path.join(args.dataset_path, 'preview')
 
     try:
-        for ev_item_index in range(args.eval):
+        prev_eval_folder
+    except:
+        prev_eval_folder = None
+    eval_folder = os.path.join(
+        preview_folder,
+        'eval',
+        os.path.splitext(os.path.basename(trained_model_path))[0],
+        f'Step_{step:09}'
+        )
+
+    if not os.path.isdir(eval_folder):
+        os.makedirs(eval_folder)
+    
+    descriptions = list(eval_dataset.initial_train_descriptions)
+
+    '''
+    if args.eval_samples > 0:
+        rng = random.Random(args.eval_seed)
+        descriptions = rng.sample(descriptions, args.eval_samples)
+    '''
+
+        # for ev_item_index, description in enumerate(descriptions):
+        #    print (os.path.dirname(description['start']))
+        # sys.exit()
+
+
+    eval_loss = []
+    eval_psnr = []
+    eval_lpips = []
+    
+    flownet.eval()
+
+    with torch.no_grad():
+        for ev_item_index, description in enumerate(descriptions):
+            
+            if eval_loss:
+                eval_loss_min = min(eval_loss)
+                eval_loss_max = max(eval_loss)
+                eval_loss_avg = float(np.array(eval_loss).mean())
+            else:
+                eval_loss_min = -1
+                eval_loss_max = -1
+                eval_loss_avg = -1
+            if eval_psnr:
+                eval_psnr_mean = float(np.array(eval_psnr).mean())
+            else:
+                eval_psnr_mean = -1
+            if eval_lpips:
+                eval_lpips_mean = float(np.array(eval_lpips).mean())
+            else:
+                eval_lpips_mean = -1
+
             clear_lines(1)
-            print (f'\rTimewarping full-scale image {ev_item_index} of {args.eval}...')
-
-            ev_item = dataset.frames_queue.get()
-            ev_img0 = ev_item['start']
-            ev_img1 = ev_item['gt']
-            ev_img2 = ev_item['end']
-            ev_ratio = ev_item['ratio']
-
-            ev_img0 = torch.from_numpy(ev_img0.copy())
-            ev_img1 = torch.from_numpy(ev_img1.copy())
-            ev_img2 = torch.from_numpy(ev_img2.copy())
-            ev_img0 = ev_img0.to(device = device, dtype = torch.float32)
-            ev_img1 = ev_img1.to(device = device, dtype = torch.float32)
-            ev_img2 = ev_img2.to(device = device, dtype = torch.float32)
-            ev_img0 = ev_img0.permute(2, 0, 1).unsqueeze(0)
-            ev_img1 = ev_img1.permute(2, 0, 1).unsqueeze(0)
-            ev_img2 = ev_img2.permute(2, 0, 1).unsqueeze(0)
-            evn_img0 = normalize(ev_img0)
-            evn_img1 = normalize(ev_img1)
-            evn_img2 = normalize(ev_img2)
-
-            n, c, h, w = evn_img1.shape
-            
-            ph = ((h - 1) // 64 + 1) * 64
-            pw = ((w - 1) // 64 + 1) * 64
-            padding = (0, pw - w, 0, ph - h)
-            evp_img0 = torch.nn.functional.pad(evn_img0, padding)
-            evp_img1 = torch.nn.functional.pad(evn_img1, padding)
-            evp_img2 = torch.nn.functional.pad(evn_img2, padding)
-            
-            evp_orig_img1 = torch.nn.functional.pad(ev_img1, padding)
-
-            with torch.no_grad():
-                flownet.eval()
-                _, _, merged = flownet(evp_img0, evp_img1, evp_img2, None, None, ev_ratio)
-                evp_output = merged[3]
-                psnr_list.append(float(psnr_torch(evp_output, evp_img1)))
-
-            preview_folder = os.path.join(args.dataset_path, 'preview')
-            eval_folder = os.path.join(preview_folder, 'eval')
-            if not os.path.isdir(eval_folder):
-                try:
-                    os.makedirs(eval_folder)
-                except Exception as e:
-                    print (e)
-
-            evp_output = restore_normalized_values(evp_output)
-            ev_output = evp_output[0].permute(1, 2, 0)[:h, :w]
-            target = ev_img1[0].permute(1, 2, 0)[:h, :w]
-            loss_l1 = criterion_l1(ev_output, target)
-            validate_loss_list.append(float(loss_l1.item()))
-
-            loss_LPIPS_ = loss_fn_alex(
-                ev_output.permute(2, 0, 1).unsqueeze(0) * 2 - 1, 
-                target.permute(2, 0, 1).unsqueeze(0) * 2 - 1
-                )
-            lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
+            print (f'\rEvaluating {ev_item_index} of {len(descriptions)}: Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f} LPIPS: {eval_lpips_mean:.4f} PSNR: {eval_psnr_mean:4f}')
 
             try:
-                write_exr(ev_img0[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_incomng.exr'))
-                write_exr(ev_img2[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_outgoing.exr'))
-                write_exr(ev_img1[0].permute(1, 2, 0)[:h, :w].clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_target.exr'))
-                # write_exr(ev_output_inflow.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
-                write_exr(ev_output.clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:04}_output.exr'))
+                eval_img0 = read_openexr_file(description['start'])['image_data']
+                eval_img1 = read_openexr_file(description['gt'])['image_data']
+                eval_img2 = read_openexr_file(description['end'])['image_data']
+                eval_ratio = description['ratio']
+
+                eval_img0 = torch.from_numpy(eval_img0)
+                eval_img1 = torch.from_numpy(eval_img1)
+                eval_img2 = torch.from_numpy(eval_img2)
+                eval_img0 = eval_img0.to(device = device, dtype = torch.float32, non_blocking = True)
+                eval_img1 = eval_img1.to(device = device, dtype = torch.float32, non_blocking = True)
+                eval_img2 = eval_img2.to(device = device, dtype = torch.float32, non_blocking = True)
+                eval_img0 = eval_img0.permute(2, 0, 1).unsqueeze(0)
+                eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
+                eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
+
+                eval_img0_orig = eval_img0.clone()
+                eval_img2_orig = eval_img2.clone()
+                eval_img0 = normalize(eval_img0)
+                eval_img2 = normalize(eval_img2)
+
+                n, c, eh, ew = eval_img0.shape
+                ph = ((eh - 1) // 64 + 1) * 64
+                pw = ((ew - 1) // 64 + 1) * 64
+                padding = (0, pw - ew, 0, ph - eh)
+                
+                eval_img0 = torch.nn.functional.pad(eval_img0, padding)
+                eval_img2 = torch.nn.functional.pad(eval_img2, padding)
+
+                eval_flow_list, eval_mask_list, eval_merged = flownet(
+                    eval_img0, 
+                    eval_img2, 
+                    eval_ratio, 
+                    iterations = args.iterations
+                    )
+                
+                eval_result = warp(eval_img0_orig, eval_flow_list[3][:, :2, :eh, :ew]) * eval_mask_list[3][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[3][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[3][:, :, :eh, :ew])
+
+                eval_loss_l1 = criterion_l1(eval_result, eval_img1)
+                eval_loss.append(float(eval_loss_l1.item()))
+                eval_psnr.append(float(psnr_torch(eval_result, eval_img1)))
+                eval_loss_LPIPS_ = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
+                eval_lpips.append(float(torch.mean(eval_loss_LPIPS_).item()))
+
+                eval_rgb_output_mask = eval_mask_list[3][:, :, :eh, :ew].repeat_interleave(3, dim=1)
+
+                # '''
+                write_eval_image_queue.put(
+                    {
+                        'preview_folder': eval_folder,
+                        'sample_source1': eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                        'sample_source1_name': f'{ev_item_index:08}_incomng.exr',
+                        'sample_source2': eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                        'sample_source2_name': f'{ev_item_index:08}_outgoing.exr',
+                        'sample_target': eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                        'sample_target_name': f'{ev_item_index:08}_target.exr',
+                        'sample_output': eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                        'sample_output_name': f'{ev_item_index:08}_output.exr',
+                        'sample_output_mask': eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                        'sample_output_mask_name': f'{ev_item_index:08}_output_mask.exr'
+                    }
+                )
+
             except Exception as e:
-                print (f'{e}\n\n')
-
-            # del ev_item, ev_img0, ev_img1, ev_img2, ev_ratio, evn_img0, evn_img1, evn_img2, evp_img0, evp_img1, evp_img2
-            del _, merged, evp_output, target
-
-    except Exception as e:
-        print (f'{e}\n\n')
+                pprint (f'\nerror while evaluating: {e}\n{description}\n\n')
    
     psnr = float(np.array(psnr_list).mean())
     smoothed_loss = float(np.mean(moving_average(validate_loss_list, 9)))
@@ -1383,7 +1503,7 @@ def main():
     minutes = int((epoch_time % 3600) // 60)
 
     clear_lines(2)
-    print(f'\rTime: {epoch_time:.2f}, Min: {min(validate_loss_list):.6f} Avg: {smoothed_loss:.6f}, Max: {max(validate_loss_list):.6f}, [PNSR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
+    print(f'\rTime: {epoch_time:.2f}, Min: {min(eval_loss_min):.6f} Avg: {eval_loss_avg:.6f}, Max: {max(eval_loss_max):.6f}, [PNSR] {eval_psnr_mean:.4f}, [LPIPS] {eval_lpips_mean:.4f}')
     print ('\n')
 
 if __name__ == "__main__":
