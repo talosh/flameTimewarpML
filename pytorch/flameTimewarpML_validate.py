@@ -1227,6 +1227,7 @@ def main():
     parser.add_argument('--save_imgs', action='store_true', dest='save_imgs', default=False, help='Save eval result images')
 
     parser.add_argument('--eval_buffer', type=int, dest='eval_buffer', default=8, help='Write buffer size for evaluated images')
+    parser.add_argument('--iterations', type=int, default=1, help='Process each flow refinement N times (default: 1)')
 
     args = parser.parse_args()
 
