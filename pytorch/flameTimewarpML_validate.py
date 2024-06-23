@@ -1426,9 +1426,11 @@ def main():
         #    print (os.path.dirname(description['start']))
         # sys.exit()
 
-    if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.Step_{loaded_step}.eval.csv'):
+    csv_file_name = f'{os.path.splitext(trained_model_path)[0]}.Set_{os.path.basename(args.dataset_path)}.Step_{loaded_step}.eval.csv'
+
+    if not os.path.isfile(csv_file_name):
         create_csv_file(
-            f'{os.path.splitext(trained_model_path)[0]}.Step_{loaded_step}.validate.csv',
+            csv_file_name,
             [
                 'Incoming',
                 'Outgoing',
@@ -1538,7 +1540,7 @@ def main():
                 ]
 
                 for eval_row in eval_rows_to_append:
-                    append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.Step_{loaded_step}.validate.csv', eval_row)
+                    append_row_to_csv(csv_file_name, eval_row)
 
                 eval_loss.append(float(eval_loss_l1.item()))
                 eval_psnr.append(float(psnr_torch(eval_result, eval_img1)))
@@ -1581,7 +1583,7 @@ def main():
     ]
 
     for eval_row in eval_rows_to_append:
-        append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.Step_{loaded_step}.validate.csv', eval_row)
+        append_row_to_csv(csv_file_name, eval_row)
 
     psnr = float(np.array(psnr_list).mean())
     smoothed_loss = float(np.mean(moving_average(validate_loss_list, 9)))
