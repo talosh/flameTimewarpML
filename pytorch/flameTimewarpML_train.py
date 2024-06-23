@@ -1410,7 +1410,7 @@ def main():
     parser.add_argument('--eval_buffer', type=int, dest='eval_buffer', default=8, help='Write buffer size for evaluated images')
     parser.add_argument('--eval_keep_all', action='store_true', dest='eval_keep_all', default=False, help='Keep eval results for each eval step')
     parser.add_argument('--eval_folder', type=str, default=None, help='Folder with clips for evaluation')
-    parser.add_argument('--eval_half', type=str, default=None, help='Evaluate in half-precision')
+    parser.add_argument('--eval_half', action='store_true', dest='eval_half', default=False, help='Evaluate in half-precision')
 
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')

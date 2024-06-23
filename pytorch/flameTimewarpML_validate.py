@@ -1227,6 +1227,8 @@ def main():
     parser.add_argument('--save_imgs', action='store_true', dest='save_imgs', default=False, help='Save eval result images')
 
     parser.add_argument('--eval_buffer', type=int, dest='eval_buffer', default=8, help='Write buffer size for evaluated images')
+    parser.add_argument('--eval_half', action='store_true', dest='eval_half', default=False, help='Evaluate in half-precision')
+
     parser.add_argument('--iterations', type=int, default=1, help='Process each flow refinement N times (default: 1)')
 
     args = parser.parse_args()
@@ -1478,6 +1480,10 @@ def main():
                     eval_ratio, 
                     iterations = args.iterations
                     )
+
+                if args.eval_half:
+                    eval_flow_list[3] = eval_flow_list[3].float()
+                    eval_mask_list[3] = eval_mask_list[3].float()
                 
                 eval_result = warp(eval_img0_orig, eval_flow_list[3][:, :2, :eh, :ew]) * eval_mask_list[3][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[3][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[3][:, :, :eh, :ew])
 
