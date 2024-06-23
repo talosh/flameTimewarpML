@@ -1426,11 +1426,9 @@ def main():
         #    print (os.path.dirname(description['start']))
         # sys.exit()
 
-    print (f'full: {args.dataset_path}')
-    print (f'basename: {os.path.basename(os.path.normpath(args.dataset_path))}')
-    print ('\n\n')
 
-    csv_file_name = f'{os.path.splitext(trained_model_path)[0]}.Set_{os.path.basename(args.dataset_path)}.Step_{loaded_step}.eval.csv'
+    dataset_basename = f'{os.path.basename(os.path.normpath(args.dataset_path))}'
+    csv_file_name = f'{os.path.splitext(trained_model_path)[0]}.Set_{dataset_basename}.Step_{loaded_step}.eval.csv'
 
     if not os.path.isfile(csv_file_name):
         create_csv_file(
