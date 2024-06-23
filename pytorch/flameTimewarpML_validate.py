@@ -1223,6 +1223,7 @@ def main():
     parser.add_argument('--model', type=str, default=None, help='Model name (optional)')
     parser.add_argument('--cpu', action='store_true', default=False, help='CPU only')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
+    parser.add_argument('--save_imgs', type=int, default=0, help='Graphics card index (default: 0)')
 
     args = parser.parse_args()
 
@@ -1473,22 +1474,22 @@ def main():
 
                 eval_rgb_output_mask = eval_mask_list[3][:, :, :eh, :ew].repeat_interleave(3, dim=1)
 
-                # '''
-                write_eval_image_queue.put(
-                    {
-                        'preview_folder': eval_folder,
-                        'sample_source1': eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                        'sample_source1_name': f'{ev_item_index:08}_incomng.exr',
-                        'sample_source2': eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                        'sample_source2_name': f'{ev_item_index:08}_outgoing.exr',
-                        'sample_target': eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                        'sample_target_name': f'{ev_item_index:08}_target.exr',
-                        'sample_output': eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                        'sample_output_name': f'{ev_item_index:08}_output.exr',
-                        'sample_output_mask': eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                        'sample_output_mask_name': f'{ev_item_index:08}_output_mask.exr'
-                    }
-                )
+                if args.save_imgs:
+                    write_eval_image_queue.put(
+                        {
+                            'preview_folder': eval_folder,
+                            'sample_source1': eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                            'sample_source1_name': f'{ev_item_index:08}_incomng.exr',
+                            'sample_source2': eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                            'sample_source2_name': f'{ev_item_index:08}_outgoing.exr',
+                            'sample_target': eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                            'sample_target_name': f'{ev_item_index:08}_target.exr',
+                            'sample_output': eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                            'sample_output_name': f'{ev_item_index:08}_output.exr',
+                            'sample_output_mask': eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                            'sample_output_mask_name': f'{ev_item_index:08}_output_mask.exr'
+                        }
+                    )
 
             except Exception as e:
                 pprint (f'\nerror while evaluating: {e}\n{description}\n\n')
