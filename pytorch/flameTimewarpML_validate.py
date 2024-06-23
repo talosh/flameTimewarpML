@@ -1525,10 +1525,10 @@ def main():
 
                 eval_rows_to_append = [
                     {
-                        'Incoming': f'{description['start']}',
-                        'Outgoing': f'{description['end']}',
-                        'GT': f'{description['gt']}',
-                        'Ratio': f'{description['ratio']}',
+                        'Incoming': f'{description["start"]}',
+                        'Outgoing': f'{description["end"]}',
+                        'GT': f'{description["gt"]}',
+                        'Ratio': f'{description["ratio"]}',
                         'Min': float(eval_loss_l1.item()),
                         'Avg': float(eval_loss_l1.item()),
                         'Max': float(eval_loss_l1.item()),
