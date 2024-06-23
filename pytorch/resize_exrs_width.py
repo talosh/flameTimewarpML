@@ -460,8 +460,8 @@ def main():
     parser = argparse.ArgumentParser(description='In-place resize exrs to half-res (WARNING - DESTRUCTIVE!)')
 
     # Required argument
-    parser.add_argument('dataset_path', type=str, help='Path to folders with exrs')
     parser.add_argument('w', type=int, help='New width')
+    parser.add_argument('dataset_path', type=str, help='Path to folders with exrs')
     args = parser.parse_args()
 
     folders_with_exr = find_folders_with_exr(args.dataset_path)
