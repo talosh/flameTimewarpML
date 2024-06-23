@@ -1,0 +1,1 @@
+This folder is neede to put alexnet-owt-7be5be79.pth for LPIPS weights
