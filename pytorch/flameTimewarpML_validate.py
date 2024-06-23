@@ -1272,6 +1272,8 @@ def main():
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
+    print (f'args dataset path: {args.dataset_path}')
+
     eval_dataset = get_dataset(
         args.dataset_path, 
         batch_size=4, 
