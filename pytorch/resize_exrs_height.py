@@ -439,14 +439,14 @@ def resize_image(tensor, new_h, new_w):
 
     return resized_tensor
 
-def halve(exr_file_path, new_w):
+def halve(exr_file_path, new_h):
     device = torch.device('cuda')
     exr_data = read_openexr_file(exr_file_path)
     h = exr_data['shape'][0]
     w = exr_data['shape'][1]
 
-    aspect_ratio = h / w
-    new_h = int(new_w * aspect_ratio)
+    aspect_ratio = w / h
+    new_w = int(new_h * aspect_ratio)
 
     img0 = exr_data['image_data']
     img0 = torch.from_numpy(img0)
@@ -460,7 +460,7 @@ def main():
     parser = argparse.ArgumentParser(description='In-place resize exrs to half-res (WARNING - DESTRUCTIVE!)')
 
     # Required argument
-    parser.add_argument('w', type=int, help='New width')
+    parser.add_argument('h', type=int, help='New height')
     parser.add_argument('dataset_path', type=str, help='Path to folders with exrs')
     args = parser.parse_args()
 
@@ -478,7 +478,7 @@ def main():
         clear_lines(1)
         print (f'\rFile [{idx+1} / {len(exr_files)}], {os.path.basename(exr_file_path)}')
         try:
-            halve(exr_file_path, args.w)
+            halve(exr_file_path, args.h)
         except Exception as e:
             print (f'\n\nError halving {exr_file_path}: {e}')
         idx += 1
