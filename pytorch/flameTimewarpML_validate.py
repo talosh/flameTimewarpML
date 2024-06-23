@@ -1274,7 +1274,7 @@ def main():
 
     eval_dataset = get_dataset(
         args.dataset_path, 
-        batch_size=args.batch_size, 
+        batch_size=4, 
         device=device, 
         frame_size=448,
         max_window=9,
