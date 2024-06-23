@@ -1398,6 +1398,7 @@ def main():
     validate_loss_list = []
     lpips_list = []
 
+    dataset_basename = f'{os.path.basename(os.path.normpath(args.dataset_path))}'
     preview_folder = os.path.join(args.dataset_path, 'preview')
 
     try:
@@ -1408,7 +1409,8 @@ def main():
         preview_folder,
         'eval',
         os.path.splitext(os.path.basename(trained_model_path))[0],
-        f'Step_{loaded_step:09}'
+        f'Step_{loaded_step:09}',
+        dataset_basename
         )
 
     if not os.path.isdir(eval_folder):
@@ -1426,8 +1428,6 @@ def main():
         #    print (os.path.dirname(description['start']))
         # sys.exit()
 
-
-    dataset_basename = f'{os.path.basename(os.path.normpath(args.dataset_path))}'
     csv_file_name = f'{os.path.splitext(trained_model_path)[0]}.Set_{dataset_basename}.Step_{loaded_step}.eval.csv'
 
     if not os.path.isfile(csv_file_name):
