@@ -403,6 +403,7 @@ def get_dataset(
         generalize = 80,
         repeat = 1
         ):
+    
     class TimewarpMLDataset(torch.utils.data.Dataset):
         def __init__(   
                 self, 
@@ -487,6 +488,9 @@ def get_dataset(
             random.shuffle(self.train_descriptions)
 
         def find_folders_with_exr(self, path):
+            
+            print (f'hello from find_folders_with_exr')
+
             """
             Find all folders under the given path that contain .exr files.
 
