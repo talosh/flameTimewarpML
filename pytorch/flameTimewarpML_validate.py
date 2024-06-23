@@ -1213,6 +1213,23 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None, 
         print(f"Model not found: {base_name or model_name}")
         return None
 
+def create_csv_file(file_name, fieldnames):
+    import csv
+    """
+    Creates a CSV file with the specified field names as headers.
+    """
+    with open(file_name, 'w', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+
+def append_row_to_csv(file_name, row):
+    import csv
+    """
+    Appends a single row to an existing CSV file.
+    """
+    with open(file_name, 'a', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=row.keys())
+        writer.writerow(row)
 
 def main():
     parser = argparse.ArgumentParser(description='Training script.')
@@ -1409,6 +1426,21 @@ def main():
         #    print (os.path.dirname(description['start']))
         # sys.exit()
 
+    if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.Step_{loaded_step}.eval.csv'):
+        create_csv_file(
+            f'{os.path.splitext(trained_model_path)[0]}.Step_{loaded_step}.validate.csv',
+            [
+                'Incoming',
+                'Outgoing',
+                'GT',
+                'Ratio',
+                'Min',
+                'Avg',
+                'Max',
+                'PSNR',
+                'LPIPS'
+            ]
+        )
 
     eval_loss = []
     eval_psnr = []
@@ -1489,9 +1521,27 @@ def main():
                 eval_result = warp(eval_img0_orig, eval_flow_list[3][:, :2, :eh, :ew]) * eval_mask_list[3][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[3][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[3][:, :, :eh, :ew])
 
                 eval_loss_l1 = criterion_l1(eval_result, eval_img1)
+                eval_loss_LPIPS_ = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
+
+                eval_rows_to_append = [
+                    {
+                        'Incoming': f'{description['start']}',
+                        'Outgoing': f'{description['end']}',
+                        'GT': f'{description['gt']}',
+                        'Ratio': f'{description['ratio']}',
+                        'Min': float(eval_loss_l1.item()),
+                        'Avg': float(eval_loss_l1.item()),
+                        'Max': float(eval_loss_l1.item()),
+                        'PSNR': float(psnr_torch(eval_result, eval_img1)),
+                        'LPIPS': float(torch.mean(eval_loss_LPIPS_).item())
+                        }
+                ]
+
+                for eval_row in eval_rows_to_append:
+                    append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.Step_{loaded_step}.validate.csv', eval_row)
+
                 eval_loss.append(float(eval_loss_l1.item()))
                 eval_psnr.append(float(psnr_torch(eval_result, eval_img1)))
-                eval_loss_LPIPS_ = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
                 eval_lpips.append(float(torch.mean(eval_loss_LPIPS_).item()))
 
                 eval_rgb_output_mask = eval_mask_list[3][:, :, :eh, :ew].repeat_interleave(3, dim=1)
@@ -1516,6 +1566,23 @@ def main():
             except Exception as e:
                 pprint (f'\nerror while evaluating: {e}\n{description}\n\n')
    
+    eval_rows_to_append = [
+        {
+            'Incoming': 'Total',
+            'Outgoing': 'Total',
+            'GT': 'Total',
+            'Ratio': 'Total',
+            'Min': eval_loss_min,
+            'Avg': eval_loss_avg,
+            'Max': eval_loss_max,
+            'PSNR': eval_psnr_mean,
+            'LPIPS': eval_lpips_mean
+            }
+    ]
+
+    for eval_row in eval_rows_to_append:
+        append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.Step_{loaded_step}.validate.csv', eval_row)
+
     psnr = float(np.array(psnr_list).mean())
     smoothed_loss = float(np.mean(moving_average(validate_loss_list, 9)))
     lpips_val = float(np.array(lpips_list).mean())
