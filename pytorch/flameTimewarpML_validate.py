@@ -1597,7 +1597,7 @@ def main():
     # minutes = int((epoch_time % 3600) // 60)
 
     clear_lines(2)
-    print(f'\rTime: {epoch_time:.2f}, Min: {min(eval_loss_min):.6f} Avg: {eval_loss_avg:.6f}, Max: {max(eval_loss_max):.6f}, [PNSR] {eval_psnr_mean:.4f}, [LPIPS] {eval_lpips_mean:.4f}')
+    print(f'\rTime: {epoch_time:.2f}, Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f}, [PNSR] {eval_psnr_mean:.4f}, [LPIPS] {eval_lpips_mean:.4f}')
     print ('\n')
 
 if __name__ == "__main__":
