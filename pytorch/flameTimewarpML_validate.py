@@ -1434,6 +1434,7 @@ def main():
         create_csv_file(
             csv_file_name,
             [
+                'Index',
                 'Incoming',
                 'Outgoing',
                 'GT',
@@ -1529,6 +1530,7 @@ def main():
 
                 eval_rows_to_append = [
                     {
+                        'Index': ev_item_index,
                         'Incoming': f'{description["start"]}',
                         'Outgoing': f'{description["end"]}',
                         'GT': f'{description["gt"]}',
@@ -1572,6 +1574,7 @@ def main():
    
     eval_rows_to_append = [
         {
+            'Index': ev_item_index + 1,
             'Incoming': 'Total',
             'Outgoing': 'Total',
             'GT': 'Total',
