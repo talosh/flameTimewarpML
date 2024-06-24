@@ -1984,7 +1984,6 @@ def main():
 
         # scale list augmentation
         random_scales = [
-            [8, 4, 2, 1],
             [4, 2, 1, 1],
             [2, 2, 1, 1],
             [2, 1, 1, 1],
@@ -1994,7 +1993,7 @@ def main():
         if random.uniform(0, 1) < 0.44:
             training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
         else:
-            training_scale = [16, 8, 4, 1]
+            training_scale = [8, 4, 2, 1] # [16, 8, 4, 1]
 
         # if random.uniform(0, 1) < 0.22:
         #    training_scale = [1 if x == 1 else x / 2 for x in training_scale]
