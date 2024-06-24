@@ -1408,9 +1408,11 @@ def main():
     parser.add_argument('--eval_samples', type=int, dest='eval_samples', default=-1, help='Evaluate N random training samples')
     parser.add_argument('--eval_seed', type=int, dest='eval_seed', default=1, help='Random seed to select samples if --eval_samples set')
     parser.add_argument('--eval_buffer', type=int, dest='eval_buffer', default=8, help='Write buffer size for evaluated images')
+    parser.add_argument('--eval_save_imgs', action='store_true', dest='save_imgs', default=False, help='Save eval result images')
     parser.add_argument('--eval_keep_all', action='store_true', dest='eval_keep_all', default=False, help='Keep eval results for each eval step')
     parser.add_argument('--eval_folder', type=str, default=None, help='Folder with clips for evaluation')
     parser.add_argument('--eval_half', action='store_true', dest='eval_half', default=False, help='Evaluate in half-precision')
+
 
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
@@ -2347,21 +2349,22 @@ def main():
                         eval_rgb_output_mask = eval_mask_list[3][:, :, :eh, :ew].repeat_interleave(3, dim=1)
 
                         # '''
-                        write_eval_image_queue.put(
-                            {
-                                'preview_folder': eval_folder,
-                                'sample_source1': eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                'sample_source1_name': f'{ev_item_index:08}_incomng.exr',
-                                'sample_source2': eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                'sample_source2_name': f'{ev_item_index:08}_outgoing.exr',
-                                'sample_target': eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                'sample_target_name': f'{ev_item_index:08}_target.exr',
-                                'sample_output': eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                'sample_output_name': f'{ev_item_index:08}_output.exr',
-                                'sample_output_mask': eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                'sample_output_mask_name': f'{ev_item_index:08}_output_mask.exr'
-                            }
-                        )
+                        if args.eval_save_imgs:
+                            write_eval_image_queue.put(
+                                {
+                                    'preview_folder': eval_folder,
+                                    'sample_source1': eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                    'sample_source1_name': f'{ev_item_index:08}_incomng.exr',
+                                    'sample_source2': eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                    'sample_source2_name': f'{ev_item_index:08}_outgoing.exr',
+                                    'sample_target': eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                    'sample_target_name': f'{ev_item_index:08}_target.exr',
+                                    'sample_output': eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                    'sample_output_name': f'{ev_item_index:08}_output.exr',
+                                    'sample_output_mask': eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                    'sample_output_mask_name': f'{ev_item_index:08}_output_mask.exr'
+                                }
+                            )
 
                     except Exception as e:
                         pprint (f'\nerror while evaluating: {e}\n{description}\n\n')
@@ -2405,7 +2408,8 @@ def main():
             # print (f'prev folder: {prev_eval_folder}\n\n')
                 if prev_eval_folder:
                     # print (f'exec "rm -rf {os.path.abspath(prev_eval_folder)}"\n\n')
-                    clean_thread = threading.Thread(target=lambda: os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')).start()
+                    if os.path.isdir(prev_eval_folder):
+                        clean_thread = threading.Thread(target=lambda: os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')).start()
                     # os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')
             prev_eval_folder = eval_folder
 
