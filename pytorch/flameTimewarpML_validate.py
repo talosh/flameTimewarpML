@@ -1587,14 +1587,14 @@ def main():
     for eval_row in eval_rows_to_append:
         append_row_to_csv(csv_file_name, eval_row)
 
-    psnr = float(np.array(psnr_list).mean())
-    smoothed_loss = float(np.mean(moving_average(validate_loss_list, 9)))
-    lpips_val = float(np.array(lpips_list).mean())
+    # psnr = float(np.array(psnr_list).mean())
+    # smoothed_loss = float(np.mean(moving_average(validate_loss_list, 9)))
+    # lpips_val = float(np.array(lpips_list).mean())
 
     epoch_time = time.time() - start_timestamp
-    days = int(epoch_time // (24 * 3600))
-    hours = int((epoch_time % (24 * 3600)) // 3600)
-    minutes = int((epoch_time % 3600) // 60)
+    # days = int(epoch_time // (24 * 3600))
+    # hours = int((epoch_time % (24 * 3600)) // 3600)
+    # minutes = int((epoch_time % 3600) // 60)
 
     clear_lines(2)
     print(f'\rTime: {epoch_time:.2f}, Min: {min(eval_loss_min):.6f} Avg: {eval_loss_avg:.6f}, Max: {max(eval_loss_max):.6f}, [PNSR] {eval_psnr_mean:.4f}, [LPIPS] {eval_lpips_mean:.4f}')
