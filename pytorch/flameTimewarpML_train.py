@@ -2382,7 +2382,7 @@ def main():
                     except Exception as e:
                         print (f'{e}\n\n')
                     '''
-            if args.eval_half():
+            if args.eval_half:
                 flownet.float()
                 flownet.load_state_dict(original_float_state_dict)
 
