@@ -131,9 +131,9 @@ class Model:
                 self.block3 = Flownet(8+4+16, c=64)
                 self.encode = Head()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1):
+            def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
                 scale = [12, 6, 3, 1] if scale == [8, 4, 2, 1] else scale
-                
+
                 img0 = img0
                 img1 = img1
                 f0 = self.encode(img0)
