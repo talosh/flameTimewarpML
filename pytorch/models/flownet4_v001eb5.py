@@ -2,6 +2,8 @@
 # Back from SiLU to LeakyReLU to test data flow
 # Warps moved to flownet forward
 # Different Tail from flownet 2lh (ConvTr 6x6, conv 1x1, ConvTr 4x4, conv 1x1)
+# Four step refinement after initial prediction (5 total)
+# Step filters as 192, 176, 144, 128, 96
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -220,15 +222,15 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v001eb',
-            'file': 'flownet4_v001eb.py',
+            'name': 'Flownet4_v001eb5',
+            'file': 'flownet4_v001eb5.py',
             'ratio_support': True
         }
         return info
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v001eb'
+        return 'TWML_Flownet_v001eb5'
 
     @staticmethod
     def input_channels(model_state_dict):
