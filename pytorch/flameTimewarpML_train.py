@@ -2064,6 +2064,8 @@ def main():
 
         # vgg_loss = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
 
+        print (f'Out: {output.shape}, Orig: {img1_orig.shape}')
+
         loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
         loss = criterion_l1(x1_output, x1_orig) # + lpips_weight * (float(torch.mean(loss_LPIPS_).item()) ** 1.1)
 
