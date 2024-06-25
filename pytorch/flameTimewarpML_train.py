@@ -1483,10 +1483,13 @@ def main():
 
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
-
+    
+    '''
     frame_size = closest_divisible(abs(int(args.frame_size)))
     if frame_size != args.frame_size:
         print (f'Frame size should be divisible by 64 for training. Using {frame_size}')
+    '''
+    frame_size = args.frame_size
 
     read_image_queue = queue.Queue(maxsize=16)
 
@@ -2064,7 +2067,7 @@ def main():
 
         # vgg_loss = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
 
-        print (f'Out: {output.shape}, Orig: {img1_orig.shape}')
+        # print (f'Out: {output.shape}, Orig: {img1_orig.shape}')
 
         loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
         loss = criterion_l1(x1_output, x1_orig) # + lpips_weight * (float(torch.mean(loss_LPIPS_).item()) ** 1.1)
