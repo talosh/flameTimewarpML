@@ -211,7 +211,7 @@ class Model:
             'name': 'Flownet4_v001eb',
             'file': 'flownet4_v001eb.py',
             'ratio_support': True,
-            'padding': 144
+            'padding': 48
         }
         return info
 
