@@ -1228,7 +1228,7 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None, 
         print(f"Model not found: {base_name or model_name}")
         return None
 
-def closest_divisible(x):
+def closest_divisible(x, padding = 64):
     """
     Find the closest integer divisible by 64 to the given number x.
 
@@ -1239,10 +1239,10 @@ def closest_divisible(x):
     int: Closest number divisible by 64.
     """
     # Round down to the nearest multiple of 64
-    lower = (x // 64) * 64
+    lower = (x // padding) * padding
     
     # Round up to the nearest multiple of 64
-    upper = lower + 64
+    upper = lower + padding
 
     # Check which one is closer to x
     if x - lower > upper - x:
@@ -1483,12 +1483,11 @@ def main():
 
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
-    
-    '''
-    frame_size = closest_divisible(abs(int(args.frame_size)))
+
+    frame_size = closest_divisible(abs(int(args.frame_size)), model_info.get('padding', 64))
     if frame_size != args.frame_size:
         print (f'Frame size should be divisible by 64 for training. Using {frame_size}')
-    '''
+
     frame_size = args.frame_size
 
     read_image_queue = queue.Queue(maxsize=16)
@@ -2319,9 +2318,10 @@ def main():
                         eval_img0 = normalize(eval_img0)
                         eval_img2 = normalize(eval_img2)
 
+                        pvalue = model_info.get('padding', 64)
                         n, c, eh, ew = eval_img0.shape
-                        ph = ((eh - 1) // 64 + 1) * 64
-                        pw = ((ew - 1) // 64 + 1) * 64
+                        ph = ((eh - 1) // pvalue + 1) * pvalue
+                        pw = ((ew - 1) // pvalue + 1) * pvalue
                         padding = (0, pw - ew, 0, ph - eh)
                         
                         eval_img0 = torch.nn.functional.pad(eval_img0, padding)
