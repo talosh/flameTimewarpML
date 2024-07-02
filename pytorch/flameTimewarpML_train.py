@@ -410,7 +410,7 @@ def get_dataset(
         batch_size = 8, 
         device = None, 
         frame_size=448, 
-        max_window=5,
+        max_window=9,
         acescc_rate = 40,
         generalize = 80,
         repeat = 1
@@ -422,7 +422,7 @@ def get_dataset(
                 batch_size = 4, 
                 device = None, 
                 frame_size=448, 
-                max_window=5,
+                max_window=9,
                 acescc_rate = 40,
                 generalize = 80,
                 repeat = 1
@@ -566,13 +566,15 @@ def get_dataset(
                 print(f'\nWarning: minimum clip length is 3 frames, {folder_path} has {len(exr_files)} frame(s) only')
                 return descriptions
 
-            if 'fast' in folder_path:
+            if 'ultrafast' in folder_path:
                 max_window = 3
+            if 'fast' in folder_path:
+                max_window = 5
             elif 'slow' in folder_path:
                 max_window = max_window
             else:
-                if max_window > 5:
-                    max_window = 5
+                if max_window > 7:
+                    max_window = 7
 
             try:
                 first_exr_file_header = read_openexr_file(exr_files[0], header_only = True)
