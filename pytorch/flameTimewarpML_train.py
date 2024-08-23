@@ -1616,7 +1616,8 @@ def main():
     if args.onecycle != -1:
         train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
             optimizer_flownet,
-            max_lr=args.lr, 
+            max_lr=args.lr,
+            div_factor = 11,
             steps_per_epoch=len(dataset)*dataset.repeat_count, 
             epochs=args.onecycle
             )
