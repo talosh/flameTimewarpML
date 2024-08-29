@@ -2071,7 +2071,7 @@ def main():
 
         loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
         # loss = (criterion_l1(x1_output, x1_orig)  + 0.1 * (float(torch.mean(loss_LPIPS_).item()) ** 1.1)) / 2
-        loss = 0.1 * float(torch.mean(loss_LPIPS_).item())
+        loss = 0.1 * torch.mean(loss_LPIPS_).item()
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
