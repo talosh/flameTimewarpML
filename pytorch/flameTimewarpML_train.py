@@ -2029,8 +2029,6 @@ def main():
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
 
-        pm_weight = 1
-        lpips_weight = 1e-9
         # self.vgg(merged[3], gt).mean() - self.ss(merged[3], gt) * 0.1
 
         '''
@@ -2071,7 +2069,10 @@ def main():
 
         loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
         # loss = (criterion_l1(x1_output, x1_orig)  + 0.1 * (float(torch.mean(loss_LPIPS_).item()) ** 1.1)) / 2
-        loss = 1e-11 * criterion_l1(x1_output, x1_orig) + 0.1 * torch.mean(loss_LPIPS_).item()
+
+        lpips_weight = 0.5
+        
+        loss = (1 - lpips_weight ) * criterion_l1(x1_output, x1_orig) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS_).item())
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
