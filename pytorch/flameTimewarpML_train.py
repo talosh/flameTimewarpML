@@ -566,15 +566,13 @@ def get_dataset(
                 print(f'\nWarning: minimum clip length is 3 frames, {folder_path} has {len(exr_files)} frame(s) only')
                 return descriptions
 
-            if 'ultrafast' in folder_path:
-                max_window = 3
             if 'fast' in folder_path:
-                max_window = 5
+                max_window = 3
             elif 'slow' in folder_path:
                 max_window = max_window
             else:
-                if max_window > 7:
-                    max_window = 7
+                if max_window > 5:
+                    max_window = 5
 
             try:
                 first_exr_file_header = read_openexr_file(exr_files[0], header_only = True)
@@ -1995,7 +1993,7 @@ def main():
             [1, 1, 1, 1],
         ]
 
-        if random.uniform(0, 1) < 0.44:
+        if random.uniform(0, 1) < 0.69:
             training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
         else:
             training_scale = [8, 4, 2, 1] # [16, 8, 4, 1]
@@ -2257,7 +2255,6 @@ def main():
                 os.makedirs(eval_folder)
             
             descriptions = list(eval_dataset.initial_train_descriptions)
-            print (f'\n\n\neval_descriptions: {len(descriptions)}\n\n\n')
 
             if args.eval_samples > 0:
                 rng = random.Random(args.eval_seed)
