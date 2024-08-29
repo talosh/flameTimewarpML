@@ -2071,7 +2071,6 @@ def main():
         # loss = (criterion_l1(x1_output, x1_orig)  + 0.1 * (float(torch.mean(loss_LPIPS_).item()) ** 1.1)) / 2
 
         lpips_weight = 0.5
-        
         loss = (1 - lpips_weight ) * criterion_l1(x1_output, x1_orig) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS_).item())
 
         loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
