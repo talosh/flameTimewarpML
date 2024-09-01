@@ -2,6 +2,7 @@
 # Back from SiLU to LeakyReLU to test data flow
 # Warps moved to flownet forward
 # Different Tail from flownet 2lh (ConvTr 6x6, conv 1x1, ConvTr 4x4, conv 1x1)
+# Scale list are multiplies of 3 instead of 2 [12, 6, 3, 1]
 
 class Model:
     def __init__(self, status = dict(), torch = None):
@@ -208,8 +209,8 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v001eb',
-            'file': 'flownet4_v001eb.py',
+            'name': 'Flownet4_v001eb3x',
+            'file': 'flownet4_v001eb3x.py',
             'ratio_support': True,
             'padding': 48
         }
@@ -217,7 +218,7 @@ class Model:
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v001eb'
+        return 'TWML_Flownet_v001eb3x'
 
     @staticmethod
     def input_channels(model_state_dict):
