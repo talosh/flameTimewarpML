@@ -2187,9 +2187,9 @@ def main():
             hours = int((epoch_time % (24 * 3600)) // 3600)
             minutes = int((epoch_time % 3600) // 60)
 
-            clear_lines(2)
-            print(f'\rEpoch [{epoch + 1} (Step {step:11} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PSNR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
-            print ('\n')
+            # clear_lines(2)
+            # print(f'\rEpoch [{epoch + 1} (Step {step:11} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PSNR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
+            # print ('\n')
 
             rows_to_append = [
                 {
@@ -2409,6 +2409,11 @@ def main():
 
             for eval_row in eval_rows_to_append:
                 append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.eval.csv', eval_row)
+
+            clear_lines(2)
+            print(f'\rEpoch [{epoch + 1} (Step {step:11} - {days:02}d {hours:02}:{minutes:02}], Eval Min: {eval_loss_min:.6f} Eval Avg: {eval_loss_avg:.6f}, Eval Max: {eval_loss_max:.6f}, Eval [PSNR] {eval_psnr_mean:.4f}, Eval [LPIPS] {eval_lpips_mean:.4f}')
+            print ('\n')
+
 
             if not args.eval_keep_all:
             # print (f'prev folder: {prev_eval_folder}\n\n')
