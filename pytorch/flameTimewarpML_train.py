@@ -2411,7 +2411,7 @@ def main():
                 append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.eval.csv', eval_row)
 
             clear_lines(2)
-            print(f'\rEpoch [{epoch + 1} (Step {step:011} - {days:02}d {hours:02}:{minutes:02}], Eval Min: {eval_loss_min:.6f} Eval Avg: {eval_loss_avg:.6f}, Eval Max: {eval_loss_max:.6f}, Eval [PSNR] {eval_psnr_mean:.4f}, Eval [LPIPS] {eval_lpips_mean:.4f}')
+            print(f'\rEpoch [{(epoch + 1):06} (Step {step:011} - {days:02}d {hours:02}:{minutes:02}], Eval Min: {eval_loss_min:.6f} Eval Avg: {eval_loss_avg:.6f}, Eval Max: {eval_loss_max:.6f}, Eval [PSNR] {eval_psnr_mean:.4f}, Eval [LPIPS] {eval_lpips_mean:.4f}')
             print ('\n')
 
 
