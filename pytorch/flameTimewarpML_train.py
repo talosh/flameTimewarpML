@@ -2265,17 +2265,34 @@ def main():
                 for ev_item_index, description in enumerate(descriptions):
                     try:
                         desc_data = dict(description)
-                        desc_data['eval_img0'] = read_openexr_file(description['start'])['image_data']
-                        desc_data['eval_img1'] = read_openexr_file(description['gt'])['image_data']
-                        desc_data['eval_img2'] = read_openexr_file(description['end'])['image_data']
+                        eval_img0 = read_openexr_file(description['start'])['image_data']
+                        eval_img1 = read_openexr_file(description['gt'])['image_data']
+                        eval_img2 = read_openexr_file(description['end'])['image_data']
+
+                        eval_img0 = torch.from_numpy(eval_img0)
+                        eval_img1 = torch.from_numpy(eval_img1)
+                        eval_img2 = torch.from_numpy(eval_img2)
+                        eval_img0 = eval_img0.to(device = device, dtype = torch.float32, non_blocking = True)
+                        eval_img1 = eval_img1.to(device = device, dtype = torch.float32, non_blocking = True)
+                        eval_img2 = eval_img2.to(device = device, dtype = torch.float32, non_blocking = True)
+                        
+                        eval_img0 = eval_img0.permute(2, 0, 1).unsqueeze(0)
+                        eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
+                        eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
+
+                        desc_data['eval_img0'] = eval_img0
+                        desc_data['eval_img1'] = eval_img1
+                        desc_data['eval_img2'] = eval_img2
+
                         desc_data['ev_item_index'] = ev_item_index
                         read_eval_image_queue.put(desc_data)
                         del desc_data
+                    
                     except Exception as e:
                         pprint (f'\nerror while reading eval images: {e}\n{description}\n\n')
                 read_eval_image_queue.put(None)
 
-            read_eval_image_queue = queue.Queue(maxsize=8)
+            read_eval_image_queue = queue.Queue(maxsize=4)
             read_eval_thread = threading.Thread(target=read_eval_images, args=(read_eval_image_queue, descriptions))
             read_eval_thread.daemon = True
             read_eval_thread.start()
@@ -2326,15 +2343,18 @@ def main():
                         eval_img2 = description['eval_img2']
                         eval_ratio = description['ratio']
 
+                        '''
                         eval_img0 = torch.from_numpy(eval_img0)
                         eval_img1 = torch.from_numpy(eval_img1)
                         eval_img2 = torch.from_numpy(eval_img2)
                         eval_img0 = eval_img0.to(device = device, dtype = torch.float32, non_blocking = True)
                         eval_img1 = eval_img1.to(device = device, dtype = torch.float32, non_blocking = True)
                         eval_img2 = eval_img2.to(device = device, dtype = torch.float32, non_blocking = True)
+                        
                         eval_img0 = eval_img0.permute(2, 0, 1).unsqueeze(0)
                         eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
                         eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
+                        '''
 
                         eval_img0_orig = eval_img0.clone()
                         eval_img2_orig = eval_img2.clone()
