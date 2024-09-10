@@ -2321,9 +2321,9 @@ def main():
                         # eval_img1 = read_openexr_file(description['gt'])['image_data']
                         # eval_img2 = read_openexr_file(description['end'])['image_data']
                         
-                        eval_img0 = description(['eval_img0'])
-                        eval_img1 = description(['eval_img1'])
-                        eval_img2 = description(['eval_img2'])
+                        eval_img0 = description['eval_img0']
+                        eval_img1 = description['eval_img1']
+                        eval_img2 = description['eval_img2']
                         eval_ratio = description['ratio']
 
                         eval_img0 = torch.from_numpy(eval_img0)
