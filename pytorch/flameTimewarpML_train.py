@@ -2268,7 +2268,7 @@ def main():
                         desc_data['eval_img0'] = read_openexr_file(description['start'])['image_data']
                         desc_data['eval_img1'] = read_openexr_file(description['gt'])['image_data']
                         desc_data['eval_img2'] = read_openexr_file(description['end'])['image_data']
-                        desc_data('ev_item_index') = ev_item_index
+                        desc_data['ev_item_index'] = ev_item_index
                         read_image_queue.put(desc_data)
                         del desc_data
                     except Exception as e:
