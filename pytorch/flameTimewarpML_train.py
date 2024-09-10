@@ -2295,6 +2295,7 @@ def main():
             flownet.eval()
             with torch.no_grad():
                 # for ev_item_index, description in enumerate(descriptions):
+                print ('waiting for read_eval_image_queue')
                 description = read_eval_image_queue.get()
                 print (f'description read: {description.keys()}')
                 while description is not None:
