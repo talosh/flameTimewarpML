@@ -2275,14 +2275,10 @@ def main():
                         pprint (f'\nerror while reading eval images: {e}\n{description}\n\n')
                 read_eval_image_queue.put(None)
 
-            print ('starting eval read thread')
-
             read_eval_image_queue = queue.Queue(maxsize=8)
             read_eval_thread = threading.Thread(target=read_eval_images, args=(read_eval_image_queue, descriptions))
             read_eval_thread.daemon = True
             read_eval_thread.start()
-
-            print ('eval read thread started')
 
             eval_loss = []
             eval_psnr = []
@@ -2295,9 +2291,7 @@ def main():
             flownet.eval()
             with torch.no_grad():
                 # for ev_item_index, description in enumerate(descriptions):
-                print ('waiting for read_eval_image_queue')
                 description = read_eval_image_queue.get()
-                print (f'description read: {description.keys()}')
                 while description is not None:
                     ev_item_index = description['ev_item_index']
                     
