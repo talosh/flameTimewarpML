@@ -2261,10 +2261,24 @@ def main():
                 rng = random.Random(args.eval_seed)
                 descriptions = rng.sample(descriptions, args.eval_samples)
 
-                # for ev_item_index, description in enumerate(descriptions):
-                #    print (os.path.dirname(description['start']))
-                # sys.exit()
+            def read_eval_images(read_eval_image_queue, descriptions):
+                for ev_item_index, description in enumerate(descriptions):
+                    try:
+                        desc_data = dict(description)
+                        desc_data['eval_img0'] = read_openexr_file(description['start'])['image_data']
+                        desc_data['eval_img1'] = read_openexr_file(description['gt'])['image_data']
+                        desc_data['eval_img2'] = read_openexr_file(description['end'])['image_data']
+                        desc_data('ev_item_index') = ev_item_index
+                        read_image_queue.put(desc_data)
+                        del desc_data
+                    except Exception as e:
+                        pprint (f'\nerror while reading eval images: {e}\n{description}\n\n')
+                read_eval_image_queue.put(None)
 
+            read_eval_image_queue = queue.Queue(maxsize=8)
+            read_eval_thread = threading.Thread(target=read_eval_images, args=(read_eval_image_queue, descriptions))
+            read_eval_thread.daemon = True
+            read_eval_thread.start()
 
             eval_loss = []
             eval_psnr = []
@@ -2276,7 +2290,10 @@ def main():
             
             flownet.eval()
             with torch.no_grad():
-                for ev_item_index, description in enumerate(descriptions):
+                # for ev_item_index, description in enumerate(descriptions):
+                description = read_eval_image_queue.get()
+                while description is not None:
+                    ev_item_index = description['ev_item_index']
                     
                     if eval_loss:
                         eval_loss_min = min(eval_loss)
@@ -2300,9 +2317,13 @@ def main():
                     print (f'\rEvaluating {ev_item_index} of {len(descriptions)}: Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f} LPIPS: {eval_lpips_mean:.4f} PSNR: {eval_psnr_mean:4f}')
 
                     try:
-                        eval_img0 = read_openexr_file(description['start'])['image_data']
-                        eval_img1 = read_openexr_file(description['gt'])['image_data']
-                        eval_img2 = read_openexr_file(description['end'])['image_data']
+                        # eval_img0 = read_openexr_file(description['start'])['image_data']
+                        # eval_img1 = read_openexr_file(description['gt'])['image_data']
+                        # eval_img2 = read_openexr_file(description['end'])['image_data']
+                        
+                        eval_img0 = description(['eval_img0'])
+                        eval_img1 = description(['eval_img1'])
+                        eval_img2 = description(['eval_img2'])
                         eval_ratio = description['ratio']
 
                         eval_img0 = torch.from_numpy(eval_img0)
@@ -2354,7 +2375,6 @@ def main():
 
                         eval_rgb_output_mask = eval_mask_list[3][:, :, :eh, :ew].repeat_interleave(3, dim=1)
 
-                        # '''
                         if args.eval_save_imgs:
                             write_eval_image_queue.put(
                                 {
@@ -2374,21 +2394,8 @@ def main():
 
                     except Exception as e:
                         pprint (f'\nerror while evaluating: {e}\n{description}\n\n')
+                    description = read_eval_image_queue.get()
 
-                    # '''
-
-                    '''
-
-                    try:
-                        write_exr(eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_incomng.exr'))
-                        write_exr(eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_outgoing.exr'))
-                        write_exr(eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_target.exr'))
-                        write_exr(eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_output.exr'))
-                        eval_rgb_output_mask = eval_mask_list[3][:, :, :eh, :ew].repeat_interleave(3, dim=1)
-                        write_exr(eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy(), os.path.join(eval_folder, f'{ev_item_index:08}_output_mask.exr'))
-                    except Exception as e:
-                        print (f'{e}\n\n')
-                    '''
             if args.eval_half:
                 flownet.float()
                 flownet.load_state_dict(original_float_state_dict)
