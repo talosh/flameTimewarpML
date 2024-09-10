@@ -2396,7 +2396,7 @@ def main():
                         del description['eval_img0']
                         del description['eval_img1']
                         del description['eval_img2']
-                        pprint (f'\nerror while evaluating: {e}\n{description}\n\n')
+                        print (f'\nerror while evaluating: {e}\n{description}\n\n')
                     description = read_eval_image_queue.get()
 
             if args.eval_half:
