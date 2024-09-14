@@ -2422,7 +2422,7 @@ def main():
 
             eval_rows_to_append = [
                 {
-                    'Epoch': epoch,
+                    'Epoch': epoch + 1,
                     'Step': step, 
                     'Min': eval_loss_min,
                     'Avg': eval_loss_avg,
