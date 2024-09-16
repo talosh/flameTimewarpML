@@ -241,8 +241,8 @@ class Model:
     @staticmethod
     def get_info():
         info = {
-            'name': 'Flownet4_v001eb5',
-            'file': 'flownet4_v001eb5.py',
+            'name': 'flownet4_v001eb_fibonacci5',
+            'file': 'flownet4_v001eb_fibonacci5.py',
             'ratio_support': True,
             'padding': 480
         }
@@ -250,7 +250,7 @@ class Model:
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v001eb5'
+        return 'flownet4_v001eb_fibonacci5'
 
     @staticmethod
     def input_channels(model_state_dict):
