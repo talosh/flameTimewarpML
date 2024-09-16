@@ -77,6 +77,55 @@ class Model:
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
 
+        class FlownetInitial(Module):
+            def __init__(self, in_planes, c=64):
+                super().__init__()
+                self.conv0 = torch.nn.Sequential(
+                    conv(in_planes, c//2, 3, 2, 1),
+                    conv(c//2, c, 3, 2, 1),
+                    )
+                self.convblock = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                )
+                self.lastconv = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, c, 6, 2, 2),
+                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
+                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
+                    torch.nn.Conv2d(c, 6, kernel_size=1, stride=1, padding=0, bias=True),
+                )
+
+            def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
+                timestep = (img0[:, :1].clone() * 0 + 1) * timestep
+                
+                if flow is None:
+                    x = torch.cat((img0, img1, f0, f1, timestep), 1)
+                    x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                else:
+                    warped_img0 = warp(img0, flow[:, :2])
+                    warped_img1 = warp(img0, flow[:, :2])
+                    warped_f0 = warp(f0, flow[:, :2])
+                    warped_f1 = warp(f1, flow[:, 2:4])
+                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
+                    x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
+                    x = torch.cat((x, flow), 1)
+
+                feat = self.conv0(x)
+                feat = self.convblock(feat)
+                tmp = self.lastconv(feat)
+                tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
+                flow = tmp[:, :4] * scale
+                mask = tmp[:, 4:5]
+                conf = tmp[:, 5:6]
+                return flow, mask, conf
+
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
@@ -132,7 +181,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.initial = Flownet(7+16, c=192)
+                self.initial = FlownetInitial(7+16, c=192)
                 self.block0 = Flownet(8+4+16, c=144)
                 self.block1 = Flownet(8+4+16, c=128)
                 self.block2 = Flownet(8+4+16, c=96)
@@ -166,7 +215,7 @@ class Model:
                 flow_list = [None] * 4
                 mask_list = [None] * 4
                 merged = [None] * 4
-
+                    
                 flow, mask, conf = self.initial(img0, img1, f0, f1, timestep, None, None, scale=scale[0])
 
                 for iteration in range(iterations):
