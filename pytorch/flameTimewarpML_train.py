@@ -1993,6 +1993,18 @@ def main():
             [1, 1, 1, 1],
         ]
 
+        '''
+        random_scales = [
+            [4, 4, 2, 1],
+            [4, 2, 2, 1],
+            [4, 2, 1, 1],
+            [2, 2, 2, 1],
+            [2, 2, 1, 1],
+            [2, 1, 1, 1],
+            [1, 1, 1, 1],
+        ]
+        '''
+
         if random.uniform(0, 1) < 0.69:
             training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
         else:

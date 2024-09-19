@@ -4,6 +4,13 @@
 # Different Tail from flownet 2lh (ConvTr 6x6, conv 1x1, ConvTr 4x4, conv 1x1)
 
 class Model:
+
+    info = {
+        'name': 'Flownet4_v001eb',
+        'file': 'flownet4_v001eb.py',
+        'ratio_support': True
+    }
+
     def __init__(self, status = dict(), torch = None):
         if torch is None:
             import torch
@@ -205,16 +212,11 @@ class Model:
 
     @staticmethod
     def get_info():
-        info = {
-            'name': 'Flownet4_v001eb',
-            'file': 'flownet4_v001eb.py',
-            'ratio_support': True
-        }
-        return info
+        return Model.info
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v001eb'
+        return Model.info.get('name')
 
     @staticmethod
     def input_channels(model_state_dict):
