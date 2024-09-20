@@ -1986,6 +1986,7 @@ def main():
         optimizer_flownet.zero_grad()
 
         # scale list augmentation
+        '''
         random_scales = [
             [4, 2, 1, 1],
             [2, 2, 1, 1],
@@ -1993,8 +1994,14 @@ def main():
             [1, 1, 1, 1],
         ]
 
+        if random.uniform(0, 1) < 0.69:
+            training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
+        else:
+            training_scale = [8, 4, 2, 1]
         '''
+
         random_scales = [
+            [8, 4, 2, 1],
             [4, 4, 2, 1],
             [4, 2, 2, 1],
             [4, 2, 1, 1],
@@ -2003,12 +2010,8 @@ def main():
             [2, 1, 1, 1],
             [1, 1, 1, 1],
         ]
-        '''
 
-        if random.uniform(0, 1) < 0.69:
-            training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
-        else:
-            training_scale = [8, 4, 2, 1]
+        training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
 
         # if random.uniform(0, 1) < 0.22:
         #    training_scale = [1 if x == 1 else x / 2 for x in training_scale]
