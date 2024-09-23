@@ -76,7 +76,7 @@ class ApplyModelDialog():
 
         self.loops = []
         self.threads = True
-
+        
         self.main_window()
 
     def verify_selection(self, selection, mode):
@@ -100,7 +100,7 @@ class ApplyModelDialog():
                     message = 'Please select clips with Timewarp Timeline FX',
                     type = 'error',
                     buttons = ['Ok'])
-
+            
             def parse_message(e):
                 dialog = flame.messages.show_in_dialog(
                     title = f'{settings["app_name"]}',
@@ -135,7 +135,7 @@ class ApplyModelDialog():
                     if len (clip.versions[0].tracks[0].segments) != 1:
                         sequence_message()
                         return False
-
+                    
                     effects = clip.versions[0].tracks[0].segments[0].effects
                     if not effects:
                         effect_message()
@@ -148,7 +148,7 @@ class ApplyModelDialog():
                             with open(temp_setup_path, 'r') as tw_setup_file:
                                 tw_setup_string = tw_setup_file.read()
                                 tw_setup_file.close()
-
+                                
                             tw_setup_xml = ET.fromstring(tw_setup_string)
                             tw_setup = dictify(tw_setup_xml)
                             try:
@@ -162,13 +162,13 @@ class ApplyModelDialog():
                                 return False
                             # pprint (tw_setup)
                             verified = True
-
+                    
                     if not verified:
                         effect_message()
                         return
 
                     verified_clips.append((clip, tw_setup_string))
-
+            
             os.remove(temp_setup_path)
             return verified_clips
 
@@ -186,7 +186,7 @@ class ApplyModelDialog():
                 buttons = ['Ok'])
                 return
             return verified_clips
-
+        
         elif mode == 'finetune':
             verified_clips = []
             for item in selection:
@@ -229,7 +229,7 @@ class ApplyModelDialog():
 
             if not os.path.isfile(self.model_path):
                 self.model_path = os.path.join(
-                    os.path.dirname(__file__),
+                    os.path.dirname(__file__), 
                     'models',
                     'flownet4.pth'
                     )
@@ -246,10 +246,10 @@ class ApplyModelDialog():
                 self.fw.save_prefs()
             self.window.show()
 
-        def cpu():
-            self.fw.prefs['cpu'] = self.cpu_button.isChecked()
+        def iterative():
+            self.fw.prefs['iterative'] = self.iterative_button.isChecked()
             self.fw.save_prefs()
-
+        
         def half():
             self.fw.prefs['half'] = self.half_button.isChecked()
             self.fw.save_prefs()
@@ -272,7 +272,6 @@ class ApplyModelDialog():
         # Labels
         self.options_label = PyFlameLabel(
             text='Options',
-            style=Style.UNDERLINE,
         )
 
         self.export_path_label = PyFlameLabel(
@@ -286,7 +285,7 @@ class ApplyModelDialog():
         # Entries
         self.export_path_entry = PyFlameLineEdit(
             text=self.working_folder,
-            max_width=True,
+            max_width=True
         )
 
         self.model_path_entry = PyFlameLineEdit(
@@ -305,15 +304,17 @@ class ApplyModelDialog():
             connect=open_model_browser,
         )
 
-        self.cpu_button = PyFlamePushButton(
-            text='CPU',
-            button_checked = self.fw.prefs.get('cpu', False),
-            connect=cpu
+        self.iterative_button = PyFlamePushButton(
+            text='Iterative',
+            button_checked = self.fw.prefs.get('iterative', False),
+            tooltip = 'Iteratively updates ratio - might help with smoother motion (Slower) ',
+            connect=iterative
         )
 
         self.half_button = PyFlamePushButton(
-            text='16 Bit',
+            text='Use less VRAM',
             button_checked = self.fw.prefs.get('half', False),
+            tooltip = 'Use less GPU memory to help with "CUDA: Out of memory" errors (Slower) ',
             connect=half
         )
 
@@ -328,20 +329,20 @@ class ApplyModelDialog():
             connect=self.window.close,
         )
         # Window layout
-        grid_layout = QtWidgets.QGridLayout()
+        grid_layout = PyFlameGridLayout()
         grid_layout.setRowMinimumHeight(0, 30)
         grid_layout.setRowMinimumHeight(1, 30)
         grid_layout.setRowMinimumHeight(2, 30)
         grid_layout.setRowMinimumHeight(3, 30)
         
-        grid_layout.setColumnMinimumWidth(0, 150)
-        grid_layout.setColumnMinimumWidth(1, 150)
-        grid_layout.setColumnMinimumWidth(2, 150)
-        grid_layout.setColumnMinimumWidth(3, 150)
+        grid_layout.setColumnMinimumWidth(0, 120)
+        grid_layout.setColumnMinimumWidth(1, 120)
+        grid_layout.setColumnMinimumWidth(2, 120)
+        grid_layout.setColumnMinimumWidth(3, 120)
 
         grid_layout.addWidget(self.options_label, 0, 0)
-        grid_layout.addWidget(self.half_button, 0, 3)
-        grid_layout.addWidget(self.cpu_button, 0, 5)
+        grid_layout.addWidget(self.half_button, 0, 4)
+        grid_layout.addWidget(self.iterative_button, 0, 5)
 
         grid_layout.addWidget(self.export_path_label, 1, 0)
         grid_layout.addWidget(self.export_path_entry, 1, 1, 1, 4)
@@ -351,7 +352,7 @@ class ApplyModelDialog():
         grid_layout.addWidget(self.model_path_entry, 2, 1, 1, 4)
         grid_layout.addWidget(self.model_browse_button, 2, 5)
 
-        grid_layout.addWidget(self.cancel_button, 3, 3)
+        grid_layout.addWidget(self.cancel_button, 3, 4)
         grid_layout.addWidget(self.export_and_apply_button, 3, 5)
 
         # Add layout to window
@@ -411,12 +412,15 @@ class ApplyModelDialog():
                 )
 
         def open_src_model_browser():
+            if self.scratch_button.isChecked():
+                return
+
             self.window.hide()
             import flame
 
             if not os.path.isfile(self.model_path):
                 self.model_path = os.path.join(
-                    os.path.dirname(__file__),
+                    os.path.dirname(__file__), 
                     'models',
                     'flownet4.pth'
                     )
@@ -455,8 +459,9 @@ class ApplyModelDialog():
                     self.fw.save_prefs()
             self.window.show()
 
-        def fast():
-            self.fw.prefs['finetune_fast'] = self.fast_button.isChecked()
+        def scratch():
+            self.fw.prefs['finetune_scratch'] = self.scratch_button.isChecked()
+            self.src_model_path_entry.read_only = self.scratch_button.isChecked()
             self.fw.save_prefs()
 
         def generalize():
@@ -465,10 +470,6 @@ class ApplyModelDialog():
 
         def large_patch():
             self.fw.prefs['finetune_1k_patch'] = self.large_patch_button.isChecked()
-            self.fw.save_prefs()
-
-        def evaluate():
-            self.fw.prefs['finetune_eval'] = self.eval_button.isChecked()
             self.fw.save_prefs()
 
         # Create export and apply window
@@ -484,7 +485,6 @@ class ApplyModelDialog():
         # Labels
         self.options_label = PyFlameLabel(
             text='Options',
-            style=Style.UNDERLINE,
         )
 
         self.export_path_label = PyFlameLabel(
@@ -531,10 +531,10 @@ class ApplyModelDialog():
             connect=open_dest_model_browser,
         )
 
-        self.fast_button = PyFlamePushButton(
-            text='Shot(s) motion is fast',
-            button_checked = self.fw.prefs.get('finetune_fast', False),
-            connect=fast
+        self.scratch_button = PyFlamePushButton(
+            text='From scratch',
+            button_checked = self.fw.prefs.get('finetune_scratch', False),
+            connect=scratch
         )
 
         self.gen_button = PyFlamePushButton(
@@ -549,11 +549,6 @@ class ApplyModelDialog():
             connect=large_patch
         )
 
-        self.eval_button = PyFlamePushButton(
-            text='Evaluate',
-            button_checked = self.fw.prefs.get('finetune_eval', False),
-            connect=evaluate
-        )
 
         self.export_and_apply_button = PyFlameButton(
             text='Export and Apply',
@@ -571,17 +566,20 @@ class ApplyModelDialog():
         grid_layout.setRowMinimumHeight(1, 30)
         grid_layout.setRowMinimumHeight(2, 30)
         grid_layout.setRowMinimumHeight(3, 30)
+        grid_layout.setRowMinimumHeight(4, 30)
+        grid_layout.setRowMinimumHeight(5, 30)
         
         grid_layout.setColumnMinimumWidth(0, 150)
         grid_layout.setColumnMinimumWidth(1, 150)
         grid_layout.setColumnMinimumWidth(2, 150)
         grid_layout.setColumnMinimumWidth(3, 150)
+        grid_layout.setColumnMinimumWidth(4, 150)
 
         grid_layout.addWidget(self.options_label, 0, 0)
-        grid_layout.addWidget(self.large_patch_button, 0, 1)
-        grid_layout.addWidget(self.gen_button, 0, 2)
-        grid_layout.addWidget(self.eval_button, 0, 3)
-        grid_layout.addWidget(self.fast_button, 0, 5)
+
+        grid_layout.addWidget(self.scratch_button, 0, 3)
+        grid_layout.addWidget(self.large_patch_button, 0, 4)
+        grid_layout.addWidget(self.gen_button, 0, 5)
 
         grid_layout.addWidget(self.export_path_label, 1, 0)
         grid_layout.addWidget(self.export_path_entry, 1, 1, 1, 4)
@@ -595,7 +593,7 @@ class ApplyModelDialog():
         grid_layout.addWidget(self.res_model_path_entry, 3, 1, 1, 4)
         grid_layout.addWidget(self.res_model_browse_button, 3, 5)
 
-        grid_layout.addWidget(self.cancel_button, 4, 3)
+        grid_layout.addWidget(self.cancel_button, 4, 4)
         grid_layout.addWidget(self.export_and_apply_button, 4, 5)
 
         # Add layout to window
@@ -653,11 +651,11 @@ class ApplyModelDialog():
 
             result_folder = os.path.abspath(
                 os.path.join(
-                    self.working_folder,
+                    self.working_folder, 
                     tw_clip_name
                     )
                 )
-
+            
             if os.path.isdir(result_folder):
                 self.window.hide()
                 dialog = flame.messages.show_in_dialog(
@@ -666,10 +664,10 @@ class ApplyModelDialog():
                     type = 'question',
                     buttons = ['Owerwrite'],
                     cancel_button = 'Cancel')
-
+                
                 if dialog == 'Cancel':
                     return False
-
+                
                 self.window.show()
 
             clip.render()
@@ -678,20 +676,20 @@ class ApplyModelDialog():
             if clip.bit_depth == 32:
                 export_preset = self.create_export_preset(
                         os.path.join(
-                            os.path.dirname(__file__),
-                            'presets',
+                            os.path.dirname(__file__), 
+                            'presets', 
                             'source_export32.xml'
                         )
                     )
             else:
                 export_preset = self.create_export_preset(
                         os.path.join(
-                            os.path.dirname(__file__),
-                            'presets',
+                            os.path.dirname(__file__), 
+                            'presets', 
                             'source_export.xml'
                         )
                     )
-
+            
             self.export_clip(clip, source_clip_folder, export_preset=export_preset)
 
             record_in = clip.versions[0].tracks[0].segments[0].record_in.relative_frame
@@ -730,11 +728,11 @@ class ApplyModelDialog():
             # '''
             new_clip_name = clip_name + '_TWML'
             watcher = threading.Thread(
-                target=self.import_watcher,
+                target=self.import_watcher, 
                 args=(
-                    result_folder,
-                    new_clip_name,
-                    clip,
+                    result_folder, 
+                    new_clip_name, 
+                    clip, 
                     [source_clip_folder],
                     lockfile_path
                     )
@@ -751,11 +749,11 @@ class ApplyModelDialog():
             outgoing_clip = self.verified_clips[1]
 
             clip_name = incoming_clip.name.get_value()
-            tw_clip_name = self.fw.sanitized(clip_name) + '_TWML' + '_' + self.fw.create_timestamp_uid()
-
+            tw_clip_name = self.fw.sanitized(clip_name) + '_TWML' + '_' + self.fw.create_timestamp_uid()        
+    
             result_folder = os.path.abspath(
             os.path.join(
-                self.working_folder,
+                self.working_folder, 
                 tw_clip_name
                 )
             )
@@ -766,8 +764,8 @@ class ApplyModelDialog():
             if incoming_clip.bit_depth == 32:
                 export_preset = self.create_export_preset(
                         os.path.join(
-                            os.path.dirname(__file__),
-                            'presets',
+                            os.path.dirname(__file__), 
+                            'presets', 
                             'openexr32bit.xml'
                         )
                     )
@@ -776,8 +774,8 @@ class ApplyModelDialog():
             else:
                 export_preset = self.create_export_preset(
                         os.path.join(
-                            os.path.dirname(__file__),
-                            'presets',
+                            os.path.dirname(__file__), 
+                            'presets', 
                             'openexr16bit.xml'
                         )
                     )
@@ -815,11 +813,11 @@ class ApplyModelDialog():
             # '''
             new_clip_name = clip_name + '_TWML'
             watcher = threading.Thread(
-                target=self.import_watcher,
+                target=self.import_watcher, 
                 args=(
-                    result_folder,
-                    new_clip_name,
-                    incoming_clip,
+                    result_folder, 
+                    new_clip_name, 
+                    incoming_clip, 
                     [incoming_folder, outgoing_folder],
                     lockfile_path
                     )
@@ -846,7 +844,7 @@ class ApplyModelDialog():
             return
 
         self.res_model_path = self.res_model_path_entry.text()
-
+        
         if not os.path.isfile(self.res_model_path):
             import shutil
             shutil.copy(self.src_model_path, self.res_model_path)
@@ -865,30 +863,41 @@ class ApplyModelDialog():
                 'normal'
             )
 
-        for clip in self.verified_clips:
+        clip_names = set()
+
+        for clip_number, clip in enumerate(self.verified_clips):
+            if clip.name.get_value() in clip_names:
+                clip_name = f'{clip.name.get_value()}_{clip_number}'
+            else:
+                clip_name = f'{clip.name.get_value()}'
+            
+            clip_names.add(clip_name)
+
             if clip.bit_depth == 32:
                 export_preset = self.create_export_preset(
                         os.path.join(
-                            os.path.dirname(__file__),
-                            'presets',
-                            'source_export32.xml'
+                            os.path.dirname(__file__), 
+                            'presets', 
+                            'source_export32bit.xml'
                         )
                     )
             else:
                 export_preset = self.create_export_preset(
                         os.path.join(
-                            os.path.dirname(__file__),
-                            'presets',
+                            os.path.dirname(__file__), 
+                            'presets', 
                             'source_export.xml'
                         )
                     )
-
+                
+            print (f'exporting {clip} as {clip_name}')
+            
             self.export_clip(
-                clip,
+                clip, 
                 os.path.join(
                     export_root_path,
-                    clip.name.get_value()
-                ),
+                    clip_name
+                ), 
                 export_preset=export_preset)
 
         json_info = {}
@@ -941,7 +950,7 @@ class ApplyModelDialog():
                 type = 'error',
                 buttons = ['Ok'])
             return False
-
+        
         self.run_finetune(json_file_path)
 
     def run_finetune(self, json_file_path):
@@ -1048,7 +1057,7 @@ class ApplyModelDialog():
         def import_flame_clip():
             import flame
             new_clips = flame.import_clips(flame_friendly_path, destination)
-
+            
             if len(new_clips) > 0:
                 new_clip = new_clips[0]
                 if new_clip:
@@ -1080,11 +1089,11 @@ class ApplyModelDialog():
                         os.rmdir(folder)
                     except Exception as e:
                         print('Error removing %s: %s' % (folder, e))
-
+            
                 print('Importing result from: %s' % import_path)
                 flame_friendly_path = import_path
                 flame.schedule_idle_event(import_flame_clip)
-
+                
                 '''
                 file_names = [f for f in os.listdir(import_path) if f.endswith('.exr')]
                 print (file_names)
@@ -1221,7 +1230,7 @@ class ApplyModelDialog():
             flame_presets_location = flame.PyExporter.get_presets_base_dir(
                         flame.PyExporter.PresetVisibility.Autodesk
                     )
-
+            
             matching_files = find_files_with_all_path_patterns(flame_presets_location, ['*OpenEXR*.xml', '*file*', '*sequence*'])
             new_version = find_version_in_file(matching_files[0])
 
@@ -1231,7 +1240,7 @@ class ApplyModelDialog():
                     '/var/tmp',
                     os.path.basename(export_preset_path)
                 )
-
+            
             if os.path.isfile(dest_preset_path):
                 # print (f'removing {dest_preset_path}')
                 os.remove(dest_preset_path)
@@ -1260,7 +1269,7 @@ def get_media_panel_custom_ui_actions():
         except Exception as e:
             print (f'[{settings["app_name"]}]: Exception: {e}')
         return False
-
+    
     def about_dialog():
         pass
 
@@ -1286,30 +1295,35 @@ def get_media_panel_custom_ui_actions():
             'actions': [
                 {
                     'name': 'Fill / Remove Duplicate Frames',
+                    'order': 1,
                     'execute': deduplicate,
                     'isVisible': scope_clip,
                     'waitCursor': False,
                 },
                 {
                     'name': 'Create Fluidmorph Transition',
+                    'order': 2,
                     'execute': fluidmorph,
                     'isVisible': scope_clip,
                     'waitCursor': False,
                 },
                 {
                     'name': "Timewarp from Flame's TW effect",
+                    'order': 3,
                     'execute': timewarp,
                     'isVisible': scope_clip,
                     'waitCursor': False,
                 },
                 {
                     'name': "Fine-tune model on selected clips",
+                    'order': 4,
                     'execute': finetune,
                     'isVisible': scope_clip,
                     'waitCursor': False,
                 },
                 {
                     'name': f'Version: {settings["version"]}',
+                    'order': 5,
                     'execute': about_dialog,
                     'isVisible': scope_clip,
                     'isEnabled': False,
