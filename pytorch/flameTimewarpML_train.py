@@ -2000,6 +2000,7 @@ def main():
             training_scale = [8, 4, 2, 1]
         '''
 
+        '''
         random_scales = [
             [8, 4, 2, 1],
             [4, 4, 2, 1],
@@ -2012,6 +2013,9 @@ def main():
         ]
 
         training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
+        '''
+
+        training_scale = [8, 4, 2, 1]
 
         # if random.uniform(0, 1) < 0.22:
         #    training_scale = [1 if x == 1 else x / 2 for x in training_scale]
@@ -2437,7 +2441,7 @@ def main():
 
             eval_rows_to_append = [
                 {
-                    'Epoch': epoch + 1,
+                    'Epoch': epoch,
                     'Step': step, 
                     'Min': eval_loss_min,
                     'Avg': eval_loss_avg,

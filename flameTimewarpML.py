@@ -34,7 +34,7 @@ settings = {
     'bundle_folder': os.getenv('FLAMETWML_BUNDLE'),
     'packages_folder': os.getenv('FLAMETWML_PACKAGES'),
     'temp_folder': os.getenv('FLAMETWML_TEMP'),
-    'version': 'v0.4.5 dev 003',
+    'version': 'v0.4.5 dev 004',
 }
 
 class ApplyModelDialog():
@@ -644,8 +644,6 @@ class ApplyModelDialog():
         self.window.close()
 
     def apply_timewarp(self):
-        hold_konsole = self.settings.get('debug')
-        cmd_strings = []
         number_of_clips = 0
 
         for clip, tw_setup_string in self.verified_clips:
