@@ -18,6 +18,9 @@ except Exception as e:
         print (f'Using {python_executable_path} python interpreter')
         sys.exit()
 
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning)
+
 class MinExrReader:
     '''Minimal, standalone OpenEXR reader for single-part, uncompressed scan line files.
 
@@ -395,16 +398,11 @@ class Timewarp():
         print('Initializing TimewarpML from Flame setup...')
         import torch
 
-        if self.json_info.get('cpu'):
-            print('Processing on CPU (Slow)')
-            self.device = torch.device("cpu")
-        else:
-            self.device = torch.device("mps") if platform.system() == 'Darwin' else torch.device('cuda')
-
+        self.device = torch.device("mps") if platform.system() == 'Darwin' else torch.device('cuda')
         self.model_path = self.json_info.get('model_path')
         self.model = self.find_and_import_model(self.model_path)
-        # if not self.model:
-        #    print (f'Unable to import model from file {self.model_path}')
+        self.model_info = self.load_model_info(self.model_path)
+        print (self.model_info)
 
     def find_and_import_model(self, model_file_path):
         import importlib
@@ -425,6 +423,18 @@ class Timewarp():
                 print('Using Half Precision')
                 model.half()
             return model
+        except Exception as e:
+            print ({e})
+            return None
+
+    def load_model_info(self, model_file_path):
+        import importlib
+        import torch
+
+        try:
+            checkpoint = torch.load(model_file_path, map_location=self.device)
+            model_info = checkpoint.get('model_info')
+            return model_info
         except Exception as e:
             print ({e})
             return None
