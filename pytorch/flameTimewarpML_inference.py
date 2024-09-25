@@ -402,7 +402,6 @@ class Timewarp():
         self.model_path = self.json_info.get('model_path')
         self.model = self.find_and_import_model(self.model_path)
         self.model_info = self.load_model_info(self.model_path)
-        print (self.model_info)
 
     def find_and_import_model(self, model_file_path):
         import importlib

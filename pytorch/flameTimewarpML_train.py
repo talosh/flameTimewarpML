@@ -1146,7 +1146,7 @@ def psnr_torch(imageA, imageB, max_pixel=1.0):
         return torch.tensor(float('inf'))
     return 20 * torch.log10(max_pixel / torch.sqrt(mse))
 
-def create_timestamp_uid(self):
+def create_timestamp_uid():
     import random
     import uuid
     from datetime import datetime
@@ -1453,7 +1453,7 @@ def main():
             Flownet = find_and_import_model(model_file=model_file)
         else:
             if not args.state_file:
-                print ('prase specify model or model state file')
+                print ('Please specify either model name or model state file')
                 return
             if not os.path.isfile(args.state_file):
                 print (f'Model state file {args.state_file} does not exist and "--model" flag is not set to start from scratch')
@@ -1986,7 +1986,8 @@ def main():
         optimizer_flownet.zero_grad()
 
         # scale list augmentation
-        '''
+
+        # '''
         random_scales = [
             [4, 2, 1, 1],
             [2, 2, 1, 1],
@@ -1998,7 +1999,7 @@ def main():
             training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
         else:
             training_scale = [8, 4, 2, 1]
-        '''
+        # '''
 
         '''
         random_scales = [
@@ -2015,7 +2016,7 @@ def main():
         training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
         '''
 
-        training_scale = [8, 4, 2, 1]
+        # training_scale = [8, 4, 2, 1]
 
         # if random.uniform(0, 1) < 0.22:
         #    training_scale = [1 if x == 1 else x / 2 for x in training_scale]
