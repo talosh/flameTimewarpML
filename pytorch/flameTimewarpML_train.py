@@ -2030,14 +2030,14 @@ def main():
 
         flownet.train()
         
-        n_iterations = 1  # n_iterations = random.randint(1, 4) if args.iterations == -1 else args.iterations
+        # n_iterations = random.randint(1, 4) if args.iterations == -1 else args.iterations
 
         flow_list, mask_list, merged = flownet(
             img0, 
             img2, 
             ratio, 
             scale=training_scale,
-            iterations = n_iterations
+            iterations = args.iterations
             )
         
         # flow0 = flow_list[3][:, :2]
