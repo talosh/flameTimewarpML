@@ -1374,6 +1374,19 @@ class VGGPerceptualLoss(torch.nn.Module):
                 k += 1
         return loss
 
+def convert_to_data_parallel(param):
+    return {
+        f'("module.{k})': v
+        for k, v in param.items()
+    }
+
+def convert_from_data_parallel(param):
+    return {
+        k.replace("module.", ""): v
+        for k, v in param.items()
+        if "module." in k
+    }
+
 current_state_dict = {}
 
 def main():
@@ -1651,7 +1664,10 @@ def main():
             print (f'unable to load saved model: {e}')
 
         try:
-            missing_keys, unexpected_keys = flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
+            if args.all_gpus:
+                missing_keys, unexpected_keys = flownet.load_state_dict(convert_to_data_parallel(checkpoint['flownet_state_dict']), strict=False)
+            else:
+                missing_keys, unexpected_keys = flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
             print('loaded previously saved Flownet state')
             if missing_keys:
                 print (f'\nMissing keys:\n{missing_keys}\n')
@@ -1727,30 +1743,6 @@ def main():
         missing_keys, unexpected_keys = flownet.load_state_dict(convert(rife_state_dict), strict=False)
         print (f'\nMissing keys:\n{missing_keys}\n')
         print (f'\nUnexpected keys:\n{unexpected_keys}\n')
-
-        '''
-        # copy encoder weights for flownet4_v004 to separate encoders on each pass
-        if model_info.get('name') == 'Flownet4_v004':
-            flownet.block0.encode01[0].load_state_dict(flownet.encode.cnn0.state_dict())
-            flownet.block0.encode01[2].load_state_dict(flownet.encode.cnn1.state_dict())
-            flownet.block0.encode01[4].load_state_dict(flownet.encode.cnn2.state_dict())
-            flownet.block0.encode01[6].load_state_dict(flownet.encode.cnn3.state_dict())
-
-            flownet.block1.encode01[0].load_state_dict(flownet.encode.cnn0.state_dict())
-            flownet.block1.encode01[2].load_state_dict(flownet.encode.cnn1.state_dict())
-            flownet.block1.encode01[4].load_state_dict(flownet.encode.cnn2.state_dict())
-            flownet.block1.encode01[6].load_state_dict(flownet.encode.cnn3.state_dict())
-
-            flownet.block2.encode01[0].load_state_dict(flownet.encode.cnn0.state_dict())
-            flownet.block2.encode01[2].load_state_dict(flownet.encode.cnn1.state_dict())
-            flownet.block2.encode01[4].load_state_dict(flownet.encode.cnn2.state_dict())
-            flownet.block2.encode01[6].load_state_dict(flownet.encode.cnn3.state_dict())
-
-            flownet.block3.encode01[0].load_state_dict(flownet.encode.cnn0.state_dict())
-            flownet.block3.encode01[2].load_state_dict(flownet.encode.cnn1.state_dict())
-            flownet.block3.encode01[4].load_state_dict(flownet.encode.cnn2.state_dict())
-            flownet.block3.encode01[6].load_state_dict(flownet.encode.cnn3.state_dict())
-        '''
 
     if args.reset_stats:
         step = 0
@@ -1925,7 +1917,12 @@ def main():
     current_state_dict['start_timestamp'] = start_timestamp
     current_state_dict['lr'] = optimizer_flownet.param_groups[0]['lr']
     current_state_dict['model_info'] = model_info
-    current_state_dict['flownet_state_dict'] = flownet.state_dict()
+    
+    if args.all_gpus:
+        current_state_dict['flownet_state_dict'] = convert_from_data_parallel(flownet.state_dict())
+    else:
+        current_state_dict['flownet_state_dict'] = flownet.state_dict()
+
     current_state_dict['optimizer_flownet_state_dict'] = optimizer_flownet.state_dict()
     current_state_dict['trained_model_path'] = trained_model_path
 
