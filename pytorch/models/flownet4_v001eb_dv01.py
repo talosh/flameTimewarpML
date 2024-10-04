@@ -177,7 +177,7 @@ class Model:
                 self.block3 = Flownet(8+4+16, c=48)
                 self.encode = Head()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1):
+            def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
                 img0 = img0
                 img1 = img1
                 f0 = self.encode(img0)
@@ -192,6 +192,10 @@ class Model:
                 flow_list[0] = flow.clone()
                 mask_list[0] = torch.sigmoid(mask.clone())
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
+                merged[3] = merged[0]
+
+                return flow_list, mask_list, merged
+
 
                 for iteration in range(iterations):
                     flow_d, mask, conf = self.block1(
