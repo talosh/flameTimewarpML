@@ -8,7 +8,7 @@ class Model:
     info = {
         'name': 'Flownet4_v001eb_dv01',
         'file': 'flownet4_v001eb_dv01.py',
-        'padding': 192,
+        'padding': 256,
         'ratio_support': True
     }
 
