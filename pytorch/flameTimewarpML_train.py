@@ -1917,12 +1917,10 @@ def main():
     current_state_dict['start_timestamp'] = start_timestamp
     current_state_dict['lr'] = optimizer_flownet.param_groups[0]['lr']
     current_state_dict['model_info'] = model_info
-    
     if args.all_gpus:
         current_state_dict['flownet_state_dict'] = convert_from_data_parallel(flownet.state_dict())
     else:
         current_state_dict['flownet_state_dict'] = flownet.state_dict()
-
     current_state_dict['optimizer_flownet_state_dict'] = optimizer_flownet.state_dict()
     current_state_dict['trained_model_path'] = trained_model_path
 
@@ -2158,7 +2156,10 @@ def main():
         current_state_dict['start_timestamp'] = start_timestamp
         current_state_dict['lr'] = optimizer_flownet.param_groups[0]['lr']
         current_state_dict['model_info'] = model_info
-        current_state_dict['flownet_state_dict'] = flownet.state_dict()
+        if args.all_gpus:
+            current_state_dict['flownet_state_dict'] = convert_from_data_parallel(flownet.state_dict())
+        else:
+            current_state_dict['flownet_state_dict'] = flownet.state_dict()
         current_state_dict['optimizer_flownet_state_dict'] = optimizer_flownet.state_dict()
         current_state_dict['trained_model_path'] = trained_model_path
 
@@ -2209,10 +2210,6 @@ def main():
 
         if ( idx + 1 ) == len(dataset):
             write_model_state_queue.put(deepcopy(current_state_dict))
-            # if os.path.isfile(trained_model_path):
-            #    backup_file = trained_model_path.replace('.pth', '.backup.pth')
-            #    shutil.copy(trained_model_path, backup_file)
-            # torch.save(current_state_dict, current_state_dict['trained_model_path'])
 
             psnr = float(np.array(psnr_list).mean())
             lpips_val = float(np.array(lpips_list).mean())
