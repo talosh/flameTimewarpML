@@ -1484,9 +1484,11 @@ def main():
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
+    '''
     frame_size = closest_divisible(abs(int(args.frame_size)), model_info.get('padding', 64))
     if frame_size != args.frame_size:
         print (f'Frame size should be divisible by 64 for training. Using {frame_size}')
+    '''
 
     frame_size = args.frame_size
 
