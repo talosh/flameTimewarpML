@@ -1376,7 +1376,7 @@ class VGGPerceptualLoss(torch.nn.Module):
 
 def convert_to_data_parallel(param):
     return {
-        f'("module.{k})': v
+        f'module.{k}': v
         for k, v in param.items()
     }
 
