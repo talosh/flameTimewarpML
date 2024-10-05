@@ -17,6 +17,7 @@ from pprint import pprint
 try:
     import numpy as np
     import torch
+    import OpenImageIO as oiio
 except:
     python_executable_path = sys.executable
     if '.miniconda' in python_executable_path:
@@ -31,6 +32,20 @@ except:
                     pass
                 class Conv2d(object):
                     pass
+
+def read_image_file(file_path, header_only = False):
+    result = {'spec': None, 'image_data': None}
+    inp = oiio.ImageInput.open(file_path)
+    if inp :
+        spec = inp.spec()
+        result['spec'] = spec
+        if not header_only:
+            height = spec.height
+            width = spec.width
+            channels = spec.nchannels
+            result['image_data'] = inp.read_image(0, 0, 0, channels)
+        inp.close()
+    return result
 
 def get_dataset(
         data_root, 
