@@ -171,6 +171,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             read_frames_thread,
             args=(self.frames_queue, self.train_descriptions, self.scale_list, self.h)
         )
+        self.frame_read_thread.start()
         print ('Done')
 
 
