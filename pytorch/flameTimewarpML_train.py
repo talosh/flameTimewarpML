@@ -67,11 +67,8 @@ def read_image_file(file_path, header_only = False):
 def get_dataset(
         data_root, 
         batch_size = 8, 
-        device = None, 
         frame_size=448, 
         max_window=9,
-        acescc_rate = 40,
-        generalize = 80,
         repeat = 1
         ):
     class TimewarpMLDataset(torch.utils.data.Dataset):
@@ -79,39 +76,22 @@ def get_dataset(
                 self, 
                 data_root, 
                 batch_size = 4, 
-                device = None, 
                 frame_size=448, 
                 max_window=9,
-                acescc_rate = 40,
-                generalize = 80,
                 repeat = 1
                 ):
             
             self.data_root = data_root
             self.batch_size = batch_size
             self.max_window = max_window
-            self.acescc_rate = acescc_rate
-            self.generalize = generalize
 
             print (f'scanning for exr files in {self.data_root}...')
             self.folders_with_exr = self.find_folders_with_exr(data_root)
             print (f'found {len(self.folders_with_exr)} clip folders.')
             
-            '''
-            folders_with_descriptions = set()
-            folders_to_scan = set()
-            if not rescan:
-                print (f'scanning dataset description files...')
-                folders_with_descriptions, folders_to_scan = self.scan_dataset_descriptions(
-                    self.folders_with_exr,
-                    file_name='dataset_folder.json'
-                    )
-                print (f'found {len(folders_with_descriptions)} pre-processed folders, {len(folders_to_scan)} folders to scan.')
-            else:
-                folders_to_scan = self.folders_with_exr
-            '''
-
             self.train_descriptions = []
+            
+            sys.exit()
 
             for folder_index, folder_path in enumerate(sorted(self.folders_with_exr)):
                 print (f'\rReading headers and building training data from clip {folder_index + 1} of {len(self.folders_with_exr)}', end='')
@@ -618,11 +598,8 @@ def get_dataset(
     return TimewarpMLDataset(
         data_root, 
         batch_size=batch_size, 
-        device=device, 
         frame_size=frame_size, 
         max_window=max_window,
-        acescc_rate=acescc_rate,
-        generalize=generalize,
         repeat=repeat
         )
 
