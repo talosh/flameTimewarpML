@@ -164,7 +164,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         print ('\nReshuffling training data indices...')
         self.reshuffle()
 
-        print ('Spawning frame reader...')
+        print ('Creating frame reader... ', end='')
         self.frames_queue = torch.multiprocessing.Queue(maxsize=4)
         self.frame_read_thread = torch.multiprocessing.Process(
             target=read_frames_thread,
@@ -172,17 +172,12 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         )
         self.frame_read_thread.start()
         print ('Done')
-        time.sleep(1)
-
-        print (f'{self.frames_queue.qsize()}')
 
         print ('reading first block of training data...')
         self.last_train_data = [self.frames_queue.get()]
         self.last_train_data_size = 4
         self.new_sample_shown = False
         self.train_data_index = 0
-
-        print (f'{type(self.last_train_data[0])}')
 
         sys.exit()
 
