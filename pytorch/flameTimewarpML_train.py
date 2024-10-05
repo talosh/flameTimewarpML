@@ -109,7 +109,7 @@ def get_dataset(
             self.frames_queue = torch.multiprocessing.Queue(maxsize=4)
             self.frame_read_thread = torch.multiprocessing.spawn(
                 self.read_frames_thread,
-                nproc = 1,
+                nprocs = 1,
                 join = False,
                 daemon = True,
             )
