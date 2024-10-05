@@ -168,7 +168,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         print ('Spawning frame reader...')
         self.frames_queue = torch.multiprocessing.Queue(maxsize=4)
         self.frame_read_thread = torch.multiprocessing.Process(
-            read_frames_thread,
+            target=read_frames_thread,
             args=(self.frames_queue, self.train_descriptions, self.scale_list, self.h)
         )
         self.frame_read_thread.start()
