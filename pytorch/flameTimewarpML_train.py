@@ -175,14 +175,15 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         )
         self.frame_read_thread.start()
         print (' Done.')
-
+        
+        '''
         print ('reading first block of training data...')
         self.last_train_data = [self.frames_queue.get()]
         self.last_train_data_size = 4
         self.new_sample_shown = False
         self.train_data_index = 0
+        '''
 
-        sys.exit()
 
     def reshuffle(self):
         random.shuffle(self.train_descriptions)
@@ -341,6 +342,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         return len(self.train_descriptions)
 
     def __getitem__(self, index):
+        return self.frames_queue.get()
         train_data = self.getimg(index)
         # src_img0 = train_data['pre_start']
         np_img0 = train_data['start']
