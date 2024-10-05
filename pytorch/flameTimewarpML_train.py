@@ -210,6 +210,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         
     @staticmethod
     def read_frames_thread(self, frames_queue, train_descriptions, scale_list, h):
+        print (f'self: {type(self)}, frames_queue: {type(frames_queue)}, train_descriptions: {type(train_descriptions)}, scale_list: {type(scale_list)}, h: {type(h)}')
 
         def resize_image(tensor, x):
             """
