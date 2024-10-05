@@ -108,12 +108,13 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             daemon = True,
         )
 
+        sys.exit()
+
         print ('reading first block of training data...')
         self.last_train_data = [self.frames_queue.get()]
         self.last_train_data_size = 4
         self.new_sample_shown = False
         self.train_data_index = 0
-        sys.exit()
 
     def reshuffle(self):
         random.shuffle(self.train_descriptions)
