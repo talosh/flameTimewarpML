@@ -65,7 +65,6 @@ def read_image_file(file_path, header_only = False):
     return result
 
 def read_frames_thread(frames_queue, train_descriptions, scale_list, h):
-    print (f'frames_queue: {type(frames_queue)}, train_descriptions: {type(train_descriptions)}, scale_list: {type(scale_list)}, h: {type(h)}')
 
     def resize_image(tensor, x):
         """
