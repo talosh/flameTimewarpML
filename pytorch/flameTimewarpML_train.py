@@ -105,14 +105,14 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             args=(self.frames_queue, self.train_descriptions, self.scale_list, self.h)
         )
 
-        time.sleep(10)
-        sys.exit()
-
         print ('reading first block of training data...')
         self.last_train_data = [self.frames_queue.get()]
         self.last_train_data_size = 4
         self.new_sample_shown = False
         self.train_data_index = 0
+
+        time.sleep(10)
+        sys.exit()
 
     def reshuffle(self):
         random.shuffle(self.train_descriptions)
@@ -234,7 +234,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         for index in range(len(train_descriptions)):
             description = train_descriptions[index]
-            print (f'desc: {description}')
             scale = scale_list[random.randint(0, len(scale_list) - 1)]
             try:
                 img0 = read_image_file(description['start'])['image_data']
