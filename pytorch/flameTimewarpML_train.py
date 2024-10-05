@@ -156,13 +156,12 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         self.folders_with_exr = self.find_folders_with_images(data_root)
         print (f'found {len(self.folders_with_exr)} clip folders.')
         
-        self.train_descriptions = torch.multiprocessing.Manager().list()
-
+        self.initial_train_descriptions = []    
         for folder_index, folder_path in enumerate(sorted(self.folders_with_exr)):
             print (f'\rReading headers and building training data from clip {folder_index + 1} of {len(self.folders_with_exr)}', end='')
-            self.train_descriptions.extend(self.create_dataset_descriptions(folder_path, max_window=self.max_window))
+            self.initial_train_descriptions.extend(self.create_dataset_descriptions(folder_path, max_window=self.max_window))
 
-        self.initial_train_descriptions = list(self.train_descriptions)
+        self.train_descriptions = torch.multiprocessing.Manager().list(self.initial_train_descriptions)
 
         print ('\nReshuffling training data indices...')
         self.reshuffle()
