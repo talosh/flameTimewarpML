@@ -86,13 +86,11 @@ def get_dataset(
             self.max_window = max_window
 
             print (f'scanning for exr files in {self.data_root}...')
-            self.folders_with_exr = self.find_folders_with_exr(data_root)
+            self.folders_with_exr = self.find_folders_with_images(data_root)
             print (f'found {len(self.folders_with_exr)} clip folders.')
             
             self.train_descriptions = []
             
-            sys.exit()
-
             for folder_index, folder_path in enumerate(sorted(self.folders_with_exr)):
                 print (f'\rReading headers and building training data from clip {folder_index + 1} of {len(self.folders_with_exr)}', end='')
                 self.train_descriptions.extend(self.create_dataset_descriptions(folder_path, max_window=self.max_window))
@@ -102,6 +100,8 @@ def get_dataset(
             print ('\nReshuffling training data indices...')
 
             self.reshuffle()
+
+            sys.exit()
 
             self.h = frame_size
             self.w = frame_size
@@ -137,30 +137,19 @@ def get_dataset(
         def reshuffle(self):
             random.shuffle(self.train_descriptions)
 
-        def find_folders_with_exr(self, path):
-            """
-            Find all folders under the given path that contain .exr files.
-
-            Parameters:
-            path (str): The root directory to start the search from.
-
-            Returns:
-            list: A list of directories containing .exr files.
-            """
-            directories_with_exr = set()
+        def find_folders_with_images(self, path, ext_list=['.exr']):
+            directories_with_imgs = set()
 
             # Walk through all directories and files in the given path
             for root, dirs, files in os.walk(path):
-                if 'preview' in root:
-                    continue
-                if 'eval' in root:
+                if 'dead_pixel_scan_' in root:
                     continue
                 for file in files:
-                    if file.endswith('.exr'):
-                        directories_with_exr.add(root)
+                    if any(file.lower().endswith(ext) for ext in ext_list):
+                        directories_with_imgs.add(root)
                         break  # No need to check other files in the same directory
 
-            return directories_with_exr
+            return directories_with_imgs
 
         def scan_dataset_descriptions(self, folders, file_name='dataset_folder.json'):
             """
@@ -214,9 +203,9 @@ def get_dataset(
                     max_window = 5
 
             try:
-                first_exr_file_header = read_openexr_file(exr_files[0], header_only = True)
-                h = first_exr_file_header['shape'][0]
-                w = first_exr_file_header['shape'][1]
+                first_exr_file_header = read_image_file(exr_files[0], header_only = True)
+                h = first_exr_file_header.height
+                w = first_exr_file_header.width
 
                 for window_size in range(3, max_window + 1):
                     for window in sliding_window(exr_files, window_size):
