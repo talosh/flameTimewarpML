@@ -133,7 +133,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         self.frames_queue = torch.multiprocessing.Queue(maxsize=4)
         self.frame_read_thread = torch.multiprocessing.spawn(
-            self.read_frames_thread,
+            dataset_read_frames_thread,
             args=(
                 self.train_descriptions,
                 self.frames_queue,
