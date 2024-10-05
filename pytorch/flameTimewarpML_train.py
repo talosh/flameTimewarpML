@@ -203,9 +203,9 @@ def get_dataset(
                     max_window = 5
 
             try:
-                first_exr_file_header = read_image_file(exr_files[0], header_only = True)
-                h = first_exr_file_header.height
-                w = first_exr_file_header.width
+                first_exr_file = read_image_file(exr_files[0], header_only = True)
+                h = first_exr_file['spec'].height
+                w = first_exr_file['spec'].width
 
                 for window_size in range(3, max_window + 1):
                     for window in sliding_window(exr_files, window_size):
