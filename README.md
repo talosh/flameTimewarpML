@@ -1,25 +1,11 @@
 ## flameTimewarpML
 
-Readme for version 0.4.4 and earlier: [Readme v0.4.4](https://github.com/talosh/flameTimewarpML/blob/main/README_v044.md)
+Previous versions: [Readme v0.4.4](https://github.com/talosh/flameTimewarpML/blob/main/README_v044.md)
 
 ## Table of Contents
 - [Status](#status)
 - [Installation](#installation)
 - [Training](#training)
-
-### Status
-
-* Training script and Flownet4 tested in production on Linux
-* Flownet4 tested on MacOS Apple Silicon with Pytorch 2.3.1
-
-    #### Todo for v0.4.5 dev 004
-
-* (done) ~~Add generalization logic to training script~~
-* (done) ~~Refine batch retime script~~
-* (done) ~~Share pre-trained weights for Flownet4 to enable using it in prod with command line and limited interface.~~
-* Optimize memory usage for Flownet4
-* Add ~~Fluidmorph and~~ Interpolate logic to new Flame script.
-* Test on Intel Mac with Pytorch 2.2.2 (Latest version avaliable for x86 Macs)
 
 ### Installation
 
@@ -47,22 +33,22 @@ tar -xvf flameTimewarpML_v0.4.5-dev003.Linux.tar.gz
 * install downloaded Miniconda python distribution, use "-p" to select install location. For example:
 
 ```bash
-sh ~/Downloads/Miniconda3-py311_24.1.2-0-Linux-x86_64.sh -bfsm -p ~/miniconda3
+sh ~/Downloads/Miniconda3-py311_24.7.1-0-Linux-x86_64.sh -bfsm -p ~/miniconda3
 ```
 
 * Activate anc clone default environment into another named "appenv" 
 
 ```bash
 eval "$(~/miniconda3/bin/conda shell.bash hook)"
-conda create --name appenv --clone base
+conda create --name appenv
 conda activate appenv
 ```
 
 * Install dependency libraries
 
 ```bash
+conda install python=3.11 conda-forge::openimageio conda-forge::py-openimageio
 conda install pyqt
-conda install numpy
 conda install conda-pack
 ```
 
