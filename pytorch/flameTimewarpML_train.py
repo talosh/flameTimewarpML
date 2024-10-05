@@ -64,6 +64,72 @@ def read_image_file(file_path, header_only = False):
         inp.close()
     return result
 
+def read_frames_thread(index, frames_queue, train_descriptions, scale_list, h):
+    print (f'self: {type(index)}, frames_queue: {type(frames_queue)}, train_descriptions: {type(train_descriptions)}, scale_list: {type(scale_list)}, h: {type(h)}')
+
+    def resize_image(tensor, x):
+        """
+        Resize the tensor of shape [h, w, c] so that the smallest dimension becomes x,
+        while retaining aspect ratio.
+
+        Parameters:
+        tensor (torch.Tensor): The input tensor with shape [h, w, c].
+        x (int): The target size for the smallest dimension.
+
+        Returns:
+        torch.Tensor: The resized tensor.
+        """
+        # Adjust tensor shape to [n, c, h, w]
+        # tensor = tensor.permute(2, 0, 1).unsqueeze(0)
+
+        # Calculate new size
+        h, w = tensor.shape[2], tensor.shape[3]
+        if h > w:
+            new_w = x
+            new_h = int(x * h / w)
+        else:
+            new_h = x
+            new_w = int(x * w / h)
+
+        # Resize
+        resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bilinear', align_corners=False)
+
+        # Adjust tensor shape back to [h, w, c]
+        # resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
+
+        return resized_tensor
+
+    for index in range(len(train_descriptions)):
+        description = train_descriptions[index]
+        scale = scale_list[random.randint(0, len(scale_list) - 1)]
+        try:
+            img0 = read_image_file(description['start'])['image_data']
+            img1 = read_image_file(description['gt'])['image_data']
+            img2 = read_image_file(description['end'])['image_data']
+
+            img0 = torch.from_numpy(img0).permute(2, 0, 1).unsqueeze(0)
+            img1 = torch.from_numpy(img1).permute(2, 0, 1).unsqueeze(0)
+            img2 = torch.from_numpy(img2).permute(2, 0, 1).unsqueeze(0)
+
+            img0 = resize_image(img0, int(h * scale))
+            img1 = resize_image(img0, int(h * scale))
+            img2 = resize_image(img0, int(h * scale))
+
+            train_data = {}
+            train_data['start'] = img0
+            train_data['gt'] = img1
+            train_data['end'] = img2
+            train_data['ratio'] = description['ratio']
+            train_data['h'] = description['h']
+            train_data['w'] = description['w']
+            train_data['description'] = description
+            train_data['index'] = index
+            frames_queue.put(train_data)
+        except Exception as e:
+            del train_data
+            print (e)
+
+
 class TimewarpMLDataset(torch.utils.data.Dataset):
     def __init__(   
             self, 
@@ -102,7 +168,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         print ('Spawning frame reader...')
         self.frames_queue = torch.multiprocessing.Queue(maxsize=4)
         self.frame_read_thread = torch.multiprocessing.spawn(
-            self.read_frames_thread,
+            read_frames_thread,
             args=(self.frames_queue, self.train_descriptions, self.scale_list, self.h)
         )
         print ('Done')
@@ -207,72 +273,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             print (f'\nError scanning {folder_path}: {e}')
 
         return descriptions
-        
-    @staticmethod
-    def read_frames_thread(self, frames_queue, train_descriptions, scale_list, h):
-        print (f'self: {type(self)}, frames_queue: {type(frames_queue)}, train_descriptions: {type(train_descriptions)}, scale_list: {type(scale_list)}, h: {type(h)}')
-
-        def resize_image(tensor, x):
-            """
-            Resize the tensor of shape [h, w, c] so that the smallest dimension becomes x,
-            while retaining aspect ratio.
-
-            Parameters:
-            tensor (torch.Tensor): The input tensor with shape [h, w, c].
-            x (int): The target size for the smallest dimension.
-
-            Returns:
-            torch.Tensor: The resized tensor.
-            """
-            # Adjust tensor shape to [n, c, h, w]
-            # tensor = tensor.permute(2, 0, 1).unsqueeze(0)
-
-            # Calculate new size
-            h, w = tensor.shape[2], tensor.shape[3]
-            if h > w:
-                new_w = x
-                new_h = int(x * h / w)
-            else:
-                new_h = x
-                new_w = int(x * w / h)
-
-            # Resize
-            resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bilinear', align_corners=False)
-
-            # Adjust tensor shape back to [h, w, c]
-            # resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
-
-            return resized_tensor
-
-        for index in range(len(train_descriptions)):
-            description = train_descriptions[index]
-            scale = scale_list[random.randint(0, len(scale_list) - 1)]
-            try:
-                img0 = read_image_file(description['start'])['image_data']
-                img1 = read_image_file(description['gt'])['image_data']
-                img2 = read_image_file(description['end'])['image_data']
-
-                img0 = torch.from_numpy(img0).permute(2, 0, 1).unsqueeze(0)
-                img1 = torch.from_numpy(img1).permute(2, 0, 1).unsqueeze(0)
-                img2 = torch.from_numpy(img2).permute(2, 0, 1).unsqueeze(0)
-
-                img0 = resize_image(img0, int(h * scale))
-                img1 = resize_image(img0, int(h * scale))
-                img2 = resize_image(img0, int(h * scale))
-
-                train_data = {}
-                train_data['start'] = img0
-                train_data['gt'] = img1
-                train_data['end'] = img2
-                train_data['ratio'] = description['ratio']
-                train_data['h'] = description['h']
-                train_data['w'] = description['w']
-                train_data['description'] = description
-                train_data['index'] = index
-                frames_queue.put(train_data)
-            except Exception as e:
-                del train_data
-                print (e)
     
     def crop(self, img0, img1, img2, h, w):
         np.random.seed(None)
