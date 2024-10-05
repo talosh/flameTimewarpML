@@ -1468,6 +1468,8 @@ def main():
         data_time = time.time() - time_stamp
         time_stamp = time.time()
 
+        data = dataset[0]
+
         # read data here
         time.sleep(0.05)
         idx = 0
