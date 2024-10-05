@@ -102,10 +102,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         self.frames_queue = torch.multiprocessing.Queue(maxsize=4)
         self.frame_read_thread = torch.multiprocessing.spawn(
             self.read_frames_thread,
-            args=(self.frames_queue, self.train_descriptions, self.scale_list, self.h),
-            nprocs = 1,
-            join = False,
-            daemon = True,
+            args=(self.frames_queue, self.train_descriptions, self.scale_list, self.h)
         )
 
         time.sleep(10)
