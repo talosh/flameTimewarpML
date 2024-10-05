@@ -1542,6 +1542,35 @@ def main():
         data_time = time.time() - time_stamp
         time_stamp = time.time()
 
+        # read data here
+        time.sleep(0.05)
+        idx = 0
+
+        data_time += time.time() - time_stamp
+        data_time_str = str(f'{data_time:.2f}')
+        time_stamp = time.time()
+
+        # train here
+        time.sleep(0.08)
+        current_lr_str = '0'
+        loss_l1_str = '0'
+
+        train_time_str = str(f'{train_time:.2f}')
+        train_time = time.time() - time_stamp
+
+        epoch_time = time.time() - start_timestamp
+        days = int(epoch_time // (24 * 3600))
+        hours = int((epoch_time % (24 * 3600)) // 3600)
+        minutes = int((epoch_time % 3600) // 60)
+
+        clear_lines(2)
+        print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{train_time_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
+        # if len(epoch_loss) < 9999:
+        #    print(f'\r[Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
+        #else:
+        #    print(f'\r[Last 10K] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
+        continue
+
         img0, img1, img2, ratio, idx = read_image_queue.get()
 
         img0 = img0.to(device, non_blocking = True)
