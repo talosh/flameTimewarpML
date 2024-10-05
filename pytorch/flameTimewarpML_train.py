@@ -138,7 +138,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 self.train_descriptions,
                 self.frames_queue,
                 self.scale_list
-            )
+            ),
             nprocs = 1,
             join = False,
             daemon = True,
