@@ -20,7 +20,7 @@ except:
     python_executable_path = sys.executable
     if '.miniconda' in python_executable_path:
         print ('Unable to import PyTorch')
-        print (f'Using {python_executable_path} python interpreter')
+        print (f'Using "{python_executable_path}" as python interpreter')
         sys.exit()
     else:
         # make Flame happy on hooks scan
@@ -36,8 +36,8 @@ try:
 except:
     python_executable_path = sys.executable
     if '.miniconda' in python_executable_path:
+        print (f'Using "{python_executable_path}" as python interpreter')
         print ('Unable to import Numpy')
-        print (f'Using {python_executable_path} python interpreter')
         sys.exit()
 
 try:
@@ -46,9 +46,9 @@ except:
     python_executable_path = sys.executable
     if '.miniconda' in python_executable_path:
         print ('Unable to import OpeiImageIO')
-        print (f'Using {python_executable_path} python interpreter')
+        print (f'Using "{python_executable_path}" as python interpreter')
         sys.exit()
-        
+
 
 def read_image_file(file_path, header_only = False):
     result = {'spec': None, 'image_data': None}
