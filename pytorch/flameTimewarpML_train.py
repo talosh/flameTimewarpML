@@ -200,8 +200,9 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         return descriptions
         
-    @classmethod
+    @staticmethod
     def read_frames_thread(frames_queue, train_descriptions, scale_list, h):
+
         def resize_image(tensor, x):
             """
             Resize the tensor of shape [h, w, c] so that the smallest dimension becomes x,
@@ -234,36 +235,36 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
             return resized_tensor
 
-        while True:
-            for index in range(len(train_descriptions)):
-                description = train_descriptions[index]
-                scale = scale_list[random.randint(0, len(scale_list) - 1)]
-                try:
-                    img0 = read_image_file(description['start'])['image_data']
-                    img1 = read_image_file(description['gt'])['image_data']
-                    img2 = read_image_file(description['end'])['image_data']
+        for index in range(len(train_descriptions)):
+            description = train_descriptions[index]
+            print (f'desc: {description}')
+            scale = scale_list[random.randint(0, len(scale_list) - 1)]
+            try:
+                img0 = read_image_file(description['start'])['image_data']
+                img1 = read_image_file(description['gt'])['image_data']
+                img2 = read_image_file(description['end'])['image_data']
 
-                    img0 = torch.from_numpy(img0).permute(2, 0, 1).unsqueeze(0)
-                    img1 = torch.from_numpy(img1).permute(2, 0, 1).unsqueeze(0)
-                    img2 = torch.from_numpy(img2).permute(2, 0, 1).unsqueeze(0)
+                img0 = torch.from_numpy(img0).permute(2, 0, 1).unsqueeze(0)
+                img1 = torch.from_numpy(img1).permute(2, 0, 1).unsqueeze(0)
+                img2 = torch.from_numpy(img2).permute(2, 0, 1).unsqueeze(0)
 
-                    img0 = resize_image(img0, int(h * scale))
-                    img1 = resize_image(img0, int(h * scale))
-                    img2 = resize_image(img0, int(h * scale))
+                img0 = resize_image(img0, int(h * scale))
+                img1 = resize_image(img0, int(h * scale))
+                img2 = resize_image(img0, int(h * scale))
 
-                    train_data = {}
-                    train_data['start'] = img0
-                    train_data['gt'] = img1
-                    train_data['end'] = img2
-                    train_data['ratio'] = description['ratio']
-                    train_data['h'] = description['h']
-                    train_data['w'] = description['w']
-                    train_data['description'] = description
-                    train_data['index'] = index
-                    frames_queue.put(train_data)
-                except Exception as e:
-                    del train_data
-                    print (e)
+                train_data = {}
+                train_data['start'] = img0
+                train_data['gt'] = img1
+                train_data['end'] = img2
+                train_data['ratio'] = description['ratio']
+                train_data['h'] = description['h']
+                train_data['w'] = description['w']
+                train_data['description'] = description
+                train_data['index'] = index
+                frames_queue.put(train_data)
+            except Exception as e:
+                del train_data
+                print (e)
     
     def crop(self, img0, img1, img2, h, w):
         np.random.seed(None)
