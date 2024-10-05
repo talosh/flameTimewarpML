@@ -15,13 +15,11 @@ from copy import deepcopy
 from pprint import pprint
 
 try:
-    import numpy as np
     import torch
-    import OpenImageIO as oiio
 except:
     python_executable_path = sys.executable
     if '.miniconda' in python_executable_path:
-        print ('Unable to import Numpy and PyTorch libraries')
+        print ('Unable to import PyTorch')
         print (f'Using {python_executable_path} python interpreter')
         sys.exit()
     else:
@@ -32,6 +30,25 @@ except:
                     pass
                 class Conv2d(object):
                     pass
+
+try:
+    import numpy as np
+except:
+    python_executable_path = sys.executable
+    if '.miniconda' in python_executable_path:
+        print ('Unable to import Numpy')
+        print (f'Using {python_executable_path} python interpreter')
+        sys.exit()
+
+try:
+    import OpenImageIO as oiio
+except:
+    python_executable_path = sys.executable
+    if '.miniconda' in python_executable_path:
+        print ('Unable to import OpeiImageIO')
+        print (f'Using {python_executable_path} python interpreter')
+        sys.exit()
+        
 
 def read_image_file(file_path, header_only = False):
     result = {'spec': None, 'image_data': None}
