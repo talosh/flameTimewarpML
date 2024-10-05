@@ -101,11 +101,8 @@ def get_dataset(
 
             self.reshuffle()
 
-            sys.exit()
-
             self.h = frame_size
             self.w = frame_size
-            # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
             self.frames_queue = queue.Queue(maxsize=32)
             self.frame_read_thread = threading.Thread(target=self.read_frames_thread)
@@ -114,25 +111,15 @@ def get_dataset(
 
             print ('reading first block of training data...')
             self.last_train_data = [self.frames_queue.get()]
-            self.last_train_data_size = 11
+            self.last_train_data_size = 4
             self.new_sample_shown = False
             self.train_data_index = 0
-
-            self.current_batch_data = []
 
             self.repeat_count = repeat
             self.repeat_counter = 0
 
-            # self.last_shuffled_index = -1
-            # self.last_source_image_data = None
-            # self.last_target_image_data = None
+            sys.exit()
 
-            if device is None:
-                self.device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda')
-            else:
-                self.device = device
-
-            print (f'ACEScc rate: {self.acescc_rate}%')
 
         def reshuffle(self):
             random.shuffle(self.train_descriptions)
@@ -150,32 +137,6 @@ def get_dataset(
                         break  # No need to check other files in the same directory
 
             return directories_with_imgs
-
-        def scan_dataset_descriptions(self, folders, file_name='dataset_folder.json'):
-            """
-            Scan folders for the presence of a specific file and categorize them.
-
-            Parameters:
-            folders (set): A set of folder paths to check.
-            file_name (str, optional): The name of the file to look for in each folder. Defaults to 'twml_dataset_folder.json'.
-
-            Returns:
-            tuple of (set, set): Two sets, the first contains folders where the file exists, the second contains folders where it does not.
-            """
-            folders_with_file = set()
-            folders_without_file = set()
-
-            for folder in folders:
-                # Construct the full path to the file
-                file_path = os.path.join(folder, file_name)
-
-                # Check if the file exists in the folder
-                if os.path.exists(file_path):
-                    folders_with_file.add(folder)
-                else:
-                    folders_without_file.add(folder)
-
-            return folders_with_file, folders_without_file
 
         def create_dataset_descriptions(self, folder_path, max_window=9):
 
@@ -266,9 +227,6 @@ def get_dataset(
                         del train_data
                         print (e)           
                 time.sleep(timeout)
-
-        def __len__(self):
-            return len(self.train_descriptions)
         
         def crop(self, img0, img1, img2, h, w):
             np.random.seed(None)
@@ -371,6 +329,9 @@ def get_dataset(
 
             return ACEScc
 
+        def __len__(self):
+            return len(self.train_descriptions)
+
         def __getitem__(self, index):
             train_data = self.getimg(index)
             # src_img0 = train_data['pre_start']
@@ -395,33 +356,6 @@ def get_dataset(
             src_img1 = src_img1.to(device = device, dtype = torch.float32)
             src_img2 = src_img2.to(device = device, dtype = torch.float32)
 
-            '''
-            train_sample_data = {}
-
-            train_sample_data['rsz1_img0'] = self.resize_image(src_img0, self.h)
-            train_sample_data['rsz1_img1'] = self.resize_image(src_img1, self.h)
-            train_sample_data['rsz1_img2'] = self.resize_image(src_img2, self.h)
-
-            train_sample_data['rsz2_img0'] = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
-            train_sample_data['rsz2_img1'] = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
-            train_sample_data['rsz2_img2'] = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
-
-            train_sample_data['rsz3_img0'] = self.resize_image(src_img0, int(self.h * (1 + 1/5)))
-            train_sample_data['rsz3_img1'] = self.resize_image(src_img1, int(self.h * (1 + 1/5)))
-            train_sample_data['rsz3_img2'] = self.resize_image(src_img2, int(self.h * (1 + 1/5)))
-
-            train_sample_data['rsz4_img0'] = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
-            train_sample_data['rsz4_img1'] = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
-            train_sample_data['rsz4_img2'] = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
-
-            if len(self.current_batch_data) < self.batch_size:
-                self.current_batch_data = [train_sample_data] * self.batch_size
-            else:
-                old_data = self.current_batch_data.pop(0)
-                del old_data
-                self.current_batch_data.append(train_sample_data)
-            '''
-
             rsz1_img0 = self.resize_image(src_img0, self.h)
             rsz1_img1 = self.resize_image(src_img1, self.h)
             rsz1_img2 = self.resize_image(src_img2, self.h)
@@ -443,24 +377,6 @@ def get_dataset(
             batch_img2 = []
 
             for index in range(self.batch_size):
-                '''
-                rsz1_img0 = self.current_batch_data[index]['rsz1_img0']
-                rsz1_img1 = self.current_batch_data[index]['rsz1_img1']
-                rsz1_img2 = self.current_batch_data[index]['rsz1_img2']
-
-                rsz2_img0 = self.current_batch_data[index]['rsz2_img0']
-                rsz2_img1 = self.current_batch_data[index]['rsz2_img1']
-                rsz2_img2 = self.current_batch_data[index]['rsz2_img2']
-
-                rsz3_img0 = self.current_batch_data[index]['rsz3_img0']
-                rsz3_img1 = self.current_batch_data[index]['rsz3_img1']
-                rsz3_img2 = self.current_batch_data[index]['rsz3_img2']
-
-                rsz4_img0 = self.current_batch_data[index]['rsz4_img0']
-                rsz4_img1 = self.current_batch_data[index]['rsz4_img1']
-                rsz4_img2 = self.current_batch_data[index]['rsz4_img2']
-                '''
-
                 if self.generalize == 0:
                     # No augmentaton
                     img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
@@ -576,13 +492,6 @@ def get_dataset(
                 batch_img2.append(img2)
 
             return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), ratio, images_idx
-
-        def get_input_channels_number(self, source_frames_paths_list):
-            total_num_channels = 0
-            for src_path in source_frames_paths_list:
-                file_header = read_openexr_file(src_path, header_only=True)
-                total_num_channels += file_header['shape'][2]
-            return total_num_channels
 
     return TimewarpMLDataset(
         data_root, 
