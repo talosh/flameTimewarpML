@@ -111,8 +111,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         self.new_sample_shown = False
         self.train_data_index = 0
 
-        print (f'{type{self.last_train_data[0]}}')
-        
+        print (f'{type(self.last_train_data[0])}')
+
         time.sleep(1)
         sys.exit()
 
