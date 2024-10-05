@@ -108,6 +108,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             daemon = True,
         )
 
+        time.sleep(10)
         sys.exit()
 
         print ('reading first block of training data...')
