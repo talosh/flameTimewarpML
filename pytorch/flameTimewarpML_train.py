@@ -206,7 +206,6 @@ def get_dataset(
             return descriptions
             
         def read_frames_thread(self):
-            timeout = 1e-8
             while True:
                 for index in range(len(self.train_descriptions)):
                     description = self.train_descriptions[index]
@@ -226,7 +225,6 @@ def get_dataset(
                     except Exception as e:
                         del train_data
                         print (e)           
-                time.sleep(timeout)
         
         def crop(self, img0, img1, img2, h, w):
             np.random.seed(None)
