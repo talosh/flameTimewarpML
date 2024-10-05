@@ -129,7 +129,6 @@ def read_frames_thread(frames_queue, train_descriptions, scale_list, h):
             del train_data
             print (e)
 
-
 class TimewarpMLDataset(torch.utils.data.Dataset):
     def __init__(   
             self, 
@@ -173,19 +172,15 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         )
         self.frame_read_thread.start()
         print ('Done')
-
-
-        time.sleep(2)
+        time.sleep(1)
 
         print (f'{self.frames_queue.qsize()}')
 
-        '''
         print ('reading first block of training data...')
         self.last_train_data = [self.frames_queue.get()]
         self.last_train_data_size = 4
         self.new_sample_shown = False
         self.train_data_index = 0
-        '''
 
         print (f'{type(self.last_train_data[0])}')
 
