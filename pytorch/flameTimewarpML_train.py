@@ -78,12 +78,18 @@ def get_dataset(
                 batch_size = 4, 
                 frame_size=448, 
                 max_window=9,
-                repeat = 1
+                repeat = 1,
+                scale_list = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
                 ):
             
             self.data_root = data_root
             self.batch_size = batch_size
             self.max_window = max_window
+            self.h = frame_size
+            self.w = frame_size
+            self.scale_list = scale_list
+            self.repeat_count = repeat
+            self.repeat_counter = 0
 
             print (f'scanning for exr files in {self.data_root}...')
             self.folders_with_exr = self.find_folders_with_images(data_root)
@@ -98,28 +104,22 @@ def get_dataset(
             self.initial_train_descriptions = list(self.train_descriptions)
 
             print ('\nReshuffling training data indices...')
-
             self.reshuffle()
 
-            self.h = frame_size
-            self.w = frame_size
-
-            self.frames_queue = queue.Queue(maxsize=32)
-            self.frame_read_thread = threading.Thread(target=self.read_frames_thread)
-            self.frame_read_thread.daemon = True
-            self.frame_read_thread.start()
+            self.frames_queue = torch.multiprocessing.Queue(maxsize=4)
+            self.frame_read_thread = torch.multiprocessing.spawn.spawn(
+                self.read_frames_thread,
+                nproc = 1,
+                join = False,
+                daemon = True,
+            )
 
             print ('reading first block of training data...')
             self.last_train_data = [self.frames_queue.get()]
             self.last_train_data_size = 4
             self.new_sample_shown = False
             self.train_data_index = 0
-
-            self.repeat_count = repeat
-            self.repeat_counter = 0
-
             sys.exit()
-
 
         def reshuffle(self):
             random.shuffle(self.train_descriptions)
@@ -209,13 +209,24 @@ def get_dataset(
             while True:
                 for index in range(len(self.train_descriptions)):
                     description = self.train_descriptions[index]
+                    scale = self.scale_list[random.randint(0, len(self.scale_list) - 1)]
                     try:
+                        img0 = read_image_file(description['start'])['image_data']
+                        img1 = read_image_file(description['gt'])['image_data']
+                        img2 = read_image_file(description['end'])['image_data']
+
+                        img0 = torch.from_numpy(img0).permute(2, 0, 1).unsqueeze(0)
+                        img1 = torch.from_numpy(img1).permute(2, 0, 1).unsqueeze(0)
+                        img2 = torch.from_numpy(img2).permute(2, 0, 1).unsqueeze(0)
+
+                        img0 = self.resize_image(img0, int(self.h * scale))
+                        img1 = self.resize_image(img0, int(self.h * scale))
+                        img2 = self.resize_image(img0, int(self.h * scale))
+
                         train_data = {}
-                        # train_data['pre_start'] = read_openexr_file(description['pre_start'])['image_data']
-                        train_data['start'] = read_openexr_file(description['start'])['image_data']
-                        train_data['gt'] = read_openexr_file(description['gt'])['image_data']
-                        train_data['end'] = read_openexr_file(description['end'])['image_data']
-                        # train_data['after_end'] = read_openexr_file(description['after_end'])['image_data']
+                        train_data['start'] = img0
+                        train_data['gt'] = img1
+                        train_data['end'] = img2
                         train_data['ratio'] = description['ratio']
                         train_data['h'] = description['h']
                         train_data['w'] = description['w']
@@ -224,7 +235,7 @@ def get_dataset(
                         self.frames_queue.put(train_data)
                     except Exception as e:
                         del train_data
-                        print (e)           
+                        print (e)
         
         def crop(self, img0, img1, img2, h, w):
             np.random.seed(None)
@@ -251,7 +262,7 @@ def get_dataset(
             torch.Tensor: The resized tensor.
             """
             # Adjust tensor shape to [n, c, h, w]
-            tensor = tensor.permute(2, 0, 1).unsqueeze(0)
+            # tensor = tensor.permute(2, 0, 1).unsqueeze(0)
 
             # Calculate new size
             h, w = tensor.shape[2], tensor.shape[3]
@@ -266,7 +277,7 @@ def get_dataset(
             resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bilinear', align_corners=False)
 
             # Adjust tensor shape back to [h, w, c]
-            resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
+            # resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
 
             return resized_tensor
 
