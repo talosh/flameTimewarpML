@@ -64,6 +64,38 @@ def read_image_file(file_path, header_only = False):
         inp.close()
     return result
 
+def dataset_read_frames_thread(descriptions, frames_queue, scale_list = [1.0]):
+    while True:
+        for index in range(len(descriptions)):
+            description = descriptions[index]
+            scale = scale_list[random.randint(0, len(scale_list) - 1)]
+            try:
+                img0 = read_image_file(description['start'])['image_data']
+                img1 = read_image_file(description['gt'])['image_data']
+                img2 = read_image_file(description['end'])['image_data']
+
+                img0 = torch.from_numpy(img0).permute(2, 0, 1).unsqueeze(0)
+                img1 = torch.from_numpy(img1).permute(2, 0, 1).unsqueeze(0)
+                img2 = torch.from_numpy(img2).permute(2, 0, 1).unsqueeze(0)
+
+                # img0 = self.resize_image(img0, int(self.h * scale))
+                # img1 = self.resize_image(img0, int(self.h * scale))
+                # img2 = self.resize_image(img0, int(self.h * scale))
+
+                train_data = {}
+                train_data['start'] = img0
+                train_data['gt'] = img1
+                train_data['end'] = img2
+                train_data['ratio'] = description['ratio']
+                train_data['h'] = description['h']
+                train_data['w'] = description['w']
+                train_data['description'] = description
+                train_data['index'] = index
+                frames_queue.put(train_data)
+            except Exception as e:
+                del train_data
+                print (e)
+
 class TimewarpMLDataset(torch.utils.data.Dataset):
     def __init__(   
             self, 
@@ -100,9 +132,13 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         self.reshuffle()
 
         self.frames_queue = torch.multiprocessing.Queue(maxsize=4)
-        torch.multiprocessing.set_start_method('spawn')
         self.frame_read_thread = torch.multiprocessing.spawn(
             self.read_frames_thread,
+            args=(
+                self.train_descriptions,
+                self.frames_queue,
+                self.scale_list
+            )
             nprocs = 1,
             join = False,
             daemon = True,
@@ -198,39 +234,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             print (f'\nError scanning {folder_path}: {e}')
 
         return descriptions
-        
-    def read_frames_thread(self):
-        while True:
-            for index in range(len(self.train_descriptions)):
-                description = self.train_descriptions[index]
-                scale = self.scale_list[random.randint(0, len(self.scale_list) - 1)]
-                try:
-                    img0 = read_image_file(description['start'])['image_data']
-                    img1 = read_image_file(description['gt'])['image_data']
-                    img2 = read_image_file(description['end'])['image_data']
-
-                    img0 = torch.from_numpy(img0).permute(2, 0, 1).unsqueeze(0)
-                    img1 = torch.from_numpy(img1).permute(2, 0, 1).unsqueeze(0)
-                    img2 = torch.from_numpy(img2).permute(2, 0, 1).unsqueeze(0)
-
-                    img0 = self.resize_image(img0, int(self.h * scale))
-                    img1 = self.resize_image(img0, int(self.h * scale))
-                    img2 = self.resize_image(img0, int(self.h * scale))
-
-                    train_data = {}
-                    train_data['start'] = img0
-                    train_data['gt'] = img1
-                    train_data['end'] = img2
-                    train_data['ratio'] = description['ratio']
-                    train_data['h'] = description['h']
-                    train_data['w'] = description['w']
-                    train_data['description'] = description
-                    train_data['index'] = index
-                    self.frames_queue.put(train_data)
-                except Exception as e:
-                    del train_data
-                    print (e)
-    
+            
     def crop(self, img0, img1, img2, h, w):
         np.random.seed(None)
         ih, iw, _ = img0.shape
