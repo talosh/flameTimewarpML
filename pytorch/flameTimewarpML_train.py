@@ -102,6 +102,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         self.frames_queue = torch.multiprocessing.Queue(maxsize=4)
         self.frame_read_thread = torch.multiprocessing.spawn(
             self.read_frames_thread,
+            args=(self.frames_queue, self.train_descriptions, self.scale_list, self.h),
             nprocs = 1,
             join = False,
             daemon = True,
@@ -198,11 +199,44 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         return descriptions
         
-    def read_frames_thread(self):
+    @classmethod
+    def read_frames_thread(frames_queue, train_descriptions, scale_list, h):
+        def resize_image(tensor, x):
+            """
+            Resize the tensor of shape [h, w, c] so that the smallest dimension becomes x,
+            while retaining aspect ratio.
+
+            Parameters:
+            tensor (torch.Tensor): The input tensor with shape [h, w, c].
+            x (int): The target size for the smallest dimension.
+
+            Returns:
+            torch.Tensor: The resized tensor.
+            """
+            # Adjust tensor shape to [n, c, h, w]
+            # tensor = tensor.permute(2, 0, 1).unsqueeze(0)
+
+            # Calculate new size
+            h, w = tensor.shape[2], tensor.shape[3]
+            if h > w:
+                new_w = x
+                new_h = int(x * h / w)
+            else:
+                new_h = x
+                new_w = int(x * w / h)
+
+            # Resize
+            resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bilinear', align_corners=False)
+
+            # Adjust tensor shape back to [h, w, c]
+            # resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
+
+            return resized_tensor
+
         while True:
-            for index in range(len(self.train_descriptions)):
-                description = self.train_descriptions[index]
-                scale = self.scale_list[random.randint(0, len(self.scale_list) - 1)]
+            for index in range(len(train_descriptions)):
+                description = train_descriptions[index]
+                scale = scale_list[random.randint(0, len(scale_list) - 1)]
                 try:
                     img0 = read_image_file(description['start'])['image_data']
                     img1 = read_image_file(description['gt'])['image_data']
@@ -212,9 +246,9 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                     img1 = torch.from_numpy(img1).permute(2, 0, 1).unsqueeze(0)
                     img2 = torch.from_numpy(img2).permute(2, 0, 1).unsqueeze(0)
 
-                    img0 = self.resize_image(img0, int(self.h * scale))
-                    img1 = self.resize_image(img0, int(self.h * scale))
-                    img2 = self.resize_image(img0, int(self.h * scale))
+                    img0 = resize_image(img0, int(h * scale))
+                    img1 = resize_image(img0, int(h * scale))
+                    img2 = resize_image(img0, int(h * scale))
 
                     train_data = {}
                     train_data['start'] = img0
@@ -225,7 +259,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                     train_data['w'] = description['w']
                     train_data['description'] = description
                     train_data['index'] = index
-                    self.frames_queue.put(train_data)
+                    frames_queue.put(train_data)
                 except Exception as e:
                     del train_data
                     print (e)
@@ -241,38 +275,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         # img3 = img3[x:x+h, y:y+w, :]
         # img4 = img4[x:x+h, y:y+w, :]
         return img0, img1, img2 #, img3, img4
-
-    def resize_image(self, tensor, x):
-        """
-        Resize the tensor of shape [h, w, c] so that the smallest dimension becomes x,
-        while retaining aspect ratio.
-
-        Parameters:
-        tensor (torch.Tensor): The input tensor with shape [h, w, c].
-        x (int): The target size for the smallest dimension.
-
-        Returns:
-        torch.Tensor: The resized tensor.
-        """
-        # Adjust tensor shape to [n, c, h, w]
-        # tensor = tensor.permute(2, 0, 1).unsqueeze(0)
-
-        # Calculate new size
-        h, w = tensor.shape[2], tensor.shape[3]
-        if h > w:
-            new_w = x
-            new_h = int(x * h / w)
-        else:
-            new_h = x
-            new_w = int(x * w / h)
-
-        # Resize
-        resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bilinear', align_corners=False)
-
-        # Adjust tensor shape back to [h, w, c]
-        # resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
-
-        return resized_tensor
 
     def getimg(self, index):
         # '''
