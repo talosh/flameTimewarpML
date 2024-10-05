@@ -1488,8 +1488,8 @@ def main():
         current_lr_str = '0'
         loss_l1_str = '0'
 
-        train_time_str = str(f'{train_time:.2f}')
         train_time = time.time() - time_stamp
+        train_time_str = str(f'{train_time:.2f}')
 
         epoch_time = time.time() - start_timestamp
         days = int(epoch_time // (24 * 3600))
