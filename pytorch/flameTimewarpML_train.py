@@ -45,7 +45,7 @@ try:
 except:
     python_executable_path = sys.executable
     if '.miniconda' in python_executable_path:
-        print ('Unable to import OpeiImageIO')
+        print ('Unable to import OpenImageIO')
         print (f'Using "{python_executable_path}" as python interpreter')
         sys.exit()
 
