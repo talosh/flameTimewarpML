@@ -1022,7 +1022,7 @@ def main():
         if args.state_file and os.path.isfile(args.state_file):
             trained_model_path = args.state_file
             try:
-                checkpoint = torch.load(trained_model_path, map_location=device)
+                checkpoint = torch.load(trained_model_path, map_location=device, weights_only=False)
                 print('loaded previously saved model checkpoint')
             except Exception as e:
                 print (f'unable to load saved model checkpoint: {e}')
@@ -1212,7 +1212,7 @@ def main():
         trained_model_path = args.state_file
 
         try:
-            checkpoint = torch.load(trained_model_path, map_location=device)
+            checkpoint = torch.load(trained_model_path, map_location=device, weights_only=False)
             print('loaded previously saved model checkpoint')
         except Exception as e:
             print (f'unable to load saved model: {e}')
@@ -1254,7 +1254,7 @@ def main():
         trained_model_path = os.path.join(trained_model_dir, traned_model_name)
 
     if args.legacy_model:
-        rife_state_dict = torch.load(args.legacy_model)
+        rife_state_dict = torch.load(args.legacy_model, weights_only=False)
         def convert(param):
             return {
                 k.replace("module.", ""): v
