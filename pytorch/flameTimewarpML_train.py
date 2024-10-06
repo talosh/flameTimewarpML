@@ -1483,6 +1483,8 @@ def main():
             iterations = args.iterations
             )
         
+        flow0 = flow_list[3][:, :2]
+        flow1 = flow_list[3][:, 2:4]
         mask = mask_list[3]
         output = merged[3]
 
