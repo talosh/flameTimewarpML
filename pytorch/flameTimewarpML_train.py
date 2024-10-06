@@ -1489,8 +1489,13 @@ def main():
         output = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
 
         loss_LPIPS_ = loss_fn_alex(output * 2 - 1, img1_orig * 2 - 1)
+        lpips_weight = 0.5
 
-        loss_l1_str = '0'
+        lpips_weight = 0.5
+        loss = (1 - lpips_weight ) * criterion_l1(output, img1_orig) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS_).item())
+
+        loss_l1 = criterion_l1(output, img1_orig)
+        loss_l1_str = str(f'{loss_l1.item():.6f}')
 
         train_time = time.time() - time_stamp
         train_time_str = str(f'{train_time:.2f}')
