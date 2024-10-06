@@ -64,6 +64,13 @@ def read_image_file(file_path, header_only = False):
         inp.close()
     return result
 
+def write_image_file(file_path, image_data, image_spec):
+    out = oiio.ImageOutput.create(file_path)
+    if out:
+        out.open(file_path, image_spec)
+        out.write_image(image_data)
+        out.close()
+
 class TimewarpMLDataset(torch.utils.data.Dataset):
     def __init__(   
             self, 
@@ -1541,9 +1548,24 @@ def main():
                 eta_min = current_lr - (( current_lr / 100 ) * pulse_dive)
                 )
 
+        # training block finishes here
         train_time = time.time() - time_stamp
         train_time_str = str(f'{train_time:.2f}')
         time_stamp = time.time()
+
+        current_state_dict['step'] = int(step)
+        current_state_dict['steps_loss'] = list(steps_loss)
+        current_state_dict['epoch'] = int(epoch)
+        current_state_dict['epoch_loss'] = list(epoch_loss)
+        current_state_dict['start_timestamp'] = start_timestamp
+        current_state_dict['lr'] = optimizer_flownet.param_groups[0]['lr']
+        current_state_dict['model_info'] = model_info
+        if args.all_gpus:
+            current_state_dict['flownet_state_dict'] = convert_from_data_parallel(flownet.state_dict())
+        else:
+            current_state_dict['flownet_state_dict'] = flownet.state_dict()
+        current_state_dict['optimizer_flownet_state_dict'] = optimizer_flownet.state_dict()
+        current_state_dict['trained_model_path'] = trained_model_path
 
         epoch_time = time.time() - start_timestamp
         days = int(epoch_time // (24 * 3600))
