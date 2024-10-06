@@ -1516,10 +1516,14 @@ def main():
         lpips_val = float(np.array(lpips_list).mean())
 
         loss.backward()
-        if not platform.system() == 'Darwin':
-            torch.cuda.synchronize()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
         optimizer_flownet.step()
+
+        # synchonize all cores here so we have time measurments right
+        if platform.system() == 'Darwin':
+            torch.mps.synchronize()
+        else:
+            torch.cuda.synchronize()
 
         try:
             scheduler_flownet.step()
