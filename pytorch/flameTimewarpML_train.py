@@ -1475,9 +1475,6 @@ def main():
 
         # n_iterations = random.randint(1, 4) if args.iterations == -1 else args.iterations
         
-        time.sleep(0.5)
-
-        '''
         flow_list, mask_list, merged = flownet(
             img0, 
             img2, 
@@ -1488,7 +1485,8 @@ def main():
         
         mask = mask_list[3]
         output = merged[3]
-        '''
+
+        loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
 
         loss_l1_str = '0'
 
