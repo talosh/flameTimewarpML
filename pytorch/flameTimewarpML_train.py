@@ -1096,10 +1096,11 @@ def main():
                     write_data['sample_output_mask'].astype(np.float16),
                     spec)
                 del write_data
-            except Exception as e:
-            # except queue.Empty:
-                print (f'\n\nWrite preview: {e}')
+            except queue.Empty:
                 time.sleep(1e-2)
+            except Exception as e:
+                print (f'\n\nWrite preview: {e}')
+                
 
     def write_eval_images(write_eval_image_queue):
         while True:
