@@ -1461,11 +1461,11 @@ def main():
         data_time_str = str(f'{data_time:.2f}')
         time_stamp = time.time()
 
-        # train here
-
+        # trainimg block starts here
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
         optimizer_flownet.zero_grad()
 
+        # scale list augmentation
         random_scales = [
             [8, 4, 2, 1],
             [4, 4, 2, 1],
@@ -1520,45 +1520,6 @@ def main():
 
 
 
-        # scale list augmentation
-
-        '''
-        random_scales = [
-            [4, 2, 1, 1],
-            [2, 2, 1, 1],
-            [2, 1, 1, 1],
-            [1, 1, 1, 1],
-        ]
-        '''
-
-        # '''
-
-        '''
-        random_scales = [
-            [8, 4, 2, 1],
-            [4, 4, 2, 1],
-            [4, 2, 2, 1],
-            [4, 2, 1, 1],
-            [2, 2, 2, 1],
-            [2, 2, 1, 1],
-            [2, 1, 1, 1],
-            [1, 1, 1, 1],
-        ]
-
-        training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
-        '''
-
-        # training_scale = [8, 4, 2, 1]
-
-        # if random.uniform(0, 1) < 0.22:
-        #    training_scale = [1 if x == 1 else x / 2 for x in training_scale]
-
-        '''    
-        if random.uniform(0, 1) < 0.165:
-            training_scale = [x * 2 for x in training_scale]
-        elif random.uniform(0, 1) < 0.33:
-            training_scale = [1/2 if x == 1 else x / 2 for x in training_scale]
-        '''
 
         flownet.train()
         
