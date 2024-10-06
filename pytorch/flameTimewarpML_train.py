@@ -355,7 +355,16 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         return len(self.train_descriptions)
 
     def __getitem__(self, index):
-        return self.getimg(index)
+        data = self.getimg(index)
+
+        img0 = data['start']
+        img1 = data['gt']
+        img2 = data['end']
+        ratio = data['ratio']
+        images_idx = self.train_data_index
+
+        return img0, img1, img2, ratio, images_idx
+
         train_data = self.getimg(index)
         # src_img0 = train_data['pre_start']
         np_img0 = train_data['start']
@@ -1483,17 +1492,16 @@ def main():
         time_stamp = time.time()
 
         # read data here
-        idx = 0
-        data = dataset[0]
+        img0, img1, img2, ratio, idx = dataset[0]
 
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
         time_stamp = time.time()
 
         # train here
-        img0 = data['start'].to(device = device, dtype = torch.float32)
-        img1 = data['gt'].to(device = device, dtype = torch.float32)
-        img2 = data['end'].to(device = device, dtype = torch.float32)
+        img0 = img0.to(device = device, dtype = torch.float32)
+        img1 = img1.to(device = device, dtype = torch.float32)
+        img2 = img2.to(device = device, dtype = torch.float32)
 
         current_lr_str = '0'
         loss_l1_str = '0'
@@ -1512,6 +1520,22 @@ def main():
         #    print(f'\r[Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
         #else:
         #    print(f'\r[Last 10K] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
+        
+        if ( idx + 1 ) == len(dataset):
+            steps_loss = []
+            epoch_loss = []
+            psnr_list = []
+            lpips_list = []
+            epoch = epoch + 1
+            batch_idx = 0
+
+            while  ( idx + 1 ) == len(dataset):
+                img0, img1, img2, ratio, idx = dataset[idx]
+            dataset.reshuffle()
+
+        batch_idx = batch_idx + 1
+        step = step + 1
+
         continue
 
         img0, img1, img2, ratio, idx = read_image_queue.get()
