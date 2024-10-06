@@ -1218,9 +1218,9 @@ def main():
 
         try:
             if args.all_gpus:
-                missing_keys, unexpected_keys = flownet.load_state_dict(convert_to_data_parallel(checkpoint['flownet_state_dict']), strict=False)
+                missing_keys, unexpected_keys = flownet.load_state_dict(convert_to_data_parallel(checkpoint['flownet_state_dict']), strict=False, weights_only=False)
             else:
-                missing_keys, unexpected_keys = flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
+                missing_keys, unexpected_keys = flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False, weights_only=False)
             print('loaded previously saved Flownet state')
             if missing_keys:
                 print (f'\nMissing keys:\n{missing_keys}\n')
@@ -1260,7 +1260,7 @@ def main():
                 for k, v in param.items()
                 if "module." in k
             }
-        missing_keys, unexpected_keys = flownet.load_state_dict(convert(rife_state_dict), strict=False)
+        missing_keys, unexpected_keys = flownet.load_state_dict(convert(rife_state_dict), strict=False, weights_only=False)
         print (f'\nMissing keys:\n{missing_keys}\n')
         print (f'\nUnexpected keys:\n{unexpected_keys}\n')
 
@@ -1992,7 +1992,7 @@ def main():
 
             if args.eval_half:
                 flownet.float()
-                flownet.load_state_dict(original_float_state_dict)
+                flownet.load_state_dict(original_float_state_dict, weights_only=False)
 
             flownet.train()
 
