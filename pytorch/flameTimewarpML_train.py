@@ -964,7 +964,7 @@ def main():
     parser.add_argument('--acescc', type=check_range_percent, default=40, help='Percentage of ACEScc encoded frames (default: 40))')
     parser.add_argument('--generalize', type=check_range_percent, default=85, help='Generalization level (0 - 100) (default: 85)')
     parser.add_argument('--weight_decay', type=float, default=-1, help='AdamW weight decay (default: calculated from --generalize value)')
-    parser.add_argument('--preview', type=int, default=1000, help='Save preview each N steps (default: 1000)')
+    parser.add_argument('--preview', type=int, default=100, help='Save preview each N steps (default: 100)')
     parser.add_argument('--save', type=int, default=1000, help='Save model state dict each N steps (default: 1000)')
     parser.add_argument('--repeat', type=int, default=1, help='Repeat each triade N times with augmentation (default: 1)')
     parser.add_argument('--iterations', type=int, default=1, help='Process each flow refinement N times (default: 1)')
@@ -1582,6 +1582,31 @@ def main():
             current_state_dict['flownet_state_dict'] = flownet.state_dict()
         current_state_dict['optimizer_flownet_state_dict'] = optimizer_flownet.state_dict()
         current_state_dict['trained_model_path'] = trained_model_path
+
+        if step % args.preview == 1:
+            rgb_source1 = img0_orig
+            rgb_source2 = img2_orig
+            rgb_target = img1_orig
+            rgb_output = output
+            rgb_output_mask = mask.repeat_interleave(3, dim=1)
+            # rgb_refine = refine_list[0] + refine_list[1] + refine_list[2] + refine_list[3]
+            # rgb_refine = (rgb_refine + 1) / 2
+            # sample_refine = rgb_refine[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+
+            preview_index = preview_index + 1 if preview_index < 9 else 0
+
+            write_image_queue.put(
+                {
+                    'preview_folder': os.path.join(args.dataset_path, 'preview'),
+                    'preview_index': int(preview_index),
+                    'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_output_mask': rgb_output_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+                }
+            )
+            del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
 
         epoch_time = time.time() - start_timestamp
         days = int(epoch_time // (24 * 3600))
