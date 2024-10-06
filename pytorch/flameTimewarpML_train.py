@@ -163,7 +163,9 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         # Walk through all directories and files in the given path
         for root, dirs, files in os.walk(path):
-            if 'dead_pixel_scan_' in root:
+            if 'preview' in root:
+                continue
+            if 'eval' in root:
                 continue
             for file in files:
                 if any(file.lower().endswith(ext) for ext in ext_list):
