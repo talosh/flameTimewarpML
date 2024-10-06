@@ -1477,10 +1477,10 @@ def main():
         test_img0 =img0[0].numpy(force=True).transpose(1, 2, 0).astype(np.uint8)
         
         ref_w, ref_h, ref_d = test_img0.shape
-        spec = oiio.ImageSpec(ref_h, ref_w, ref_d, 'uint8')
-        pixels = np.zeros((ref_w, ref_h, ref_d), dtype=np.uint8)
-        pixels += 128
-        write_image_file('/var/tmp/test.tif', pixels, spec)
+        spec = oiio.ImageSpec(ref_h, ref_w, ref_d, 'half')
+        pixels = np.zeros((ref_w, ref_h, ref_d), dtype=np.float16)
+        pixels += 0.2
+        write_image_file('/var/tmp/test.exr', pixels, spec)
         sys.exit()
 
         for i in range(img0.shape[0]):
