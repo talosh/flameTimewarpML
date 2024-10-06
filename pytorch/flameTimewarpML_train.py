@@ -1451,11 +1451,8 @@ def main():
         time_stamp = time.time()
 
         # train here
-
-        '''
         for i in range(img0.shape[0]):
             img0[i], img1[i], img2[i] = augment_images(img0[i], img1[i], img2[i], args.generalize, args.acescc)
-        '''
 
         current_lr_str = '0'
         loss_l1_str = '0'
