@@ -1077,27 +1077,28 @@ def main():
                 spec = oiio.ImageSpec(frame_size, frame_size, 3, 'half')
                 write_image_file(
                     os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
-                    write_data['sample_source1'],
+                    write_data['sample_source1'].astype(np.float16),
                     spec)
                 write_image_file(
                     os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
-                    write_data['sample_source2'],
+                    write_data['sample_source2'].astype(np.float16),
                     spec)
                 write_image_file(
                     os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
-                    write_data['sample_target'],
+                    write_data['sample_target'].astype(np.float16),
                     spec)
                 write_image_file(
                     os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
-                    write_data['sample_output'],
+                    write_data['sample_output'].astype(np.float16),
                     spec)
                 write_image_file(
                     os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
-                    write_data['sample_output_mask'],
+                    write_data['sample_output_mask'].astype(np.float16),
                     spec)
                 del write_data
-            except:
+            except Exception as e:
             # except queue.Empty:
+                print (f'\n\nWrite preview: {e}')
                 time.sleep(1e-2)
 
     def write_eval_images(write_eval_image_queue):
