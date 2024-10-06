@@ -1260,8 +1260,6 @@ def main():
         psnr_list = []
         lpips_list = []
 
-    dataset.epoch = epoch
-
     # LPIPS Init
 
     import warnings
@@ -1278,6 +1276,7 @@ def main():
     start_timestamp = time.time()
     time_stamp = time.time()
     epoch = current_epoch if args.first_epoch == -1 else args.first_epoch
+    dataset.epoch = epoch
     step = loaded_step if args.first_epoch == -1 else step
     batch_idx = 0
 
