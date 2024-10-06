@@ -1260,6 +1260,8 @@ def main():
         psnr_list = []
         lpips_list = []
 
+    dataset.epoch = epoch
+
     # LPIPS Init
 
     import warnings
