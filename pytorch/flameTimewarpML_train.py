@@ -302,6 +302,16 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                     img1 = read_image_file(item['gt'])['image_data']
                     img2 = read_image_file(item['end'])['image_data']
 
+                    if img0 is None:
+                        print(f'Unable to read frame {item['start']}')
+                        continue
+                    if img1 is None:
+                        print(f'Unable to read frame {item['gt']}')
+                        continue
+                    if img2 is None:
+                        print(f'Unable to read frame {item['end']}')
+                        continue
+
                     img0 = torch.from_numpy(img0).permute(2, 0, 1).unsqueeze(0)
                     img1 = torch.from_numpy(img1).permute(2, 0, 1).unsqueeze(0)
                     img2 = torch.from_numpy(img2).permute(2, 0, 1).unsqueeze(0)
