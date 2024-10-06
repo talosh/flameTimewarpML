@@ -234,7 +234,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
     
     @staticmethod
     def read_frames(frames_queue, train_descriptions, batch_size, scale_list, h, w):
-        
+
         def resize_image(tensor, x):
             """
             Resize the tensor of shape [h, w, c] so that the smallest dimension becomes x,
@@ -1441,9 +1441,6 @@ def main():
 
         # read data here
         img0, img1, img2, ratio, idx = dataset[0]
-        n, c, h, w = img0.shape
-        for i in range(n):
-            img0[i], img1[i], img2[i] = augment_images(img0[i], img1[i], img2[i], args.generalize, args.acescc)
 
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
@@ -1453,6 +1450,10 @@ def main():
         img0 = img0.to(device = device, dtype = torch.float32, non_blocking=True)
         img1 = img1.to(device = device, dtype = torch.float32, non_blocking=True)
         img2 = img2.to(device = device, dtype = torch.float32, non_blocking=True)
+        
+        n, c, h, w = img0.shape
+        for i in range(n):
+            img0[i], img1[i], img2[i] = augment_images(img0[i], img1[i], img2[i], args.generalize, args.acescc)
 
         current_lr_str = '0'
         loss_l1_str = '0'
