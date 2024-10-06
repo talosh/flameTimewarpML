@@ -1109,6 +1109,8 @@ def main():
         while True:
             try:
                 write_data = write_eval_image_queue.get_nowait()
+                print (os.path.join(write_data['preview_folder'], write_data['sample_source1_name']))
+                print ('\n\n')
                 write_image_file(
                     os.path.join(write_data['preview_folder'], write_data['sample_source1_name']),
                     write_data['sample_source1']
@@ -1876,7 +1878,7 @@ def main():
                         del description['eval_img0']
                         del description['eval_img1']
                         del description['eval_img2']
-                        print (f'\nerror while evaluating: {e}\n{description}\n\n')
+                        print (f'\nError while evaluating: {e}\n{description}\n\n')
                     description = read_eval_image_queue.get()
 
             if args.eval_half:
