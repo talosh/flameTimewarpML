@@ -356,6 +356,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         return len(self.train_descriptions)
 
     def __getitem__(self, index):
+
         batch_img0 = []
         batch_img1 = []
         batch_img2 = []
@@ -364,9 +365,10 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         for batch_index in range(self.batch_size):
             data = self.getimg(index)
-            batch_img0.append(data['start'])
-            batch_img1.append(data['gt'])
-            batch_img2.append(data['end'])
+            img0, img1, img2 = self.crop(data['start'], data['gt'], data['end'], self.h, self.w)
+            batch_img0.append(img0)
+            batch_img1.append(img1)
+            batch_img2.append(img2)
             batch_ratio.append(torch.full((1, self.w, self.h), data['ratio']))
             
         return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), torch.stack(batch_ratio), images_idx
