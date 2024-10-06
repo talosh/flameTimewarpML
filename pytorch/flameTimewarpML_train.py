@@ -1474,9 +1474,11 @@ def main():
         img2 = img2.to(device = device, dtype = torch.float32)
         ratio = ratio.to(device = device, dtype = torch.float32)
         
-        test_img0 =img0[0].numpy(force=True).transpose(1, 2, 0)
-        spec = oiio.ImageSpec(frame_size, frame_size, 3, 'half')
-        write_image_file('/var/tmp/test.exr', test_img0, spec)
+        test_img0 =img0[0].numpy(force=True).transpose(1, 2, 0).astype(np.uint8)
+        
+        ref_w, ref_h, ref_d = test_img0.shape
+        spec = oiio.ImageSpec(ref_h, ref_w, ref_d, 'uint8')
+        write_image_file('/var/tmp/test.tif', test_img0, spec)
         sys.exit()
 
         for i in range(img0.shape[0]):
