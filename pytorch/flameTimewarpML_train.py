@@ -1482,6 +1482,8 @@ def main():
         else:
             training_scale = [8, 4, 2, 1]
 
+        flownet.train()
+
 
         loss_l1_str = '0'
 
@@ -1517,11 +1519,6 @@ def main():
         step = step + 1
 
         continue
-
-
-
-
-        flownet.train()
         
         # n_iterations = random.randint(1, 4) if args.iterations == -1 else args.iterations
 
