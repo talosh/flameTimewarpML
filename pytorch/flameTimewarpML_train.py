@@ -1516,11 +1516,11 @@ def main():
         lpips_val = float(np.array(lpips_list).mean())
 
         loss.backward()
-        torch.cuda.synchronize()
+        if not platform.system() == 'Darwin':
+            torch.cuda.synchronize()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
         optimizer_flownet.step()
 
-        '''
         try:
             scheduler_flownet.step()
         except Exception as e:
@@ -1536,7 +1536,6 @@ def main():
                 T_max=pulse_period, 
                 eta_min = current_lr - (( current_lr / 100 ) * pulse_dive)
                 )
-        '''
 
         train_time = time.time() - time_stamp
         train_time_str = str(f'{train_time:.2f}')
