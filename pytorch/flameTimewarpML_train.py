@@ -1476,7 +1476,7 @@ def main():
         
         test_img0 =img0[0].numpy(force=True).transpose(1, 2, 0)
         spec = oiio.ImageSpec(frame_size, frame_size, 3, 'half')
-        write_images('/var/tmp/test.exr', test_img0, spec)
+        write_image_file('/var/tmp/test.exr', test_img0, spec)
         sys.exit()
 
         for i in range(img0.shape[0]):
