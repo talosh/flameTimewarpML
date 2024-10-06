@@ -1482,18 +1482,19 @@ def main():
         data_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        data = dataset[0]
-
         # read data here
-        time.sleep(0.05)
         idx = 0
+        data = dataset[0]
 
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
         time_stamp = time.time()
 
         # train here
-        time.sleep(0.08)
+        img0 = data['start'].to(device = device, dtype = torch.float32)
+        img1 = data['gt'].to(device = device, dtype = torch.float32)
+        img2 = data['end'].to(device = device, dtype = torch.float32)
+
         current_lr_str = '0'
         loss_l1_str = '0'
 
