@@ -1080,19 +1080,19 @@ def main():
                     write_data['sample_source1'].astype(np.float16),
                     spec)
                 write_image_file(
-                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
+                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_outgoing.exr'),
                     write_data['sample_source2'].astype(np.float16),
                     spec)
                 write_image_file(
-                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
+                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_target.exr'),
                     write_data['sample_target'].astype(np.float16),
                     spec)
                 write_image_file(
-                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
+                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_output.exr'),
                     write_data['sample_output'].astype(np.float16),
                     spec)
                 write_image_file(
-                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
+                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_output_mask.exr'),
                     write_data['sample_output_mask'].astype(np.float16),
                     spec)
                 del write_data
