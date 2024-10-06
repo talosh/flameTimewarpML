@@ -217,7 +217,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         return descriptions
     
     @staticmethod
-    def read_frames(frames_queue, train_descriptions, scale_list, h):
+    def read_frames(frames_queue, train_descriptions, batch_size, scale_list, h, w):
 
         def resize_image(tensor, x):
             """
@@ -251,6 +251,59 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
             return resized_tensor
 
+        def crop_images(img0, img1, img2, h, w):
+            np.random.seed(None)
+            _, iw, ih = img0.shape
+            x = np.random.randint(0, ih - h + 1)
+            y = np.random.randint(0, iw - w + 1)
+            img0 = img0[:, y:y+w, x:x+h]
+            img1 = img1[:, y:y+w, x:x+h]
+            img2 = img2[:, y:y+w, x:x+h]
+            # img3 = img3[x:x+h, y:y+w, :]
+            # img4 = img4[x:x+h, y:y+w, :]
+            return img0, img1, img2 #, img3, img4
+
+        num_items = len(train_descriptions)
+        for start_idx in range(0, num_items, batch_size):
+            end_idx = min(start_idx + batch_size, num_items)
+            batch = train_descriptions[start_idx:end_idx]
+            
+            batch_img0 = []
+            batch_img1 = []
+            batch_img2 = []
+            batch_ratio = []
+
+            for item in batch:
+                scale = scale_list[random.randint(0, len(scale_list) - 1)]
+
+                img0 = read_image_file(item['start'])['image_data']
+                img1 = read_image_file(item['gt'])['image_data']
+                img2 = read_image_file(item['end'])['image_data']
+
+                img0 = torch.from_numpy(img0).permute(2, 0, 1).unsqueeze(0)
+                img1 = torch.from_numpy(img1).permute(2, 0, 1).unsqueeze(0)
+                img2 = torch.from_numpy(img2).permute(2, 0, 1).unsqueeze(0)
+
+                img0 = resize_image(img0, int(h * scale))
+                img1 = resize_image(img0, int(h * scale))
+                img2 = resize_image(img0, int(h * scale))
+
+                img0, img1, img2 = crop_images(img0[0], img1[0], img2[0], h, w)
+
+                batch_img0.append(img0)
+                batch_img1.append(img1)
+                batch_img2.append(img2)
+                batch_ratio.append(torch.full((1, w, h), item['ratio']))
+
+            training_data = {}
+            training_data['start'] = torch.stack(batch_img0)
+            training_data['gt'] = torch.stack(batch_img1)
+            training_data['end'] = torch.stack(batch_img2)
+            training_data['ratio'] = torch.stack(batch_ratio)
+            training_data['index'] = end_idx
+            frames_queue.put(training_data)
+
+        '''
         for index in range(len(train_descriptions)):
             description = train_descriptions[index]
             if description is None:
@@ -282,6 +335,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             except Exception as e:
                 del train_data
                 print (e)
+        '''
 
     def crop(self, img0, img1, img2, h, w):
         np.random.seed(None)
@@ -356,22 +410,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         return len(self.train_descriptions)
 
     def __getitem__(self, index):
-
-        batch_img0 = []
-        batch_img1 = []
-        batch_img2 = []
-        batch_ratio = []
-        images_idx = self.train_data_index
-
-        for batch_index in range(self.batch_size):
-            data = self.getimg(index)
-            img0, img1, img2 = self.crop(data['start'][0], data['gt'][0], data['end'][0], self.h, self.w)
-            batch_img0.append(img0)
-            batch_img1.append(img1)
-            batch_img2.append(img2)
-            batch_ratio.append(torch.full((1, self.w, self.h), data['ratio']))
-            
-        return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), torch.stack(batch_ratio), images_idx
+        return self.getimg(index)
 
         train_data = self.getimg(index)
         # src_img0 = train_data['pre_start']
