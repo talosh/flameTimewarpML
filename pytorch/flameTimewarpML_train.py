@@ -309,11 +309,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                     img1 = resize_image(img0, int(h * scale))
                     img2 = resize_image(img0, int(h * scale))
 
-                    print (f'\nresized: {img0.shape}')
-
                     img0, img1, img2 = crop_images(img0[0], img1[0], img2[0], h, w)
-
-                    print (f'\ncropped:{img0.shape}')
 
                     batch_img0.append(img0)
                     batch_img1.append(img1)
