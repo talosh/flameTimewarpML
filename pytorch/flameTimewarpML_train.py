@@ -1516,12 +1516,11 @@ def main():
         lpips_val = float(np.array(lpips_list).mean())
 
         loss.backward()
-        img0 = img0.to(device = device, dtype = torch.float32)
-        '''
+        torch.cuda.synchronize()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
-
         optimizer_flownet.step()
 
+        '''
         try:
             scheduler_flownet.step()
         except Exception as e:
