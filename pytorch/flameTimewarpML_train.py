@@ -1452,7 +1452,7 @@ def main():
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
         img2_orig = img2.detach().clone()
-        
+
         img0 = normalize(img0)
         img1 = normalize(img1)
         img2 = normalize(img2)
@@ -1463,7 +1463,26 @@ def main():
 
         # train here
 
-        current_lr_str = '0'
+        current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
+        optimizer_flownet.zero_grad()
+
+        random_scales = [
+            [8, 4, 2, 1],
+            [4, 4, 2, 1],
+            [4, 2, 2, 1],
+            [4, 2, 1, 1],
+            [2, 2, 2, 1],
+            [2, 2, 1, 1],
+            [2, 1, 1, 1],
+            [1, 1, 1, 1],
+        ]
+
+        if random.uniform(0, 1) < 0.44:
+            training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
+        else:
+            training_scale = [8, 4, 2, 1]
+
+
         loss_l1_str = '0'
 
         train_time = time.time() - time_stamp
@@ -1499,21 +1518,7 @@ def main():
 
         continue
 
-        img0, img1, img2, ratio, idx = read_image_queue.get()
 
-        img0 = img0.to(device, non_blocking = True)
-        img1 = img1.to(device, non_blocking = True)
-        img2 = img2.to(device, non_blocking = True)
-        img0_orig = img0.detach().clone()
-        img1_orig = img1.detach().clone()
-        img2_orig = img2.detach().clone()
-        img0 = normalize(img0)
-        img1 = normalize(img1)
-        img2 = normalize(img2)
-
-        current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
-
-        optimizer_flownet.zero_grad()
 
         # scale list augmentation
 
@@ -1526,21 +1531,6 @@ def main():
         ]
         '''
 
-        random_scales = [
-            [8, 4, 2, 1],
-            [4, 4, 2, 1],
-            [4, 2, 2, 1],
-            [4, 2, 1, 1],
-            [2, 2, 2, 1],
-            [2, 2, 1, 1],
-            [2, 1, 1, 1],
-            [1, 1, 1, 1],
-        ]
-
-        if random.uniform(0, 1) < 0.44:
-            training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
-        else:
-            training_scale = [8, 4, 2, 1]
         # '''
 
         '''
