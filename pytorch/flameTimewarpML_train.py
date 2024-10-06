@@ -1446,13 +1446,22 @@ def main():
         img1 = img1.to(device = device, dtype = torch.float32)
         img2 = img2.to(device = device, dtype = torch.float32)
 
+        for i in range(img0.shape[0]):
+            img0[i], img1[i], img2[i] = augment_images(img0[i], img1[i], img2[i], args.generalize, args.acescc)
+
+        img0_orig = img0.detach().clone()
+        img1_orig = img1.detach().clone()
+        img2_orig = img2.detach().clone()
+        
+        img0 = normalize(img0)
+        img1 = normalize(img1)
+        img2 = normalize(img2)
+
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
         time_stamp = time.time()
 
         # train here
-        for i in range(img0.shape[0]):
-            img0[i], img1[i], img2[i] = augment_images(img0[i], img1[i], img2[i], args.generalize, args.acescc)
 
         current_lr_str = '0'
         loss_l1_str = '0'
