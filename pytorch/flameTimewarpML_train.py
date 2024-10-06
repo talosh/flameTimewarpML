@@ -1474,17 +1474,6 @@ def main():
         img2 = img2.to(device = device, dtype = torch.float32)
         ratio = ratio.to(device = device, dtype = torch.float32)
         
-        test_img0 =img0[0].numpy(force=True).transpose(1, 2, 0).copy()
-
-        print (type(test_img0))
-        
-        ref_w, ref_h, ref_d = test_img0.shape
-        spec = oiio.ImageSpec(frame_size, frame_size, 3, 'half')
-        # pixels = np.zeros((ref_w, ref_h, ref_d), dtype=np.float16)
-        # pixels += test_img0
-        write_image_file('/var/tmp/test.exr', test_img0, spec)
-        sys.exit()
-
         for i in range(img0.shape[0]):
             img0[i], img1[i], img2[i] = augment_images(img0[i], img1[i], img2[i], args.generalize, args.acescc)
 
@@ -1626,11 +1615,11 @@ def main():
                 {
                     'preview_folder': os.path.join(args.dataset_path, 'preview'),
                     'preview_index': int(preview_index),
-                    'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output_mask': rgb_output_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+                    'sample_source1': rgb_source1[0].numpy(force=True).transpose(1, 2, 0).copy(),
+                    'sample_source2': rgb_source2[0].numpy(force=True).transpose(1, 2, 0).copy(),
+                    'sample_target': rgb_target[0].numpy(force=True).transpose(1, 2, 0).copy(),
+                    'sample_output': rgb_output[0].numpy(force=True).transpose(1, 2, 0).copy(),
+                    'sample_output_mask': rgb_output_mask[0].numpy(force=True).transpose(1, 2, 0).copy()
                 }
             )
             del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
