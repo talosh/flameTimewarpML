@@ -1247,7 +1247,7 @@ def main():
             print('loaded previously saved model checkpoint')
         except Exception as e:
             print (f'unable to load saved model: {e}')
-
+            
         try:
             if args.all_gpus:
                 missing_keys, unexpected_keys = flownet.load_state_dict(convert_to_data_parallel(checkpoint['flownet_state_dict']), strict=False, weights_only=False)
