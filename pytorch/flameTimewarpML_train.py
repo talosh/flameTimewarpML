@@ -1515,6 +1515,7 @@ def main():
         smoothed_loss = float(np.mean(moving_average(epoch_loss, 9)))
         lpips_val = float(np.array(lpips_list).mean())
 
+        '''
         loss.backward()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
 
@@ -1535,6 +1536,7 @@ def main():
                 T_max=pulse_period, 
                 eta_min = current_lr - (( current_lr / 100 ) * pulse_dive)
                 )
+        '''
 
         train_time = time.time() - time_stamp
         train_time_str = str(f'{train_time:.2f}')
