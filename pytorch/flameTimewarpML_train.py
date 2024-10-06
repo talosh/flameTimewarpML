@@ -1592,7 +1592,7 @@ def main():
         if platform.system() == 'Darwin':
             torch.mps.synchronize()
         else:
-            torch.cuda.synchronize()
+            torch.cuda.synchronize(device=device)
 
         try:
             scheduler_flownet.step()
