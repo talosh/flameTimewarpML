@@ -1480,9 +1480,9 @@ def main():
         
         ref_w, ref_h, ref_d = test_img0.shape
         spec = oiio.ImageSpec(ref_h, ref_w, ref_d, 'half')
-        pixels = np.zeros((ref_w, ref_h, ref_d), dtype=np.float16)
-        pixels += test_img0
-        write_image_file('/var/tmp/test.exr', pixels, spec)
+        # pixels = np.zeros((ref_w, ref_h, ref_d), dtype=np.float16)
+        # pixels += test_img0
+        write_image_file('/var/tmp/test.exr', test_img0, spec)
         sys.exit()
 
         for i in range(img0.shape[0]):
