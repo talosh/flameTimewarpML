@@ -364,23 +364,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         return srgb_image
 
-    def apply_acescc(self, linear_image):
-        const_neg16 = torch.tensor(2**-16, dtype=linear_image.dtype, device=linear_image.device)
-        const_neg15 = torch.tensor(2**-15, dtype=linear_image.dtype, device=linear_image.device)
-        const_972 = torch.tensor(9.72, dtype=linear_image.dtype, device=linear_image.device)
-        const_1752 = torch.tensor(17.52, dtype=linear_image.dtype, device=linear_image.device)
-        
-        condition = linear_image < 0
-        value_if_true = (torch.log2(const_neg16) + const_972) / const_1752
-        value_if_false = (torch.log2(const_neg16 + linear_image * 0.5) + const_972) / const_1752
-        ACEScc = torch.where(condition, value_if_true, value_if_false)
-
-        condition = linear_image >= const_neg15
-        value_if_true = (torch.log2(linear_image) + const_972) / const_1752
-        ACEScc = torch.where(condition, value_if_true, ACEScc)
-
-        return ACEScc
-
     def __len__(self):
         return len(self.train_descriptions)
 
@@ -388,166 +371,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         training_data =  self.getimg(index)
         images_idx = self.train_data_index
         return training_data['start'], training_data['gt'], training_data['end'], training_data['ratio'], images_idx
-
-        train_data = self.getimg(index)
-        # src_img0 = train_data['pre_start']
-        np_img0 = train_data['start']
-        np_img1 = train_data['gt']
-        np_img2 = train_data['end']
-        # src_img4 = train_data['after_end']
-        imgh = train_data['h']
-        imgw = train_data['w']
-        ratio = train_data['ratio']
-        images_idx = self.train_data_index
-
-        device = self.device
-
-        src_img0 = torch.from_numpy(np_img0.copy())
-        src_img1 = torch.from_numpy(np_img1.copy())
-        src_img2 = torch.from_numpy(np_img2.copy())
-
-        del train_data, np_img0, np_img1, np_img2
-
-        src_img0 = src_img0.to(device = device, dtype = torch.float32)
-        src_img1 = src_img1.to(device = device, dtype = torch.float32)
-        src_img2 = src_img2.to(device = device, dtype = torch.float32)
-
-        rsz1_img0 = self.resize_image(src_img0, self.h)
-        rsz1_img1 = self.resize_image(src_img1, self.h)
-        rsz1_img2 = self.resize_image(src_img2, self.h)
-
-        rsz2_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
-        rsz2_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
-        rsz2_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
-
-        rsz3_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/5)))
-        rsz3_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/5)))
-        rsz3_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/5)))
-
-        rsz4_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
-        rsz4_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
-        rsz4_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
-
-        batch_img0 = []
-        batch_img1 = []
-        batch_img2 = []
-
-        for index in range(self.batch_size):
-            if self.generalize == 0:
-                # No augmentaton
-                img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
-                img0 = img0.permute(2, 0, 1)
-                img1 = img1.permute(2, 0, 1)
-                img2 = img2.permute(2, 0, 1)
-            elif self.generalize == 1:
-                # Augment only scale and horizontal flip
-                q = random.uniform(0, 1)
-                if q < 0.25:
-                    img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
-                elif q < 0.5:
-                    img0, img1, img2 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, self.h, self.w)
-                elif q < 0.75:
-                    img0, img1, img2 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, self.h, self.w)
-                else:
-                    img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
-                img0 = img0.permute(2, 0, 1)
-                img1 = img1.permute(2, 0, 1)
-                img2 = img2.permute(2, 0, 1)
-                if random.uniform(0, 1) < 0.5:
-                    img0 = img0.flip(-1)
-                    img1 = img1.flip(-1)
-                    img2 = img2.flip(-1)
-            else:
-                q = random.uniform(0, 1)
-                if q < 0.25:
-                    img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
-                elif q < 0.5:
-                    img0, img1, img2 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, self.h, self.w)
-                elif q < 0.75:
-                    img0, img1, img2 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, self.h, self.w)
-                else:
-                    img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
-
-                img0 = img0.permute(2, 0, 1)
-                img1 = img1.permute(2, 0, 1)
-                img2 = img2.permute(2, 0, 1)
-
-                # Horizontal flip (reverse width)
-                if random.uniform(0, 1) < 0.5:
-                    img0 = img0.flip(-1)
-                    img1 = img1.flip(-1)
-                    img2 = img2.flip(-1)
-
-                # Rotation
-                if random.uniform(0, 1) < (self.generalize / 100):
-                    p = random.uniform(0, 1)
-                    if p < 0.25:
-                        img0 = torch.flip(img0.transpose(1, 2), [2])
-                        img1 = torch.flip(img1.transpose(1, 2), [2])
-                        img2 = torch.flip(img2.transpose(1, 2), [2])
-                    elif p < 0.5:
-                        img0 = torch.flip(img0, [1, 2])
-                        img1 = torch.flip(img1, [1, 2])
-                        img2 = torch.flip(img2, [1, 2])
-                    elif p < 0.75:
-                        img0 = torch.flip(img0.transpose(1, 2), [1])
-                        img1 = torch.flip(img1.transpose(1, 2), [1])
-                        img2 = torch.flip(img2.transpose(1, 2), [1])
-
-                if random.uniform(0, 1) < (self.generalize / 100):
-                    # Vertical flip (reverse height)
-                    if random.uniform(0, 1) < 0.5:
-                        img0 = img0.flip(-2)
-                        img1 = img1.flip(-2)
-                        img2 = img2.flip(-2)
-
-                if random.uniform(0, 1) < (self.generalize / 100):
-                    # Depth-wise flip (reverse channels)
-                    if random.uniform(0, 1) < 0.28:
-                        img0 = img0.flip(0)
-                        img1 = img1.flip(0)
-                        img2 = img2.flip(0)
-
-                if random.uniform(0, 1) < (self.generalize / 100):
-                    # Exposure augmentation
-                    exp = random.uniform(1 / 8, 2)
-                    if random.uniform(0, 1) < 0.4:
-                        img0 = img0 * exp
-                        img1 = img1 * exp
-                        img2 = img2 * exp
-
-                if random.uniform(0, 1) < (self.generalize / 100):
-                    # add colour banace shift
-                    delta = random.uniform(0, 0.49)
-                    r = random.uniform(1-delta, 1+delta)
-                    g = random.uniform(1-delta, 1+delta)
-                    b = random.uniform(1-delta, 1+delta)
-                    multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device)
-                    img0 = img0 * multipliers
-                    img1 = img1 * multipliers
-                    img2 = img2 * multipliers
-
-                def gamma_up(img, gamma = 1.18):
-                    return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
-
-                if random.uniform(0, 1) < (self.generalize / 100):
-                    if random.uniform(0, 1) < 0.44:
-                        gamma = random.uniform(0.9, 1.9)
-                        img0 = gamma_up(img0, gamma=gamma)
-                        img1 = gamma_up(img1, gamma=gamma)
-                        img2 = gamma_up(img2, gamma=gamma)
-
-            # Convert to ACEScc
-            if random.uniform(0, 1) < (self.acescc_rate / 100):
-                img0 = self.apply_acescc(img0)
-                img1 = self.apply_acescc(img1)
-                img2 = self.apply_acescc(img2)
-
-            batch_img0.append(img0)
-            batch_img1.append(img1)
-            batch_img2.append(img2)
-
-        return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), ratio, images_idx
 
 def get_dataset(
         data_root, 
@@ -985,6 +808,108 @@ def convert_from_data_parallel(param):
         if "module." in k
     }
 
+def apply_acescc(linear_image):
+    const_neg16 = torch.tensor(2**-16, dtype=linear_image.dtype, device=linear_image.device)
+    const_neg15 = torch.tensor(2**-15, dtype=linear_image.dtype, device=linear_image.device)
+    const_972 = torch.tensor(9.72, dtype=linear_image.dtype, device=linear_image.device)
+    const_1752 = torch.tensor(17.52, dtype=linear_image.dtype, device=linear_image.device)
+    
+    condition = linear_image < 0
+    value_if_true = (torch.log2(const_neg16) + const_972) / const_1752
+    value_if_false = (torch.log2(const_neg16 + linear_image * 0.5) + const_972) / const_1752
+    ACEScc = torch.where(condition, value_if_true, value_if_false)
+
+    condition = linear_image >= const_neg15
+    value_if_true = (torch.log2(linear_image) + const_972) / const_1752
+    ACEScc = torch.where(condition, value_if_true, ACEScc)
+
+    return ACEScc
+
+def augment_images(img0, img1, img2, generalize, acescc_rate):
+    if generalize == 0:
+        # No augmentaton
+        return img0, img1, img2
+    elif generalize == 1:
+        # Augment only with horizontal flipping
+        if random.uniform(0, 1) < 0.5:
+            img0 = img0.flip(-1)
+            img1 = img1.flip(-1)
+            img2 = img2.flip(-1)
+        return img0, img1, img2
+    else:
+        # Horizontal flip (reverse width)
+        if random.uniform(0, 1) < 0.5:
+            img0 = img0.flip(-1)
+            img1 = img1.flip(-1)
+            img2 = img2.flip(-1)
+
+        # Rotation
+        if random.uniform(0, 1) < (generalize / 100):
+            p = random.uniform(0, 1)
+            if p < 0.25:
+                img0 = torch.flip(img0.transpose(1, 2), [2])
+                img1 = torch.flip(img1.transpose(1, 2), [2])
+                img2 = torch.flip(img2.transpose(1, 2), [2])
+            elif p < 0.5:
+                img0 = torch.flip(img0, [1, 2])
+                img1 = torch.flip(img1, [1, 2])
+                img2 = torch.flip(img2, [1, 2])
+            elif p < 0.75:
+                img0 = torch.flip(img0.transpose(1, 2), [1])
+                img1 = torch.flip(img1.transpose(1, 2), [1])
+                img2 = torch.flip(img2.transpose(1, 2), [1])
+
+        if random.uniform(0, 1) < (generalize / 100):
+            # Vertical flip (reverse height)
+            if random.uniform(0, 1) < 0.5:
+                img0 = img0.flip(-2)
+                img1 = img1.flip(-2)
+                img2 = img2.flip(-2)
+
+        if random.uniform(0, 1) < (generalize / 100):
+            # Depth-wise flip (reverse channels)
+            if random.uniform(0, 1) < 0.28:
+                img0 = img0.flip(0)
+                img1 = img1.flip(0)
+                img2 = img2.flip(0)
+
+        if random.uniform(0, 1) < (generalize / 100):
+            # Exposure augmentation
+            exp = random.uniform(1 / 8, 2)
+            if random.uniform(0, 1) < 0.4:
+                img0 = img0 * exp
+                img1 = img1 * exp
+                img2 = img2 * exp
+
+        if random.uniform(0, 1) < (generalize / 100):
+            # add colour banace shift
+            delta = random.uniform(0, 0.28)
+            r = random.uniform(1-delta, 1+delta)
+            g = random.uniform(1-delta, 1+delta)
+            b = random.uniform(1-delta, 1+delta)
+            multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(img0.device)
+            img0 = img0 * multipliers
+            img1 = img1 * multipliers
+            img2 = img2 * multipliers
+
+        def gamma_up(img, gamma = 1.18):
+            return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
+
+        if random.uniform(0, 1) < (generalize / 100):
+            if random.uniform(0, 1) < 0.44:
+                gamma = random.uniform(0.9, 1.9)
+                img0 = gamma_up(img0, gamma=gamma)
+                img1 = gamma_up(img1, gamma=gamma)
+                img2 = gamma_up(img2, gamma=gamma)
+
+        # Convert to ACEScc
+        if random.uniform(0, 1) < (acescc_rate / 100):
+            img0 = apply_acescc(img0)
+            img1 = apply_acescc(img1)
+            img2 = apply_acescc(img2)
+
+        return img0, img1, img2
+
 current_state_dict = {}
 
 def main():
@@ -1247,7 +1172,7 @@ def main():
             print('loaded previously saved model checkpoint')
         except Exception as e:
             print (f'unable to load saved model: {e}')
-            
+
         try:
             if args.all_gpus:
                 missing_keys, unexpected_keys = flownet.load_state_dict(convert_to_data_parallel(checkpoint['flownet_state_dict']), strict=False, weights_only=False)
@@ -1516,6 +1441,9 @@ def main():
 
         # read data here
         img0, img1, img2, ratio, idx = dataset[0]
+        n, c, h, w = img0.shape
+        for i in range(n):
+            img0[i], img1[i], img2[i] = augment_images(img0[i], img1[i], img2[i], args.generalize, args.acescc)
 
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
