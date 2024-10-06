@@ -1450,9 +1450,8 @@ def main():
         img0 = img0.to(device = device, dtype = torch.float32, non_blocking=True)
         img1 = img1.to(device = device, dtype = torch.float32, non_blocking=True)
         img2 = img2.to(device = device, dtype = torch.float32, non_blocking=True)
-        
-        n, c, h, w = img0.shape
-        for i in range(n):
+
+        for i in range(img0.shape[0]):
             img0[i], img1[i], img2[i] = augment_images(img0[i], img1[i], img2[i], args.generalize, args.acescc)
 
         current_lr_str = '0'
