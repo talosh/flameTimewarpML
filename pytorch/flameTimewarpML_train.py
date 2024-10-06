@@ -112,13 +112,13 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 frame_read_process.start()
                 frame_read_process.join()
 
+        self.frame_read_thread = threading.Thread(target=read_frames_thread, args=(self.train_descriptions, self.mp_frames_queue, self.scale_list, self.h))
+        self.frame_read_thread.daemon = True
+        self.frame_read_thread.start()
+
         def transfer_frames_thread(mp_frames_queue, frames_queue):
             while True:
                 frames_queue.put(mp_frames_queue.get())
-
-        self.frame_read_thread = threading.Thread(target=read_frames_thread, args=(self.train_descriptions, self.frames_queue, self.scale_list, self.h))
-        self.frame_read_thread.daemon = True
-        self.frame_read_thread.start()
 
         self.frame_read_thread = threading.Thread(target=transfer_frames_thread, args=(self.mp_frames_queue, self.frames_queue))
         self.frame_read_thread.daemon = True
