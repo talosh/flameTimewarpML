@@ -321,7 +321,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                     batch_img2.append(img2)
                     batch_ratio.append(torch.full((1, w, h), item['ratio']))
                 except Exception as e:
-                    print (f'\n{e}\n')
+                    print (f'\nRead frames process: {e}\n')
 
             training_data = {}
             training_data['start'] = torch.stack(batch_img0)
@@ -1583,6 +1583,7 @@ def main():
         current_state_dict['optimizer_flownet_state_dict'] = optimizer_flownet.state_dict()
         current_state_dict['trained_model_path'] = trained_model_path
 
+        '''
         if step % args.preview == 1:
             rgb_source1 = img0_orig
             rgb_source2 = img2_orig
@@ -1607,6 +1608,7 @@ def main():
                 }
             )
             del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
+        '''
 
         epoch_time = time.time() - start_timestamp
         days = int(epoch_time // (24 * 3600))
