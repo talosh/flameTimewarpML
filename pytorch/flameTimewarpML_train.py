@@ -235,6 +235,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
     @staticmethod
     def read_frames(frames_queue, train_descriptions, batch_size, scale_list, h, w):
 
+        print (f'H: {h}, W: {w}')
+
         def resize_image(tensor, x):
             """
             Resize the tensor of shape [h, w, c] so that the smallest dimension becomes x,
@@ -309,6 +311,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
                     img0, img1, img2 = crop_images(img0[0], img1[0], img2[0], h, w)
 
+                    print (f'\n{img0.shape})
+
                     batch_img0.append(img0)
                     batch_img1.append(img1)
                     batch_img2.append(img2)
@@ -355,14 +359,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             return self.last_train_data[random.randint(0, len(self.last_train_data) - 1)]
         # '''
         # return self.frames_queue.get()
-
-    def srgb_to_linear(self, srgb_image):
-        # Apply the inverse sRGB gamma curve
-        mask = srgb_image <= 0.04045
-        srgb_image[mask] = srgb_image[mask] / 12.92
-        srgb_image[~mask] = ((srgb_image[~mask] + 0.055) / 1.055) ** 2.4
-
-        return srgb_image
 
     def __len__(self):
         return len(self.train_descriptions)
@@ -807,6 +803,14 @@ def convert_from_data_parallel(param):
         for k, v in param.items()
         if "module." in k
     }
+
+def srgb_to_linear(self, srgb_image):
+    # Apply the inverse sRGB gamma curve
+    mask = srgb_image <= 0.04045
+    srgb_image[mask] = srgb_image[mask] / 12.92
+    srgb_image[~mask] = ((srgb_image[~mask] + 0.055) / 1.055) ** 2.4
+
+    return srgb_image
 
 def apply_acescc(linear_image):
     const_neg16 = torch.tensor(2**-16, dtype=linear_image.dtype, device=linear_image.device)
