@@ -1475,7 +1475,7 @@ def main():
         img2 = img2.to(device = device, dtype = torch.float32)
         ratio = ratio.to(device = device, dtype = torch.float32)
         
-        test_img0 =img0[0]
+        test_img0 =img0[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
         print (test_img0.shape)
         sys.exit()
 
