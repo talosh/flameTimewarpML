@@ -1499,9 +1499,9 @@ def main():
         time_stamp = time.time()
 
         # train here
-        img0 = img0.to(device = device, dtype = torch.float32)
-        img1 = img1.to(device = device, dtype = torch.float32)
-        img2 = img2.to(device = device, dtype = torch.float32)
+        img0 = img0.to(device = device, dtype = torch.float32, non_blocking=True)
+        img1 = img1.to(device = device, dtype = torch.float32, non_blocking=True)
+        img2 = img2.to(device = device, dtype = torch.float32, non_blocking=True)
 
         current_lr_str = '0'
         loss_l1_str = '0'
