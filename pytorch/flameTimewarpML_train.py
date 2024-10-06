@@ -90,6 +90,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         self.scale_list = scale_list
         self.repeat_count = repeat
         self.repeat_counter = 0
+        self.epoch = 0
 
         print (f'scanning for exr files in {self.data_root}...')
         self.folders_with_exr = self.find_folders_with_images(data_root)
@@ -124,6 +125,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 )
                 frame_read_process.start()
                 frame_read_process.join()
+                self.epoch += 1
 
         self.frame_read_thread = threading.Thread(
             target=read_frames_thread, args=(
