@@ -300,6 +300,10 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 img1 = torch.from_numpy(img1).permute(2, 0, 1).unsqueeze(0)
                 img2 = torch.from_numpy(img2).permute(2, 0, 1).unsqueeze(0)
 
+                img0 = img0.to(device = 'cpu', dtype = torch.float32, non_blocking=True)
+                img1 = img0.to(device = 'cpu', dtype = torch.float32, non_blocking=True)
+                img2 = img0.to(device = 'cpu', dtype = torch.float32, non_blocking=True)
+
                 img0 = resize_image(img0, int(h * scale))
                 img1 = resize_image(img0, int(h * scale))
                 img2 = resize_image(img0, int(h * scale))
