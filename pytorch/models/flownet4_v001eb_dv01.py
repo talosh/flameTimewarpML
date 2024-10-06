@@ -141,8 +141,6 @@ class Model:
                 )
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
-                timestep = (img0[:, :1].clone() * 0 + 1) * timestep
-                
                 if flow is None:
                     x = torch.cat((img0, img1, f0, f1, timestep), 1)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
@@ -178,10 +176,11 @@ class Model:
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
-                img0 = img0
-                img1 = img1
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
+
+                if not torch.is_tensor(timestep):
+                    timestep = (img0[:, :1].clone() * 0 + 1) * timestep
 
                 flow_list = [None] * 4
                 mask_list = [None] * 4
