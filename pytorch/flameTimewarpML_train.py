@@ -1516,6 +1516,7 @@ def main():
         lpips_val = float(np.array(lpips_list).mean())
 
         loss.backward()
+        img0 = img0.to(device = device, dtype = torch.float32)
         '''
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
 
