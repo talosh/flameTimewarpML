@@ -1899,7 +1899,6 @@ def main():
             print(f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Eval Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f}, [PSNR] {eval_psnr_mean:.4f}, [LPIPS] {eval_lpips_mean:.4f}')
             print ('\n')
 
-
             if not args.eval_keep_all:
             # print (f'prev folder: {prev_eval_folder}\n\n')
                 if prev_eval_folder:
