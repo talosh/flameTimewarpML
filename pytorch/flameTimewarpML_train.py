@@ -1624,6 +1624,9 @@ def main():
             )
             del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
 
+        if step % args.save == 1:
+            write_model_state_queue.put(deepcopy(current_state_dict))
+
         epoch_time = time.time() - start_timestamp
         days = int(epoch_time // (24 * 3600))
         hours = int((epoch_time % (24 * 3600)) // 3600)
