@@ -1439,7 +1439,7 @@ def main():
         data_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        # read data here
+        # data block starts here
         img0, img1, img2, ratio, idx = dataset[0]
 
         img0 = img0.to(device = device, dtype = torch.float32)
