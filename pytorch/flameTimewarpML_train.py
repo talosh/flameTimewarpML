@@ -1478,7 +1478,8 @@ def main():
         
         ref_w, ref_h, ref_d = test_img0.shape
         spec = oiio.ImageSpec(ref_h, ref_w, ref_d, 'uint8')
-        write_image_file('/var/tmp/test.tif', test_img0, spec)
+        pixels = np.zeros((ref_w, ref_h, ref_d), dtype=np.uint8)
+        write_image_file('/var/tmp/test.tif', pixels, spec)
         sys.exit()
 
         for i in range(img0.shape[0]):
