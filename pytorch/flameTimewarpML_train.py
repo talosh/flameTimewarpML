@@ -99,7 +99,8 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         self.reshuffle()
 
         # print ('Creating frame reader...', end='')
-        self.frames_queue = torch.multiprocessing.Queue(maxsize=4)
+        self.mp_frames_queue = torch.multiprocessing.Queue(maxsize=4)
+        self.frames_queue = queue.Queue(maxsize=32)
 
         def read_frames_thread(train_descriptions, frames_queue, scale_list, h):
             while True:
@@ -111,7 +112,15 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 frame_read_process.start()
                 frame_read_process.join()
 
+        def transfer_frames_thread(mp_frames_queue, frames_queue):
+            while True:
+                frames_queue.put(mp_frames_queue.get())
+
         self.frame_read_thread = threading.Thread(target=read_frames_thread, args=(self.train_descriptions, self.frames_queue, self.scale_list, self.h))
+        self.frame_read_thread.daemon = True
+        self.frame_read_thread.start()
+
+        self.frame_read_thread = threading.Thread(target=transfer_frames_thread, args=(self.mp_frames_queue, self.frames_queue))
         self.frame_read_thread.daemon = True
         self.frame_read_thread.start()
 
@@ -347,7 +356,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         return len(self.train_descriptions)
 
     def __getitem__(self, index):
-        return self.frames_queue.get()
+        return self.getimg(index)
         train_data = self.getimg(index)
         # src_img0 = train_data['pre_start']
         np_img0 = train_data['start']
