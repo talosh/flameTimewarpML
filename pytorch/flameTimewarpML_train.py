@@ -1101,7 +1101,6 @@ def main():
             except Exception as e:
                 print (f'\n\nWrite preview: {e}')
                 
-
     def write_eval_images(write_eval_image_queue):
         while True:
             try:
@@ -1476,7 +1475,8 @@ def main():
         ratio = ratio.to(device = device, dtype = torch.float32)
         
         test_img0 =img0[0].numpy(force=True).transpose(1, 2, 0)
-        print (test_img0.shape)
+        spec = oiio.ImageSpec(frame_size, frame_size, 3, 'half')
+        write_images('/var/tmp/test.exr', test_img0, spec)
         sys.exit()
 
         for i in range(img0.shape[0]):
