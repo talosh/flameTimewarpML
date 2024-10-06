@@ -1109,27 +1109,32 @@ def main():
         while True:
             try:
                 write_data = write_eval_image_queue.get_nowait()
-                print (os.path.join(write_data['preview_folder'], write_data['sample_source1_name']))
-                print ('\n\n')
+                h, w, c = write_data['sample_source1'].shape
+                spec = oiio.ImageSpec(w, h, c, 'half')
                 write_image_file(
                     os.path.join(write_data['preview_folder'], write_data['sample_source1_name']),
-                    write_data['sample_source1']
+                    write_data['sample_source1'],
+                    spec
                     )
                 write_image_file(
                     os.path.join(write_data['preview_folder'], write_data['sample_source2_name']),
-                    write_data['sample_source2']
+                    write_data['sample_source2'],
+                    spec
                     )
                 write_image_file(
                     os.path.join(write_data['preview_folder'], write_data['sample_target_name']),
-                    write_data['sample_target']
+                    write_data['sample_target'],
+                    spec
                     )
                 write_image_file(
                     os.path.join(write_data['preview_folder'], write_data['sample_output_name']),
-                    write_data['sample_output']
+                    write_data['sample_output'],
+                    spec
                     )
                 write_image_file(
                     os.path.join(write_data['preview_folder'], write_data['sample_output_mask_name']),
-                    write_data['sample_output_mask']
+                    write_data['sample_output_mask'],
+                    spec
                     )
                 del write_data
             except queue.Empty:
