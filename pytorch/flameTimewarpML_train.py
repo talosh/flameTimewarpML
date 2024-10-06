@@ -1442,14 +1442,15 @@ def main():
         # read data here
         img0, img1, img2, ratio, idx = dataset[0]
 
+        img0 = img0.to(device = device, dtype = torch.float32)
+        img1 = img1.to(device = device, dtype = torch.float32)
+        img2 = img2.to(device = device, dtype = torch.float32)
+
         data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
         time_stamp = time.time()
 
         # train here
-        img0 = img0.to(device = device, dtype = torch.float32)
-        img1 = img1.to(device = device, dtype = torch.float32)
-        img2 = img2.to(device = device, dtype = torch.float32)
 
         '''
         for i in range(img0.shape[0]):
