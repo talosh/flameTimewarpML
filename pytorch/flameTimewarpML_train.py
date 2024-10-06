@@ -1474,8 +1474,9 @@ def main():
         img1 = img1.to(device = device, dtype = torch.float32)
         img2 = img2.to(device = device, dtype = torch.float32)
         ratio = ratio.to(device = device, dtype = torch.float32)
-
-        print (img0.shape)
+        
+        test_img0 =img0[0]
+        print (test_img0.shape)
         sys.exit()
 
         for i in range(img0.shape[0]):
