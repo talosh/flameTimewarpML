@@ -1515,8 +1515,8 @@ def main():
         smoothed_loss = float(np.mean(moving_average(epoch_loss, 9)))
         lpips_val = float(np.array(lpips_list).mean())
 
-        '''
         loss.backward()
+        '''
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
 
         optimizer_flownet.step()
