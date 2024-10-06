@@ -285,12 +285,12 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
     def crop(self, img0, img1, img2, h, w):
         np.random.seed(None)
-        ih, iw, _ = img0.shape
+        _, iw, ih = img0.shape
         x = np.random.randint(0, ih - h + 1)
         y = np.random.randint(0, iw - w + 1)
-        img0 = img0[x:x+h, y:y+w, :]
-        img1 = img1[x:x+h, y:y+w, :]
-        img2 = img2[x:x+h, y:y+w, :]
+        img0 = img0[:, y:y+w, x:x+h]
+        img1 = img1[:, y:y+w, x:x+h]
+        img2 = img2[:, y:y+w, x:x+h]
         # img3 = img3[x:x+h, y:y+w, :]
         # img4 = img4[x:x+h, y:y+w, :]
         return img0, img1, img2 #, img3, img4
@@ -365,7 +365,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         for batch_index in range(self.batch_size):
             data = self.getimg(index)
-            img0, img1, img2 = self.crop(data['start'], data['gt'], data['end'], self.h, self.w)
+            img0, img1, img2 = self.crop(data['start'][0], data['gt'][0], data['end'][0], self.h, self.w)
             batch_img0.append(img0)
             batch_img1.append(img1)
             batch_img2.append(img2)
