@@ -1004,7 +1004,8 @@ def main():
         if args.state_file and os.path.isfile(args.state_file):
             trained_model_path = args.state_file
             try:
-                checkpoint = torch.load(trained_model_path, map_location=device, weights_only=False)
+                # checkpoint = torch.load(trained_model_path, map_location=device, weights_only=False)
+                checkpoint = torch.load(trained_model_path, map_location=device)
                 print('loaded previously saved model checkpoint')
             except Exception as e:
                 print (f'unable to load saved model checkpoint: {e}')
@@ -1213,15 +1214,18 @@ def main():
 
         try:
             checkpoint = torch.load(trained_model_path, map_location=device, weights_only=False)
+            # checkpoint = torch.load(trained_model_path, map_location=device)
             print('loaded previously saved model checkpoint')
         except Exception as e:
             print (f'unable to load saved model: {e}')
 
         try:
             if args.all_gpus:
-                missing_keys, unexpected_keys = flownet.load_state_dict(convert_to_data_parallel(checkpoint['flownet_state_dict']), strict=False, weights_only=False)
+                # missing_keys, unexpected_keys = flownet.load_state_dict(convert_to_data_parallel(checkpoint['flownet_state_dict']), strict=False, weights_only=False)
+                missing_keys, unexpected_keys = flownet.load_state_dict(convert_to_data_parallel(checkpoint['flownet_state_dict']), strict=False)
             else:
-                missing_keys, unexpected_keys = flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False, weights_only=False)
+                # missing_keys, unexpected_keys = flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False, weights_only=False)
+                missing_keys, unexpected_keys = flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
             print('loaded previously saved Flownet state')
             if missing_keys:
                 print (f'\nMissing keys:\n{missing_keys}\n')
@@ -1261,7 +1265,8 @@ def main():
                 for k, v in param.items()
                 if "module." in k
             }
-        missing_keys, unexpected_keys = flownet.load_state_dict(convert(rife_state_dict), strict=False, weights_only=False)
+        # missing_keys, unexpected_keys = flownet.load_state_dict(convert(rife_state_dict), strict=False, weights_only=False)
+        missing_keys, unexpected_keys = flownet.load_state_dict(convert(rife_state_dict), strict=False)
         print (f'\nMissing keys:\n{missing_keys}\n')
         print (f'\nUnexpected keys:\n{unexpected_keys}\n')
 
@@ -1876,7 +1881,9 @@ def main():
 
             if args.eval_half:
                 flownet.float()
-                flownet.load_state_dict(original_float_state_dict, weights_only=False)
+                # flownet.load_state_dict(original_float_state_dict, weights_only=False)
+                flownet.load_state_dict(original_float_state_dict)
+
 
             flownet.train()
 
