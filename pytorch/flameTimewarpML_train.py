@@ -72,7 +72,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             frame_size=448, 
             max_window=9,
             repeat = 1,
-            scale_list = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
+            scale_list = [1.0, 1.12, 1.25]
             ):
         
         self.data_root = data_root
