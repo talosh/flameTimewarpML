@@ -1643,7 +1643,7 @@ def main():
             print(f'\r[Last 10K] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
         '''
         
-        print (idx + 1)
+        print (dataset.epoch)
 
         if ( idx + 1 ) == len(dataset):
             steps_loss = []
