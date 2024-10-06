@@ -141,7 +141,10 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         # to reduce overhead when getting directly from mp queue
         def transfer_frames_thread(mp_frames_queue, frames_queue):
             while True:
-                frames_queue.put(mp_frames_queue.get())
+                try:
+                    frames_queue.put(mp_frames_queue.get())
+                except:
+                    time.sleep(0.1)
 
         self.frame_read_thread = threading.Thread(target=transfer_frames_thread, args=(self.mp_frames_queue, self.frames_queue))
         self.frame_read_thread.daemon = True
