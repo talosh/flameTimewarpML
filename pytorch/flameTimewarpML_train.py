@@ -271,7 +271,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         def crop_images(img0, img1, img2, h, w):
             np.random.seed(None)
-            _, iw, ih = img0.shape
+            _, ih, iw = img0.shape
             x = np.random.randint(0, ih - h + 1)
             y = np.random.randint(0, iw - w + 1)
             img0 = img0[:, x:x+h, y:y+w]
@@ -313,7 +313,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
                     img0, img1, img2 = crop_images(img0[0], img1[0], img2[0], h, w)
 
-                    print (f'\ncropped: {img0.shape}')
+                    print (f'\ncropped:{img0.shape}')
 
                     batch_img0.append(img0)
                     batch_img1.append(img1)
