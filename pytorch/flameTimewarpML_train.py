@@ -234,9 +234,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
     
     @staticmethod
     def read_frames(frames_queue, train_descriptions, batch_size, scale_list, h, w):
-
-        print (f'H: {h}, W: {w}')
-
+        
         def resize_image(tensor, x):
             """
             Resize the tensor of shape [h, w, c] so that the smallest dimension becomes x,
