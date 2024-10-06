@@ -126,6 +126,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 frame_read_process.start()
                 frame_read_process.join()
                 self.epoch += 1
+                self.reshuffle()
 
         self.frame_read_thread = threading.Thread(
             target=read_frames_thread, args=(
