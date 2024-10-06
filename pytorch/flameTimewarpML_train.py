@@ -1474,7 +1474,7 @@ def main():
         img2 = img2.to(device = device, dtype = torch.float32)
         ratio = ratio.to(device = device, dtype = torch.float32)
         
-        test_img0 =img0[0].numpy(force=True).transpose(1, 2, 0)
+        test_img0 =img0[0].numpy(force=True).transpose(1, 2, 0).copy()
 
         print (type(test_img0))
         
