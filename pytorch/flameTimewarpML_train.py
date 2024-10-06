@@ -1481,6 +1481,9 @@ def main():
             scale=training_scale,
             iterations = args.iterations
             )
+        
+        mask = mask_list[3]
+        output = merged[3]
 
         loss_l1_str = '0'
 
