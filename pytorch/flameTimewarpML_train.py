@@ -1644,23 +1644,50 @@ def main():
         else:
             print(f'\r[Last 10K] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
         '''
-        
-        print (dataset.epoch)
 
-        if ( idx + 1 ) == len(dataset):
+        if epoch != dataset.epoch:
+            write_model_state_queue.put(deepcopy(current_state_dict))
+
+            psnr = float(np.array(psnr_list).mean())
+            lpips_val = float(np.array(lpips_list).mean())
+
+            epoch_time = time.time() - start_timestamp
+            days = int(epoch_time // (24 * 3600))
+            hours = int((epoch_time % (24 * 3600)) // 3600)
+            minutes = int((epoch_time % 3600) // 60)
+
+            # clear_lines(2)
+            # print(f'\rEpoch [{epoch + 1} (Step {step:11} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PSNR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
+            # print ('\n')
+
+            rows_to_append = [
+                {
+                    'Epoch': epoch,
+                    'Step': step, 
+                    'Min': min(epoch_loss),
+                    'Avg': smoothed_loss,
+                    'Max': max(epoch_loss),
+                    'PSNR': psnr,
+                    'LPIPS': lpips_val
+                 }
+            ]
+            for row in rows_to_append:
+                append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.csv', row)
+
+            psnr = 0
+
             steps_loss = []
             epoch_loss = []
             psnr_list = []
             lpips_list = []
-            epoch = epoch + 1
+            epoch = dataset.epoch
             batch_idx = 0
-
-            while  ( idx + 1 ) == len(dataset):
-                img0, img1, img2, ratio, idx = dataset[idx]
-            dataset.reshuffle()
 
         batch_idx = batch_idx + 1
         step = step + 1
+
+        if epoch == args.epochs:
+            sys.exit()
 
         continue
         
