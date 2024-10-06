@@ -356,7 +356,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         return len(self.train_descriptions)
 
     def __getitem__(self, index):
-
         batch_img0 = []
         batch_img1 = []
         batch_img2 = []
