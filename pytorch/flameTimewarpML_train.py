@@ -1884,7 +1884,6 @@ def main():
                 # flownet.load_state_dict(original_float_state_dict, weights_only=False)
                 flownet.load_state_dict(original_float_state_dict)
 
-
             flownet.train()
 
             eval_rows_to_append = [
