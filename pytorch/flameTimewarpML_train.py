@@ -1059,11 +1059,27 @@ def main():
             try:
                 write_data = write_image_queue.get_nowait()
                 preview_index = write_data.get('preview_index', 0)
-                write_exr(write_data['sample_source1'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'), half_float = True)
-                write_exr(write_data['sample_source2'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_outgoing.exr'), half_float = True)
-                write_exr(write_data['sample_target'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_target.exr'), half_float = True)
-                write_exr(write_data['sample_output'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_output.exr'), half_float = True)
-                write_exr(write_data['sample_output_mask'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_output_mask.exr'), half_float = True)
+                spec = oiio.ImageSpec(frame_size, frame_size, 3, 'half')
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
+                    write_data['sample_source1'],
+                    spec)
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
+                    write_data['sample_source2'],
+                    spec)
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
+                    write_data['sample_target'],
+                    spec)
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
+                    write_data['sample_output'],
+                    spec)
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
+                    write_data['sample_output_mask'],
+                    spec)
                 del write_data
             except:
             # except queue.Empty:
@@ -1095,12 +1111,12 @@ def main():
             except:
                 time.sleep(1e-2)
 
-    '''
     write_image_queue = queue.Queue(maxsize=16)
     write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
     write_thread.daemon = True
     write_thread.start()
-    
+
+    '''    
     write_eval_image_queue = queue.Queue(maxsize=args.eval_buffer)
     write_eval_thread = threading.Thread(target=write_eval_images, args=(write_eval_image_queue, ))
     write_eval_thread.daemon = True
