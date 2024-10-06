@@ -1474,7 +1474,9 @@ def main():
         img2 = img2.to(device = device, dtype = torch.float32)
         ratio = ratio.to(device = device, dtype = torch.float32)
         
-        test_img0 =img0[0].numpy(force=True).transpose(1, 2, 0).astype(np.uint8)
+        test_img0 =img0[0].numpy(force=True).transpose(1, 2, 0)
+
+        print (type(test_img0))
         
         ref_w, ref_h, ref_d = test_img0.shape
         spec = oiio.ImageSpec(ref_h, ref_w, ref_d, 'half')
