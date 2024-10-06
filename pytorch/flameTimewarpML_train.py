@@ -1080,43 +1080,59 @@ def main():
                 spec = oiio.ImageSpec(frame_size, frame_size, 3, 'half')
                 write_image_file(
                     os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
-                    write_data['sample_source1'].astype(np.float16),
+                    write_data['sample_source1'],
                     spec)
                 write_image_file(
                     os.path.join(write_data['preview_folder'], f'{preview_index:02}_outgoing.exr'),
-                    write_data['sample_source2'].astype(np.float16),
+                    write_data['sample_source2'],
                     spec)
                 write_image_file(
                     os.path.join(write_data['preview_folder'], f'{preview_index:02}_target.exr'),
-                    write_data['sample_target'].astype(np.float16),
+                    write_data['sample_target'],
                     spec)
                 write_image_file(
                     os.path.join(write_data['preview_folder'], f'{preview_index:02}_output.exr'),
-                    write_data['sample_output'].astype(np.float16),
+                    write_data['sample_output'],
                     spec)
                 write_image_file(
                     os.path.join(write_data['preview_folder'], f'{preview_index:02}_output_mask.exr'),
-                    write_data['sample_output_mask'].astype(np.float16),
+                    write_data['sample_output_mask'],
                     spec)
                 del write_data
             except queue.Empty:
                 time.sleep(1e-2)
             except Exception as e:
-                print (f'\n\nWrite preview: {e}')
+                print (f'\n\nError write preview: {e}')
                 
     def write_eval_images(write_eval_image_queue):
         while True:
             try:
                 write_data = write_eval_image_queue.get_nowait()
-                write_exr(write_data['sample_source1'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_source1_name']), half_float = True)
-                write_exr(write_data['sample_source2'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_source2_name']), half_float = True)
-                write_exr(write_data['sample_target'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_target_name']), half_float = True)
-                write_exr(write_data['sample_output'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_output_name']), half_float = True)
-                write_exr(write_data['sample_output_mask'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_output_mask_name']), half_float = True)
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], write_data['sample_source1_name']),
+                    write_data['sample_source1']
+                    )
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], write_data['sample_source2_name']),
+                    write_data['sample_source2']
+                    )
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], write_data['sample_target_name']),
+                    write_data['sample_target']
+                    )
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], write_data['sample_output_name']),
+                    write_data['sample_output']
+                    )
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], write_data['sample_output_mask_name']),
+                    write_data['sample_output_mask']
+                    )
                 del write_data
-            except:
-            # except queue.Empty:
+            except queue.Empty:
                 time.sleep(1e-2)
+            except Exception as e:
+                print (f'\n\nError writing eval images: {e}')
 
     def write_model_state(write_model_state_queue):
         while True:
@@ -1135,12 +1151,10 @@ def main():
     write_thread.daemon = True
     write_thread.start()
 
-    '''    
     write_eval_image_queue = queue.Queue(maxsize=args.eval_buffer)
     write_eval_thread = threading.Thread(target=write_eval_images, args=(write_eval_image_queue, ))
     write_eval_thread.daemon = True
     write_eval_thread.start()
-    '''
 
     write_model_state_queue = queue.Queue(maxsize=2)
     write_model_state_thread = threading.Thread(target=write_model_state, args=(write_model_state_queue, ))
@@ -1680,231 +1694,7 @@ def main():
             lpips_list = []
             epoch = dataset.epoch
             batch_idx = 0
-
-        batch_idx = batch_idx + 1
-        step = step + 1
-
-        if epoch == args.epochs:
-            sys.exit()
-
-        continue
         
-        
-        # flow0 = flow_list[3][:, :2]
-        # flow1 = flow_list[3][:, 2:4]
-        mask = mask_list[3]
-        # output = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
-        
-        output = merged[3]
-        # warped_img0 = warp(img0, flow_list[3][:, :2])
-        # warped_img2 = warp(img2, flow_list[3][:, 2:4])
-        # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
-
-        # self.vgg(merged[3], gt).mean() - self.ss(merged[3], gt) * 0.1
-
-        '''
-        x8_output = torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
-        x8_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
-        # x8_lpips = torch.mean(loss_fn_lpips.forward(x8_output * 2 - 1, x8_orig * 2 - 1))
-        x8_lpips = torch.mean(loss_fn_vgg.forward(x8_output, x8_orig)) - loss_fn_ssim(x8_output, x8_orig) * 0.1
-        loss_x8 = pm_weight * criterion_huber(x8_output, x8_orig) + lpips_weight * x8_lpips
-
-        x4_output = torch.nn.functional.interpolate(merged[1], scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
-        x4_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
-        # x4_lpips = torch.mean(loss_fn_lpips.forward(x4_output * 2 - 1, x4_orig * 2 - 1))
-        x4_lpips = torch.mean(loss_fn_vgg.forward(x4_output, x4_orig)) - loss_fn_ssim(x4_output, x4_orig) * 0.1
-        loss_x4 = pm_weight * criterion_huber(x4_output, x4_orig) + lpips_weight * x4_lpips
-
-        x2_output = torch.nn.functional.interpolate(merged[2], scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
-        x2_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
-        # x2_lpips = torch.mean(loss_fn_lpips.forward(x2_output * 2 - 1, x2_orig * 2 - 1))
-        x2_lpips = torch.mean(loss_fn_vgg.forward(x2_output, x2_orig)) - loss_fn_ssim(x2_output, x2_orig) * 0.1
-        loss_x2 = pm_weight * criterion_huber(x2_output, x2_orig) + lpips_weight * x2_lpips
-
-        x1_output = merged[3]
-        x1_orig = img1
-        # x1_lpips = torch.mean(loss_fn_lpips.forward(x1_output * 2 - 1, x1_orig * 2 - 1))
-        x1_lpips = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
-        loss_x1 = pm_weight * criterion_huber(x1_output, x1_orig) + lpips_weight * x1_lpips
-
-        loss = 0.24 * loss_x8 + 0.24 * loss_x4 + 0.24 * loss_x2 + 0.28 * loss_x1
-        '''
-
-
-        x1_output = merged[3]
-        x1_orig = img1
-
-        # vgg_loss = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
-
-        # print (f'Out: {output.shape}, Orig: {img1_orig.shape}')
-
-        loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
-        # loss = (criterion_l1(x1_output, x1_orig)  + 0.1 * (float(torch.mean(loss_LPIPS_).item()) ** 1.1)) / 2
-
-        lpips_weight = 0.5
-        loss = (1 - lpips_weight ) * criterion_l1(x1_output, x1_orig) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS_).item())
-
-        loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
-        loss_l1_str = str(f'{loss_l1.item():.6f}')
-
-        epoch_loss.append(float(loss_l1.item()))
-        steps_loss.append(float(loss_l1.item()))
-        lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
-        # lpips_list.append(1.)
-        psnr_list.append(float(psnr_torch(output, img1)))
-
-        if len(epoch_loss) < 9999:
-            smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
-            window_min = min(epoch_loss)
-            window_max = max(epoch_loss)
-            lpips_window_val = float(np.array(lpips_list).mean())
-        else:
-            smoothed_window_loss = np.mean(moving_average(epoch_loss[-9999:], 9))
-            window_min = min(epoch_loss[-9999:])
-            window_max = max(epoch_loss[-9999:])
-            lpips_window_val = float(np.array(lpips_list[-9999:]).mean())
-        smoothed_loss = float(np.mean(moving_average(epoch_loss, 9)))
-        lpips_val = float(np.array(lpips_list).mean())
-
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
-
-        optimizer_flownet.step()
-
-        try:
-            scheduler_flownet.step()
-        except Exception as e:
-            # if Onecycle is over due to variable number of steps per epoch
-            # fall back to Cosine
-
-            print (f'switching to CosineAnnealingLR scheduler:')
-            print (f'{e}\n\n')
-
-            current_lr = float(optimizer_flownet.param_groups[0]["lr"])
-            scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimizer_flownet, 
-                T_max=pulse_period, 
-                eta_min = current_lr - (( current_lr / 100 ) * pulse_dive)
-                )
-
-        train_time = time.time() - time_stamp
-        time_stamp = time.time()
-
-        current_state_dict['step'] = int(step)
-        current_state_dict['steps_loss'] = list(steps_loss)
-        current_state_dict['epoch'] = int(epoch)
-        current_state_dict['epoch_loss'] = list(epoch_loss)
-        current_state_dict['start_timestamp'] = start_timestamp
-        current_state_dict['lr'] = optimizer_flownet.param_groups[0]['lr']
-        current_state_dict['model_info'] = model_info
-        if args.all_gpus:
-            current_state_dict['flownet_state_dict'] = convert_from_data_parallel(flownet.state_dict())
-        else:
-            current_state_dict['flownet_state_dict'] = flownet.state_dict()
-        current_state_dict['optimizer_flownet_state_dict'] = optimizer_flownet.state_dict()
-        current_state_dict['trained_model_path'] = trained_model_path
-
-        if step % args.preview == 1:
-            rgb_source1 = img0_orig
-            rgb_source2 = img2_orig
-            rgb_target = img1_orig
-            rgb_output = restore_normalized_values(output)
-            rgb_output_mask = mask.repeat_interleave(3, dim=1)
-            # rgb_refine = refine_list[0] + refine_list[1] + refine_list[2] + refine_list[3]
-            # rgb_refine = (rgb_refine + 1) / 2
-            # sample_refine = rgb_refine[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
-
-            preview_index = preview_index + 1 if preview_index < 9 else 0
-
-            write_image_queue.put(
-                {
-                    'preview_folder': os.path.join(args.dataset_path, 'preview'),
-                    'preview_index': int(preview_index),
-                    'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output_mask': rgb_output_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
-                }
-            )
-
-            del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
-
-        if step % args.save == 1:
-            write_model_state_queue.put(deepcopy(current_state_dict))
-
-        data_time += time.time() - time_stamp
-        data_time_str = str(f'{data_time:.2f}')
-        train_time_str = str(f'{train_time:.2f}')
-
-        epoch_time = time.time() - start_timestamp
-        days = int(epoch_time // (24 * 3600))
-        hours = int((epoch_time % (24 * 3600)) // 3600)
-        minutes = int((epoch_time % 3600) // 60)
-
-        clear_lines(2)
-        print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{train_time_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
-        if len(epoch_loss) < 9999:
-            print(f'\r[Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
-        else:
-            print(f'\r[Last 10K] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
-
-        if ( idx + 1 ) == len(dataset):
-            write_model_state_queue.put(deepcopy(current_state_dict))
-
-            psnr = float(np.array(psnr_list).mean())
-            lpips_val = float(np.array(lpips_list).mean())
-
-            epoch_time = time.time() - start_timestamp
-            days = int(epoch_time // (24 * 3600))
-            hours = int((epoch_time % (24 * 3600)) // 3600)
-            minutes = int((epoch_time % 3600) // 60)
-
-            # clear_lines(2)
-            # print(f'\rEpoch [{epoch + 1} (Step {step:11} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PSNR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
-            # print ('\n')
-
-            rows_to_append = [
-                {
-                    'Epoch': epoch,
-                    'Step': step, 
-                    'Min': min(epoch_loss),
-                    'Avg': smoothed_loss,
-                    'Max': max(epoch_loss),
-                    'PSNR': psnr,
-                    'LPIPS': lpips_val
-                 }
-            ]
-            for row in rows_to_append:
-                append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.csv', row)
-
-            psnr = 0
-
-            '''
-            if args.onecycle != -1:
-                if first_pass:
-                    first_pass = False
-                    optimizer_state_dict = optimizer_flownet.state_dict()
-                    scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
-                        optimizer_flownet,
-                        max_lr=args.lr, 
-                        total_steps= step * args.onecycle, 
-                        )
-                    optimizer_flownet.load_state_dict(optimizer_state_dict)
-                print (f'setting OneCycleLR after first cycle with max_lr={args.lr}, steps={step}\n\n')
-            '''
-
-            steps_loss = []
-            epoch_loss = []
-            psnr_list = []
-            lpips_list = []
-            epoch = epoch + 1
-            batch_idx = 0
-
-            while  ( idx + 1 ) == len(dataset):
-                img0, img1, img2, ratio, idx = read_image_queue.get()
-            dataset.reshuffle()
-
         if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
             if not args.eval_first:
                 if step == 1:
@@ -1938,9 +1728,9 @@ def main():
                 for ev_item_index, description in enumerate(descriptions):
                     try:
                         desc_data = dict(description)
-                        eval_img0 = read_openexr_file(description['start'])['image_data']
-                        eval_img1 = read_openexr_file(description['gt'])['image_data']
-                        eval_img2 = read_openexr_file(description['end'])['image_data']
+                        eval_img0 = read_image_file(description['start'])['image_data']
+                        eval_img1 = read_image_file(description['gt'])['image_data']
+                        eval_img2 = read_image_file(description['end'])['image_data']
 
                         desc_data['eval_img0'] = eval_img0
                         desc_data['eval_img1'] = eval_img1
