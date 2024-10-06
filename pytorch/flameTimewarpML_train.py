@@ -115,6 +115,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         self.frame_read_thread.daemon = True
         self.frame_read_thread.start()
 
+        # to reduce overhead when getting directly from mp queue
         def transfer_frames_thread(mp_frames_queue, frames_queue):
             while True:
                 frames_queue.put(mp_frames_queue.get())
@@ -124,7 +125,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         self.frame_read_thread.start()
 
         print ('Starting frame reader process...', end='')
-        # print ('reading first block of training data...')
+        # reading first block of training data here
         self.last_train_data = [self.frames_queue.get()]
         self.last_train_data_size = 4
         self.new_sample_shown = False
@@ -355,15 +356,21 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
         return len(self.train_descriptions)
 
     def __getitem__(self, index):
-        data = self.getimg(index)
 
-        img0 = data['start']
-        img1 = data['gt']
-        img2 = data['end']
-        ratio = data['ratio']
+        batch_img0 = []
+        batch_img1 = []
+        batch_img2 = []
+        batch_ratio = []
         images_idx = self.train_data_index
 
-        return img0, img1, img2, ratio, images_idx
+        for batch_index in range(self.batch_size):
+            data = self.getimg(index)
+            batch_img0.append(data['start'])
+            batch_img1.append(data['gt'])
+            batch_img2.append(data['end'])
+            batch_ratio.append(torch.full((1, self.w, self.h), data['ratio']))
+            
+        return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), torch.stack(batch_ratio), images_idx
 
         train_data = self.getimg(index)
         # src_img0 = train_data['pre_start']
