@@ -1475,6 +1475,9 @@ def main():
         img2 = img2.to(device = device, dtype = torch.float32)
         ratio = ratio.to(device = device, dtype = torch.float32)
 
+        print (img0.shape)
+        sys.exit()
+
         for i in range(img0.shape[0]):
             img0[i], img1[i], img2[i] = augment_images(img0[i], img1[i], img2[i], args.generalize, args.acescc)
 
