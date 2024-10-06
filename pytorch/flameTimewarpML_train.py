@@ -291,7 +291,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         num_items = len(train_descriptions)
         for start_idx in range(0, num_items, batch_size):
-            end_idx = min(start_idx + batch_size, num_items)
+            end_idx = min(start_idx + batch_size, num_items - 1)
             batch = train_descriptions[start_idx:end_idx]
             
             batch_img0 = []
