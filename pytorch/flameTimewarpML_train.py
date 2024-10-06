@@ -1122,7 +1122,6 @@ def main():
     else:
         eval_dataset = dataset
     
-
     def read_images(read_image_queue, dataset):
         while True:
             for batch_idx in range(len(dataset)):
