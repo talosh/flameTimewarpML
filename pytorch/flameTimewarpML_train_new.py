@@ -15,13 +15,12 @@ from copy import deepcopy
 from pprint import pprint
 
 try:
-    import numpy as np
     import torch
 except:
     python_executable_path = sys.executable
     if '.miniconda' in python_executable_path:
-        print ('Unable to import Numpy and PyTorch libraries')
-        print (f'Using {python_executable_path} python interpreter')
+        print ('Unable to import PyTorch')
+        print (f'Using "{python_executable_path}" as python interpreter')
         sys.exit()
     else:
         # make Flame happy on hooks scan
@@ -32,629 +31,226 @@ except:
                 class Conv2d(object):
                     pass
 
-class MinExrReader:
-    '''Minimal, standalone OpenEXR reader for single-part, uncompressed scan line files.
-
-    This OpenEXR reader makes a couple of assumptions
-    - single-part files with arbitrary number of channels,
-    - no pixel data compression, and
-    - equal channel types (HALF, FLOAT, UINT).
-
-    These assumptions allow us to efficiently parse and read the `.exr` file. In particular
-    we gain constant offsets between scan lines which allows us to read the entire image
-    in (H,C,W) format without copying.
-
-    Use `MinimalEXR.select` to select a subset of channels in the given order. `MinimalEXR.select`
-    tries to be smart when copying is required and when views are ok.
-    
-    Based on the file format presented in
-    https://www.openexr.com/documentation/openexrfilelayout.pdf
-
-    Attributes
-    ----------
-    shape: tuple
-        Shape of image in (H,C,W) order
-    image: numpy.array
-        Uncompressed image data.
-    attrs: dict
-        OpenEXR header attributes.
-    '''
-
-    class BufferReader:
-        '''A lightweight io.BytesIO object with convenience functions.
-        
-        Params
-        ------
-        data : bytes-like
-            Bytes for which random access is required.
-        
-        '''
-
-        def __init__(self, data):
-            self.data = data
-            self.len = len(data)
-            self.off = 0
-
-        def read(self, n):
-            '''Read next `n` bytes.'''
-            v = self.data[self.off:self.off+n]
-            self.off += n
-            return v
-
-        def read_null_string(self):
-            import ctypes
-            '''Read a null-terminated string.'''
-            s = ctypes.create_string_buffer(self.data[self.off:]).value
-            if s != None:
-                s = s.decode('utf-8')
-                self.off += len(s) + 1
-            return s
-
-        def peek(self):
-            '''Peek next byte.'''
-            return self.data[self.off]
-
-        def advance(self, n):
-            '''Advance offset by `n` bytes.'''
-            self.off += n
-
-        def nleft(self):
-            '''Returns the number of bytes left to read.'''
-            return self.len - self.off - 1
-
-    def __init__(self, fp, header_only = False):
-        self.fp = fp
-        self.image = None
-        self.shape = None
-
-        self._read_header()
-        if not header_only:
-            self._read_image()
-
-    def select(self, channels, channels_last=True):
-        import numpy as np
-        '''Returns an image composed only of the given channels.
-        
-        Attempts to be smart about memory views vs. memory copies.
-
-        Params
-        ------
-        channels: list-like
-            Names of channels to be extracted. Appearance in list
-            also defines the order of the channels. 
-        channels_last: bool, optional
-            When true return image in (H,W,C) format.
-
-        Returns
-        -------
-        image: HxWxC or HxCxW array
-            Selected image data.
-        '''
-        H,C,W = self.shape
-        ids = [self.channel_map[c] for c in channels]                
-        if len(ids) == 0:
-            img = np.empty((H,0,W), dtype=self.image.dtype)
-        else:
-            diff = np.diff(ids)
-            sH = slice(0, H)
-            sW = slice(0, W)
-            if len(diff) == 0:
-                # single channel select, return view
-                sC = slice(ids[0],ids[0]+1)
-                img = self.image[sH,sC,sW]
-            elif len(set(diff)) == 1:
-                # mutliple channels, constant offset between, return view
-                # Careful here with negative steps, ie. diff[0] < 0:
-                start = ids[0]
-                step = diff[0]
-                end = ids[-1]+diff[0]
-                end = None if end < 0 else end                
-                sC = slice(start,end,step)
-                img = self.image[sH,sC,sW]
-            else:
-                # multiple channels not slicable -> copy mem
-                chdata = [self.image[sH,i:i+1,sW] for i in ids]
-                img = np.concatenate(chdata, 1)
-        
-        if channels_last:
-            img = img.transpose(0,2,1)
-        return img
-
-    def _read_header(self):
-        import numpy as np
-        import struct
-
-        self.fp.seek(0)        
-        buf = self.BufferReader(self.fp.read(10000))
-
-        # Magic and version and info bits
-        magic, version, b2, b3, b4 = struct.unpack('<iB3B', buf.read(8))
-        assert magic == 20000630, 'Not an OpenEXR file.'
-        assert b2 in (0, 4), 'Not a single-part scan line file.'
-        assert b3 == b4 == 0, 'Unused flags in version field are not zero.'
-
-        # Header attributes
-        self.attrs = self._read_header_attrs(buf)
-
-        # Parse channels and datawindow
-        self.compr = self._parse_compression(self.attrs)        
-        self.channel_names, self.channel_types = self._parse_channels(self.attrs)
-        self.channel_map = {cn:i for i,cn in enumerate(self.channel_names)}
-        H, W = self._parse_data_window(self.attrs)
-        self.shape = (H,len(self.channel_names),W)
-        self.first_offset = self._read_first_offset(buf)
-        
-        # Assert our assumptions
-        assert self.compr == 0x00, 'Compression not supported.'
-        assert len(set(self.channel_types)) <= 1, 'All channel types must be equal.'
-
-    def _read_image(self):
-        import numpy as np
-        # Here is a shortcut: We assume all channels of the same type and thus constant offsets between
-        # scanlines (SOFF). Note, each scanline has a header (y-coordinate (int4), data size DS (int4)) and data in scanlines
-        # is stored consecutively for channels (in order of appearance in header). Thus we can interpret the content
-        # as HxCxW image with strides: (SOFF,DS*W,DS)
-        H,C,W = self.shape
-
-        if np.prod(self.shape) == 0:
-            return np.empty(self.shape, dtype=np.float32)
-
-        dtype  = self.channel_types[0]
-        DS = np.dtype(dtype).itemsize
-        SOFF = 8+DS*W*C        
-        strides = (SOFF, DS*W, DS)
-        nbytes = SOFF*H
-
-        self.fp.seek(self.first_offset, 0)
-        image = np.frombuffer(self.fp.read(nbytes), dtype=dtype, count=-1, offset=8)
-        self.image = np.lib.stride_tricks.as_strided(image, (H,C,W), strides)
-
-    def _read_header_attrs(self, buf):
-        attrs = {}
-        while buf.nleft() > 0:
-            attr = self._read_header_attr(buf)
-            if attr is None:
-                break
-            attrs[attr[0]] = attr
-        return attrs
-
-    def _read_header_attr(self, buf):
-        import struct
-        if buf.peek() == 0x00:
-            buf.advance(1)
-            return None
-        aname = buf.read_null_string()
-        atype = buf.read_null_string()
-        asize = struct.unpack('<i', buf.read(4))[0]
-        data = buf.read(asize)
-        return (aname, atype, asize, data)
-
-    def _parse_channels(self, attrs):
-        import struct
-        import numpy as np
-
-        attr = attrs['channels']
-        assert attr[1] == 'chlist', 'Unexcepted type for channels attribute.'
-        buf = self.BufferReader(attr[-1])
-        channel_names, channel_types = [], []
-        PT_LOOKUP = [np.uint32, np.float16, np.float32]
-        while buf.nleft() > 0 and buf.peek() != 0x00:            
-            channel_names.append(buf.read_null_string())
-            pt = struct.unpack('<i', buf.read(4))[0]
-            channel_types.append(PT_LOOKUP[pt])
-            buf.advance(12) # skip remaining entries
-        if buf.nleft() > 0:
-            buf.advance(1) # account for zero byte
-        return channel_names, channel_types
-
-    def _parse_data_window(self, attrs):
-        import struct
-        attr = attrs['dataWindow']
-        assert attr[1] == 'box2i', 'Unexcepted type for dataWindow attribute.'
-        xmin, ymin, xmax, ymax = struct.unpack('<iiii', attr[-1])
-        return (ymax-ymin+1, xmax-xmin+1)
-
-    def _parse_compression(self, attrs):
-        return attrs['compression'][-1][0]
-
-    def _read_offsets(self, buf):
-        import struct
-        offsets = []
-        while buf.nleft() > 0 and buf.peek() != 0x00:
-            o = struct.unpack('<Q', buf.read(8))[0]
-            offsets.append(o)
-        if buf.nleft() > 0:
-            buf.advance(1) # account for zero byte
-        return offsets
-
-    def _read_first_offset(self, buf):
-        import struct
-        assert buf.nleft() > 0 and buf.peek() != 0x00, 'Failed to read offset.'
-        return struct.unpack('<Q', buf.read(8))[0]
-
-def read_openexr_file(file_path, header_only = False):
-    """
-    Reads data from an OpenEXR file specified by the file path.
-
-    This function opens an OpenEXR file and reads its contents, either the header information only or the full data, including image data. It utilizes the MinExrReader to process the file.
-
-    Parameters:
-    - file_path (str): Path to the OpenEXR file to be read.
-    - header_only (bool, optional): If True, only header information is read. Defaults to False.
-
-    Returns:
-    - dict: A dictionary containing the OpenEXR file's metadata and image data (if header_only is False). The dictionary includes the following keys:
-        - 'attrs': Attributes of the OpenEXR file.
-        - 'compr': Compression type used in the OpenEXR file.
-        - 'channel_names': Names of the channels in the OpenEXR file.
-        - 'channel_types': Data types of the channels in the OpenEXR file.
-        - 'shape': The shape of the image data, rearranged as (height, width, channels).
-        - 'image_data': Numpy array of the image data if header_only is False. The data is transposed to match the shape (height, width, channels).
-
-    Note:
-    - The function uses a context manager to ensure the file is properly closed after reading.
-    - It assumes the existence of a class method `MinExrReader` for reading the OpenEXR file.
-    """
-
+try:
     import numpy as np
-    with open(file_path, 'rb') as sfp:
-        source_reader = MinExrReader(sfp, header_only)
-        result = {
-            'attrs': source_reader.attrs,
-            'compr': source_reader.compr,
-            'channel_names': source_reader.channel_names,
-            'channel_types': source_reader.channel_types,
-            'shape': (source_reader.shape[0], source_reader.shape[2], source_reader.shape[1]),
-        }
+except:
+    python_executable_path = sys.executable
+    if '.miniconda' in python_executable_path:
+        print (f'Using "{python_executable_path}" as python interpreter')
+        print ('Unable to import Numpy')
+        sys.exit()
+
+try:
+    import OpenImageIO as oiio
+except:
+    python_executable_path = sys.executable
+    if '.miniconda' in python_executable_path:
+        print ('Unable to import OpenImageIO')
+        print (f'Using "{python_executable_path}" as python interpreter')
+        sys.exit()
+
+
+def read_image_file(file_path, header_only = False):
+    result = {'spec': None, 'image_data': None}
+    inp = oiio.ImageInput.open(file_path)
+    if inp :
+        spec = inp.spec()
+        result['spec'] = spec
         if not header_only:
-            result['image_data'] = source_reader.image.transpose(0, 2, 1)[:, :, ::-1].copy()
-        del source_reader
+            height = spec.height
+            width = spec.width
+            channels = spec.nchannels
+            result['image_data'] = inp.read_image(0, 0, 0, channels)
+        inp.close()
     return result
 
-def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
-    import struct
-    import numpy as np
+def write_image_file(file_path, image_data, image_spec):
+    out = oiio.ImageOutput.create(file_path)
+    if out:
+        out.open(file_path, image_spec)
+        out.write_image(image_data)
+        out.close()
 
-    if image_data.dtype == np.float16:
-        half_float = True
-
-    height, width, depth = image_data.shape
-    red = image_data[:, :, 0]
-    green = image_data[:, :, 1]
-    blue = image_data[:, :, 2]
-    if depth > 3:
-        alpha = image_data[:, :, 3]
-    else:
-        alpha = np.array([])
-
-    channels_list = ['B', 'G', 'R'] if not alpha.size else ['A', 'B', 'G', 'R']
-
-    MAGIC = 20000630
-    VERSION = 2
-    UINT = 0
-    HALF = 1
-    FLOAT = 2
-
-    def write_attr(f, name, type, value):
-        f.write(name.encode('utf-8') + b'\x00')
-        f.write(type.encode('utf-8') + b'\x00')
-        f.write(struct.pack('<I', len(value)))
-        f.write(value)
-
-    def get_channels_attr(channels_list):
-        channel_list = b''
-        for channel_name in channels_list:
-            name_padded = channel_name[:254] + '\x00'
-            bit_depth = 1 if half_float else 2
-            pLinear = 0
-            reserved = (0, 0, 0)  # replace with your values if needed
-            xSampling = 1  # replace with your value
-            ySampling = 1  # replace with your value
-            channel_list += struct.pack(
-                f"<{len(name_padded)}s i B 3B 2i",
-                name_padded.encode(), 
-                bit_depth, 
-                pLinear, 
-                *reserved, 
-                xSampling, 
-                ySampling
-                )
-        channel_list += struct.pack('c', b'\x00')
-
-            # channel_list += (f'{i}\x00').encode('utf-8')
-            # channel_list += struct.pack("<i4B", HALF, 1, 1, 0, 0)
-        return channel_list
-    
-    def get_box2i_attr(x_min, y_min, x_max, y_max):
-        return struct.pack('<iiii', x_min, y_min, x_max, y_max)
-
-    with open(filename, 'wb') as f:
-        # Magic number and version field
-        f.write(struct.pack('I', 20000630))  # Magic number
-        f.write(struct.pack('H', 2))  # Version field
-        f.write(struct.pack('H', 0))  # Version field
-        write_attr(f, 'channels', 'chlist', get_channels_attr(channels_list))
-        write_attr(f, 'compression', 'compression', b'\x00')  # no compression
-        write_attr(f, 'dataWindow', 'box2i', get_box2i_attr(0, 0, width - 1, height - 1))
-        write_attr(f, 'displayWindow', 'box2i', get_box2i_attr(0, 0, width - 1, height - 1))
-        write_attr(f, 'lineOrder', 'lineOrder', b'\x00')  # increasing Y
-        write_attr(f, 'pixelAspectRatio', 'float', struct.pack('<f', pixelAspectRatio))
-        write_attr(f, 'screenWindowCenter', 'v2f', struct.pack('<ff', 0.0, 0.0))
-        write_attr(f, 'screenWindowWidth', 'float', struct.pack('<f', 1.0))
-        f.write(b'\x00')  # end of header
-
-        # Scan line offset table size and position
-        line_offset_pos = f.tell()
-        pixel_data_start = line_offset_pos + 8 * height
-        bytes_per_channel = 2 if half_float else 4
-        # each scan line starts with 4 bytes for y coord and 4 bytes for pixel data size
-        bytes_per_scan_line = width * len(channels_list) * bytes_per_channel + 8 
-
-        for y in range(height):
-            f.write(struct.pack('<Q', pixel_data_start + y * bytes_per_scan_line))
-
-        channel_data = {'R': red, 'G': green, 'B': blue, 'A': alpha}
-
-        # Pixel data
-        for y in range(height):
-            f.write(struct.pack('I', y))  # Line number
-            f.write(struct.pack('I', bytes_per_channel * len(channels_list) * width))  # Pixel data size
-            for channel in sorted(channels_list):
-                f.write(channel_data[channel][y].tobytes())
-        f.close
-
-    del image_data, red, green, blue
-
-def get_dataset(
-        data_root, 
-        batch_size = 8, 
-        device = None, 
-        frame_size=448, 
-        max_window=9,
-        acescc_rate = 40,
-        generalize = 80,
-        repeat = 1
-        ):
-    class TimewarpMLDataset(torch.utils.data.Dataset):
-        def __init__(   
-                self, 
-                data_root, 
-                batch_size = 4, 
-                device = None, 
-                frame_size=448, 
-                max_window=9,
-                acescc_rate = 40,
-                generalize = 80,
-                repeat = 1
-                ):
-            
-            self.data_root = data_root
-            self.batch_size = batch_size
-            self.max_window = max_window
-            self.acescc_rate = acescc_rate
-            self.generalize = generalize
-
-            print (f'scanning for exr files in {self.data_root}...')
-            self.folders_with_exr = self.find_folders_with_exr(data_root)
-            print (f'found {len(self.folders_with_exr)} clip folders.')
-            
-            '''
-            folders_with_descriptions = set()
-            folders_to_scan = set()
-            if not rescan:
-                print (f'scanning dataset description files...')
-                folders_with_descriptions, folders_to_scan = self.scan_dataset_descriptions(
-                    self.folders_with_exr,
-                    file_name='dataset_folder.json'
-                    )
-                print (f'found {len(folders_with_descriptions)} pre-processed folders, {len(folders_to_scan)} folders to scan.')
-            else:
-                folders_to_scan = self.folders_with_exr
-            '''
-
-            self.train_descriptions = []
-
-            for folder_index, folder_path in enumerate(sorted(self.folders_with_exr)):
-                print (f'\rReading headers and building training data from clip {folder_index + 1} of {len(self.folders_with_exr)}', end='')
-                self.train_descriptions.extend(self.create_dataset_descriptions(folder_path, max_window=self.max_window))
-
-            self.initial_train_descriptions = list(self.train_descriptions)
-
-            print ('\nReshuffling training data indices...')
-
-            self.reshuffle()
-
-            self.h = frame_size
-            self.w = frame_size
-            # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
-
-            self.frames_queue = queue.Queue(maxsize=32)
-            self.frame_read_thread = threading.Thread(target=self.read_frames_thread)
-            self.frame_read_thread.daemon = True
-            self.frame_read_thread.start()
-
-            print ('reading first block of training data...')
-            self.last_train_data = [self.frames_queue.get()]
-            self.last_train_data_size = 11
-            self.new_sample_shown = False
-            self.train_data_index = 0
-
-            self.current_batch_data = []
-
-            self.repeat_count = repeat
-            self.repeat_counter = 0
-
-            # self.last_shuffled_index = -1
-            # self.last_source_image_data = None
-            # self.last_target_image_data = None
-
-            if device is None:
-                self.device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda')
-            else:
-                self.device = device
-
-            print (f'ACEScc rate: {self.acescc_rate}%')
-
-        def reshuffle(self):
-            random.shuffle(self.train_descriptions)
-
-        def find_folders_with_exr(self, path):
-            """
-            Find all folders under the given path that contain .exr files.
-
-            Parameters:
-            path (str): The root directory to start the search from.
-
-            Returns:
-            list: A list of directories containing .exr files.
-            """
-            directories_with_exr = set()
-
-            # Walk through all directories and files in the given path
-            for root, dirs, files in os.walk(path):
-                if 'preview' in root:
-                    continue
-                if 'eval' in root:
-                    continue
-                for file in files:
-                    if file.endswith('.exr'):
-                        directories_with_exr.add(root)
-                        break  # No need to check other files in the same directory
-
-            return directories_with_exr
-
-        def scan_dataset_descriptions(self, folders, file_name='dataset_folder.json'):
-            """
-            Scan folders for the presence of a specific file and categorize them.
-
-            Parameters:
-            folders (set): A set of folder paths to check.
-            file_name (str, optional): The name of the file to look for in each folder. Defaults to 'twml_dataset_folder.json'.
-
-            Returns:
-            tuple of (set, set): Two sets, the first contains folders where the file exists, the second contains folders where it does not.
-            """
-            folders_with_file = set()
-            folders_without_file = set()
-
-            for folder in folders:
-                # Construct the full path to the file
-                file_path = os.path.join(folder, file_name)
-
-                # Check if the file exists in the folder
-                if os.path.exists(file_path):
-                    folders_with_file.add(folder)
-                else:
-                    folders_without_file.add(folder)
-
-            return folders_with_file, folders_without_file
-
-        def create_dataset_descriptions(self, folder_path, max_window=9):
-
-            def sliding_window(lst, n):
-                for i in range(len(lst) - n + 1):
-                    yield lst[i:i + n]
-
-            exr_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.exr')]
-            exr_files.sort()
-
-            descriptions = []
-
-            if len(exr_files) < max_window:
-                max_window = len(exr_files)
-            if max_window < 3:
-                print(f'\nWarning: minimum clip length is 3 frames, {folder_path} has {len(exr_files)} frame(s) only')
-                return descriptions
-
-            if 'fast' in folder_path:
-                max_window = 3
-            elif 'slow' in folder_path:
-                max_window = max_window
-            else:
-                if max_window > 5:
-                    max_window = 5
-
-            try:
-                first_exr_file_header = read_openexr_file(exr_files[0], header_only = True)
-                h = first_exr_file_header['shape'][0]
-                w = first_exr_file_header['shape'][1]
-
-                for window_size in range(3, max_window + 1):
-                    for window in sliding_window(exr_files, window_size):
-                        start_frame = window[0]
-                        start_frame_index = exr_files.index(window[0])
-                        end_frame = window[-1]
-                        end_frame_index = exr_files.index(window[-1])
-                        for gt_frame_index, gt_frame in enumerate(window[1:-1]):
-                            fw_item = {
-                                'h': h,
-                                'w': w,
-                                # 'pre_start': exr_files[max(start_frame_index - 1, 0)],
-                                'start': start_frame,
-                                'gt': gt_frame,
-                                'end': end_frame,
-                                # 'after_end': exr_files[min(end_frame_index + 1, len(exr_files) - 1)],
-                                'ratio': 1 / (len(window) - 1) * (gt_frame_index + 1)
-                            }
-
-                            bw_item = {
-                                'h': h,
-                                'w': w,
-                                # 'pre_start': exr_files[min(end_frame_index + 1, len(exr_files) - 1)],
-                                'start': end_frame,
-                                'gt': gt_frame,
-                                'end': start_frame,
-                                # 'after_end': exr_files[max(start_frame_index - 1, 0)],
-                                'ratio': 1 - (1 / (len(window) - 1) * (gt_frame_index + 1))
-                            }
-
-                            descriptions.append(fw_item)
-                            descriptions.append(bw_item)
-
-            except Exception as e:
-                print (f'\nError scanning {folder_path}: {e}')
-
-            return descriptions
-            
-        def read_frames_thread(self):
-            timeout = 1e-8
-            while True:
-                for index in range(len(self.train_descriptions)):
-                    description = self.train_descriptions[index]
-                    try:
-                        train_data = {}
-                        # train_data['pre_start'] = read_openexr_file(description['pre_start'])['image_data']
-                        train_data['start'] = read_openexr_file(description['start'])['image_data']
-                        train_data['gt'] = read_openexr_file(description['gt'])['image_data']
-                        train_data['end'] = read_openexr_file(description['end'])['image_data']
-                        # train_data['after_end'] = read_openexr_file(description['after_end'])['image_data']
-                        train_data['ratio'] = description['ratio']
-                        train_data['h'] = description['h']
-                        train_data['w'] = description['w']
-                        train_data['description'] = description
-                        train_data['index'] = index
-                        self.frames_queue.put(train_data)
-                    except Exception as e:
-                        del train_data
-                        print (e)           
-                time.sleep(timeout)
-
-        def __len__(self):
-            return len(self.train_descriptions)
+class TimewarpMLDataset(torch.utils.data.Dataset):
+    def __init__(   
+            self, 
+            data_root, 
+            batch_size = 4, 
+            frame_size=448, 
+            max_window=9,
+            repeat = 1,
+            scale_list = [1.0, 1.12, 1.25]
+            ):
         
-        def crop(self, img0, img1, img2, h, w):
-            np.random.seed(None)
-            ih, iw, _ = img0.shape
-            x = np.random.randint(0, ih - h + 1)
-            y = np.random.randint(0, iw - w + 1)
-            img0 = img0[x:x+h, y:y+w, :]
-            img1 = img1[x:x+h, y:y+w, :]
-            img2 = img2[x:x+h, y:y+w, :]
-            # img3 = img3[x:x+h, y:y+w, :]
-            # img4 = img4[x:x+h, y:y+w, :]
-            return img0, img1, img2 #, img3, img4
+        self.data_root = data_root
+        self.batch_size = batch_size
+        self.max_window = max_window
+        self.h = frame_size
+        self.w = frame_size
+        self.scale_list = scale_list
+        self.repeat_count = repeat
+        self.repeat_counter = 0
+        self.epoch = 0
 
-        def resize_image(self, tensor, x):
+        print (f'scanning for exr files in {self.data_root}...')
+        self.folders_with_exr = self.find_folders_with_images(data_root)
+        print (f'found {len(self.folders_with_exr)} clip folders.')
+        
+        self.initial_train_descriptions = []    
+        for folder_index, folder_path in enumerate(sorted(self.folders_with_exr)):
+            print (f'\rReading headers and building training data from clip {folder_index + 1} of {len(self.folders_with_exr)}', end='')
+            self.initial_train_descriptions.extend(self.create_dataset_descriptions(folder_path, max_window=self.max_window))
+
+        self.train_descriptions = list(self.initial_train_descriptions)
+
+        print ('\nReshuffling training data indices...')
+        self.reshuffle()
+
+        self.mp_frames_queue = torch.multiprocessing.Queue(maxsize=4)
+        self.frames_queue = queue.Queue(maxsize=32)
+
+        def read_frames_thread(train_descriptions, frames_queue, batch_size, scale_list, h, w):
+            while True:
+                frame_read_process = torch.multiprocessing.Process(
+                    target=self.read_frames,
+                    args=(
+                        frames_queue,
+                        list(train_descriptions),
+                        batch_size,
+                        scale_list,
+                        h,
+                        w
+                        ),
+                    daemon = True
+                )
+                frame_read_process.start()
+                frame_read_process.join()
+                self.epoch += 1
+                self.reshuffle()
+
+        self.frame_read_thread = threading.Thread(
+            target=read_frames_thread, args=(
+                self.train_descriptions, 
+                self.mp_frames_queue, 
+                self.batch_size, 
+                self.scale_list, 
+                self.h,
+                self.w
+                )
+            )
+        self.frame_read_thread.daemon = True
+        self.frame_read_thread.start()
+
+        # to reduce overhead when getting directly from mp queue
+        def transfer_frames_thread(mp_frames_queue, frames_queue):
+            while True:
+                try:
+                    frames_queue.put(mp_frames_queue.get())
+                except:
+                    time.sleep(0.1)
+
+        self.frame_read_thread = threading.Thread(target=transfer_frames_thread, args=(self.mp_frames_queue, self.frames_queue))
+        self.frame_read_thread.daemon = True
+        self.frame_read_thread.start()
+
+        print ('Starting frame reader process...', end='')
+        # reading first block of training data here
+        self.last_train_data = [self.frames_queue.get()]
+        self.last_train_data_size = 4 # size of the buffer that stores training data
+        self.new_sample_shown = False
+        self.train_data_index = 0
+        print (' Done.')
+
+    def reshuffle(self):
+        random.shuffle(self.train_descriptions)
+
+    def find_folders_with_images(self, path, ext_list=['.exr']):
+        directories_with_imgs = set()
+
+        # Walk through all directories and files in the given path
+        for root, dirs, files in os.walk(path):
+            if 'preview' in root:
+                continue
+            if 'eval' in root:
+                continue
+            for file in files:
+                if any(file.lower().endswith(ext) for ext in ext_list):
+                    directories_with_imgs.add(root)
+                    break  # No need to check other files in the same directory
+
+        return directories_with_imgs
+
+    def create_dataset_descriptions(self, folder_path, max_window=9):
+
+        def sliding_window(lst, n):
+            for i in range(len(lst) - n + 1):
+                yield lst[i:i + n]
+
+        exr_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.exr')]
+        exr_files.sort()
+
+        descriptions = []
+
+        if len(exr_files) < max_window:
+            max_window = len(exr_files)
+        if max_window < 3:
+            print(f'\nWarning: minimum clip length is 3 frames, {folder_path} has {len(exr_files)} frame(s) only')
+            return descriptions
+
+        if 'fast' in folder_path:
+            max_window = 3
+        elif 'slow' in folder_path:
+            max_window = max_window
+        else:
+            if max_window > 5:
+                max_window = 5
+
+        try:
+            first_exr_file = read_image_file(exr_files[0], header_only = True)
+            h = first_exr_file['spec'].height
+            w = first_exr_file['spec'].width
+
+            for window_size in range(3, max_window + 1):
+                for window in sliding_window(exr_files, window_size):
+                    start_frame = window[0]
+                    start_frame_index = exr_files.index(window[0])
+                    end_frame = window[-1]
+                    end_frame_index = exr_files.index(window[-1])
+                    for gt_frame_index, gt_frame in enumerate(window[1:-1]):
+                        fw_item = {
+                            'h': h,
+                            'w': w,
+                            # 'pre_start': exr_files[max(start_frame_index - 1, 0)],
+                            'start': start_frame,
+                            'gt': gt_frame,
+                            'end': end_frame,
+                            # 'after_end': exr_files[min(end_frame_index + 1, len(exr_files) - 1)],
+                            'ratio': 1 / (len(window) - 1) * (gt_frame_index + 1)
+                        }
+
+                        bw_item = {
+                            'h': h,
+                            'w': w,
+                            # 'pre_start': exr_files[min(end_frame_index + 1, len(exr_files) - 1)],
+                            'start': end_frame,
+                            'gt': gt_frame,
+                            'end': start_frame,
+                            # 'after_end': exr_files[max(start_frame_index - 1, 0)],
+                            'ratio': 1 - (1 / (len(window) - 1) * (gt_frame_index + 1))
+                        }
+
+                        descriptions.append(fw_item)
+                        descriptions.append(bw_item)
+
+        except Exception as e:
+            print (f'\nError scanning {folder_path}: {e}')
+
+        return descriptions
+    
+    @staticmethod
+    def read_frames(frames_queue, train_descriptions, batch_size, scale_list, h, w):
+
+        def resize_image(tensor, x):
             """
             Resize the tensor of shape [h, w, c] so that the smallest dimension becomes x,
             while retaining aspect ratio.
@@ -667,7 +263,7 @@ def get_dataset(
             torch.Tensor: The resized tensor.
             """
             # Adjust tensor shape to [n, c, h, w]
-            tensor = tensor.permute(2, 0, 1).unsqueeze(0)
+            # tensor = tensor.permute(2, 0, 1).unsqueeze(0)
 
             # Calculate new size
             h, w = tensor.shape[2], tensor.shape[3]
@@ -682,288 +278,130 @@ def get_dataset(
             resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bilinear', align_corners=False)
 
             # Adjust tensor shape back to [h, w, c]
-            resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
+            # resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
 
             return resized_tensor
 
-        def getimg(self, index):
-            # '''
-            if not self.last_train_data:
-                new_data = self.frames_queue.get_nowait()
-                self.last_train_data = [new_data]
-                del new_data
-            if self.repeat_counter >= self.repeat_count:
-                try:
-                    if len(self.last_train_data) == self.last_train_data_size:
-                        self.last_train_data.pop(0)
-                    elif len(self.last_train_data) == self.last_train_data_size:
-                        self.last_train_data = self.last_train_data[:-(self.last_train_data_size - 1)]
-                    new_data = self.frames_queue.get_nowait()
-                    self.train_data_index = new_data['index']
-                    self.last_train_data.append(new_data)
-                    self.new_sample_shown = False
-                    del new_data
-                    self.repeat_counter = 0
-                except queue.Empty:
-                    pass
+        def crop_images(img0, img1, img2, h, w):
+            np.random.seed(None)
+            _, ih, iw = img0.shape
+            x = np.random.randint(0, ih - h + 1)
+            y = np.random.randint(0, iw - w + 1)
+            img0 = img0[:, x:x+h, y:y+w]
+            img1 = img1[:, x:x+h, y:y+w]
+            img2 = img2[:, x:x+h, y:y+w]
+            return img0, img1, img2
 
-            self.repeat_counter += 1
-            if not self.new_sample_shown:
-                self.new_sample_shown = True
-                return self.last_train_data[-1]
-            # if random.uniform(0, 1) < 0.44:
-            #    return self.last_train_data[-1]
-            else:
-                return self.last_train_data[random.randint(0, len(self.last_train_data) - 1)]
-            # '''
-            # return self.frames_queue.get()
-
-        def srgb_to_linear(self, srgb_image):
-            # Apply the inverse sRGB gamma curve
-            mask = srgb_image <= 0.04045
-            srgb_image[mask] = srgb_image[mask] / 12.92
-            srgb_image[~mask] = ((srgb_image[~mask] + 0.055) / 1.055) ** 2.4
-
-            return srgb_image
-
-        def apply_acescc(self, linear_image):
-            const_neg16 = torch.tensor(2**-16, dtype=linear_image.dtype, device=linear_image.device)
-            const_neg15 = torch.tensor(2**-15, dtype=linear_image.dtype, device=linear_image.device)
-            const_972 = torch.tensor(9.72, dtype=linear_image.dtype, device=linear_image.device)
-            const_1752 = torch.tensor(17.52, dtype=linear_image.dtype, device=linear_image.device)
+        num_items = len(train_descriptions)
+        for start_idx in range(0, num_items-1, batch_size):
+            end_idx = min(start_idx + batch_size, num_items - 1)
+            batch = train_descriptions[start_idx:end_idx]
             
-            condition = linear_image < 0
-            value_if_true = (torch.log2(const_neg16) + const_972) / const_1752
-            value_if_false = (torch.log2(const_neg16 + linear_image * 0.5) + const_972) / const_1752
-            ACEScc = torch.where(condition, value_if_true, value_if_false)
-
-            condition = linear_image >= const_neg15
-            value_if_true = (torch.log2(linear_image) + const_972) / const_1752
-            ACEScc = torch.where(condition, value_if_true, ACEScc)
-
-            return ACEScc
-
-        def __getitem__(self, index):
-            train_data = self.getimg(index)
-            # src_img0 = train_data['pre_start']
-            np_img0 = train_data['start']
-            np_img1 = train_data['gt']
-            np_img2 = train_data['end']
-            # src_img4 = train_data['after_end']
-            imgh = train_data['h']
-            imgw = train_data['w']
-            ratio = train_data['ratio']
-            images_idx = self.train_data_index
-
-            device = self.device
-
-            src_img0 = torch.from_numpy(np_img0.copy())
-            src_img1 = torch.from_numpy(np_img1.copy())
-            src_img2 = torch.from_numpy(np_img2.copy())
-
-            del train_data, np_img0, np_img1, np_img2
-
-            src_img0 = src_img0.to(device = device, dtype = torch.float32)
-            src_img1 = src_img1.to(device = device, dtype = torch.float32)
-            src_img2 = src_img2.to(device = device, dtype = torch.float32)
-
-            '''
-            train_sample_data = {}
-
-            train_sample_data['rsz1_img0'] = self.resize_image(src_img0, self.h)
-            train_sample_data['rsz1_img1'] = self.resize_image(src_img1, self.h)
-            train_sample_data['rsz1_img2'] = self.resize_image(src_img2, self.h)
-
-            train_sample_data['rsz2_img0'] = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
-            train_sample_data['rsz2_img1'] = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
-            train_sample_data['rsz2_img2'] = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
-
-            train_sample_data['rsz3_img0'] = self.resize_image(src_img0, int(self.h * (1 + 1/5)))
-            train_sample_data['rsz3_img1'] = self.resize_image(src_img1, int(self.h * (1 + 1/5)))
-            train_sample_data['rsz3_img2'] = self.resize_image(src_img2, int(self.h * (1 + 1/5)))
-
-            train_sample_data['rsz4_img0'] = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
-            train_sample_data['rsz4_img1'] = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
-            train_sample_data['rsz4_img2'] = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
-
-            if len(self.current_batch_data) < self.batch_size:
-                self.current_batch_data = [train_sample_data] * self.batch_size
-            else:
-                old_data = self.current_batch_data.pop(0)
-                del old_data
-                self.current_batch_data.append(train_sample_data)
-            '''
-
-            rsz1_img0 = self.resize_image(src_img0, self.h)
-            rsz1_img1 = self.resize_image(src_img1, self.h)
-            rsz1_img2 = self.resize_image(src_img2, self.h)
-
-            rsz2_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
-            rsz2_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
-            rsz2_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
-
-            rsz3_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/5)))
-            rsz3_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/5)))
-            rsz3_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/5)))
-
-            rsz4_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
-            rsz4_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
-            rsz4_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
-
             batch_img0 = []
             batch_img1 = []
             batch_img2 = []
+            batch_ratio = []
 
-            for index in range(self.batch_size):
-                '''
-                rsz1_img0 = self.current_batch_data[index]['rsz1_img0']
-                rsz1_img1 = self.current_batch_data[index]['rsz1_img1']
-                rsz1_img2 = self.current_batch_data[index]['rsz1_img2']
+            for item in batch:
+                scale = scale_list[random.randint(0, len(scale_list) - 1)]
 
-                rsz2_img0 = self.current_batch_data[index]['rsz2_img0']
-                rsz2_img1 = self.current_batch_data[index]['rsz2_img1']
-                rsz2_img2 = self.current_batch_data[index]['rsz2_img2']
+                try:
+                    img0 = read_image_file(item['start'])['image_data']
+                    img1 = read_image_file(item['gt'])['image_data']
+                    img2 = read_image_file(item['end'])['image_data']
 
-                rsz3_img0 = self.current_batch_data[index]['rsz3_img0']
-                rsz3_img1 = self.current_batch_data[index]['rsz3_img1']
-                rsz3_img2 = self.current_batch_data[index]['rsz3_img2']
+                    if img0 is None:
+                        print(f'\n\nUnable to read frame {item["start"]}')
+                        continue
+                    if img1 is None:
+                        print(f'\n\nUnable to read frame {item["gt"]}')
+                        continue
+                    if img2 is None:
+                        print(f'\n\nUnable to read frame {item["end"]}')
+                        continue
 
-                rsz4_img0 = self.current_batch_data[index]['rsz4_img0']
-                rsz4_img1 = self.current_batch_data[index]['rsz4_img1']
-                rsz4_img2 = self.current_batch_data[index]['rsz4_img2']
-                '''
+                    img0 = torch.from_numpy(img0).permute(2, 0, 1).unsqueeze(0)
+                    img1 = torch.from_numpy(img1).permute(2, 0, 1).unsqueeze(0)
+                    img2 = torch.from_numpy(img2).permute(2, 0, 1).unsqueeze(0)
 
-                if self.generalize == 0:
-                    # No augmentaton
-                    img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
-                    img0 = img0.permute(2, 0, 1)
-                    img1 = img1.permute(2, 0, 1)
-                    img2 = img2.permute(2, 0, 1)
-                elif self.generalize == 1:
-                    # Augment only scale and horizontal flip
-                    q = random.uniform(0, 1)
-                    if q < 0.25:
-                        img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
-                    elif q < 0.5:
-                        img0, img1, img2 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, self.h, self.w)
-                    elif q < 0.75:
-                        img0, img1, img2 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, self.h, self.w)
-                    else:
-                        img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
-                    img0 = img0.permute(2, 0, 1)
-                    img1 = img1.permute(2, 0, 1)
-                    img2 = img2.permute(2, 0, 1)
-                    if random.uniform(0, 1) < 0.5:
-                        img0 = img0.flip(-1)
-                        img1 = img1.flip(-1)
-                        img2 = img2.flip(-1)
-                else:
-                    q = random.uniform(0, 1)
-                    if q < 0.25:
-                        img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
-                    elif q < 0.5:
-                        img0, img1, img2 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, self.h, self.w)
-                    elif q < 0.75:
-                        img0, img1, img2 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, self.h, self.w)
-                    else:
-                        img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
+                    img0 = img0.to(device = 'cpu', dtype = torch.float32, non_blocking=True)
+                    img1 = img1.to(device = 'cpu', dtype = torch.float32, non_blocking=True)
+                    img2 = img2.to(device = 'cpu', dtype = torch.float32, non_blocking=True)
 
-                    img0 = img0.permute(2, 0, 1)
-                    img1 = img1.permute(2, 0, 1)
-                    img2 = img2.permute(2, 0, 1)
+                    img0 = resize_image(img0, int(h * scale))
+                    img1 = resize_image(img1, int(h * scale))
+                    img2 = resize_image(img2, int(h * scale))
 
-                    # Horizontal flip (reverse width)
-                    if random.uniform(0, 1) < 0.5:
-                        img0 = img0.flip(-1)
-                        img1 = img1.flip(-1)
-                        img2 = img2.flip(-1)
+                    img0, img1, img2 = crop_images(img0[0], img1[0], img2[0], h, w)
 
-                    # Rotation
-                    if random.uniform(0, 1) < (self.generalize / 100):
-                        p = random.uniform(0, 1)
-                        if p < 0.25:
-                            img0 = torch.flip(img0.transpose(1, 2), [2])
-                            img1 = torch.flip(img1.transpose(1, 2), [2])
-                            img2 = torch.flip(img2.transpose(1, 2), [2])
-                        elif p < 0.5:
-                            img0 = torch.flip(img0, [1, 2])
-                            img1 = torch.flip(img1, [1, 2])
-                            img2 = torch.flip(img2, [1, 2])
-                        elif p < 0.75:
-                            img0 = torch.flip(img0.transpose(1, 2), [1])
-                            img1 = torch.flip(img1.transpose(1, 2), [1])
-                            img2 = torch.flip(img2.transpose(1, 2), [1])
+                    batch_img0.append(img0)
+                    batch_img1.append(img1)
+                    batch_img2.append(img2)
+                    batch_ratio.append(torch.full((1, w, h), item['ratio']))
+                except Exception as e:
+                    print (f'\nRead frames process: {e}\n')
 
-                    if random.uniform(0, 1) < (self.generalize / 100):
-                        # Vertical flip (reverse height)
-                        if random.uniform(0, 1) < 0.5:
-                            img0 = img0.flip(-2)
-                            img1 = img1.flip(-2)
-                            img2 = img2.flip(-2)
+            training_data = {}
+            training_data['start'] = torch.stack(batch_img0)
+            training_data['gt'] = torch.stack(batch_img1)
+            training_data['end'] = torch.stack(batch_img2)
+            training_data['ratio'] = torch.stack(batch_ratio)
+            training_data['index'] = end_idx
+            frames_queue.put(training_data)
 
-                    if random.uniform(0, 1) < (self.generalize / 100):
-                        # Depth-wise flip (reverse channels)
-                        if random.uniform(0, 1) < 0.28:
-                            img0 = img0.flip(0)
-                            img1 = img1.flip(0)
-                            img2 = img2.flip(0)
+    def getimg(self, index):
+        # '''
+        if not self.last_train_data:
+            new_data = self.frames_queue.get_nowait()
+            self.last_train_data = [new_data]
+            del new_data
+        if self.repeat_counter >= self.repeat_count:
+            try:
+                if len(self.last_train_data) == self.last_train_data_size:
+                    self.last_train_data.pop(0)
+                elif len(self.last_train_data) == self.last_train_data_size:
+                    self.last_train_data = self.last_train_data[:-(self.last_train_data_size - 1)]
+                new_data = self.frames_queue.get_nowait()
+                self.train_data_index = new_data['index']
+                self.last_train_data.append(new_data)
+                self.new_sample_shown = False
+                del new_data
+                self.repeat_counter = 0
+            except queue.Empty:
+                pass
 
-                    if random.uniform(0, 1) < (self.generalize / 100):
-                        # Exposure augmentation
-                        exp = random.uniform(1 / 8, 2)
-                        if random.uniform(0, 1) < 0.4:
-                            img0 = img0 * exp
-                            img1 = img1 * exp
-                            img2 = img2 * exp
+        self.repeat_counter += 1
+        if not self.new_sample_shown:
+            self.new_sample_shown = True
+            return self.last_train_data[-1]
+        # if random.uniform(0, 1) < 0.44:
+        #    return self.last_train_data[-1]
+        else:
+            return self.last_train_data[random.randint(0, len(self.last_train_data) - 1)]
+        # '''
+        # return self.frames_queue.get()
 
-                    if random.uniform(0, 1) < (self.generalize / 100):
-                        # add colour banace shift
-                        delta = random.uniform(0, 0.49)
-                        r = random.uniform(1-delta, 1+delta)
-                        g = random.uniform(1-delta, 1+delta)
-                        b = random.uniform(1-delta, 1+delta)
-                        multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device)
-                        img0 = img0 * multipliers
-                        img1 = img1 * multipliers
-                        img2 = img2 * multipliers
+    def __len__(self):
+        return len(self.train_descriptions)
 
-                    def gamma_up(img, gamma = 1.18):
-                        return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
+    def __getitem__(self, index):
+        training_data =  self.getimg(index)
+        images_idx = self.train_data_index
+        return training_data['start'], training_data['gt'], training_data['end'], training_data['ratio'], images_idx
 
-                    if random.uniform(0, 1) < (self.generalize / 100):
-                        if random.uniform(0, 1) < 0.44:
-                            gamma = random.uniform(0.9, 1.9)
-                            img0 = gamma_up(img0, gamma=gamma)
-                            img1 = gamma_up(img1, gamma=gamma)
-                            img2 = gamma_up(img2, gamma=gamma)
-
-                # Convert to ACEScc
-                if random.uniform(0, 1) < (self.acescc_rate / 100):
-                    img0 = self.apply_acescc(img0)
-                    img1 = self.apply_acescc(img1)
-                    img2 = self.apply_acescc(img2)
-
-                batch_img0.append(img0)
-                batch_img1.append(img1)
-                batch_img2.append(img2)
-
-            return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), ratio, images_idx
-
-        def get_input_channels_number(self, source_frames_paths_list):
-            total_num_channels = 0
-            for src_path in source_frames_paths_list:
-                file_header = read_openexr_file(src_path, header_only=True)
-                total_num_channels += file_header['shape'][2]
-            return total_num_channels
+def get_dataset(
+        data_root, 
+        batch_size = 8, 
+        frame_size=448, 
+        max_window=9,
+        repeat = 1
+        ):
 
     return TimewarpMLDataset(
         data_root, 
         batch_size=batch_size, 
-        device=device, 
         frame_size=frame_size, 
         max_window=max_window,
-        acescc_rate=acescc_rate,
-        generalize=generalize,
         repeat=repeat
         )
 
@@ -1387,9 +825,120 @@ def convert_from_data_parallel(param):
         if "module." in k
     }
 
+def srgb_to_linear(self, srgb_image):
+    # Apply the inverse sRGB gamma curve
+    mask = srgb_image <= 0.04045
+    srgb_image[mask] = srgb_image[mask] / 12.92
+    srgb_image[~mask] = ((srgb_image[~mask] + 0.055) / 1.055) ** 2.4
+
+    return srgb_image
+
+def apply_acescc(linear_image):
+    const_neg16 = torch.tensor(2**-16, dtype=linear_image.dtype, device=linear_image.device)
+    const_neg15 = torch.tensor(2**-15, dtype=linear_image.dtype, device=linear_image.device)
+    const_972 = torch.tensor(9.72, dtype=linear_image.dtype, device=linear_image.device)
+    const_1752 = torch.tensor(17.52, dtype=linear_image.dtype, device=linear_image.device)
+    
+    condition = linear_image < 0
+    value_if_true = (torch.log2(const_neg16) + const_972) / const_1752
+    value_if_false = (torch.log2(const_neg16 + linear_image * 0.5) + const_972) / const_1752
+    ACEScc = torch.where(condition, value_if_true, value_if_false)
+
+    condition = linear_image >= const_neg15
+    value_if_true = (torch.log2(linear_image) + const_972) / const_1752
+    ACEScc = torch.where(condition, value_if_true, ACEScc)
+
+    return ACEScc
+
+def augment_images(img0, img1, img2, generalize, acescc_rate):
+    if generalize == 0:
+        # No augmentaton
+        return img0, img1, img2
+    elif generalize == 1:
+        # Augment only with horizontal flipping
+        if random.uniform(0, 1) < 0.5:
+            img0 = img0.flip(-1)
+            img1 = img1.flip(-1)
+            img2 = img2.flip(-1)
+        return img0, img1, img2
+    else:
+        # Horizontal flip (reverse width)
+        if random.uniform(0, 1) < 0.5:
+            img0 = img0.flip(-1)
+            img1 = img1.flip(-1)
+            img2 = img2.flip(-1)
+
+        # Rotation
+        if random.uniform(0, 1) < (generalize / 100):
+            p = random.uniform(0, 1)
+            if p < 0.25:
+                img0 = torch.flip(img0.transpose(1, 2), [2])
+                img1 = torch.flip(img1.transpose(1, 2), [2])
+                img2 = torch.flip(img2.transpose(1, 2), [2])
+            elif p < 0.5:
+                img0 = torch.flip(img0, [1, 2])
+                img1 = torch.flip(img1, [1, 2])
+                img2 = torch.flip(img2, [1, 2])
+            elif p < 0.75:
+                img0 = torch.flip(img0.transpose(1, 2), [1])
+                img1 = torch.flip(img1.transpose(1, 2), [1])
+                img2 = torch.flip(img2.transpose(1, 2), [1])
+
+        if random.uniform(0, 1) < (generalize / 100):
+            # Vertical flip (reverse height)
+            if random.uniform(0, 1) < 0.5:
+                img0 = img0.flip(-2)
+                img1 = img1.flip(-2)
+                img2 = img2.flip(-2)
+
+        if random.uniform(0, 1) < (generalize / 100):
+            # Depth-wise flip (reverse channels)
+            if random.uniform(0, 1) < 0.28:
+                img0 = img0.flip(0)
+                img1 = img1.flip(0)
+                img2 = img2.flip(0)
+
+        if random.uniform(0, 1) < (generalize / 100):
+            # Exposure augmentation
+            exp = random.uniform(1 / 8, 2)
+            if random.uniform(0, 1) < 0.4:
+                img0 = img0 * exp
+                img1 = img1 * exp
+                img2 = img2 * exp
+
+        if random.uniform(0, 1) < (generalize / 100):
+            # add colour banace shift
+            delta = random.uniform(0, 0.28)
+            r = random.uniform(1-delta, 1+delta)
+            g = random.uniform(1-delta, 1+delta)
+            b = random.uniform(1-delta, 1+delta)
+            multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(img0.device)
+            img0 = img0 * multipliers
+            img1 = img1 * multipliers
+            img2 = img2 * multipliers
+
+        def gamma_up(img, gamma = 1.18):
+            return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
+
+        if random.uniform(0, 1) < (generalize / 100):
+            if random.uniform(0, 1) < 0.44:
+                gamma = random.uniform(0.9, 1.9)
+                img0 = gamma_up(img0, gamma=gamma)
+                img1 = gamma_up(img1, gamma=gamma)
+                img2 = gamma_up(img2, gamma=gamma)
+
+        # Convert to ACEScc
+        if random.uniform(0, 1) < (acescc_rate / 100):
+            img0 = apply_acescc(img0)
+            img1 = apply_acescc(img1)
+            img2 = apply_acescc(img2)
+
+        return img0, img1, img2
+
 current_state_dict = {}
 
 def main():
+    torch.multiprocessing.set_start_method('spawn', force=True)
     global current_state_dict
     parser = argparse.ArgumentParser(description='Training script.')
 
@@ -1421,7 +970,7 @@ def main():
     parser.add_argument('--eval_samples', type=int, dest='eval_samples', default=-1, help='Evaluate N random training samples')
     parser.add_argument('--eval_seed', type=int, dest='eval_seed', default=1, help='Random seed to select samples if --eval_samples set')
     parser.add_argument('--eval_buffer', type=int, dest='eval_buffer', default=8, help='Write buffer size for evaluated images')
-    parser.add_argument('--eval_save_imgs', action='store_true', dest='eval_save_imgs', default=False, help='Save eval result images')
+    # parser.add_argument('--eval_save_imgs', action='store_true', dest='eval_save_imgs', default=False, help='Save eval result images')
     parser.add_argument('--eval_keep_all', action='store_true', dest='eval_keep_all', default=False, help='Keep eval results for each eval step')
     parser.add_argument('--eval_folder', type=str, default=None, help='Folder with clips for evaluation')
     parser.add_argument('--eval_half', action='store_true', dest='eval_half', default=False, help='Evaluate in half-precision')
@@ -1433,7 +982,7 @@ def main():
     parser.add_argument('--acescc', type=check_range_percent, default=40, help='Percentage of ACEScc encoded frames (default: 40))')
     parser.add_argument('--generalize', type=check_range_percent, default=85, help='Generalization level (0 - 100) (default: 85)')
     parser.add_argument('--weight_decay', type=float, default=-1, help='AdamW weight decay (default: calculated from --generalize value)')
-    parser.add_argument('--preview', type=int, default=1000, help='Save preview each N steps (default: 1000)')
+    parser.add_argument('--preview', type=int, default=100, help='Save preview each N steps (default: 100)')
     parser.add_argument('--save', type=int, default=1000, help='Save model state dict each N steps (default: 1000)')
     parser.add_argument('--repeat', type=int, default=1, help='Repeat each triade N times with augmentation (default: 1)')
     parser.add_argument('--iterations', type=int, default=1, help='Process each flow refinement N times (default: 1)')
@@ -1455,6 +1004,7 @@ def main():
         if args.state_file and os.path.isfile(args.state_file):
             trained_model_path = args.state_file
             try:
+                # checkpoint = torch.load(trained_model_path, map_location=device, weights_only=False)
                 checkpoint = torch.load(trained_model_path, map_location=device)
                 print('loaded previously saved model checkpoint')
             except Exception as e:
@@ -1497,24 +1047,17 @@ def main():
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
-    '''
-    frame_size = closest_divisible(abs(int(args.frame_size)), model_info.get('padding', 64))
-    if frame_size != args.frame_size:
-        print (f'Frame size should be divisible by 64 for training. Using {frame_size}')
-    '''
+    # frame_size = closest_divisible(abs(int(args.frame_size)), model_info.get('padding', 64))
+    # if frame_size != args.frame_size:
+    #     print (f'Frame size should be divisible by 64 for training. Using {frame_size}')
 
     frame_size = args.frame_size
-
-    read_image_queue = queue.Queue(maxsize=16)
 
     dataset = get_dataset(
         args.dataset_path, 
         batch_size=args.batch_size, 
-        device=device, 
         frame_size=frame_size,
         max_window=max_dataset_window,
-        acescc_rate=args.acescc,
-        generalize=args.generalize,
         repeat=args.repeat
         )
     
@@ -1523,51 +1066,81 @@ def main():
         eval_dataset = get_dataset(
         args.eval_folder, 
         batch_size=args.batch_size,
-        device=device, 
         frame_size=frame_size,
         max_window=max_dataset_window,
-        acescc_rate=args.acescc,
-        generalize=args.generalize,
         repeat=args.repeat
         )
     else:
         eval_dataset = dataset
-
-    def read_images(read_image_queue, dataset):
-        while True:
-            for batch_idx in range(len(dataset)):
-                img0, img1, img2, ratio, idx = dataset[batch_idx]
-                read_image_queue.put((img0, img1, img2, ratio, idx))
-                del img0, img1, img2, ratio, idx
-
+    
     def write_images(write_image_queue):
         while True:
             try:
                 write_data = write_image_queue.get_nowait()
                 preview_index = write_data.get('preview_index', 0)
-                write_exr(write_data['sample_source1'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'), half_float = True)
-                write_exr(write_data['sample_source2'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_outgoing.exr'), half_float = True)
-                write_exr(write_data['sample_target'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_target.exr'), half_float = True)
-                write_exr(write_data['sample_output'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_output.exr'), half_float = True)
-                write_exr(write_data['sample_output_mask'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_output_mask.exr'), half_float = True)
+                spec = oiio.ImageSpec(frame_size, frame_size, 3, 'half')
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_incomng.exr'),
+                    write_data['sample_source1'],
+                    spec)
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_outgoing.exr'),
+                    write_data['sample_source2'],
+                    spec)
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_target.exr'),
+                    write_data['sample_target'],
+                    spec)
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_output.exr'),
+                    write_data['sample_output'],
+                    spec)
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], f'{preview_index:02}_output_mask.exr'),
+                    write_data['sample_output_mask'],
+                    spec)
                 del write_data
-            except:
-            # except queue.Empty:
+            except queue.Empty:
                 time.sleep(1e-2)
-
+            except Exception as e:
+                print (f'\n\nError write preview: {e}')
+                
     def write_eval_images(write_eval_image_queue):
         while True:
             try:
                 write_data = write_eval_image_queue.get_nowait()
-                write_exr(write_data['sample_source1'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_source1_name']), half_float = True)
-                write_exr(write_data['sample_source2'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_source2_name']), half_float = True)
-                write_exr(write_data['sample_target'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_target_name']), half_float = True)
-                write_exr(write_data['sample_output'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_output_name']), half_float = True)
-                write_exr(write_data['sample_output_mask'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_output_mask_name']), half_float = True)
+                h, w, c = write_data['sample_source1'].shape
+                spec = oiio.ImageSpec(w, h, c, 'half')
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], write_data['sample_source1_name']),
+                    write_data['sample_source1'],
+                    spec
+                    )
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], write_data['sample_source2_name']),
+                    write_data['sample_source2'],
+                    spec
+                    )
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], write_data['sample_target_name']),
+                    write_data['sample_target'],
+                    spec
+                    )
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], write_data['sample_output_name']),
+                    write_data['sample_output'],
+                    spec
+                    )
+                write_image_file(
+                    os.path.join(write_data['preview_folder'], write_data['sample_output_mask_name']),
+                    write_data['sample_output_mask'],
+                    spec
+                    )
                 del write_data
-            except:
-            # except queue.Empty:
+            except queue.Empty:
                 time.sleep(1e-2)
+            except Exception as e:
+                print (f'\n\nError writing eval images: {e}')
 
     def write_model_state(write_model_state_queue):
         while True:
@@ -1581,15 +1154,11 @@ def main():
             except:
                 time.sleep(1e-2)
 
-    read_thread = threading.Thread(target=read_images, args=(read_image_queue, dataset))
-    read_thread.daemon = True
-    read_thread.start()
-
     write_image_queue = queue.Queue(maxsize=16)
     write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
     write_thread.daemon = True
     write_thread.start()
-    
+
     write_eval_image_queue = queue.Queue(maxsize=args.eval_buffer)
     write_eval_thread = threading.Thread(target=write_eval_images, args=(write_eval_image_queue, ))
     write_eval_thread.daemon = True
@@ -1608,7 +1177,6 @@ def main():
     criterion_l1 = torch.nn.L1Loss()
     criterion_huber = torch.nn.HuberLoss(delta=0.001)
 
-    # weight_decay = 10 ** (0.07 * args.generalize - 9) if args.generalize > 1 else 1e-9
     weight_decay = 10 ** (-2 - 0.02 * (args.generalize - 1)) if args.generalize > 1 else 1e-4
 
     if args.weight_decay != -1:
@@ -1622,8 +1190,6 @@ def main():
         print (f'Setting augmentation rate to {args.generalize}% and weight decay to {weight_decay:.2e}')
 
     optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=weight_decay)
-    # optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
-
     train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
 
     if args.onecycle != -1:
@@ -1636,10 +1202,6 @@ def main():
             )
         print (f'setting OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.onecycle}')
         args.epochs = args.onecycle
-
-    # train_scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, mode='min', factor=0.1, patience=2)
-    # lambda_function = lambda epoch: 1
-    # train_scheduler_flownet = torch.optim.lr_scheduler.LambdaLR(optimizer_flownet, lr_lambda=lambda_function)
 
     scheduler_flownet = train_scheduler_flownet
 
@@ -1658,15 +1220,18 @@ def main():
         trained_model_path = args.state_file
 
         try:
-            checkpoint = torch.load(trained_model_path, map_location=device)
+            checkpoint = torch.load(trained_model_path, map_location=device, weights_only=False)
+            # checkpoint = torch.load(trained_model_path, map_location=device)
             print('loaded previously saved model checkpoint')
         except Exception as e:
             print (f'unable to load saved model: {e}')
 
         try:
             if args.all_gpus:
+                # missing_keys, unexpected_keys = flownet.load_state_dict(convert_to_data_parallel(checkpoint['flownet_state_dict']), strict=False, weights_only=False)
                 missing_keys, unexpected_keys = flownet.load_state_dict(convert_to_data_parallel(checkpoint['flownet_state_dict']), strict=False)
             else:
+                # missing_keys, unexpected_keys = flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False, weights_only=False)
                 missing_keys, unexpected_keys = flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
             print('loaded previously saved Flownet state')
             if missing_keys:
@@ -1676,14 +1241,6 @@ def main():
         except Exception as e:
             print (f'unable to load Flownet state: {e}')
 
-        '''
-        try:
-            model_D.load_state_dict(checkpoint['model_d_state_dict'], strict=False)
-            print('loaded previously saved Determinator state')
-        except Exception as e:
-            print (f'unable to load Determinator state: {e}')
-        '''
-
         try:
             loaded_step = checkpoint['step']
             print (f'loaded step: {loaded_step}')
@@ -1691,16 +1248,6 @@ def main():
             print (f'epoch: {current_epoch + 1}')
         except Exception as e:
             print (f'unable to set step and epoch: {e}')
-
-        '''
-        try:
-            steps_loss = checkpoint['steps_loss']
-            print (f'loaded loss statistics for step: {step}')
-            epoch_loss = checkpoint['epoch_loss']
-            print (f'loaded loss statistics for epoch: {current_epoch + 1}')
-        except Exception as e:
-            print (f'unable to load step and epoch loss statistics: {e}')
-        '''
 
     else:
         traned_model_name = 'flameTWML_model_' + create_timestamp_uid() + '.pth'
@@ -1718,28 +1265,14 @@ def main():
         trained_model_path = os.path.join(trained_model_dir, traned_model_name)
 
     if args.legacy_model:
-        '''
-        try:
-            Flownet().load_model(args.legacy_model, flownet)
-            print (f'loaded legacy model state: {args.legacy_model}')
-        except Exception as e:
-            print (f'unable to load legacy model: {e}')
-        '''
-
-        '''
-        default_rife_model_path = os.path.join(
-            os.path.abspath(os.path.dirname(__file__)),
-            'models_data',
-            'flownet_v412.pkl'
-        )
-        '''
-        rife_state_dict = torch.load(args.legacy_model)
+        rife_state_dict = torch.load(args.legacy_model, weights_only=False)
         def convert(param):
             return {
                 k.replace("module.", ""): v
                 for k, v in param.items()
                 if "module." in k
             }
+        # missing_keys, unexpected_keys = flownet.load_state_dict(convert(rife_state_dict), strict=False, weights_only=False)
         missing_keys, unexpected_keys = flownet.load_state_dict(convert(rife_state_dict), strict=False)
         print (f'\nMissing keys:\n{missing_keys}\n')
         print (f'\nUnexpected keys:\n{unexpected_keys}\n')
@@ -1758,22 +1291,19 @@ def main():
 
     import warnings
     warnings.filterwarnings('ignore', category=UserWarning)
+    warnings.filterwarnings('ignore', category=FutureWarning)
 
     import lpips
     os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
     loss_fn_alex = lpips.LPIPS(net='alex')
     loss_fn_alex.to(device)
-    # loss_fn_lpips = lpips.LPIPS(net='vgg', lpips=False, spatial=True)
-    # loss_fn_lpips.to(device)
-
-    # loss_fn_ssim = SSIM()
-    # loss_fn_vgg = VGGPerceptualLoss().to(device)
 
     warnings.resetwarnings()
 
     start_timestamp = time.time()
     time_stamp = time.time()
     epoch = current_epoch if args.first_epoch == -1 else args.first_epoch
+    dataset.epoch = epoch
     step = loaded_step if args.first_epoch == -1 else step
     batch_idx = 0
 
@@ -1966,33 +1496,34 @@ def main():
         data_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        img0, img1, img2, ratio, idx = read_image_queue.get()
+        # data block starts here
+        img0, img1, img2, ratio, idx = dataset[0]
 
-        img0 = img0.to(device, non_blocking = True)
-        img1 = img1.to(device, non_blocking = True)
-        img2 = img2.to(device, non_blocking = True)
+        img0 = img0.to(device = device, dtype = torch.float32)
+        img1 = img1.to(device = device, dtype = torch.float32)
+        img2 = img2.to(device = device, dtype = torch.float32)
+        ratio = ratio.to(device = device, dtype = torch.float32)
+        
+        for i in range(img0.shape[0]):
+            img0[i], img1[i], img2[i] = augment_images(img0[i], img1[i], img2[i], args.generalize, args.acescc)
+
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
         img2_orig = img2.detach().clone()
+
         img0 = normalize(img0)
         img1 = normalize(img1)
         img2 = normalize(img2)
 
-        current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
+        data_time += time.time() - time_stamp
+        data_time_str = str(f'{data_time:.2f}')
+        time_stamp = time.time()
 
+        # trainimg block starts here
+        current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
         optimizer_flownet.zero_grad()
 
         # scale list augmentation
-
-        '''
-        random_scales = [
-            [4, 2, 1, 1],
-            [2, 2, 1, 1],
-            [2, 1, 1, 1],
-            [1, 1, 1, 1],
-        ]
-        '''
-
         random_scales = [
             [8, 4, 2, 1],
             [4, 4, 2, 1],
@@ -2008,39 +1539,11 @@ def main():
             training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
         else:
             training_scale = [8, 4, 2, 1]
-        # '''
-
-        '''
-        random_scales = [
-            [8, 4, 2, 1],
-            [4, 4, 2, 1],
-            [4, 2, 2, 1],
-            [4, 2, 1, 1],
-            [2, 2, 2, 1],
-            [2, 2, 1, 1],
-            [2, 1, 1, 1],
-            [1, 1, 1, 1],
-        ]
-
-        training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
-        '''
-
-        # training_scale = [8, 4, 2, 1]
-
-        # if random.uniform(0, 1) < 0.22:
-        #    training_scale = [1 if x == 1 else x / 2 for x in training_scale]
-
-        '''    
-        if random.uniform(0, 1) < 0.165:
-            training_scale = [x * 2 for x in training_scale]
-        elif random.uniform(0, 1) < 0.33:
-            training_scale = [1/2 if x == 1 else x / 2 for x in training_scale]
-        '''
 
         flownet.train()
-        
-        # n_iterations = random.randint(1, 4) if args.iterations == -1 else args.iterations
 
+        # n_iterations = random.randint(1, 4) if args.iterations == -1 else args.iterations
+        
         flow_list, mask_list, merged = flownet(
             img0, 
             img2, 
@@ -2049,67 +1552,26 @@ def main():
             iterations = args.iterations
             )
         
-        # flow0 = flow_list[3][:, :2]
-        # flow1 = flow_list[3][:, 2:4]
+        # difference = torch.abs(tensor_a - tensor_b)
+        # difference_gray = torch.mean(difference, dim=0)
+
+        flow0 = flow_list[3][:, :2]
+        flow1 = flow_list[3][:, 2:4]
         mask = mask_list[3]
-        # output = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
-        
-        output = merged[3]
-        # warped_img0 = warp(img0, flow_list[3][:, :2])
-        # warped_img2 = warp(img2, flow_list[3][:, 2:4])
-        # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
+        output = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
 
-        # self.vgg(merged[3], gt).mean() - self.ss(merged[3], gt) * 0.1
-
-        '''
-        x8_output = torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
-        x8_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
-        # x8_lpips = torch.mean(loss_fn_lpips.forward(x8_output * 2 - 1, x8_orig * 2 - 1))
-        x8_lpips = torch.mean(loss_fn_vgg.forward(x8_output, x8_orig)) - loss_fn_ssim(x8_output, x8_orig) * 0.1
-        loss_x8 = pm_weight * criterion_huber(x8_output, x8_orig) + lpips_weight * x8_lpips
-
-        x4_output = torch.nn.functional.interpolate(merged[1], scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
-        x4_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
-        # x4_lpips = torch.mean(loss_fn_lpips.forward(x4_output * 2 - 1, x4_orig * 2 - 1))
-        x4_lpips = torch.mean(loss_fn_vgg.forward(x4_output, x4_orig)) - loss_fn_ssim(x4_output, x4_orig) * 0.1
-        loss_x4 = pm_weight * criterion_huber(x4_output, x4_orig) + lpips_weight * x4_lpips
-
-        x2_output = torch.nn.functional.interpolate(merged[2], scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
-        x2_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
-        # x2_lpips = torch.mean(loss_fn_lpips.forward(x2_output * 2 - 1, x2_orig * 2 - 1))
-        x2_lpips = torch.mean(loss_fn_vgg.forward(x2_output, x2_orig)) - loss_fn_ssim(x2_output, x2_orig) * 0.1
-        loss_x2 = pm_weight * criterion_huber(x2_output, x2_orig) + lpips_weight * x2_lpips
-
-        x1_output = merged[3]
-        x1_orig = img1
-        # x1_lpips = torch.mean(loss_fn_lpips.forward(x1_output * 2 - 1, x1_orig * 2 - 1))
-        x1_lpips = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
-        loss_x1 = pm_weight * criterion_huber(x1_output, x1_orig) + lpips_weight * x1_lpips
-
-        loss = 0.24 * loss_x8 + 0.24 * loss_x4 + 0.24 * loss_x2 + 0.28 * loss_x1
-        '''
-
-
-        x1_output = merged[3]
-        x1_orig = img1
-
-        # vgg_loss = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
-
-        # print (f'Out: {output.shape}, Orig: {img1_orig.shape}')
-
-        loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
-        # loss = (criterion_l1(x1_output, x1_orig)  + 0.1 * (float(torch.mean(loss_LPIPS_).item()) ** 1.1)) / 2
+        loss_LPIPS_ = loss_fn_alex(output * 2 - 1, img1_orig * 2 - 1)
+        lpips_weight = 0.5
 
         lpips_weight = 0.5
-        loss = (1 - lpips_weight ) * criterion_l1(x1_output, x1_orig) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS_).item())
+        loss = (1 - lpips_weight ) * criterion_l1(output, img1_orig) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS_).item())
 
-        loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
+        loss_l1 = criterion_l1(output, img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
 
         epoch_loss.append(float(loss_l1.item()))
         steps_loss.append(float(loss_l1.item()))
         lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
-        # lpips_list.append(1.)
         psnr_list.append(float(psnr_torch(output, img1)))
 
         if len(epoch_loss) < 9999:
@@ -2127,8 +1589,13 @@ def main():
 
         loss.backward()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
-
         optimizer_flownet.step()
+
+        # synchonize all cores here so we have time measurments right
+        if platform.system() == 'Darwin':
+            torch.mps.synchronize()
+        else:
+            torch.cuda.synchronize(device=device)
 
         try:
             scheduler_flownet.step()
@@ -2146,7 +1613,9 @@ def main():
                 eta_min = current_lr - (( current_lr / 100 ) * pulse_dive)
                 )
 
+        # training block finishes here
         train_time = time.time() - time_stamp
+        train_time_str = str(f'{train_time:.2f}')
         time_stamp = time.time()
 
         current_state_dict['step'] = int(step)
@@ -2167,7 +1636,7 @@ def main():
             rgb_source1 = img0_orig
             rgb_source2 = img2_orig
             rgb_target = img1_orig
-            rgb_output = restore_normalized_values(output)
+            rgb_output = output
             rgb_output_mask = mask.repeat_interleave(3, dim=1)
             # rgb_refine = refine_list[0] + refine_list[1] + refine_list[2] + refine_list[3]
             # rgb_refine = (rgb_refine + 1) / 2
@@ -2179,22 +1648,17 @@ def main():
                 {
                     'preview_folder': os.path.join(args.dataset_path, 'preview'),
                     'preview_index': int(preview_index),
-                    'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output_mask': rgb_output_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+                    'sample_source1': rgb_source1[0].numpy(force=True).transpose(1, 2, 0).copy(),
+                    'sample_source2': rgb_source2[0].numpy(force=True).transpose(1, 2, 0).copy(),
+                    'sample_target': rgb_target[0].numpy(force=True).transpose(1, 2, 0).copy(),
+                    'sample_output': rgb_output[0].numpy(force=True).transpose(1, 2, 0).copy(),
+                    'sample_output_mask': rgb_output_mask[0].numpy(force=True).transpose(1, 2, 0).copy()
                 }
             )
-
             del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
 
         if step % args.save == 1:
             write_model_state_queue.put(deepcopy(current_state_dict))
-
-        data_time += time.time() - time_stamp
-        data_time_str = str(f'{data_time:.2f}')
-        train_time_str = str(f'{train_time:.2f}')
 
         epoch_time = time.time() - start_timestamp
         days = int(epoch_time // (24 * 3600))
@@ -2208,7 +1672,7 @@ def main():
         else:
             print(f'\r[Last 10K] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
 
-        if ( idx + 1 ) == len(dataset):
+        if epoch != dataset.epoch:
             write_model_state_queue.put(deepcopy(current_state_dict))
 
             psnr = float(np.array(psnr_list).mean())
@@ -2239,31 +1703,13 @@ def main():
 
             psnr = 0
 
-            '''
-            if args.onecycle != -1:
-                if first_pass:
-                    first_pass = False
-                    optimizer_state_dict = optimizer_flownet.state_dict()
-                    scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
-                        optimizer_flownet,
-                        max_lr=args.lr, 
-                        total_steps= step * args.onecycle, 
-                        )
-                    optimizer_flownet.load_state_dict(optimizer_state_dict)
-                print (f'setting OneCycleLR after first cycle with max_lr={args.lr}, steps={step}\n\n')
-            '''
-
             steps_loss = []
             epoch_loss = []
             psnr_list = []
             lpips_list = []
-            epoch = epoch + 1
+            epoch = dataset.epoch
             batch_idx = 0
-
-            while  ( idx + 1 ) == len(dataset):
-                img0, img1, img2, ratio, idx = read_image_queue.get()
-            dataset.reshuffle()
-
+        
         if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
             if not args.eval_first:
                 if step == 1:
@@ -2297,9 +1743,9 @@ def main():
                 for ev_item_index, description in enumerate(descriptions):
                     try:
                         desc_data = dict(description)
-                        eval_img0 = read_openexr_file(description['start'])['image_data']
-                        eval_img1 = read_openexr_file(description['gt'])['image_data']
-                        eval_img2 = read_openexr_file(description['end'])['image_data']
+                        eval_img0 = read_image_file(description['start'])['image_data']
+                        eval_img1 = read_image_file(description['gt'])['image_data']
+                        eval_img2 = read_image_file(description['end'])['image_data']
 
                         desc_data['eval_img0'] = eval_img0
                         desc_data['eval_img1'] = eval_img1
@@ -2419,32 +1865,33 @@ def main():
 
                         eval_rgb_output_mask = eval_mask_list[3][:, :, :eh, :ew].repeat_interleave(3, dim=1)
 
-                        if args.eval_save_imgs:
-                            write_eval_image_queue.put(
-                                {
-                                    'preview_folder': eval_folder,
-                                    'sample_source1': eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_source1_name': f'{ev_item_index:08}_incomng.exr',
-                                    'sample_source2': eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_source2_name': f'{ev_item_index:08}_outgoing.exr',
-                                    'sample_target': eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_target_name': f'{ev_item_index:08}_target.exr',
-                                    'sample_output': eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_output_name': f'{ev_item_index:08}_output.exr',
-                                    'sample_output_mask': eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_output_mask_name': f'{ev_item_index:08}_output_mask.exr'
-                                }
-                            )
+                        # if args.eval_save_imgs:
+                        write_eval_image_queue.put(
+                            {
+                                'preview_folder': eval_folder,
+                                'sample_source1': eval_img0_orig[0].numpy(force=True).transpose(1, 2, 0).copy(),
+                                'sample_source1_name': f'{ev_item_index:08}_incomng.exr',
+                                'sample_source2': eval_img2_orig[0].numpy(force=True).transpose(1, 2, 0).copy(),
+                                'sample_source2_name': f'{ev_item_index:08}_outgoing.exr',
+                                'sample_target': eval_img1[0].numpy(force=True).transpose(1, 2, 0).copy(),
+                                'sample_target_name': f'{ev_item_index:08}_target.exr',
+                                'sample_output': eval_result[0].numpy(force=True).transpose(1, 2, 0).copy(),
+                                'sample_output_name': f'{ev_item_index:08}_output.exr',
+                                'sample_output_mask': eval_rgb_output_mask[0].numpy(force=True).transpose(1, 2, 0).copy(),
+                                'sample_output_mask_name': f'{ev_item_index:08}_output_mask.exr'
+                            }
+                        )
 
                     except Exception as e:
                         del description['eval_img0']
                         del description['eval_img1']
                         del description['eval_img2']
-                        print (f'\nerror while evaluating: {e}\n{description}\n\n')
+                        print (f'\nError while evaluating: {e}\n{description}\n\n')
                     description = read_eval_image_queue.get()
 
             if args.eval_half:
                 flownet.float()
+                # flownet.load_state_dict(original_float_state_dict, weights_only=False)
                 flownet.load_state_dict(original_float_state_dict)
 
             flownet.train()
@@ -2467,7 +1914,6 @@ def main():
             clear_lines(2)
             print(f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Eval Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f}, [PSNR] {eval_psnr_mean:.4f}, [LPIPS] {eval_lpips_mean:.4f}')
             print ('\n')
-
 
             if not args.eval_keep_all:
             # print (f'prev folder: {prev_eval_folder}\n\n')
