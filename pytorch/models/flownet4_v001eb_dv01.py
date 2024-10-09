@@ -76,7 +76,7 @@ class Model:
                 # Combine outputs and apply sigmoid activation
                 out = avg_out + max_out
                 out = self.sigmoid(out).view(batch_size, channels, 1, 1)
-                
+
                 out = out.expand_as(x)
                 out = out * self.beta + self.gamma
 
@@ -87,8 +87,8 @@ class Model:
             def __init__(self, kernel_size=7):
                 super(SpatialAttention, self).__init__()
                 padding = kernel_size // 2  # Ensure same spatial dimensions
-                self.conv = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
-                self.sigmoid = nn.Sigmoid()
+                self.conv = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
+                self.sigmoid = torch.nn.Sigmoid()
 
             def forward(self, x):
                 # Compute average and max along the channel dimension
@@ -115,7 +115,7 @@ class Model:
                 # Apply channel attention module
                 x = self.channel_attention(x)
                 # Apply spatial attention module
-                x = self.spatial_attention(x)
+                # x = self.spatial_attention(x)
                 return x
 
         class Head(Module):
