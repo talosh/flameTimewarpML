@@ -45,6 +45,79 @@ class Model:
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='reflection', align_corners=True)
 
+        class ChannelAttention(nn.Module):
+            def __init__(self, in_channels, reduction_ratio=16):
+                super(ChannelAttention, self).__init__()
+                self.avg_pool = torch.nn.AdaptiveAvgPool2d(1)  # Global average pooling
+                self.max_pool = torch.nn.AdaptiveMaxPool2d(1)  # Global max pooling
+
+                # Shared MLP layers
+                self.mlp = torch.nn.Sequential(
+                    torch.nn.Linear(in_channels, in_channels // reduction_ratio, bias=False),
+                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.Linear(in_channels // reduction_ratio, in_channels, bias=False)
+                )
+                self.sigmoid = torch.nn.Sigmoid()
+                self.beta = torch.nn.Parameter(torch.ones((1, in_channels, 1, 1)), requires_grad=True)
+                self.gamma = torch.nn.Parameter(torch.ones((1, in_channels, 1, 1)), requires_grad=True)
+
+            def forward(self, x):
+                batch_size, channels, _, _ = x.size()
+
+                # Apply average pooling and reshape
+                avg_pool = self.avg_pool(x).view(batch_size, channels)
+                # Apply max pooling and reshape
+                max_pool = self.max_pool(x).view(batch_size, channels)
+
+                # Forward pass through MLP
+                avg_out = self.mlp(avg_pool)
+                max_out = self.mlp(max_pool)
+
+                # Combine outputs and apply sigmoid activation
+                out = avg_out + max_out
+                out = self.sigmoid(out).view(batch_size, channels, 1, 1)
+                
+                out = out.expand_as(x)
+                out = out * self.beta + self.gamma
+
+                # Scale input feature maps
+                return x * out
+
+        class SpatialAttention(nn.Module):
+            def __init__(self, kernel_size=7):
+                super(SpatialAttention, self).__init__()
+                padding = kernel_size // 2  # Ensure same spatial dimensions
+                self.conv = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
+                self.sigmoid = nn.Sigmoid()
+
+            def forward(self, x):
+                # Compute average and max along the channel dimension
+                avg_out = torch.mean(x, dim=1, keepdim=True)
+                max_out, _ = torch.max(x, dim=1, keepdim=True)
+
+                # Concatenate along channel dimension
+                x_cat = torch.cat([avg_out, max_out], dim=1)
+
+                # Apply convolution and sigmoid activation
+                out = self.conv(x_cat)
+                out = self.sigmoid(out)
+
+                # Scale input feature maps
+                return x * out.expand_as(x)
+
+        class CBAM(nn.Module):
+            def __init__(self, in_channels, reduction_ratio=16, spatial_kernel_size=7):
+                super(CBAM, self).__init__()
+                self.channel_attention = ChannelAttention(in_channels, reduction_ratio)
+                self.spatial_attention = SpatialAttention(spatial_kernel_size)
+
+            def forward(self, x):
+                # Apply channel attention module
+                x = self.channel_attention(x)
+                # Apply spatial attention module
+                x = self.spatial_attention(x)
+                return x
+
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
