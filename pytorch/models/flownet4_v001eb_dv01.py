@@ -173,8 +173,8 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
-                    conv(in_planes, c//2, 3, 2, 1),
-                    conv(c//2, c, 3, 2, 1),
+                    conv(in_planes, c, 3, 2, 1),
+                    conv(c, c, 3, 2, 1),
                     )
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
@@ -299,7 +299,7 @@ class Model:
                 self.block0 = Flownet(3+3+8+8+1, c=192)
                 self.block1 = Flownet(3+3+8+8+1+1+4, c=96)
                 self.block2 = Flownet(3+3+8+8+1+1+4, c=64)
-                self.block3 = Flownet(3+3+8+8+1+1+4, c=48)
+                self.block3 = FlownetShallow(3+3+8+8+1+1+4, c=48)
                 self.block4 = FlownetShallow(3+3+8+8+1+1+4, c=32)
                 self.encode = Head()
                 self.maxdepth = 8
@@ -318,7 +318,7 @@ class Model:
                 scale = [x if x == 8 else x + 1 for x in scale]
                 
                 # step training
-                scale[0] = 1
+                # scale[0] = 1
 
                 pvalue = scale[0] * self.maxdepth
                 _, _, h, w = img0.shape
@@ -345,12 +345,14 @@ class Model:
                 mask_list[0] = torch.sigmoid(mask.clone())
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
+                '''
                 # step training
                 flow_list[3] = flow_list[0]
                 mask_list[3] = mask_list[0]
                 merged[3] = merged[0]
 
                 return flow_list, mask_list, merged
+                '''
 
                 # refine step 1
                 pvalue = scale[1] * self.maxdepth
