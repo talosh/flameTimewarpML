@@ -120,7 +120,7 @@ class Model:
                 # Apply channel attention module
                 x = self.channel_attention(x)
                 # Apply spatial attention module
-                # x = self.spatial_attention(x)
+                x = self.spatial_attention(x)
                 return x
 
         class Head(Module):
