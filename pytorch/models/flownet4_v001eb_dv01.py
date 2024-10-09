@@ -315,7 +315,7 @@ class Model:
                 mask_list = [None] * 4
                 merged = [None] * 4
 
-                scale = [x if x == 8 else x + 1 for x in scale]
+                # scale = [x if x == 8 else x + 1 for x in scale]
                 
                 # step training
                 scale[0] = scale[2]
