@@ -81,7 +81,7 @@ class Model:
                 out = out * self.beta + self.gamma
 
                 # Scale input feature maps
-                return x * out
+                return out
 
         class SpatialAttention(Module):
             def __init__(self, c, kernel_size=7):
@@ -108,7 +108,7 @@ class Model:
                 out = out * self.beta + self.gamma
 
                 # Scale input feature maps
-                return x * out
+                return out
 
         class CBAM(Module):
             def __init__(self, in_channels, reduction_ratio=16, spatial_kernel_size=7):
@@ -117,10 +117,12 @@ class Model:
                 self.spatial_attention = SpatialAttention(spatial_kernel_size)
 
             def forward(self, x):
-                # Apply channel attention module
-                x = self.channel_attention(x)
-                # Apply spatial attention module
-                x = self.spatial_attention(x)
+                out_ch = self.channel_attention(x)
+                out_sp = self.spatial_attention(x)
+
+                x = x * out_ch
+                x = x * out_sp
+                
                 return x
 
         class Head(Module):
