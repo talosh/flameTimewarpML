@@ -118,7 +118,7 @@ class Model:
 
                 x = x * channel_attention
                 x = x * spatial_attention
-                
+
                 return x
 
         class Head(Module):
@@ -168,6 +168,49 @@ class Model:
 
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
+
+        class FlownetShallow(Module):
+            def __init__(self, in_planes, c=64):
+                super().__init__()
+                self.conv0 = torch.nn.Sequential(
+                    conv(in_planes, c//2, 3, 2, 1),
+                    conv(c//2, c, 3, 2, 1),
+                    )
+                self.convblock = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                )
+                self.lastconv = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, c, 6, 2, 2),
+                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
+                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
+                    torch.nn.Conv2d(c, 6, kernel_size=1, stride=1, padding=0, bias=True),
+                )
+
+            def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
+                warped_img0 = warp(img0, flow[:, :2])
+                warped_img1 = warp(img0, flow[:, :2])
+                warped_f0 = warp(f0, flow[:, :2])
+                warped_f1 = warp(f1, flow[:, 2:4])
+                x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
+                x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
+                x = torch.cat((x, flow), 1)
+
+                feat = self.conv0(x)
+                feat = self.convblock(feat)
+                tmp = self.lastconv(feat)
+                tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
+                flow = tmp[:, :4] * scale
+                mask = tmp[:, 4:5]
+                conf = tmp[:, 5:6]
+                return flow, mask, conf
 
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
@@ -253,11 +296,13 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = Flownet(7+16, c=192)
-                self.block1 = Flownet(8+4+16, c=128)
-                self.block2 = Flownet(8+4+16, c=96)
-                self.block3 = Flownet(8+4+16, c=48)
+                self.block0 = Flownet(3+3+8+8+1, c=192)
+                self.block1 = Flownet(3+3+8+8+1+1+4, c=96)
+                self.block2 = Flownet(3+3+8+8+1+1+4, c=64)
+                self.block3 = Flownet(3+3+8+8+1+1+4, c=48)
+                self.block4 = FlownetShallow(3+3+8+8+1+1+4, c=32)
                 self.encode = Head()
+                self.maxdepth = 8
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
                 f0 = self.encode(img0)
@@ -270,67 +315,142 @@ class Model:
                 mask_list = [None] * 4
                 merged = [None] * 4
 
-                scale[0] = 1
+                scale = [x if x == 8 else x + 1 for x in scale]
 
-                flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, scale=scale[0])
+                # scale[0] = 1
+
+                pvalue = scale[0] * self.maxdepth
+                _, _, h, w = img0.shape
+                ph = ((h - 1) // pvalue + 1) * pvalue
+                pw = ((w - 1) // pvalue + 1) * pvalue
+                padding = (0, pw - w, 0, ph - h)
+
+                flow, mask, conf = self.block0(
+                    torch.nn.functional.pad(img0, padding), 
+                    torch.nn.functional.pad(img1, padding), 
+                    torch.nn.functional.pad(f0, padding), 
+                    torch.nn.functional.pad(f1, padding), 
+                    torch.nn.functional.pad(timestep, padding, mode='replicate'), 
+                    None, 
+                    None, 
+                    scale=scale[0]
+                    )
+                
+                flow = flow[:, :, :h, :w]
+                mask = mask[:, :, :h, :w]
+                conf = conf[:, :, :h, :w]
 
                 flow_list[0] = flow.clone()
                 mask_list[0] = torch.sigmoid(mask.clone())
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
-                
+
+                '''                
                 flow_list[3] = flow_list[0]
                 mask_list[3] = mask_list[0]
                 merged[3] = merged[0]
 
                 return flow_list, mask_list, merged
+                '''
 
+                # refine step 1
+                pvalue = scale[1] * self.maxdepth
+                ph = ((h - 1) // pvalue + 1) * pvalue
+                pw = ((w - 1) // pvalue + 1) * pvalue
+                padding = (0, pw - w, 0, ph - h)
 
-                for iteration in range(iterations):
-                    flow_d, mask, conf = self.block1(
-                        img0, 
-                        img1,
-                        f0,
-                        f1,
-                        timestep,
-                        mask,
-                        flow, 
-                        scale=scale[1]
-                    )
-                    flow = flow + flow_d
+                flow_d, mask, conf = self.block1(
+                    torch.nn.functional.pad(img0, padding), 
+                    torch.nn.functional.pad(img1, padding),
+                    torch.nn.functional.pad(f0, padding),
+                    torch.nn.functional.pad(f1, padding),
+                    torch.nn.functional.pad(timestep, padding, mode='replicate'),
+                    torch.nn.functional.pad(mask, padding),
+                    torch.nn.functional.pad(flow, padding), 
+                    scale=scale[1]
+                )
+
+                flow = flow[:, :, :h, :w]
+                mask = mask[:, :, :h, :w]
+                conf = conf[:, :, :h, :w]
+                flow = flow + flow_d
 
                 flow_list[1] = flow.clone()
                 mask_list[1] = torch.sigmoid(mask.clone())
                 merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
-                for iteration in range(iterations):
-                    flow_d, mask, conf = self.block2(
-                        img0, 
-                        img1,
-                        f0,
-                        f1,
-                        timestep,
-                        mask,
-                        flow, 
-                        scale=scale[2]
-                    )
-                    flow = flow + flow_d
+                # refine step 2
+                pvalue = scale[2] * self.maxdepth
+                ph = ((h - 1) // pvalue + 1) * pvalue
+                pw = ((w - 1) // pvalue + 1) * pvalue
+                padding = (0, pw - w, 0, ph - h)
+
+                flow_d, mask, conf = self.block2(
+                    torch.nn.functional.pad(img0, padding), 
+                    torch.nn.functional.pad(img1, padding),
+                    torch.nn.functional.pad(f0, padding),
+                    torch.nn.functional.pad(f1, padding),
+                    torch.nn.functional.pad(timestep, padding, mode='replicate'),
+                    torch.nn.functional.pad(mask, padding),
+                    torch.nn.functional.pad(flow, padding), 
+                    scale=scale[2]
+                )
+
+                flow = flow[:, :, :h, :w]
+                mask = mask[:, :, :h, :w]
+                conf = conf[:, :, :h, :w]
+                flow = flow + flow_d
 
                 flow_list[2] = flow.clone()
                 mask_list[2] = torch.sigmoid(mask.clone())
                 merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
-                for iteration in range(iterations):
-                    flow_d, mask, conf = self.block3(
-                        img0, 
-                        img1,
-                        f0,
-                        f1,
-                        timestep,
-                        mask,
-                        flow, 
-                        scale=scale[3]
-                    )
-                    flow = flow + flow_d
+                # refine step 3
+                pvalue = scale[3] * self.maxdepth
+                ph = ((h - 1) // pvalue + 1) * pvalue
+                pw = ((w - 1) // pvalue + 1) * pvalue
+                padding = (0, pw - w, 0, ph - h)
+
+                flow_d, mask, conf = self.block3(
+                    torch.nn.functional.pad(img0, padding), 
+                    torch.nn.functional.pad(img1, padding),
+                    torch.nn.functional.pad(f0, padding),
+                    torch.nn.functional.pad(f1, padding),
+                    torch.nn.functional.pad(timestep, padding, mode='replicate'),
+                    torch.nn.functional.pad(mask, padding),
+                    torch.nn.functional.pad(flow, padding), 
+                    scale=scale[3]
+                )
+
+                flow = flow[:, :, :h, :w]
+                mask = mask[:, :, :h, :w]
+                conf = conf[:, :, :h, :w]
+                flow = flow + flow_d
+
+                flow_list[3] = flow
+                mask_list[3] = torch.sigmoid(mask)
+                merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
+
+                # refine step 4
+                pvalue = 1 * self.maxdepth
+                ph = ((h - 1) // pvalue + 1) * pvalue
+                pw = ((w - 1) // pvalue + 1) * pvalue
+                padding = (0, pw - w, 0, ph - h)
+
+                flow_d, mask, conf = self.block4(
+                    torch.nn.functional.pad(img0, padding), 
+                    torch.nn.functional.pad(img1, padding),
+                    torch.nn.functional.pad(f0, padding),
+                    torch.nn.functional.pad(f1, padding),
+                    torch.nn.functional.pad(timestep, padding, mode='replicate'),
+                    torch.nn.functional.pad(mask, padding),
+                    torch.nn.functional.pad(flow, padding), 
+                    scale=1
+                )
+
+                flow = flow[:, :, :h, :w]
+                mask = mask[:, :, :h, :w]
+                conf = conf[:, :, :h, :w]
+                flow = flow + flow_d
 
                 flow_list[3] = flow
                 mask_list[3] = torch.sigmoid(mask)
