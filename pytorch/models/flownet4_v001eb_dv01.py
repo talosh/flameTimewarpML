@@ -84,13 +84,13 @@ class Model:
                 return out
 
         class SpatialAttention(Module):
-            def __init__(self, c, kernel_size=7):
+            def __init__(self, kernel_size=7):
                 super(SpatialAttention, self).__init__()
                 padding = kernel_size // 2  # Ensure same spatial dimensions
                 self.conv = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
                 self.sigmoid = torch.nn.Sigmoid()
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.beta = torch.nn.Parameter(torch.ones((1, 1, 1, 1)), requires_grad=True)
+                self.gamma = torch.nn.Parameter(torch.ones((1, 1, 1, 1)), requires_grad=True)
 
             def forward(self, x):
                 # Compute average and max along the channel dimension
@@ -108,7 +108,7 @@ class Model:
                 print (out.shape)
 
                 out = out.expand_as(x)
-                # out = out * self.beta + self.gamma
+                out = out * self.beta + self.gamma
 
                 # Scale input feature maps
                 return out
