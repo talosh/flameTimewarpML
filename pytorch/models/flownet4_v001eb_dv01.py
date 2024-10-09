@@ -104,8 +104,11 @@ class Model:
                 out = self.conv(x_cat)
                 out = self.sigmoid(out)
 
+                print ('\n\n')
+                print (out.shape)
+
                 out = out.expand_as(x)
-                out = out * self.beta + self.gamma
+                # out = out * self.beta + self.gamma
 
                 # Scale input feature maps
                 return out
@@ -122,7 +125,7 @@ class Model:
 
                 x = x * out_ch
                 x = x * out_sp
-                
+
                 return x
 
         class Head(Module):
