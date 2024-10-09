@@ -58,8 +58,6 @@ class Model:
                     torch.nn.Linear(c // reduction_ratio, c, bias=False)
                 )
                 self.sigmoid = torch.nn.Sigmoid()
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
 
             def forward(self, x):
                 batch_size, channels, _, _ = x.size()
@@ -76,9 +74,7 @@ class Model:
                 # Combine outputs and apply sigmoid activation
                 out = avg_out + max_out
                 out = self.sigmoid(out).view(batch_size, channels, 1, 1)
-
                 out = out.expand_as(x)
-                out = out * self.beta + self.gamma
 
                 # Scale input feature maps
                 return out
@@ -89,8 +85,6 @@ class Model:
                 padding = kernel_size // 2  # Ensure same spatial dimensions
                 self.conv = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
                 self.sigmoid = torch.nn.Sigmoid()
-                self.beta = torch.nn.Parameter(torch.ones((1, 1, 1, 1)), requires_grad=True)
-                self.gamma = torch.nn.Parameter(torch.ones((1, 1, 1, 1)), requires_grad=True)
 
             def forward(self, x):
                 # Compute average and max along the channel dimension
@@ -103,25 +97,27 @@ class Model:
                 # Apply convolution and sigmoid activation
                 out = self.conv(x_cat)
                 out = self.sigmoid(out)
-
                 out = out.expand_as(x)
-                out = out * self.beta + self.gamma
 
                 # Scale input feature maps
                 return out
 
         class CBAM(Module):
-            def __init__(self, in_channels, reduction_ratio=16, spatial_kernel_size=7):
+            def __init__(self, c, reduction_ratio=16, spatial_kernel_size=9):
                 super(CBAM, self).__init__()
-                self.channel_attention = ChannelAttention(in_channels, reduction_ratio)
+                self.channel_attention = ChannelAttention(c, reduction_ratio)
                 self.spatial_attention = SpatialAttention(spatial_kernel_size)
+                self.channel_scale = torch.nn.Parameter(torch.full((1, c, 1, 1), 0.5), requires_grad=True)
+                self.channel_offset = torch.nn.Parameter(torch.full((1, c, 1, 1), 0.75), requires_grad=True)
+                self.spatial_scale = torch.nn.Parameter(torch.full((1, 1, 1, 1), 0.5), requires_grad=True)
+                self.spatial_offset = torch.nn.Parameter(torch.full((1, 1, 1, 1), 0.75), requires_grad=True)
 
             def forward(self, x):
-                out_ch = self.channel_attention(x)
-                out_sp = self.spatial_attention(x)
+                channel_attention = self.channel_attention(x)
+                spatial_attention = self.spatial_attention(x)
 
-                x = x * out_ch
-                x = x * out_sp
+                x = x * (channel_attention * self.channel_scale + self.channel_offset)
+                x = x * (spatial_attention * self.spatial_scale + self.spatial_offset)
 
                 return x
 
