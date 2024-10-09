@@ -113,12 +113,12 @@ class Model:
                 self.spatial_offset = torch.nn.Parameter(torch.full((1, 1, 1, 1), 0.75), requires_grad=True)
 
             def forward(self, x):
-                channel_attention = self.channel_attention(x)
-                spatial_attention = self.spatial_attention(x)
+                channel_attention = self.channel_attention(x) * self.channel_scale + self.channel_offset
+                spatial_attention = self.spatial_attention(x) * self.spatial_scale + self.spatial_offset
 
-                x = x * (channel_attention * self.channel_scale + self.channel_offset)
-                x = x * (spatial_attention * self.spatial_scale + self.spatial_offset)
-
+                x = x * channel_attention
+                x = x * spatial_attention
+                
                 return x
 
         class Head(Module):
