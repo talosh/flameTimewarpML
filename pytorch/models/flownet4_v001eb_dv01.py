@@ -45,7 +45,7 @@ class Model:
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='reflection', align_corners=True)
 
-        class ChannelAttention(nn.Module):
+        class ChannelAttention(Module):
             def __init__(self, in_channels, reduction_ratio=16):
                 super(ChannelAttention, self).__init__()
                 self.avg_pool = torch.nn.AdaptiveAvgPool2d(1)  # Global average pooling
@@ -83,7 +83,7 @@ class Model:
                 # Scale input feature maps
                 return x * out
 
-        class SpatialAttention(nn.Module):
+        class SpatialAttention(Module):
             def __init__(self, kernel_size=7):
                 super(SpatialAttention, self).__init__()
                 padding = kernel_size // 2  # Ensure same spatial dimensions
@@ -105,7 +105,7 @@ class Model:
                 # Scale input feature maps
                 return x * out.expand_as(x)
 
-        class CBAM(nn.Module):
+        class CBAM(Module):
             def __init__(self, in_channels, reduction_ratio=16, spatial_kernel_size=7):
                 super(CBAM, self).__init__()
                 self.channel_attention = ChannelAttention(in_channels, reduction_ratio)
