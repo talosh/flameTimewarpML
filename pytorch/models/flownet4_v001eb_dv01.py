@@ -202,6 +202,8 @@ class Model:
                 )
 
                 self.mix = torch.nn.Conv2d(c*2, c*2, kernel_size=1, stride=1, padding=0, bias=True)
+
+                self.attention = CBAM(c*2)
                 
                 self.convblock_mix = torch.nn.Sequential(
                     ResConv(c*2),
@@ -236,6 +238,7 @@ class Model:
                 feat_deep = self.convblock_deep(feat_deep)
                 feat = torch.cat((feat_deep, feat), 1)
                 feat = self.mix(feat)
+                feat = self.attention(feat)
                 feat = self.convblock_mix(feat)
                 tmp = self.lastconv(feat)
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
