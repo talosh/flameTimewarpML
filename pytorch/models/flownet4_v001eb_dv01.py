@@ -27,7 +27,7 @@ class Model:
                     stride=stride,
                     padding=padding, 
                     dilation=dilation,
-                    padding_mode = 'reflect',
+                    padding_mode='zeros',
                     bias=True
                 ),
                 torch.nn.LeakyReLU(0.2, True)
@@ -127,6 +127,9 @@ class Model:
                     ResConv(c),
                     torch.nn.ConvTranspose2d(c, c, 4, 2, 1)
                 )
+
+                self.mix = torch.nn.Conv2d(c*2, c*2, kernel_size=1, stride=1, padding=0, bias=True)
+                
                 self.convblock_mix = torch.nn.Sequential(
                     ResConv(c*2),
                     ResConv(c*2),
@@ -159,6 +162,8 @@ class Model:
                 feat = self.convblock(feat)
                 feat_deep = self.convblock_deep(feat_deep)
                 feat = torch.cat((feat_deep, feat), 1)
+                feat = self.mix(feat)
+                feat = self.convblock_mix(feat)
                 tmp = self.lastconv(feat)
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
                 flow = tmp[:, :4] * scale
