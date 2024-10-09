@@ -369,7 +369,7 @@ class Model:
                     scale=scale[1]
                 )
 
-                flow = flow[:, :, :h, :w]
+                flow_d = flow_d[:, :, :h, :w]
                 mask = mask[:, :, :h, :w]
                 conf = conf[:, :, :h, :w]
                 flow = flow + flow_d
@@ -395,7 +395,7 @@ class Model:
                     scale=scale[2]
                 )
 
-                flow = flow[:, :, :h, :w]
+                flow_d = flow_d[:, :, :h, :w]
                 mask = mask[:, :, :h, :w]
                 conf = conf[:, :, :h, :w]
                 flow = flow + flow_d
@@ -421,7 +421,7 @@ class Model:
                     scale=scale[3]
                 )
 
-                flow = flow[:, :, :h, :w]
+                flow_d = flow_d[:, :, :h, :w]
                 mask = mask[:, :, :h, :w]
                 conf = conf[:, :, :h, :w]
                 flow = flow + flow_d
@@ -447,7 +447,7 @@ class Model:
                     scale=1
                 )
 
-                flow = flow[:, :, :h, :w]
+                flow_d = flow_d[:, :, :h, :w]
                 mask = mask[:, :, :h, :w]
                 conf = conf[:, :, :h, :w]
                 flow = flow + flow_d
