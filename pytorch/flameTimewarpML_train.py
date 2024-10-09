@@ -511,7 +511,7 @@ def get_dataset(
             directories_with_exr = set()
 
             # Walk through all directories and files in the given path
-            for root, dirs, files in os.walk(path):
+            for root, dirs, files in os.walk(path, followlinks=True):
                 if 'preview' in root:
                     continue
                 if 'eval' in root:
