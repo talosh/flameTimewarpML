@@ -316,8 +316,9 @@ class Model:
                 merged = [None] * 4
 
                 scale = [x if x == 8 else x + 1 for x in scale]
-
-                # scale[0] = 1
+                
+                # step training
+                scale[0] = 1
 
                 pvalue = scale[0] * self.maxdepth
                 _, _, h, w = img0.shape
@@ -344,13 +345,12 @@ class Model:
                 mask_list[0] = torch.sigmoid(mask.clone())
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
-                '''                
+                # step training
                 flow_list[3] = flow_list[0]
                 mask_list[3] = mask_list[0]
                 merged[3] = merged[0]
 
                 return flow_list, mask_list, merged
-                '''
 
                 # refine step 1
                 pvalue = scale[1] * self.maxdepth
