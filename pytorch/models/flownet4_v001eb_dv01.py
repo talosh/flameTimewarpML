@@ -46,20 +46,20 @@ class Model:
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='reflection', align_corners=True)
 
         class ChannelAttention(Module):
-            def __init__(self, in_channels, reduction_ratio=16):
+            def __init__(self, c, reduction_ratio=16):
                 super(ChannelAttention, self).__init__()
                 self.avg_pool = torch.nn.AdaptiveAvgPool2d(1)  # Global average pooling
                 self.max_pool = torch.nn.AdaptiveMaxPool2d(1)  # Global max pooling
 
                 # Shared MLP layers
                 self.mlp = torch.nn.Sequential(
-                    torch.nn.Linear(in_channels, in_channels // reduction_ratio, bias=False),
+                    torch.nn.Linear(c, c // reduction_ratio, bias=False),
                     torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.Linear(in_channels // reduction_ratio, in_channels, bias=False)
+                    torch.nn.Linear(c // reduction_ratio, c, bias=False)
                 )
                 self.sigmoid = torch.nn.Sigmoid()
-                self.beta = torch.nn.Parameter(torch.ones((1, in_channels, 1, 1)), requires_grad=True)
-                self.gamma = torch.nn.Parameter(torch.ones((1, in_channels, 1, 1)), requires_grad=True)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
 
             def forward(self, x):
                 batch_size, channels, _, _ = x.size()
@@ -84,11 +84,13 @@ class Model:
                 return x * out
 
         class SpatialAttention(Module):
-            def __init__(self, kernel_size=7):
+            def __init__(self, c, kernel_size=7):
                 super(SpatialAttention, self).__init__()
                 padding = kernel_size // 2  # Ensure same spatial dimensions
                 self.conv = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
                 self.sigmoid = torch.nn.Sigmoid()
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
 
             def forward(self, x):
                 # Compute average and max along the channel dimension
@@ -102,8 +104,11 @@ class Model:
                 out = self.conv(x_cat)
                 out = self.sigmoid(out)
 
+                out = out.expand_as(x)
+                out = out * self.beta + self.gamma
+
                 # Scale input feature maps
-                return x * out.expand_as(x)
+                return x * out
 
         class CBAM(Module):
             def __init__(self, in_channels, reduction_ratio=16, spatial_kernel_size=7):
