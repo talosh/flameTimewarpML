@@ -103,9 +103,9 @@ class Model:
                 # Apply convolution and sigmoid activation
                 out = self.conv(x_cat)
                 out = self.sigmoid(out)
-
-                print ('\n\n')
-                print (out.shape)
+                
+                # print ('\n\n')
+                # print (out.shape)
 
                 out = out.expand_as(x)
                 out = out * self.beta + self.gamma
