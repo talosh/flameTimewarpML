@@ -975,7 +975,7 @@ def get_dataset(
                 batch_img1.append(torch.clamp(img1, min=0.))
                 batch_img2.append(torch.clamp(img2, min=0.))
 
-            return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), ratio, images_idx
+            return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), ratio, images_idx, description
 
     return TimewarpMLDataset(
         data_root, 
