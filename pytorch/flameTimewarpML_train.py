@@ -2430,19 +2430,29 @@ def main():
             dataset.reshuffle()
 
         if (args.preview_max > 0) and (step % args.preview_maxmin_steps) == 1:
-            print ('\n\n')
+            max_preview_folder = os.path.join(args.dataset_path, 'preview', 'max')
             max_loss_values = max_values.get_values()
-            for item in max_loss_values:
-                pprint(item)
-            print('\n\n')
-            del item
+            index = 0
+            item = None
+            for index, item in enumerate(max_loss_values):
+
+                epoch_time = time.time() - start_timestamp
+                days = int(epoch_time // (24 * 3600))
+                hours = int((epoch_time % (24 * 3600)) // 3600)
+                minutes = int((epoch_time % 3600) // 60)
+
+                clear_lines(2)
+                print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{train_time_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
+                print (f'\Rendering MAX preview {index + 1} of {len(max_loss_values)}')
+
+                time.sleep(0.1)
+
+            del index, item
 
         if (args.preview_min > 0) and (step % args.preview_maxmin_steps) == 1:
-            print ('\n\n')
             min_loss_values = min_values.get_values()
             for item in min_loss_values:
-                pprint(item)
-            print('\n\n')
+                pass
             del item
 
         if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
