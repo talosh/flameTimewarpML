@@ -2437,7 +2437,23 @@ def main():
             index = 0
             item = None
             for index, item in enumerate(max_loss_values):
-                pass
+                n, c, h, w = item['img0_orig'].shape
+                for b_indx in range(n):
+                    write_eval_image_queue.put(
+                    {
+                        'preview_folder': max_preview_folder,
+                        'sample_source1': item['img0_orig'][b_indx].transpose(1, 2, 0),
+                        'sample_source1_name': f'{index:04}_{b_indx:02}_incomng.exr',
+                        'sample_source2': item['img2_orig'][b_indx].transpose(1, 2, 0),
+                        'sample_source2_name': f'{index:04}_{b_indx:02}_outgoing.exr',
+                        'sample_target': item['img1_orig'][b_indx].transpose(1, 2, 0),
+                        'sample_target_name': f'{index:04}_{b_indx:02}_target.exr',
+                        'sample_output': item['output'][b_indx].transpose(1, 2, 0),
+                        'sample_output_name': f'{index:04}_{b_indx:02}_output.exr',
+                        'sample_output_mask': item['mask'][b_indx].transpose(1, 2, 0),
+                        'sample_output_mask_name': f'{index:04}_{b_indx:02}_output_mask.exr'
+                    }
+                )
             del index, item
 
         if (args.preview_min > 0) and (step % args.preview_maxmin_steps) == 1:
