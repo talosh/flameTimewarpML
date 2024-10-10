@@ -2255,8 +2255,20 @@ def main():
         # lpips_list.append(1.)
         psnr_list.append(float(psnr_torch(output, img1)))
 
-        max_values.add(loss.item(), {'loss_l1': float(loss_l1.item()), 'lpips': float(torch.mean(loss_LPIPS_).item())})
-        min_values.add(loss.item(), {'loss_l1': float(loss_l1.item()), 'lpips': float(torch.mean(loss_LPIPS_).item())})
+        max_values.add(
+            loss.item(), {
+                'loss_l1': float(loss_l1.item()),
+                'lpips': float(torch.mean(loss_LPIPS_).item()),
+                'description': current_desc
+                }
+             )
+        min_values.add(
+            loss.item(), {
+                'loss_l1': float(loss_l1.item()),
+                'lpips': float(torch.mean(loss_LPIPS_).item()),
+                'description': current_desc
+                }
+            )
 
         if len(epoch_loss) < 9999:
             smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
