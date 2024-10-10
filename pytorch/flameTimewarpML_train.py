@@ -1484,16 +1484,9 @@ class MinNValues:
             heapq.heappush(self.heap, heap_item)
         else:
             # If the new value is smaller than the largest in the heap
-            try:
-                if -value > self.heap[0][0]:
-                    # Replace the largest value with the new value
-                    heapq.heapreplace(self.heap, heap_item)
-            except:
-                print ('\n\n')
-                print (self.n)
-                print (len(self.heap))
-                pprint (self.heap)
-                print ('\n\n')
+            if -value > self.heap[0][0]:
+                # Replace the largest value with the new value
+                heapq.heapreplace(self.heap, heap_item)
 
     def get_values(self):
         """
@@ -2110,8 +2103,8 @@ def main():
         return graceful_exit
     signal.signal(signal.SIGINT, create_graceful_exit(current_state_dict))
 
-    max_values = MaxNValues(n=args.preview_max)
-    min_values = MinNValues(n=args.preview_min)
+    max_values = MaxNValues(n=args.preview_max if args.preview_max else 10)
+    min_values = MinNValues(n=args.preview_min if args.preview_min else 10)
 
     while True:
         data_time = time.time() - time_stamp
