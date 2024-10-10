@@ -10,18 +10,18 @@ import queue
 import threading
 import time
 import platform
+import heapq
 from copy import deepcopy
 
 from pprint import pprint
 
 try:
-    import numpy as np
     import torch
 except:
     python_executable_path = sys.executable
     if '.miniconda' in python_executable_path:
-        print ('Unable to import Numpy and PyTorch libraries')
-        print (f'Using {python_executable_path} python interpreter')
+        print ('Unable to import PyTorch')
+        print (f'Using "{python_executable_path}" as python interpreter')
         sys.exit()
     else:
         # make Flame happy on hooks scan
@@ -31,6 +31,25 @@ except:
                     pass
                 class Conv2d(object):
                     pass
+
+try:
+    import numpy as np
+except:
+    python_executable_path = sys.executable
+    if '.miniconda' in python_executable_path:
+        print (f'Using "{python_executable_path}" as python interpreter')
+        print ('Unable to import Numpy')
+        sys.exit()
+
+try:
+    import OpenImageIO as oiio
+except:
+    python_executable_path = sys.executable
+    if '.miniconda' in python_executable_path:
+        print ('Unable to import OpenImageIO')
+        print (f'Using "{python_executable_path}" as python interpreter')
+        sys.exit()
+
 
 class MinExrReader:
     '''Minimal, standalone OpenEXR reader for single-part, uncompressed scan line files.
@@ -405,6 +424,18 @@ def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
 
     del image_data, red, green, blue
 
+def read_image_file(file_path, header_only = False):
+    result = {'spec': None, 'image_data': None}
+    inp = oiio.ImageInput.open(file_path)
+    if inp :
+        spec = inp.spec()
+        result['spec'] = spec
+        if not header_only:
+            channels = spec.nchannels
+            result['image_data'] = inp.read_image(0, 0, 0, channels)
+        inp.close()
+    return result
+
 def get_dataset(
         data_root, 
         batch_size = 8, 
@@ -575,9 +606,15 @@ def get_dataset(
                     max_window = 5
 
             try:
+                '''
                 first_exr_file_header = read_openexr_file(exr_files[0], header_only = True)
                 h = first_exr_file_header['shape'][0]
                 w = first_exr_file_header['shape'][1]
+                '''
+
+                first_exr_file_header = read_image_file(exr_files[0], header_only = True)
+                h = first_exr_file_header['spec'].height
+                w = first_exr_file_header['spec'].width
 
                 for window_size in range(3, max_window + 1):
                     for window in sliding_window(exr_files, window_size):
@@ -623,11 +660,9 @@ def get_dataset(
                     description = self.train_descriptions[index]
                     try:
                         train_data = {}
-                        # train_data['pre_start'] = read_openexr_file(description['pre_start'])['image_data']
                         train_data['start'] = read_openexr_file(description['start'])['image_data']
                         train_data['gt'] = read_openexr_file(description['gt'])['image_data']
                         train_data['end'] = read_openexr_file(description['end'])['image_data']
-                        # train_data['after_end'] = read_openexr_file(description['after_end'])['image_data']
                         train_data['ratio'] = description['ratio']
                         train_data['h'] = description['h']
                         train_data['w'] = description['w']
@@ -948,13 +983,6 @@ def get_dataset(
                 batch_img2.append(torch.clamp(img2, min=0.))
 
             return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), ratio, images_idx
-
-        def get_input_channels_number(self, source_frames_paths_list):
-            total_num_channels = 0
-            for src_path in source_frames_paths_list:
-                file_header = read_openexr_file(src_path, header_only=True)
-                total_num_channels += file_header['shape'][2]
-            return total_num_channels
 
     return TimewarpMLDataset(
         data_root, 
@@ -1386,6 +1414,107 @@ def convert_from_data_parallel(param):
         for k, v in param.items()
         if "module." in k
     }
+
+class MaxNValues:
+    def __init__(self, n):
+        """
+        Initializes the MaxNValues object.
+
+        Parameters:
+        - n (int): The maximum number of top values to keep.
+        """
+        self.n = n  # Maximum number of values to keep
+        self.heap = []  # Min-heap to store the top n values (as tuples of (value, data))
+
+    def add(self, value, data):
+        """
+        Adds a new value and its associated dictionary to the collection.
+        Keeps only the top n values.
+
+        Parameters:
+        - value (float): The float value to add.
+        - data (dict): The dictionary associated with the value.
+        """
+        if len(self.heap) < self.n:
+            # If the heap is not full, push the new item
+            heapq.heappush(self.heap, (value, data))
+        else:
+            # If the new value is greater than the smallest in the heap, replace it
+            if value > self.heap[0][0]:
+                heapq.heapreplace(self.heap, (value, data))
+
+    def get_values(self):
+        """
+        Returns the list of top n values and their associated data,
+        sorted in descending order.
+
+        Returns:
+        - List[Tuple[float, dict]]: A list of tuples containing the values and their data.
+        """
+        # Sort the heap in descending order based on the values
+        return sorted(self.heap, key=lambda x: x[0], reverse=True)
+
+    def __len__(self):
+        """
+        Returns the current number of values stored.
+
+        Returns:
+        - int: The number of values in the heap.
+        """
+        return len(self.heap)
+
+class MinNValues:
+    def __init__(self, n):
+        """
+        Initializes the MinNValues object.
+
+        Parameters:
+        - n (int): The maximum number of minimum values to keep.
+        """
+        self.n = n  # Maximum number of values to keep
+        self.heap = []  # Max-heap to store the top n minimum values (as tuples of (-value, data))
+
+    def add(self, value, data):
+        """
+        Adds a new value and its associated dictionary to the collection.
+        Keeps only the top n minimum values.
+
+        Parameters:
+        - value (float): The float value to add.
+        - data (dict): The dictionary associated with the value.
+        """
+        # Invert the value to simulate a max-heap
+        heap_item = (-value, data)
+        if len(self.heap) < self.n:
+            # If the heap is not full, push the new item
+            heapq.heappush(self.heap, heap_item)
+        else:
+            # If the new value is smaller than the largest in the heap
+            if -value > self.heap[0][0]:
+                # Replace the largest value with the new value
+                heapq.heapreplace(self.heap, heap_item)
+
+    def get_values(self):
+        """
+        Returns the list of top n minimum values and their associated data,
+        sorted in ascending order.
+
+        Returns:
+        - List[Tuple[float, dict]]: A list of tuples containing the values and their data.
+        """
+        # Convert inverted values back to positive and sort in ascending order
+        sorted_heap = sorted([(-item[0], item[1]) for item in self.heap], key=lambda x: x[0])
+        return sorted_heap
+
+    def __len__(self):
+        """
+        Returns the current number of values stored.
+
+        Returns:
+        - int: The number of values in the heap.
+        """
+        return len(self.heap)
+
 
 current_state_dict = {}
 
@@ -2379,11 +2508,7 @@ def main():
                     print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{train_time_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
                     print (f'\rEvaluating {ev_item_index} of {len(descriptions)}: Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f} LPIPS: {eval_lpips_mean:.4f} PSNR: {eval_psnr_mean:4f}')
 
-                    try:
-                        # eval_img0 = read_openexr_file(description['start'])['image_data']
-                        # eval_img1 = read_openexr_file(description['gt'])['image_data']
-                        # eval_img2 = read_openexr_file(description['end'])['image_data']
-                        
+                    try:                        
                         eval_img0 = description['eval_img0']
                         eval_img1 = description['eval_img1']
                         eval_img2 = description['eval_img2']
