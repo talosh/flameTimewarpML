@@ -1738,9 +1738,9 @@ def main():
                 write_exr(write_data['sample_source2'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_B_outgoing.exr'), half_float = True)
                 write_exr(write_data['sample_target'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_C_target.exr'), half_float = True)
                 write_exr(write_data['sample_output'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_D_output.exr'), half_float = True)
-                write_exr(write_data['sample_output_diff'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}__E_output_diff.exr'), half_float = True)
-                write_exr(write_data['sample_output_mask'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_F_output_mask.exr'), half_float = True)
-                write_exr(write_data['sample_output_conf'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_G_output_conf.exr'), half_float = True)
+                write_exr(write_data['sample_output_diff'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_E_output_diff.exr'), half_float = True)
+                write_exr(write_data['sample_output_conf'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_F_output_conf.exr'), half_float = True)
+                write_exr(write_data['sample_output_mask'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_G_output_mask.exr'), half_float = True)
                 del write_data
             except:
             # except queue.Empty:
