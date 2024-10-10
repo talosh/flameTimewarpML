@@ -798,17 +798,17 @@ def get_dataset(
             rsz1_img1 = self.resize_image(src_img1, self.h)
             rsz1_img2 = self.resize_image(src_img2, self.h)
 
-            rsz2_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
-            rsz2_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
-            rsz2_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
+            rsz2_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/8)))
+            rsz2_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/8)))
+            rsz2_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/8)))
 
-            rsz3_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/5)))
-            rsz3_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/5)))
-            rsz3_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/5)))
+            rsz3_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/7)))
+            rsz3_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/7)))
+            rsz3_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/7)))
 
-            rsz4_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
-            rsz4_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
-            rsz4_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
+            rsz4_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
+            rsz4_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
+            rsz4_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
 
             batch_img0 = []
             batch_img1 = []
