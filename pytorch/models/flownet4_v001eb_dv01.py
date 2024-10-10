@@ -342,7 +342,7 @@ class Model:
                 # step training
 
                 # 2 steps
-                scale[0] = 1
+                scale[0] = scale[2]
                 scale[1] = 1
 
                 flow, mask, conf = self.block0(
@@ -362,7 +362,7 @@ class Model:
                 conf_list[0] = torch.sigmoid(conf.clone())
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
-                # '''
+                '''
                 # step training
                 flow_list[3] = flow_list[0]
                 mask_list[3] = mask_list[0]
@@ -370,7 +370,7 @@ class Model:
                 merged[3] = merged[0]
 
                 return flow_list, mask_list, conf_list, merged
-                # '''
+                '''
 
                 # refine step 1
                 flow_d, mask, conf_d = self.block1(
