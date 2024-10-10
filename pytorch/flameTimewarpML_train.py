@@ -2263,7 +2263,7 @@ def main():
                 'description': current_desc,
                 'img0_orig': img0_orig.numpy(force=True).copy(),
                 'img1_orig': img1_orig.numpy(force=True).copy(),
-                'img1_orig': img1_orig.numpy(force=True).copy(),
+                'img2_orig': img2_orig.numpy(force=True).copy(),
                 'mask': mask.numpy(force=True).copy(),
                 'output': output_restored.numpy(force=True).copy(),
         }
