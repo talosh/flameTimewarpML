@@ -342,16 +342,8 @@ class Model:
                 # step training
 
                 # 2 steps
-                scale[0] = scale[2]
+                scale[0] = 2
                 scale[1] = 1
-
-                '''
-                pvalue = scale[0] * self.maxdepth
-                _, _, h, w = img0.shape
-                ph = ((h - 1) // pvalue + 1) * pvalue
-                pw = ((w - 1) // pvalue + 1) * pvalue
-                padding = (0, pw - w, 0, ph - h)
-                '''
 
                 flow, mask, conf = self.block0(
                     img0, 
@@ -365,25 +357,12 @@ class Model:
                     scale=scale[0]
                     )
                 
-                '''
-                flow = flow[:, :, :h, :w]
-                mask = mask[:, :, :h, :w]
-                conf = conf[:, :, :h, :w]
-                '''
-
                 flow_list[0] = flow.clone()
                 mask_list[0] = torch.sigmoid(mask.clone())
                 conf_list[0] = torch.sigmoid(conf.clone())
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
                 # refine step 1
-                '''
-                pvalue = scale[1] * self.maxdepth
-                ph = ((h - 1) // pvalue + 1) * pvalue
-                pw = ((w - 1) // pvalue + 1) * pvalue
-                padding = (0, pw - w, 0, ph - h)
-                '''
-
                 flow_d, mask, conf_d = self.block1(
                     img0, 
                     img1,
