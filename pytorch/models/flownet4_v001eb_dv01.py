@@ -361,11 +361,11 @@ class Model:
                 '''
 
                 flow, mask, conf = self.block0(
-                    torch.nn.functional.pad(img0, padding, mode='replicate'), 
-                    torch.nn.functional.pad(img1, padding, mode='replicate'), 
-                    torch.nn.functional.pad(f0, padding, mode='replicate'), 
-                    torch.nn.functional.pad(f1, padding, mode='replicate'), 
-                    torch.nn.functional.pad(timestep, padding, mode='replicate'), 
+                    img0, 
+                    img1, 
+                    f0, 
+                    f1, 
+                    timestep, 
                     None, 
                     None,
                     None,
@@ -392,14 +392,14 @@ class Model:
                 '''
 
                 flow_d, mask, conf_d = self.block1(
-                    torch.nn.functional.pad(img0, padding, mode='replicate'), 
-                    torch.nn.functional.pad(img1, padding, mode='replicate'),
-                    torch.nn.functional.pad(f0, padding, mode='replicate'),
-                    torch.nn.functional.pad(f1, padding, mode='replicate'),
-                    torch.nn.functional.pad(timestep, padding, mode='replicate'),
-                    torch.nn.functional.pad(mask, padding, mode='replicate'),
-                    torch.nn.functional.pad(conf, padding, mode='replicate'),
-                    torch.nn.functional.pad(flow, padding, mode='replicate'), 
+                    img0, 
+                    img1,
+                    f0,
+                    f1,
+                    timestep,
+                    mask,
+                    conf,
+                    flow, 
                     scale=scale[1]
                 )
 
