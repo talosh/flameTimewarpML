@@ -606,12 +606,6 @@ def get_dataset(
                     max_window = 5
 
             try:
-                '''
-                first_exr_file_header = read_openexr_file(exr_files[0], header_only = True)
-                h = first_exr_file_header['shape'][0]
-                w = first_exr_file_header['shape'][1]
-                '''
-
                 first_exr_file_header = read_image_file(exr_files[0], header_only = True)
                 h = first_exr_file_header['spec'].height
                 w = first_exr_file_header['spec'].width
