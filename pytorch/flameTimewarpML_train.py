@@ -2437,20 +2437,21 @@ def main():
             index = 0
             item = None
             for index, item in enumerate(max_loss_values):
-                n, c, h, w = item[1]['img0_orig'].shape
+                item_data = item[1]
+                n, c, h, w = item_data['img0_orig'].shape
                 for b_indx in range(n):
                     write_eval_image_queue.put(
                     {
                         'preview_folder': max_preview_folder,
-                        'sample_source1': item['img0_orig'][b_indx].transpose(1, 2, 0),
+                        'sample_source1': item_data['img0_orig'][b_indx].transpose(1, 2, 0),
                         'sample_source1_name': f'{index:04}_{b_indx:02}_incomng.exr',
-                        'sample_source2': item['img2_orig'][b_indx].transpose(1, 2, 0),
+                        'sample_source2': item_data['img2_orig'][b_indx].transpose(1, 2, 0),
                         'sample_source2_name': f'{index:04}_{b_indx:02}_outgoing.exr',
-                        'sample_target': item['img1_orig'][b_indx].transpose(1, 2, 0),
+                        'sample_target': item_data['img1_orig'][b_indx].transpose(1, 2, 0),
                         'sample_target_name': f'{index:04}_{b_indx:02}_target.exr',
-                        'sample_output': item['output'][b_indx].transpose(1, 2, 0),
+                        'sample_output': item_data['output'][b_indx].transpose(1, 2, 0),
                         'sample_output_name': f'{index:04}_{b_indx:02}_output.exr',
-                        'sample_output_mask': item['mask'][b_indx].transpose(1, 2, 0),
+                        'sample_output_mask': item_data['mask'][b_indx].transpose(1, 2, 0),
                         'sample_output_mask_name': f'{index:04}_{b_indx:02}_output_mask.exr'
                     }
                 )
