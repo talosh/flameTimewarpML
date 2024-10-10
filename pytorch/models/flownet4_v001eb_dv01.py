@@ -328,7 +328,7 @@ class Model:
 
                 merged = [None] * 4
 
-                scale = [5, 3, 2, 1] if scale == [8, 4, 2, 1] else scale
+                # scale = [5, 3, 2, 1] if scale == [8, 4, 2, 1] else scale
 
                 # scale = [x if x == 8 else x + 1 for x in scale]
                 
