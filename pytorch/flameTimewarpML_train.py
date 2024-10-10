@@ -1883,21 +1883,6 @@ def main():
         trained_model_path = os.path.join(trained_model_dir, traned_model_name)
 
     if args.legacy_model:
-        '''
-        try:
-            Flownet().load_model(args.legacy_model, flownet)
-            print (f'loaded legacy model state: {args.legacy_model}')
-        except Exception as e:
-            print (f'unable to load legacy model: {e}')
-        '''
-
-        '''
-        default_rife_model_path = os.path.join(
-            os.path.abspath(os.path.dirname(__file__)),
-            'models_data',
-            'flownet_v412.pkl'
-        )
-        '''
         rife_state_dict = torch.load(args.legacy_model)
         def convert(param):
             return {
@@ -2224,7 +2209,7 @@ def main():
         
         # n_iterations = random.randint(1, 4) if args.iterations == -1 else args.iterations
 
-        flow_list, mask_list, merged = flownet(
+        flow_list, mask_list, conf_list, merged = flownet(
             img0, 
             img2, 
             ratio, 
@@ -2668,7 +2653,7 @@ def main():
                             eval_img0 = eval_img0.half()
                             eval_img2 = eval_img2.half()
 
-                        eval_flow_list, eval_mask_list, eval_merged = flownet(
+                        eval_flow_list, eval_mask_list, eval_conf_list, eval_merged = flownet(
                             eval_img0, 
                             eval_img2,
                             eval_ratio, 
