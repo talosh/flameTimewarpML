@@ -2467,8 +2467,8 @@ def main():
             while  ( idx + 1 ) == len(dataset):
                 img0, img1, img2, ratio, idx, current_desc = read_image_queue.get()
             dataset.reshuffle()
-            max_loss_values.reset()
-            min_loss_values.reset()
+            max_values.reset()
+            min_values.reset()
 
         if (args.preview_max > 0) and (step % args.preview_maxmin_steps) == 1:
             max_preview_folder = os.path.join(args.dataset_path, 'preview', 'max')

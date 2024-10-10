@@ -267,11 +267,14 @@ class Model:
                 if flow is None:
                     x = torch.cat((img0, img1, f0, f1, timestep), 1)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    x_deep = x
                 else:
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img0, flow[:, :2])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
+                    x_deep = torch.cat((img0, img1, f0, f1, timestep, mask), 1)
+                    x_deep = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
