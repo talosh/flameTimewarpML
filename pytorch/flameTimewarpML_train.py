@@ -1489,8 +1489,10 @@ class MinNValues:
                     # Replace the largest value with the new value
                     heapq.heapreplace(self.heap, heap_item)
             except:
+                print ('\n\n')
                 print (len(self.heap))
                 pprint (self.heap)
+                print ('\n\n')
 
     def get_values(self):
         """
