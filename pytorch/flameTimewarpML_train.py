@@ -969,9 +969,9 @@ def get_dataset(
 
                 # Convert to ACEScc
                 if random.uniform(0, 1) < (self.acescc_rate / 100):
-                    img0 = self.apply_acescc(torch.clamp(img0, min=0.01))
-                    img1 = self.apply_acescc(torch.clamp(img1, min=0.01))
-                    img2 = self.apply_acescc(torch.clamp(img2, min=0.01))
+                    img0 = self.apply_acescc(torch.clamp(img0, min=0.001))
+                    img1 = self.apply_acescc(torch.clamp(img1, min=0.001))
+                    img2 = self.apply_acescc(torch.clamp(img2, min=0.001))
 
                 batch_img0.append(torch.clamp(img0, min=0.))
                 batch_img1.append(torch.clamp(img1, min=0.))
