@@ -1448,6 +1448,25 @@ class MaxNValues:
         # Sort the heap in descending order based on the values
         return sorted(self.heap, key=lambda x: x[0], reverse=True)
 
+    def reset(self):
+        """
+        Clears the heap, removing all stored values.
+        """
+        self.heap = []
+
+    def set_n(self, new_n):
+        """
+        Sets a new value for n and adjusts the heap accordingly.
+
+        Parameters:
+        - new_n (int): The new maximum number of top values to keep.
+        """
+        self.n = new_n
+        if len(self.heap) > new_n:
+            # Keep only the top new_n values
+            self.heap = heapq.nlargest(new_n, self.heap)
+            heapq.heapify(self.heap)
+
     def __len__(self):
         """
         Returns the current number of values stored.
@@ -1499,6 +1518,25 @@ class MinNValues:
         # Convert inverted values back to positive and sort in ascending order
         sorted_heap = sorted([(-item[0], item[1]) for item in self.heap], key=lambda x: x[0])
         return sorted_heap
+
+    def reset(self):
+        """
+        Clears the heap, removing all stored values.
+        """
+        self.heap = []
+
+    def set_n(self, new_n):
+        """
+        Sets a new value for n and adjusts the heap accordingly.
+
+        Parameters:
+        - new_n (int): The new maximum number of top values to keep.
+        """
+        self.n = new_n
+        if len(self.heap) > new_n:
+            # Keep only the top new_n values
+            self.heap = heapq.nlargest(new_n, self.heap)
+            heapq.heapify(self.heap)
 
     def __len__(self):
         """
