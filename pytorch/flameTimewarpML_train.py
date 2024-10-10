@@ -1490,6 +1490,7 @@ class MinNValues:
                     heapq.heapreplace(self.heap, heap_item)
             except:
                 print ('\n\n')
+                print (self.n)
                 print (len(self.heap))
                 pprint (self.heap)
                 print ('\n\n')
