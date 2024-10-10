@@ -375,7 +375,7 @@ class Model:
                 conf_list[3] = conf_list[0]
                 merged[3] = merged[0]
 
-                return flow_list, mask_list, merged
+                return flow_list, mask_list, conf_list, merged
                 # '''
 
                 # refine step 1
