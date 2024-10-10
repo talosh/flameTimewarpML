@@ -774,14 +774,13 @@ def get_dataset(
 
         def __getitem__(self, index):
             train_data = self.getimg(index)
-            # src_img0 = train_data['pre_start']
             np_img0 = train_data['start']
             np_img1 = train_data['gt']
             np_img2 = train_data['end']
-            # src_img4 = train_data['after_end']
             imgh = train_data['h']
             imgw = train_data['w']
             ratio = train_data['ratio']
+            description = train_data['description']
             images_idx = self.train_data_index
 
             device = self.device
@@ -2255,6 +2254,9 @@ def main():
         lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
         # lpips_list.append(1.)
         psnr_list.append(float(psnr_torch(output, img1)))
+
+        max_values.add(loss.item(), {'loss_l1': float(loss_l1.item()), 'lpips': float(torch.mean(loss_LPIPS_).item())})
+        min_values.add(loss.item(), {'loss_l1': float(loss_l1.item()), 'lpips': float(torch.mean(loss_LPIPS_).item())})
 
         if len(epoch_loss) < 9999:
             smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
