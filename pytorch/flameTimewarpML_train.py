@@ -2426,7 +2426,7 @@ def main():
             batch_idx = 0
 
             while  ( idx + 1 ) == len(dataset):
-                img0, img1, img2, ratio, idx = read_image_queue.get()
+                img0, img1, img2, ratio, idx, current_desc = read_image_queue.get()
             dataset.reshuffle()
 
         if (args.preview_max > 0) and (step % args.preview_maxmin_steps) == 1:
