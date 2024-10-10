@@ -2431,10 +2431,19 @@ def main():
 
         if (args.preview_max > 0) and (step % args.preview_maxmin_steps) == 1:
             print ('\n\n')
-            top_loss_values = max_values.get_values()
-            for item in top_loss_values:
+            max_loss_values = max_values.get_values()
+            for item in max_loss_values:
                 pprint(item)
             print('\n\n')
+            del item
+
+        if (args.preview_min > 0) and (step % args.preview_maxmin_steps) == 1:
+            print ('\n\n')
+            min_loss_values = min_values.get_values()
+            for item in min_loss_values:
+                pprint(item)
+            print('\n\n')
+            del item
 
         if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
             if not args.eval_first:
