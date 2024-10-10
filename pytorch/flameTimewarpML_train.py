@@ -1548,6 +1548,30 @@ class MinNValues:
         """
         return len(self.heap)
 
+def diffmatte(tensor1, tensor2):
+    """
+    Computes the difference matte between two tensors.
+
+    Parameters:
+    - tensor1 (torch.Tensor): First tensor of shape (n, c, h, w)
+    - tensor2 (torch.Tensor): Second tensor of shape (n, c, h, w)
+    - threshold (float): Threshold value to binarize the difference matte
+
+    Returns:
+    - difference_matte (torch.Tensor): Tensor of shape (n, 1, h, w) with values between 0 and 1
+    """
+    # Ensure the tensors are of the same shape
+    assert tensor1.shape == tensor2.shape, "Input tensors must have the same shape"
+
+    # Compute the per-pixel L2 norm difference across the channel dimension
+    difference = torch.norm(tensor1 - tensor2, p=2, dim=1, keepdim=True)  # Shape: (n, 1, h, w)
+
+    # Normalize the difference to range [0, 1]
+    max_val = difference.view(difference.size(0), -1).max(dim=1)[0].view(-1, 1, 1, 1)
+    difference_normalized = difference / (max_val + 1e-8)  # Add epsilon to prevent division by zero
+
+    return difference_normalized
+
 
 current_state_dict = {}
 
@@ -2220,6 +2244,7 @@ def main():
         # flow0 = flow_list[3][:, :2]
         # flow1 = flow_list[3][:, 2:4]
         mask = mask_list[3]
+        conf = conf_list[3]
         # output = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
         
         output = merged[3]
@@ -2267,10 +2292,11 @@ def main():
         # print (f'Out: {output.shape}, Orig: {img1_orig.shape}')
 
         loss_LPIPS_ = loss_fn_alex(output_restored * 2 - 1, img1_orig * 2 - 1)
+        loss_conf = criterion_l1(conf, diffmatte(x1_output, x1_orig))
         # loss = (criterion_l1(x1_output, x1_orig)  + 0.1 * (float(torch.mean(loss_LPIPS_).item()) ** 1.1)) / 2
 
         lpips_weight = 0.5
-        loss = (1 - lpips_weight ) * criterion_l1(x1_output, x1_orig) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS_).item())
+        loss = (1 - lpips_weight ) * criterion_l1(x1_output, x1_orig) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS_).item()) + 0.1 * loss_conf
 
         loss_l1 = criterion_l1(output_restored, img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
