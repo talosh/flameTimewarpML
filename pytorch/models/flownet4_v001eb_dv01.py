@@ -263,7 +263,7 @@ class Model:
                     torch.nn.Conv2d(c, 6, kernel_size=1, stride=1, padding=0, bias=True),
                 )
 
-            def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
+            def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
                 if flow is None:
                     x = torch.cat((img0, img1, f0, f1, timestep), 1)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
@@ -271,29 +271,37 @@ class Model:
                 else:
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
+
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    x_deep = torch.cat((img0, img1, f0, f1, timestep, mask), 1)
+                    
+                    x_deep = torch.cat((img0, img1, f0, f1, timestep, conf), 1)
                     x_deep = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    
                     x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
                     x_deep = torch.cat((x, flow), 1)
 
                 feat = self.conv0(x)
-                feat_deep = self.conv1(x_deep)
                 feat = self.convblock(feat)
+
+                feat_deep = self.conv1(x_deep)
                 feat_deep = self.convblock_deep(feat_deep)
+
                 feat = torch.cat((feat_deep, feat), 1)
                 feat = self.mix(feat)
                 feat = self.attention(feat)
                 feat = self.convblock_mix(feat)
                 tmp = self.lastconv(feat)
+
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
                 flow = tmp[:, :4] * scale
                 mask = tmp[:, 4:5]
                 conf = tmp[:, 5:6]
+
                 return flow, mask, conf
 
         class FlownetCas(Module):
@@ -316,6 +324,8 @@ class Model:
 
                 flow_list = [None] * 4
                 mask_list = [None] * 4
+                conf_list = [None] * 4
+
                 merged = [None] * 4
 
                 scale = [5, 3, 2, 1] if scale == [8, 4, 2, 1] else scale
@@ -344,7 +354,8 @@ class Model:
                     torch.nn.functional.pad(f1, padding), 
                     torch.nn.functional.pad(timestep, padding, mode='replicate'), 
                     None, 
-                    None, 
+                    None,
+                    None,
                     scale=scale[0]
                     )
                 
