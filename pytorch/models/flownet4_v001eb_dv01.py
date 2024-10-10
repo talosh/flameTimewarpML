@@ -364,7 +364,7 @@ class Model:
                 conf = conf[:, :, :h, :w]
 
                 flow_list[0] = flow.clone()
-                mask_list[0] = torch.clamp(torch.sigmoid(mask.clone())*1.2 - 0.1, 0, 1)
+                mask_list[0] = torch.clamp(torch.sigmoid(mask.clone())*1.1 - 0.05, 0, 1)
                 conf_list[0] = torch.sigmoid(conf.clone())
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
