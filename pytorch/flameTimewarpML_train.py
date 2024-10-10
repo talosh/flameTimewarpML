@@ -1918,6 +1918,11 @@ def main():
             if param.requires_grad:
                 print(name, param.requires_grad)
 
+        print (f'flownet.module.block0.attention.channel_scale {flownet.module.block0.attention.channel_scale.weight.data}')
+        print (f'flownet.module.block0.attention.channel_offset {flownet.module.block0.attention.channel_offset.weight.data}')
+        print (f'flownet.module.block0.attention.spatial_scale {flownet.module.block0.attention.spatial_scale.weight.data}')
+        print (f'flownet.module.block0.attention.spatial_offset {flownet.module.block0.attention.spatial_offset.weight.data}')
+
     print('\n\n')
 
     current_state_dict['step'] = int(step)
