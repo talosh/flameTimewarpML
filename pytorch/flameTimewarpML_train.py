@@ -2458,6 +2458,9 @@ def main():
             del index, item
 
         if (args.preview_min > 0) and (step % args.preview_maxmin_steps) == 1:
+            min_preview_folder = os.path.join(args.dataset_path, 'preview', 'min')
+            if not os.path.isdir(min_preview_folder):
+                os.makedirs(min_preview_folder)
             min_loss_values = min_values.get_values()
             for item in min_loss_values:
                 pass
