@@ -212,7 +212,7 @@ class Model:
                 return flow, mask, conf
 
         class Flownet(Module):
-            def __init__(self, in_planes, c=64):
+            def __init__(self, in_planes, c=64, c_deep=96):
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
                     conv(in_planes, c//2, 3, 2, 1),
