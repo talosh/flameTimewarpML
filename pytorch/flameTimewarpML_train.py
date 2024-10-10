@@ -1557,8 +1557,8 @@ def main():
     parser.add_argument('--generalize', type=check_range_percent, default=85, help='Generalization level (0 - 100) (default: 85)')
     parser.add_argument('--weight_decay', type=float, default=-1, help='AdamW weight decay (default: calculated from --generalize value)')
     parser.add_argument('--preview', type=int, default=100, help='Save preview each N steps (default: 100)')
-    parser.add_argument('--preview_max', type=int, default=10, help='Save separate preview for N highest error samples (default: 10)')
-    parser.add_argument('--preview_min', type=int, default=10, help='Save separate preview for N lowest error samples (default: 10)')
+    parser.add_argument('--preview_max', type=int, default=0, help='Save separate preview for N highest error samples (default: 0)')
+    parser.add_argument('--preview_min', type=int, default=0, help='Save separate preview for N lowest error samples (default: 0)')
     parser.add_argument('--preview_maxmin_steps', type=int, default=1000, help='Save max or min preview each N steps (default: 1000)')
     parser.add_argument('--save', type=int, default=1000, help='Save model state dict each N steps (default: 1000)')
     parser.add_argument('--repeat', type=int, default=1, help='Repeat each triade N times with augmentation (default: 1)')
@@ -2428,6 +2428,13 @@ def main():
             while  ( idx + 1 ) == len(dataset):
                 img0, img1, img2, ratio, idx = read_image_queue.get()
             dataset.reshuffle()
+
+        if (args.preview_max > 0) and (step % args.preview_maxmin_steps) == 1:
+            print ('\n\n')
+            top_loss_values = max_values.get_values()
+            for item in top_loss_values:
+                pprint(item)
+            print('\n\n')
 
         if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
             if not args.eval_first:
