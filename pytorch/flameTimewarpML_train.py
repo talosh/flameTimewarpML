@@ -2437,7 +2437,7 @@ def main():
             index = 0
             item = None
             for index, item in enumerate(max_loss_values):
-                n, c, h, w = item['img0_orig'].shape
+                n, c, h, w = item[1]['img0_orig'].shape
                 for b_indx in range(n):
                     write_eval_image_queue.put(
                     {
