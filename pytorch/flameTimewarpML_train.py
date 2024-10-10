@@ -2260,7 +2260,12 @@ def main():
             loss.item(), {
                 'loss_l1': float(loss_l1.item()),
                 'lpips': float(torch.mean(loss_LPIPS_).item()),
-                'description': current_desc
+                'description': current_desc,
+                'img0_orig': img0_orig.numpy(force=True).copy(),
+                'img1_orig': img1_orig.numpy(force=True).copy(),
+                'img1_orig': img1_orig.numpy(force=True).copy(),
+                'mask': mask.numpy(force=True).copy(),
+                'output': restore_normalized_values(output).numpy(force=True).copy(),
                 }
              )
         min_values.add(
@@ -2431,22 +2436,13 @@ def main():
 
         if (args.preview_max > 0) and (step % args.preview_maxmin_steps) == 1:
             max_preview_folder = os.path.join(args.dataset_path, 'preview', 'max')
+            if not os.path.isdir(max_preview_folder):
+                os.makedirs(max_preview_folder)
             max_loss_values = max_values.get_values()
             index = 0
             item = None
             for index, item in enumerate(max_loss_values):
-
-                epoch_time = time.time() - start_timestamp
-                days = int(epoch_time // (24 * 3600))
-                hours = int((epoch_time % (24 * 3600)) // 3600)
-                minutes = int((epoch_time % 3600) // 60)
-
-                clear_lines(2)
-                print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{train_time_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
-                print (f'\Rendering MAX preview {index + 1} of {len(max_loss_values)}')
-
-                time.sleep(0.1)
-
+                pass
             del index, item
 
         if (args.preview_min > 0) and (step % args.preview_maxmin_steps) == 1:
