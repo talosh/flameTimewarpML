@@ -665,7 +665,8 @@ def get_dataset(
                         self.frames_queue.put(train_data)
                     except Exception as e:
                         del train_data
-                        print (e)           
+                        print (f'\n\nError reading file: {e}')
+                        print (f'{description}\n\n')
                 time.sleep(timeout)
 
         def __len__(self):
