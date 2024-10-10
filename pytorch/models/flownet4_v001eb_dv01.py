@@ -212,16 +212,16 @@ class Model:
                 return flow, mask, conf
 
         class Flownet(Module):
-            def __init__(self, in_planes, c=64, c_deep=96):
+            def __init__(self, in_planes, c=64, cd=96):
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
                     conv(in_planes, c//2, 3, 2, 1),
                     conv(c//2, c, 3, 2, 1),
                     )
                 self.conv1 = torch.nn.Sequential(
-                    conv(in_planes, c//2, 3, 2, 1),
-                    conv(c//2, c, 3, 2, 1),
-                    conv(c, c, 3, 2, 1),
+                    conv(in_planes, cd//2, 3, 2, 1),
+                    conv(cd//2, cd, 3, 2, 1),
+                    conv(cd, cd, 3, 2, 1),
                     )
 
                 self.convblock = torch.nn.Sequential(
@@ -235,29 +235,29 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock_deep = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1)
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
+                    torch.nn.ConvTranspose2d(cd, cd, 4, 2, 1)
                 )
 
-                self.mix = torch.nn.Conv2d(c*2, c*2, kernel_size=1, stride=1, padding=0, bias=True)
+                self.mix = torch.nn.Conv2d(c+cd, c+cd, kernel_size=1, stride=1, padding=0, bias=True)
 
-                self.attention = CBAM(c*2)
+                self.attention = CBAM(c+cd)
                 
                 self.convblock_mix = torch.nn.Sequential(
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
+                    ResConv(c+cd),
+                    ResConv(c+cd),
+                    ResConv(c+cd),
+                    ResConv(c+cd),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c*2, c, 6, 2, 2),
+                    torch.nn.ConvTranspose2d(c+cd, c, 6, 2, 2),
                     torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
                     torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
                     torch.nn.Conv2d(c, 6, kernel_size=1, stride=1, padding=0, bias=True),
@@ -279,9 +279,10 @@ class Model:
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
+                    x_deep = torch.cat((x, flow), 1)
 
                 feat = self.conv0(x)
-                feat_deep = self.conv1(x)
+                feat_deep = self.conv1(x_deep)
                 feat = self.convblock(feat)
                 feat_deep = self.convblock_deep(feat_deep)
                 feat = torch.cat((feat_deep, feat), 1)
@@ -298,11 +299,11 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = Flownet(3+3+8+8+1, c=192)
-                self.block1 = Flownet(3+3+8+8+1+1+4, c=96)
-                self.block2 = Flownet(3+3+8+8+1+1+4, c=64)
-                self.block3 = FlownetShallow(3+3+8+8+1+1+4, c=48)
-                self.block4 = FlownetShallow(3+3+8+8+1+1+4, c=32)
+                self.block0 = Flownet(23, c=192, cd=192)
+                self.block1 = Flownet(28, c=96, cd=128)
+                self.block2 = Flownet(28, c=64, cd=96)
+                self.block3 = FlownetShallow(28, c=48)
+                self.block4 = FlownetShallow(28, c=32)
                 self.encode = Head()
                 self.maxdepth = 8
 
