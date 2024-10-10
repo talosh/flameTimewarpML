@@ -1738,6 +1738,7 @@ def main():
                 write_exr(write_data['sample_source2'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_outgoing.exr'), half_float = True)
                 write_exr(write_data['sample_target'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_target.exr'), half_float = True)
                 write_exr(write_data['sample_output'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_output.exr'), half_float = True)
+                write_exr(write_data['sample_output_diff'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_output_diff.exr'), half_float = True)
                 write_exr(write_data['sample_output_mask'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_output_mask.exr'), half_float = True)
                 write_exr(write_data['sample_output_conf'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_output_conf.exr'), half_float = True)
                 del write_data
@@ -2385,6 +2386,7 @@ def main():
             rgb_output = output_restored
             rgb_output_mask = mask.repeat_interleave(3, dim=1)
             rgb_output_conf = conf.repeat_interleave(3, dim=1)
+            rgb_output_diff = diffmatte(output_restored, img1_orig).repeat_interleave(3, dim=1)
             # rgb_refine = refine_list[0] + refine_list[1] + refine_list[2] + refine_list[3]
             # rgb_refine = (rgb_refine + 1) / 2
             # sample_refine = rgb_refine[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
@@ -2401,7 +2403,8 @@ def main():
                     'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                     'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                     'sample_output_mask': rgb_output_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output_conf': rgb_output_conf[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+                    'sample_output_conf': rgb_output_conf[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_output_diff': rgb_output_diff[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
                 }
             )
 
