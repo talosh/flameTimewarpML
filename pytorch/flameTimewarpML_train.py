@@ -1918,10 +1918,10 @@ def main():
             if param.requires_grad:
                 print(name, param.requires_grad)
 
-        print (f'flownet.module.block0.attention.channel_scale {flownet.module.block0.attention.channel_scale.weight.data}')
-        print (f'flownet.module.block0.attention.channel_offset {flownet.module.block0.attention.channel_offset.weight.data}')
-        print (f'flownet.module.block0.attention.spatial_scale {flownet.module.block0.attention.spatial_scale.weight.data}')
-        print (f'flownet.module.block0.attention.spatial_offset {flownet.module.block0.attention.spatial_offset.weight.data}')
+        print (f'flownet.module.block0.attention.channel_scale {flownet.module.block0.attention.channel_scale.data}')
+        print (f'flownet.module.block0.attention.channel_offset {flownet.module.block0.attention.channel_offset.data}')
+        print (f'flownet.module.block0.attention.spatial_scale {flownet.module.block0.attention.spatial_scale.data}')
+        print (f'flownet.module.block0.attention.spatial_offset {flownet.module.block0.attention.spatial_offset.data}')
 
     print('\n\n')
 
