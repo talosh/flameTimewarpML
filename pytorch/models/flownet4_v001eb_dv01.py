@@ -194,7 +194,7 @@ class Model:
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
                 warped_img0 = warp(img0, flow[:, :2])
-                warped_img1 = warp(img0, flow[:, :2])
+                warped_img1 = warp(img1, flow[:, :2])
                 warped_f0 = warp(f0, flow[:, :2])
                 warped_f1 = warp(f1, flow[:, 2:4])
                 x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
@@ -270,7 +270,7 @@ class Model:
                     x_deep = x
                 else:
                     warped_img0 = warp(img0, flow[:, :2])
-                    warped_img1 = warp(img0, flow[:, :2])
+                    warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
                     x_deep = torch.cat((img0, img1, f0, f1, timestep, mask), 1)
