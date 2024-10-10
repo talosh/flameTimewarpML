@@ -316,7 +316,7 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = Flownet(23, c=192, cd=192)
-                self.block1 = Flownet(28, c=96, cd=128)
+                self.block1 = Flownet(28, c=128, cd=96)
                 self.block2 = Flownet(28, c=64, cd=96)
                 self.block3 = FlownetShallow(28, c=48)
                 self.block4 = FlownetShallow(28, c=32)
