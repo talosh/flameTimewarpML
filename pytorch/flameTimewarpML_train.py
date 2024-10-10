@@ -2323,8 +2323,9 @@ def main():
             # rgb_refine = refine_list[0] + refine_list[1] + refine_list[2] + refine_list[3]
             # rgb_refine = (rgb_refine + 1) / 2
             # sample_refine = rgb_refine[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
-
-            preview_index = preview_index + 1 if preview_index < 9 else 0
+            
+            preview_index += 1
+            preview_index = preview_index if preview_index < 10 else 0
 
             write_image_queue.put(
                 {
