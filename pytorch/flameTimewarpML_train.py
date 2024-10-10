@@ -1754,6 +1754,8 @@ def main():
                 write_exr(write_data['sample_source2'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_source2_name']), half_float = True)
                 write_exr(write_data['sample_target'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_target_name']), half_float = True)
                 write_exr(write_data['sample_output'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_output_name']), half_float = True)
+                write_exr(write_data['sample_output_diff'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_output_diff_name']), half_float = True)
+                write_exr(write_data['sample_output_conf'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_output_conf_name']), half_float = True)
                 write_exr(write_data['sample_output_mask'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_output_mask_name']), half_float = True)
                 del write_data
             except:
@@ -2288,13 +2290,14 @@ def main():
 
         x1_output = merged[3]
         x1_orig = img1
+        diff_matte = diffmatte(x1_output, x1_orig)
 
         # vgg_loss = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
 
         # print (f'Out: {output.shape}, Orig: {img1_orig.shape}')
 
         loss_LPIPS_ = loss_fn_alex(output_restored * 2 - 1, img1_orig * 2 - 1)
-        loss_conf = criterion_l1(conf, diffmatte(x1_output, x1_orig))
+        loss_conf = criterion_l1(conf, diff_matte)
         # loss = (criterion_l1(x1_output, x1_orig)  + 0.1 * (float(torch.mean(loss_LPIPS_).item()) ** 1.1)) / 2
 
         lpips_weight = 0.5
@@ -2316,6 +2319,8 @@ def main():
                 'img0_orig': img0_orig.numpy(force=True).copy(),
                 'img1_orig': img1_orig.numpy(force=True).copy(),
                 'img2_orig': img2_orig.numpy(force=True).copy(),
+                'diff': diff_matte.numpy(force=True).copy(),
+                'conf': conf.numpy(force=True).copy(),
                 'mask': mask.repeat_interleave(3, dim=1).numpy(force=True).copy(),
                 'output': output_restored.numpy(force=True).copy(),
         }
@@ -2386,7 +2391,7 @@ def main():
             rgb_output = output_restored
             rgb_output_mask = mask.repeat_interleave(3, dim=1)
             rgb_output_conf = conf.repeat_interleave(3, dim=1)
-            rgb_output_diff = diffmatte(output_restored, img1_orig).repeat_interleave(3, dim=1)
+            rgb_output_diff = diff_matte.repeat_interleave(3, dim=1)
             # rgb_refine = refine_list[0] + refine_list[1] + refine_list[2] + refine_list[3]
             # rgb_refine = (rgb_refine + 1) / 2
             # sample_refine = rgb_refine[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
@@ -2502,15 +2507,19 @@ def main():
                     {
                         'preview_folder': max_preview_folder,
                         'sample_source1': item_data['img0_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_source1_name': f'{index:04}_{b_indx:02}_incomng.exr',
+                        'sample_source1_name': f'{index:04}_{b_indx:02}_A_incomng.exr',
                         'sample_source2': item_data['img2_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_source2_name': f'{index:04}_{b_indx:02}_outgoing.exr',
+                        'sample_source2_name': f'{index:04}_{b_indx:02}_B_outgoing.exr',
                         'sample_target': item_data['img1_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_target_name': f'{index:04}_{b_indx:02}_target.exr',
+                        'sample_target_name': f'{index:04}_{b_indx:02}_C_target.exr',
                         'sample_output': item_data['output'][b_indx].transpose(1, 2, 0),
-                        'sample_output_name': f'{index:04}_{b_indx:02}_output.exr',
+                        'sample_output_name': f'{index:04}_{b_indx:02}_D_output.exr',
+                        'sample_output_diff': item_data['diff'][b_indx].transpose(1, 2, 0),
+                        'sample_output_diff_name': f'{index:04}_{b_indx:02}_E_diff.exr',
+                        'sample_output_conf': item_data['conf'][b_indx].transpose(1, 2, 0),
+                        'sample_output_conf_name': f'{index:04}_{b_indx:02}_F_conf.exr',
                         'sample_output_mask': item_data['mask'][b_indx].transpose(1, 2, 0),
-                        'sample_output_mask_name': f'{index:04}_{b_indx:02}_output_mask.exr'
+                        'sample_output_mask_name': f'{index:04}_{b_indx:02}_G_mask.exr',
                     }
                     )
                     json_filename = os.path.join(
@@ -2536,15 +2545,19 @@ def main():
                     {
                         'preview_folder': min_preview_folder,
                         'sample_source1': item_data['img0_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_source1_name': f'{index:04}_{b_indx:02}_incomng.exr',
+                        'sample_source1_name': f'{index:04}_{b_indx:02}_A_incomng.exr',
                         'sample_source2': item_data['img2_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_source2_name': f'{index:04}_{b_indx:02}_outgoing.exr',
+                        'sample_source2_name': f'{index:04}_{b_indx:02}_B_outgoing.exr',
                         'sample_target': item_data['img1_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_target_name': f'{index:04}_{b_indx:02}_target.exr',
+                        'sample_target_name': f'{index:04}_{b_indx:02}_C_target.exr',
                         'sample_output': item_data['output'][b_indx].transpose(1, 2, 0),
-                        'sample_output_name': f'{index:04}_{b_indx:02}_output.exr',
+                        'sample_output_name': f'{index:04}_{b_indx:02}_D_output.exr',
+                        'sample_output_diff': item_data['diff'][b_indx].transpose(1, 2, 0),
+                        'sample_output_diff_name': f'{index:04}_{b_indx:02}_E_diff.exr',
+                        'sample_output_conf': item_data['conf'][b_indx].transpose(1, 2, 0),
+                        'sample_output_conf_name': f'{index:04}_{b_indx:02}_F_conf.exr',
                         'sample_output_mask': item_data['mask'][b_indx].transpose(1, 2, 0),
-                        'sample_output_mask_name': f'{index:04}_{b_indx:02}_output_mask.exr'
+                        'sample_output_mask_name': f'{index:04}_{b_indx:02}_G_mask.exr',
                     }
                     )
                     json_filename = os.path.join(
