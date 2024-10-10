@@ -939,13 +939,13 @@ def get_dataset(
 
                 # Convert to ACEScc
                 if random.uniform(0, 1) < (self.acescc_rate / 100):
-                    img0 = self.apply_acescc(img0)
-                    img1 = self.apply_acescc(img1)
-                    img2 = self.apply_acescc(img2)
+                    img0 = self.apply_acescc(torch.clamp(img0, min=0.02))
+                    img1 = self.apply_acescc(torch.clamp(img1, min=0.02))
+                    img2 = self.apply_acescc(torch.clamp(img2, min=0.02))
 
-                batch_img0.append(img0)
-                batch_img1.append(img1)
-                batch_img2.append(img2)
+                batch_img0.append(torch.clamp(img0, min=0.))
+                batch_img1.append(torch.clamp(img1, min=0.))
+                batch_img2.append(torch.clamp(img2, min=0.))
 
             return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), ratio, images_idx
 
