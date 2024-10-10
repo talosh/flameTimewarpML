@@ -272,9 +272,6 @@ class Model:
                 pw = ((w - 1) // pvalue + 1) * pvalue
                 padding = (0, pw - w, 0, ph - h)
                 
-                print (f'\n\nph {ph}')
-                print (f'pw{pw}\n\n')
-
                 if flow is None:
                     x = torch.cat((img0, img1, f0, f1, timestep), 1)
                     x = torch.nn.functional.pad(x, padding, mode='replicate')
