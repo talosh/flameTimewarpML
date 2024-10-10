@@ -335,11 +335,8 @@ class Model:
                 # step training
 
                 # 2 steps
-                scale[0] = 1
-                '''
                 scale[0] = scale[2]
-                scale[1] = scale[3]
-                '''
+                scale[1] = 1
 
                 pvalue = scale[0] * self.maxdepth
                 _, _, h, w = img0.shape
@@ -368,41 +365,43 @@ class Model:
                 conf_list[0] = torch.sigmoid(conf.clone())
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
-                # '''
-                # step training
-                flow_list[3] = flow_list[0]
-                mask_list[3] = mask_list[0]
-                conf_list[3] = conf_list[0]
-                merged[3] = merged[0]
-
-                return flow_list, mask_list, conf_list, merged
-                # '''
-
                 # refine step 1
                 pvalue = scale[1] * self.maxdepth
                 ph = ((h - 1) // pvalue + 1) * pvalue
                 pw = ((w - 1) // pvalue + 1) * pvalue
                 padding = (0, pw - w, 0, ph - h)
 
-                flow_d, mask, conf = self.block1(
+                flow_d, mask, conf_d = self.block1(
                     torch.nn.functional.pad(img0, padding), 
                     torch.nn.functional.pad(img1, padding),
                     torch.nn.functional.pad(f0, padding),
                     torch.nn.functional.pad(f1, padding),
                     torch.nn.functional.pad(timestep, padding, mode='replicate'),
                     torch.nn.functional.pad(mask, padding),
+                    torch.nn.functional.pad(conf, padding),
                     torch.nn.functional.pad(flow, padding), 
                     scale=scale[1]
                 )
 
                 flow_d = flow_d[:, :, :h, :w]
                 mask = mask[:, :, :h, :w]
-                conf = conf[:, :, :h, :w]
-                flow = flow + flow_d
+                conf = conf + conf_d[:, :, :h, :w]
+                flow = flow + flow_d[:, :, :h, :w]
 
                 flow_list[1] = flow.clone()
                 mask_list[1] = torch.sigmoid(mask.clone())
+                conf_list[1] = torch.sigmoid(conf.clone())
                 merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
+
+                # '''
+                # step training
+                flow_list[3] = flow_list[1]
+                mask_list[3] = mask_list[1]
+                conf_list[3] = conf_list[1]
+                merged[3] = merged[1]
+
+                return flow_list, mask_list, conf_list, merged
+                # '''
 
                 # refine step 2
                 pvalue = scale[2] * self.maxdepth
