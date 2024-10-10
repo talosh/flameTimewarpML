@@ -2470,7 +2470,7 @@ def main():
                 for b_indx in range(n):
                     write_eval_image_queue.put(
                     {
-                        'preview_folder': max_preview_folder,
+                        'preview_folder': min_preview_folder,
                         'sample_source1': item_data['img0_orig'][b_indx].transpose(1, 2, 0),
                         'sample_source1_name': f'{index:04}_{b_indx:02}_incomng.exr',
                         'sample_source2': item_data['img2_orig'][b_indx].transpose(1, 2, 0),
