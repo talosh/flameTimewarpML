@@ -262,6 +262,7 @@ class Model:
                     torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
                     torch.nn.Conv2d(c, 6, kernel_size=1, stride=1, padding=0, bias=True),
                 )
+                self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
 
@@ -324,7 +325,6 @@ class Model:
                 self.block3 = FlownetShallow(28, c=48)
                 self.block4 = FlownetShallow(28, c=32)
                 self.encode = Head()
-                self.maxdepth = 8
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
                 f0 = self.encode(img0)
