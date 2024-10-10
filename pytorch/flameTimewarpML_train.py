@@ -660,9 +660,9 @@ def get_dataset(
                     description = self.train_descriptions[index]
                     try:
                         train_data = {}
-                        train_data['start'] = read_openexr_file(description['start'])['image_data']
-                        train_data['gt'] = read_openexr_file(description['gt'])['image_data']
-                        train_data['end'] = read_openexr_file(description['end'])['image_data']
+                        train_data['start'] = read_image_file(description['start'])['image_data']
+                        train_data['gt'] = read_image_file(description['gt'])['image_data']
+                        train_data['end'] = read_image_file(description['end'])['image_data']
                         train_data['ratio'] = description['ratio']
                         train_data['h'] = description['h']
                         train_data['w'] = description['w']
@@ -2446,9 +2446,9 @@ def main():
                 for ev_item_index, description in enumerate(descriptions):
                     try:
                         desc_data = dict(description)
-                        eval_img0 = read_openexr_file(description['start'])['image_data']
-                        eval_img1 = read_openexr_file(description['gt'])['image_data']
-                        eval_img2 = read_openexr_file(description['end'])['image_data']
+                        eval_img0 = read_image_file(description['start'])['image_data']
+                        eval_img1 = read_image_file(description['gt'])['image_data']
+                        eval_img2 = read_image_file(description['end'])['image_data']
 
                         desc_data['eval_img0'] = eval_img0
                         desc_data['eval_img1'] = eval_img1
