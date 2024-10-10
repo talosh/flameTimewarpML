@@ -332,7 +332,6 @@ class Model:
                 flow_list = [None] * 4
                 mask_list = [None] * 4
                 conf_list = [None] * 4
-
                 merged = [None] * 4
 
                 # scale = [5, 3, 2, 1] if scale == [8, 4, 2, 1] else scale
