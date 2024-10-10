@@ -2109,7 +2109,7 @@ def main():
         data_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        img0, img1, img2, ratio, idx = read_image_queue.get()
+        img0, img1, img2, ratio, idx, current_desc = read_image_queue.get()
 
         img0 = img0.to(device, non_blocking = True)
         img1 = img1.to(device, non_blocking = True)
