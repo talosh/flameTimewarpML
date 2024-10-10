@@ -2512,13 +2512,13 @@ def main():
                         'sample_output_mask': item_data['mask'][b_indx].transpose(1, 2, 0),
                         'sample_output_mask_name': f'{index:04}_{b_indx:02}_output_mask.exr'
                     }
-                )
-                json_filename = os.path.join(
-                    max_preview_folder,
-                    f'{index:04}_{b_indx:02}.json'
-                )
-                with open(json_filename, 'w', encoding='utf-8') as json_file:
-                    json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
+                    )
+                    json_filename = os.path.join(
+                        max_preview_folder,
+                        f'{index:04}_{b_indx:02}.json'
+                    )
+                    with open(json_filename, 'w', encoding='utf-8') as json_file:
+                        json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
             del index, item
 
         if (args.preview_min > 0) and (step % args.preview_maxmin_steps) == 1:
@@ -2546,13 +2546,13 @@ def main():
                         'sample_output_mask': item_data['mask'][b_indx].transpose(1, 2, 0),
                         'sample_output_mask_name': f'{index:04}_{b_indx:02}_output_mask.exr'
                     }
-                )
-                json_filename = os.path.join(
-                    min_preview_folder,
-                    f'{index:04}_{b_indx:02}.json'
-                )
-                with open(json_filename, 'w', encoding='utf-8') as json_file:
-                    json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
+                    )
+                    json_filename = os.path.join(
+                        min_preview_folder,
+                        f'{index:04}_{b_indx:02}.json'
+                    )
+                    with open(json_filename, 'w', encoding='utf-8') as json_file:
+                        json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
             del index, item
 
         if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
