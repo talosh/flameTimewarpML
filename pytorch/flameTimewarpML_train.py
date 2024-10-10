@@ -2199,6 +2199,7 @@ def main():
         # output = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
         
         output = merged[3]
+        output_restored = restore_normalized_values(output)
         # warped_img0 = warp(img0, flow_list[3][:, :2])
         # warped_img2 = warp(img2, flow_list[3][:, 2:4])
         # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
@@ -2241,13 +2242,13 @@ def main():
 
         # print (f'Out: {output.shape}, Orig: {img1_orig.shape}')
 
-        loss_LPIPS_ = loss_fn_alex(restore_normalized_values(output) * 2 - 1, img1_orig * 2 - 1)
+        loss_LPIPS_ = loss_fn_alex(output_restored * 2 - 1, img1_orig * 2 - 1)
         # loss = (criterion_l1(x1_output, x1_orig)  + 0.1 * (float(torch.mean(loss_LPIPS_).item()) ** 1.1)) / 2
 
         lpips_weight = 0.5
         loss = (1 - lpips_weight ) * criterion_l1(x1_output, x1_orig) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS_).item())
 
-        loss_l1 = criterion_l1(restore_normalized_values(output), img1_orig)
+        loss_l1 = criterion_l1(output_restored, img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
 
         epoch_loss.append(float(loss_l1.item()))
@@ -2265,7 +2266,7 @@ def main():
                 'img1_orig': img1_orig.numpy(force=True).copy(),
                 'img1_orig': img1_orig.numpy(force=True).copy(),
                 'mask': mask.numpy(force=True).copy(),
-                'output': restore_normalized_values(output).numpy(force=True).copy(),
+                'output': output_restored.numpy(force=True).copy(),
                 }
              )
         min_values.add(
@@ -2336,7 +2337,7 @@ def main():
             rgb_source1 = img0_orig
             rgb_source2 = img2_orig
             rgb_target = img1_orig
-            rgb_output = restore_normalized_values(output)
+            rgb_output = output_restored
             rgb_output_mask = mask.repeat_interleave(3, dim=1)
             # rgb_refine = refine_list[0] + refine_list[1] + refine_list[2] + refine_list[3]
             # rgb_refine = (rgb_refine + 1) / 2
