@@ -345,10 +345,10 @@ class Model:
                 padding = (0, pw - w, 0, ph - h)
 
                 flow, mask, conf = self.block0(
-                    torch.nn.functional.pad(img0, padding), 
-                    torch.nn.functional.pad(img1, padding), 
-                    torch.nn.functional.pad(f0, padding), 
-                    torch.nn.functional.pad(f1, padding), 
+                    torch.nn.functional.pad(img0, padding, mode='replicate'), 
+                    torch.nn.functional.pad(img1, padding, mode='replicate'), 
+                    torch.nn.functional.pad(f0, padding, mode='replicate'), 
+                    torch.nn.functional.pad(f1, padding, mode='replicate'), 
                     torch.nn.functional.pad(timestep, padding, mode='replicate'), 
                     None, 
                     None,
@@ -372,14 +372,14 @@ class Model:
                 padding = (0, pw - w, 0, ph - h)
 
                 flow_d, mask, conf_d = self.block1(
-                    torch.nn.functional.pad(img0, padding), 
-                    torch.nn.functional.pad(img1, padding),
-                    torch.nn.functional.pad(f0, padding),
-                    torch.nn.functional.pad(f1, padding),
+                    torch.nn.functional.pad(img0, padding, mode='replicate'), 
+                    torch.nn.functional.pad(img1, padding, mode='replicate'),
+                    torch.nn.functional.pad(f0, padding, mode='replicate'),
+                    torch.nn.functional.pad(f1, padding, mode='replicate'),
                     torch.nn.functional.pad(timestep, padding, mode='replicate'),
-                    torch.nn.functional.pad(mask, padding),
-                    torch.nn.functional.pad(conf, padding),
-                    torch.nn.functional.pad(flow, padding), 
+                    torch.nn.functional.pad(mask, padding, mode='replicate'),
+                    torch.nn.functional.pad(conf, padding, mode='replicate'),
+                    torch.nn.functional.pad(flow, padding, mode='replicate'), 
                     scale=scale[1]
                 )
 
