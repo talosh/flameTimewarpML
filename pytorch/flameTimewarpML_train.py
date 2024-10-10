@@ -2264,7 +2264,7 @@ def main():
                 'img0_orig': img0_orig.numpy(force=True).copy(),
                 'img1_orig': img1_orig.numpy(force=True).copy(),
                 'img2_orig': img2_orig.numpy(force=True).copy(),
-                'mask': mask.numpy(force=True).copy(),
+                'mask': mask.repeat_interleave(3, dim=1).numpy(force=True).copy(),
                 'output': output_restored.numpy(force=True).copy(),
         }
 
@@ -2462,9 +2462,28 @@ def main():
             if not os.path.isdir(min_preview_folder):
                 os.makedirs(min_preview_folder)
             min_loss_values = min_values.get_values()
-            for item in min_loss_values:
-                pass
-            del item
+            index = 0
+            item = None
+            for index, item in enumerate(min_loss_values):
+                item_data = item[1]
+                n, c, h, w = item_data['img0_orig'].shape
+                for b_indx in range(n):
+                    write_eval_image_queue.put(
+                    {
+                        'preview_folder': max_preview_folder,
+                        'sample_source1': item_data['img0_orig'][b_indx].transpose(1, 2, 0),
+                        'sample_source1_name': f'{index:04}_{b_indx:02}_incomng.exr',
+                        'sample_source2': item_data['img2_orig'][b_indx].transpose(1, 2, 0),
+                        'sample_source2_name': f'{index:04}_{b_indx:02}_outgoing.exr',
+                        'sample_target': item_data['img1_orig'][b_indx].transpose(1, 2, 0),
+                        'sample_target_name': f'{index:04}_{b_indx:02}_target.exr',
+                        'sample_output': item_data['output'][b_indx].transpose(1, 2, 0),
+                        'sample_output_name': f'{index:04}_{b_indx:02}_output.exr',
+                        'sample_output_mask': item_data['mask'][b_indx].transpose(1, 2, 0),
+                        'sample_output_mask_name': f'{index:04}_{b_indx:02}_output_mask.exr'
+                    }
+                )
+            del index, item
 
         if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
             if not args.eval_first:
