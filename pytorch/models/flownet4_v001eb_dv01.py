@@ -302,12 +302,13 @@ class Model:
                     x = torch.cat((x, flow), 1)
 
                 feat = self.conv0(x)
+                feat = self.convblock(feat)
+
                 feat_deep = self.conv1(feat)
                 feat_deep = torch.cat([self.maxpool2(feat_deep), self.avgpool2(feat_deep)], dim=1)
                 feat_deep = self.conv2(feat_deep)
                 feat_deep = self.attn_deep(feat_deep)
                 feat_deep = self.convblock_deep(feat)
-                feat = self.convblock(feat)
 
                 feat = torch.cat((feat_deep, feat), 1)
                 feat = self.mix(feat)
