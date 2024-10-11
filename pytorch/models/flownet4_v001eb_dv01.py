@@ -221,7 +221,6 @@ class Model:
                     conv(c, c, 3, 2, 1),
                     )
                 self.conv1 = conv(c, c, 3, 2, 1)
-                self.attn_deep = CBAM(c)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
@@ -288,7 +287,6 @@ class Model:
 
                 feat = self.conv0(x)
                 feat_deep = self.conv1(feat)
-                feat_deep = self.attn_deep(feat_deep)
 
                 feat = self.convblock(feat)
                 feat_deep = self.convblock_deep(feat_deep)
