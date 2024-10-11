@@ -1952,10 +1952,10 @@ def main():
             param.requires_grad = False        
         for param in flownet.module.block1.parameters():
             param.requires_grad = False
-        '''
-
         for param in flownet.module.block2.parameters():
             param.requires_grad = False
+        
+        '''
         for param in flownet.module.block3.parameters():
             param.requires_grad = False
         for param in flownet.module.block4.parameters():
@@ -2075,6 +2075,11 @@ def main():
         print (f'flownet.module.block1.attn.channel_offset {flownet.module.block1.attn.channel_offset.data}')
         print (f'flownet.module.block1.attn.spatial_scale {flownet.module.block1.attn.spatial_scale.data}')
         print (f'flownet.module.block1.attn.spatial_offset {flownet.module.block1.attn.spatial_offset.data}')
+
+        print (f'flownet.module.block2.attn.channel_scale {flownet.module.block2.attn.channel_scale.data}')
+        print (f'flownet.module.block2.attn.channel_offset {flownet.module.block2.attn.channel_offset.data}')
+        print (f'flownet.module.block2.attn.spatial_scale {flownet.module.block2.attn.spatial_scale.data}')
+        print (f'flownet.module.block2.attn.spatial_offset {flownet.module.block2.attn.spatial_offset.data}')
 
     print('\n\n')
 
