@@ -145,8 +145,8 @@ class Model:
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 self.attn = CBAM(32, channel_scale=-0.4, spatial_scale=-0.4)
-                self.maxpool2 = torch.nn.MaxPool(2)
-                self.avgpool2 = torch.nn.AvgPool(2)
+                self.maxpool2 = torch.nn.MaxPool2d(2)
+                self.avgpool2 = torch.nn.AvgPool2d(2)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x):
@@ -233,8 +233,8 @@ class Model:
                     conv(c, c, 3, 2, 1),
                     )
                 self.conv1 = conv(c, c, 3, 1, 1)
-                self.maxpool2 = torch.nn.MaxPool(2)
-                self.avgpool2 = torch.nn.AvgPool(2)
+                self.maxpool2 = torch.nn.MaxPool2d(2)
+                self.avgpool2 = torch.nn.AvgPool2d(2)
                 self.conv2 = conv(c*2, c, 3, 1, 1)
                 self.attn_deep = CBAM(c)
                 self.convblock = torch.nn.Sequential(
