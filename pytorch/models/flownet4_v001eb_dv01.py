@@ -86,7 +86,7 @@ class Model:
                 return out
 
         class SpatialAttention(Module):
-            def __init__(self, kernel_size=7):
+            def __init__(self, kernel_size=3):
                 super(SpatialAttention, self).__init__()
                 padding = kernel_size // 2  # Ensure same spatial dimensions
                 self.conv0 = torch.nn.Conv2d(2, 2, kernel_size, padding=padding, padding_mode='reflect', bias=False)
