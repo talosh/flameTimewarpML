@@ -341,17 +341,17 @@ class Model:
                     scale=scale[0]
                     )
                 
-                # flow_list[0] = flow.clone()
-                # mask_list[0] = torch.sigmoid(mask.clone())
-                # conf_list[0] = torch.sigmoid(conf.clone())
-                # merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
+                flow_list[0] = flow.clone()
+                mask_list[0] = torch.sigmoid(mask.clone())
+                conf_list[0] = torch.sigmoid(conf.clone())
+                merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
                 # '''
                 # step training
-                flow_list[4] = flow.clone()
-                mask_list[4] = torch.sigmoid(mask.clone())
-                conf_list[4] = torch.sigmoid(conf.clone())
-                merged[4] = warp(img0, flow[:, :2]) * mask + warp(img1, flow[:, 2:4]) * (1 - mask)
+                flow_list[4] = flow_list[0]
+                mask_list[4] = mask_list[0]
+                conf_list[4] = conf_list[0]
+                merged[4] = merged[0]
 
                 return flow_list, mask_list, conf_list, merged
                 # '''
