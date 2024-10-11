@@ -287,10 +287,13 @@ class Model:
                     x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, flow), 1)
                     x = torch.nn.functional.pad(x, padding)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    x_deep = x
 
+                    '''
                     x_deep = torch.cat((img0, img1, f0, f1, timestep, conf, flow), 1)
                     x_deep = torch.nn.functional.pad(x_deep, padding)
                     x_deep = torch.nn.functional.interpolate(x_deep, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    '''
 
 
                 feat = self.conv0(x)
@@ -316,8 +319,8 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = Flownet(23, c=192, cd=192)
-                self.block1 = Flownet(28, c=96, cd=128)
-                self.block2 = Flownet(28, c=64, cd=96)
+                self.block1 = Flownet(28, c=96, cd=96)
+                self.block2 = Flownet(28, c=64, cd=64)
                 self.block3 = FlownetShallow(28, c=48)
                 self.block4 = FlownetShallow(28, c=32)
                 self.encode = Head()
