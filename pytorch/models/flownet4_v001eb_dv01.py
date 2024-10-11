@@ -286,9 +286,8 @@ class Model:
                     x = torch.cat((x, flow), 1)
 
                 feat = self.conv0(x)
-                feat_deep = self.conv1(feat)
-
                 feat = self.convblock(feat)
+                feat_deep = self.conv1(feat)
                 feat_deep = self.convblock_deep(feat_deep)
 
                 feat = torch.cat((feat_deep, feat), 1)
