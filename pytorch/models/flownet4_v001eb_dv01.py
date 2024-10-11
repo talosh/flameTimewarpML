@@ -36,6 +36,16 @@ class Model:
                     padding_mode='reflect',
                     bias=True
                 ),
+                torch.nn.Conv2d(
+                    out_planes, 
+                    out_planes, 
+                    kernel_size=kernel_size, 
+                    stride=1,
+                    padding=1, 
+                    dilation=1,
+                    padding_mode='reflect',
+                    bias=True
+                ),
                 torch.nn.LeakyReLU(0.2, True)
             )
 
