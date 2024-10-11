@@ -408,6 +408,7 @@ class Model:
                     f1,
                     timestep,
                     mask,
+                    flow,
                     scale=scale[3]
                 )
 
@@ -427,6 +428,7 @@ class Model:
                     f1,
                     timestep,
                     mask,
+                    flow,
                     scale=1
                 )
 
