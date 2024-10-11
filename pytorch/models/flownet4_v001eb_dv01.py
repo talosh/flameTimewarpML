@@ -328,7 +328,8 @@ class Model:
                 scale = [8, 5, 3, 2] if scale == [8, 4, 2, 1] else scale                
                 
                 # step training
-                scale[0] = 1
+                scale[0] = scale[3]
+                scale[1] = 1
 
                 flow, mask, conf = self.block0(
                     img0, 
@@ -346,16 +347,6 @@ class Model:
                 conf_list[0] = torch.sigmoid(conf.clone())
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
-                # '''
-                # step training
-                flow_list[4] = flow_list[0]
-                mask_list[4] = mask_list[0]
-                conf_list[4] = conf_list[0]
-                merged[4] = merged[0]
-
-                return flow_list, mask_list, conf_list, merged
-                # '''
-
                 # refine step 1
                 flow_d, mask, conf_d = self.block1(
                     img0, 
@@ -371,10 +362,20 @@ class Model:
                 conf = conf + conf_d
                 flow = flow + flow_d
 
-                # flow_list[1] = flow.clone()
-                # mask_list[1] = torch.sigmoid(mask.clone())
-                # conf_list[1] = torch.sigmoid(conf.clone())
-                # merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
+                flow_list[1] = flow.clone()
+                mask_list[1] = torch.sigmoid(mask.clone())
+                conf_list[1] = torch.sigmoid(conf.clone())
+                merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
+
+                # '''
+                # step training
+                flow_list[4] = flow_list[1]
+                mask_list[4] = mask_list[1]
+                conf_list[4] = conf_list[1]
+                merged[4] = merged[1]
+
+                return flow_list, mask_list, conf_list, merged
+                # '''
 
                 # refine step 2
                 flow_d, mask, conf_d = self.block2(
