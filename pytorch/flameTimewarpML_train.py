@@ -2289,8 +2289,8 @@ def main():
                 'img0_orig': img0_orig.numpy(force=True).copy(),
                 'img1_orig': img1_orig.numpy(force=True).copy(),
                 'img2_orig': img2_orig.numpy(force=True).copy(),
-                'diff': diff_matte.numpy(force=True).copy(),
-                'conf': conf.numpy(force=True).copy(),
+                'diff': diff_matte.repeat_interleave(3, dim=1).numpy(force=True).copy(),
+                'conf': conf.repeat_interleave(3, dim=1).numpy(force=True).copy(),
                 'mask': mask.repeat_interleave(3, dim=1).numpy(force=True).copy(),
                 'output': output_restored.numpy(force=True).copy(),
         }
