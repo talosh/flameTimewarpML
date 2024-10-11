@@ -271,7 +271,7 @@ class Model:
                     conv(in_planes, c, 3, 2, 1),
                     conv(c, c, 3, 2, 1),
                     )
-                self.conv1 = conv(c, c, 3, 1, 1)
+                self.conv1 = conv(c, c, 3, 2, 1)
                 self.maxpool2 = torch.nn.MaxPool2d(2)
                 self.avgpool2 = torch.nn.AvgPool2d(2)
                 self.conv2 = conv(c*2, c, 3, 1, 1)
@@ -342,9 +342,11 @@ class Model:
 
                 feat = self.conv0(x)
                 feat_deep = self.conv1(feat)
+                '''
                 feat_deep = torch.cat([self.maxpool2(feat_deep), self.avgpool2(feat_deep)], dim=1)
                 feat_deep = self.conv2(feat_deep)
                 feat_deep = self.attn_deep(feat_deep)
+                '''
 
                 feat = self.convblock(feat)
                 feat_deep = self.convblock_deep(feat_deep)
