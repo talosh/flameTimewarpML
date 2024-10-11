@@ -328,9 +328,11 @@ class Model:
                 scale = [8, 5, 3, 2] if scale == [8, 4, 2, 1] else scale                
                 
                 # step training
+                '''
                 scale[0] = scale[2]
                 scale[1] = scale[3]
                 scale[2] = 1
+                '''
 
                 flow, mask, conf = self.block0(
                     img0, 
@@ -344,8 +346,8 @@ class Model:
                     )
                 
                 flow_list[0] = flow.clone()
-                mask_list[0] = torch.sigmoid(mask.clone())
-                conf_list[0] = torch.sigmoid(conf.clone())
+                mask_list[0] = torch.sigmoid(mask)
+                conf_list[0] = torch.sigmoid(conf)
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
                 # refine step 1
@@ -364,8 +366,8 @@ class Model:
                 flow = flow + flow_d
 
                 flow_list[1] = flow.clone()
-                mask_list[1] = torch.sigmoid(mask.clone())
-                conf_list[1] = torch.sigmoid(conf.clone())
+                mask_list[1] = torch.sigmoid(mask)
+                conf_list[1] = torch.sigmoid(conf)
                 merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
                 # refine step 2
@@ -384,11 +386,11 @@ class Model:
                 flow = flow + flow_d
 
                 flow_list[2] = flow.clone()
-                mask_list[2] = torch.sigmoid(mask.clone())
-                conf_list[2] = torch.sigmoid(conf.clone())
+                mask_list[2] = torch.sigmoid(mask)
+                conf_list[2] = torch.sigmoid(conf)
                 merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
-                # '''
+                '''
                 # step training
                 flow_list[4] = flow_list[2]
                 mask_list[4] = mask_list[2]
@@ -396,7 +398,7 @@ class Model:
                 merged[4] = merged[2]
 
                 return flow_list, mask_list, conf_list, merged
-                # '''
+                '''
 
                 # refine step 3
                 flow_d, mask, conf_d = self.block3(
@@ -412,10 +414,10 @@ class Model:
                 conf = conf + conf_d
                 flow = flow + flow_d
 
-                # flow_list[3] = flow
-                # mask_list[3] = torch.sigmoid(mask)
-                # conf_list[3] = torch.sigmoid(conf.clone())
-                # merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
+                flow_list[3] = flow
+                mask_list[3] = torch.sigmoid(mask)
+                conf_list[3] = torch.sigmoid(conf)
+                merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 # refine step 4
                 flow_d, mask, conf_d = self.block4(
@@ -433,8 +435,8 @@ class Model:
 
                 flow_list[4] = flow
                 mask_list[4] = torch.sigmoid(mask)
-                conf_list[4] = torch.sigmoid(conf.clone())
-                merged[4] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
+                conf_list[4] = torch.sigmoid(conf)
+                merged[4] = warp(img0, flow[:, :2]) * mask_list[4] + warp(img1, flow[:, 2:4]) * (1 - mask_list[4])
 
                 return flow_list, mask_list, conf_list, merged
 
