@@ -50,7 +50,7 @@ class Model:
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
         class ChannelAttention(Module):
-            def __init__(self, c, reduction_ratio=16):
+            def __init__(self, c, reduction_ratio=8):
                 super(ChannelAttention, self).__init__()
                 self.avg_pool = torch.nn.AdaptiveAvgPool2d(1)  # Global average pooling
                 self.max_pool = torch.nn.AdaptiveMaxPool2d(1)  # Global max pooling
@@ -108,7 +108,7 @@ class Model:
                 return out
 
         class CBAM(Module):
-            def __init__(self, c, reduction_ratio=16, spatial_kernel_size=3, channel_scale=0.2, spatial_scale=0.2):
+            def __init__(self, c, reduction_ratio=8, spatial_kernel_size=3, channel_scale=0.2, spatial_scale=0.2):
                 super(CBAM, self).__init__()
                 self.channel_attention = ChannelAttention(c, reduction_ratio)
                 self.spatial_attention = SpatialAttention(spatial_kernel_size)
