@@ -2215,11 +2215,11 @@ def main():
             iterations = args.iterations
             )
         
-        # flow0 = flow_list[-1][:, :2]
-        # flow1 = flow_list[-1][:, 2:4]
+        flow0 = flow_list[-1][:, :2]
+        flow1 = flow_list[-1][:, 2:4]
         mask = mask_list[-1]
         conf = conf_list[-1]
-        # output = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
+        output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
         
         output = merged[-1]
         output_restored = restore_normalized_values(output)
@@ -2266,14 +2266,14 @@ def main():
 
         # print (f'Out: {output.shape}, Orig: {img1_orig.shape}')
 
-        loss_LPIPS_ = loss_fn_alex(output_restored * 2 - 1, img1_orig * 2 - 1)
+        loss_LPIPS_ = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
         loss_conf = criterion_l1(conf, diff_matte)
         # loss = (criterion_l1(x1_output, x1_orig)  + 0.1 * (float(torch.mean(loss_LPIPS_).item()) ** 1.1)) / 2
 
         lpips_weight = 0.5
         loss = (1 - lpips_weight ) * criterion_l1(x1_output, x1_orig) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS_).item()) + 0.01 * loss_conf
 
-        loss_l1 = criterion_l1(output_restored, img1_orig)
+        loss_l1 = criterion_l1(output_clean, img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
 
         epoch_loss.append(float(loss_l1.item()))
