@@ -7,8 +7,7 @@
 # First two refine steps are Deep modules
 # Two more refine steps are standart modules with no flow given
 # Channles are 192, 96, 64 for deep and 48, 32 for standart
-# Head feature encoder changed to accomodate max + avg pooling and attention
-# Conv module has second conv layer before ReLUo
+# Head feature encoder added attention block
 
 class Model:
 
@@ -24,32 +23,6 @@ class Model:
         Module = torch.nn.Module
         backwarp_tenGrid = {}
         
-        '''
-        def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
-            return torch.nn.Sequential(
-                torch.nn.Conv2d(
-                    in_planes, 
-                    out_planes, 
-                    kernel_size=kernel_size, 
-                    stride=stride,
-                    padding=padding, 
-                    dilation=dilation,
-                    padding_mode='reflect',
-                    bias=True
-                ),
-                torch.nn.Conv2d(
-                    out_planes, 
-                    out_planes, 
-                    kernel_size=kernel_size, 
-                    stride=1,
-                    padding=1, 
-                    dilation=1,
-                    padding_mode='reflect',
-                    bias=True
-                ),
-                torch.nn.LeakyReLU(0.2, True)
-            )
-        '''
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
@@ -155,32 +128,6 @@ class Model:
 
                 return x
 
-        '''
-        class Head(Module):
-            def __init__(self):
-                super(Head, self).__init__()
-                self.cnn0 = torch.nn.Conv2d(3, 32, 3, 1, 1)
-                self.cnn1 = torch.nn.Conv2d(64, 32, 3, 1, 1)
-                self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-                self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
-                self.attn = CBAM(32, channel_scale=-0.4, spatial_scale=-0.4)
-                self.maxpool2 = torch.nn.MaxPool2d(2)
-                self.avgpool2 = torch.nn.AvgPool2d(2)
-                self.relu = torch.nn.LeakyReLU(0.2, True)
-
-            def forward(self, x):
-                x = self.cnn0(x)
-                x = self.relu(x)
-                x = torch.cat([self.maxpool2(x), self.avgpool2(x)], dim=1)
-                x = self.cnn1(x)
-                x = self.relu(x)
-                x = self.cnn2(x)
-                x = self.relu(x)
-                x = self.attn(x)
-                x = self.cnn3(x)
-                return x
-        '''
-
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
@@ -274,9 +221,6 @@ class Model:
                     conv(c, c, 3, 2, 1),
                     )
                 self.conv1 = conv(c, c, 3, 2, 1)
-                self.maxpool2 = torch.nn.MaxPool2d(2)
-                self.avgpool2 = torch.nn.AvgPool2d(2)
-                self.conv2 = conv(c*2, c, 3, 1, 1)
                 self.attn_deep = CBAM(c)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
@@ -344,11 +288,7 @@ class Model:
 
                 feat = self.conv0(x)
                 feat_deep = self.conv1(feat)
-                '''
-                feat_deep = torch.cat([self.maxpool2(feat_deep), self.avgpool2(feat_deep)], dim=1)
-                feat_deep = self.conv2(feat_deep)
                 feat_deep = self.attn_deep(feat_deep)
-                '''
 
                 feat = self.convblock(feat)
                 feat_deep = self.convblock_deep(feat_deep)
