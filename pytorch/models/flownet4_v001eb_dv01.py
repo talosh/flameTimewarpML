@@ -23,7 +23,8 @@ class Model:
             import torch
         Module = torch.nn.Module
         backwarp_tenGrid = {}
-
+        
+        '''
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
                 torch.nn.Conv2d(
@@ -48,6 +49,23 @@ class Model:
                 ),
                 torch.nn.LeakyReLU(0.2, True)
             )
+        '''
+
+        def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
+            return torch.nn.Sequential(
+                torch.nn.Conv2d(
+                    in_planes, 
+                    out_planes, 
+                    kernel_size=kernel_size, 
+                    stride=stride,
+                    padding=padding, 
+                    dilation=dilation,
+                    padding_mode='reflect',
+                    bias=True
+                ),
+                torch.nn.LeakyReLU(0.2, True)
+            )
+
 
         def warp(tenInput, tenFlow):
             k = (str(tenFlow.device), str(tenFlow.size()))
