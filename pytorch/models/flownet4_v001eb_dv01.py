@@ -155,7 +155,6 @@ class Model:
 
                 return x
 
-        '''
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
@@ -179,8 +178,8 @@ class Model:
                 x = self.attn(x)
                 x = self.cnn3(x)
                 return x
-        '''
 
+        '''
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
@@ -199,6 +198,7 @@ class Model:
                 x = self.relu(x)
                 x = self.cnn3(x)
                 return x
+        '''
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
