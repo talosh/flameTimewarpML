@@ -310,6 +310,10 @@ class Model:
                 feat_deep = self.attn_deep(feat_deep)
                 feat_deep = self.convblock_deep(feat)
 
+                print('\n\n')
+                print (f'feat {feat.shape}')
+                print (f'feat_deep {feat_deep.shape}')
+
                 feat = torch.cat((feat_deep, feat), 1)
                 feat = self.mix(feat)
                 feat = self.attn(feat)
