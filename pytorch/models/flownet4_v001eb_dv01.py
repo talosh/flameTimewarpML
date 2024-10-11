@@ -22,7 +22,6 @@ class Model:
             import torch
         Module = torch.nn.Module
         backwarp_tenGrid = {}
-        
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
@@ -38,7 +37,6 @@ class Model:
                 ),
                 torch.nn.LeakyReLU(0.2, True)
             )
-
 
         def warp(tenInput, tenFlow):
             k = (str(tenFlow.device), str(tenFlow.size()))
@@ -135,7 +133,7 @@ class Model:
                 self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
-                self.attn = CBAM(32, channel_scale=-0.4, spatial_scale=-0.4)
+                self.attn = CBAM(32, channel_scale=-0.2, spatial_scale=-0.2)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x):
