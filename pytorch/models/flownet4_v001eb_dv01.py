@@ -102,7 +102,7 @@ class Model:
                 return out
 
         class CBAM(Module):
-            def __init__(self, c, reduction_ratio=16, spatial_kernel_size=9):
+            def __init__(self, c, reduction_ratio=16, spatial_kernel_size=7):
                 super(CBAM, self).__init__()
                 self.channel_attention = ChannelAttention(c, reduction_ratio)
                 self.spatial_attention = SpatialAttention(spatial_kernel_size)
