@@ -155,6 +155,7 @@ class Model:
 
                 return x
 
+        '''
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
@@ -178,8 +179,8 @@ class Model:
                 x = self.attn(x)
                 x = self.cnn3(x)
                 return x
-
         '''
+
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
@@ -187,6 +188,7 @@ class Model:
                 self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
+                self.attn = CBAM(32, channel_scale=-0.4, spatial_scale=-0.4)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x):
@@ -196,9 +198,9 @@ class Model:
                 x = self.relu(x)
                 x = self.cnn2(x)
                 x = self.relu(x)
+                x = self.attn(x)
                 x = self.cnn3(x)
                 return x
-        '''
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
