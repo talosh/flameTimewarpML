@@ -2222,7 +2222,6 @@ def main():
         output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
         
         output = merged[-1]
-        output_restored = restore_normalized_values(output)
         # warped_img0 = warp(img0, flow_list[-1][:, :2])
         # warped_img2 = warp(img2, flow_list[-1][:, 2:4])
         # output = warped_img0 * mask_list[-1] + warped_img2 * (1 - mask_list[-1])
@@ -2292,7 +2291,7 @@ def main():
                 'diff': diff_matte.repeat_interleave(3, dim=1).numpy(force=True).copy(),
                 'conf': conf.repeat_interleave(3, dim=1).numpy(force=True).copy(),
                 'mask': mask.repeat_interleave(3, dim=1).numpy(force=True).copy(),
-                'output': output_restored.numpy(force=True).copy(),
+                'output': output_clean.numpy(force=True).copy(),
         }
 
         max_values.add(loss.item(), min_max_item)
@@ -2359,7 +2358,7 @@ def main():
             rgb_source1 = img0_orig
             rgb_source2 = img2_orig
             rgb_target = img1_orig
-            rgb_output = output_restored
+            rgb_output = output_clean
             rgb_output_mask = mask.repeat_interleave(3, dim=1)
             rgb_output_conf = conf.repeat_interleave(3, dim=1)
             rgb_output_diff = diff_matte.repeat_interleave(3, dim=1)
