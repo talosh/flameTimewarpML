@@ -111,7 +111,7 @@ class Model:
             def __init__(self, c, reduction_ratio=4, spatial_kernel_size=3, channel_scale=0.2, spatial_scale=0.2):
                 super(CBAM, self).__init__()
                 self.channel_attention = ChannelAttention(c, reduction_ratio)
-                self.spatial_attention = SpatialAttention(spatial_kernel_size)
+                self.spatial_attention = SpatialAttention(kernel_size = spatial_kernel_size)
                 self.channel_scale = torch.nn.Parameter(torch.full((1, 1, 1, 1), channel_scale), requires_grad=True)
                 self.channel_offset = torch.nn.Parameter(torch.full((1, 1, 1, 1), 1 - abs(channel_scale)/2), requires_grad=True)
                 self.spatial_scale = torch.nn.Parameter(torch.full((1, 1, 1, 1), spatial_scale), requires_grad=True)
