@@ -470,20 +470,6 @@ def get_dataset(
             self.folders_with_exr = self.find_folders_with_exr(data_root)
             print (f'found {len(self.folders_with_exr)} clip folders.')
             
-            '''
-            folders_with_descriptions = set()
-            folders_to_scan = set()
-            if not rescan:
-                print (f'scanning dataset description files...')
-                folders_with_descriptions, folders_to_scan = self.scan_dataset_descriptions(
-                    self.folders_with_exr,
-                    file_name='dataset_folder.json'
-                    )
-                print (f'found {len(folders_with_descriptions)} pre-processed folders, {len(folders_to_scan)} folders to scan.')
-            else:
-                folders_to_scan = self.folders_with_exr
-            '''
-
             self.train_descriptions = []
 
             for folder_index, folder_path in enumerate(sorted(self.folders_with_exr)):
@@ -555,32 +541,6 @@ def get_dataset(
 
             return directories_with_exr
 
-        def scan_dataset_descriptions(self, folders, file_name='dataset_folder.json'):
-            """
-            Scan folders for the presence of a specific file and categorize them.
-
-            Parameters:
-            folders (set): A set of folder paths to check.
-            file_name (str, optional): The name of the file to look for in each folder. Defaults to 'twml_dataset_folder.json'.
-
-            Returns:
-            tuple of (set, set): Two sets, the first contains folders where the file exists, the second contains folders where it does not.
-            """
-            folders_with_file = set()
-            folders_without_file = set()
-
-            for folder in folders:
-                # Construct the full path to the file
-                file_path = os.path.join(folder, file_name)
-
-                # Check if the file exists in the folder
-                if os.path.exists(file_path):
-                    folders_with_file.add(folder)
-                else:
-                    folders_without_file.add(folder)
-
-            return folders_with_file, folders_without_file
-
         def create_dataset_descriptions(self, folder_path, max_window=9):
 
             def sliding_window(lst, n):
@@ -621,14 +581,14 @@ def get_dataset(
                             fw_item = {
                                 'h': h,
                                 'w': w,
-                                # 'pre_start': exr_files[max(start_frame_index - 1, 0)],
                                 'start': start_frame,
                                 'gt': gt_frame,
                                 'end': end_frame,
-                                # 'after_end': exr_files[min(end_frame_index + 1, len(exr_files) - 1)],
                                 'ratio': 1 / (len(window) - 1) * (gt_frame_index + 1)
                             }
+                            descriptions.append(fw_item)
 
+                            '''
                             bw_item = {
                                 'h': h,
                                 'w': w,
@@ -639,9 +599,8 @@ def get_dataset(
                                 # 'after_end': exr_files[max(start_frame_index - 1, 0)],
                                 'ratio': 1 - (1 / (len(window) - 1) * (gt_frame_index + 1))
                             }
-
-                            descriptions.append(fw_item)
                             descriptions.append(bw_item)
+                            '''
 
             except Exception as e:
                 print (f'\nError scanning {folder_path}: {e}')
@@ -784,6 +743,12 @@ def get_dataset(
             ratio = train_data['ratio']
             description = train_data['description']
             images_idx = self.train_data_index
+
+            if random.uniform(0, 1) > 0.5:
+                np_img2 = train_data['start']
+                np_img0 = train_data['end']
+                ratio = 1 - ratio
+                description['inverted'] = True
 
             device = self.device
 
@@ -2256,19 +2221,19 @@ def main():
             iterations = args.iterations
             )
         
-        # flow0 = flow_list[3][:, :2]
-        # flow1 = flow_list[3][:, 2:4]
-        mask = mask_list[3]
-        conf = conf_list[3]
+        # flow0 = flow_list[-1][:, :2]
+        # flow1 = flow_list[-1][:, 2:4]
+        mask = mask_list[-1]
+        conf = conf_list[-1]
         # output = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
         
-        output = merged[3]
+        output = merged[-1]
         output_restored = restore_normalized_values(output)
-        # warped_img0 = warp(img0, flow_list[3][:, :2])
-        # warped_img2 = warp(img2, flow_list[3][:, 2:4])
-        # output = warped_img0 * mask_list[3] + warped_img2 * (1 - mask_list[3])
+        # warped_img0 = warp(img0, flow_list[-1][:, :2])
+        # warped_img2 = warp(img2, flow_list[-1][:, 2:4])
+        # output = warped_img0 * mask_list[-1] + warped_img2 * (1 - mask_list[-1])
 
-        # self.vgg(merged[3], gt).mean() - self.ss(merged[3], gt) * 0.1
+        # self.vgg(merged[-1], gt).mean() - self.ss(merged[-1], gt) * 0.1
 
         '''
         x8_output = torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
@@ -2289,7 +2254,7 @@ def main():
         x2_lpips = torch.mean(loss_fn_vgg.forward(x2_output, x2_orig)) - loss_fn_ssim(x2_output, x2_orig) * 0.1
         loss_x2 = pm_weight * criterion_huber(x2_output, x2_orig) + lpips_weight * x2_lpips
 
-        x1_output = merged[3]
+        x1_output = merged[-1]
         x1_orig = img1
         # x1_lpips = torch.mean(loss_fn_lpips.forward(x1_output * 2 - 1, x1_orig * 2 - 1))
         x1_lpips = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
@@ -2299,7 +2264,7 @@ def main():
         '''
 
 
-        x1_output = merged[3]
+        x1_output = merged[-1]
         x1_orig = img1
         diff_matte = diffmatte(x1_output, x1_orig)
 
@@ -2718,10 +2683,10 @@ def main():
                             )
                         
                         if args.eval_half:
-                            eval_flow_list[3] = eval_flow_list[3].float()
-                            eval_mask_list[3] = eval_mask_list[3].float()
+                            eval_flow_list[-1] = eval_flow_list[-1].float()
+                            eval_mask_list[-1] = eval_mask_list[-1].float()
                         
-                        eval_result = warp(eval_img0_orig, eval_flow_list[3][:, :2, :eh, :ew]) * eval_mask_list[3][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[3][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[3][:, :, :eh, :ew])
+                        eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :eh, :ew]) * eval_mask_list[-1][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[-1][:, :, :eh, :ew])
 
                         eval_loss_l1 = criterion_l1(eval_result, eval_img1)
                         eval_loss.append(float(eval_loss_l1.item()))
@@ -2729,22 +2694,28 @@ def main():
                         eval_loss_LPIPS_ = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
                         eval_lpips.append(float(torch.mean(eval_loss_LPIPS_).item()))
 
-                        eval_rgb_output_mask = eval_mask_list[3][:, :, :eh, :ew].repeat_interleave(3, dim=1)
+                        eval_rgb_output_mask = eval_mask_list[-1][:, :, :eh, :ew].repeat_interleave(3, dim=1)
+                        eval_rgb_conf = eval_conf_list[-1][:, :, :eh, :ew].repeat_interleave(3, dim=1)
+                        eval_rgb_diff = diffmatte(eval_result, eval_img1)[:, :, :eh, :ew].repeat_interleave(3, dim=1)
 
                         if args.eval_save_imgs:
                             write_eval_image_queue.put(
                                 {
                                     'preview_folder': eval_folder,
                                     'sample_source1': eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_source1_name': f'{ev_item_index:08}_incomng.exr',
+                                    'sample_source1_name': f'{ev_item_index:08}_A_incomng.exr',
                                     'sample_source2': eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_source2_name': f'{ev_item_index:08}_outgoing.exr',
+                                    'sample_source2_name': f'{ev_item_index:08}_B_outgoing.exr',
                                     'sample_target': eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_target_name': f'{ev_item_index:08}_target.exr',
+                                    'sample_target_name': f'{ev_item_index:08}_C_target.exr',
                                     'sample_output': eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_output_name': f'{ev_item_index:08}_output.exr',
+                                    'sample_output_name': f'{ev_item_index:08}_D_output.exr',
+                                    'sample_output_diff': eval_rgb_diff[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                    'sample_output_diff_name': f'{ev_item_index:08}_E_diff.exr',
+                                    'sample_output_conf': eval_rgb_conf[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
+                                    'sample_output_conf_name': f'{ev_item_index:08}_F_conf.exr',
                                     'sample_output_mask': eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_output_mask_name': f'{ev_item_index:08}_output_mask.exr'
+                                    'sample_output_mask_name': f'{ev_item_index:08}_G_mask.exr'
                                 }
                             )
 
