@@ -2147,7 +2147,7 @@ def main():
     min_values = MinNValues(n=args.preview_min if args.preview_min else 10)
 
     while True:
-        data_time = time.time() - time_stamp
+        # data_time = time.time() - time_stamp
         time_stamp = time.time()
 
         #  img0, img1, img2, ratio, idx, current_desc = read_image_queue.get()
@@ -2221,6 +2221,9 @@ def main():
         elif random.uniform(0, 1) < 0.33:
             training_scale = [1/2 if x == 1 else x / 2 for x in training_scale]
         '''
+
+        data_time = time.time() - time_stamp
+        time_stamp = time.time()
 
         flownet.train()
         
@@ -2300,22 +2303,6 @@ def main():
         # lpips_list.append(1.)
         psnr_list.append(float(psnr_torch(output, img1)))
 
-        min_max_item = {
-                'loss_l1': float(loss_l1.item()),
-                'lpips': float(torch.mean(loss_LPIPS_).item()),
-                'description': current_desc,
-                'img0_orig': img0_orig.numpy(force=True).copy(),
-                'img1_orig': img1_orig.numpy(force=True).copy(),
-                'img2_orig': img2_orig.numpy(force=True).copy(),
-                'diff': diff_matte.repeat_interleave(3, dim=1).numpy(force=True).copy(),
-                'conf': conf.repeat_interleave(3, dim=1).numpy(force=True).copy(),
-                'mask': mask.repeat_interleave(3, dim=1).numpy(force=True).copy(),
-                'output': output_clean.numpy(force=True).copy(),
-        }
-
-        max_values.add(loss.item(), min_max_item)
-        min_values.add(loss.item(), min_max_item)
-
         if len(epoch_loss) < 9999:
             smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
             window_min = min(epoch_loss)
@@ -2358,6 +2345,22 @@ def main():
 
         train_time = time.time() - time_stamp
         time_stamp = time.time()
+
+        min_max_item = {
+                'loss_l1': float(loss_l1.item()),
+                'lpips': float(torch.mean(loss_LPIPS_).item()),
+                'description': current_desc,
+                'img0_orig': img0_orig.numpy(force=True).copy(),
+                'img1_orig': img1_orig.numpy(force=True).copy(),
+                'img2_orig': img2_orig.numpy(force=True).copy(),
+                'diff': diff_matte.repeat_interleave(3, dim=1).numpy(force=True).copy(),
+                'conf': conf.repeat_interleave(3, dim=1).numpy(force=True).copy(),
+                'mask': mask.repeat_interleave(3, dim=1).numpy(force=True).copy(),
+                'output': output_clean.numpy(force=True).copy(),
+        }
+
+        max_values.add(loss.item(), min_max_item)
+        min_values.add(loss.item(), min_max_item)
 
         current_state_dict['step'] = int(step)
         current_state_dict['steps_loss'] = list(steps_loss)
@@ -2407,8 +2410,8 @@ def main():
         if step % args.save == 1:
             write_model_state_queue.put(deepcopy(current_state_dict))
 
-        data_time += time.time() - time_stamp
         data_time_str = str(f'{data_time:.2f}')
+        data_time1_str = str(f'{data_time1:.2f}')
         train_time_str = str(f'{train_time:.2f}')
 
         epoch_time = time.time() - start_timestamp
@@ -2417,7 +2420,7 @@ def main():
         minutes = int((epoch_time % 3600) // 60)
 
         clear_lines(2)
-        print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{train_time_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
+        print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{train_time_str}+{data_time1_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}, Loss L1: {loss_l1_str}')
         if len(epoch_loss) < 9999:
             print(f'\r[Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
         else:
@@ -2779,6 +2782,7 @@ def main():
         step = step + 1
 
         del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
+        data_time1 = time.time() - time_stamp
 
         if epoch == args.epochs:
             sys.exit()
