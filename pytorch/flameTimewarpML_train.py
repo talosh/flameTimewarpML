@@ -1665,8 +1665,6 @@ def main():
 
     frame_size = args.frame_size
 
-    read_image_queue = queue.Queue(maxsize=16)
-
     dataset = get_dataset(
         args.dataset_path, 
         batch_size=args.batch_size, 
@@ -1745,9 +1743,12 @@ def main():
             except:
                 time.sleep(1e-2)
 
+    '''
+    read_image_queue = queue.Queue(maxsize=16)
     read_thread = threading.Thread(target=read_images, args=(read_image_queue, dataset))
     read_thread.daemon = True
     read_thread.start()
+    '''
 
     write_image_queue = queue.Queue(maxsize=16)
     write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
@@ -2149,7 +2150,8 @@ def main():
         data_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        img0, img1, img2, ratio, idx, current_desc = read_image_queue.get()
+        #  img0, img1, img2, ratio, idx, current_desc = read_image_queue.get()
+        img0, img1, img2, ratio, idx, current_desc = dataset[batch_idx]
 
         img0 = img0.to(device, non_blocking = True)
         img1 = img1.to(device, non_blocking = True)
@@ -2472,9 +2474,11 @@ def main():
             lpips_list = []
             epoch = epoch + 1
             batch_idx = 0
-
+            
+            '''
             while  ( idx + 1 ) == len(dataset):
                 img0, img1, img2, ratio, idx, current_desc = read_image_queue.get()
+            '''
             dataset.reshuffle()
             max_values.reset()
             min_values.reset()
