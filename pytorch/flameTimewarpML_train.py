@@ -759,9 +759,13 @@ def get_dataset(
 
             del train_data, np_img0, np_img1, np_img2
 
-            src_img0 = src_img0.to(device = device, dtype = torch.float32)
-            src_img1 = src_img1.to(device = device, dtype = torch.float32)
-            src_img2 = src_img2.to(device = device, dtype = torch.float32)
+            src_img0 = src_img0.to(dtype = torch.float32)
+            src_img1 = src_img1.to(dtype = torch.float32)
+            src_img2 = src_img2.to(dtype = torch.float32)
+
+            # src_img0 = src_img0.to(device = device, dtype = torch.float32)
+            # src_img1 = src_img1.to(device = device, dtype = torch.float32)
+            # src_img2 = src_img2.to(device = device, dtype = torch.float32)
 
             '''
             train_sample_data = {}
