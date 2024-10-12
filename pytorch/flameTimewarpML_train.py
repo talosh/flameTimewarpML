@@ -2146,6 +2146,10 @@ def main():
     max_values = MaxNValues(n=args.preview_max if args.preview_max else 10)
     min_values = MinNValues(n=args.preview_min if args.preview_min else 10)
 
+    data_time = 0
+    data_time1 = 0
+    train_time = 0
+
     while True:
         # data_time = time.time() - time_stamp
         time_stamp = time.time()
