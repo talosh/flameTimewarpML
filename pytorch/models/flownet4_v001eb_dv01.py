@@ -241,7 +241,8 @@ class Model:
                     torch.nn.ConvTranspose2d(c, c, 4, 2, 1)
                 )
                 self.mix = torch.nn.Conv2d(c*2, c*2, kernel_size=1, stride=1, padding=0, bias=True)
-                self.attn = CBAM(c*2)
+                self.attn = CBAM(c)
+                self.attn_deep = CBAM(c)
                 self.convblock_mix = torch.nn.Sequential(
                     ResConv(c*2),
                     ResConv(c*2),
@@ -290,9 +291,11 @@ class Model:
                 feat_deep = self.conv1(feat)
                 feat_deep = self.convblock_deep(feat_deep)
 
-                feat = torch.cat((feat_deep, feat), 1)
-                feat = self.mix(feat)
                 feat = self.attn(feat)
+                feat_deep = self.attn_deep(feat_deep)
+
+                feat = torch.cat((feat, feat_deep), 1)
+                feat = self.mix(feat)
                 feat = self.convblock_mix(feat)
                 tmp = self.lastconv(feat)
 
