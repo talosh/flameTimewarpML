@@ -645,10 +645,6 @@ def get_dataset(
                                 img1 = self.resize_image(img1, int(self.h * (1 + 1/6)))
                                 img2 = self.resize_image(img2, int(self.h * (1 + 1/6)))
 
-                        img0 = img0.permute(2, 0, 1)
-                        img1 = img1.permute(2, 0, 1)
-                        img2 = img2.permute(2, 0, 1)
-
                         train_data = {}
                         train_data['start'] = img0
                         train_data['gt'] = img1
@@ -874,6 +870,11 @@ def get_dataset(
                 '''
 
                 img0, img1, img2 = self.crop(img0, img1, img2, self.h, self.w)
+
+                img0 = img0.permute(2, 0, 1)
+                img1 = img1.permute(2, 0, 1)
+                img2 = img2.permute(2, 0, 1)
+
                 if self.generalize == 0:
                     # No augmentaton
                     pass
