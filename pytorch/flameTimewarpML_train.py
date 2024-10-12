@@ -2148,6 +2148,7 @@ def main():
 
     data_time = 0
     data_time1 = 0
+    data_time2 = 0
     train_time = 0
 
     while True:
@@ -2156,6 +2157,9 @@ def main():
 
         #  img0, img1, img2, ratio, idx, current_desc = read_image_queue.get()
         img0, img1, img2, ratio, idx, current_desc = dataset[batch_idx]
+
+        data_time = time.time() - time_stamp
+        time_stamp = time.time()
 
         img0 = img0.to(device, non_blocking = True)
         img1 = img1.to(device, non_blocking = True)
@@ -2226,7 +2230,7 @@ def main():
             training_scale = [1/2 if x == 1 else x / 2 for x in training_scale]
         '''
 
-        data_time = time.time() - time_stamp
+        data_time1 = time.time() - time_stamp
         time_stamp = time.time()
 
         flownet.train()
@@ -2416,6 +2420,7 @@ def main():
 
         data_time_str = str(f'{data_time:.2f}')
         data_time1_str = str(f'{data_time1:.2f}')
+        data_time2_str = str(f'{data_time2:.2f}')
         train_time_str = str(f'{train_time:.2f}')
 
         epoch_time = time.time() - start_timestamp
@@ -2786,7 +2791,7 @@ def main():
         step = step + 1
 
         del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
-        data_time1 = time.time() - time_stamp
+        data_time2 = time.time() - time_stamp
 
         if epoch == args.epochs:
             sys.exit()
