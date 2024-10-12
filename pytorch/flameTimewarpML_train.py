@@ -869,6 +869,8 @@ def get_dataset(
                         img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
                 '''
 
+                print (img0.shape)
+
                 img0, img1, img2 = self.crop(img0, img1, img2, self.h, self.w)
 
                 img0 = img0.permute(2, 0, 1)
