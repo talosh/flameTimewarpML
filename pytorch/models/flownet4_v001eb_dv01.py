@@ -218,7 +218,8 @@ class Model:
                     conv(in_planes, c, 3, 2, 1),
                     conv(c, c, 3, 2, 1),
                     )
-                self.conv1 = conv(c, c, 3, 2, 1)
+                self.conv1 = conv(c, c, 3, 1, 1)
+                self.avg2 = torch.nn.AvgPool2d(2)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
