@@ -613,10 +613,46 @@ def get_dataset(
                 for index in range(len(self.train_descriptions)):
                     description = self.train_descriptions[index]
                     try:
+
+                        img0 = read_image_file(description['start'])['image_data']
+                        img1 = read_image_file(description['gt'])['image_data']
+                        img2 = read_image_file(description['end'])['image_data']
+
+                        img0 = torch.from_numpy(img0.copy()).to(dtype = torch.float32)
+                        img1 = torch.from_numpy(img1.copy()).to(dtype = torch.float32)
+                        img2 = torch.from_numpy(img2.copy()).to(dtype = torch.float32)
+
+                        if self.generalize == 0:
+                            img0 = self.resize_image(img0, self.h)
+                            img1 = self.resize_image(img1, self.h)
+                            img2 = self.resize_image(img2, self.h)
+                        else:
+                            q = random.uniform(0, 1)
+                            if q < 0.25:
+                                img0 = self.resize_image(img0, self.h)
+                                img1 = self.resize_image(img1, self.h)
+                                img2 = self.resize_image(img2, self.h)
+                            elif q < 0.5:
+                                img0 = self.resize_image(img0, int(self.h * (1 + 1/8)))
+                                img1 = self.resize_image(img1, int(self.h * (1 + 1/8)))
+                                img2 = self.resize_image(img2, int(self.h * (1 + 1/8)))
+                            elif q < 0.75:
+                                img0 = self.resize_image(img0, int(self.h * (1 + 1/7)))
+                                img1 = self.resize_image(img1, int(self.h * (1 + 1/7)))
+                                img2 = self.resize_image(img2, int(self.h * (1 + 1/7)))
+                            else:
+                                img0 = self.resize_image(img0, int(self.h * (1 + 1/6)))
+                                img1 = self.resize_image(img1, int(self.h * (1 + 1/6)))
+                                img2 = self.resize_image(img2, int(self.h * (1 + 1/6)))
+
+                        img0 = img0.permute(2, 0, 1)
+                        img1 = img1.permute(2, 0, 1)
+                        img2 = img2.permute(2, 0, 1)
+
                         train_data = {}
-                        train_data['start'] = read_image_file(description['start'])['image_data']
-                        train_data['gt'] = read_image_file(description['gt'])['image_data']
-                        train_data['end'] = read_image_file(description['end'])['image_data']
+                        train_data['start'] = img0
+                        train_data['gt'] = img1
+                        train_data['end'] = img2
                         train_data['ratio'] = description['ratio']
                         train_data['h'] = description['h']
                         train_data['w'] = description['w']
@@ -736,6 +772,8 @@ def get_dataset(
 
         def __getitem__(self, index):
             train_data = self.getimg(index)
+
+            '''
             np_img0 = train_data['start']
             np_img1 = train_data['gt']
             np_img2 = train_data['end']
@@ -767,33 +805,6 @@ def get_dataset(
             # src_img1 = src_img1.to(device = device, dtype = torch.float32)
             # src_img2 = src_img2.to(device = device, dtype = torch.float32)
 
-            '''
-            train_sample_data = {}
-
-            train_sample_data['rsz1_img0'] = self.resize_image(src_img0, self.h)
-            train_sample_data['rsz1_img1'] = self.resize_image(src_img1, self.h)
-            train_sample_data['rsz1_img2'] = self.resize_image(src_img2, self.h)
-
-            train_sample_data['rsz2_img0'] = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
-            train_sample_data['rsz2_img1'] = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
-            train_sample_data['rsz2_img2'] = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
-
-            train_sample_data['rsz3_img0'] = self.resize_image(src_img0, int(self.h * (1 + 1/5)))
-            train_sample_data['rsz3_img1'] = self.resize_image(src_img1, int(self.h * (1 + 1/5)))
-            train_sample_data['rsz3_img2'] = self.resize_image(src_img2, int(self.h * (1 + 1/5)))
-
-            train_sample_data['rsz4_img0'] = self.resize_image(src_img0, int(self.h * (1 + 1/4)))
-            train_sample_data['rsz4_img1'] = self.resize_image(src_img1, int(self.h * (1 + 1/4)))
-            train_sample_data['rsz4_img2'] = self.resize_image(src_img2, int(self.h * (1 + 1/4)))
-
-            if len(self.current_batch_data) < self.batch_size:
-                self.current_batch_data = [train_sample_data] * self.batch_size
-            else:
-                old_data = self.current_batch_data.pop(0)
-                del old_data
-                self.current_batch_data.append(train_sample_data)
-            '''
-
             rsz1_img0 = self.resize_image(src_img0, self.h)
             rsz1_img1 = self.resize_image(src_img1, self.h)
             rsz1_img2 = self.resize_image(src_img2, self.h)
@@ -809,6 +820,16 @@ def get_dataset(
             rsz4_img0 = self.resize_image(src_img0, int(self.h * (1 + 1/6)))
             rsz4_img1 = self.resize_image(src_img1, int(self.h * (1 + 1/6)))
             rsz4_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
+            '''
+
+            img0 = train_data['start']
+            img1 = train_data['gt']
+            img2 = train_data['end']
+            imgh = train_data['h']
+            imgw = train_data['w']
+            ratio = train_data['ratio']
+            description = train_data['description']
+            images_idx = self.train_data_index
 
             batch_img0 = []
             batch_img1 = []
@@ -816,23 +837,6 @@ def get_dataset(
 
             for index in range(self.batch_size):
                 '''
-                rsz1_img0 = self.current_batch_data[index]['rsz1_img0']
-                rsz1_img1 = self.current_batch_data[index]['rsz1_img1']
-                rsz1_img2 = self.current_batch_data[index]['rsz1_img2']
-
-                rsz2_img0 = self.current_batch_data[index]['rsz2_img0']
-                rsz2_img1 = self.current_batch_data[index]['rsz2_img1']
-                rsz2_img2 = self.current_batch_data[index]['rsz2_img2']
-
-                rsz3_img0 = self.current_batch_data[index]['rsz3_img0']
-                rsz3_img1 = self.current_batch_data[index]['rsz3_img1']
-                rsz3_img2 = self.current_batch_data[index]['rsz3_img2']
-
-                rsz4_img0 = self.current_batch_data[index]['rsz4_img0']
-                rsz4_img1 = self.current_batch_data[index]['rsz4_img1']
-                rsz4_img2 = self.current_batch_data[index]['rsz4_img2']
-                '''
-
                 if self.generalize == 0:
                     # No augmentaton
                     img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
@@ -867,11 +871,18 @@ def get_dataset(
                         img0, img1, img2 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, self.h, self.w)
                     else:
                         img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
+                '''
 
-                    img0 = img0.permute(2, 0, 1)
-                    img1 = img1.permute(2, 0, 1)
-                    img2 = img2.permute(2, 0, 1)
-
+                img0, img1, img2 = self.crop(img0, img1, img2, self.h, self.w)
+                if self.generalize == 0:
+                    # No augmentaton
+                    pass
+                elif self.generalize == 1:
+                    if random.uniform(0, 1) < 0.5:
+                        img0 = img0.flip(-1)
+                        img1 = img1.flip(-1)
+                        img2 = img2.flip(-1)
+                else:
                     # Horizontal flip (reverse width)
                     if random.uniform(0, 1) < 0.5:
                         img0 = img0.flip(-1)
