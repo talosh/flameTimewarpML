@@ -818,9 +818,9 @@ def get_dataset(
             rsz4_img2 = self.resize_image(src_img2, int(self.h * (1 + 1/6)))
             '''
 
-            img0 = train_data['start']
-            img1 = train_data['gt']
-            img2 = train_data['end']
+            src_img0 = train_data['start']
+            src_img1 = train_data['gt']
+            src_img2 = train_data['end']
             imgh = train_data['h']
             imgw = train_data['w']
             ratio = train_data['ratio']
@@ -869,9 +869,7 @@ def get_dataset(
                         img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
                 '''
 
-                print (img0.shape)
-
-                img0, img1, img2 = self.crop(img0, img1, img2, self.h, self.w)
+                img0, img1, img2 = self.crop(src_img0, src_img1, src_img2, self.h, self.w)
 
                 img0 = img0.permute(2, 0, 1)
                 img1 = img1.permute(2, 0, 1)
@@ -961,6 +959,8 @@ def get_dataset(
                 batch_img0.append(torch.clamp(img0, min=0.))
                 batch_img1.append(torch.clamp(img1, min=0.))
                 batch_img2.append(torch.clamp(img2, min=0.))
+
+            del train_data, src_img0, src_img1, src_img2
 
             return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), ratio, images_idx, description
 
