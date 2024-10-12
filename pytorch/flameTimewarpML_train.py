@@ -685,7 +685,8 @@ def get_dataset(
             if self.repeat_counter >= self.repeat_count:
                 try:
                     if len(self.last_train_data) == self.last_train_data_size:
-                        self.last_train_data.pop(0)
+                        data_to_delete = self.last_train_data.pop(0)
+                        del data_to_delete
                     elif len(self.last_train_data) == self.last_train_data_size:
                         self.last_train_data = self.last_train_data[:-(self.last_train_data_size - 1)]
                     new_data = self.frames_queue.get_nowait()
