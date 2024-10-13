@@ -1573,9 +1573,11 @@ class LossStats:
         self.lpips = 0
         self.lpips_last10k = 0
 
+        '''
         stats_thread = threading.Thread(target=self.calclulate_stats, args=())
         stats_thread.daemon = True
         stats_thread.start()
+        '''
 
     def calclulate_stats(self):
         while True:
