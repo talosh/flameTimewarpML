@@ -1617,7 +1617,8 @@ class LossStats:
 
 current_state_dict = {}
 
-min_l1 = sys.float_info.max
+min_l1 = float(sys.float_info.max)
+print (min_l1)
 avg_l1 = 0
 max_l1 = 0
 avg_pnsr = 0
