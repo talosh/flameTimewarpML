@@ -2368,6 +2368,7 @@ def main():
         loss_l1 = criterion_l1(output_clean, img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
 
+        print (min_l1)
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
         avg_l1 = (avg_l1 * (step - 1) + float(loss_l1.item())) / step
