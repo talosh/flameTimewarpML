@@ -1579,8 +1579,13 @@ class LossStats:
 
     def calclulate_stats(self):
         while True:
-            time.sleep(1e-8)
-            continue
+            try:
+                self.l1 = float(np.mean(moving_average(self.epoch_l1_loss, 9)))
+                self.lpips = float(np.array(self.lpips_list).mean())
+            except:
+                pass
+            
+            time.sleep(0.1)
             
             '''
             if len(self.epoch_l1_loss) < 1:
