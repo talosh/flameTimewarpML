@@ -2371,7 +2371,7 @@ def main():
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
         avg_l1 = float(loss_l1.item()) if avg_l1 == 0 else (avg_l1 * (step - 1) + float(loss_l1.item())) / step
-        avg_lpips = (avg_lpips * (step - 1) + float(torch.mean(loss_LPIPS_).item())) / step
+        avg_lpips = float(torch.mean(loss_LPIPS_).item()) if avg_lpips == 0 else (avg_lpips * (step - 1) + float(torch.mean(loss_LPIPS_).item())) / step
         avg_pnsr = (avg_pnsr * (step - 1) + float(psnr_torch(output, img1))) / step
 
         loss.backward()
