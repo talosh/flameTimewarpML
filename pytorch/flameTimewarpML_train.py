@@ -1855,28 +1855,6 @@ def main():
     else:
         print (f'Setting augmentation rate to {args.generalize}% and weight decay to {weight_decay:.2e}')
 
-    optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=weight_decay)
-    # optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
-
-    train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
-
-    if args.onecycle != -1:
-        train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer_flownet,
-            max_lr=args.lr,
-            div_factor = 11,
-            steps_per_epoch=len(dataset)*dataset.repeat_count, 
-            epochs=args.onecycle
-            )
-        print (f'setting OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.onecycle}')
-        args.epochs = args.onecycle
-
-    # train_scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, mode='min', factor=0.1, patience=2)
-    # lambda_function = lambda epoch: 1
-    # train_scheduler_flownet = torch.optim.lr_scheduler.LambdaLR(optimizer_flownet, lr_lambda=lambda_function)
-
-    scheduler_flownet = train_scheduler_flownet
-
     step = 0
     loaded_step = 0
     current_epoch = 0
@@ -1952,6 +1930,29 @@ def main():
         loaded_step = 0
         current_epoch = 0
         preview_index = 0
+
+    optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=weight_decay)
+    # optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
+
+    train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
+
+    if args.onecycle != -1:
+        train_scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
+            optimizer_flownet,
+            max_lr=args.lr,
+            div_factor = 11,
+            steps_per_epoch=len(dataset)*dataset.repeat_count, 
+            epochs=args.onecycle,
+            last_epoch = -1 if step == 0 else step
+            )
+        print (f'setting OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.onecycle}')
+        args.epochs = args.onecycle
+
+    # train_scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, mode='min', factor=0.1, patience=2)
+    # lambda_function = lambda epoch: 1
+    # train_scheduler_flownet = torch.optim.lr_scheduler.LambdaLR(optimizer_flownet, lr_lambda=lambda_function)
+
+    scheduler_flownet = train_scheduler_flownet
 
     # LPIPS Init
 
