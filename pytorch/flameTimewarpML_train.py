@@ -1580,35 +1580,22 @@ class LossStats:
     def calclulate_stats(self):
         while True:
             try:
+                if len(self.epoch_l1_loss) < 9999:
+                    self.l1_last10k = float(np.mean(moving_average(self.epoch_l1_loss, 9)))
+                    self.l1_min_last10k = float(min(self.epoch_l1_loss))
+                    self.l1_max_last10k = float(max(self.epoch_l1_loss))
+                    self.lpips_last10k = float(np.array(self.lpips_list).mean())
+                else:
+                    self.l1_last10k = np.mean(moving_average(self.epoch_l1_loss[-9999:], 9))
+                    self.l1_min_last10k = min(self.epoch_l1_loss[-9999:])
+                    self.l1_max_last10k = max(self.epoch_l1_loss[-9999:])
+                    self.lpips_last10k = float(np.array(self.lpips_list[-9999:]).mean())
                 self.l1 = float(np.mean(moving_average(self.epoch_l1_loss, 9)))
                 self.lpips = float(np.array(self.lpips_list).mean())
             except:
                 pass
-            
             time.sleep(0.1)
             
-            '''
-            if len(self.epoch_l1_loss) < 1:
-                time.sleep(1e-8)
-                continue
-            if len(self.lpips_list) < 1:
-                time.sleep(1e-8)
-                continue
-
-            if len(self.epoch_l1_loss) < 9999:
-                self.l1_last10k = float(np.mean(moving_average(self.epoch_l1_loss, 9)))
-                self.l1_min_last10k = float(min(self.epoch_l1_loss))
-                self.l1_max_last10k = float(max(self.epoch_l1_loss))
-                self.lpips_last10k = float(np.array(self.lpips_list).mean())
-            else:
-                self.l1_last10k = np.mean(moving_average(self.epoch_l1_loss[-9999:], 9))
-                self.l1_min_last10k = min(self.epoch_l1_loss[-9999:])
-                self.l1_max_last10k = max(self.epoch_l1_loss[-9999:])
-                self.lpips_last10k = float(np.array(self.lpips_list[-9999:]).mean())
-            self.l1 = float(np.mean(moving_average(self.epoch_l1_loss, 9)))
-            self.lpips = float(np.array(self.lpips_list).mean())
-            '''
-
     def add_l1(self, val):
         self.epoch_l1_loss.append(val)
 
