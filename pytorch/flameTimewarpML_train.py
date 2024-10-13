@@ -2194,7 +2194,6 @@ def main():
     signal.signal(signal.SIGINT, create_graceful_exit(current_state_dict))
 
     min_l1 = float(sys.float_info.max)
-    print (min_l1)
     avg_l1 = 0
     max_l1 = 0
     avg_pnsr = 0
@@ -2369,10 +2368,9 @@ def main():
         loss_l1 = criterion_l1(output_clean, img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
 
-        print (min_l1)
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
-        avg_l1 = (avg_l1 * (step - 1) + float(loss_l1.item())) / step
+        avg_l1 = float(loss_l1.item()) if avg_l1 == 0 else (avg_l1 * (step - 1) + float(loss_l1.item())) / step
         avg_lpips = (avg_lpips * (step - 1) + float(torch.mean(loss_LPIPS_).item())) / step
         avg_pnsr = (avg_pnsr * (step - 1) + float(psnr_torch(output, img1))) / step
 
