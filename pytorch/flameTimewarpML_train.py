@@ -2368,22 +2368,6 @@ def main():
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        min_max_item = {
-                'loss_l1': float(loss_l1.item()),
-                'lpips': float(torch.mean(loss_LPIPS_).item()),
-                'description': current_desc,
-                'img0_orig': img0_orig.numpy(force=True).copy(),
-                'img1_orig': img1_orig.numpy(force=True).copy(),
-                'img2_orig': img2_orig.numpy(force=True).copy(),
-                'diff': diff_matte.repeat_interleave(3, dim=1).numpy(force=True).copy(),
-                'conf': conf.repeat_interleave(3, dim=1).numpy(force=True).copy(),
-                'mask': mask.repeat_interleave(3, dim=1).numpy(force=True).copy(),
-                'output': output_clean.numpy(force=True).copy(),
-        }
-
-        max_values.add(loss.item(), min_max_item)
-        min_values.add(loss.item(), min_max_item)
-
         current_state_dict['step'] = int(step)
         current_state_dict['steps_loss'] = list(steps_loss)
         current_state_dict['epoch'] = int(epoch)
@@ -2397,6 +2381,9 @@ def main():
             current_state_dict['flownet_state_dict'] = flownet.state_dict()
         current_state_dict['optimizer_flownet_state_dict'] = optimizer_flownet.state_dict()
         current_state_dict['trained_model_path'] = trained_model_path
+
+        if step % args.save == 1:
+            write_model_state_queue.put(deepcopy(current_state_dict))
 
         if step % args.preview == 1:
             rgb_source1 = img0_orig
@@ -2429,85 +2416,22 @@ def main():
 
             del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
 
-        if step % args.save == 1:
-            write_model_state_queue.put(deepcopy(current_state_dict))
+        '''
+        min_max_item = {
+                'loss_l1': float(loss_l1.item()),
+                'lpips': float(torch.mean(loss_LPIPS_).item()),
+                'description': current_desc,
+                'img0_orig': img0_orig.numpy(force=True).copy(),
+                'img1_orig': img1_orig.numpy(force=True).copy(),
+                'img2_orig': img2_orig.numpy(force=True).copy(),
+                'diff': diff_matte.repeat_interleave(3, dim=1).numpy(force=True).copy(),
+                'conf': conf.repeat_interleave(3, dim=1).numpy(force=True).copy(),
+                'mask': mask.repeat_interleave(3, dim=1).numpy(force=True).copy(),
+                'output': output_clean.numpy(force=True).copy(),
+        }
 
-        data_time_str = str(f'{data_time:.2f}')
-        data_time1_str = str(f'{data_time1:.2f}')
-        data_time2_str = str(f'{data_time2:.2f}')
-        train_time_str = str(f'{train_time:.2f}')
-
-        epoch_time = time.time() - start_timestamp
-        days = int(epoch_time // (24 * 3600))
-        hours = int((epoch_time % (24 * 3600)) // 3600)
-        minutes = int((epoch_time % 3600) // 60)
-
-        clear_lines(2)
-        print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{data_time1_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
-        if len(epoch_loss) < 9999:
-            print(f'\r[Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
-        else:
-            print(f'\r[Last 10K] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
-
-        if ( idx + 1 ) == len(dataset):
-            write_model_state_queue.put(deepcopy(current_state_dict))
-
-            psnr = float(np.array(psnr_list).mean())
-            lpips_val = float(np.array(lpips_list).mean())
-
-            epoch_time = time.time() - start_timestamp
-            days = int(epoch_time // (24 * 3600))
-            hours = int((epoch_time % (24 * 3600)) // 3600)
-            minutes = int((epoch_time % 3600) // 60)
-
-            # clear_lines(2)
-            # print(f'\rEpoch [{epoch + 1} (Step {step:11} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PSNR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
-            # print ('\n')
-
-            rows_to_append = [
-                {
-                    'Epoch': epoch,
-                    'Step': step, 
-                    'Min': min(epoch_loss),
-                    'Avg': smoothed_loss,
-                    'Max': max(epoch_loss),
-                    'PSNR': psnr,
-                    'LPIPS': lpips_val
-                 }
-            ]
-            for row in rows_to_append:
-                append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.csv', row)
-
-            psnr = 0
-
-            '''
-            if args.onecycle != -1:
-                if first_pass:
-                    first_pass = False
-                    optimizer_state_dict = optimizer_flownet.state_dict()
-                    scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
-                        optimizer_flownet,
-                        max_lr=args.lr, 
-                        total_steps= step * args.onecycle, 
-                        )
-                    optimizer_flownet.load_state_dict(optimizer_state_dict)
-                print (f'setting OneCycleLR after first cycle with max_lr={args.lr}, steps={step}\n\n')
-            '''
-
-            steps_loss = []
-            epoch_loss = []
-            psnr_list = []
-            lpips_list = []
-            epoch = epoch + 1
-            batch_idx = 0
-            
-            '''
-            while  ( idx + 1 ) == len(dataset):
-                img0, img1, img2, ratio, idx, current_desc = read_image_queue.get()
-            '''
-            dataset.reshuffle()
-            max_values.reset()
-            min_values.reset()
+        max_values.add(loss.item(), min_max_item)
+        min_values.add(loss.item(), min_max_item)
 
         if (args.preview_max > 0) and (step % args.preview_maxmin_steps) == 1:
             max_preview_folder = os.path.join(args.dataset_path, 'preview', 'max')
@@ -2584,6 +2508,85 @@ def main():
                     with open(json_filename, 'w', encoding='utf-8') as json_file:
                         json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
             del index, item
+
+        '''
+        
+        data_time_str = str(f'{data_time:.2f}')
+        data_time1_str = str(f'{data_time1:.2f}')
+        data_time2_str = str(f'{data_time2:.2f}')
+        train_time_str = str(f'{train_time:.2f}')
+
+        epoch_time = time.time() - start_timestamp
+        days = int(epoch_time // (24 * 3600))
+        hours = int((epoch_time % (24 * 3600)) // 3600)
+        minutes = int((epoch_time % 3600) // 60)
+
+        clear_lines(2)
+        print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{data_time1_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
+        if len(epoch_loss) < 9999:
+            print(f'\r[Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
+        else:
+            print(f'\r[Last 10K] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
+
+        if ( idx + 1 ) == len(dataset):
+            write_model_state_queue.put(deepcopy(current_state_dict))
+
+            psnr = float(np.array(psnr_list).mean())
+            lpips_val = float(np.array(lpips_list).mean())
+
+            epoch_time = time.time() - start_timestamp
+            days = int(epoch_time // (24 * 3600))
+            hours = int((epoch_time % (24 * 3600)) // 3600)
+            minutes = int((epoch_time % 3600) // 60)
+
+            # clear_lines(2)
+            # print(f'\rEpoch [{epoch + 1} (Step {step:11} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PSNR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
+            # print ('\n')
+
+            rows_to_append = [
+                {
+                    'Epoch': epoch,
+                    'Step': step, 
+                    'Min': min(epoch_loss),
+                    'Avg': smoothed_loss,
+                    'Max': max(epoch_loss),
+                    'PSNR': psnr,
+                    'LPIPS': lpips_val
+                 }
+            ]
+            for row in rows_to_append:
+                append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.csv', row)
+
+            psnr = 0
+
+            '''
+            if args.onecycle != -1:
+                if first_pass:
+                    first_pass = False
+                    optimizer_state_dict = optimizer_flownet.state_dict()
+                    scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
+                        optimizer_flownet,
+                        max_lr=args.lr, 
+                        total_steps= step * args.onecycle, 
+                        )
+                    optimizer_flownet.load_state_dict(optimizer_state_dict)
+                print (f'setting OneCycleLR after first cycle with max_lr={args.lr}, steps={step}\n\n')
+            '''
+
+            steps_loss = []
+            epoch_loss = []
+            psnr_list = []
+            lpips_list = []
+            epoch = epoch + 1
+            batch_idx = 0
+            
+            '''
+            while  ( idx + 1 ) == len(dataset):
+                img0, img1, img2, ratio, idx, current_desc = read_image_queue.get()
+            '''
+            dataset.reshuffle()
+            max_values.reset()
+            min_values.reset()
 
         if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
             if not args.eval_first:
