@@ -1582,8 +1582,8 @@ class LossStats:
             try:
                 if len(self.epoch_l1_loss) < 9999:
                     self.l1_last10k = float(np.mean(moving_average(self.epoch_l1_loss, 9)))
-                    self.l1_min_last10k = float(min(self.epoch_l1_loss))
-                    self.l1_max_last10k = float(max(self.epoch_l1_loss))
+                    self.l1_min_last10k = min(self.epoch_l1_loss)
+                    self.l1_max_last10k = max(self.epoch_l1_loss)
                     self.lpips_last10k = float(np.array(self.lpips_list).mean())
                 else:
                     self.l1_last10k = np.mean(moving_average(self.epoch_l1_loss[-9999:], 9))
@@ -1591,6 +1591,8 @@ class LossStats:
                     self.l1_max_last10k = max(self.epoch_l1_loss[-9999:])
                     self.lpips_last10k = float(np.array(self.lpips_list[-9999:]).mean())
                 self.l1 = float(np.mean(moving_average(self.epoch_l1_loss, 9)))
+                self.l1_min = min(self.epoch_l1_loss)
+                self.l1_max = max(self.epoch_l1_loss)
                 self.lpips = float(np.array(self.lpips_list).mean())
             except:
                 pass
