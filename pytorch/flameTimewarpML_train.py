@@ -1617,6 +1617,12 @@ class LossStats:
 
 current_state_dict = {}
 
+min_l1 = sys.float_info.max
+avg_l1 = 0
+max_l1 = 0
+avg_pnsr = 0
+avg_lpips = 0
+
 def main():
     global current_state_dict
     parser = argparse.ArgumentParser(description='Training script.')
@@ -2193,7 +2199,7 @@ def main():
         return graceful_exit
     signal.signal(signal.SIGINT, create_graceful_exit(current_state_dict))
 
-    stats = LossStats()
+    # stats = LossStats()
     max_values = MaxNValues(n=args.preview_max if args.preview_max else 10)
     min_values = MinNValues(n=args.preview_min if args.preview_min else 10)
 
@@ -2362,9 +2368,11 @@ def main():
         loss_l1 = criterion_l1(output_clean, img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
 
-        stats.add_l1(float(loss_l1.item()))
-        stats.add_lpips(float(torch.mean(loss_LPIPS_).item()))
-        stats.add_pnsr(float(psnr_torch(output, img1)))
+        min_l1 = min(min_l1, float(loss_l1.item()))
+        max_l1 = max(max_l1, float(loss_l1.item()))
+        avg_l1 = (avg_l1 * (step - 1) + float(loss_l1.item())) / step
+        avg_lpips = (avg_lpips * (step - 1) + float(torch.mean(loss_LPIPS_).item())) / step
+        avg_pnsr = (avg_pnsr * (step - 1) + float(psnr_torch(output, img1))) / step
 
         loss.backward()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
@@ -2549,16 +2557,22 @@ def main():
 
         clear_lines(2)
         print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{data_time1_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
+        print(f'\r[Epoch] Min: {min_l1:.6f} Avg: {avg_l1:.6f}, Max: {max_l1:.6f} LPIPS: {avg_lpips:.4f}')
+
+        '''
         if len(stats) < 9999:
             print(f'\r[Epoch] Min: {stats.l1_min:.6f} Avg: {stats.l1:.6f}, Max: {stats.l1_max:.6f} LPIPS: {stats.lpips:.4f}')
         else:
             print(f'\r[Last 10K] Min: {stats.l1_min_last10k:.6f} Avg: {stats.l1_min_last10k:.6f}, Max: {stats.l1_max:.6f} LPIPS: {stats.lpips_last10k:.4f} [Epoch] Min: {stats.l1_min:.6f} Avg: {stats.l1:.6f}, Max: {stats.l1_max:.6f} LPIPS: {stats.lpips:.4f}')
+        '''
 
         if ( idx + 1 ) == len(dataset):
             write_model_state_queue.put(deepcopy(current_state_dict))
 
+            '''
             psnr = float(np.array(psnr_list).mean())
             lpips_val = float(np.array(lpips_list).mean())
+            '''
 
             epoch_time = time.time() - start_timestamp
             days = int(epoch_time // (24 * 3600))
@@ -2573,11 +2587,11 @@ def main():
                 {
                     'Epoch': epoch,
                     'Step': step, 
-                    'Min': stats.l1_min,
-                    'Avg': stats.l1,
-                    'Max': stats.l1_max,
-                    'PSNR': psnr,
-                    'LPIPS': lpips_val
+                    'Min': min_l1,
+                    'Avg': avg_l1,
+                    'Max': max_l1,
+                    'PSNR': avg_pnsr,
+                    'LPIPS': avg_lpips
                  }
             ]
             for row in rows_to_append:
@@ -2599,7 +2613,10 @@ def main():
                 print (f'setting OneCycleLR after first cycle with max_lr={args.lr}, steps={step}\n\n')
             '''
 
-            stats.reset()
+            avg_l1 = 0
+            avg_pnsr = 0
+            avg_lpips = 0
+            # stats.reset()
             epoch = epoch + 1
             batch_idx = 0
             
