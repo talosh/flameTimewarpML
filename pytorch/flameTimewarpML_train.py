@@ -1617,13 +1617,6 @@ class LossStats:
 
 current_state_dict = {}
 
-min_l1 = float(sys.float_info.max)
-print (min_l1)
-avg_l1 = 0
-max_l1 = 0
-avg_pnsr = 0
-avg_lpips = 0
-
 def main():
     global current_state_dict
     parser = argparse.ArgumentParser(description='Training script.')
@@ -2199,6 +2192,13 @@ def main():
             exit(0)
         return graceful_exit
     signal.signal(signal.SIGINT, create_graceful_exit(current_state_dict))
+
+    min_l1 = float(sys.float_info.max)
+    print (min_l1)
+    avg_l1 = 0
+    max_l1 = 0
+    avg_pnsr = 0
+    avg_lpips = 0
 
     # stats = LossStats()
     max_values = MaxNValues(n=args.preview_max if args.preview_max else 10)
