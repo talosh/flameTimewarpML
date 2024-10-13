@@ -239,7 +239,7 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
-                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1, padding_mode='reflect')
+                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1)
                 )
                 self.mix = torch.nn.Conv2d(c*2, c*2, kernel_size=1, stride=1, padding=0, bias=True)
                 self.attn = CBAM(c)
