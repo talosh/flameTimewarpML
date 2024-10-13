@@ -2247,6 +2247,11 @@ def main():
         data_time1 = time.time() - time_stamp
         time_stamp = time.time()
 
+        if platform.system() == 'Darwin':
+            torch.mps.synchronize()
+        else:
+            torch.cuda.synchronize(device=device)
+
         flownet.train()
         
         # n_iterations = random.randint(1, 4) if args.iterations == -1 else args.iterations
@@ -2510,7 +2515,7 @@ def main():
             del index, item
 
         '''
-        
+
         data_time_str = str(f'{data_time:.2f}')
         data_time1_str = str(f'{data_time1:.2f}')
         data_time2_str = str(f'{data_time2:.2f}')
