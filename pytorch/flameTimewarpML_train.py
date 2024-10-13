@@ -1945,7 +1945,7 @@ def main():
             div_factor = 11,
             steps_per_epoch=len(dataset)*dataset.repeat_count, 
             epochs=args.onecycle,
-            last_epoch = -1 if step == 0 else step
+            last_epoch = step
             )
         print (f'setting OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.onecycle}')
         args.epochs = args.onecycle
