@@ -1581,6 +1581,9 @@ class LossStats:
 
     def calclulate_stats(self):
         while True:
+                time.sleep(1e-8)
+                continue
+
             if len(self.epoch_l1_loss) < 1:
                 time.sleep(1e-8)
                 continue
