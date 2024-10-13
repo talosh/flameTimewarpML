@@ -1581,9 +1581,10 @@ class LossStats:
 
     def calclulate_stats(self):
         while True:
-                time.sleep(1e-8)
-                continue
-
+            time.sleep(1e-8)
+            continue
+            
+            '''
             if len(self.epoch_l1_loss) < 1:
                 time.sleep(1e-8)
                 continue
@@ -1603,6 +1604,7 @@ class LossStats:
                 self.lpips_last10k = float(np.array(self.lpips_list[-9999:]).mean())
             self.l1 = float(np.mean(moving_average(self.epoch_l1_loss, 9)))
             self.lpips = float(np.array(self.lpips_list).mean())
+            '''
 
     def add_l1(self, val):
         self.epoch_l1_loss.append(val)
