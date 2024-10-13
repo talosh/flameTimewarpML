@@ -1557,6 +1557,60 @@ def diffmatte(tensor1, tensor2):
 
     return difference_normalized
 
+class LossStats:
+    def __init__(self):
+        self.epoch_l1_loss = []
+        self.psnr_list = []
+        self.lpips_list = []
+        self.l1 = 0
+        self.l1_last10k = 0
+        self.l1_min = 0
+        self.l1_min_last10k = 0
+        self.l1_max = 0
+        self.l1_max_last10k = 0
+        self.psnr = 0
+        self.psnr_last10k = 0
+        self.lpips = 0
+        self.lpips_last10k = 0
+
+        stats_thread = threading.Thread(target=self.calclulate_stats, args=())
+        stats_thread.daemon = True
+        stats_thread.start()
+
+    def calclulate_stats(self):
+        while True:
+            if len(self.epoch_l1_loss) < 1:
+                time.sleep(1e-8)
+                continue
+            elif len(self.epoch_l1_loss) < 9999:
+                self.l1_last10k = float(np.mean(moving_average(self.epoch_l1_loss, 9)))
+                self.l1_min_last10k = float(min(self.epoch_l1_loss))
+                self.l1_max_last10k = float(max(self.epoch_l1_loss))
+                self.lpips_last10k = float(np.array(self.lpips_list).mean())
+            else:
+                self.l1_last10k = np.mean(moving_average(self.epoch_l1_loss[-9999:], 9))
+                self.l1_min_last10k = min(self.epoch_l1_loss[-9999:])
+                self.l1_max_last10k = max(self.epoch_l1_loss[-9999:])
+                self.lpips_last10k = float(np.array(self.lpips_list[-9999:]).mean())
+            self.l1 = float(np.mean(moving_average(self.epoch_l1_loss, 9)))
+            self.lpips = float(np.array(self.lpips_list).mean())
+
+    def add_l1(self, val):
+        self.epoch_l1_loss.append(val)
+
+    def add_pnsr(self, val):
+        self.psnr_list.append(val)
+
+    def add_lpips(self, val):
+        self.lpips_list.append(val)
+
+    def reset(self):
+        self.epoch_l1_loss = []
+        self.psnr_list = []
+        self.lpips_list = []
+
+    def __len__(self):
+        return len(self.epoch_l1_loss)
 
 current_state_dict = {}
 
@@ -1826,12 +1880,6 @@ def main():
     loaded_step = 0
     current_epoch = 0
     preview_index = 0
-    first_pass = True
-
-    steps_loss = []
-    epoch_loss = []
-    psnr_list = []
-    lpips_list = []
 
     if args.state_file:
         trained_model_path = args.state_file
@@ -1871,16 +1919,6 @@ def main():
         except Exception as e:
             print (f'unable to set step and epoch: {e}')
 
-        '''
-        try:
-            steps_loss = checkpoint['steps_loss']
-            print (f'loaded loss statistics for step: {step}')
-            epoch_loss = checkpoint['epoch_loss']
-            print (f'loaded loss statistics for epoch: {current_epoch + 1}')
-        except Exception as e:
-            print (f'unable to load step and epoch loss statistics: {e}')
-        '''
-
     else:
         traned_model_name = 'flameTWML_model_' + create_timestamp_uid() + '.pth'
         if platform.system() == 'Darwin':
@@ -1913,10 +1951,6 @@ def main():
         loaded_step = 0
         current_epoch = 0
         preview_index = 0
-        steps_loss = []
-        epoch_loss = []
-        psnr_list = []
-        lpips_list = []
 
     # LPIPS Init
 
@@ -2106,9 +2140,7 @@ def main():
     print('\n\n')
 
     current_state_dict['step'] = int(step)
-    current_state_dict['steps_loss'] = list(steps_loss)
     current_state_dict['epoch'] = int(epoch)
-    current_state_dict['epoch_loss'] = list(epoch_loss)
     current_state_dict['start_timestamp'] = start_timestamp
     current_state_dict['lr'] = optimizer_flownet.param_groups[0]['lr']
     current_state_dict['model_info'] = model_info
@@ -2157,8 +2189,10 @@ def main():
         return graceful_exit
     signal.signal(signal.SIGINT, create_graceful_exit(current_state_dict))
 
+    stats = LossStats()
     max_values = MaxNValues(n=args.preview_max if args.preview_max else 10)
     min_values = MinNValues(n=args.preview_min if args.preview_min else 10)
+
 
     data_time = 0
     data_time1 = 0
@@ -2324,24 +2358,9 @@ def main():
         loss_l1 = criterion_l1(output_clean, img1_orig)
         loss_l1_str = str(f'{loss_l1.item():.6f}')
 
-        epoch_loss.append(float(loss_l1.item()))
-        steps_loss.append(float(loss_l1.item()))
-        lpips_list.append(float(torch.mean(loss_LPIPS_).item()))
-        # lpips_list.append(1.)
-        psnr_list.append(float(psnr_torch(output, img1)))
-
-        if len(epoch_loss) < 9999:
-            smoothed_window_loss = np.mean(moving_average(epoch_loss, 9))
-            window_min = min(epoch_loss)
-            window_max = max(epoch_loss)
-            lpips_window_val = float(np.array(lpips_list).mean())
-        else:
-            smoothed_window_loss = np.mean(moving_average(epoch_loss[-9999:], 9))
-            window_min = min(epoch_loss[-9999:])
-            window_max = max(epoch_loss[-9999:])
-            lpips_window_val = float(np.array(lpips_list[-9999:]).mean())
-        smoothed_loss = float(np.mean(moving_average(epoch_loss, 9)))
-        lpips_val = float(np.array(lpips_list).mean())
+        stats.add_l1(float(loss_l1.item()))
+        stats.add_lpips(float(torch.mean(loss_LPIPS_).item()))
+        stats.add_pnsr(float(psnr_torch(output, img1)))
 
         loss.backward()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
@@ -2374,9 +2393,7 @@ def main():
         time_stamp = time.time()
 
         current_state_dict['step'] = int(step)
-        current_state_dict['steps_loss'] = list(steps_loss)
         current_state_dict['epoch'] = int(epoch)
-        current_state_dict['epoch_loss'] = list(epoch_loss)
         current_state_dict['start_timestamp'] = start_timestamp
         current_state_dict['lr'] = optimizer_flownet.param_groups[0]['lr']
         current_state_dict['model_info'] = model_info
@@ -2528,10 +2545,10 @@ def main():
 
         clear_lines(2)
         print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{data_time1_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
-        if len(epoch_loss) < 9999:
-            print(f'\r[Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
+        if len(stats) < 9999:
+            print(f'\r[Epoch] Min: {stats.l1_min:.6f} Avg: {stats.l1:.6f}, Max: {stats.l1_max:.6f} LPIPS: {stats.lpips:.4f}')
         else:
-            print(f'\r[Last 10K] Min: {window_min:.6f} Avg: {smoothed_window_loss:.6f}, Max: {window_max:.6f} LPIPS: {lpips_window_val:.4f} [Epoch] Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f} LPIPS: {lpips_val:.4f}')
+            print(f'\r[Last 10K] Min: {stats.l1_min_last10k:.6f} Avg: {stats.l1_min_last10k:.6f}, Max: {stats.l1_max:.6f} LPIPS: {stats.lpips_last10k:.4f} [Epoch] Min: {stats.l1_min:.6f} Avg: {stats.l1:.6f}, Max: {stats.l1_max:.6f} LPIPS: {stats.lpips:.4f}')
 
         if ( idx + 1 ) == len(dataset):
             write_model_state_queue.put(deepcopy(current_state_dict))
@@ -2552,9 +2569,9 @@ def main():
                 {
                     'Epoch': epoch,
                     'Step': step, 
-                    'Min': min(epoch_loss),
-                    'Avg': smoothed_loss,
-                    'Max': max(epoch_loss),
+                    'Min': stats.l1_min,
+                    'Avg': stats.l1,
+                    'Max': stats.l1_max,
                     'PSNR': psnr,
                     'LPIPS': lpips_val
                  }
@@ -2578,10 +2595,7 @@ def main():
                 print (f'setting OneCycleLR after first cycle with max_lr={args.lr}, steps={step}\n\n')
             '''
 
-            steps_loss = []
-            epoch_loss = []
-            psnr_list = []
-            lpips_list = []
+            stats.reset()
             epoch = epoch + 1
             batch_idx = 0
             
