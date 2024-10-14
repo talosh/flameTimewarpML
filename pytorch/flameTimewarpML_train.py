@@ -952,9 +952,9 @@ def get_dataset(
 
                 # Convert to ACEScc
                 if random.uniform(0, 1) < (self.acescc_rate / 100):
-                    img0 = self.apply_acescc(torch.clamp(img0, min=0.001))
-                    img1 = self.apply_acescc(torch.clamp(img1, min=0.001))
-                    img2 = self.apply_acescc(torch.clamp(img2, min=0.001))
+                    img0 = self.apply_acescc(torch.clamp(img0, min=0.01))
+                    img1 = self.apply_acescc(torch.clamp(img1, min=0.01))
+                    img2 = self.apply_acescc(torch.clamp(img2, min=0.01))
 
                 batch_img0.append(torch.clamp(img0, min=0.))
                 batch_img1.append(torch.clamp(img1, min=0.))
@@ -1928,7 +1928,7 @@ def main():
             div_factor = 11,
             steps_per_epoch=len(dataset)*dataset.repeat_count, 
             epochs=args.onecycle,
-            # last_epoch = step
+            last_epoch = -1 if step == 0 else step
             )
         print (f'setting OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.onecycle}')
         args.epochs = args.onecycle
@@ -2248,34 +2248,6 @@ def main():
             training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
         else:
             training_scale = [8, 4, 2, 1]
-        # '''
-
-        '''
-        random_scales = [
-            [8, 4, 2, 1],
-            [4, 4, 2, 1],
-            [4, 2, 2, 1],
-            [4, 2, 1, 1],
-            [2, 2, 2, 1],
-            [2, 2, 1, 1],
-            [2, 1, 1, 1],
-            [1, 1, 1, 1],
-        ]
-
-        training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
-        '''
-
-        # training_scale = [8, 4, 2, 1]
-
-        # if random.uniform(0, 1) < 0.22:
-        #    training_scale = [1 if x == 1 else x / 2 for x in training_scale]
-
-        '''    
-        if random.uniform(0, 1) < 0.165:
-            training_scale = [x * 2 for x in training_scale]
-        elif random.uniform(0, 1) < 0.33:
-            training_scale = [1/2 if x == 1 else x / 2 for x in training_scale]
-        '''
 
         data_time1 = time.time() - time_stamp
         time_stamp = time.time()
