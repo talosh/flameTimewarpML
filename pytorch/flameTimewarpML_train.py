@@ -2450,7 +2450,6 @@ def main():
 
             del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
 
-        '''
         min_max_item = {
                 'loss_l1': float(loss_l1.item()),
                 'lpips': float(torch.mean(loss_LPIPS_).item()),
@@ -2542,8 +2541,6 @@ def main():
                     with open(json_filename, 'w', encoding='utf-8') as json_file:
                         json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
             del index, item
-
-        '''
 
         data_time_str = str(f'{data_time:.2f}')
         data_time1_str = str(f'{data_time1:.2f}')
