@@ -254,7 +254,7 @@ class Model:
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c*2, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
