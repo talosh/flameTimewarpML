@@ -1871,17 +1871,10 @@ def main():
             print (f'unable to load Flownet state: {e}')
 
         try:
-            if args.all_gpus:
-                optimizer_flownet.load_state_dict(convert_to_data_parallel(checkpoint['optimizer_flownet_state_dict']))
-            else:
-                optimizer_flownet.load_state_dict(checkpoint['optimizer_flownet_state_dict'])
-            print('loaded previously saved Flownet state')
-            if missing_keys:
-                print (f'\nMissing keys:\n{missing_keys}\n')
-            if unexpected_keys:
-                print (f'\nUnexpected keys:\n{unexpected_keys}\n')
+            optimizer_flownet.load_state_dict(checkpoint['optimizer_flownet_state_dict'])
+            print('loaded previously saved optimizer state')
         except Exception as e:
-            print (f'unable to load Flownet state: {e}')
+            print (f'unable to load optimizer state: {e}')
 
         try:
             loaded_step = checkpoint['step']
