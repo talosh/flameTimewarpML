@@ -214,7 +214,7 @@ class Model:
                     conv(in_planes, c, 3, 2, 1),
                     conv(c, c, 3, 2, 1),
                     )
-                self.conv1 = conv(c, c, 3, 1, 1)
+                self.conv1 = conv(c, c*2, 3, 1, 1)
                 self.avg2 = torch.nn.AvgPool2d(2)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
@@ -224,12 +224,12 @@ class Model:
                     torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True)
                 )
                 self.convblock_deep = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
-                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    torch.nn.Conv2d(c*2, c*2, kernel_size=1, stride=1, padding=0, bias=True),
+                    torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                 )
                 self.attn = CBAM(c)
                 self.attn_deep = CBAM(c)
