@@ -2117,11 +2117,13 @@ def main():
     print (f'flownet.module.block0.attn_deep.spatial_scale {flownet.module.block0.attn_deep.spatial_scale.data}')
     print (f'flownet.module.block0.attn_deep.spatial_offset {flownet.module.block0.attn_deep.spatial_offset.data}')
 
+    print ()
     print (f'flownet.module.block1.attn.channel_scale {flownet.module.block1.attn.channel_scale.data}')
     print (f'flownet.module.block1.attn.channel_offset {flownet.module.block1.attn.channel_offset.data}')
     print (f'flownet.module.block1.attn.spatial_scale {flownet.module.block1.attn.spatial_scale.data}')
     print (f'flownet.module.block1.attn.spatial_offset {flownet.module.block1.attn.spatial_offset.data}')
 
+    print ()
     print (f'flownet.module.block2.attn.channel_scale {flownet.module.block2.attn.channel_scale.data}')
     print (f'flownet.module.block2.attn.channel_offset {flownet.module.block2.attn.channel_offset.data}')
     print (f'flownet.module.block2.attn.spatial_scale {flownet.module.block2.attn.spatial_scale.data}')
