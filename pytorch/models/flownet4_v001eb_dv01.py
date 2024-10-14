@@ -280,8 +280,8 @@ class Model:
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
 
-                x = self.attn(x)
                 feat = self.conv0(x)
+                feat = self.attn(feat)
                 feat = self.convblock(feat)
 
                 feat_deep = self.attn_deep(feat)
