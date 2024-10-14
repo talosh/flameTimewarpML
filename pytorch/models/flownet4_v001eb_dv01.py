@@ -87,8 +87,7 @@ class Model:
             def __init__(self, kernel_size=3):
                 super(SpatialAttention, self).__init__()
                 padding = kernel_size // 2  # Ensure same spatial dimensions
-                self.conv0 = torch.nn.Conv2d(2, 2, kernel_size, padding=padding, padding_mode='reflect', bias=False)
-                self.conv1 = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, padding_mode='reflect', bias=False)
+                self.conv0 = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, padding_mode='reflect', bias=False)
                 self.sigmoid = torch.nn.Sigmoid()
 
             def forward(self, x):
@@ -100,8 +99,7 @@ class Model:
                 x_cat = torch.cat([avg_out, max_out], dim=1)
 
                 # Apply convolution and sigmoid activation
-                x_cat = self.conv0(x_cat)
-                out = self.conv1(x_cat)
+                out = self.conv0(x_cat)
                 out = self.sigmoid(out)
                 out = out.expand_as(x)
 
