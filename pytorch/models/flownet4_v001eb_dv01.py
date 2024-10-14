@@ -245,11 +245,17 @@ class Model:
                     ResConv(c*2),
                     ResConv(c*2),
                 )
+                '''
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c*2, c, 6, 2, 2),
                     torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
                     torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
                     torch.nn.Conv2d(c, 6, kernel_size=1, stride=1, padding=0, bias=True),
+                )
+                '''
+                self.lastconv = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
 
