@@ -2187,7 +2187,7 @@ def main():
     avg_pnsr = 0
     avg_lpips = 0
 
-    # stats = LossStats()
+    preview_maxmin_steps = args.preview_maxmin_steps if args.preview_maxmin_steps < len(dataset)*dataset.repeat_count else len(dataset)*dataset.repeat_count
     max_values = MaxNValues(n=args.preview_max if args.preview_max else 10)
     min_values = MinNValues(n=args.preview_min if args.preview_min else 10)
 
@@ -2453,7 +2453,7 @@ def main():
         max_values.add(loss.item(), min_max_item)
         min_values.add(loss.item(), min_max_item)
 
-        if (args.preview_max > 0) and (step % args.preview_maxmin_steps) == 1:
+        if (args.preview_max > 0) and ((step % preview_maxmin_steps) == 1 or ( idx + 1 ) == len(dataset)):
             max_preview_folder = os.path.join(args.dataset_path, 'preview', 'max')
             if not os.path.isdir(max_preview_folder):
                 os.makedirs(max_preview_folder)
@@ -2491,7 +2491,7 @@ def main():
                         json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
             del index, item
 
-        if (args.preview_min > 0) and (step % args.preview_maxmin_steps) == 1:
+        if (args.preview_min > 0) and ((step % preview_maxmin_steps) == 1 or ( idx + 1 ) == len(dataset)):
             min_preview_folder = os.path.join(args.dataset_path, 'preview', 'min')
             if not os.path.isdir(min_preview_folder):
                 os.makedirs(min_preview_folder)
