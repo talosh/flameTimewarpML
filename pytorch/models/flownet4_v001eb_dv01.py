@@ -150,7 +150,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-                self.relu = torch.nn.LeakyReLU(0.2, True) # torch.nn.SELU(inplace = True)
+                self.relu = torch.nn.LeakyReLU(0.2, True)
 
                 torch.nn.init.kaiming_normal_(self.conv.weight, mode='fan_in', nonlinearity='relu')
                 self.conv.weight.data *= 1e-2
