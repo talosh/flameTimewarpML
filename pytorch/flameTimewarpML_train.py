@@ -2198,6 +2198,7 @@ def main():
     max_l1 = 0
     avg_pnsr = 0
     avg_lpips = 0
+    epoch_step = 0
 
     # stats = LossStats()
     max_values = MaxNValues(n=args.preview_max if args.preview_max else 10)
@@ -2370,9 +2371,9 @@ def main():
 
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
-        avg_l1 = float(loss_l1.item()) if step == 0 else (avg_l1 * (step - 1) + float(loss_l1.item())) / step 
-        avg_lpips = float(torch.mean(loss_LPIPS_).item()) if step == 0 else (avg_lpips * (step - 1) + float(torch.mean(loss_LPIPS_).item())) / step
-        avg_pnsr = float(psnr_torch(output, img1)) if step == 0 else (avg_pnsr * (step - 1) + float(psnr_torch(output, img1))) / step
+        avg_l1 = float(loss_l1.item()) if epoch_step == 0 else (avg_l1 * (epoch_step - 1) + float(loss_l1.item())) / epoch_step 
+        avg_lpips = float(torch.mean(loss_LPIPS_).item()) if epoch_step == 0 else (avg_lpips * (epoch_step - 1) + float(torch.mean(loss_LPIPS_).item())) / epoch_step
+        avg_pnsr = float(psnr_torch(output, img1)) if epoch_step == 0 else (avg_pnsr * (epoch_step - 1) + float(psnr_torch(output, img1))) / epoch_step
 
         loss.backward()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
@@ -2610,9 +2611,12 @@ def main():
                 print (f'setting OneCycleLR after first cycle with max_lr={args.lr}, steps={step}\n\n')
             '''
 
+            min_l1 = float(sys.float_info.max)
+            max_l1 = 0
             avg_l1 = 0
             avg_pnsr = 0
             avg_lpips = 0
+            epoch_step = 0
             # stats.reset()
             epoch = epoch + 1
             batch_idx = 0
@@ -2842,6 +2846,7 @@ def main():
             prev_eval_folder = eval_folder
 
         batch_idx = batch_idx + 1
+        epoch_step = epoch_step + 1
         step = step + 1
 
         del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
