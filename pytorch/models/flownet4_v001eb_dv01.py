@@ -290,11 +290,11 @@ class Model:
 
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
+                feat = self.attn(feat)
+
                 feat_deep = self.conv1(feat)
                 feat_deep = self.avg2(feat_deep)
                 feat_deep = self.convblock_deep(feat_deep)
-
-                feat = self.attn(feat)
                 feat_deep = self.attn_deep(feat_deep)
 
                 feat = torch.cat((feat, feat_deep), 1)
