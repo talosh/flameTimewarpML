@@ -234,14 +234,14 @@ class Model:
                 self.attn = CBAM(c)
                 self.attn_deep = CBAM(c)
                 # self.mix = torch.nn.Conv2d(c*2, c*2, kernel_size=1, stride=1, padding=0, bias=True)
-                self.mix = conv(c*2, c*2, 3, 1, 1)
+                self.mix = conv(c*2, c, 3, 1, 1)
                 self.convblock_mix = torch.nn.Sequential(
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
@@ -252,7 +252,7 @@ class Model:
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c*2, 4*6, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
