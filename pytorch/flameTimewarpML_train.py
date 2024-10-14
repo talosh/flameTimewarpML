@@ -1762,13 +1762,6 @@ def main():
     else:
         eval_dataset = dataset
 
-    def read_images(read_image_queue, dataset):
-        while True:
-            for batch_idx in range(len(dataset)):
-                img0, img1, img2, ratio, idx, current_desc = dataset[batch_idx]
-                read_image_queue.put((img0, img1, img2, ratio, idx, current_desc))
-                del img0, img1, img2, ratio, idx, current_desc
-
     def write_images(write_image_queue):
         while True:
             try:
@@ -1814,13 +1807,6 @@ def main():
             except:
                 time.sleep(1e-2)
 
-    '''
-    read_image_queue = queue.Queue(maxsize=16)
-    read_thread = threading.Thread(target=read_images, args=(read_image_queue, dataset))
-    read_thread.daemon = True
-    read_thread.start()
-    '''
-
     write_image_queue = queue.Queue(maxsize=16)
     write_thread = threading.Thread(target=write_images, args=(write_image_queue, ))
     write_thread.daemon = True
@@ -1844,8 +1830,8 @@ def main():
     criterion_l1 = torch.nn.L1Loss()
     criterion_huber = torch.nn.HuberLoss(delta=0.001)
 
-    # weight_decay = 10 ** (0.07 * args.generalize - 9) if args.generalize > 1 else 1e-9
     weight_decay = 10 ** (-2 - 0.02 * (args.generalize - 1)) if args.generalize > 1 else 1e-4
+    optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=weight_decay)
 
     if args.weight_decay != -1:
         weight_decay = args.weight_decay
@@ -1884,13 +1870,18 @@ def main():
         except Exception as e:
             print (f'unable to load Flownet state: {e}')
 
-        '''
         try:
-            model_D.load_state_dict(checkpoint['model_d_state_dict'], strict=False)
-            print('loaded previously saved Determinator state')
+            if args.all_gpus:
+                optimizer_flownet.load_state_dict(convert_to_data_parallel(checkpoint['optimizer_flownet_state_dict']), strict=False)
+            else:
+                optimizer_flownet.load_state_dict(checkpoint['optimizer_flownet_state_dict'], strict=False)
+            print('loaded previously saved Flownet state')
+            if missing_keys:
+                print (f'\nMissing keys:\n{missing_keys}\n')
+            if unexpected_keys:
+                print (f'\nUnexpected keys:\n{unexpected_keys}\n')
         except Exception as e:
-            print (f'unable to load Determinator state: {e}')
-        '''
+            print (f'unable to load Flownet state: {e}')
 
         try:
             loaded_step = checkpoint['step']
@@ -1932,9 +1923,6 @@ def main():
         loaded_step = 0
         current_epoch = 0
         preview_index = 0
-
-    optimizer_flownet = torch.optim.AdamW(flownet.parameters(), lr=lr, weight_decay=weight_decay)
-    # optimizer_dt = torch.optim.Adam(model_D.parameters(), lr=lr)
 
     train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
 
@@ -2198,12 +2186,10 @@ def main():
     max_l1 = 0
     avg_pnsr = 0
     avg_lpips = 0
-    epoch_step = 0
 
     # stats = LossStats()
     max_values = MaxNValues(n=args.preview_max if args.preview_max else 10)
     min_values = MinNValues(n=args.preview_min if args.preview_min else 10)
-
 
     data_time = 0
     data_time1 = 0
@@ -2371,9 +2357,9 @@ def main():
 
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
-        avg_l1 = float(loss_l1.item()) if epoch_step == 0 else (avg_l1 * (epoch_step - 1) + float(loss_l1.item())) / epoch_step 
-        avg_lpips = float(torch.mean(loss_LPIPS_).item()) if epoch_step == 0 else (avg_lpips * (epoch_step - 1) + float(torch.mean(loss_LPIPS_).item())) / epoch_step
-        avg_pnsr = float(psnr_torch(output, img1)) if epoch_step == 0 else (avg_pnsr * (epoch_step - 1) + float(psnr_torch(output, img1))) / epoch_step
+        avg_l1 = float(loss_l1.item()) if batch_idx == 0 else (avg_l1 * (batch_idx - 1) + float(loss_l1.item())) / batch_idx 
+        avg_lpips = float(torch.mean(loss_LPIPS_).item()) if batch_idx == 0 else (avg_lpips * (batch_idx - 1) + float(torch.mean(loss_LPIPS_).item())) / batch_idx
+        avg_pnsr = float(psnr_torch(output, img1)) if batch_idx == 0 else (avg_pnsr * (batch_idx - 1) + float(psnr_torch(output, img1))) / batch_idx
 
         loss.backward()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
@@ -2554,7 +2540,7 @@ def main():
         minutes = int((epoch_time % 3600) // 60)
 
         clear_lines(2)
-        print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{data_time1_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
+        print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{data_time1_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
         print(f'\r[Epoch] Min: {min_l1:.6f} Avg: {avg_l1:.6f}, Max: {max_l1:.6f} LPIPS: {avg_lpips:.4f}')
 
         '''
@@ -2616,8 +2602,6 @@ def main():
             avg_l1 = 0
             avg_pnsr = 0
             avg_lpips = 0
-            epoch_step = 0
-            # stats.reset()
             epoch = epoch + 1
             batch_idx = 0
             
@@ -2846,7 +2830,6 @@ def main():
             prev_eval_folder = eval_folder
 
         batch_idx = batch_idx + 1
-        epoch_step = epoch_step + 1
         step = step + 1
 
         del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output
