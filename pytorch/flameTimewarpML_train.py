@@ -1872,9 +1872,9 @@ def main():
 
         try:
             if args.all_gpus:
-                optimizer_flownet.load_state_dict(convert_to_data_parallel(checkpoint['optimizer_flownet_state_dict']), strict=False)
+                optimizer_flownet.load_state_dict(convert_to_data_parallel(checkpoint['optimizer_flownet_state_dict']))
             else:
-                optimizer_flownet.load_state_dict(checkpoint['optimizer_flownet_state_dict'], strict=False)
+                optimizer_flownet.load_state_dict(checkpoint['optimizer_flownet_state_dict'])
             print('loaded previously saved Flownet state')
             if missing_keys:
                 print (f'\nMissing keys:\n{missing_keys}\n')
