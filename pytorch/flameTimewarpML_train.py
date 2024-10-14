@@ -1870,11 +1870,13 @@ def main():
         except Exception as e:
             print (f'unable to load Flownet state: {e}')
 
+        '''
         try:
             optimizer_flownet.load_state_dict(checkpoint['optimizer_flownet_state_dict'])
             print('loaded previously saved optimizer state')
         except Exception as e:
             print (f'unable to load optimizer state: {e}')
+        '''
 
         try:
             loaded_step = checkpoint['step']
