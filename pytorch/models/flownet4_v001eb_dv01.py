@@ -230,8 +230,8 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
-                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
                     torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True)
+                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
                 )
                 self.attn = CBAM(c)
                 self.attn_deep = CBAM(c)
