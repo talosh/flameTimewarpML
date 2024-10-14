@@ -133,7 +133,7 @@ class Model:
                 self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
-                self.attn = CBAM(32, channel_scale=-0.2, spatial_scale=-0.2)
+                self.attn = CBAM(32, channel_scale=-0.1, spatial_scale=-0.1)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x):
@@ -241,7 +241,8 @@ class Model:
                     ResConv(c),
                     torch.nn.ConvTranspose2d(c, c, 4, 2, 1)
                 )
-                self.mix = torch.nn.Conv2d(c*2, c*2, kernel_size=1, stride=1, padding=0, bias=True)
+                # self.mix = torch.nn.Conv2d(c*2, c*2, kernel_size=1, stride=1, padding=0, bias=True)
+                self.mix = conv(c*2, c*2, 3, 1, 1)
                 self.attn = CBAM(c)
                 self.attn_deep = CBAM(c)
                 self.convblock_mix = torch.nn.Sequential(
