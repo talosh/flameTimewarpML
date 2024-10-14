@@ -1668,7 +1668,7 @@ def main():
     parser.add_argument('--preview', type=int, default=100, help='Save preview each N steps (default: 100)')
     parser.add_argument('--preview_max', type=int, default=0, help='Save separate preview for N highest error samples (default: 0)')
     parser.add_argument('--preview_min', type=int, default=0, help='Save separate preview for N lowest error samples (default: 0)')
-    parser.add_argument('--preview_maxmin_steps', type=int, default=1000, help='Save max or min preview each N steps (default: 1000)')
+    parser.add_argument('--preview_maxmin_steps', type=int, default=10000, help='Save max or min preview each N steps (default: 10000)')
     parser.add_argument('--save', type=int, default=10000, help='Save model state dict each N steps (default: 10000)')
     parser.add_argument('--repeat', type=int, default=1, help='Repeat each triade N times with augmentation (default: 1)')
     parser.add_argument('--iterations', type=int, default=1, help='Process each flow refinement N times (default: 1)')
