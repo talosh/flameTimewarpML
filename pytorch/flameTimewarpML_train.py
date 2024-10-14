@@ -622,6 +622,10 @@ def get_dataset(
                         img1 = torch.from_numpy(img1.copy()).to(dtype = torch.float32)
                         img2 = torch.from_numpy(img2.copy()).to(dtype = torch.float32)
 
+                        img0 = torch.clamp(img0, min=0.001)
+                        img1 = torch.clamp(img1, min=0.001)
+                        img2 = torch.clamp(img2, min=0.001)
+
                         if self.generalize == 0:
                             img0 = self.resize_image(img0, self.h)
                             img1 = self.resize_image(img1, self.h)
