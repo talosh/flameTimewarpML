@@ -2411,9 +2411,11 @@ def main():
 
             del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
 
+        current_desc['loss'] = float(loss.item())
+        current_desc['loss_l1'] = float(loss_l1.item())
+        current_desc['lpips'] = float(torch.mean(loss_LPIPS_).item())
+
         min_max_item = {
-                'loss_l1': float(loss_l1.item()),
-                'lpips': float(torch.mean(loss_LPIPS_).item()),
                 'description': current_desc,
                 'img0_orig': img0_orig.numpy(force=True).copy(),
                 'img1_orig': img1_orig.numpy(force=True).copy(),
