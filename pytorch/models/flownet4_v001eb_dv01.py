@@ -342,7 +342,7 @@ class Model:
                 scale[0] = scale[3]
                 scale[1] = 1
 
-                flow, x, conf = self.block0(
+                flow, mask, conf = self.block0(
                     img0, 
                     img1, 
                     f0, 
