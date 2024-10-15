@@ -342,7 +342,7 @@ class Model:
                 scale[0] = scale[3]
                 scale[1] = 1
 
-                flow, mask, conf = self.block0(
+                flow, x, conf = self.block0(
                     img0, 
                     img1, 
                     f0, 
@@ -393,7 +393,7 @@ class Model:
                 flow_list[4] = flow_list[1]
                 mask_list[4] = mask_list[1]
                 conf_list[4] = conf_list[1]
-                merged[4] = merged[0]
+                merged[4] = merged[1]
 
                 return flow_list, mask_list, conf_list, merged
                 # '''
