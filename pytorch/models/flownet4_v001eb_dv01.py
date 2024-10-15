@@ -389,7 +389,7 @@ class Model:
                 merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
                 # '''
-                # step training
+                # step training stage 2
                 flow_list[4] = flow_list[1]
                 mask_list[4] = mask_list[1]
                 conf_list[4] = conf_list[1]
