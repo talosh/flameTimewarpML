@@ -659,9 +659,9 @@ def get_dataset(
                         img1 = img1.squeeze(0).permute(1, 2, 0)
                         img2 = img2.squeeze(0).permute(1, 2, 0)
 
-                        train_data['start'] = img0
-                        train_data['gt'] = img1
-                        train_data['end'] = img2
+                        train_data['start'] = img0.numpy(force=True).copy()
+                        train_data['gt'] = img1.numpy(force=True).copy()
+                        train_data['end'] = img2.numpy(force=True).copy()
                         train_data['ratio'] = description['ratio']
                         train_data['h'] = description['h']
                         train_data['w'] = description['w']
@@ -825,6 +825,10 @@ def get_dataset(
 
             for index in range(self.batch_size):
                 img0, img1, img2 = self.crop(src_img0, src_img1, src_img2, self.h, self.w)
+
+                img0 = torch.from_numpy(img0).to(dtype = torch.float32)
+                img1 = torch.from_numpy(img1).to(dtype = torch.float32)
+                img2 = torch.from_numpy(img2).to(dtype = torch.float32)
 
                 img0 = img0.permute(2, 0, 1)
                 img1 = img1.permute(2, 0, 1)
