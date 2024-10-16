@@ -763,10 +763,12 @@ def get_dataset(
             const_972 = torch.tensor(9.72, dtype=linear_image.dtype, device=linear_image.device)
             const_1752 = torch.tensor(17.52, dtype=linear_image.dtype, device=linear_image.device)
             
+            '''
             condition = linear_image < 0
             value_if_true = (torch.log2(const_neg16) + const_972) / const_1752
             value_if_false = (torch.log2(const_neg16 + linear_image * 0.5) + const_972) / const_1752
             ACEScc = torch.where(condition, value_if_true, value_if_false)
+            '''
 
             condition = linear_image >= const_neg15
             value_if_true = (torch.log2(linear_image) + const_972) / const_1752
@@ -800,6 +802,7 @@ def get_dataset(
                 img1 = img1.permute(2, 0, 1)
                 img2 = img2.permute(2, 0, 1)
 
+                '''
                 if self.generalize == 0:
                     # No augmentaton
                     pass
@@ -874,7 +877,7 @@ def get_dataset(
                             img0 = gamma_up(img0, gamma=gamma)
                             img1 = gamma_up(img1, gamma=gamma)
                             img2 = gamma_up(img2, gamma=gamma)
-                '''
+
                 # Convert to ACEScc
                 if random.uniform(0, 1) < (self.acescc_rate / 100):
                     img0 = self.apply_acescc(torch.clamp(img0, min=0.01))
