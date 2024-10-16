@@ -615,6 +615,9 @@ def get_dataset(
             while True:
                 for index in range(len(self.train_descriptions)):
                     description = self.train_descriptions[index]
+                    train_data = {}
+                    train_data['description'] = description
+
                     try:
                         img0 = read_image_file(description['start'])['image_data']
                         img1 = read_image_file(description['gt'])['image_data']
@@ -647,7 +650,6 @@ def get_dataset(
                                 img1 = self.resize_image(img1, int(self.h * (1 + 1/6)))
                                 img2 = self.resize_image(img2, int(self.h * (1 + 1/6)))
 
-                        train_data = {}
                         train_data['start'] = img0
                         train_data['gt'] = img1
                         train_data['end'] = img2
@@ -658,13 +660,10 @@ def get_dataset(
                         train_data['index'] = index
                         self.frames_queue.put(train_data)
 
-                        del img0, img1, img2
+                        del img0, img1, img2, train_data
 
                     except Exception as e:
-                        try:
-                            del train_data
-                        except:
-                            pass
+                        del train_data
                         print (f'\n\nError reading file: {e}')
                         print (f'{description}\n\n')
 
