@@ -652,9 +652,10 @@ def get_dataset(
                             new_h = h_scaled
                             new_w = int(h_scaled * w / h)
 
-                        img0 = torch.nn.functional.interpolate(img0, size=(new_h, new_w), mode='bilinear', align_corners=False)
-                        img1 = torch.nn.functional.interpolate(img1, size=(new_h, new_w), mode='bilinear', align_corners=False)
-                        img2 = torch.nn.functional.interpolate(img2, size=(new_h, new_w), mode='bilinear', align_corners=False)
+                        resize_transform = torchvision.transforms.Resize((new_h, new_w))
+                        img0 = resize_transform(img0)
+                        img1 = resize_transform(img1)
+                        img2 = resize_transform(img2)
 
                         img0 = img0.squeeze(0).permute(1, 2, 0)
                         img1 = img1.squeeze(0).permute(1, 2, 0)
