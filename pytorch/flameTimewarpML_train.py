@@ -763,12 +763,10 @@ def get_dataset(
             const_972 = torch.tensor(9.72, dtype=linear_image.dtype, device=linear_image.device)
             const_1752 = torch.tensor(17.52, dtype=linear_image.dtype, device=linear_image.device)
             
-            '''
             condition = linear_image < 0
             value_if_true = (torch.log2(const_neg16) + const_972) / const_1752
             value_if_false = (torch.log2(const_neg16 + linear_image * 0.5) + const_972) / const_1752
             ACEScc = torch.where(condition, value_if_true, value_if_false)
-            '''
 
             condition = linear_image >= const_neg15
             value_if_true = (torch.log2(linear_image) + const_972) / const_1752
