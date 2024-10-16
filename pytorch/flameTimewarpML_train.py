@@ -626,6 +626,10 @@ def get_dataset(
                         img1 = torch.from_numpy(img1).to(dtype = torch.float32)
                         img2 = torch.from_numpy(img2).to(dtype = torch.float32)
 
+                        img0 = img0.permute(2, 0, 1).unsqueeze(0)
+                        img1 = img1.permute(2, 0, 1).unsqueeze(0)
+                        img2 = img2.permute(2, 0, 1).unsqueeze(0)
+
                         if self.generalize == 0:
                             h_scaled = self.h
                         else:
@@ -639,15 +643,9 @@ def get_dataset(
                             else:
                                 h_scaled = int(self.h * (1 + 1/6))
                         
-                        img0rsz = self.resize_image(img0.clone(), h_scaled)
-                        img1rsz = self.resize_image(img1.clone(), h_scaled)
-                        img2rsz = self.resize_image(img2.clone(), h_scaled)
-
-                        del img0, img1, img2
-
-                        train_data['start'] = img0rsz
-                        train_data['gt'] = img1rsz
-                        train_data['end'] = img2rsz
+                        train_data['start'] = img0.squeeze(0).permute(1, 2, 0)
+                        train_data['gt'] = img1.squeeze(0).permute(1, 2, 0)
+                        train_data['end'] = img2.squeeze(0).permute(1, 2, 0)
                         train_data['ratio'] = description['ratio']
                         train_data['h'] = description['h']
                         train_data['w'] = description['w']
