@@ -703,6 +703,8 @@ def get_dataset(
             # Adjust tensor shape back to [h, w, c]
             resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
 
+            del tensor
+
             return resized_tensor
 
         def getimg(self, index):
