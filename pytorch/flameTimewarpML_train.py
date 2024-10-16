@@ -891,6 +891,7 @@ def get_dataset(
                             img1 *= exp
                             img2 *= exp
 
+                    '''
                     if random.uniform(0, 1) < (self.generalize / 100):
                         # add colour banace shift
                         delta = random.uniform(0, 0.49)
@@ -906,6 +907,7 @@ def get_dataset(
                         img1 *= multipliers
                         img2 *= multipliers
                         del multipliers
+                    '''
 
                     def gamma_up(img, gamma = 1.18):
                         return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
