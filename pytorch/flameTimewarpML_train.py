@@ -2137,7 +2137,6 @@ def main():
         # data_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        #  img0, img1, img2, ratio, idx, current_desc = read_image_queue.get()
         img0, img1, img2, ratio, idx, current_desc = dataset[batch_idx]
 
         data_time = time.time() - time_stamp
@@ -2154,10 +2153,6 @@ def main():
         img2 = normalize(img2)
 
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
-
-        # del img0, img1, img2, img0_orig, img1_orig, img2_orig #, flow_list, mask_list, merged, mask, output, output_clean
-        # continue
-
         optimizer_flownet.zero_grad()
 
         # scale list augmentation
@@ -2242,6 +2237,9 @@ def main():
 
         train_time = time.time() - time_stamp
         time_stamp = time.time()
+
+        del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, flow0, flow1, output, output_clean
+        continue
 
         current_state_dict['step'] = int(step)
         current_state_dict['epoch'] = int(epoch)
