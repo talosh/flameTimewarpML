@@ -2234,7 +2234,7 @@ def main():
             # current_lr = float(optimizer_flownet.param_groups[0]["lr"])
             
             scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimizer_flownet, 
+                optimizer_flownet,
                 T_max=pulse_period, 
                 eta_min = lr/10 - (( lr / 100 ) * pulse_dive)
                 )
