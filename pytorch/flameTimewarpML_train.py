@@ -2200,19 +2200,19 @@ def main():
         diff_matte = diffmatte(output_clean, img1_orig)
         loss_conf = criterion_l1(conf, diff_matte)
 
-        del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte
+        lpips_weight = 0.5
+        loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
+        loss = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS).item()) + 0.01 * loss_conf
+        loss_l1 = criterion_l1(output_clean, img1_orig)
+
+        del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
         continue
 
-        lpips_weight = 0.5
-        loss_LPIPS_ = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
-        loss = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS_).item()) + 0.01 * loss_conf
-
-        loss_l1 = criterion_l1(output_clean, img1_orig)
 
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
         avg_l1 = float(loss_l1.item()) if batch_idx == 0 else (avg_l1 * (batch_idx - 1) + float(loss_l1.item())) / batch_idx 
-        avg_lpips = float(torch.mean(loss_LPIPS_).item()) if batch_idx == 0 else (avg_lpips * (batch_idx - 1) + float(torch.mean(loss_LPIPS_).item())) / batch_idx
+        avg_lpips = float(torch.mean(loss_LPIPS_).item()) if batch_idx == 0 else (avg_lpips * (batch_idx - 1) + float(torch.mean(loss_LPIPS).item())) / batch_idx
         avg_pnsr = float(psnr_torch(output, img1)) if batch_idx == 0 else (avg_pnsr * (batch_idx - 1) + float(psnr_torch(output, img1))) / batch_idx
 
         loss.backward()
