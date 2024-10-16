@@ -842,8 +842,6 @@ def get_dataset(
                             img1 = img1.flip(0)
                             img2 = img2.flip(0)
 
-                '''
-
                     if random.uniform(0, 1) < (self.generalize / 100):
                         # Exposure augmentation
                         exp = random.uniform(1 / 8, 2)
@@ -863,6 +861,8 @@ def get_dataset(
                         img1 *= multipliers
                         img2 *= multipliers
                         del multipliers
+
+                '''
 
                     def gamma_up(img, gamma = 1.18):
                         return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
