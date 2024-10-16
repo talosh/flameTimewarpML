@@ -752,10 +752,17 @@ def get_dataset(
             else:
                 return self.last_train_data[random.randint(0, len(self.last_train_data) - 1)]
             '''
-            try:
-                self.last_train_data = [self.frames_queue.get_nowait()]
-            except queue.Empty:
-                pass
+
+            if self.repeat_counter >= self.repeat_count:
+                try:
+                    self.last_train_data = [self.frames_queue.get_nowait()]
+                except queue.Empty:
+                    pass
+                self.repeat_counter = 0
+                self.train_data_index = self.last_train_data[0]['index']
+            else:
+                self.repeat_counter += 1
+            
             return self.last_train_data[0]
 
         def srgb_to_linear(self, srgb_image):
