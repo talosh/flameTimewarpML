@@ -860,6 +860,7 @@ def get_dataset(
                 img1 = img1.permute(2, 0, 1)
                 img2 = img2.permute(2, 0, 1)
                 
+                '''
                 if self.generalize == 0:
                     # No augmentaton
                     pass
@@ -934,12 +935,15 @@ def get_dataset(
                             img0 = gamma_up(img0, gamma=gamma)
                             img1 = gamma_up(img1, gamma=gamma)
                             img2 = gamma_up(img2, gamma=gamma)
+                    '''
 
+                '''
                 # Convert to ACEScc
                 if random.uniform(0, 1) < (self.acescc_rate / 100):
                     img0 = self.apply_acescc(torch.clamp(img0, min=0.01))
                     img1 = self.apply_acescc(torch.clamp(img1, min=0.01))
                     img2 = self.apply_acescc(torch.clamp(img2, min=0.01))
+                '''
                 
                 batch_img0.append(img0)
                 batch_img1.append(img1)
