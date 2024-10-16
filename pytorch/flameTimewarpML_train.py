@@ -720,34 +720,6 @@ def get_dataset(
             return resized_tensor
 
         def getimg(self, index):
-            if not self.last_train_data:
-                try:
-                    new_data = self.frames_queue.get_nowait()
-                    self.last_train_data = [new_data]
-                except queue.Empty:
-                    return None  # or handle accordingly
-
-            if self.repeat_counter >= self.repeat_count:
-                try:
-                    if len(self.last_train_data) >= self.last_train_data_size:
-                        self.last_train_data.pop(0)
-
-                    new_data = self.frames_queue.get_nowait()
-                    self.train_data_index = new_data['index']
-                    self.last_train_data.append(new_data)
-                    self.new_sample_shown = False
-                    self.repeat_counter = 0
-                except queue.Empty:
-                    pass
-
-            self.repeat_counter += 1
-
-            if not self.new_sample_shown:
-                self.new_sample_shown = True
-                return self.last_train_data[-1]
-            else:
-                return random.choice(self.last_train_data)
-
             '''
             if not self.last_train_data:
                 new_data = self.frames_queue.get_nowait()
@@ -776,7 +748,7 @@ def get_dataset(
             else:
                 return self.last_train_data[random.randint(0, len(self.last_train_data) - 1)]
             '''
-            # return self.frames_queue.get()
+            return self.frames_queue.get()
 
         def srgb_to_linear(self, srgb_image):
             # Apply the inverse sRGB gamma curve
