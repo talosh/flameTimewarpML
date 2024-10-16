@@ -651,13 +651,21 @@ def get_dataset(
                             new_h = h_scaled
                             new_w = int(h_scaled * w / h)
 
-                        # img0 = torch.nn.functional.interpolate(img0, size=(new_h, new_w), mode='bilinear', align_corners=False)
-                        # img1 = torch.nn.functional.interpolate(img1, size=(new_h, new_w), mode='bilinear', align_corners=False)
-                        # img2 = torch.nn.functional.interpolate(img2, size=(new_h, new_w), mode='bilinear', align_corners=False)
+                        img0 = torch.nn.functional.interpolate(img0, size=(new_h, new_w), mode='bilinear', align_corners=False)
+                        img1 = torch.nn.functional.interpolate(img1, size=(new_h, new_w), mode='bilinear', align_corners=False)
+                        img2 = torch.nn.functional.interpolate(img2, size=(new_h, new_w), mode='bilinear', align_corners=False)
 
-                        train_data['start'] = img0.squeeze(0).permute(1, 2, 0)
-                        train_data['gt'] = img1.squeeze(0).permute(1, 2, 0)
-                        train_data['end'] = img2.squeeze(0).permute(1, 2, 0)
+                        img0 = img0.squeeze(0).permute(1, 2, 0)
+                        img1 = img0.squeeze(0).permute(1, 2, 0)
+                        img2 = img0.squeeze(0).permute(1, 2, 0)
+
+                        img0 = img0.numpy(force = True)
+                        img1 = img0.numpy(force = True)
+                        img2 = img0.numpy(force = True)
+
+                        train_data['start'] = img0
+                        train_data['gt'] = img1
+                        train_data['end'] = img2
                         train_data['ratio'] = description['ratio']
                         train_data['h'] = description['h']
                         train_data['w'] = description['w']
@@ -821,6 +829,10 @@ def get_dataset(
 
             for index in range(self.batch_size):
                 img0, img1, img2 = self.crop(src_img0, src_img1, src_img2, self.h, self.w)
+
+                img0 = torch.from_numpy(img0).to(device = device, dtype = torch.float32)
+                img1 = torch.from_numpy(img1).to(device = device, dtype = torch.float32)
+                img2 = torch.from_numpy(img2).to(device = device, dtype = torch.float32)
 
                 img0 = img0.permute(2, 0, 1)
                 img1 = img1.permute(2, 0, 1)
