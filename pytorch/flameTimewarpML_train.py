@@ -909,11 +909,10 @@ def get_dataset(
                         # Exposure augmentation
                         exp = random.uniform(1 / 8, 2)
                         if random.uniform(0, 1) < 0.4:
-                            img0 *= exp
-                            img1 *= exp
-                            img2 *= exp
+                            img0 = img0 * exp
+                            img1 = img1 * exp
+                            img2 = img2 * exp
 
-                    '''
                     if random.uniform(0, 1) < (self.generalize / 100):
                         # add colour banace shift
                         delta = random.uniform(0, 0.49)
@@ -921,21 +920,20 @@ def get_dataset(
                         g = random.uniform(1-delta, 1+delta)
                         b = random.uniform(1-delta, 1+delta)
                         multipliers = torch.tensor([r, g, b]).view(3, 1, 1)
-                        img0 *= multipliers
-                        img1 *= multipliers
-                        img2 *= multipliers
+                        img0 = img0 * multipliers
+                        img1 = img1 * multipliers
+                        img2 = img2 * multipliers
                         del multipliers
 
                     def gamma_up(img, gamma = 1.18):
                         return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
-
+                    
                     if random.uniform(0, 1) < (self.generalize / 100):
                         if random.uniform(0, 1) < 0.44:
                             gamma = random.uniform(0.9, 1.9)
                             img0 = gamma_up(img0, gamma=gamma)
                             img1 = gamma_up(img1, gamma=gamma)
                             img2 = gamma_up(img2, gamma=gamma)
-                    '''
 
                 # Convert to ACEScc
                 if random.uniform(0, 1) < (self.acescc_rate / 100):
