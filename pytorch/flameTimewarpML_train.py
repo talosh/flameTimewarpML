@@ -435,6 +435,7 @@ def read_image_file(file_path, header_only = False):
             channels = spec.nchannels
             img_data = inp.read_image(0, 0, 0, channels).transpose(1, 0, 2)
             result['image_data'] = np.ascontiguousarray(img_data)
+            del img_data
         inp.close()
     return result
 
