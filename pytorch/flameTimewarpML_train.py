@@ -658,9 +658,20 @@ def get_dataset(
                             new_h = h_scaled
                             new_w = int(h_scaled * w / h)
 
-                        img0 = img0.resize((new_h, new_w), resample=Image.LANCZOS)
-                        img1 = img1.resize((new_h, new_w), resample=Image.LANCZOS)
-                        img2 = img2.resize((new_h, new_w), resample=Image.LANCZOS)
+                        channels = [Image.fromarray(img0[:, :, i], mode='F') for i in range(3)]
+                        resized_channels = [channel.resize((new_h, new_w), resample=Image.LANCZOS) for channel in channels]
+                        resized_image = Image.merge('RGB', resized_channels)
+                        img0 = np.array(resized_image).astype(np.float32)
+
+                        channels = [Image.fromarray(img1[:, :, i], mode='F') for i in range(3)]
+                        resized_channels = [channel.resize((new_h, new_w), resample=Image.LANCZOS) for channel in channels]
+                        resized_image = Image.merge('RGB', resized_channels)
+                        img1 = np.array(resized_image).astype(np.float32)
+
+                        channels = [Image.fromarray(img2[:, :, i], mode='F') for i in range(3)]
+                        resized_channels = [channel.resize((new_h, new_w), resample=Image.LANCZOS) for channel in channels]
+                        resized_image = Image.merge('RGB', resized_channels)
+                        img2 = np.array(resized_image).astype(np.float32)
 
                         '''
                         img0 = torchvision.transforms.functional.resize(img0, (new_h, new_w))
@@ -672,9 +683,9 @@ def get_dataset(
                         img2 = img2.squeeze(0).permute(1, 2, 0)
                         '''
 
-                        train_data['start'] = np.array(img0).astype(np.float32)
-                        train_data['gt'] = np.array(img1).astype(np.float32)
-                        train_data['end'] = np.array(img2).astype(np.float32)
+                        train_data['start'] = img0
+                        train_data['gt'] = img1
+                        train_data['end'] = img2
                         train_data['ratio'] = description['ratio']
                         train_data['h'] = description['h']
                         train_data['w'] = description['w']
