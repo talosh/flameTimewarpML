@@ -698,9 +698,7 @@ def get_dataset(
                 new_w = int(x * w / h)
 
             # Resize
-            resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bicubic', align_corners=False)
-            
-            del tensor
+            resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bilinear', align_corners=False)
 
             # Adjust tensor shape back to [h, w, c]
             resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
