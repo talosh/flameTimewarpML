@@ -2228,6 +2228,9 @@ def main():
 
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
 
+        del img0, img1, img2, img0_orig, img1_orig, img2_orig #, flow_list, mask_list, merged, mask, output, output_clean
+        continue
+
         optimizer_flownet.zero_grad()
 
         # scale list augmentation
