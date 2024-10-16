@@ -626,34 +626,32 @@ def get_dataset(
                         img1 = torch.from_numpy(img1np.copy()).to(dtype = torch.float32)
                         img2 = torch.from_numpy(img2np.copy()).to(dtype = torch.float32)
 
-                        '''
                         if self.generalize == 0:
-                            img0 = self.resize_image(img0, self.h)
-                            img1 = self.resize_image(img1, self.h)
-                            img2 = self.resize_image(img2, self.h)
+                            img0rs = self.resize_image(img0, self.h)
+                            img1rs = self.resize_image(img1, self.h)
+                            img2rs = self.resize_image(img2, self.h)
                         else:
                             q = random.uniform(0, 1)
                             if q < 0.25:
-                                img0 = self.resize_image(img0, self.h)
-                                img1 = self.resize_image(img1, self.h)
-                                img2 = self.resize_image(img2, self.h)
+                                img0rs = self.resize_image(img0, self.h)
+                                img1rs = self.resize_image(img1, self.h)
+                                img2rs = self.resize_image(img2, self.h)
                             elif q < 0.5:
-                                img0 = self.resize_image(img0, int(self.h * (1 + 1/8)))
-                                img1 = self.resize_image(img1, int(self.h * (1 + 1/8)))
-                                img2 = self.resize_image(img2, int(self.h * (1 + 1/8)))
+                                img0rs = self.resize_image(img0, int(self.h * (1 + 1/8)))
+                                img1rs = self.resize_image(img1, int(self.h * (1 + 1/8)))
+                                img2rs = self.resize_image(img2, int(self.h * (1 + 1/8)))
                             elif q < 0.75:
-                                img0 = self.resize_image(img0, int(self.h * (1 + 1/7)))
-                                img1 = self.resize_image(img1, int(self.h * (1 + 1/7)))
-                                img2 = self.resize_image(img2, int(self.h * (1 + 1/7)))
+                                img0rs = self.resize_image(img0, int(self.h * (1 + 1/7)))
+                                img1rs = self.resize_image(img1, int(self.h * (1 + 1/7)))
+                                img2rs = self.resize_image(img2, int(self.h * (1 + 1/7)))
                             else:
-                                img0 = self.resize_image(img0, int(self.h * (1 + 1/6)))
-                                img1 = self.resize_image(img1, int(self.h * (1 + 1/6)))
-                                img2 = self.resize_image(img2, int(self.h * (1 + 1/6)))
-                        '''
+                                img0rs = self.resize_image(img0, int(self.h * (1 + 1/6)))
+                                img1rs = self.resize_image(img1, int(self.h * (1 + 1/6)))
+                                img2rs = self.resize_image(img2, int(self.h * (1 + 1/6)))
                         
-                        train_data['start'] = img0
-                        train_data['gt'] = img1
-                        train_data['end'] = img2
+                        train_data['start'] = img0rs
+                        train_data['gt'] = img1rs
+                        train_data['end'] = img2rs
                         train_data['ratio'] = description['ratio']
                         train_data['h'] = description['h']
                         train_data['w'] = description['w']
