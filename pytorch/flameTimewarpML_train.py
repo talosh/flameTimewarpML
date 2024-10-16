@@ -2307,7 +2307,7 @@ def main():
 
         current_desc['loss'] = float(loss.item())
         current_desc['loss_l1'] = float(loss_l1.item())
-        current_desc['lpips'] = float(torch.mean(loss_LPIPS_).item())
+        current_desc['lpips'] = float(torch.mean(loss_LPIPS).item())
 
         min_max_item = {
                 'description': current_desc,
@@ -2628,8 +2628,8 @@ def main():
                         eval_loss_l1 = criterion_l1(eval_result, eval_img1)
                         eval_loss.append(float(eval_loss_l1.item()))
                         eval_psnr.append(float(psnr_torch(eval_result, eval_img1)))
-                        eval_loss_LPIPS_ = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
-                        eval_lpips.append(float(torch.mean(eval_loss_LPIPS_).item()))
+                        eval_loss_LPIPS = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
+                        eval_lpips.append(float(torch.mean(eval_loss_LPIPS).item()))
 
                         eval_rgb_output_mask = eval_mask_list[-1][:, :, :eh, :ew].repeat_interleave(3, dim=1)
                         eval_rgb_conf = eval_conf_list[-1][:, :, :eh, :ew].repeat_interleave(3, dim=1)
