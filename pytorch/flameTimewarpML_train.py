@@ -812,7 +812,6 @@ def get_dataset(
                         img1 = img1.flip(-1)
                         img2 = img2.flip(-1)
 
-                '''
                     # Rotation
                     if random.uniform(0, 1) < (self.generalize / 100):
                         p = random.uniform(0, 1)
@@ -843,13 +842,15 @@ def get_dataset(
                             img1 = img1.flip(0)
                             img2 = img2.flip(0)
 
+                '''
+
                     if random.uniform(0, 1) < (self.generalize / 100):
                         # Exposure augmentation
                         exp = random.uniform(1 / 8, 2)
                         if random.uniform(0, 1) < 0.4:
-                            img0 = img0 * exp
-                            img1 = img1 * exp
-                            img2 = img2 * exp
+                            img0 *= exp
+                            img1 *= exp
+                            img2 *= exp
 
                     if random.uniform(0, 1) < (self.generalize / 100):
                         # add colour banace shift
@@ -858,10 +859,10 @@ def get_dataset(
                         g = random.uniform(1-delta, 1+delta)
                         b = random.uniform(1-delta, 1+delta)
                         multipliers = torch.tensor([r, g, b]).view(3, 1, 1)
-                        # multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device)
-                        img0 = img0 * multipliers
-                        img1 = img1 * multipliers
-                        img2 = img2 * multipliers
+                        img0 *= multipliers
+                        img1 *= multipliers
+                        img2 *= multipliers
+                        del multipliers
 
                     def gamma_up(img, gamma = 1.18):
                         return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
