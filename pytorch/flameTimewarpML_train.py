@@ -639,9 +639,9 @@ def get_dataset(
                             else:
                                 h_scaled = int(self.h * (1 + 1/6))
                                                 
-                        train_data['start'] = self.resize_image(img0, h_scaled)
-                        train_data['gt'] = self.resize_image(img1, h_scaled)
-                        train_data['end'] = self.resize_image(img2, h_scaled)
+                        train_data['start'] = self.resize_image(img0, h_scaled).contiguous()
+                        train_data['gt'] = self.resize_image(img1, h_scaled).contiguous()
+                        train_data['end'] = self.resize_image(img2, h_scaled).contiguous()
                         train_data['ratio'] = description['ratio']
                         train_data['h'] = description['h']
                         train_data['w'] = description['w']
