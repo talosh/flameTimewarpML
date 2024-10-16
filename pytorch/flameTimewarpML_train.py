@@ -2257,7 +2257,7 @@ def main():
             iterations = args.iterations
             )
 
-        continue
+        # continue
 
         flow0 = flow_list[-1][:, :2]
         flow1 = flow_list[-1][:, 2:4]
