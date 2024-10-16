@@ -2161,16 +2161,6 @@ def main():
         optimizer_flownet.zero_grad()
 
         # scale list augmentation
-
-        '''
-        random_scales = [
-            [4, 2, 1, 1],
-            [2, 2, 1, 1],
-            [2, 1, 1, 1],
-            [1, 1, 1, 1],
-        ]
-        '''
-
         random_scales = [
             [8, 4, 2, 1],
             [4, 4, 2, 1],
@@ -2190,17 +2180,10 @@ def main():
         data_time1 = time.time() - time_stamp
         time_stamp = time.time()
 
-        if platform.system() == 'Darwin':
-            torch.mps.synchronize()
-        else:
-            torch.cuda.synchronize(device=device)
-
         flownet.train()
         
-        # n_iterations = random.randint(1, 4) if args.iterations == -1 else args.iterations
-
         flow_list, mask_list, conf_list, merged = flownet(
-            img0, 
+            img0,
             img2, 
             ratio, 
             scale=training_scale,
@@ -2211,61 +2194,18 @@ def main():
         flow1 = flow_list[-1][:, 2:4]
         mask = mask_list[-1]
         conf = conf_list[-1]
-        output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
-        
+
         output = merged[-1]
-        # warped_img0 = warp(img0, flow_list[-1][:, :2])
-        # warped_img2 = warp(img2, flow_list[-1][:, 2:4])
-        # output = warped_img0 * mask_list[-1] + warped_img2 * (1 - mask_list[-1])
+        output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
 
-        # self.vgg(merged[-1], gt).mean() - self.ss(merged[-1], gt) * 0.1
-
-        '''
-        x8_output = torch.nn.functional.interpolate(merged[0], scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
-        x8_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[0], mode="bilinear", align_corners=False)
-        # x8_lpips = torch.mean(loss_fn_lpips.forward(x8_output * 2 - 1, x8_orig * 2 - 1))
-        x8_lpips = torch.mean(loss_fn_vgg.forward(x8_output, x8_orig)) - loss_fn_ssim(x8_output, x8_orig) * 0.1
-        loss_x8 = pm_weight * criterion_huber(x8_output, x8_orig) + lpips_weight * x8_lpips
-
-        x4_output = torch.nn.functional.interpolate(merged[1], scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
-        x4_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[1], mode="bilinear", align_corners=False)
-        # x4_lpips = torch.mean(loss_fn_lpips.forward(x4_output * 2 - 1, x4_orig * 2 - 1))
-        x4_lpips = torch.mean(loss_fn_vgg.forward(x4_output, x4_orig)) - loss_fn_ssim(x4_output, x4_orig) * 0.1
-        loss_x4 = pm_weight * criterion_huber(x4_output, x4_orig) + lpips_weight * x4_lpips
-
-        x2_output = torch.nn.functional.interpolate(merged[2], scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
-        x2_orig = torch.nn.functional.interpolate(img1, scale_factor= 1. / training_scale[2], mode="bilinear", align_corners=False)
-        # x2_lpips = torch.mean(loss_fn_lpips.forward(x2_output * 2 - 1, x2_orig * 2 - 1))
-        x2_lpips = torch.mean(loss_fn_vgg.forward(x2_output, x2_orig)) - loss_fn_ssim(x2_output, x2_orig) * 0.1
-        loss_x2 = pm_weight * criterion_huber(x2_output, x2_orig) + lpips_weight * x2_lpips
-
-        x1_output = merged[-1]
-        x1_orig = img1
-        # x1_lpips = torch.mean(loss_fn_lpips.forward(x1_output * 2 - 1, x1_orig * 2 - 1))
-        x1_lpips = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
-        loss_x1 = pm_weight * criterion_huber(x1_output, x1_orig) + lpips_weight * x1_lpips
-
-        loss = 0.24 * loss_x8 + 0.24 * loss_x4 + 0.24 * loss_x2 + 0.28 * loss_x1
-        '''
-
-
-        x1_output = merged[-1]
-        x1_orig = img1
-        diff_matte = diffmatte(x1_output, x1_orig)
-
-        # vgg_loss = torch.mean(loss_fn_vgg.forward(x1_output, x1_orig)) - loss_fn_ssim(x1_output, x1_orig) * 0.1
-
-        # print (f'Out: {output.shape}, Orig: {img1_orig.shape}')
-
-        loss_LPIPS_ = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
+        diff_matte = diffmatte(output_clean, img1_orig)
         loss_conf = criterion_l1(conf, diff_matte)
-        # loss = (criterion_l1(x1_output, x1_orig)  + 0.1 * (float(torch.mean(loss_LPIPS_).item()) ** 1.1)) / 2
 
         lpips_weight = 0.5
-        loss = (1 - lpips_weight ) * criterion_l1(x1_output, x1_orig) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS_).item()) + 0.01 * loss_conf
+        loss_LPIPS_ = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
+        loss = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS_).item()) + 0.01 * loss_conf
 
         loss_l1 = criterion_l1(output_clean, img1_orig)
-        loss_l1_str = str(f'{loss_l1.item():.6f}')
 
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
