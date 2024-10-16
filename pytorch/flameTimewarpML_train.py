@@ -838,6 +838,8 @@ def get_dataset(
                 img1 = img1.permute(2, 0, 1)
                 img2 = img2.permute(2, 0, 1)
 
+                print (f'img0 {img0.shape}')
+
                 if self.generalize == 0:
                     # No augmentaton
                     pass
