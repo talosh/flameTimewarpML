@@ -437,6 +437,7 @@ def read_image_file(file_path, header_only = False):
             result['image_data'] = np.ascontiguousarray(img_data)
             del img_data
         inp.close()
+        del inp
     return result
 
 def get_dataset(
