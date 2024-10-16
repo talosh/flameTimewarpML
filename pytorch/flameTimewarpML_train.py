@@ -2717,7 +2717,7 @@ def main():
         batch_idx = batch_idx + 1
         step = step + 1
 
-        del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, merged, mask, output, output_clean
+        del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
         data_time2 = time.time() - time_stamp
 
         if epoch == args.epochs:
