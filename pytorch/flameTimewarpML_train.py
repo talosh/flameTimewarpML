@@ -897,7 +897,7 @@ def get_dataset(
                         r = random.uniform(1-delta, 1+delta)
                         g = random.uniform(1-delta, 1+delta)
                         b = random.uniform(1-delta, 1+delta)
-                        multipliers = torch.tensor([r, g, b]).view(3, 1, 1)
+                        multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device = device, dtype = torch.float32)
                         img0 *= multipliers
                         img1 *= multipliers
                         img2 *= multipliers
