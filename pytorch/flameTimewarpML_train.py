@@ -619,9 +619,9 @@ def get_dataset(
                     train_data['description'] = description
 
                     try:
-                        img0 = read_image_file(description['start'])
-                        img1 = read_image_file(description['gt'])
-                        img2 = read_image_file(description['end'])
+                        img0 = read_image_file(description['start'])['image_data']
+                        img1 = read_image_file(description['gt'])['image_data']
+                        img2 = read_image_file(description['end'])['image_data']
 
                         img0 = Image.fromarray(img0, mode='F')                        
                         img1 = Image.fromarray(img1, mode='F')                        
