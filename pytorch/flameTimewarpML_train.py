@@ -627,6 +627,7 @@ def get_dataset(
                         img1 = torch.from_numpy(img1).to(dtype = torch.float32)
                         img2 = torch.from_numpy(img2).to(dtype = torch.float32)
 
+                        '''
                         if self.generalize == 0:
                             img0 = self.resize_image(img0, self.h)
                             img1 = self.resize_image(img1, self.h)
@@ -649,7 +650,8 @@ def get_dataset(
                                 img0 = self.resize_image(img0, int(self.h * (1 + 1/6)))
                                 img1 = self.resize_image(img1, int(self.h * (1 + 1/6)))
                                 img2 = self.resize_image(img2, int(self.h * (1 + 1/6)))
-
+                        '''
+                        
                         train_data['start'] = img0
                         train_data['gt'] = img1
                         train_data['end'] = img2
@@ -883,7 +885,7 @@ def get_dataset(
                     img2 = self.apply_acescc(torch.clamp(img2, min=0.01))
                 
                 '''
-                 
+
                 batch_img0.append(img0)
                 batch_img1.append(img1)
                 batch_img2.append(img2)
