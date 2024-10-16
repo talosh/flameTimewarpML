@@ -642,7 +642,15 @@ def get_dataset(
                                 h_scaled = int(self.h * (1 + 1/7))
                             else:
                                 h_scaled = int(self.h * (1 + 1/6))
-                        
+
+                        h, w = img0.shape[2], img0.shape[3]
+                        if h > w:
+                            new_w = h_scaled
+                            new_h = int(h_scaled * h / w)
+                        else:
+                            new_h = h_scaled
+                            new_w = int(h_scaled * w / h)
+
                         train_data['start'] = img0.squeeze(0).permute(1, 2, 0)
                         train_data['gt'] = img1.squeeze(0).permute(1, 2, 0)
                         train_data['end'] = img2.squeeze(0).permute(1, 2, 0)
