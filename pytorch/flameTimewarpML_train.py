@@ -791,50 +791,11 @@ def get_dataset(
             batch_img2 = []
 
             for index in range(self.batch_size):
-                '''
-                if self.generalize == 0:
-                    # No augmentaton
-                    img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
-                    img0 = img0.permute(2, 0, 1)
-                    img1 = img1.permute(2, 0, 1)
-                    img2 = img2.permute(2, 0, 1)
-                elif self.generalize == 1:
-                    # Augment only scale and horizontal flip
-                    q = random.uniform(0, 1)
-                    if q < 0.25:
-                        img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
-                    elif q < 0.5:
-                        img0, img1, img2 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, self.h, self.w)
-                    elif q < 0.75:
-                        img0, img1, img2 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, self.h, self.w)
-                    else:
-                        img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
-                    img0 = img0.permute(2, 0, 1)
-                    img1 = img1.permute(2, 0, 1)
-                    img2 = img2.permute(2, 0, 1)
-                    if random.uniform(0, 1) < 0.5:
-                        img0 = img0.flip(-1)
-                        img1 = img1.flip(-1)
-                        img2 = img2.flip(-1)
-                else:
-                    q = random.uniform(0, 1)
-                    if q < 0.25:
-                        img0, img1, img2 = self.crop(rsz1_img0, rsz1_img1, rsz1_img2, self.h, self.w)
-                    elif q < 0.5:
-                        img0, img1, img2 = self.crop(rsz2_img0, rsz2_img1, rsz2_img2, self.h, self.w)
-                    elif q < 0.75:
-                        img0, img1, img2 = self.crop(rsz3_img0, rsz3_img1, rsz3_img2, self.h, self.w)
-                    else:
-                        img0, img1, img2 = self.crop(rsz4_img0, rsz4_img1, rsz4_img2, self.h, self.w)
-                '''
-
                 img0, img1, img2 = self.crop(src_img0, src_img1, src_img2, self.h, self.w)
 
                 img0 = img0.permute(2, 0, 1)
                 img1 = img1.permute(2, 0, 1)
                 img2 = img2.permute(2, 0, 1)
-
-                '''
 
                 if self.generalize == 0:
                     # No augmentaton
@@ -851,6 +812,7 @@ def get_dataset(
                         img1 = img1.flip(-1)
                         img2 = img2.flip(-1)
 
+                '''
                     # Rotation
                     if random.uniform(0, 1) < (self.generalize / 100):
                         p = random.uniform(0, 1)
@@ -919,9 +881,9 @@ def get_dataset(
 
                 '''
                 
-                batch_img0.append(torch.clamp(img0, min=0.))
-                batch_img1.append(torch.clamp(img1, min=0.))
-                batch_img2.append(torch.clamp(img2, min=0.))
+                batch_img0.append(img0)
+                batch_img1.append(img1)
+                batch_img2.append(img2)
 
             del train_data, src_img0, src_img1, src_img2
 
