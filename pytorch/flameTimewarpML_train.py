@@ -662,7 +662,10 @@ def get_dataset(
                         train_data['index'] = index
                         self.frames_queue.put(train_data)
                     except Exception as e:
-                        del train_data
+                        try:
+                            del train_data
+                        except:
+                            pass
                         print (f'\n\nError reading file: {e}')
                         print (f'{description}\n\n')
                 time.sleep(timeout)
