@@ -623,10 +623,6 @@ def get_dataset(
                         img1 = torch.from_numpy(img1).to(dtype = torch.float32)
                         img2 = torch.from_numpy(img2).to(dtype = torch.float32)
 
-                        # img0 = torch.clamp(img0, min=0.)
-                        # img1 = torch.clamp(img1, min=0.)
-                        # img2 = torch.clamp(img2, min=1e-11)
-
                         if self.generalize == 0:
                             img0 = self.resize_image(img0, self.h)
                             img1 = self.resize_image(img1, self.h)
@@ -721,7 +717,7 @@ def get_dataset(
             return resized_tensor
 
         def getimg(self, index):
-            '''
+            # '''
             if not self.last_train_data:
                 new_data = self.frames_queue.get_nowait()
                 self.last_train_data = [new_data]
@@ -748,8 +744,8 @@ def get_dataset(
                 return self.last_train_data[-1]
             else:
                 return self.last_train_data[random.randint(0, len(self.last_train_data) - 1)]
-            '''
-            return self.frames_queue.get()
+            # '''
+            # return self.frames_queue.get()
 
         def srgb_to_linear(self, srgb_image):
             # Apply the inverse sRGB gamma curve
