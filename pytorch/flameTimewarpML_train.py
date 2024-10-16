@@ -659,9 +659,9 @@ def get_dataset(
                         img1 = img0.squeeze(0).permute(1, 2, 0)
                         img2 = img0.squeeze(0).permute(1, 2, 0)
 
-                        img0 = img0.numpy(force = True).copy()
-                        img1 = img1.numpy(force = True).copy()
-                        img2 = img2.numpy(force = True).copy()
+                        img0 = img0.numpy(force = True)
+                        img1 = img1.numpy(force = True)
+                        img2 = img2.numpy(force = True)
 
                         train_data['start'] = img0
                         train_data['gt'] = img1
@@ -838,7 +838,6 @@ def get_dataset(
                 img1 = img1.permute(2, 0, 1)
                 img2 = img2.permute(2, 0, 1)
 
-                '''
                 if self.generalize == 0:
                     # No augmentaton
                     pass
@@ -898,11 +897,7 @@ def get_dataset(
                         r = random.uniform(1-delta, 1+delta)
                         g = random.uniform(1-delta, 1+delta)
                         b = random.uniform(1-delta, 1+delta)
-                        multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device = device, dtype = torch.float32)
-                        print (f'multipliers {multipliers.shape}')
-
-                        print (f'img0 {img0.shape}')
-
+                        multipliers = torch.tensor([r, g, b]).view(3, 1, 1)
                         img0 *= multipliers
                         img1 *= multipliers
                         img2 *= multipliers
@@ -923,8 +918,6 @@ def get_dataset(
                     img0 = self.apply_acescc(torch.clamp(img0, min=0.01))
                     img1 = self.apply_acescc(torch.clamp(img1, min=0.01))
                     img2 = self.apply_acescc(torch.clamp(img2, min=0.01))
-
-                '''
 
                 batch_img0.append(img0)
                 batch_img1.append(img1)
