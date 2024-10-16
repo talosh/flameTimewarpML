@@ -838,8 +838,6 @@ def get_dataset(
                 img1 = img1.permute(2, 0, 1)
                 img2 = img2.permute(2, 0, 1)
 
-                print (f'img0 {img0.shape}')
-
                 if self.generalize == 0:
                     # No augmentaton
                     pass
@@ -901,6 +899,9 @@ def get_dataset(
                         b = random.uniform(1-delta, 1+delta)
                         multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device = device, dtype = torch.float32)
                         print (f'multipliers {multipliers.shape}')
+
+                        print (f'img0 {img0.shape}')
+
                         img0 *= multipliers
                         img1 *= multipliers
                         img2 *= multipliers
