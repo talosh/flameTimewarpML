@@ -860,7 +860,6 @@ def get_dataset(
                 img1 = img1.permute(2, 0, 1)
                 img2 = img2.permute(2, 0, 1)
                 
-                '''
                 if self.generalize == 0:
                     # No augmentaton
                     pass
@@ -935,7 +934,6 @@ def get_dataset(
                             img0 = gamma_up(img0, gamma=gamma)
                             img1 = gamma_up(img1, gamma=gamma)
                             img2 = gamma_up(img2, gamma=gamma)
-                    '''
 
                 # Convert to ACEScc
                 if random.uniform(0, 1) < (self.acescc_rate / 100):
