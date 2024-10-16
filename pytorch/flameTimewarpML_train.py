@@ -494,12 +494,10 @@ def get_dataset(
             self.frame_read_thread.start()
 
             print ('reading first block of training data...')
-            self.last_train_data = [self.frames_queue.get()]
             self.last_train_data_size = 11
+            self.last_train_data = [self.frames_queue.get()] * self.last_train_data_size
             self.new_sample_shown = False
             self.train_data_index = 0
-
-            self.current_batch_data = []
 
             self.repeat_count = repeat
             self.repeat_counter = 0
@@ -793,17 +791,24 @@ def get_dataset(
             return self.last_train_data[0]
             '''
 
-            '''
-            try:
-                self.last_train_data = [self.frames_queue.get_nowait()]
-            except queue.Empty:
-                pass
+            if self.repeat_counter >= self.repeat_count:
+                self.repeat_counter = 0
+                try:
+                    new_data = self.frames_queue.get_nowait()
+                    self.last_train_data[random.randint(0, len(self.last_train_data) - 1)] = new_data
+                    self.train_data_index = new_data['index']
+                    return new_data
+                except queue.Empty:
+                    old_data = random.choice(self.last_train_data)
+                    self.train_data_index = old_data['index']
+                    return old_data
+            else:
+                self.repeat_counter += 1
+                old_data = random.choice(self.last_train_data)
+                self.train_data_index = old_data['index']
+                return old_data
 
-            self.train_data_index = self.last_train_data[0]['index']
-            return self.last_train_data[0]
-            '''
-
-            return self.frames_queue.get()
+            # return self.frames_queue.get()
 
         def srgb_to_linear(self, srgb_image):
             # Apply the inverse sRGB gamma curve
