@@ -18,7 +18,6 @@ from pprint import pprint
 
 try:
     import torch
-    import torchvision
 except:
     python_executable_path = sys.executable
     if '.miniconda' in python_executable_path:
@@ -611,6 +610,7 @@ def get_dataset(
             return descriptions
             
         def read_frames_thread(self):
+            from PIL import Image
             timeout = 1e-8
             while True:
                 for index in range(len(self.train_descriptions)):
@@ -623,6 +623,11 @@ def get_dataset(
                         img1 = read_image_file(description['gt'])
                         img2 = read_image_file(description['end'])
 
+                        img0 = Image.fromarray(img0, mode='F')                        
+                        img1 = Image.fromarray(img1, mode='F')                        
+                        img2 = Image.fromarray(img2, mode='F')                     
+
+                        '''
                         img0 = torch.from_numpy(img0['image_data']).to(dtype = torch.float32)
                         img1 = torch.from_numpy(img1['image_data']).to(dtype = torch.float32)
                         img2 = torch.from_numpy(img2['image_data']).to(dtype = torch.float32)
@@ -630,6 +635,7 @@ def get_dataset(
                         img0 = img0.permute(2, 0, 1).unsqueeze(0)
                         img1 = img1.permute(2, 0, 1).unsqueeze(0)
                         img2 = img2.permute(2, 0, 1).unsqueeze(0)
+                        '''
 
                         if self.generalize == 0:
                             h_scaled = self.h
@@ -652,6 +658,11 @@ def get_dataset(
                             new_h = h_scaled
                             new_w = int(h_scaled * w / h)
 
+                        img0 = img0.resize((new_h, new_w), resample=Image.LANCZOS)
+                        img1 = img1.resize((new_h, new_w), resample=Image.LANCZOS)
+                        img2 = img2.resize((new_h, new_w), resample=Image.LANCZOS)
+
+                        '''
                         img0 = torchvision.transforms.functional.resize(img0, (new_h, new_w))
                         img1 = torchvision.transforms.functional.resize(img1, (new_h, new_w))
                         img2 = torchvision.transforms.functional.resize(img2, (new_h, new_w))
@@ -659,10 +670,11 @@ def get_dataset(
                         img0 = img0.squeeze(0).permute(1, 2, 0)
                         img1 = img1.squeeze(0).permute(1, 2, 0)
                         img2 = img2.squeeze(0).permute(1, 2, 0)
+                        '''
 
-                        train_data['start'] = img0.numpy(force=True).copy()
-                        train_data['gt'] = img1.numpy(force=True).copy()
-                        train_data['end'] = img2.numpy(force=True).copy()
+                        train_data['start'] = np.array(img0).astype(np.float32)
+                        train_data['gt'] = np.array(img1).astype(np.float32)
+                        train_data['end'] = np.array(img2).astype(np.float32)
                         train_data['ratio'] = description['ratio']
                         train_data['h'] = description['h']
                         train_data['w'] = description['w']
