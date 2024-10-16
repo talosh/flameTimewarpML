@@ -651,6 +651,10 @@ def get_dataset(
                             new_h = h_scaled
                             new_w = int(h_scaled * w / h)
 
+                        img0 = torch.nn.functional.interpolate(img0, size=(new_h, new_w), mode='bilinear', align_corners=False)
+                        img1 = torch.nn.functional.interpolate(img1, size=(new_h, new_w), mode='bilinear', align_corners=False)
+                        img2 = torch.nn.functional.interpolate(img2, size=(new_h, new_w), mode='bilinear', align_corners=False)
+
                         train_data['start'] = img0.squeeze(0).permute(1, 2, 0)
                         train_data['gt'] = img1.squeeze(0).permute(1, 2, 0)
                         train_data['end'] = img2.squeeze(0).permute(1, 2, 0)
