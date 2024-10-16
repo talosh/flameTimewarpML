@@ -748,7 +748,11 @@ def get_dataset(
             else:
                 return self.last_train_data[random.randint(0, len(self.last_train_data) - 1)]
             '''
-            return self.frames_queue.get()
+            try:
+                self.last_train_data = [self.frames_queue.get_nowait()]
+            except queue.Empty:
+                pass
+            return self.last_train_data[0]
 
         def srgb_to_linear(self, srgb_image):
             # Apply the inverse sRGB gamma curve
