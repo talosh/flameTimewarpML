@@ -719,7 +719,7 @@ def get_dataset(
             return resized_tensor
 
         def getimg(self, index):
-            '''
+            # '''
             if not self.last_train_data:
                 new_data = self.frames_queue.get_nowait()
                 self.last_train_data = [new_data]
@@ -746,8 +746,8 @@ def get_dataset(
                 return self.last_train_data[-1]
             else:
                 return self.last_train_data[random.randint(0, len(self.last_train_data) - 1)]
-            '''
-            return self.frames_queue.get()
+            # '''
+            # return self.frames_queue.get()
 
         def srgb_to_linear(self, srgb_image):
             # Apply the inverse sRGB gamma curve
