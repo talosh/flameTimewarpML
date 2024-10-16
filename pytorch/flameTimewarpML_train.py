@@ -659,9 +659,7 @@ def get_dataset(
                         img1 = img0.squeeze(0).permute(1, 2, 0)
                         img2 = img0.squeeze(0).permute(1, 2, 0)
 
-                        img0 = img0.numpy(force = True)
-                        img1 = img0.numpy(force = True)
-                        img2 = img0.numpy(force = True)
+                        print (type(img0))
 
                         train_data['start'] = img0
                         train_data['gt'] = img1
