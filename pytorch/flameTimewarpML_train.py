@@ -652,10 +652,9 @@ def get_dataset(
                             new_h = h_scaled
                             new_w = int(h_scaled * w / h)
 
-                        resize_transform = torchvision.transforms.Resize((new_h, new_w))
-                        img0 = resize_transform(img0)
-                        img1 = resize_transform(img1)
-                        img2 = resize_transform(img2)
+                        img0 = torchvision.transforms.functional.resize(img0, (new_h, new_w))
+                        img1 = torchvision.transforms.functional.resize(img1, (new_h, new_w))
+                        img2 = torchvision.transforms.functional.resize(img2, (new_h, new_w))
 
                         img0 = img0.squeeze(0).permute(1, 2, 0)
                         img1 = img1.squeeze(0).permute(1, 2, 0)
