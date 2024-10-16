@@ -655,18 +655,18 @@ def get_dataset(
                             new_w = int(h_scaled * w / h)
 
                         channels = [Image.fromarray(img0[:, :, i], mode='F') for i in range(3)]
-                        resized_channels = [channel.resize((new_h, new_w), resample=Image.LANCZOS) for channel in channels]
-                        resized_image = Image.merge('RGB', resized_channels)
+                        # resized_channels = [channel.resize((new_h, new_w), resample=Image.LANCZOS) for channel in channels]
+                        resized_image = Image.merge('RGB', channels)
                         img0 = np.array(resized_image).astype(np.float32)
 
                         channels = [Image.fromarray(img1[:, :, i], mode='F') for i in range(3)]
-                        resized_channels = [channel.resize((new_h, new_w), resample=Image.LANCZOS) for channel in channels]
-                        resized_image = Image.merge('RGB', resized_channels)
+                        # resized_channels = [channel.resize((new_h, new_w), resample=Image.LANCZOS) for channel in channels]
+                        resized_image = Image.merge('RGB', channels)
                         img1 = np.array(resized_image).astype(np.float32)
 
                         channels = [Image.fromarray(img2[:, :, i], mode='F') for i in range(3)]
-                        resized_channels = [channel.resize((new_h, new_w), resample=Image.LANCZOS) for channel in channels]
-                        resized_image = Image.merge('RGB', resized_channels)
+                        # resized_channels = [channel.resize((new_h, new_w), resample=Image.LANCZOS) for channel in channels]
+                        resized_image = Image.merge('RGB', channels)
                         img2 = np.array(resized_image).astype(np.float32)
 
                         '''
