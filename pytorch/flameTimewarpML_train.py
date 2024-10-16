@@ -874,12 +874,13 @@ def get_dataset(
                             img0 = gamma_up(img0, gamma=gamma)
                             img1 = gamma_up(img1, gamma=gamma)
                             img2 = gamma_up(img2, gamma=gamma)
-
+                '''
                 # Convert to ACEScc
                 if random.uniform(0, 1) < (self.acescc_rate / 100):
                     img0 = self.apply_acescc(torch.clamp(img0, min=0.01))
                     img1 = self.apply_acescc(torch.clamp(img1, min=0.01))
                     img2 = self.apply_acescc(torch.clamp(img2, min=0.01))
+                '''
                 
                 batch_img0.append(img0)
                 batch_img1.append(img1)
@@ -2178,7 +2179,7 @@ def main():
 
         del img0, img1, img2, img0_orig, img1_orig, img2_orig
         continue
-    
+
         data_time1 = time.time() - time_stamp
         time_stamp = time.time()
 
