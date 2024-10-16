@@ -2185,8 +2185,8 @@ def main():
         else:
             training_scale = [8, 4, 2, 1]
 
-        del img0, img1, img2, img0_orig, img1_orig, img2_orig
-        continue
+        # del img0, img1, img2, img0_orig, img1_orig, img2_orig
+        # continue
 
         data_time1 = time.time() - time_stamp
         time_stamp = time.time()
@@ -2257,8 +2257,8 @@ def main():
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow0, flow1, flow_list, mask, mask_list, conf, conf_list, merged, output, output_clean, diff_matte
-        continue
+        # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow0, flow1, flow_list, mask, mask_list, conf, conf_list, merged, output, output_clean, diff_matte
+        # continue
 
         current_state_dict['step'] = int(step)
         current_state_dict['epoch'] = int(epoch)
