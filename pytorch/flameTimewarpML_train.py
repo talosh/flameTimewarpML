@@ -622,9 +622,9 @@ def get_dataset(
                         img1 = read_image_file(description['gt'])
                         img2 = read_image_file(description['end'])
 
-                        img0 = torch.from_numpy(img0['image_data']).to(device = device, dtype = torch.float32)
-                        img1 = torch.from_numpy(img1['image_data']).to(device = device, dtype = torch.float32)
-                        img2 = torch.from_numpy(img2['image_data']).to(device = device, dtype = torch.float32)
+                        img0 = torch.from_numpy(img0['image_data']).to(dtype = torch.float32)
+                        img1 = torch.from_numpy(img1['image_data']).to(dtype = torch.float32)
+                        img2 = torch.from_numpy(img2['image_data']).to(dtype = torch.float32)
 
                         img0 = img0.permute(2, 0, 1).unsqueeze(0)
                         img1 = img1.permute(2, 0, 1).unsqueeze(0)
