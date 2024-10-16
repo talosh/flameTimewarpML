@@ -2189,9 +2189,6 @@ def main():
             iterations = args.iterations
             )
 
-        del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged
-        continue
-
         flow0 = flow_list[-1][:, :2]
         flow1 = flow_list[-1][:, 2:4]
         mask = mask_list[-1]
@@ -2202,6 +2199,9 @@ def main():
 
         diff_matte = diffmatte(output_clean, img1_orig)
         loss_conf = criterion_l1(conf, diff_matte)
+
+        del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte
+        continue
 
         lpips_weight = 0.5
         loss_LPIPS_ = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
