@@ -799,14 +799,10 @@ def get_dataset(
                     self.train_data_index = new_data['index']
                     return new_data
                 except queue.Empty:
-                    old_data = random.choice(self.last_train_data)
-                    self.train_data_index = old_data['index']
-                    return old_data
+                    return random.choice(self.last_train_data)
             else:
                 self.repeat_counter += 1
-                old_data = random.choice(self.last_train_data)
-                self.train_data_index = old_data['index']
-                return old_data
+                return random.choice(self.last_train_data)
 
             # return self.frames_queue.get()
 
