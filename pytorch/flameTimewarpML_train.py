@@ -618,13 +618,13 @@ def get_dataset(
                     train_data['description'] = description
 
                     try:
-                        img0np = read_image_file(description['start'])['image_data']
-                        img1np = read_image_file(description['gt'])['image_data']
-                        img2np = read_image_file(description['end'])['image_data']
+                        img0 = read_image_file(description['start'])['image_data']
+                        img1 = read_image_file(description['gt'])['image_data']
+                        img2 = read_image_file(description['end'])['image_data']
 
-                        img0 = torch.from_numpy(img0np.copy()).to(dtype = torch.float32)
-                        img1 = torch.from_numpy(img1np.copy()).to(dtype = torch.float32)
-                        img2 = torch.from_numpy(img2np.copy()).to(dtype = torch.float32)
+                        img0 = torch.from_numpy(img0).to(dtype = torch.float32)
+                        img1 = torch.from_numpy(img1).to(dtype = torch.float32)
+                        img2 = torch.from_numpy(img2).to(dtype = torch.float32)
 
                         if self.generalize == 0:
                             h_scaled = self.h
