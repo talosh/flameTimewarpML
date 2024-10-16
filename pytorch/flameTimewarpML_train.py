@@ -771,6 +771,7 @@ def get_dataset(
             return self.last_train_data[0]
             '''
 
+            '''
             try:
                 self.last_train_data = [self.frames_queue.get_nowait()]
             except queue.Empty:
@@ -778,6 +779,9 @@ def get_dataset(
 
             self.train_data_index = self.last_train_data[0]['index']
             return self.last_train_data[0]
+            '''
+
+            return self.frames_queue.get()
 
         def srgb_to_linear(self, srgb_image):
             # Apply the inverse sRGB gamma curve
@@ -833,7 +837,8 @@ def get_dataset(
                 img0 = img0.permute(2, 0, 1)
                 img1 = img1.permute(2, 0, 1)
                 img2 = img2.permute(2, 0, 1)
-
+                
+                '''
                 if self.generalize == 0:
                     # No augmentaton
                     pass
@@ -914,6 +919,8 @@ def get_dataset(
                     img0 = self.apply_acescc(torch.clamp(img0, min=0.01))
                     img1 = self.apply_acescc(torch.clamp(img1, min=0.01))
                     img2 = self.apply_acescc(torch.clamp(img2, min=0.01))
+                
+                '''
 
                 batch_img0.append(img0)
                 batch_img1.append(img1)
