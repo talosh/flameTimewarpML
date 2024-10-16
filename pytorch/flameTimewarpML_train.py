@@ -18,6 +18,7 @@ from pprint import pprint
 
 try:
     import torch
+    import torchvision
 except:
     python_executable_path = sys.executable
     if '.miniconda' in python_executable_path:
