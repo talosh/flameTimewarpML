@@ -801,7 +801,6 @@ def get_dataset(
                 img1 = img1.permute(2, 0, 1)
                 img2 = img2.permute(2, 0, 1)
 
-                '''
                 if self.generalize == 0:
                     # No augmentaton
                     pass
@@ -882,8 +881,6 @@ def get_dataset(
                     img0 = self.apply_acescc(torch.clamp(img0, min=0.01))
                     img1 = self.apply_acescc(torch.clamp(img1, min=0.01))
                     img2 = self.apply_acescc(torch.clamp(img2, min=0.01))
-                
-                '''
 
                 batch_img0.append(img0)
                 batch_img1.append(img1)
