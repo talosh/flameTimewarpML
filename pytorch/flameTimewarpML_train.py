@@ -817,6 +817,11 @@ def get_dataset(
             src_img0 = train_data['start']
             src_img1 = train_data['gt']
             src_img2 = train_data['end']
+
+            src_img0 = torch.from_numpy(src_img0).to(dtype = torch.float32)
+            src_img1 = torch.from_numpy(src_img1).to(dtype = torch.float32)
+            src_img2 = torch.from_numpy(src_img2).to(dtype = torch.float32)
+
             imgh = train_data['h']
             imgw = train_data['w']
             ratio = train_data['ratio']
