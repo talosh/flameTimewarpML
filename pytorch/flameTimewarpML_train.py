@@ -710,6 +710,8 @@ def get_dataset(
 
             # Resize
             resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bicubic', align_corners=False)
+            
+            del tensor
 
             # Adjust tensor shape back to [h, w, c]
             resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
@@ -717,7 +719,7 @@ def get_dataset(
             return resized_tensor
 
         def getimg(self, index):
-            # '''
+            '''
             if not self.last_train_data:
                 new_data = self.frames_queue.get_nowait()
                 self.last_train_data = [new_data]
@@ -744,8 +746,8 @@ def get_dataset(
                 return self.last_train_data[-1]
             else:
                 return self.last_train_data[random.randint(0, len(self.last_train_data) - 1)]
-            # '''
-            # return self.frames_queue.get()
+            '''
+            return self.frames_queue.get()
 
         def srgb_to_linear(self, srgb_image):
             # Apply the inverse sRGB gamma curve
