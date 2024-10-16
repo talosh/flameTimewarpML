@@ -623,10 +623,6 @@ def get_dataset(
                         img1 = read_image_file(description['gt'])['image_data']
                         img2 = read_image_file(description['end'])['image_data']
 
-                        img0 = Image.fromarray(img0, mode='F')                        
-                        img1 = Image.fromarray(img1, mode='F')                        
-                        img2 = Image.fromarray(img2, mode='F')                     
-
                         '''
                         img0 = torch.from_numpy(img0['image_data']).to(dtype = torch.float32)
                         img1 = torch.from_numpy(img1['image_data']).to(dtype = torch.float32)
@@ -659,18 +655,18 @@ def get_dataset(
                             new_w = int(h_scaled * w / h)
 
                         channels = [Image.fromarray(img0[:, :, i], mode='F') for i in range(3)]
-                        # resized_channels = [channel.resize((new_h, new_w), resample=Image.LANCZOS) for channel in channels]
-                        resized_image = Image.merge('RGB', channels)
+                        resized_channels = [channel.resize((new_h, new_w), resample=Image.LANCZOS) for channel in channels]
+                        resized_image = Image.merge('RGB', resized_channels)
                         img0 = np.array(resized_image).astype(np.float32)
 
                         channels = [Image.fromarray(img1[:, :, i], mode='F') for i in range(3)]
-                        # resized_channels = [channel.resize((new_h, new_w), resample=Image.LANCZOS) for channel in channels]
-                        resized_image = Image.merge('RGB', channels)
+                        resized_channels = [channel.resize((new_h, new_w), resample=Image.LANCZOS) for channel in channels]
+                        resized_image = Image.merge('RGB', resized_channels)
                         img1 = np.array(resized_image).astype(np.float32)
 
                         channels = [Image.fromarray(img2[:, :, i], mode='F') for i in range(3)]
-                        # resized_channels = [channel.resize((new_h, new_w), resample=Image.LANCZOS) for channel in channels]
-                        resized_image = Image.merge('RGB', channels)
+                        resized_channels = [channel.resize((new_h, new_w), resample=Image.LANCZOS) for channel in channels]
+                        resized_image = Image.merge('RGB', resized_channels)
                         img2 = np.array(resized_image).astype(np.float32)
 
                         '''
