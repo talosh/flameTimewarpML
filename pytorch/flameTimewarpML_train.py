@@ -774,7 +774,7 @@ def get_dataset(
             
             del value_if_true
             del value_if_false
-            
+
             return ACEScc
 
         def __getitem__(self, index):
@@ -1919,10 +1919,10 @@ def main():
             param.requires_grad = False
         for param in flownet.module.block1.parameters():
             param.requires_grad = False
-        '''
-
         for param in flownet.module.block2.parameters():
             param.requires_grad = False
+        '''
+
         for param in flownet.module.block3.parameters():
             param.requires_grad = False
         for param in flownet.module.block4.parameters():
@@ -2149,8 +2149,8 @@ def main():
 
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
 
-        del img0, img1, img2, img0_orig, img1_orig, img2_orig #, flow_list, mask_list, merged, mask, output, output_clean
-        continue
+        # del img0, img1, img2, img0_orig, img1_orig, img2_orig #, flow_list, mask_list, merged, mask, output, output_clean
+        # continue
 
         optimizer_flownet.zero_grad()
 
