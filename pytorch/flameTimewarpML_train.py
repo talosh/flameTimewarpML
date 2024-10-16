@@ -2188,7 +2188,10 @@ def main():
             scale=training_scale,
             iterations = args.iterations
             )
-        
+
+        del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged
+        continue
+
         flow0 = flow_list[-1][:, :2]
         flow1 = flow_list[-1][:, 2:4]
         mask = mask_list[-1]
