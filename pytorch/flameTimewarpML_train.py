@@ -428,7 +428,7 @@ def write_exr(image_data, filename, half_float = False, pixelAspectRatio = 1.0):
 def read_image_file(file_path, header_only = False):
     result = {'spec': None, 'image_data': None}
     inp = oiio.ImageInput.open(file_path)
-    if inp :
+    if inp:
         spec = inp.spec()
         result['spec'] = spec
         if not header_only:
