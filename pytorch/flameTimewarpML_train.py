@@ -2237,7 +2237,7 @@ def main():
             training_scale = [8, 4, 2, 1]
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig
-        continue
+        # continue
 
         data_time1 = time.time() - time_stamp
         time_stamp = time.time()
@@ -2251,6 +2251,8 @@ def main():
             scale=training_scale,
             iterations = args.iterations
             )
+
+        continue
 
         flow0 = flow_list[-1][:, :2]
         flow1 = flow_list[-1][:, 2:4]
