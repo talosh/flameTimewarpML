@@ -643,9 +643,9 @@ def get_dataset(
                         img1rsz = self.resize_image(img1, h_scaled)
                         img2rsz = self.resize_image(img2, h_scaled)
 
-                        train_data['start'] = img0
-                        train_data['gt'] = img1
-                        train_data['end'] = img2
+                        train_data['start'] = img0rsz
+                        train_data['gt'] = img1rsz
+                        train_data['end'] = img2rsz
                         train_data['ratio'] = description['ratio']
                         train_data['h'] = description['h']
                         train_data['w'] = description['w']
