@@ -639,11 +639,9 @@ def get_dataset(
                             else:
                                 h_scaled = int(self.h * (1 + 1/6))
                         
-                        '''
-                        train_data['start'] = self.resize_image(img0, h_scaled).detach().clone().contiguous()
-                        train_data['gt'] = self.resize_image(img1, h_scaled).detach().clone().contiguous()
-                        train_data['end'] = self.resize_image(img2, h_scaled).detach().clone().contiguous()
-                        '''
+                        img0rsz = self.resize_image(img0, h_scaled)
+                        img1rsz = self.resize_image(img1, h_scaled)
+                        img2rsz = self.resize_image(img2, h_scaled)
 
                         train_data['start'] = img0
                         train_data['gt'] = img1
