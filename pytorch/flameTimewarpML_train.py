@@ -1348,6 +1348,9 @@ class MaxNValues:
             if value > self.heap[0][0]:
                 heapq.heapreplace(self.heap, (value, data))
 
+        self.heap = heapq.nlargest(self.n, self.heap)
+        heapq.heapify(self.heap)
+
     def get_values(self):
         """
         Returns the list of top n values and their associated data,
@@ -1418,6 +1421,9 @@ class MinNValues:
                 # Replace the largest value with the new value
                 heapq.heapreplace(self.heap, heap_item)
 
+        self.heap = heapq.nsmallest(self.n, self.heap)
+        heapq.heapify(self.heap)
+
     def get_values(self):
         """
         Returns the list of top n minimum values and their associated data,
@@ -1446,7 +1452,7 @@ class MinNValues:
         self.n = new_n
         if len(self.heap) > new_n:
             # Keep only the top new_n values
-            self.heap = heapq.nlargest(new_n, self.heap)
+            self.heap = heapq.nsmallest(new_n, self.heap)
             heapq.heapify(self.heap)
 
     def __len__(self):
