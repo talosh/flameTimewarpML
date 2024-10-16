@@ -2203,7 +2203,7 @@ def main():
             training_scale = [8, 4, 2, 1]
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig
-        # continue
+        continue
 
         data_time1 = time.time() - time_stamp
         time_stamp = time.time()
@@ -2225,9 +2225,6 @@ def main():
 
         output = merged[-1]
         output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
-
-        del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean
-        continue
 
         diff_matte = diffmatte(output_clean, img1_orig)
         loss_conf = criterion_l1(conf, diff_matte)
