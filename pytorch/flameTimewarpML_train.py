@@ -2226,6 +2226,9 @@ def main():
         output = merged[-1]
         output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
 
+        del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean
+        continue
+
         diff_matte = diffmatte(output_clean, img1_orig)
         loss_conf = criterion_l1(conf, diff_matte)
 
@@ -2234,8 +2237,8 @@ def main():
         loss = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS).item()) + 0.01 * loss_conf
         loss_l1 = criterion_l1(output_clean, img1_orig)
 
-        del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
-        continue
+        # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
+        # continue
 
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
