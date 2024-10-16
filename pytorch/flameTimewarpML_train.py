@@ -622,9 +622,9 @@ def get_dataset(
                         img1 = torch.from_numpy(img1.copy()).to(dtype = torch.float32)
                         img2 = torch.from_numpy(img2.copy()).to(dtype = torch.float32)
 
-                        img0 = torch.clamp(img0, min=0.001)
-                        img1 = torch.clamp(img1, min=0.001)
-                        img2 = torch.clamp(img2, min=0.001)
+                        img0 = torch.clamp(img0, min=0.0001)
+                        img1 = torch.clamp(img1, min=0.0001)
+                        img2 = torch.clamp(img2, min=0.0001)
 
                         if self.generalize == 0:
                             img0 = self.resize_image(img0, self.h)
@@ -659,6 +659,7 @@ def get_dataset(
                         train_data['description'] = description
                         train_data['index'] = index
                         self.frames_queue.put(train_data)
+
                     except Exception as e:
                         try:
                             del train_data
@@ -666,6 +667,7 @@ def get_dataset(
                             pass
                         print (f'\n\nError reading file: {e}')
                         print (f'{description}\n\n')
+                
                 time.sleep(timeout)
 
         def __len__(self):
