@@ -32,7 +32,7 @@ class Model:
                     stride=stride,
                     padding=padding, 
                     dilation=dilation,
-                    padding_mode='reflect',
+                    padding_mode='replicate',
                     bias=True
                 ),
                 torch.nn.LeakyReLU(0.2, True)
@@ -87,7 +87,7 @@ class Model:
             def __init__(self, kernel_size=3):
                 super(SpatialAttention, self).__init__()
                 padding = kernel_size // 2  # Ensure same spatial dimensions
-                self.conv0 = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, padding_mode='reflect', bias=False)
+                self.conv0 = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, padding_mode='replicate', bias=False)
                 self.sigmoid = torch.nn.Sigmoid()
 
             def forward(self, x):
@@ -148,7 +148,7 @@ class Model:
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'replicate', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
