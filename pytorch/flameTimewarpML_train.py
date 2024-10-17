@@ -2758,7 +2758,9 @@ def main():
 
         snapshot = tracemalloc.take_snapshot()
 
-        clear_lines(10)
+        clear_lines(12)
+        print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{data_time1_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
+        print(f'\r[Epoch] Min: {min_l1:.6f} Avg: {avg_l1:.6f}, Max: {max_l1:.6f} LPIPS: {avg_lpips:.4f}')
         top_stats = snapshot.statistics('lineno')
         for stat in top_stats[:10]:
             print(stat)
