@@ -2134,6 +2134,8 @@ def main():
 
     print('\n\n')
 
+    print(f'{'\n'*12}')
+
     current_state_dict['step'] = int(step)
     current_state_dict['epoch'] = int(epoch)
     current_state_dict['start_timestamp'] = start_timestamp
