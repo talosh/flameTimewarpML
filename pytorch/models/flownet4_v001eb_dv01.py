@@ -338,9 +338,9 @@ class Model:
                 # scale[1] = 1
 
                 # stage 3
-                scale[0] = scale[2]
-                scale[1] = scale[3]
-                scale[2] = 1
+                # scale[0] = scale[2]
+                # scale[1] = scale[3]
+                # scale[2] = 1
 
                 flow, mask, conf = self.block0(
                     img0, 
@@ -418,7 +418,7 @@ class Model:
                 conf_list[2] = torch.sigmoid(conf)
                 merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
-                # '''
+                '''
                 # step training stage 03
                 flow_list[4] = flow_list[2]
                 mask_list[4] = mask_list[2]
@@ -426,7 +426,7 @@ class Model:
                 merged[4] = merged[2]
 
                 return flow_list, mask_list, conf_list, merged
-                # '''
+                '''
 
                 # refine step 3
                 flow_d, mask, conf_d = self.block3(
