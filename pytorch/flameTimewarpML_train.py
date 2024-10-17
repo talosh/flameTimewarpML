@@ -20,6 +20,7 @@ from pprint import pprint
 
 try:
     import torch
+    import torchvision
 except:
     python_executable_path = sys.executable
     if '.miniconda' in python_executable_path:
@@ -669,6 +670,8 @@ def get_dataset(
                         resized_channels = [channel.resize((new_w, new_h), resample=Image.LANCZOS) for channel in channels]
                         resized_arrays = [np.array(channel) for channel in resized_channels]
                         img2 = np.stack(resized_arrays, axis=-1)
+
+                        # resize_transform = torchvision.transforms.Resize((new_w, new_h), interpolation=torchvision.transforms.InterpolationMode.LANCZOS)
 
                         '''
                         img0 = torchvision.transforms.functional.resize(img0, (new_h, new_w))
