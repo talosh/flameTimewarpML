@@ -235,8 +235,8 @@ class Model:
                 )
                 self.attn = CBAM(c)
                 self.attn_deep = CBAM(c)
-                self.mix = torch.nn.Conv2d(c*2, c, kernel_size=3, stride=1, padding=1, bias=True)
-                # self.mix = conv(c*2, c, 3, 1, 1)
+                # self.mix = torch.nn.Conv2d(c*2, c, kernel_size=3, stride=1, padding=1, bias=True)
+                self.mix = conv(c*2, c, 3, 1, 1)
                 self.convblock_mix = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
