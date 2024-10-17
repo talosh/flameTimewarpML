@@ -2758,7 +2758,7 @@ def main():
         batch_idx = batch_idx + 1
         step = step + 1
 
-        snapshot = tracemalloc.take_snapshot()
+        # snapshot = tracemalloc.take_snapshot()
         
         '''
         clear_lines(12)
