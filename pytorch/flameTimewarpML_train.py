@@ -438,7 +438,7 @@ def read_image_file(file_path, header_only = False):
             result['image_data'] = inp.read_image(0, 0, 0, channels)
             # img_data = inp.read_image(0, 0, 0, channels) #.transpose(1, 0, 2)
             # result['image_data'] = np.ascontiguousarray(img_data)
-        # inp.close()
+        inp.close()
         # del inp
     return result
 
