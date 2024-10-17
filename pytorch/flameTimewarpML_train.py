@@ -2758,6 +2758,7 @@ def main():
 
         snapshot = tracemalloc.take_snapshot()
 
+        clear_lines(10)
         top_stats = snapshot.statistics('lineno')
         for stat in top_stats[:10]:
             print(stat)
