@@ -945,7 +945,7 @@ def get_dataset(
                 batch_img1.append(img1)
                 batch_img2.append(img2)
 
-            del train_data, src_img0, src_img1, src_img2
+            # del train_data, src_img0, src_img1, src_img2
 
             return torch.stack(batch_img0), torch.stack(batch_img1), torch.stack(batch_img2), ratio, images_idx, description
 
