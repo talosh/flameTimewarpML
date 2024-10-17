@@ -2134,7 +2134,7 @@ def main():
 
     print('\n\n')
 
-    print(f'{'\n'*12}')
+    print(f'{"\n"*12}')
 
     current_state_dict['step'] = int(step)
     current_state_dict['epoch'] = int(epoch)
