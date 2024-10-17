@@ -221,7 +221,6 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
-                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True)
                 )
                 self.convblock_deep = torch.nn.Sequential(
                     ResConv(c*2),
