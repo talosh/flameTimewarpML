@@ -617,85 +617,83 @@ def get_dataset(
                     train_data = {}
                     train_data['description'] = description
 
-                    # try:
-                    img0 = read_image_file(description['start'])['image_data']
-                    img1 = read_image_file(description['gt'])['image_data']
-                    img2 = read_image_file(description['end'])['image_data']
+                    try:
+                        img0 = read_image_file(description['start'])['image_data']
+                        img1 = read_image_file(description['gt'])['image_data']
+                        img2 = read_image_file(description['end'])['image_data']
 
-                    '''
-                    img0 = torch.from_numpy(img0['image_data']).to(dtype = torch.float32)
-                    img1 = torch.from_numpy(img1['image_data']).to(dtype = torch.float32)
-                    img2 = torch.from_numpy(img2['image_data']).to(dtype = torch.float32)
+                        '''
+                        img0 = torch.from_numpy(img0['image_data']).to(dtype = torch.float32)
+                        img1 = torch.from_numpy(img1['image_data']).to(dtype = torch.float32)
+                        img2 = torch.from_numpy(img2['image_data']).to(dtype = torch.float32)
 
-                    img0 = img0.permute(2, 0, 1)
-                    img1 = img1.permute(2, 0, 1)
-                    img2 = img2.permute(2, 0, 1)
-                    '''
+                        img0 = img0.permute(2, 0, 1)
+                        img1 = img1.permute(2, 0, 1)
+                        img2 = img2.permute(2, 0, 1)
+                        '''
 
-                    if self.generalize == 0:
-                        h_scaled = self.h
-                    else:
-                        q = random.uniform(0, 1)
-                        if q < 0.25:
+                        if self.generalize == 0:
                             h_scaled = self.h
-                        elif q < 0.5:
-                            h_scaled = int(self.h * (1 + 1/8))
-                        elif q < 0.75:
-                            h_scaled = int(self.h * (1 + 1/7))
                         else:
-                            h_scaled = int(self.h * (1 + 1/6))
+                            q = random.uniform(0, 1)
+                            if q < 0.25:
+                                h_scaled = self.h
+                            elif q < 0.5:
+                                h_scaled = int(self.h * (1 + 1/8))
+                            elif q < 0.75:
+                                h_scaled = int(self.h * (1 + 1/7))
+                            else:
+                                h_scaled = int(self.h * (1 + 1/6))
 
-                    h, w = img0.shape[0], img0.shape[1]
-                    if h > w:
-                        new_w = h_scaled
-                        new_h = int(h_scaled * h / w)
-                    else:
-                        new_h = h_scaled
-                        new_w = int(h_scaled * w / h)
+                        h, w = img0.shape[0], img0.shape[1]
+                        if h > w:
+                            new_w = h_scaled
+                            new_h = int(h_scaled * h / w)
+                        else:
+                            new_h = h_scaled
+                            new_w = int(h_scaled * w / h)
 
-                    channels = [Image.fromarray(img0[:, :, i], mode='F') for i in range(3)]
-                    resized_channels = [channel.resize((new_w, new_h), resample=Image.LANCZOS) for channel in channels]
-                    resized_arrays = [np.array(channel) for channel in resized_channels]
-                    img0 = np.stack(resized_arrays, axis=-1)
+                        channels = [Image.fromarray(img0[:, :, i], mode='F') for i in range(3)]
+                        resized_channels = [channel.resize((new_w, new_h), resample=Image.LANCZOS) for channel in channels]
+                        resized_arrays = [np.array(channel) for channel in resized_channels]
+                        img0 = np.stack(resized_arrays, axis=-1)
 
-                    channels = [Image.fromarray(img1[:, :, i], mode='F') for i in range(3)]
-                    resized_channels = [channel.resize((new_w, new_h), resample=Image.LANCZOS) for channel in channels]
-                    resized_arrays = [np.array(channel) for channel in resized_channels]
-                    img1 = np.stack(resized_arrays, axis=-1)
+                        channels = [Image.fromarray(img1[:, :, i], mode='F') for i in range(3)]
+                        resized_channels = [channel.resize((new_w, new_h), resample=Image.LANCZOS) for channel in channels]
+                        resized_arrays = [np.array(channel) for channel in resized_channels]
+                        img1 = np.stack(resized_arrays, axis=-1)
 
-                    channels = [Image.fromarray(img2[:, :, i], mode='F') for i in range(3)]
-                    resized_channels = [channel.resize((new_w, new_h), resample=Image.LANCZOS) for channel in channels]
-                    resized_arrays = [np.array(channel) for channel in resized_channels]
-                    img2 = np.stack(resized_arrays, axis=-1)
+                        channels = [Image.fromarray(img2[:, :, i], mode='F') for i in range(3)]
+                        resized_channels = [channel.resize((new_w, new_h), resample=Image.LANCZOS) for channel in channels]
+                        resized_arrays = [np.array(channel) for channel in resized_channels]
+                        img2 = np.stack(resized_arrays, axis=-1)
 
-                    '''
-                    img0 = torchvision.transforms.functional.resize(img0, (new_h, new_w))
-                    img1 = torchvision.transforms.functional.resize(img1, (new_h, new_w))
-                    img2 = torchvision.transforms.functional.resize(img2, (new_h, new_w))
+                        '''
+                        img0 = torchvision.transforms.functional.resize(img0, (new_h, new_w))
+                        img1 = torchvision.transforms.functional.resize(img1, (new_h, new_w))
+                        img2 = torchvision.transforms.functional.resize(img2, (new_h, new_w))
 
-                    img0 = img0.squeeze(0).permute(1, 2, 0)
-                    img1 = img1.squeeze(0).permute(1, 2, 0)
-                    img2 = img2.squeeze(0).permute(1, 2, 0)
-                    '''
+                        img0 = img0.squeeze(0).permute(1, 2, 0)
+                        img1 = img1.squeeze(0).permute(1, 2, 0)
+                        img2 = img2.squeeze(0).permute(1, 2, 0)
+                        '''
 
-                    train_data['start'] = img0
-                    train_data['gt'] = img1
-                    train_data['end'] = img2
-                    train_data['ratio'] = description['ratio']
-                    train_data['h'] = description['h']
-                    train_data['w'] = description['w']
-                    train_data['description'] = description
-                    train_data['index'] = index
-                    self.frames_queue.put(train_data)
+                        train_data['start'] = img0
+                        train_data['gt'] = img1
+                        train_data['end'] = img2
+                        train_data['ratio'] = description['ratio']
+                        train_data['h'] = description['h']
+                        train_data['w'] = description['w']
+                        train_data['description'] = description
+                        train_data['index'] = index
+                        self.frames_queue.put(train_data)
 
-                    del img0, img1, img2, train_data
+                        # del img0, img1, img2, train_data
                     
-                    '''
                     except Exception as e:
                         del train_data
                         print (f'\n\nError reading file: {e}')
                         print (f'{description}\n\n')
-                    '''
 
                 # time.sleep(timeout)
 
