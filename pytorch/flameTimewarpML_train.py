@@ -2134,7 +2134,7 @@ def main():
 
     print('\n\n')
 
-    print("\n"*12)
+    # print("\n"*12)
 
     current_state_dict['step'] = int(step)
     current_state_dict['epoch'] = int(epoch)
@@ -2202,7 +2202,7 @@ def main():
     train_time = 0
 
     while True:
-        tracemalloc.start()
+        # tracemalloc.start()
         # data_time = time.time() - time_stamp
         time_stamp = time.time()
 
@@ -2467,9 +2467,9 @@ def main():
         hours = int((epoch_time % (24 * 3600)) // 3600)
         minutes = int((epoch_time % 3600) // 60)
 
-        # clear_lines(2)
-        # print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{data_time1_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
-        # print(f'\r[Epoch] Min: {min_l1:.6f} Avg: {avg_l1:.6f}, Max: {max_l1:.6f} LPIPS: {avg_lpips:.4f}')
+        clear_lines(2)
+        print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{data_time1_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
+        print(f'\r[Epoch] Min: {min_l1:.6f} Avg: {avg_l1:.6f}, Max: {max_l1:.6f} LPIPS: {avg_lpips:.4f}')
 
         '''
         if len(stats) < 9999:
@@ -2759,13 +2759,15 @@ def main():
         step = step + 1
 
         snapshot = tracemalloc.take_snapshot()
-
+        
+        '''
         clear_lines(12)
         print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{data_time1_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
         print(f'\r[Epoch] Min: {min_l1:.6f} Avg: {avg_l1:.6f}, Max: {max_l1:.6f} LPIPS: {avg_lpips:.4f}')
         top_stats = snapshot.statistics('lineno')
         for stat in top_stats[:10]:
             print(stat)
+        '''
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
         data_time2 = time.time() - time_stamp
