@@ -2099,6 +2099,7 @@ def main():
             if param.requires_grad:
                 print(name, param.requires_grad)
 
+    '''
     print ()
     print (f'flownet.module.encoder.attn.channel_scale {flownet.module.encode.attn.channel_scale.data}')
     print (f'flownet.module.encoder.attn.channel_offset {flownet.module.encode.attn.channel_offset.data}')
@@ -2134,6 +2135,7 @@ def main():
     print (f'flownet.module.block2.attn_deep.channel_offset {flownet.module.block2.attn_deep.channel_offset.data}')
     print (f'flownet.module.block2.attn_deep.spatial_scale {flownet.module.block2.attn_deep.spatial_scale.data}')
     print (f'flownet.module.block2.attn_deep.spatial_offset {flownet.module.block2.attn_deep.spatial_offset.data}')
+    '''
 
     print('\n\n')
 
