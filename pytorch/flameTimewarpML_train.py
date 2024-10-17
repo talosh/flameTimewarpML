@@ -2657,6 +2657,11 @@ def main():
                         eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
                         eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
 
+                        if args.all_gpus:
+                            eval_img0 = torch.cat([eval_img0, eval_img0], dim=0)
+                            eval_img1 = torch.cat([eval_img1, eval_img1], dim=0)
+                            eval_img2 = torch.cat([eval_img2, eval_img2], dim=0)
+
                         eval_img0_orig = eval_img0.clone()
                         eval_img2_orig = eval_img2.clone()
                         eval_img0 = normalize(eval_img0)
