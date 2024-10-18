@@ -491,6 +491,7 @@ def get_dataset(
             self.w = frame_size
             # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
+            self.frame_read_process = None
             self.frames_queue = torch.multiprocessing.Queue(maxsize=4)
             self.frame_read_thread = threading.Thread(target=self.read_frames_thread)
             self.frame_read_thread.daemon = True
@@ -612,7 +613,7 @@ def get_dataset(
 
         def read_frames_thread(self):
             while True:
-                frame_read_process = torch.multiprocessing.Process(
+                self.frame_read_process = torch.multiprocessing.Process(
                     target=self.read_frames,
                     args=(
                         self.frames_queue,
@@ -623,14 +624,14 @@ def get_dataset(
                         ),
                     daemon = True
                 )
-                frame_read_process.start()
-                frame_read_process.join()
+                self.frame_read_process.daemon = True
+                self.frame_read_process.start()
+                self.frame_read_process.join()
                 self.reshuffle()
 
         @staticmethod
         def read_frames(frames_queue, train_descriptions, generalize, self_h, self_w):
             from PIL import Image
-            timeout = 1e-8
             while True:
                 for index in range(len(train_descriptions)):
                     description = train_descriptions[index]
