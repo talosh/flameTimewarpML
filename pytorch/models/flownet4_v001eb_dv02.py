@@ -149,9 +149,9 @@ class Model:
                 # combined = combined.view(-1, 2, c)  # Flatten to (n*h*w, 2, c)
                 combined = combined.view(n * h * w, 2, c)
                 
-                if hs_reset or self.hs is None:
+                # if hs_reset or self.hs is None:
                     # Initialize hidden state to zeros (batch_size, n*h*w, hidden_size)
-                    self.hs = torch.zeros(1, n * h * w, self.hidden_size).to(combined.device)
+                #    self.hs = torch.zeros(1, n * h * w, self.hidden_size).to(combined.device)
                 
                 # Pass the combined tensor through the GRU
                 _, hidden_state = self.gru(combined)
