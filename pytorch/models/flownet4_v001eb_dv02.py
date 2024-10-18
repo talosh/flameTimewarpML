@@ -250,8 +250,6 @@ class Model:
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
-                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
@@ -294,6 +292,7 @@ class Model:
                 feat = torch.cat((feat, feat_deep), 1)
                 feat = self.mix(feat)
                 feat = self.convblock_mix(feat)
+                feat = torch.nn.functional.interpolate(feat, scale_factor=2, mode='bilinear', align_corners=False)
                 tmp = self.lastconv(feat)
 
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
