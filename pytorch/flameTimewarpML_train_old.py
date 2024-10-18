@@ -485,13 +485,14 @@ def get_dataset(
             self.initial_train_descriptions = list(self.train_descriptions)
 
             print ('\nReshuffling training data indices...')
+
             self.reshuffle()
 
             self.h = frame_size
             self.w = frame_size
             # self.frame_multiplier = (self.src_w // self.w) * (self.src_h // self.h) * 4
 
-            self.frames_queue = torch.multiprocessing.Queue(maxsize=4)
+            self.frames_queue = queue.Queue(maxsize=4)
             self.frame_read_thread = threading.Thread(target=self.read_frames_thread)
             self.frame_read_thread.daemon = True
             self.frame_read_thread.start()
@@ -609,31 +610,13 @@ def get_dataset(
                 print (f'\nError scanning {folder_path}: {e}')
 
             return descriptions
-
+            
         def read_frames_thread(self):
-            while True:
-                frame_read_process = torch.multiprocessing.Process(
-                    target=self.read_frames,
-                    args=(
-                        self.frames_queue,
-                        list(self.train_descriptions),
-                        batch_size,
-                        self.h,
-                        self.w
-                        ),
-                    daemon = True
-                )
-                frame_read_process.start()
-                frame_read_process.join()
-                self.reshuffle()
-
-        @staticmethod
-        def read_frames(frames_queue, train_descriptions, generalize, self_h, self_w):
             from PIL import Image
             timeout = 1e-8
             while True:
-                for index in range(len(train_descriptions)):
-                    description = train_descriptions[index]
+                for index in range(len(self.train_descriptions)):
+                    description = self.train_descriptions[index]
                     train_data = {}
                     train_data['description'] = description
 
@@ -652,18 +635,18 @@ def get_dataset(
                         img2 = img2.permute(2, 0, 1)
                         '''
 
-                        if generalize == 0:
-                            h_scaled = self_h
+                        if self.generalize == 0:
+                            h_scaled = self.h
                         else:
                             q = random.uniform(0, 1)
                             if q < 0.25:
-                                h_scaled = self_h
+                                h_scaled = self.h
                             elif q < 0.5:
-                                h_scaled = int(self_h * (1 + 1/8))
+                                h_scaled = int(self.h * (1 + 1/8))
                             elif q < 0.75:
-                                h_scaled = int(self_h * (1 + 1/7))
+                                h_scaled = int(self.h * (1 + 1/7))
                             else:
-                                h_scaled = int(self_h * (1 + 1/6))
+                                h_scaled = int(self.h * (1 + 1/6))
 
                         h, w = img0.shape[0], img0.shape[1]
                         if h > w:
@@ -708,7 +691,7 @@ def get_dataset(
                         train_data['w'] = description['w']
                         train_data['description'] = description
                         train_data['index'] = index
-                        frames_queue.put(train_data)
+                        self.frames_queue.put(train_data)
 
                         # del img0, img1, img2, train_data
                     

@@ -111,6 +111,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
 
         def read_frames_thread(train_descriptions, frames_queue, batch_size, scale_list, h, w):
             while True:
+                self.reshuffle()
                 frame_read_process = torch.multiprocessing.Process(
                     target=self.read_frames,
                     args=(
@@ -126,7 +127,6 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                 frame_read_process.start()
                 frame_read_process.join()
                 self.epoch += 1
-                self.reshuffle()
 
         self.frame_read_thread = threading.Thread(
             target=read_frames_thread, args=(
