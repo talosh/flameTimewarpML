@@ -124,7 +124,7 @@ class Model:
 
                 return x
 
-        class GRUMixer(nn.Module):
+        class GRUMixer(torch.nn.Module):
             def __init__(self, c, hidden_size):
                 super(GRUMixer, self).__init__()
                 self.c = c
