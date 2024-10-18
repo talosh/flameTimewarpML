@@ -475,9 +475,6 @@ def get_dataset(
             self.generalize = generalize
             self.sequential = sequential
 
-            print (f'sequential: {self.sequential}')
-
-
             print (f'scanning for exr files in {self.data_root}...')
             self.folders_with_exr = self.find_folders_with_exr(data_root)
             print (f'found {len(self.folders_with_exr)} clip folders.')
@@ -493,6 +490,8 @@ def get_dataset(
             if not self.sequential:
                 print ('\nReshuffling training data indices...')
                 self.reshuffle()
+            else:
+                print (f'\nSequential: {self.sequential}')
 
             self.h = frame_size
             self.w = frame_size
