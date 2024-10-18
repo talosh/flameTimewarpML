@@ -989,7 +989,7 @@ def get_dataset(
         acescc_rate=acescc_rate,
         generalize=generalize,
         repeat=repeat,
-        sequential = False
+        sequential = sequential
         )
 
 def normalize(image_array) :
