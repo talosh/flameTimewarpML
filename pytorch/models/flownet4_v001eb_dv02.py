@@ -162,7 +162,7 @@ class Model:
                 # Reshape the output back to (n, c, h, w)
                 output = output_flat.permute(0, 2, 1).view(n, c, h, w)
                 
-                return output, hidden_state_raw
+                return output
 
         class Head(Module):
             def __init__(self):
@@ -331,7 +331,7 @@ class Model:
                 feat = torch.nn.functional.interpolate(self.attn_deep(feat), scale_factor=0.5, mode='bilinear', align_corners=False)
                 feat_deep = self.convblock_deep(feat)
                 # feat = torch.cat((feat, feat_deep), 1)
-                feat, hs = self.mix(feat, feat_deep)
+                feat = self.mix(feat, feat_deep)
                 feat = self.convblock_mix(feat)
                 feat = torch.nn.functional.interpolate(feat, scale_factor=2, mode='bilinear', align_corners=False)
                 tmp = self.lastconv(feat)
