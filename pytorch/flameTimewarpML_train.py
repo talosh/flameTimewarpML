@@ -1687,7 +1687,7 @@ def main():
     parser.add_argument('--repeat', type=int, default=1, help='Repeat each triade N times with augmentation (default: 1)')
     parser.add_argument('--iterations', type=int, default=1, help='Process each flow refinement N times (default: 1)')
     parser.add_argument('--compile', action='store_true', dest='compile', default=False, help='Compile with torch.compile')
-    parser.add_argument('--sequential', action='store_true', dest='all_gpus', default=False, help='Keep sequences, do not reshuffle')
+    parser.add_argument('--sequential', action='store_true', dest='sequential', default=False, help='Keep sequences, do not reshuffle')
 
     args = parser.parse_args()
 
@@ -1763,7 +1763,8 @@ def main():
         max_window=max_dataset_window,
         acescc_rate=args.acescc,
         generalize=args.generalize,
-        repeat=args.repeat
+        repeat=args.repeat,
+        sequential = args.sequential
         )
     
     if args.eval_folder:

@@ -129,6 +129,7 @@ class Model:
                 super(GRUMixer, self).__init__()
                 self.c = c
                 self.hidden_size = hidden_size
+                self.hs = None
                 
                 # GRU layer to process the content of the tensors
                 self.gru = torch.nn.GRU(input_size=c, hidden_size=hidden_size, batch_first=True)
@@ -136,7 +137,7 @@ class Model:
                 # Linear layer to map the hidden state back to the original size
                 self.fc = torch.nn.Linear(hidden_size, c)
                 
-            def forward(self, tensor1, tensor2, hs=None):
+            def forward(self, tensor1, tensor2, hs_reset=False):
                 # Input tensors have shape (n, c, h, w)
                 n, c, h, w = tensor1.shape
                 
