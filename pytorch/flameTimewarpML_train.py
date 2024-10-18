@@ -488,6 +488,7 @@ def get_dataset(
             self.initial_train_descriptions = list(self.train_descriptions)
 
             if not self.sequential:
+                print (self.sequential)
                 print ('\nReshuffling training data indices...')
                 self.reshuffle()
 
