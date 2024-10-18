@@ -451,7 +451,8 @@ def get_dataset(
         max_window=9,
         acescc_rate = 40,
         generalize = 80,
-        repeat = 1
+        repeat = 1,
+        sequential = False
         ):
     class TimewarpMLDataset(torch.utils.data.Dataset):
         def __init__(   
@@ -984,7 +985,8 @@ def get_dataset(
         max_window=max_window,
         acescc_rate=acescc_rate,
         generalize=generalize,
-        repeat=repeat
+        repeat=repeat,
+        sequential = False
         )
 
 def normalize(image_array) :
