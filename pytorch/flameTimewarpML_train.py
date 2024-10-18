@@ -874,9 +874,9 @@ def get_dataset(
             for index in range(self.batch_size):
                 img0, img1, img2 = self.crop(src_img0, src_img1, src_img2, self.h, self.w)
 
-                img0 = torch.from_numpy(img0).to(dtype = torch.float32)
-                img1 = torch.from_numpy(img1).to(dtype = torch.float32)
-                img2 = torch.from_numpy(img2).to(dtype = torch.float32)
+                img0 = torch.from_numpy(img0).to(device = device, dtype = torch.float32)
+                img1 = torch.from_numpy(img1).to(device = device, dtype = torch.float32)
+                img2 = torch.from_numpy(img2).to(device = device, dtype = torch.float32)
 
                 img0 = img0.permute(2, 0, 1)
                 img1 = img1.permute(2, 0, 1)
@@ -941,7 +941,7 @@ def get_dataset(
                         r = random.uniform(1-delta, 1+delta)
                         g = random.uniform(1-delta, 1+delta)
                         b = random.uniform(1-delta, 1+delta)
-                        multipliers = torch.tensor([r, g, b]).view(3, 1, 1)
+                        multipliers = torch.tensor([r, g, b]).view(3, 1, 1).to(device = device, dtype = torch.float32)
                         img0 = img0 * multipliers
                         img1 = img1 * multipliers
                         img2 = img2 * multipliers
