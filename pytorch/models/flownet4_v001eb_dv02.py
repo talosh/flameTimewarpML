@@ -156,7 +156,7 @@ class Model:
                     _, self.hs = self.gru(combined, self.hs)
                 
                 # Reshape the hidden state back to (n, h*w, hidden_size)
-                self.hs = self.hs.detach().copy()
+                self.hs = self.hs.detach().clone()
                 hidden_state = self.hs.squeeze(0).view(n, h*w, self.hidden_size)
                 
                 # Apply a fully connected layer to map back to the original number of channels (c)
