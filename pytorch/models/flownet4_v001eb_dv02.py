@@ -157,7 +157,7 @@ class Model:
                 # Pass the combined tensor through the GRU
                 _, hidden_state = self.gru(combined)
 
-                print (f'hs: {hidden_state.shape}\n\n')
+                # print (f'hs: {hidden_state.shape}\n\n')
 
                 # Reshape the hidden state back to (n, h*w, hidden_size)
                 self.hs = hidden_state.detach().clone()
