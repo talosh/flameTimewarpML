@@ -2210,17 +2210,16 @@ def main():
             ]
         )
     
-    '''
     import signal
     def create_graceful_exit(current_state_dict):
         def graceful_exit(signum, frame):
             print(f'\nSaving current state to {current_state_dict["trained_model_path"]}...')
             print (f'Epoch: {current_state_dict["epoch"]}, Step: {current_state_dict["step"]:11}')
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
+            signal.signal(signum, signal.SIG_DFL)
             sys.exit(0)
         return graceful_exit
     signal.signal(signal.SIGINT, create_graceful_exit(current_state_dict))
-    '''
 
     min_l1 = float(sys.float_info.max)
     avg_l1 = 0
