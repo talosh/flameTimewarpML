@@ -150,7 +150,10 @@ class Model:
                 combined = combined.view(-1, 2, c)  # Flatten to (n*h*w, 2, c)
                 
                 # Pass the combined tensor through the GRU
-                _, self.hs = self.gru(combined)  # hidden_state has shape (1, n*h*w, hidden_size)
+                if hs_reset:
+                    _, self.hs = self.gru(combined)  # hidden_state has shape (1, n*h*w, hidden_size)
+                else:
+                    _, self.hs = self.gru(combined, self.hs)
                 
                 # Reshape the hidden state back to (n, h*w, hidden_size)
                 hidden_state = self.hs.squeeze(0).view(n, h*w, self.hidden_size)
