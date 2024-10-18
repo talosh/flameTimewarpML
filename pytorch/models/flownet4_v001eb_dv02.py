@@ -151,12 +151,12 @@ class Model:
                 
                 # Pass the combined tensor through the GRU
                 if hs_reset:
-                    _, self.hs = self.gru(combined)  # hidden_state has shape (1, n*h*w, hidden_size)
+                    _, hidden_state = self.gru(combined)  # hidden_state has shape (1, n*h*w, hidden_size)
                 else:
-                    _, self.hs = self.gru(combined, self.hs)
+                    _, hidden_state = self.gru(combined, self.hs)
                 
                 # Reshape the hidden state back to (n, h*w, hidden_size)
-                self.hs = self.hs.detach().clone()
+                self.hs = hidden_state.detach().clone()
                 hidden_state = self.hs.squeeze(0).view(n, h*w, self.hidden_size)
                 
                 # Apply a fully connected layer to map back to the original number of channels (c)
