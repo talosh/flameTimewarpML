@@ -620,7 +620,7 @@ def get_dataset(
             return descriptions
 
         def read_frames_thread(self):
-            while True:
+            while not exit_event.is_set():
                 self.frame_read_process = torch.multiprocessing.Process(
                     target=self.read_frames,
                     args=(
@@ -641,7 +641,7 @@ def get_dataset(
         @staticmethod
         def read_frames(frames_queue, train_descriptions, generalize, self_h, self_w):
             from PIL import Image
-            while True:
+            while not process_exit_event.is_set():
                 for index in range(len(train_descriptions)):
                     description = train_descriptions[index]
                     train_data = {}
