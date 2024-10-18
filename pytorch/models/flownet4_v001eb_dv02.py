@@ -129,7 +129,6 @@ class Model:
                 super(GRUMixer, self).__init__()
                 self.c = c
                 self.hidden_size = hidden_size
-                self.hs = None
                 
                 # GRU layer to process the content of the tensors
                 self.gru = torch.nn.GRU(input_size=c, hidden_size=hidden_size, batch_first=True)
@@ -157,10 +156,7 @@ class Model:
                 # Pass the combined tensor through the GRU
                 _, hidden_state = self.gru(combined)
 
-                # print (f'hs: {hidden_state.shape}\n\n')
-
                 # Reshape the hidden state back to (n, h*w, hidden_size)
-                self.hs = hidden_state.detach().clone()
                 hidden_state = hidden_state.squeeze(0).view(n, h*w, self.hidden_size)
                 
                 # Apply a fully connected layer to map back to the original number of channels (c)
