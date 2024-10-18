@@ -155,7 +155,9 @@ class Model:
                     self.hs = torch.zeros(1, n * h * w, self.hidden_size).to(combined.device)
                 
                 # Pass the combined tensor through the GRU
-                _, hidden_state = self.gru(combined, self.hs)
+                _, hidden_state = self.gru(combined)
+
+                print (f'hs: {hidden_state.shape}\n\n')
 
                 # Reshape the hidden state back to (n, h*w, hidden_size)
                 self.hs = hidden_state.detach().clone()
