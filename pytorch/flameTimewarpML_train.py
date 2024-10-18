@@ -2216,7 +2216,8 @@ def main():
             print(f'\nSaving current state to {current_state_dict["trained_model_path"]}...')
             print (f'Epoch: {current_state_dict["epoch"]}, Step: {current_state_dict["step"]:11}')
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
-            signal.signal(signum, signal.SIGINT)
+            signal.signal(signum, signal.SIG_DFL)
+            os.kill()
         return graceful_exit
     signal.signal(signal.SIGINT, create_graceful_exit(current_state_dict))
 
