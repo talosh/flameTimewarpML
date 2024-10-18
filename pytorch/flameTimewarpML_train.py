@@ -1758,6 +1758,8 @@ def main():
 
     frame_size = args.frame_size
 
+    print (f'sequential: {args.sequential}')
+
     dataset = get_dataset(
         args.dataset_path, 
         batch_size=args.batch_size, 
@@ -1780,7 +1782,8 @@ def main():
         max_window=max_dataset_window,
         acescc_rate=args.acescc,
         generalize=args.generalize,
-        repeat=args.repeat
+        repeat=args.repeat,
+        sequential = args.sequential
         )
     else:
         eval_dataset = dataset
