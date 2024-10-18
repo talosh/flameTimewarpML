@@ -287,11 +287,8 @@ class Model:
                 feat = self.attn(feat)
                 feat = self.convblock(feat)
 
-                feat_deep = self.attn_deep(feat)
-                feat_deep = self.conv1(feat_deep)
-                feat_deep = self.convblock_deep(feat_deep)
-
-                feat = torch.nn.functional.interpolate(x, scale_factor=0.5, mode='bilinear', align_corners=False)
+                feat = torch.nn.functional.interpolate(self.attn_deep(feat), scale_factor=0.5, mode='bilinear', align_corners=False)
+                feat_deep = self.convblock_deep(feat)
 
                 feat = torch.cat((feat, feat_deep), 1)
                 feat = self.mix(feat)
