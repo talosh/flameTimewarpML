@@ -2218,6 +2218,8 @@ def main():
             torch.save(current_state_dict, current_state_dict['trained_model_path'])
             signal.signal(signum, signal.SIG_DFL)
             os.kill(os.getpid(), signal.SIGINT)
+            sys.exit()
+            exit()
         return graceful_exit
     signal.signal(signal.SIGINT, create_graceful_exit(current_state_dict))
 
