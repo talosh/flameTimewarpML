@@ -124,6 +124,44 @@ class Model:
 
                 return x
 
+        class GRUMixer(nn.Module):
+            def __init__(self, c, hidden_size):
+                super(GRUMixer, self).__init__()
+                self.c = c
+                self.hidden_size = hidden_size
+                
+                # GRU layer to process the content of the tensors
+                self.gru = torch.nn.GRU(input_size=c, hidden_size=hidden_size, batch_first=True)
+                
+                # Linear layer to map the hidden state back to the original size
+                self.fc = torch.nn.Linear(hidden_size, c)
+                
+            def forward(self, tensor1, tensor2):
+                # Input tensors have shape (n, c, h, w)
+                n, c, h, w = tensor1.shape
+                
+                # Flatten the spatial dimensions to treat each (h, w) position as a time step
+                tensor1_flat = tensor1.view(n, c, -1).permute(0, 2, 1)  # (n, h*w, c)
+                tensor2_flat = tensor2.view(n, c, -1).permute(0, 2, 1)  # (n, h*w, c)
+                
+                # Concatenate tensor1 and tensor2 along the sequence dimension
+                combined = torch.stack([tensor1_flat, tensor2_flat], dim=2)  # (n, h*w, 2, c)
+                combined = combined.view(-1, 2, c)  # Flatten to (n*h*w, 2, c)
+                
+                # Pass the combined tensor through the GRU
+                _, hidden_state = self.gru(combined)  # hidden_state has shape (1, n*h*w, hidden_size)
+                
+                # Reshape the hidden state back to (n, h*w, hidden_size)
+                hidden_state = hidden_state.squeeze(0).view(n, h*w, self.hidden_size)
+                
+                # Apply a fully connected layer to map back to the original number of channels (c)
+                output_flat = self.fc(hidden_state)  # (n, h*w, c)
+                
+                # Reshape the output back to (n, c, h, w)
+                output = output_flat.permute(0, 2, 1).view(n, c, h, w)
+                
+                return output
+
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
@@ -231,7 +269,8 @@ class Model:
                 )
                 self.attn = CBAM(c)
                 self.attn_deep = CBAM(c)
-                self.mix = torch.nn.Conv2d(c*2, c, kernel_size=1, stride=1, padding=0, bias=True)
+                self.mix = GRUMixer(c, c)
+                # self.mix = torch.nn.Conv2d(c*2, c, kernel_size=1, stride=1, padding=0, bias=True)
                 # self.mix = conv(c*2, c, 3, 1, 1)
                 self.convblock_mix = torch.nn.Sequential(
                     ResConv(c),
