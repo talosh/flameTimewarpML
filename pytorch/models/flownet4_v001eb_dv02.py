@@ -136,7 +136,7 @@ class Model:
                 # Linear layer to map the hidden state back to the original size
                 self.fc = torch.nn.Linear(hidden_size, c)
                 
-            def forward(self, tensor1, tensor2):
+            def forward(self, tensor1, tensor2, hs=None):
                 # Input tensors have shape (n, c, h, w)
                 n, c, h, w = tensor1.shape
                 
@@ -149,10 +149,10 @@ class Model:
                 combined = combined.view(-1, 2, c)  # Flatten to (n*h*w, 2, c)
                 
                 # Pass the combined tensor through the GRU
-                _, hidden_state = self.gru(combined)  # hidden_state has shape (1, n*h*w, hidden_size)
+                _, hidden_state_raw = self.gru(combined, hs)  # hidden_state has shape (1, n*h*w, hidden_size)
                 
                 # Reshape the hidden state back to (n, h*w, hidden_size)
-                hidden_state = hidden_state.squeeze(0).view(n, h*w, self.hidden_size)
+                hidden_state = hidden_state_raw.squeeze(0).view(n, h*w, self.hidden_size)
                 
                 # Apply a fully connected layer to map back to the original number of channels (c)
                 output_flat = self.fc(hidden_state)  # (n, h*w, c)
@@ -160,7 +160,7 @@ class Model:
                 # Reshape the output back to (n, c, h, w)
                 output = output_flat.permute(0, 2, 1).view(n, c, h, w)
                 
-                return output
+                return output, hidden_state_raw
 
         class Head(Module):
             def __init__(self):
@@ -329,7 +329,7 @@ class Model:
                 feat = torch.nn.functional.interpolate(self.attn_deep(feat), scale_factor=0.5, mode='bilinear', align_corners=False)
                 feat_deep = self.convblock_deep(feat)
                 # feat = torch.cat((feat, feat_deep), 1)
-                feat = self.mix(feat, feat_deep)
+                feat, hs = self.mix(feat, feat_deep)
                 feat = self.convblock_mix(feat)
                 feat = torch.nn.functional.interpolate(feat, scale_factor=2, mode='bilinear', align_corners=False)
                 tmp = self.lastconv(feat)

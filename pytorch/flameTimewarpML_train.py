@@ -463,7 +463,8 @@ def get_dataset(
                 max_window=9,
                 acescc_rate = 40,
                 generalize = 80,
-                repeat = 1
+                repeat = 1,
+                sequential = False
                 ):
             
             self.data_root = data_root
@@ -471,6 +472,7 @@ def get_dataset(
             self.max_window = max_window
             self.acescc_rate = acescc_rate
             self.generalize = generalize
+            self.sequential = sequential
 
             print (f'scanning for exr files in {self.data_root}...')
             self.folders_with_exr = self.find_folders_with_exr(data_root)
@@ -484,8 +486,9 @@ def get_dataset(
 
             self.initial_train_descriptions = list(self.train_descriptions)
 
-            print ('\nReshuffling training data indices...')
-            self.reshuffle()
+            if not self.sequential:
+                print ('\nReshuffling training data indices...')
+                self.reshuffle()
 
             self.h = frame_size
             self.w = frame_size
@@ -627,7 +630,8 @@ def get_dataset(
                 self.frame_read_process.daemon = True
                 self.frame_read_process.start()
                 self.frame_read_process.join()
-                self.reshuffle()
+                if not self.sequential:
+                    self.reshuffle()
 
         @staticmethod
         def read_frames(frames_queue, train_descriptions, generalize, self_h, self_w):
@@ -1683,6 +1687,7 @@ def main():
     parser.add_argument('--repeat', type=int, default=1, help='Repeat each triade N times with augmentation (default: 1)')
     parser.add_argument('--iterations', type=int, default=1, help='Process each flow refinement N times (default: 1)')
     parser.add_argument('--compile', action='store_true', dest='compile', default=False, help='Compile with torch.compile')
+    parser.add_argument('--sequential', action='store_true', dest='all_gpus', default=False, help='Keep sequences, do not reshuffle')
 
     args = parser.parse_args()
 
@@ -2559,7 +2564,8 @@ def main():
             while  ( idx + 1 ) == len(dataset):
                 img0, img1, img2, ratio, idx, current_desc = dataset[batch_idx]
 
-            dataset.reshuffle()
+            if not args.sequential:
+                dataset.reshuffle()
             max_values.reset()
             min_values.reset()
 
