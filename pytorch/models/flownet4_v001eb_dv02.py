@@ -216,6 +216,7 @@ class Model:
                     )
                 # self.conv1 = conv(c, c*2, 3, 2, 1)
                 # self.conv1 = torch.nn.Conv2d(c, c*2, kernel_size=3, stride=2, padding=1, bias=True)
+                self.avg2 = torch.nn.AvgPool2d(2)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
@@ -286,10 +287,10 @@ class Model:
                 feat = self.conv0(x)
                 feat = self.attn(feat)
                 feat = self.convblock(feat)
-
-                feat = torch.nn.functional.interpolate(self.attn_deep(feat), scale_factor=0.5, mode='bilinear', align_corners=False)
+                feat = self.attn_deep(feat)
+                feat = self.avg2(feat)
+                # feat = torch.nn.functional.interpolate(self.attn_deep(feat), scale_factor=0.5, mode='bilinear', align_corners=False)
                 feat_deep = self.convblock_deep(feat)
-
                 feat = torch.cat((feat, feat_deep), 1)
                 feat = self.mix(feat)
                 feat = self.convblock_mix(feat)
