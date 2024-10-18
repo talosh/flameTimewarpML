@@ -54,6 +54,8 @@ except:
         print (f'Using "{python_executable_path}" as python interpreter')
         sys.exit()
 
+exit_event = threading.Event()  # For threads
+process_exit_event = torch.multiprocessing.Event()  # For processes
 
 class MinExrReader:
     '''Minimal, standalone OpenEXR reader for single-part, uncompressed scan line files.
