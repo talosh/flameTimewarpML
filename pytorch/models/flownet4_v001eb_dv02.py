@@ -147,7 +147,8 @@ class Model:
                 
                 # Concatenate tensor1 and tensor2 along the sequence dimension
                 combined = torch.stack([tensor1_flat, tensor2_flat], dim=2)  # (n, h*w, 2, c)
-                combined = combined.view(-1, 2, c)  # Flatten to (n*h*w, 2, c)
+                # combined = combined.view(-1, 2, c)  # Flatten to (n*h*w, 2, c)
+                combined = combined.view(n * h * w, 2, c)
                 
                 if hs_reset or self.hs is None:
                     # Initialize hidden state to zeros (batch_size, n*h*w, hidden_size)
