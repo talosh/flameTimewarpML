@@ -214,8 +214,8 @@ class Model:
                     conv(in_planes, c//2, 3, 2, 1),
                     conv(c//2, c, 3, 2, 1),
                     )
-                self.conv1 = conv(c, c*2, 3, 2, 1)
-                self.avg2 = torch.nn.AvgPool2d(2)
+                # self.conv1 = conv(c, c*2, 3, 2, 1)
+                # self.conv1 = torch.nn.Conv2d(c, c*2, kernel_size=3, stride=2, padding=1, bias=True)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
@@ -223,22 +223,22 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock_deep = torch.nn.Sequential(
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 self.attn = CBAM(c)
                 self.attn_deep = CBAM(c)
-                # self.mix = torch.nn.Conv2d(c*3, c*2, kernel_size=1, stride=1, padding=1, bias=True)
-                self.mix = conv(c*3, c*2, 3, 1, 1)
+                self.mix = torch.nn.Conv2d(c*2, c, kernel_size=1, stride=1, padding=0, bias=True)
+                # self.mix = conv(c*2, c, 3, 1, 1)
                 self.convblock_mix = torch.nn.Sequential(
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
@@ -291,7 +291,7 @@ class Model:
                 feat_deep = self.conv1(feat_deep)
                 feat_deep = self.convblock_deep(feat_deep)
 
-                feat = self.avg2(feat)
+                feat = torch.nn.functional.interpolate(x, scale_factor=0.5, mode='bilinear', align_corners=False)
 
                 feat = torch.cat((feat, feat_deep), 1)
                 feat = self.mix(feat)
