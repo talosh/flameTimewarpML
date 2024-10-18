@@ -147,14 +147,15 @@ class Model:
                 
                 # Concatenate tensor1 and tensor2 along the sequence dimension
                 combined = torch.stack([tensor1_flat, tensor2_flat], dim=2)  # (n, h*w, 2, c)
-                combined = combined.view(n * h * w, 2, c)  # Flatten to (n*h*w, 2, c)
+                combined = combined.view(-1, 2, c)  # Flatten to (n*h*w, 2, c)
+                
+                if hs_reset or self.hs is None:
+                    # Initialize hidden state to zeros (batch_size, n*h*w, hidden_size)
+                    self.hs = torch.zeros(1, n * h * w, self.hidden_size).to(combined.device)
                 
                 # Pass the combined tensor through the GRU
-                if hs_reset:
-                    _, hidden_state = self.gru(combined)  # hidden_state has shape (1, n*h*w, hidden_size)
-                else:
-                    _, hidden_state = self.gru(combined, self.hs)
-                
+                _, hidden_state = self.gru(combined, self.hs)
+
                 # Reshape the hidden state back to (n, h*w, hidden_size)
                 self.hs = hidden_state.detach().clone()
                 hidden_state = hidden_state.squeeze(0).view(n, h*w, self.hidden_size)
