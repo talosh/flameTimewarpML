@@ -150,10 +150,11 @@ class Model:
                 combined = combined.view(-1, 2, c)  # Flatten to (n*h*w, 2, c)
                 
                 # Pass the combined tensor through the GRU
-                _, hidden_state_raw = self.gru(combined, hs)  # hidden_state has shape (1, n*h*w, hidden_size)
+                _, self.hs = self.gru(combined)  # hidden_state has shape (1, n*h*w, hidden_size)
                 
                 # Reshape the hidden state back to (n, h*w, hidden_size)
-                hidden_state = hidden_state_raw.squeeze(0).view(n, h*w, self.hidden_size)
+                hidden_state = self.hs.squeeze(0).view(n, h*w, self.hidden_size)
+                self.hs = self.hs.detach()
                 
                 # Apply a fully connected layer to map back to the original number of channels (c)
                 output_flat = self.fc(hidden_state)  # (n, h*w, c)
