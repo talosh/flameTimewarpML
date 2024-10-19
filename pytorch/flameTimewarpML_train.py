@@ -1790,7 +1790,7 @@ def main():
         eval_dataset = dataset
 
     def write_images(write_image_queue):
-        while not exit_event.is_set():
+        while True:
             try:
                 write_data = write_image_queue.get_nowait()
                 preview_index = write_data.get('preview_index', 0)
@@ -1807,7 +1807,7 @@ def main():
                 time.sleep(1e-2)
 
     def write_eval_images(write_eval_image_queue):
-        while not exit_event.is_set():
+        while True:
             try:
                 write_data = write_eval_image_queue.get_nowait()
                 write_exr(write_data['sample_source1'].astype(np.float16), os.path.join(write_data['preview_folder'], write_data['sample_source1_name']), half_float = True)
@@ -1823,7 +1823,7 @@ def main():
                 time.sleep(1e-2)
 
     def write_model_state(write_model_state_queue):
-        while not exit_event.is_set():
+        while True:
             try:
                 current_state_dict = write_model_state_queue.get_nowait()
                 trained_model_path = current_state_dict['trained_model_path']
