@@ -165,9 +165,11 @@ class Model:
                     torch.nn.init.constant_(self.conv.bias, 0)
 
             def forward(self, x):
-                attn = self.sp_attn(x) * self.spatial_scale + self.spatial_offset
-                noise = torch.randn_like(x) * attn * self.gamma + self.theta
-                return self.relu(self.conv(x * attn + noise) * self.beta + x)
+                out = self.relu(self.conv(x) * self.beta + x)
+                # attn = self.sp_attn(out) * self.spatial_scale + self.spatial_offset
+                # noise = torch.randn_like(x) * attn * self.gamma + self.theta
+                noise = torch.randn_like(x) * self.gamma + self.theta
+                return out + noise
 
         class FlownetShallow(Module):
             def __init__(self, in_planes, c=64):
