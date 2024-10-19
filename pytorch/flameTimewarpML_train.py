@@ -2590,6 +2590,7 @@ def main():
             max_values.reset()
             min_values.reset()
 
+        # Evaluation block
         if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
             if not args.eval_first:
                 if step == 1:
@@ -2648,11 +2649,20 @@ def main():
             eval_psnr = []
             eval_lpips = []
 
+            original_state_dict = deepcopy(flownet.state_dict())
+
+            flownet.cpu()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()            
+            elif torch.backends.mps.is_available():
+                torch.mps.empty_cache()
+
+            evalnet = Flownet().get_model()().to(device)
+            evalnet.load_state_dict(original_state_dict)
             if args.eval_half:
-                original_float_state_dict = deepcopy(flownet.state_dict())
-                flownet.half()
-            
-            flownet.eval()
+                evalnet.half()
+
+            evalnet.eval()
             with torch.no_grad():
                 # for ev_item_index, description in enumerate(descriptions):
                 description = read_eval_image_queue.get()
@@ -2725,7 +2735,7 @@ def main():
                             eval_img0 = eval_img0.half()
                             eval_img2 = eval_img2.half()
 
-                        eval_flow_list, eval_mask_list, eval_conf_list, eval_merged = flownet(
+                        eval_flow_list, eval_mask_list, eval_conf_list, eval_merged = evalnet(
                             eval_img0, 
                             eval_img2,
                             eval_ratio, 
@@ -2776,10 +2786,13 @@ def main():
                         print (f'\nerror while evaluating: {e}\n{description}\n\n')
                     description = read_eval_image_queue.get()
 
-            if args.eval_half:
-                flownet.float()
-                flownet.load_state_dict(original_float_state_dict)
+            del evalnet
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()            
+            elif torch.backends.mps.is_available():
+                torch.mps.empty_cache()
 
+            flownet.to(device)
             flownet.train()
 
             eval_rows_to_append = [
