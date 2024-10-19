@@ -166,9 +166,8 @@ class Model:
 
             def forward(self, x):
                 out = self.relu(self.conv(x) * self.beta + x)
-                # attn = self.sp_attn(out) * self.spatial_scale + self.spatial_offset
-                # noise = torch.randn_like(x) * attn * self.gamma + self.theta
-                noise = torch.randn_like(x) * self.gamma + self.theta
+                attn = self.sp_attn(out) * self.spatial_scale + self.spatial_offset
+                noise = torch.randn_like(x) * attn * self.gamma + self.theta
                 return out + noise
 
         class FlownetShallow(Module):
