@@ -153,7 +153,11 @@ class Model:
                 self.gamma = torch.nn.Parameter(torch.full((1, c, 1, 1), 1e-4), requires_grad=True)
                 self.theta = torch.nn.Parameter(torch.full((1, c, 1, 1), 0.), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
+
                 self.sp_attn = SpatialAttention()
+                self.spatial_scale = torch.nn.Parameter(torch.full((1, 1, 1, 1), 1.), requires_grad=True)
+                self.spatial_offset = torch.nn.Parameter(torch.full((1, 1, 1, 1), 1 - 0.), requires_grad=True)
+
 
                 torch.nn.init.kaiming_normal_(self.conv.weight, mode='fan_in', nonlinearity='relu')
                 self.conv.weight.data *= 1e-2
@@ -162,7 +166,7 @@ class Model:
 
             def forward(self, x):
                 out = self.relu(self.conv(x) * self.beta + x)
-                attn = self.sp_attn(out)
+                attn = self.sp_attn(out) * self.spatial_scale + self.spatial_offset
                 noise = torch.randn_like(x) * attn * self.gamma + self.theta
                 return out + noise
 
