@@ -2650,6 +2650,8 @@ def main():
             eval_lpips = []
 
             original_state_dict = deepcopy(flownet.state_dict())
+            if args.all_gpus:
+                original_state_dict = convert_from_data_parallel(original_state_dict)
 
             flownet.cpu()
             if torch.cuda.is_available():
@@ -2659,6 +2661,7 @@ def main():
 
             evalnet = Flownet().get_model()().to(device)
             evalnet.load_state_dict(original_state_dict)
+                
             if args.eval_half:
                 evalnet.half()
 
