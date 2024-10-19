@@ -2389,7 +2389,7 @@ def main():
 
             write_image_queue.put(
                 {
-                    'preview_folder': os.path.join(args.dataset_path, 'preview'),
+                    'preview_folder': os.path.join(args.dataset_path, 'preview', os.path.splitext(os.path.basename(trained_model_path))[0]),
                     'preview_index': int(preview_index),
                     'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                     'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
@@ -2422,7 +2422,11 @@ def main():
         min_values.add(loss.item(), min_max_item)
 
         if (args.preview_max > 0) and ((step % preview_maxmin_steps) == 1 or ( idx + 1 ) == len(dataset)):
-            max_preview_folder = os.path.join(args.dataset_path, 'preview', 'max')
+            max_preview_folder = os.path.join(
+                args.dataset_path,
+                'preview',
+                os.path.splitext(os.path.basename(trained_model_path))[0],
+                'max')
             if not os.path.isdir(max_preview_folder):
                 os.makedirs(max_preview_folder)
             max_loss_values = max_values.get_values()
@@ -2460,7 +2464,11 @@ def main():
             del index, item
 
         if (args.preview_min > 0) and ((step % preview_maxmin_steps) == 1 or ( idx + 1 ) == len(dataset)):
-            min_preview_folder = os.path.join(args.dataset_path, 'preview', 'min')
+            min_preview_folder = os.path.join(
+                args.dataset_path,
+                'preview',
+                os.path.splitext(os.path.basename(trained_model_path))[0],
+                'min')
             if not os.path.isdir(min_preview_folder):
                 os.makedirs(min_preview_folder)
             min_loss_values = min_values.get_values()
