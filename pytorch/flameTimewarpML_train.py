@@ -1794,7 +1794,7 @@ def main():
             try:
                 write_data = write_image_queue.get_nowait()
                 preview_index = write_data.get('preview_index', 0)
-                print (f'\n\nPreview folder: {write_data['preview_folder']}')
+                print (f'\n\nPreview folder: {write_data["preview_folder"]}')
                 write_exr(write_data['sample_source1'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_A_incomng.exr'), half_float = True)
                 write_exr(write_data['sample_source2'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_B_outgoing.exr'), half_float = True)
                 write_exr(write_data['sample_target'].astype(np.float16), os.path.join(write_data['preview_folder'], f'{preview_index:02}_C_target.exr'), half_float = True)
