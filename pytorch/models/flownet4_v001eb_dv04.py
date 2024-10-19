@@ -153,6 +153,7 @@ class Model:
                 self.gamma = torch.nn.Parameter(torch.full((1, c, 1, 1), 1e-4), requires_grad=True)
                 self.theta = torch.nn.Parameter(torch.full((1, c, 1, 1), 0.), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
+                self.sp_attn = SpatialAttention()
 
                 torch.nn.init.kaiming_normal_(self.conv.weight, mode='fan_in', nonlinearity='relu')
                 self.conv.weight.data *= 1e-2
@@ -160,8 +161,10 @@ class Model:
                     torch.nn.init.constant_(self.conv.bias, 0)
 
             def forward(self, x):
-                noise = torch.randn_like(x) * self.gamma + self.theta
-                return self.relu(self.conv(x) * self.beta + x) + noise
+                out = self.relu(self.conv(x) * self.beta + x)
+                attn = self.sp_attn(out)
+                noise = torch.randn_like(x) * attn * self.gamma + self.theta
+                return out + noise
 
         class FlownetShallow(Module):
             def __init__(self, in_planes, c=64):
