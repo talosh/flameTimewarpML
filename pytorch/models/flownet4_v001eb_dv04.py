@@ -170,11 +170,11 @@ class Model:
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
                 torch.nn.init.kaiming_normal_(self.conv.weight, mode='fan_in', nonlinearity='relu')
-                self.conv.weight.data *= 1e-2
+                self.conv.weight.data *= 1e-4
                 if self.conv.bias is not None:
                     torch.nn.init.constant_(self.conv.bias, 0)
                 torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
-                self.conv1.weight.data *= 1e-2
+                self.conv1.weight.data *= 1e-4
                 if self.conv1.bias is not None:
                     torch.nn.init.constant_(self.conv1.bias, 0)
 
