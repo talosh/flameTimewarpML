@@ -149,9 +149,7 @@ class Model:
             def __init__(self, c, dilation=1):
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'replicate', bias=True)
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.gamma = torch.nn.Parameter(torch.full((1, c, 1, 1), 1e-4), requires_grad=True)
-                self.theta = torch.nn.Parameter(torch.full((1, c, 1, 1), 0.), requires_grad=True)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
                 torch.nn.init.kaiming_normal_(self.conv.weight, mode='fan_in', nonlinearity='relu')
@@ -160,8 +158,7 @@ class Model:
                     torch.nn.init.constant_(self.conv.bias, 0)
 
             def forward(self, x):
-                noise = torch.randn_like(x) * self.gamma + self.theta
-                return self.relu(self.conv(x) * self.beta + x) + noise
+                return self.relu(self.conv(x) * self.beta + x)
 
         class FlownetShallow(Module):
             def __init__(self, in_planes, c=64):
@@ -171,6 +168,7 @@ class Model:
                     conv(c, c, 3, 2, 1),
                     )
                 self.convblock = torch.nn.Sequential(
+                    ResConv(c),
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
@@ -237,6 +235,7 @@ class Model:
                 )
                 self.attn = CBAM(c)
                 self.attn_deep = CBAM(c)
+                self.attn_mix = CBAM(c)
                 # self.mix = torch.nn.Conv2d(c*2, c, kernel_size=3, stride=1, padding=1, bias=True)
                 self.mix = conv(c*2, c, 3, 1, 1)
                 self.convblock_mix = torch.nn.Sequential(
@@ -299,6 +298,7 @@ class Model:
 
                 feat = torch.cat((feat, feat_deep), 1)
                 feat = self.mix(feat)
+                feat = self.attn_mix(feat)
                 feat = self.convblock_mix(feat)
                 tmp = self.lastconv(feat)
 
