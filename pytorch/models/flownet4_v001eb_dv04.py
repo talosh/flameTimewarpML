@@ -304,8 +304,7 @@ class Model:
                 feat = self.attn(feat)
                 feat = self.convblock(feat)
 
-                feat_deep = self.attn_deep(feat)
-                feat_deep = self.conv1(feat_deep)
+                feat_deep = self.conv1(feat)
                 feat_deep = self.convblock_deep(feat_deep)
 
                 feat = self.mix(feat, feat_deep)
