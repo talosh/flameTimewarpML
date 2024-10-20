@@ -249,7 +249,6 @@ class Model:
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                 )
                 self.attn = CBAM(c)
-                self.attn_deep = CBAM(c)
                 self.mix = ResConvMix(c)
                 self.convblock_mix = torch.nn.Sequential(
                     ResConv(c),
