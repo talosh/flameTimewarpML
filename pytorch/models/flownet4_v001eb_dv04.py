@@ -179,7 +179,6 @@ class Model:
                 if self.conv1.bias is not None:
                     torch.nn.init.constant_(self.conv1.bias, 0)
 
-
             def forward(self, x, x_deep):
                 return self.relu(self.conv(x_deep) * self.beta + self.conv1(x) * self.gamma + torch.randn_like(x) * self.theta)
 
