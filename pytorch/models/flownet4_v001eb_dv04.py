@@ -309,7 +309,6 @@ class Model:
                 feat_deep = self.convblock_deep(feat_deep)
 
                 feat = self.mix(feat, feat_deep)
-                feat = self.attn_mix(feat)
                 feat = self.convblock_mix(feat)
                 tmp = self.lastconv(feat)
 
