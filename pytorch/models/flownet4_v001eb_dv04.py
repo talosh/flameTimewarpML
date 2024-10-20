@@ -166,7 +166,8 @@ class Model:
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'replicate', bias=True)
                 self.conv1 = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'replicate', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)    
+                self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.theta = torch.nn.Parameter(torch.full((1, c, 1, 1), 1e-11), requires_grad=True)  
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
                 torch.nn.init.kaiming_normal_(self.conv.weight, mode='fan_in', nonlinearity='relu')
@@ -180,7 +181,7 @@ class Model:
 
 
             def forward(self, x, x_deep):
-                return self.relu(self.conv(x_deep) * self.beta + self.conv1(x) * self.gamma)
+                return self.relu(self.conv(x_deep) * self.beta + self.conv1(x) * self.gamma + torch.randn_like(x) * self.theta)
 
         class FlownetShallow(Module):
             def __init__(self, in_planes, c=64):
