@@ -173,6 +173,11 @@ class Model:
                 self.conv.weight.data *= 1e-2
                 if self.conv.bias is not None:
                     torch.nn.init.constant_(self.conv.bias, 0)
+                torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
+                self.conv1.weight.data *= 1e-2
+                if self.conv1.bias is not None:
+                    torch.nn.init.constant_(self.conv1.bias, 0)
+
 
             def forward(self, x, x_deep):
                 return self.relu(self.conv(x_deep) * self.beta + self.conv1(x) * self.gamma)
