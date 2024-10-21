@@ -866,21 +866,22 @@ def get_dataset(
             return ACEScc
 
         def __getitem__(self, index):
+            train_data = self.getimg(index)
+
+            src_img0 = train_data['start']
+            src_img1 = train_data['gt']
+            src_img2 = train_data['end']
+            imgh = train_data['h']
+            imgw = train_data['w']
+            ratio = train_data['ratio']
+            description = train_data['description']
+            images_idx = self.train_data_index
+
             batch_img0 = []
             batch_img1 = []
             batch_img2 = []
 
             for batch_index in range(self.batch_size):
-                train_data = self.getimg(index)
-
-                src_img0 = train_data['start']
-                src_img1 = train_data['gt']
-                src_img2 = train_data['end']
-                imgh = train_data['h']
-                imgw = train_data['w']
-                ratio = train_data['ratio']
-                description = train_data['description']
-                images_idx = self.train_data_index
 
                 img0, img1, img2 = self.crop(src_img0, src_img1, src_img2, self.h, self.w)
 
