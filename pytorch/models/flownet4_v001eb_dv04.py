@@ -235,12 +235,10 @@ class Model:
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                self.conv0 = torch.nn.Sequential(
-                    conv(in_planes, c, 3, 2, 1),
-                    conv(c, c, 3, 2, 1),
-                    )
-                self.conv1 = conv(c, c*2, 3, 2, 1)
-                # self.avg2 = torch.nn.AvgPool2d(2)
+                self.conv0 = conv(in_planes + 1, c, 3, 2, 1)
+                self.conv1 = conv(c, c, 3, 2, 1)
+                self.conv2 = conv(c, c*2, 3, 2, 1)
+                self.attn = CBAM(c)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
@@ -255,7 +253,6 @@ class Model:
                     ResConv(c*2),
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                 )
-                self.attn = CBAM(c)
                 self.mix = ResConvMix(c)
                 self.convblock_mix = torch.nn.Sequential(
                     ResConv(c),
@@ -265,14 +262,6 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                 )
-                '''
-                self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c*2, c, 6, 2, 2),
-                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
-                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
-                    torch.nn.Conv2d(c, 6, kernel_size=1, stride=1, padding=0, bias=True),
-                )
-                '''
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
@@ -306,11 +295,14 @@ class Model:
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
 
+                x = torch.cat((x, torch.randn_like(x[:, :1, :, :])), 1)
+
                 feat = self.conv0(x)
                 feat = self.attn(feat)
-                feat = self.convblock(feat)
+                feat = self.conv1(feat)
+                feat_deep = self.conv2(feat)
 
-                feat_deep = self.conv1(feat)
+                feat = self.convblock(feat)
                 feat_deep = self.convblock_deep(feat_deep)
 
                 feat = self.mix(feat, feat_deep)
@@ -328,8 +320,8 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = Flownet(23, c=192)
-                self.block1 = Flownet(28, c=96)
-                self.block2 = Flownet(28, c=64)
+                self.block1 = FlownetShallow(28, c=96)
+                self.block2 = FlownetShallow(28, c=64)
                 self.block3 = FlownetShallow(24, c=48)
                 self.block4 = FlownetShallow(24, c=32)
                 self.encode = Head()
