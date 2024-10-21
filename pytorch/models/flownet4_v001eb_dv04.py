@@ -239,7 +239,7 @@ class Model:
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, c*2, 3, 2, 1)
                 self.attn = CBAM(c)
-                self.beta = torch.nn.Parameter(torch.fill((1, 1, 1, 1), 1e-4), requires_grad=True)
+                self.noise_level = torch.nn.Parameter(torch.fill((1, 1, 1, 1), 1e-4), requires_grad=True)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
@@ -296,7 +296,7 @@ class Model:
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
 
-                noise = torch.randn_like(x[:, :1, :, :]) * self.beta
+                noise = torch.randn_like(x[:, :1, :, :]) * self.noise_level
                 x = torch.cat((x, noise), 1)
 
                 feat = self.conv0(x)
