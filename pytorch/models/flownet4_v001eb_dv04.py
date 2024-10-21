@@ -182,7 +182,7 @@ class Model:
             def forward(self, x, x_deep):
                 return self.relu(self.conv(x_deep) * self.beta + self.conv1(x) * self.gamma + torch.randn_like(x) * self.theta)
 
-        class FlownetShallow(Module):
+        class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
@@ -232,14 +232,14 @@ class Model:
                 conf = tmp[:, 5:6][:, :, :h, :w]
                 return flow, mask, conf
 
-        class Flownet(Module):
+        class FlownetDeep(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = conv(in_planes + 1, c, 3, 2, 1)
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, c*2, 3, 2, 1)
                 self.attn = CBAM(c)
-                self.noise_level = torch.nn.Parameter(torch.fill((1, 1, 1, 1), 1e-4), requires_grad=True)
+                self.noise_level = torch.nn.Parameter(torch.full((1, 1, 1, 1), 1e-4), requires_grad=True)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
@@ -321,11 +321,11 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = Flownet(23, c=192)
-                self.block1 = FlownetShallow(28, c=96)
-                self.block2 = FlownetShallow(28, c=64)
-                self.block3 = FlownetShallow(24, c=48)
-                self.block4 = FlownetShallow(24, c=32)
+                self.block0 = FlownetDeep(23, c=192)
+                self.block1 = Flownet(28, c=96)
+                self.block2 = Flownet(28, c=64)
+                self.block3 = Flownet(24, c=48)
+                self.block4 = Flownet(24, c=32)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
