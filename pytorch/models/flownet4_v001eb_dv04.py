@@ -148,7 +148,7 @@ class Model:
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
@@ -163,8 +163,8 @@ class Model:
         class ResConvMix(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
-                self.conv1 = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'zeros', bias=True)
+                self.conv1 = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.theta = torch.nn.Parameter(torch.full((1, c, 1, 1), 1e-11), requires_grad=True)  
@@ -203,7 +203,8 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
+                    torch.nn.Conv2d(c, 4*6, 3, 1, 1, padding_mode = 'zeros', bias=True),
                     torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 4
