@@ -157,7 +157,6 @@ class Model:
                 if self.cnn3.bias is not None:
                     torch.nn.init.constant_(self.cnn3.bias, 0)
 
-
             def forward(self, x):
                 x = self.cnn0(x)
                 x = self.relu(x)
