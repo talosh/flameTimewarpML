@@ -259,7 +259,7 @@ class Model:
                 conf = tmp[:, 5:6][:, :, :h, :w]
                 return flow, mask, conf
 
-        class FlownetDeep(Module):
+        class FlownetDeepSingleHead(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = conv(in_planes + 1, c, 3, 2, 1)
@@ -346,11 +346,104 @@ class Model:
 
                 return flow, mask, conf
 
+        class FlownetDeepDoubleHead(Module):
+            def __init__(self, in_planes, c=64):
+                super().__init__()
+                self.conv0 = conv(in_planes + 1, c, 3, 2, 1)
+                self.conv0a = conv(in_planes - 5, c, 3, 2, 1)
+                self.conv1 = conv(c, c, 3, 2, 1)
+                self.conv1a = conv(c, c, 3, 2, 1)
+                self.conv2 = conv(c, c, 3, 2, 1)
+                self.attn = CBAM(c)
+                self.noise_level = torch.nn.Parameter(torch.ones((1, 1, 1, 1)), requires_grad=True)
+                self.convblock = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                )
+                self.convblock_deep = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
+                    ResConv(c),
+                    ResConv(c),
+                )
+                self.mix = ResConvMix(c)
+                self.convblock_mix = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                )
+                self.lastconv = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
+                    torch.nn.Conv2d(c//2, 4*6, 3, 1, 1, padding_mode = 'reflect', bias=True),
+                    torch.nn.PixelShuffle(2)
+                )
+                self.maxdepth = 8
+
+            def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
+
+                pvalue = scale * self.maxdepth
+                _, _, h, w = img0.shape
+                ph = ((h - 1) // pvalue + 1) * pvalue
+                pw = ((w - 1) // pvalue + 1) * pvalue
+                padding = (0, pw - w, 0, ph - h)
+                
+                x_deep = torch.cat((img0, img1, f0, f1, timestep), 1)
+                x_deep = torch.nn.functional.pad(x, padding)
+                x_deep = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+
+                warped_img0 = warp(img0, flow[:, :2])
+                warped_img1 = warp(img1, flow[:, 2:4])
+
+                warped_f0 = warp(f0, flow[:, :2])
+                warped_f1 = warp(f1, flow[:, 2:4])
+                
+                x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
+                x = torch.nn.functional.pad(x, padding)
+                x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+
+                flow = torch.nn.functional.pad(flow, padding)
+                flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
+                x = torch.cat((x, flow), 1)
+
+                noise = torch.randn_like(x[:, :1, :, :]) * self.noise_level
+                x = torch.cat((x, noise), 1)
+
+                feat = self.conv0(x)
+                feat = self.attn(feat)
+                feat = self.conv1(feat)
+                feat = self.convblock(feat)
+
+                feat_deep = self.conv0(x_deep)
+                feat_deep = self.attn(feat_deep)
+                feat_deep = self.conv1(feat_deep)
+                feat_deep = self.conv2(feat_deep)
+                feat_deep = self.convblock_deep(feat_deep)
+
+                feat = self.mix(feat, feat_deep)
+                feat = self.convblock_mix(feat)
+                tmp = self.lastconv(feat)
+
+                tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
+                flow = tmp[:, :4][:, :, :h, :w] * scale
+                mask = tmp[:, 4:5][:, :, :h, :w]
+                conf = tmp[:, 5:6][:, :, :h, :w]
+
+                return flow, mask, conf
+
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeep(23, c=192)
-                self.block1 = Flownet(28, c=96)
+                self.block0 = FlownetDeepSingleHead(23, c=192)
+                self.block1 = FlownetDeepDoubleHead(28, c=96)
                 self.block2 = Flownet(28, c=64)
                 self.block3 = Flownet(24, c=48)
                 self.block4 = Flownet(24, c=32)
