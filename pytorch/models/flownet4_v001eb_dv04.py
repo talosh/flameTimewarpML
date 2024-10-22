@@ -91,7 +91,7 @@ class Model:
                 self.sigmoid = torch.nn.Sigmoid()
 
                 torch.nn.init.kaiming_normal_(self.conv0.weight, mode='fan_in', nonlinearity='relu')
-                self.conv.weight.data *= 1e-4
+                self.conv0.weight.data *= 1e-4
 
             def forward(self, x):
                 # Compute average and max along the channel dimension
