@@ -350,7 +350,7 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = conv(in_planes + 1, c, 3, 2, 1)
-                self.conv0a = conv(in_planes - 5, c, 3, 2, 1)
+                self.conv0a = conv(in_planes - 4, c, 3, 2, 1)
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv1a = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, c, 3, 2, 1)
@@ -416,6 +416,7 @@ class Model:
 
                 noise = torch.randn_like(x[:, :1, :, :]) * self.noise_level
                 x = torch.cat((x, noise), 1)
+                x_deep = torch.cat((x_deep, noise), 1)
 
                 feat = self.conv0(x)
                 feat = self.attn(feat)
