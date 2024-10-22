@@ -193,10 +193,10 @@ class Model:
                 self.theta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)  
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
-                torch.nn.init.kaiming_normal_(self.conv.weight, mode='fan_in', nonlinearity='relu')
-                self.conv.weight.data *= 1e-4
-                if self.conv.bias is not None:
-                    torch.nn.init.constant_(self.conv.bias, 0)
+                torch.nn.init.kaiming_normal_(self.conv0.weight, mode='fan_in', nonlinearity='relu')
+                self.conv0.weight.data *= 1e-4
+                if self.conv0.bias is not None:
+                    torch.nn.init.constant_(self.conv0.bias, 0)
                 torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
                 self.conv1.weight.data *= 1e-4
                 if self.conv1.bias is not None:
