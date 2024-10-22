@@ -268,7 +268,8 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
+                    torch.nn.Conv2d(c//2, 4*6, 3, 1, 1, padding_mode = 'zeros', bias=True),
                     torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
@@ -349,7 +350,7 @@ class Model:
                 # step training
 
                 # stage 1
-                # scale[0] = 1
+                scale[0] = 1
 
                 # stage 2
                 # scale[0] = scale[3]
