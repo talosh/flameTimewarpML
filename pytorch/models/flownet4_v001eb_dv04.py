@@ -280,6 +280,7 @@ class Model:
                     ResConv(c*2),
                     ResConv(c*2),
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
+                    ResConv(c),
                 )
                 self.mix = ResConvMix(c)
                 self.convblock_mix = torch.nn.Sequential(
