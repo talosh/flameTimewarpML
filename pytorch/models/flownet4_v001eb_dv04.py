@@ -90,9 +90,6 @@ class Model:
                 self.conv0 = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, padding_mode='zeros', bias=False)
                 self.sigmoid = torch.nn.Sigmoid()
 
-                torch.nn.init.kaiming_normal_(self.conv0.weight, mode='fan_in', nonlinearity='relu')
-                self.conv0.weight.data *= 1e-4
-
             def forward(self, x):
                 # Compute average and max along the channel dimension
                 avg_out = torch.mean(x, dim=1, keepdim=True)
@@ -137,26 +134,6 @@ class Model:
                 self.attn = CBAM(32)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
-                torch.nn.init.kaiming_normal_(self.cnn0.weight, mode='fan_in', nonlinearity='relu')
-                self.cnn0.weight.data *= 1e-4
-                if self.cnn0.bias is not None:
-                    torch.nn.init.constant_(self.cnn0.bias, 0)
-
-                torch.nn.init.kaiming_normal_(self.cnn1.weight, mode='fan_in', nonlinearity='relu')
-                self.cnn1.weight.data *= 1e-4
-                if self.cnn1.bias is not None:
-                    torch.nn.init.constant_(self.cnn1.bias, 0)
-
-                torch.nn.init.kaiming_normal_(self.cnn2.weight, mode='fan_in', nonlinearity='relu')
-                self.cnn2.weight.data *= 1e-4
-                if self.cnn2.bias is not None:
-                    torch.nn.init.constant_(self.cnn2.bias, 0)
-
-                torch.nn.init.kaiming_normal_(self.cnn3.weight, mode='fan_in', nonlinearity='relu')
-                self.cnn3.weight.data *= 1e-4
-                if self.cnn3.bias is not None:
-                    torch.nn.init.constant_(self.cnn3.bias, 0)
-
             def forward(self, x):
                 x = self.cnn0(x)
                 x = self.relu(x)
@@ -175,11 +152,6 @@ class Model:
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
-                torch.nn.init.kaiming_normal_(self.conv.weight, mode='fan_in', nonlinearity='relu')
-                self.conv.weight.data *= 1e-4
-                if self.conv.bias is not None:
-                    torch.nn.init.constant_(self.conv.bias, 0)
-
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
 
@@ -192,15 +164,6 @@ class Model:
                 self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.theta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)  
                 self.relu = torch.nn.LeakyReLU(0.2, True)
-
-                torch.nn.init.kaiming_normal_(self.conv0.weight, mode='fan_in', nonlinearity='relu')
-                self.conv0.weight.data *= 1e-4
-                if self.conv0.bias is not None:
-                    torch.nn.init.constant_(self.conv0.bias, 0)
-                torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
-                self.conv1.weight.data *= 1e-4
-                if self.conv1.bias is not None:
-                    torch.nn.init.constant_(self.conv1.bias, 0)
 
             def forward(self, x, x_deep):
                 return self.relu(self.conv0(x) * self.beta + self.conv1(x_deep) * self.gamma + torch.randn_like(x) * self.theta)
