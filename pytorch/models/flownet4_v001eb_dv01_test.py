@@ -12,8 +12,8 @@
 class Model:
 
     info = {
-        'name': 'Flownet4_v001eb_dv01',
-        'file': 'flownet4_v001eb_dv01.py',
+        'name': 'Flownet4_v001eb_dv04',
+        'file': 'flownet4_v001eb_dv04.py',
         'ratio_support': True
     }
 
@@ -32,7 +32,7 @@ class Model:
                     stride=stride,
                     padding=padding, 
                     dilation=dilation,
-                    padding_mode='replicate',
+                    padding_mode='zeros',
                     bias=True
                 ),
                 torch.nn.LeakyReLU(0.2, True)
@@ -84,11 +84,14 @@ class Model:
                 return out
 
         class SpatialAttention(Module):
-            def __init__(self, kernel_size=3):
+            def __init__(self, kernel_size=5):
                 super(SpatialAttention, self).__init__()
                 padding = kernel_size // 2  # Ensure same spatial dimensions
-                self.conv0 = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, padding_mode='replicate', bias=False)
+                self.conv0 = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, padding_mode='zeros', bias=False)
                 self.sigmoid = torch.nn.Sigmoid()
+
+                torch.nn.init.kaiming_normal_(self.conv0.weight, mode='fan_in', nonlinearity='relu')
+                self.conv0.weight.data *= 1e-4
 
             def forward(self, x):
                 # Compute average and max along the channel dimension
@@ -106,7 +109,7 @@ class Model:
                 return out
 
         class CBAM(Module):
-            def __init__(self, c, reduction_ratio=4, spatial_kernel_size=3, channel_scale=0.2, spatial_scale=0.2):
+            def __init__(self, c, reduction_ratio=4, spatial_kernel_size=5, channel_scale=0.2, spatial_scale=0.2):
                 super(CBAM, self).__init__()
                 self.channel_attention = ChannelAttention(c, reduction_ratio)
                 self.spatial_attention = SpatialAttention(kernel_size = spatial_kernel_size)
