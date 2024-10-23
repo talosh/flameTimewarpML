@@ -160,11 +160,11 @@ class Model:
             def forward(self, x):
                 x = self.cnn0(x)
                 x = self.relu(x)
-                x = self.attn(x)
                 x = self.cnn1(x)
                 x = self.relu(x)
                 x = self.cnn2(x)
                 x = self.relu(x)
+                x = self.attn(x)
                 x = self.cnn3(x)
                 return x
 
