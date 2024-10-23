@@ -12,8 +12,8 @@
 class Model:
 
     info = {
-        'name': 'Flownet4_v001eb_dv04',
-        'file': 'flownet4_v001eb_dv04.py',
+        'name': 'Flownet4_v001eb_dv01',
+        'file': 'flownet4_v001eb_dv01.py',
         'ratio_support': True
     }
 
@@ -32,7 +32,7 @@ class Model:
                     stride=stride,
                     padding=padding, 
                     dilation=dilation,
-                    padding_mode='zeros',
+                    padding_mode='replicate',
                     bias=True
                 ),
                 torch.nn.LeakyReLU(0.2, True)
@@ -84,14 +84,11 @@ class Model:
                 return out
 
         class SpatialAttention(Module):
-            def __init__(self, kernel_size=5):
+            def __init__(self, kernel_size=3):
                 super(SpatialAttention, self).__init__()
                 padding = kernel_size // 2  # Ensure same spatial dimensions
-                self.conv0 = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, padding_mode='zeros', bias=False)
+                self.conv0 = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, padding_mode='replicate', bias=False)
                 self.sigmoid = torch.nn.Sigmoid()
-
-                torch.nn.init.kaiming_normal_(self.conv0.weight, mode='fan_in', nonlinearity='relu')
-                self.conv0.weight.data *= 1e-4
 
             def forward(self, x):
                 # Compute average and max along the channel dimension
@@ -109,7 +106,7 @@ class Model:
                 return out
 
         class CBAM(Module):
-            def __init__(self, c, reduction_ratio=4, spatial_kernel_size=5, channel_scale=0.2, spatial_scale=0.2):
+            def __init__(self, c, reduction_ratio=4, spatial_kernel_size=3, channel_scale=0.2, spatial_scale=0.2):
                 super(CBAM, self).__init__()
                 self.channel_attention = ChannelAttention(c, reduction_ratio)
                 self.spatial_attention = SpatialAttention(kernel_size = spatial_kernel_size)
@@ -137,85 +134,40 @@ class Model:
                 self.attn = CBAM(32, channel_scale=-0.1, spatial_scale=-0.1)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
-                torch.nn.init.kaiming_normal_(self.cnn0.weight, mode='fan_in', nonlinearity='relu')
-                self.cnn0.weight.data *= 1e-4
-                if self.cnn0.bias is not None:
-                    torch.nn.init.constant_(self.cnn0.bias, 0)
-
-                torch.nn.init.kaiming_normal_(self.cnn1.weight, mode='fan_in', nonlinearity='relu')
-                self.cnn1.weight.data *= 1e-4
-                if self.cnn1.bias is not None:
-                    torch.nn.init.constant_(self.cnn1.bias, 0)
-
-                torch.nn.init.kaiming_normal_(self.cnn2.weight, mode='fan_in', nonlinearity='relu')
-                self.cnn2.weight.data *= 1e-4
-                if self.cnn2.bias is not None:
-                    torch.nn.init.constant_(self.cnn2.bias, 0)
-
-                torch.nn.init.kaiming_normal_(self.cnn3.weight, mode='fan_in', nonlinearity='relu')
-                self.cnn3.weight.data *= 1e-4
-                if self.cnn3.bias is not None:
-                    torch.nn.init.constant_(self.cnn3.bias, 0)
-
             def forward(self, x):
                 x = self.cnn0(x)
                 x = self.relu(x)
-                x = self.attn(x)
                 x = self.cnn1(x)
                 x = self.relu(x)
                 x = self.cnn2(x)
                 x = self.relu(x)
+                x = self.attn(x)
                 x = self.cnn3(x)
                 return x
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'zeros', bias=True)
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'replicate', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
                 torch.nn.init.kaiming_normal_(self.conv.weight, mode='fan_in', nonlinearity='relu')
-                self.conv.weight.data *= 1e-4
+                self.conv.weight.data *= 1e-2
                 if self.conv.bias is not None:
                     torch.nn.init.constant_(self.conv.bias, 0)
 
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
 
-        class ResConvMix(Module):
-            def __init__(self, c, dilation=1):
-                super().__init__()
-                self.conv0 = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'zeros', bias=True)
-                self.conv1 = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'zeros', bias=True)
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.theta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)  
-                self.relu = torch.nn.LeakyReLU(0.2, True)
-
-                torch.nn.init.kaiming_normal_(self.conv0.weight, mode='fan_in', nonlinearity='relu')
-                self.conv0.weight.data *= 1e-4
-                if self.conv0.bias is not None:
-                    torch.nn.init.constant_(self.conv0.bias, 0)
-                torch.nn.init.kaiming_normal_(self.conv1.weight, mode='fan_in', nonlinearity='relu')
-                self.conv1.weight.data *= 1e-4
-                if self.conv1.bias is not None:
-                    torch.nn.init.constant_(self.conv1.bias, 0)
-
-            def forward(self, x, x_deep):
-                return self.relu(self.conv0(x) * self.beta + self.conv1(x_deep) * self.gamma + torch.randn_like(x) * self.theta)
-
-        class Flownet(Module):
+        class FlownetShallow(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
-                    conv(in_planes+2, c, 3, 2, 1),
+                    conv(in_planes, c, 3, 2, 1),
                     conv(c, c, 3, 2, 1),
                     )
                 self.convblock = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
@@ -229,7 +181,6 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
-                self.noise_level = torch.nn.Parameter(torch.full((1, 1, 1, 1), 1e-4), requires_grad=True)
                 self.maxdepth = 4
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
@@ -247,9 +198,6 @@ class Model:
                 x = torch.nn.functional.pad(x, padding)
                 x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 
-                noise = torch.randn_like(x[:, :2, :, :]) * self.noise_level
-                x = torch.cat((x, noise), 1)
-
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
@@ -259,20 +207,21 @@ class Model:
                 conf = tmp[:, 5:6][:, :, :h, :w]
                 return flow, mask, conf
 
-        class FlownetDeepSingleHead(Module):
+        class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                self.conv0 = conv(in_planes + 1, c, 3, 2, 1)
-                self.conv1 = conv(c, c, 3, 2, 1)
-                self.conv2 = conv(c, c*2, 3, 2, 1)
-                self.attn = CBAM(c)
-                self.noise_level = torch.nn.Parameter(torch.ones((1, 1, 1, 1)), requires_grad=True)
+                self.conv0 = torch.nn.Sequential(
+                    conv(in_planes, c, 3, 2, 1),
+                    conv(c, c, 3, 2, 1),
+                    )
+                self.conv1 = conv(c, c*2, 3, 2, 1)
+                # self.avg2 = torch.nn.AvgPool2d(2)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
-                    ResConv(c),
+                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True)
                 )
                 self.convblock_deep = torch.nn.Sequential(
                     ResConv(c*2),
@@ -280,9 +229,11 @@ class Model:
                     ResConv(c*2),
                     ResConv(c*2),
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
-                    ResConv(c),
                 )
-                self.mix = ResConvMix(c)
+                self.attn = CBAM(c)
+                self.attn_deep = CBAM(c)
+                # self.mix = torch.nn.Conv2d(c*2, c, kernel_size=3, stride=1, padding=1, bias=True)
+                self.mix = conv(c*2, c, 3, 1, 1)
                 self.convblock_mix = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
@@ -291,9 +242,16 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                 )
+                '''
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
-                    torch.nn.Conv2d(c//2, 4*6, 3, 1, 1, padding_mode = 'reflect', bias=True),
+                    torch.nn.ConvTranspose2d(c*2, c, 6, 2, 2),
+                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
+                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
+                    torch.nn.Conv2d(c, 6, kernel_size=1, stride=1, padding=0, bias=True),
+                )
+                '''
+                self.lastconv = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
@@ -325,112 +283,17 @@ class Model:
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
 
-                noise = torch.randn_like(x[:, :1, :, :]) * self.noise_level
-                x = torch.cat((x, noise), 1)
-
                 feat = self.conv0(x)
                 feat = self.attn(feat)
-                feat = self.conv1(feat)
-                feat_deep = self.conv2(feat)
-
-                feat = self.convblock(feat)
-                feat_deep = self.convblock_deep(feat_deep)
-
-                feat = self.mix(feat, feat_deep)
-                feat = self.convblock_mix(feat)
-                tmp = self.lastconv(feat)
-
-                tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
-                flow = tmp[:, :4][:, :, :h, :w] * scale
-                mask = tmp[:, 4:5][:, :, :h, :w]
-                conf = tmp[:, 5:6][:, :, :h, :w]
-
-                return flow, mask, conf
-
-        class FlownetDeepDoubleHead(Module):
-            def __init__(self, in_planes, c=64):
-                super().__init__()
-                self.conv0 = conv(in_planes + 1, c, 3, 2, 1)
-                self.conv0a = conv(in_planes - 4, c, 3, 2, 1)
-                self.conv1 = conv(c, c, 3, 2, 1)
-                self.conv1a = conv(c, c, 3, 2, 1)
-                self.conv2 = conv(c, c, 3, 2, 1)
-                self.attn = CBAM(c)
-                self.noise_level = torch.nn.Parameter(torch.ones((1, 1, 1, 1)), requires_grad=True)
-                self.convblock = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                )
-                self.convblock_deep = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
-                    ResConv(c),
-                    ResConv(c),
-                )
-                self.mix = ResConvMix(c)
-                self.convblock_mix = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                )
-                self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
-                    torch.nn.Conv2d(c//2, 4*6, 3, 1, 1, padding_mode = 'reflect', bias=True),
-                    torch.nn.PixelShuffle(2)
-                )
-                self.maxdepth = 8
-
-            def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
-
-                pvalue = scale * self.maxdepth
-                _, _, h, w = img0.shape
-                ph = ((h - 1) // pvalue + 1) * pvalue
-                pw = ((w - 1) // pvalue + 1) * pvalue
-                padding = (0, pw - w, 0, ph - h)
-                
-                x_deep = torch.cat((img0, img1, f0, f1, timestep), 1)
-                x_deep = torch.nn.functional.pad(x, padding)
-                x_deep = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-
-                warped_img0 = warp(img0, flow[:, :2])
-                warped_img1 = warp(img1, flow[:, 2:4])
-
-                warped_f0 = warp(f0, flow[:, :2])
-                warped_f1 = warp(f1, flow[:, 2:4])
-                
-                x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
-                x = torch.nn.functional.pad(x, padding)
-                x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-
-                flow = torch.nn.functional.pad(flow, padding)
-                flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
-                x = torch.cat((x, flow), 1)
-
-                noise = torch.randn_like(x[:, :1, :, :]) * self.noise_level
-                x = torch.cat((x, noise), 1)
-                x_deep = torch.cat((x_deep, noise), 1)
-
-                feat = self.conv0(x)
-                feat = self.attn(feat)
-                feat = self.conv1(feat)
                 feat = self.convblock(feat)
 
-                feat_deep = self.conv0(x_deep)
-                feat_deep = self.attn(feat_deep)
+                feat_deep = self.attn_deep(feat)
                 feat_deep = self.conv1(feat_deep)
-                feat_deep = self.conv2(feat_deep)
+                # feat_deep = self.avg2(feat_deep)
                 feat_deep = self.convblock_deep(feat_deep)
 
-                feat = self.mix(feat, feat_deep)
+                feat = torch.cat((feat, feat_deep), 1)
+                feat = self.mix(feat)
                 feat = self.convblock_mix(feat)
                 tmp = self.lastconv(feat)
 
@@ -444,11 +307,11 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepSingleHead(23, c=192)
-                self.block1 = FlownetDeepDoubleHead(28, c=96)
+                self.block0 = Flownet(23, c=192)
+                self.block1 = Flownet(28, c=96)
                 self.block2 = Flownet(28, c=64)
-                self.block3 = Flownet(24, c=48)
-                self.block4 = Flownet(24, c=32)
+                self.block3 = FlownetShallow(24, c=48)
+                self.block4 = FlownetShallow(24, c=32)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
