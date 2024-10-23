@@ -81,7 +81,7 @@ def main():
     exr_files = []
 
     for folder_idx, folder_path in enumerate(sorted(folders_with_exr)):
-        print (f'\Folder [{folder_idx+1} / {len(folders_with_exr)}], {folder_path}', end='')
+        print (f'\rFolder [{folder_idx+1} / {len(folders_with_exr)}], {folder_path}', end='')
         folder_exr_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.exr')]
         folder_exr_files.sort()
         
