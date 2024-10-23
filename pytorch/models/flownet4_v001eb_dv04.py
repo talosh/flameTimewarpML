@@ -320,7 +320,6 @@ class Model:
                 self.conv1_deep = conv(c, c, 3, 2, 1)
                 self.conv2_deep = conv(c, c*2, 3, 2, 1)
                 self.attn = CBAM(c)
-                self.attn_deep = CBAM(c)
                 self.noise_level = torch.nn.Parameter(torch.ones((1, 1, 1, 1)), requires_grad=True)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
@@ -383,12 +382,11 @@ class Model:
                 x_deep = torch.cat((x_deep, noise), 1)
 
                 feat = self.conv0(x)
-                feat = self.attn(feat)
                 feat = self.conv1(feat)
                 feat = self.convblock(feat)
 
                 feat_deep = self.conv0_deep(x_deep)
-                feat_deep = self.attn_deep(feat_deep)
+                feat_deep = self.attn(feat_deep)
                 feat_deep = self.conv1_deep(feat_deep)
                 feat_deep = self.conv2_deep(feat_deep)
                 feat_deep = self.convblock_deep(feat_deep)
