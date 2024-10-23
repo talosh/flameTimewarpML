@@ -50,9 +50,9 @@ def find_folders_with_exr(path):
 
     # Walk through all directories and files in the given path
     for root, dirs, files in os.walk(path):
-        if root.endswith('preview'):
+        if 'preview' in root:
             continue
-        if root.endswith('eval'):
+        if 'eval' in root:
             continue
         for file in files:
             if file.endswith('.exr'):
@@ -77,8 +77,6 @@ def main():
     args = parser.parse_args()
 
     folders_with_exr = find_folders_with_exr(args.dataset_path)
-
-    exr_files = []
 
     for folder_idx, folder_path in enumerate(sorted(folders_with_exr)):
         print (f'\rFolder [{folder_idx+1} / {len(folders_with_exr)}], {folder_path}', end='')
