@@ -90,7 +90,7 @@ def main():
                 frame_number = int(parts[-2])
                 frame_numbers.append(frame_number)
             except ValueError:
-                print (f'\nFormat error in {folder_path}: {filename}')
+                print (f'\rFormat error in {folder_path}: {filename}')
         
         frame_numbers.sort()
         for i in range(1, len(frame_numbers)):
