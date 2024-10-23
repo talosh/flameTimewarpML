@@ -255,8 +255,7 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
-                    torch.nn.Conv2d(c//2, 4*6, 3, 1, 1, padding_mode = 'reflect', bias=True),
+                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
@@ -314,11 +313,12 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = conv(in_planes + 1, c, 3, 2, 1)
-                self.conv0a = conv(in_planes - 4, c, 3, 2, 1)
                 self.conv1 = conv(c, c, 3, 2, 1)
-                self.conv1a = conv(c, c, 3, 2, 1)
-                self.conv2 = conv(c, c, 3, 2, 1)
+                self.conv0_deep = conv(in_planes - 4, c, 3, 2, 1)
+                self.conv1_deep = conv(c, c, 3, 2, 1)
+                self.conv2_deep = conv(c, c*2, 3, 2, 1)
                 self.attn = CBAM(c)
+                self.attn_deep = CBAM(c)
                 self.noise_level = torch.nn.Parameter(torch.ones((1, 1, 1, 1)), requires_grad=True)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
@@ -328,12 +328,11 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock_deep = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
-                    ResConv(c),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                     ResConv(c),
                 )
                 self.mix = ResConvMix(c)
@@ -346,8 +345,7 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
-                    torch.nn.Conv2d(c//2, 4*6, 3, 1, 1, padding_mode = 'reflect', bias=True),
+                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
@@ -387,10 +385,10 @@ class Model:
                 feat = self.conv1(feat)
                 feat = self.convblock(feat)
 
-                feat_deep = self.conv0(x_deep)
-                feat_deep = self.attn(feat_deep)
-                feat_deep = self.conv1(feat_deep)
-                feat_deep = self.conv2(feat_deep)
+                feat_deep = self.conv0_deep(x_deep)
+                feat_deep = self.attn_deep(feat_deep)
+                feat_deep = self.conv1_deep(feat_deep)
+                feat_deep = self.conv2_deep(feat_deep)
                 feat_deep = self.convblock_deep(feat_deep)
 
                 feat = self.mix(feat, feat_deep)
