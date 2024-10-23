@@ -95,7 +95,7 @@ def main():
         frame_numbers.sort()
         for i in range(1, len(frame_numbers)):
             if frame_numbers[i] != frame_numbers[i - 1] + 1:
-                print(f'\nInconsistent {folder_path}: Missing or non-consecutive frame between {frame_numbers[i-1]} and {frame_numbers[i]}')
+                print(f'\rInconsistent {folder_path}: Missing or non-consecutive frame between {frame_numbers[i-1]} and {frame_numbers[i]}\n')
 
     print ('')
 
