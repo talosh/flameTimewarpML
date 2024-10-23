@@ -85,7 +85,6 @@ def main():
         folder_exr_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.exr')]
         folder_exr_files.sort()
         
-        '''
         frame_numbers = []
         for filename in folder_exr_files:
             parts = filename.split('.')
@@ -99,7 +98,6 @@ def main():
         for i in range(1, len(frame_numbers)):
             if frame_numbers[i] != frame_numbers[i - 1] + 1:
                 print(f'\nMissing or non-consecutive frame between {frame_numbers[i-1]} and {frame_numbers[i]}')
-        '''
 
     print ('')
 
