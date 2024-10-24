@@ -2347,9 +2347,8 @@ def main():
         except Exception as e:
             # if Onecycle is over due to variable number of steps per epoch
             # fall back to Cosine
-
             print (f'switching to CyclicLR scheduler:')
-            print (f'{e}\n\n')
+            # print (f'{e}\n\n')
 
             current_lr = float(optimizer_flownet.param_groups[0]["lr"])
 
