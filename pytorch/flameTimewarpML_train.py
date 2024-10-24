@@ -2347,10 +2347,10 @@ def main():
         except Exception as e:
             # if Onecycle is over due to variable number of steps per epoch
             # fall back to Cosine
-            print (f'switching to CyclicLR scheduler:')
-            # print (f'{e}\n\n')
 
             current_lr = float(optimizer_flownet.param_groups[0]["lr"])
+            print (f'switching to CyclicLR scheduler with base lr {current_lr}')
+            # print (f'{e}\n\n')
 
             train_scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
                             optimizer_flownet,
