@@ -652,6 +652,11 @@ def get_dataset(
                         img1 = read_image_file(description['gt'])['image_data']
                         img2 = read_image_file(description['end'])['image_data']
 
+                        # get rid of negative values before scale
+                        img0 =[img0 < 0.] = 0.
+                        img1 =[img1 < 0.] = 0.
+                        img2 =[img2 < 0.] = 0.
+
                         '''
                         img0 = torch.from_numpy(img0['image_data']).to(dtype = torch.float32)
                         img1 = torch.from_numpy(img1['image_data']).to(dtype = torch.float32)
@@ -892,10 +897,6 @@ def get_dataset(
                 img0 = img0.permute(2, 0, 1)
                 img1 = img1.permute(2, 0, 1)
                 img2 = img2.permute(2, 0, 1)
-
-                img0 = torch.clamp(img0, min=0.)
-                img1 = torch.clamp(img1, min=0.)
-                img2 = torch.clamp(img2, min=0.)
 
                 if self.generalize == 0:
                     # No augmentaton
