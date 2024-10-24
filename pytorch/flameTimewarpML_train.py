@@ -2349,13 +2349,14 @@ def main():
             # fall back to Cosine
 
             current_lr = float(optimizer_flownet.param_groups[0]["lr"])
-            print (f'switching to CyclicLR scheduler with base lr {current_lr}')
+            max_lr = current_lr + (( current_lr / 100 ) * pulse_dive)
+            print (f'switching to CyclicLR scheduler with base {current_lr} and max {max_lr}')
             # print (f'{e}\n\n')
 
             train_scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
                             optimizer_flownet,
                             base_lr=current_lr,  # Lower boundary of the learning rate cycle
-                            max_lr=current_lr + (( current_lr / 100 ) * pulse_dive),    # Upper boundary of the learning rate cycle
+                            max_lr=max_lr,    # Upper boundary of the learning rate cycle
                             step_size_up=pulse_period,  # Number of iterations for the increasing part of the cycle
                             mode='exp_range',  # Use exp_range to enable scale_fn
                             scale_fn=sinusoidal_scale_fn,  # Custom sinusoidal function
