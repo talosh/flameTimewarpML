@@ -1640,6 +1640,11 @@ class LossStats:
     def __len__(self):
         return len(self.epoch_l1_loss)
 
+def sinusoidal_scale_fn(x):
+    import math
+    # x is a fraction of the cycle's progress (0 to 1)
+    return 0.5 * (1 + math.sin(math.pi * (x - 0.5)))
+
 current_state_dict = {}
 
 def main():
