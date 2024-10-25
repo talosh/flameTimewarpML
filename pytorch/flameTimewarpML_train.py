@@ -512,7 +512,7 @@ def get_dataset(
             self.train_data_index = 0
 
             self.repeat_count = repeat
-            self.repeat_counter = 0
+            self.repeat_counter = 1
 
             # self.last_shuffled_index = -1
             # self.last_source_image_data = None
@@ -828,7 +828,7 @@ def get_dataset(
             '''
 
             if self.repeat_counter >= self.repeat_count:
-                self.repeat_counter = 0
+                self.repeat_counter = 1
                 try:
                     new_data = self.frames_queue.get_nowait()
                     self.last_train_data[random.randint(0, len(self.last_train_data) - 1)] = new_data
