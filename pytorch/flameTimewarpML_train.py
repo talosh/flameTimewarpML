@@ -1746,7 +1746,7 @@ def main():
     model_info = Flownet.get_info()
     print ('Model info:')
     pprint (model_info)
-    max_dataset_window = 9
+    max_dataset_window = 11
     if not model_info.get('ratio_support'):
         max_dataset_window = 3
     
