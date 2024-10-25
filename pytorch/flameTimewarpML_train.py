@@ -1959,14 +1959,24 @@ def main():
         preview_index = 0
     
     if args.onecycle != -1:
-        scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer_flownet,
-            max_lr=args.lr,
-            div_factor = 11,
-            steps_per_epoch=len(dataset)*dataset.repeat_count, 
-            epochs=args.onecycle,
-            last_epoch = -1 # if loaded_step == 0 else loaded_step
-            )
+        try:
+            scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
+                optimizer_flownet,
+                max_lr=args.lr,
+                div_factor = 11,
+                steps_per_epoch=len(dataset)*dataset.repeat_count, 
+                epochs=args.onecycle,
+                last_epoch = -1 if loaded_step == 0 else loaded_step
+                )
+        except:
+            scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
+                optimizer_flownet,
+                max_lr=args.lr,
+                div_factor = 11,
+                steps_per_epoch=len(dataset)*dataset.repeat_count, 
+                epochs=args.onecycle,
+                last_epoch = -1
+                )
         print (f'setting OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.onecycle}, last: {-1 if loaded_step == 0 else loaded_step}')
         args.epochs = args.onecycle
     else:
