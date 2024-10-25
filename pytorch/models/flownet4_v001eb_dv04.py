@@ -361,8 +361,8 @@ class Model:
                 padding = (0, pw - w, 0, ph - h)
                 
                 x_deep = torch.cat((img0, img1, f0, f1, timestep), 1)
-                x_deep = torch.nn.functional.pad(x, padding)
-                x_deep = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                x_deep = torch.nn.functional.pad(x_deep, padding)
+                x_deep = torch.nn.functional.interpolate(x_deep, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 
                 warped_img0 = warp(img0, flow[:, :2])
                 warped_img1 = warp(img1, flow[:, 2:4])
