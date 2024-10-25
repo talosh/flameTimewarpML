@@ -1667,7 +1667,7 @@ def main():
     # Optional arguments
     parser.add_argument('--lr', type=float, default=1e-6, help='Learning rate (default: 1e-6)')
     parser.add_argument('--type', type=int, default=1, help='Model type (int): 1 - MultiresNet, 2 - MultiresNet 4 (default: 1)')
-    parser.add_argument('--pulse', type=float, default=1000, help='Period in steps to pulse learning rate (float) (default: 1K)')
+    parser.add_argument('--pulse', type=float, default=10000, help='Period in steps to pulse learning rate (float) (default: 10K)')
     parser.add_argument('--pulse_amplitude', type=float, default=25, help='Learning rate pulse amplitude (percentage) (default: 25)')
     parser.add_argument('--onecycle', type=int, default=-1, help='Train one cycle for N epochs (default: None)')
     parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
