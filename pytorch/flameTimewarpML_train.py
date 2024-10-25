@@ -2364,6 +2364,7 @@ def main():
                             base_lr=current_lr,  # Lower boundary of the learning rate cycle
                             max_lr=max_lr,    # Upper boundary of the learning rate cycle
                             step_size_up=pulse_period,  # Number of iterations for the increasing part of the cycle
+                            cycle_momentum=False,
                             mode='exp_range',  # Use exp_range to enable scale_fn
                             scale_fn=sinusoidal_scale_fn,  # Custom sinusoidal function
                             scale_mode='cycle'  # Apply scaling once per cycle
