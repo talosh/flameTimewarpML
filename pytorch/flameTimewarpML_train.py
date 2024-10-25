@@ -1958,6 +1958,7 @@ def main():
         current_epoch = 0
         preview_index = 0
 
+    '''
     train_scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
                     optimizer_flownet,
                     base_lr=lr - (( lr / 100 ) * pulse_dive),  # Lower boundary of the learning rate cycle
@@ -1966,6 +1967,15 @@ def main():
                     mode='exp_range',  # Use exp_range to enable scale_fn
                     cycle_momentum=True,
                     scale_fn=sinusoidal_scale_fn,  # Custom sinusoidal function
+                    scale_mode='iterations'  # Apply scaling once per cycle
+                )
+    '''
+
+    train_scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
+                    optimizer_flownet,
+                    base_lr=lr - (( lr / 100 ) * pulse_dive),  # Lower boundary of the learning rate cycle
+                    max_lr=lr,    # Upper boundary of the learning rate cycle
+                    step_size_up=pulse_period,  # Number of iterations for the increasing part of the cycle
                     scale_mode='iterations'  # Apply scaling once per cycle
                 )
 
