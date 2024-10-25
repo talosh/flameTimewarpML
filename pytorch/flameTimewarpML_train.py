@@ -1966,7 +1966,7 @@ def main():
                     mode='exp_range',  # Use exp_range to enable scale_fn
                     cycle_momentum=False,
                     scale_fn=sinusoidal_scale_fn,  # Custom sinusoidal function
-                    scale_mode='iterations'  # Apply scaling once per cycle
+                    scale_mode='cycle'  # Apply scaling once per cycle
                 )
 
     # train_scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_flownet, T_max=pulse_period, eta_min = lr - (( lr / 100 ) * pulse_dive) )
