@@ -653,9 +653,9 @@ def get_dataset(
                         img2 = read_image_file(description['end'])['image_data']
 
                         # get rid of negative values before scale
-                        img0 =[img0 < 0.] = 0.
-                        img1 =[img1 < 0.] = 0.
-                        img2 =[img2 < 0.] = 0.
+                        img0[img0 < 0] = 0.
+                        img1[img1 < 0] = 0.
+                        img2[img2 < 0] = 0.
 
                         '''
                         img0 = torch.from_numpy(img0['image_data']).to(dtype = torch.float32)
