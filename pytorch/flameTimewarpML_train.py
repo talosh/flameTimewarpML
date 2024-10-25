@@ -1964,6 +1964,7 @@ def main():
                 optimizer_flownet,
                 max_lr=args.lr,
                 div_factor = 11,
+                final_div_factor = 1,
                 steps_per_epoch=len(dataset)*dataset.repeat_count, 
                 epochs=args.onecycle,
                 last_epoch = -1 if loaded_step == 0 else loaded_step
@@ -1973,6 +1974,7 @@ def main():
                 optimizer_flownet,
                 max_lr=args.lr,
                 div_factor = 11,
+                final_div_factor = 1,
                 steps_per_epoch=len(dataset)*dataset.repeat_count, 
                 epochs=args.onecycle,
                 last_epoch = -1
