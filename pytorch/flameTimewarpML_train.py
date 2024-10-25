@@ -1963,8 +1963,8 @@ def main():
             scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
                 optimizer_flownet,
                 max_lr=args.lr,
-                div_factor = 11,
-                final_div_factor = 1,
+                div_factor = 5,
+                final_div_factor = 2,
                 steps_per_epoch=len(dataset)*dataset.repeat_count, 
                 epochs=args.onecycle,
                 last_epoch = -1 if loaded_step == 0 else loaded_step
@@ -1973,8 +1973,8 @@ def main():
             scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
                 optimizer_flownet,
                 max_lr=args.lr,
-                div_factor = 11,
-                final_div_factor = 1,
+                div_factor = 5,
+                final_div_factor = 2,
                 steps_per_epoch=len(dataset)*dataset.repeat_count, 
                 epochs=args.onecycle,
                 last_epoch = -1
