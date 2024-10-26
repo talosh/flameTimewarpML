@@ -963,6 +963,17 @@ def get_dataset(
                         img2 = img2 * multipliers
                         del multipliers
 
+                    '''
+                    if random.uniform(0, 1) < (self.generalize / 100):
+                        # add noise
+                        delta = random.uniform(0, 0.04)
+                        noise_level_r = random.uniform(0, delta)
+                        noise_level_g = random.uniform(0, delta)
+                        noise_level_b = random.uniform(0, delta)
+                        noise_r = torch.randn_like(img0[:, :1, :, :]) * noise_level_r
+                    '''
+
+
                     def gamma_up(img, gamma = 1.18):
                         return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
                     
