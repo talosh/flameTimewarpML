@@ -242,7 +242,6 @@ class Model:
                     ResConv(c*2),
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                     torch.nn.Conv2d(c, c, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True),
-                    ResConv(c),
                 )
                 self.mix = ResConvMix(c)
                 self.convblock_mix = torch.nn.Sequential(
