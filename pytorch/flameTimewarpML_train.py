@@ -2286,13 +2286,6 @@ def main():
         img1_orig = img1.detach().clone()
         img2_orig = img2.detach().clone()
 
-        if random.uniform(0, 1) < (args.generalize / 100):
-            # add noise
-            if random.uniform(0, 1) < 0.99:
-                delta = random.uniform(0, 4e-2)
-                img0 += torch.rand_like(img0) * delta
-                img2 += torch.rand_like(img1) * delta
-
         img0 = normalize(img0)
         img1 = normalize(img1)
         img2 = normalize(img2)
@@ -2324,10 +2317,17 @@ def main():
         time_stamp = time.time()
 
         flownet.train()
-        
+
+        if random.uniform(0, 1) < (args.generalize / 100):
+            # add noise
+            if random.uniform(0, 1) < 0.99:
+                delta = random.uniform(0, 4e-2)
+                noise_img0 = torch.rand_like(img0) * delta
+                noise_img2 = torch.rand_like(img1) * delta
+
         flow_list, mask_list, conf_list, merged = flownet(
-            img0,
-            img2,
+            img0 + noise_img0,
+            img2 + noise_img2,
             ratio,
             scale=training_scale,
             iterations = args.iterations
