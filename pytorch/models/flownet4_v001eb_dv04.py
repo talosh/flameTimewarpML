@@ -223,7 +223,7 @@ class Model:
         class FlownetDeepSingleHead(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                self.conv0 = conv(in_planes + 1, c, 3, 2, 1)
+                self.conv0 = conv(in_planes, c, 3, 2, 1)
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, c*2, 3, 2, 1)
                 self.attn = CBAM(c)
@@ -273,27 +273,9 @@ class Model:
                 pw = ((w - 1) // pvalue + 1) * pvalue
                 padding = (0, pw - w, 0, ph - h)
                 
-                if flow is None:
-                    x = torch.cat((img0 * 2 - 1, img1 * 2 - 1, f0, f1, timestep), 1)
-                    x = torch.nn.functional.pad(x, padding)
-                    x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                else:
-                    warped_img0 = warp(img0, flow[:, :2])
-                    warped_img1 = warp(img1, flow[:, 2:4])
-
-                    warped_f0 = warp(f0, flow[:, :2])
-                    warped_f1 = warp(f1, flow[:, 2:4])
-                    
-                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
-                    x = torch.nn.functional.pad(x, padding)
-                    x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-
-                    flow = torch.nn.functional.pad(flow, padding)
-                    flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
-                    x = torch.cat((x, flow), 1)
-
-                noise = torch.randn_like(x[:, :1, :, :]) * self.noise_level
-                x = torch.cat((x, noise), 1)
+                x = torch.cat((img0 * 2 - 1, img1 * 2 - 1, f0, f1, timestep), 1)
+                x = torch.nn.functional.pad(x, padding)
+                x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 
                 feat = self.conv0(x)
                 feat = self.attn(feat)
