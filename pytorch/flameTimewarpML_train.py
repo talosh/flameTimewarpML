@@ -2336,7 +2336,7 @@ def main():
         loss_conf = criterion_l1(conf, diff_matte)
 
         lpips_weight = 0.5
-        loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
+        loss_LPIPS = loss_fn_alex(output * 2 - 1, img1 * 2 - 1)
         loss = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS).item()) + 0.01 * loss_conf + 0.01 * float(torch.mean(diff_matte))
         loss_l1 = criterion_l1(output_clean, img1_orig)
 
