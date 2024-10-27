@@ -277,7 +277,7 @@ class Model:
                 padding = (0, pw - w, 0, ph - h)
                 
                 if flow is None:
-                    x = torch.cat((img0, img1, f0, f1, timestep), 1)
+                    x = torch.cat((img0 * 2 - 1, img1 * 2 - 1, f0, f1, timestep), 1)
                     x = torch.nn.functional.pad(x, padding)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 else:
