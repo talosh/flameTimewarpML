@@ -35,7 +35,8 @@ class Model:
                     padding_mode='zeros',
                     bias=True
                 ),
-                torch.nn.LeakyReLU(0.2, True)
+                torch.nn.Mish(True)
+                # torch.nn.LeakyReLU(0.2, True)
             )
 
         def warp(tenInput, tenFlow):
