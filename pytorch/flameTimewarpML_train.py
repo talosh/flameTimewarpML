@@ -965,6 +965,7 @@ def get_dataset(
                         img2 = img2 * multipliers
                         del multipliers
 
+                    '''
                     if random.uniform(0, 1) < (self.generalize / 100):
                         # add noise
                         if random.uniform(0, 1) < 0.99:
@@ -972,6 +973,7 @@ def get_dataset(
                             img0 += torch.rand_like(img0) * delta
                             img1 += torch.rand_like(img1) * delta
                             img2 += torch.rand_like(img1) * delta
+                    '''
 
                     def gamma_up(img, gamma = 1.18):
                         return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
@@ -2283,6 +2285,14 @@ def main():
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
         img2_orig = img2.detach().clone()
+
+        if random.uniform(0, 1) < (args.generalize / 100):
+            # add noise
+            if random.uniform(0, 1) < 0.99:
+                delta = random.uniform(0, 4e-2)
+                img0 += torch.rand_like(img0) * delta
+                img2 += torch.rand_like(img1) * delta
+
         img0 = normalize(img0)
         img1 = normalize(img1)
         img2 = normalize(img2)
