@@ -164,17 +164,16 @@ class Model:
                 self.conv1 = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.theta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)  
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x, x_deep):
-                return self.relu(self.conv0(x) * self.beta + self.conv1(x_deep) * self.gamma + torch.randn_like(x) * self.theta)
+                return self.relu(self.conv0(x) * self.beta + self.conv1(x_deep) * self.gamma)
 
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
-                    conv(in_planes+2, c, 3, 2, 1),
+                    conv(in_planes, c, 3, 2, 1),
                     conv(c, c, 3, 2, 1),
                     )
                 self.convblock = torch.nn.Sequential(
@@ -211,9 +210,6 @@ class Model:
                 x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
                 x = torch.nn.functional.pad(x, padding)
                 x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-
-                noise = torch.randn_like(x[:, :2, :, :]) * self.noise_level
-                x = torch.cat((x, noise), 1)
 
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
