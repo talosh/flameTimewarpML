@@ -32,7 +32,7 @@ class Model:
                     stride=stride,
                     padding=padding, 
                     dilation=dilation,
-                    padding_mode='replicate',
+                    padding_mode='reflect',
                     bias=True
                 ),
                 torch.nn.LeakyReLU(0.2, True)
