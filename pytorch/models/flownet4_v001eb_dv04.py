@@ -87,7 +87,7 @@ class Model:
             def __init__(self, kernel_size=5):
                 super(SpatialAttention, self).__init__()
                 padding = kernel_size // 2  # Ensure same spatial dimensions
-                self.conv0 = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, padding_mode='zeros', bias=False)
+                self.conv0 = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, padding_mode='reflect', bias=False)
                 self.sigmoid = torch.nn.Sigmoid()
 
             def forward(self, x):
