@@ -573,6 +573,8 @@ def get_dataset(
             if 'fast' in folder_path:
                 max_window = 3
             elif 'slow' in folder_path:
+                max_window = 7
+            elif 'slower' in folder_path:
                 max_window = max_window
             else:
                 if max_window > 5:
@@ -963,16 +965,12 @@ def get_dataset(
                         img2 = img2 * multipliers
                         del multipliers
 
-                    '''
                     if random.uniform(0, 1) < (self.generalize / 100):
                         # add noise
-                        delta = random.uniform(0, 0.04)
-                        noise_level_r = random.uniform(0, delta)
-                        noise_level_g = random.uniform(0, delta)
-                        noise_level_b = random.uniform(0, delta)
-                        noise_r = torch.randn_like(img0[:, :1, :, :]) * noise_level_r
-                    '''
-
+                        delta = random.uniform(0, 0.08)
+                        img0 += torch.rand_like(img0) * delta
+                        img1 += torch.rand_like(img1) * delta
+                        img2 += torch.rand_like(img1) * delta
 
                     def gamma_up(img, gamma = 1.18):
                         return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
