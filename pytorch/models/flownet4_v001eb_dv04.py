@@ -227,7 +227,6 @@ class Model:
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, c*2, 3, 2, 1)
                 self.attn = CBAM(c)
-                self.noise_level = torch.nn.Parameter(torch.ones((1, 1, 1, 1)), requires_grad=True)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
