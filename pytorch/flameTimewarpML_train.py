@@ -964,16 +964,14 @@ def get_dataset(
                         img1 = img1 * multipliers
                         img2 = img2 * multipliers
                         del multipliers
-
-                    '''
+                    
                     if random.uniform(0, 1) < (self.generalize / 100):
                         # add noise
                         if random.uniform(0, 1) < 0.99:
-                            delta = random.uniform(0, 8e-2)
+                            delta = random.uniform(0, 1e-2)
                             img0 += torch.rand_like(img0) * delta
                             img1 += torch.rand_like(img1) * delta
                             img2 += torch.rand_like(img1) * delta
-                    '''
 
                     def gamma_up(img, gamma = 1.18):
                         return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
@@ -2285,7 +2283,6 @@ def main():
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
         img2_orig = img2.detach().clone()
-
         img0 = normalize(img0)
         img1 = normalize(img1)
         img2 = normalize(img2)
@@ -2317,17 +2314,10 @@ def main():
         time_stamp = time.time()
 
         flownet.train()
-
-        if random.uniform(0, 1) < (args.generalize / 100):
-            # add noise
-            if random.uniform(0, 1) < 0.99:
-                delta = random.uniform(0, 4e-2)
-                noise_img0 = torch.rand_like(img0) * delta
-                noise_img2 = torch.rand_like(img1) * delta
-
+        
         flow_list, mask_list, conf_list, merged = flownet(
-            img0 + noise_img0,
-            img2 + noise_img2,
+            img0,
+            img2,
             ratio,
             scale=training_scale,
             iterations = args.iterations
@@ -2358,7 +2348,7 @@ def main():
         max_l1 = max(max_l1, float(loss_l1.item()))
         avg_l1 = float(loss_l1.item()) if batch_idx == 0 else (avg_l1 * (batch_idx - 1) + float(loss_l1.item())) / batch_idx 
         avg_lpips = float(torch.mean(loss_LPIPS).item()) if batch_idx == 0 else (avg_lpips * (batch_idx - 1) + float(torch.mean(loss_LPIPS).item())) / batch_idx
-        avg_pnsr = float(psnr_torch(output_clean, img1_orig)) if batch_idx == 0 else (avg_pnsr * (batch_idx - 1) + float(psnr_torch(output_clean, img1_orig))) / batch_idx
+        avg_pnsr = float(psnr_torch(output, img1)) if batch_idx == 0 else (avg_pnsr * (batch_idx - 1) + float(psnr_torch(output, img1))) / batch_idx
 
         loss.backward()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
