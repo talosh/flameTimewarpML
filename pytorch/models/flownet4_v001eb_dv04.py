@@ -394,7 +394,7 @@ class Model:
                 super().__init__()
                 self.block0 = FlownetDeepSingleHead(23, c=192)
                 self.block1 = FlownetDeepDoubleHead(28, c=96)
-                self.block2 = Flownet(28, c=64)
+                self.block2 = FlownetDeepDoubleHead(28, c=64)
                 self.block3 = Flownet(24, c=48)
                 self.block4 = Flownet(24, c=32)
                 self.encode = Head()
@@ -419,13 +419,13 @@ class Model:
                 # scale[0] = 1
 
                 # stage 2
-                scale[0] = scale[3]
-                scale[1] = 1
+                # scale[0] = scale[3]
+                # scale[1] = 1
 
                 # stage 3
-                # scale[0] = scale[2]
-                # scale[1] = scale[3]
-                # scale[2] = 1
+                scale[0] = scale[2]
+                scale[1] = scale[3]
+                scale[2] = 1
 
                 flow, mask, conf = self.block0(
                     img0, 
@@ -473,7 +473,7 @@ class Model:
                 conf_list[1] = torch.sigmoid(conf)
                 merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
-                # '''
+                '''
                 # step training stage 2
                 flow_list[4] = flow_list[1]
                 mask_list[4] = mask_list[1]
@@ -481,7 +481,7 @@ class Model:
                 merged[4] = merged[1]
 
                 return flow_list, mask_list, conf_list, merged
-                # '''
+                '''
 
                 # refine step 2
                 flow_d, mask, conf_d = self.block2(
@@ -503,7 +503,7 @@ class Model:
                 conf_list[2] = torch.sigmoid(conf)
                 merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
-                '''
+                # '''
                 # step training stage 03
                 flow_list[4] = flow_list[2]
                 mask_list[4] = mask_list[2]
@@ -511,7 +511,7 @@ class Model:
                 merged[4] = merged[2]
 
                 return flow_list, mask_list, conf_list, merged
-                '''
+                # '''
 
                 # refine step 3
                 flow_d, mask, conf_d = self.block3(
