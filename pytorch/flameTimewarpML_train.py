@@ -967,8 +967,8 @@ def get_dataset(
 
                     if random.uniform(0, 1) < (self.generalize / 100):
                         # add noise
-                        if random.uniform(0, 1) < 0.25:
-                            delta = random.uniform(0, 1e-2)
+                        if random.uniform(0, 1) < 0.99:
+                            delta = random.uniform(0, 8e-2)
                             img0 += torch.rand_like(img0) * delta
                             img1 += torch.rand_like(img1) * delta
                             img2 += torch.rand_like(img1) * delta
