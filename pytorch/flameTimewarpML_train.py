@@ -2175,7 +2175,6 @@ def main():
         print (f'flownet.module.block0.attn.channel_offset {flownet.module.block0.attn.channel_offset.data}')
         print (f'flownet.module.block0.attn.spatial_scale {flownet.module.block0.attn.spatial_scale.data}')
         print (f'flownet.module.block0.attn.spatial_offset {flownet.module.block0.attn.spatial_offset.data}')
-        print (f'flownet.module.block0.noise_level {flownet.module.block0.noise_level.data}')
         # print (f'flownet.module.block0.mix.noise_level {flownet.module.block0.mix.theta.data}')
 
         print ()
