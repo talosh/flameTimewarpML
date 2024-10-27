@@ -292,7 +292,7 @@ class Model:
                     x = torch.cat((x, flow), 1)
 
                 noise = torch.randn_like(x[:, :1, :, :]) * self.noise_level
-                x = torch.cat((x, 1e-11 * noise), 1)
+                x = torch.cat((x, noise), 1)
 
                 feat = self.conv0(x)
                 feat = self.attn(feat)
