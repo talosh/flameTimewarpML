@@ -312,6 +312,11 @@ class Model:
                     conv(c, c*2, 3, 2, 1),
                     conv(c*2, c*3, 3, 2, 1)
                 )
+                self.conv2_deep = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c*3, c*2, 4, 2, 1),
+                    conv(c*2, c*2, 3, 1, 1),
+                    torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
+                )
                 self.attn = CBAM(c)
                 self.noise_level = torch.nn.Parameter(torch.ones((1, 1, 1, 1)), requires_grad=True)
                 self.convblock = torch.nn.Sequential(
@@ -330,9 +335,6 @@ class Model:
                     ResConv(c*3),
                     ResConv(c*3),
                     ResConv(c*3),
-                    torch.nn.ConvTranspose2d(c*3, c*2, 4, 2, 1),
-                    torch.nn.Conv2d(c*2, c*2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True),
-                    torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                 )
                 self.mix = ResConvMix(c)
                 self.convblock_mix = torch.nn.Sequential(
@@ -387,6 +389,7 @@ class Model:
                 feat_deep = self.attn(feat_deep)
                 feat_deep = self.conv1_deep(feat_deep)
                 feat_deep = self.convblock_deep(feat_deep)
+                feat_deep = self.conv2_deep(feat_deep)
 
                 feat = self.mix(feat, feat_deep)
                 feat = self.convblock_mix(feat)
