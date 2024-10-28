@@ -147,8 +147,7 @@ class Model:
                 x = self.cnn2(x)
                 x = self.relu(x)
                 x = self.cnn3(x)
-                x = self.compressor(x)
-                return x
+                return self.compressor(x)
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
