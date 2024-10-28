@@ -330,6 +330,10 @@ class Model:
                     ResConv(c*3),
                     ResConv(c*3),
                     ResConv(c*3),
+                    ResConv(c*3),
+                    ResConv(c*3),
+                    ResConv(c*3),
+                    ResConv(c*3),
                 )
                 self.mix = ResConvMix(c)
                 self.convblock_mix = torch.nn.Sequential(
