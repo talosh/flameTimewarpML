@@ -242,10 +242,6 @@ class Model:
                     ResConv(c*2),
                     ResConv(c*2),
                     ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                     torch.nn.Conv2d(c, c, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True),
                 )
@@ -259,12 +255,18 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    torch.nn.PixelShuffle(2)
+                )
+                '''
+                self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, c, 6, 2, 2),
                     torch.nn.Conv2d(c, c, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True),
                     torch.nn.Mish(True),
                     torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
                     torch.nn.Conv2d(c, 6, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True),
                 )
+                '''
                 self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
