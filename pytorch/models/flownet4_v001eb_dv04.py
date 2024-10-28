@@ -135,7 +135,7 @@ class Model:
                 self.attn = CBAM(32, channel_scale=-0.1, spatial_scale=0.1)
                 # self.relu = torch.nn.LeakyReLU(0.2, True)
                 self.relu = torch.nn.Mish(True)
-                self.clamp = torch.nn.Tanh()
+                self.compressor = torch.nn.Tanh()
 
 
             def forward(self, x):
@@ -147,7 +147,7 @@ class Model:
                 x = self.cnn2(x)
                 x = self.relu(x)
                 x = self.cnn3(x)
-                x = self.clamp(x)
+                x = self.compressor(x)
                 return x
 
         class ResConv(Module):
