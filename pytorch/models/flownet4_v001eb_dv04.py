@@ -135,7 +135,7 @@ class Model:
                 self.attn = CBAM(32)
                 # self.relu = torch.nn.LeakyReLU(0.2, True)
                 self.relu = torch.nn.Mish(True)
-                self.clamp = torch.nn.tanh()
+                self.clamp = torch.nn.Tanh()
 
 
             def forward(self, x):
