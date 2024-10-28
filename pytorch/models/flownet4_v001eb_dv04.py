@@ -216,6 +216,10 @@ class Model:
                 x = torch.nn.functional.pad(x, padding)
                 x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 
+                flow = torch.nn.functional.pad(flow, padding)
+                flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
+                x = torch.cat((x, flow), 1)
+
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
@@ -404,9 +408,9 @@ class Model:
                 super().__init__()
                 self.block0 = FlownetDeepSingleHead(23, c=192)
                 self.block1 = FlownetDeepDoubleHead(28, c=96)
-                self.block2 = FlownetDeepDoubleHead(28, c=64)
-                self.block3 = Flownet(24, c=48)
-                self.block4 = Flownet(24, c=32)
+                self.block2 = Flownet(28, c=64)
+                self.block3 = Flownet(28, c=48)
+                self.block4 = Flownet(28, c=32)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
