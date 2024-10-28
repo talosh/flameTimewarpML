@@ -249,15 +249,15 @@ class Model:
                 )
                 self.mix = ResConvMix(c)
                 self.convblock_mix = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    ResConv(c*2),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c*2, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
                 '''
@@ -291,7 +291,7 @@ class Model:
                 feat = self.convblock(feat)
                 feat_deep = self.convblock_deep(feat_deep)
 
-                feat = self.mix(feat, feat_deep)
+                feat = torch.cat((feat, feat_deep), 1)
                 feat = self.convblock_mix(feat)
                 tmp = self.lastconv(feat)
 
