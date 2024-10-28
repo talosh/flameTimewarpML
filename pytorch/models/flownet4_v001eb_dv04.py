@@ -35,8 +35,8 @@ class Model:
                     padding_mode='zeros',
                     bias=True
                 ),
-                torch.nn.Mish(True)
-                # torch.nn.LeakyReLU(0.2, True)
+                # torch.nn.Mish(True)
+                torch.nn.LeakyReLU(0.2, True)
             )
 
         def warp(tenInput, tenFlow):
@@ -247,7 +247,6 @@ class Model:
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                     torch.nn.Conv2d(c, c, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True),
                 )
-                self.mix = ResConvMix(c)
                 self.convblock_mix = torch.nn.Sequential(
                     ResConv(c*2),
                     ResConv(c*2),
@@ -286,9 +285,9 @@ class Model:
                 feat = self.conv0(x)
                 feat = self.attn(feat)
                 feat = self.conv1(feat)
-                feat_deep = self.conv2(feat)
-
                 feat = self.convblock(feat)
+
+                feat_deep = self.conv2(feat)
                 feat_deep = self.convblock_deep(feat_deep)
 
                 feat = torch.cat((feat, feat_deep), 1)
