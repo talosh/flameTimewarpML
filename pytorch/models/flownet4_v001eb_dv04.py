@@ -475,7 +475,7 @@ class Model:
                 )
 
                 conf = conf + conf_d
-                flow = flow + flow_d
+                flow = flow_d
 
                 flow_list[1] = flow.clone()
                 mask_list[1] = torch.sigmoid(mask)
