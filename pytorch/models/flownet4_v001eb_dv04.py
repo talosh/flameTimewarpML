@@ -317,8 +317,7 @@ class Model:
                 feat_deep = self.conv2(feat)
                 feat_deep = self.convblock_deep(feat_deep)
 
-                feat = torch.cat((feat, feat_deep), 1)
-                feat = self.reshuffle(feat) + self.mix(feat)
+                feat = self.shrtcut(feat) + self.mix(torch.cat((feat, feat_deep), 1))
                 feat = self.convblock_mix(feat)
                 tmp = self.lastconv(feat)
 
