@@ -259,6 +259,7 @@ class Model:
                 self.conv2 = conv_mish(c//2, c, 3, 2, 1)
                 self.attn = CBAM(c//2)
                 self.reshuffle = conv_mish(c, c, 3, 1, 1)
+                self.mix = conv_mish(c, c, 3, 1, 1)
                 self.convblock = torch.nn.Sequential(
                     ResConvMish(c//2),
                     ResConvMish(c//2),
