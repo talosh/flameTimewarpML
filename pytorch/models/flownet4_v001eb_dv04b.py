@@ -185,7 +185,7 @@ class Model:
         class ResConvMix(Module):
             def __init__(self, c):
                 super().__init__()
-                self.up = torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1, padding_mode = 'reflect', bias=True)
+                self.up = torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1)
                 self.conv = torch.nn.Conv2d(c + c//2, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
@@ -343,7 +343,7 @@ class Model:
                 feat_deep = self.convblock_deep3(feat_deep)
                 feat = self.convblock3(feat)
                 feat = self.mix3(feat, feat_deep)
-                
+
                 feat = self.convblock4(feat)
                 tmp = self.lastconv(feat)
 
