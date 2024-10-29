@@ -355,7 +355,6 @@ class Model:
                 self.beta_mix = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu_mix = torch.nn.LeakyReLU(0.2, True)
 
-                self.noise_level = torch.nn.Parameter(torch.ones((1, 1, 1, 1)), requires_grad=True)
                 self.convblock_deep = torch.nn.Sequential(
                     ResConv(c*2),
                     ResConv(c*2),
@@ -369,7 +368,6 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                 )
-                # self.mix = ResConvMix(c)
                 self.convblock_mix = torch.nn.Sequential(
                     ResConv(c*2),
                     ResConv(c*2),
