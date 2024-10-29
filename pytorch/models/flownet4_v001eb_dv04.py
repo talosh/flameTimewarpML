@@ -145,7 +145,7 @@ class Model:
                 x = self.cnn2(x)
                 x = self.relu(x)
                 x = self.cnn3(x)
-                return self.compressor(x)
+                return x
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
@@ -238,7 +238,7 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
-                    torch.nn.Conv2d(c, c, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True),
+                    ResConv(c),
                 )
                 self.convblock_deep = torch.nn.Sequential(
                     ResConv(c*2),
@@ -246,7 +246,7 @@ class Model:
                     ResConv(c*2),
                     ResConv(c*2),
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
-                    torch.nn.Conv2d(c, c, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True),
+                    ResConv(c),
                 )
                 self.convblock_mix = torch.nn.Sequential(
                     ResConv(c*2),
@@ -256,19 +256,19 @@ class Model:
                     ResConv(c*2),
                     ResConv(c*2),
                 )
+                '''
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c*2, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, c, 6, 2, 2),
-                    torch.nn.Conv2d(c, c, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True),
+                    torch.nn.ConvTranspose2d(c*2, c, 6, 2, 2),
+                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, padding_mode = 'reflect', bias=True),
                     torch.nn.Mish(True),
                     torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
                     torch.nn.Conv2d(c, 6, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True),
                 )
-                '''
                 self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
@@ -279,7 +279,7 @@ class Model:
                 pw = ((w - 1) // pvalue + 1) * pvalue
                 padding = (0, pw - w, 0, ph - h)
                 
-                x = torch.cat((img0*2-1, img1*2-1, f0, f1, timestep), 1)
+                x = torch.cat((img0, img1, f0, f1, timestep), 1)
                 x = torch.nn.functional.pad(x, padding)
                 x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 
