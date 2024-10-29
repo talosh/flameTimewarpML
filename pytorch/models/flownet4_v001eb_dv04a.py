@@ -12,8 +12,8 @@
 class Model:
 
     info = {
-        'name': 'Flownet4_v001eb_dv04',
-        'file': 'flownet4_v001eb_dv04.py',
+        'name': 'Flownet4_v001eb_dv04a',
+        'file': 'flownet4_v001eb_dv04a.py',
         'ratio_support': True
     }
 
