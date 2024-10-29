@@ -255,32 +255,32 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = conv_mish(in_planes, c//2, 3, 2, 1)
-                self.conv1 = conv_mish(c//2, c, 3, 2, 1)
-                self.conv2 = conv_mish(c, c*2, 3, 2, 1)
+                self.conv1 = conv_mish(c//2, c//2, 3, 2, 1)
+                self.conv2 = conv_mish(c//2, c, 3, 2, 1)
                 self.attn = CBAM(c//2)
-                self.reshuffle = torch.nn.Conv2d(c*2, c*2, 1, 1, 0)
+                self.reshuffle = torch.nn.Conv2d(c, c, 1, 1, 0)
                 self.convblock = torch.nn.Sequential(
-                    ResConvMish(c),
-                    ResConvMish(c),
-                    ResConvMish(c),
-                    ResConvMish(c),
-                    ResConvMish(c),
+                    ResConvMish(c//2),
+                    ResConvMish(c//2),
+                    ResConvMish(c//2),
+                    ResConvMish(c//2),
+                    ResConvMish(c//2),
                 )
                 self.convblock_deep = torch.nn.Sequential(
-                    ResConvMish(c*2),
-                    ResConvMish(c*2),
-                    ResConvMish(c*2),
-                    ResConvMish(c*2),
-                    torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                     ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
+                    ResConvMish(c//2),
                 )
                 self.convblock_mix = torch.nn.Sequential(
-                    ResConvMish(c*2),
-                    ResConvMish(c*2),
-                    ResConvMish(c*2),
-                    ResConvMish(c*2),
-                    ResConvMish(c*2),
-                    ResConvMish(c*2),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
@@ -289,11 +289,11 @@ class Model:
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c*2, c, 6, 2, 2),
-                    torch.nn.Conv2d(c, c, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True),
+                    torch.nn.ConvTranspose2d(c, c//2, 6, 2, 2),
+                    torch.nn.Conv2d(c//2, c//2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True),
                     torch.nn.Mish(True),
-                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
-                    torch.nn.Conv2d(c//2, 6, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True),
+                    torch.nn.ConvTranspose2d(c//2, c//4, 4, 2, 1),
+                    torch.nn.Conv2d(c//4, 6, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True),
                 )
                 self.maxdepth = 8
 
