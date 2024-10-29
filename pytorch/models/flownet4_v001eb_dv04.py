@@ -179,7 +179,6 @@ class Model:
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.shuffle = torch.nn.Conv2d(c, c, 1, 1, 0)
                 self.gate = torch.nn.Conv2d(c*2, c, 1, 1, 0)
                 self.avg_pool = torch.nn.AdaptiveAvgPool2d(1)
                 self.relu =  torch.nn.Mish(True)
