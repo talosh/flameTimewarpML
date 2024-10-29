@@ -183,7 +183,7 @@ class Model:
                 self.gate = torch.nn.Conv2d(c*2, c, 3, 2, 1, padding_mode = 'reflect', bias=True)
                 self.avg_pool = torch.nn.AdaptiveAvgPool2d(1)
                 self.max_pool = torch.nn.AdaptiveMaxPool2d(1)
-                self.gatemix = torch.nn.Conv2d(2, 1, 1, 1, 0)
+                self.gatemix = torch.nn.Conv2d(c*2, c, 1, 1, 0)
 
                 self.relu =  torch.nn.Mish(True)
 
