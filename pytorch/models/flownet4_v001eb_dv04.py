@@ -281,8 +281,6 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
