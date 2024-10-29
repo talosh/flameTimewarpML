@@ -39,6 +39,22 @@ class Model:
                 torch.nn.LeakyReLU(0.2, True)
             )
 
+        def conv_mish(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
+            return torch.nn.Sequential(
+                torch.nn.Conv2d(
+                    in_planes, 
+                    out_planes, 
+                    kernel_size=kernel_size, 
+                    stride=stride,
+                    padding=padding, 
+                    dilation=dilation,
+                    padding_mode='zeros',
+                    bias=True
+                ),
+                torch.nn.Mish(True)
+                # torch.nn.LeakyReLU(0.2, True)
+            )
+
         def warp(tenInput, tenFlow):
             k = (str(tenFlow.device), str(tenFlow.size()))
             if k not in backwarp_tenGrid:
@@ -238,9 +254,9 @@ class Model:
         class FlownetDeepSingleHead(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                self.conv0 = conv(in_planes, c//2, 3, 2, 1)
-                self.conv1 = conv(c//2, c, 3, 2, 1)
-                self.conv2 = conv(c, c*2, 3, 2, 1)
+                self.conv0 = conv_mish(in_planes, c//2, 3, 2, 1)
+                self.conv1 = conv_mish(c//2, c, 3, 2, 1)
+                self.conv2 = conv_mish(c, c*2, 3, 2, 1)
                 self.attn = CBAM(c//2)
                 self.convblock = torch.nn.Sequential(
                     ResConvMish(c),
