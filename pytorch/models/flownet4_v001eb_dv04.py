@@ -273,7 +273,6 @@ class Model:
                     ResConvMish(c),
                     ResConvMish(c),
                     torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
-                    ResConvMish(c//2),
                 )
                 self.convblock_mix = torch.nn.Sequential(
                     ResConvMish(c),
