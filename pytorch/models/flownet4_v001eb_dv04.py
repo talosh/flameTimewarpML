@@ -187,7 +187,7 @@ class Model:
                 feat = self.conv(x)
                 gate = self.relu(self.gate(torch.cat((self.avg_pool(x), self.avg_pool(feat)), 1)))
                 gate = self.beta + gate
-                return self.relu(self.shuffle(feat * gate + x))
+                return self.relu(feat * gate + x)
 
         class ResConvMix(Module):
             def __init__(self, c, dilation=1):
