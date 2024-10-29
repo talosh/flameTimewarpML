@@ -278,7 +278,6 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                 )
-                '''
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c*2, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
@@ -290,6 +289,7 @@ class Model:
                     torch.nn.ConvTranspose2d(c//2, c//2, 4, 2, 1),
                     torch.nn.Conv2d(c//2, 6, kernel_size=1, stride=1, padding=0, padding_mode = 'reflect', bias=False),
                 )
+                '''
                 self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
