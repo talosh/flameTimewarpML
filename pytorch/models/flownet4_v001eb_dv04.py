@@ -472,7 +472,7 @@ class Model:
                 )
 
                 conf = conf + conf_d
-                flow = flow_d # try to get completely new flow as well
+                flow = flow + flow_d
 
                 flow_list[1] = flow.clone()
                 mask_list[1] = torch.sigmoid(mask)
