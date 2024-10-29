@@ -373,8 +373,6 @@ class Model:
                     ResConv(c*2),
                     ResConv(c*2),
                     ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
                 )
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
