@@ -267,6 +267,10 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                 )
+                self.convblock_shrtcut = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                )
                 self.convblock_deep = torch.nn.Sequential(
                     ResConv(c*2),
                     ResConv(c*2),
@@ -338,6 +342,8 @@ class Model:
 
                 feat_deep = self.conv2(feat)
                 feat_deep = self.convblock_deep(feat_deep)
+
+                feat = self.convblock_shrtcut(feat)
                 feat = self.relu(self.conv_deep(feat_deep) * self.beta_deep + feat)
 
                 feat = self.convblock_mix(feat)
