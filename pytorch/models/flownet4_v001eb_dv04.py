@@ -261,6 +261,12 @@ class Model:
                 self.conv_deep = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
                 self.beta_deep = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu_deep = torch.nn.LeakyReLU(0.2, True)
+                self.convblock_shallow = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                ) 
                 self.convblock_deep = torch.nn.Sequential(
                     ResConv(c*2),
                     ResConv(c*2),
