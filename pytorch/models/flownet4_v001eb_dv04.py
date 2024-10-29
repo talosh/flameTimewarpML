@@ -254,23 +254,13 @@ class Model:
         class FlownetDeepSingleHead(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                self.conv0 = conv(in_planes, c, 3, 2, 1)
-                self.conv1 = conv(c, c, 3, 2, 1)
+                self.conv0 = conv(in_planes, c//2, 3, 2, 1)
+                self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv2 = conv(c, c*2, 3, 2, 1)
-                self.attn = CBAM(c)
+                self.attn = CBAM(c//2)
                 self.conv_deep = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
                 self.beta_deep = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.LeakyReLU(0.2, True)
-                self.convblock = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                )
-                self.convblock_shrtcut = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                )
+                self.relu_deep = torch.nn.LeakyReLU(0.2, True)
                 self.convblock_deep = torch.nn.Sequential(
                     ResConv(c*2),
                     ResConv(c*2),
@@ -278,7 +268,9 @@ class Model:
                     ResConv(c*2),
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                 )
-                self.convblock_mix = torch.nn.Sequential(
+                self.convblock = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
@@ -290,15 +282,6 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
-                '''
-                self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, c, 6, 2, 2),
-                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
-                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
-                    torch.nn.Conv2d(c, 6, kernel_size=1, stride=1, padding=0, bias=True),
-                )
-                '''
-
                 '''
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, c//2, 6, 2, 2),
@@ -338,15 +321,12 @@ class Model:
                 feat = self.conv0(x)
                 feat = self.attn(feat)
                 feat = self.conv1(feat)
-                feat = self.convblock(feat)
 
                 feat_deep = self.conv2(feat)
                 feat_deep = self.convblock_deep(feat_deep)
 
-                feat = self.convblock_shrtcut(feat)
-                feat = self.relu(self.conv_deep(feat_deep) * self.beta_deep + feat)
-
-                feat = self.convblock_mix(feat)
+                feat = self.relu_deep(self.conv_deep(feat_deep) * self.beta_deep + feat)
+                feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
 
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
@@ -466,7 +446,7 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeepSingleHead(23, c=192)
-                self.block1 = Flownet(28, c=96)
+                self.block1 = FlownetDeepDualHead(28, c=96)
                 self.block2 = Flownet(28, c=64)
                 self.block3 = Flownet(28, c=48)
                 self.block4 = Flownet(28, c=32)
