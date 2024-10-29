@@ -152,8 +152,17 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                # self.relu =  torch.nn.Mish(True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
+
+            def forward(self, x):
+                return self.relu(self.conv(x) * self.beta + x)
+
+        class ResConvMish(Module):
+            def __init__(self, c, dilation=1):
+                super().__init__()
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.relu =  torch.nn.Mish(True)
 
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
@@ -234,19 +243,19 @@ class Model:
                 self.conv2 = conv(c, c*2, 3, 2, 1)
                 self.attn = CBAM(c//2)
                 self.convblock = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
                 )
                 self.convblock_deep = torch.nn.Sequential(
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
+                    ResConvMish(c*2),
+                    ResConvMish(c*2),
+                    ResConvMish(c*2),
+                    ResConvMish(c*2),
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
-                    ResConv(c),
+                    ResConvMish(c),
                 )
                 self.convblock_mix = torch.nn.Sequential(
                     ResConv(c*2),
