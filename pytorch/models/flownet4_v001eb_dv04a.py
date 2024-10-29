@@ -327,11 +327,10 @@ class Model:
                 feat = self.conv0(x)
                 feat = self.attn(feat)
                 feat = self.conv1(feat)
+                feat = self.convblock_shallow(feat)
 
                 feat_deep = self.conv2(feat)
                 feat_deep = self.convblock_deep(feat_deep)
-
-                feat = self.convblock_shallow(feat)
 
                 feat = self.relu_deep(self.conv_deep(feat_deep) * self.beta_deep + feat)
                 feat = self.convblock(feat)
