@@ -174,14 +174,25 @@ class Model:
                 return self.relu(self.conv(x) * self.beta + x)
 
         class ResConvMish(Module):
-            def __init__(self, c, dilation=1):
+            def __init__(self, c):
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+
+                self.shuffle = torch.nn.Conv2d(c, c, 1, 1, 0)
+                self.gate = torch.nn.Conv2d(c*2, c, 3, 2, 1, padding_mode = 'reflect', bias=True)
+                self.avg_pool = torch.nn.AdaptiveAvgPool2d(1)
+                self.max_pool = torch.nn.AdaptiveMaxPool2d(1)
+
                 self.relu =  torch.nn.Mish(True)
 
             def forward(self, x):
-                return self.relu(self.conv(x) * self.beta + x)
+                feat = self.conv(x)
+                gate = self.relu(self.gate(torch.cat((x, feat), 1)))
+                gate_avg = self.avg_pool(gate)
+                gat_max = self.max_pool(gate)
+                gate = self.beta + self.shuffle(gate_avg) + self.shuffle(gat_max)
+                return self.relu(self.shuffle(feat * gate + x))
 
         class ResConvMix(Module):
             def __init__(self, c, dilation=1):
