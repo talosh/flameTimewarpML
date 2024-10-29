@@ -260,6 +260,7 @@ class Model:
                 self.conv1 = conv_mish(c//2, c, 3, 2, 1)
                 self.conv2 = conv_mish(c, c*2, 3, 2, 1)
                 self.attn = CBAM(c//2)
+                self.reshuffle = torch.nn.Conv2d(c*2, c*2, 1, 1, 0)
                 self.convblock = torch.nn.Sequential(
                     ResConvMish(c),
                     ResConvMish(c),
@@ -276,17 +277,11 @@ class Model:
                     ResConvMish(c),
                 )
                 self.convblock_mix = torch.nn.Sequential(
-                    torch.nn.Conv2d(c*2, c*2, 1, 1, 0),
                     ResConv(c*2),
-                    torch.nn.Conv2d(c*2, c*2, 1, 1, 0),
                     ResConv(c*2),
-                    torch.nn.Conv2d(c*2, c*2, 1, 1, 0),
                     ResConv(c*2),
-                    torch.nn.Conv2d(c*2, c*2, 1, 1, 0),
                     ResConv(c*2),
-                    torch.nn.Conv2d(c*2, c*2, 1, 1, 0),
                     ResConv(c*2),
-                    torch.nn.Conv2d(c*2, c*2, 1, 1, 0),
                     ResConv(c*2),
                 )
                 '''
@@ -325,6 +320,7 @@ class Model:
                 feat_deep = self.convblock_deep(feat_deep)
 
                 feat = torch.cat((feat, feat_deep), 1)
+                feat = self.reshuffle(feat)
                 feat = self.convblock_mix(feat)
                 tmp = self.lastconv(feat)
 
