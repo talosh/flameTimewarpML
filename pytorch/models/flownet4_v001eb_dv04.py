@@ -277,11 +277,17 @@ class Model:
                     ResConvMish(c),
                 )
                 self.convblock_mix = torch.nn.Sequential(
+                    torch.nn.Conv2d(c*2, c*2, 1, 1, 0),
                     ResConv(c*2),
+                    torch.nn.Conv2d(c*2, c*2, 1, 1, 0),
                     ResConv(c*2),
+                    torch.nn.Conv2d(c*2, c*2, 1, 1, 0),
                     ResConv(c*2),
+                    torch.nn.Conv2d(c*2, c*2, 1, 1, 0),
                     ResConv(c*2),
+                    torch.nn.Conv2d(c*2, c*2, 1, 1, 0),
                     ResConv(c*2),
+                    torch.nn.Conv2d(c*2, c*2, 1, 1, 0),
                     ResConv(c*2),
                 )
                 '''
