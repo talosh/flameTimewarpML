@@ -255,26 +255,17 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = conv_mish(in_planes, c//2, 3, 2, 1)
-                self.conv1 = conv_mish(c//2, c//2, 3, 2, 1)
-                self.conv2 = conv_mish(c, c, 3, 2, 1)
-                self.shrtcut = conv_mish(c//2, c, 3, 2, 1)
+                self.conv1 = conv_mish(c//2, c, 3, 2, 1)
+                self.conv2 = conv_mish(c, c*2, 3, 2, 1)
                 self.attn = CBAM(c//2)
-                self.mix = conv_mish(c, c, 3, 1, 1)
-                self.convblock = torch.nn.Sequential(
-                    ResConvMish(c//2),
-                    ResConvMish(c//2),
-                    ResConvMish(c//2),
-                    ResConvMish(c//2),
-                    ResConvMish(c//2),
-                )
                 self.convblock_deep = torch.nn.Sequential(
-                    ResConvMish(c),
-                    ResConvMish(c),
-                    ResConvMish(c),
-                    ResConvMish(c),
-                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
+                    ResConvMish(c*2),
+                    ResConvMish(c*2),
+                    ResConvMish(c*2),
+                    ResConvMish(c*2),
+                    torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                 )
-                self.convblock_mix = torch.nn.Sequential(
+                self.convblock = torch.nn.Sequential(
                     ResConvMish(c),
                     ResConvMish(c),
                     ResConvMish(c),
@@ -310,15 +301,13 @@ class Model:
 
                 feat = self.conv0(x)
                 feat = self.attn(feat)
-                shrtcut = self.shrtcut(feat)
                 feat = self.conv1(feat)
-                feat = self.convblock(feat)
 
-                feat_deep = self.conv2(shrtcut)
+                feat_deep = self.conv2(feat)
                 feat_deep = self.convblock_deep(feat_deep)
 
-                feat = shrtcut + self.mix(torch.cat((feat, feat_deep), 1))
-                feat = self.convblock_mix(feat)
+                feat = feat + feat_deep
+                feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
 
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
