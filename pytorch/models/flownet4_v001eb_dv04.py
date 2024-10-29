@@ -275,12 +275,12 @@ class Model:
                     ResConvMish(c),
                 )
                 self.convblock_mix = torch.nn.Sequential(
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
+                    ResConvMish(c*2),
+                    ResConvMish(c*2),
+                    ResConvMish(c*2),
+                    ResConvMish(c*2),
+                    ResConvMish(c*2),
+                    ResConvMish(c*2),
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
