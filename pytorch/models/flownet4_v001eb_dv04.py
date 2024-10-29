@@ -300,9 +300,23 @@ class Model:
                 pw = ((w - 1) // pvalue + 1) * pvalue
                 padding = (0, pw - w, 0, ph - h)
                 
-                x = torch.cat((img0, img1, f0, f1, timestep), 1)
-                x = torch.nn.functional.pad(x, padding)
-                x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                if flow is None:
+                    x = torch.cat((img0, img1, f0, f1, timestep), 1)
+                    x = torch.nn.functional.pad(x, padding)
+                    x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                else:
+                    warped_img0 = warp(img0, flow[:, :2])
+                    warped_img1 = warp(img1, flow[:, 2:4])
+                    warped_f0 = warp(f0, flow[:, :2])
+                    warped_f1 = warp(f1, flow[:, 2:4])
+                    
+                    x = torch.cat((img0, img1, f0, f1, warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
+                    x = torch.nn.functional.pad(x, padding)
+                    x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+
+                    flow = torch.nn.functional.pad(flow, padding)
+                    flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
+                    x = torch.cat((x, flow), 1)
 
                 feat = self.conv0(x)
                 feat = self.attn(feat)
@@ -322,33 +336,38 @@ class Model:
 
                 return flow, mask, conf
 
-        class FlownetDeepDoubleHead(Module):
+        class FlownetDeepDualHead(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                self.conv0 = conv(in_planes + 1, c, 3, 2, 1)
+                self.conv0 = conv(in_planes, c, 3, 2, 1)
                 self.conv1 = conv(c, c, 3, 2, 1)
-                self.conv0_deep = conv(in_planes - 5, c, 3, 2, 1)
-                self.conv1_deep = torch.nn.Sequential(
-                    conv(c, c, 3, 2, 1),
-                    conv(c, c*2, 3, 2, 1),
-                )
-                self.conv2_deep = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
-                    conv(c, c, 3, 1, 1),
-                )
-                self.attn = CBAM(c)
+
+                self.conv0_clean = conv_mish(in_planes-4, c//2, 3, 2, 1)
+                self.conv1_clean = conv_mish(c//2, c, 3, 2, 1)
+                self.conv2_deep = conv_mish(c, c*2, 3, 2, 1)
+                self.attn = CBAM(c//2)
+
+                self.conv_deep = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
+                self.beta_deep = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.relu_deep = torch.nn.LeakyReLU(0.2, True)
+
+                self.conv_mix = torch.nn.Conv2d(c*2, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
+                self.beta_mix = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.relu_mix = torch.nn.LeakyReLU(0.2, True)
+
                 self.noise_level = torch.nn.Parameter(torch.ones((1, 1, 1, 1)), requires_grad=True)
-                self.convblock = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                )
                 self.convblock_deep = torch.nn.Sequential(
                     ResConv(c*2),
                     ResConv(c*2),
                     ResConv(c*2),
                     ResConv(c*2),
+                    torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
+                )
+                self.convblock_clean = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 # self.mix = ResConvMix(c)
                 self.convblock_mix = torch.nn.Sequential(
@@ -358,6 +377,16 @@ class Model:
                     ResConv(c*2),
                     ResConv(c*2),
                     ResConv(c*2),
+                )
+                self.convblock = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c*2, 4*6, 4, 2, 1),
@@ -373,9 +402,9 @@ class Model:
                 pw = ((w - 1) // pvalue + 1) * pvalue
                 padding = (0, pw - w, 0, ph - h)
                 
-                x_deep = torch.cat((img0, img1, f0, f1, timestep), 1)
-                x_deep = torch.nn.functional.pad(x_deep, padding)
-                x_deep = torch.nn.functional.interpolate(x_deep, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                x_clean = torch.cat((img0, img1, f0, f1, timestep), 1)
+                x_clean = torch.nn.functional.pad(x_clean, padding)
+                x_clean = torch.nn.functional.interpolate(x_clean, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 
                 warped_img0 = warp(img0, flow[:, :2])
                 warped_img1 = warp(img1, flow[:, 2:4])
@@ -391,21 +420,23 @@ class Model:
                 flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
                 x = torch.cat((x, flow), 1)
 
-                noise = torch.randn_like(x[:, :1, :, :]) * self.noise_level
-                x = torch.cat((x, noise), 1)
-
                 feat = self.conv0(x)
                 feat = self.conv1(feat)
-                feat = self.convblock(feat)
 
-                feat_deep = self.conv0_deep(x_deep)
-                feat_deep = self.attn(feat_deep)
-                feat_deep = self.conv1_deep(feat_deep)
+                feat_clean = self.conv0_clean(x_clean)
+                feat_clean = self.attn(feat_clean)
+                feat_clean = self.conv1_clean(feat_clean)
+
+                feat_deep = self.conv2_deep(feat_clean)
                 feat_deep = self.convblock_deep(feat_deep)
-                feat_deep = self.conv2_deep(feat_deep)
 
-                feat = torch.cat((feat, feat_deep), 1)
-                feat = self.convblock_mix(feat)
+                feat_clean = self.relu_deep(self.conv_deep(feat_deep) * self.beta_deep + feat_clean)
+                feat_clean = self.convblock_clean(feat_clean)
+                
+                feat_mix = self.convblock_mix(torch.cat((feat_clean, feat), 1))
+                feat = self.relu_mix(self.conv_mix(feat_mix) * self.beta_mix + feat)
+
+                feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
 
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
