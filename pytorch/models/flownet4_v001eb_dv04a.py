@@ -258,7 +258,7 @@ class Model:
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv2 = conv(c, c*2, 3, 2, 1)
                 self.attn = CBAM(c//2)
-                self.conv_deep = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
+                self.conv_deep = torch.nn.Conv2d(c*2, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
                 self.beta_deep = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu_deep = torch.nn.LeakyReLU(0.2, True)
                 self.convblock_shallow = torch.nn.Sequential(
@@ -331,7 +331,7 @@ class Model:
                 
                 feat = self.convblock_shallow(feat)
 
-                feat = self.relu_deep(self.conv_deep(feat_deep) * self.beta_deep + feat)
+                feat = self.relu_deep(self.conv_deep(torch.cat((feat_deep, feat), 1)) * self.beta_deep + feat)
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
 
