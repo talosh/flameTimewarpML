@@ -190,7 +190,7 @@ class Model:
             def forward(self, x):
                 feat = self.conv(x)
                 gate = self.relu(self.gate(torch.cat((x, feat), 1)))
-                gate = self.beta + self.gatemix(torch.cat(self.avg_pool(gate), self.max_pool(gate)), 1)
+                gate = self.beta + self.gatemix(torch.cat((self.avg_pool(gate), self.max_pool(gate)), 1))
                 return self.relu(self.shuffle(feat * gate + x))
 
         class ResConvMix(Module):
