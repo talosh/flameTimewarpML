@@ -32,7 +32,7 @@ class Model:
                     stride=stride,
                     padding=padding, 
                     dilation=dilation,
-                    padding_mode='zeros',
+                    padding_mode='reflect',
                     bias=True
                 ),
                 # torch.nn.Mish(True)
@@ -48,7 +48,7 @@ class Model:
                     stride=stride,
                     padding=padding, 
                     dilation=dilation,
-                    padding_mode='zeros',
+                    padding_mode='reflect',
                     bias=True
                 ),
                 torch.nn.Mish(True)
