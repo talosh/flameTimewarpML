@@ -176,14 +176,12 @@ class Model:
         class ResConvMish(Module):
             def __init__(self, c):
                 super().__init__()
-                self.conv0 = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
-                self.conv1 = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.Mish(True)
 
             def forward(self, x):
-                return self.relu(self.conv1(self.conv0(x) * self.beta) * self.gamma + x)
+                return self.relu(self.conv(x) * self.beta + x)
 
         class ResConvMix(Module):
             def __init__(self, c, dilation=1):
