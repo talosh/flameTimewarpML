@@ -342,7 +342,7 @@ class Model:
                 self.conv0 = conv(in_planes, c, 3, 2, 1)
                 self.conv1 = conv(c, c, 3, 2, 1)
 
-                self.conv0_clean = conv_mish(in_planes-3, c, 3, 2, 1)
+                self.conv0_clean = conv_mish(in_planes-5, c, 3, 2, 1)
                 self.conv1_clean = conv_mish(c, c, 3, 2, 1)
                 self.conv2_deep = conv_mish(c, c*2, 3, 2, 1)
                 self.attn = CBAM(c)
