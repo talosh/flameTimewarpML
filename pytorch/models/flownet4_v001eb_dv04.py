@@ -261,7 +261,7 @@ class Model:
                 self.conv_deep = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
                 self.beta_deep = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
-                self.convblock_shallow = torch.nn.Sequential(
+                self.convblock = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
@@ -274,7 +274,7 @@ class Model:
                     ResConv(c*2),
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                 )
-                self.convblock = torch.nn.Sequential(
+                self.convblock_mix = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
@@ -325,14 +325,13 @@ class Model:
                 feat = self.conv0(x)
                 feat = self.attn(feat)
                 feat = self.conv1(feat)
+                feat = self.convblock(feat)
 
                 feat_deep = self.conv2(feat)
                 feat_deep = self.convblock_deep(feat_deep)
-
-                feat = self.convblock_shallow(feat)
-
                 feat = self.relu(self.conv_deep(feat_deep) * self.beta_deep + feat)
-                feat = self.convblock(feat)
+
+                feat = self.convblock_mix(feat)
                 tmp = self.lastconv(feat)
 
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
