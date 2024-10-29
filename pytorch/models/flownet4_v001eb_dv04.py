@@ -345,7 +345,7 @@ class Model:
                 self.conv0_clean = conv_mish(in_planes-4, c, 3, 2, 1)
                 self.conv1_clean = conv_mish(c, c, 3, 2, 1)
                 self.conv2_deep = conv_mish(c, c*2, 3, 2, 1)
-                self.attn = CBAM(c//2)
+                self.attn = CBAM(c)
 
                 self.conv_deep = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
                 self.beta_deep = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
