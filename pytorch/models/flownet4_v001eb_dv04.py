@@ -257,8 +257,8 @@ class Model:
                 self.conv0 = conv_mish(in_planes, c//2, 3, 2, 1)
                 self.conv1 = conv_mish(c//2, c//2, 3, 2, 1)
                 self.conv2 = conv_mish(c//2, c, 3, 2, 1)
+                self.shrtcut = conv_mish(c//2, c, 3, 2, 1)
                 self.attn = CBAM(c//2)
-                self.shrtcut = conv_mish(c//2, c, 1, 1, 0)
                 self.mix = conv_mish(c, c, 3, 1, 1)
                 self.convblock = torch.nn.Sequential(
                     ResConvMish(c//2),
@@ -310,13 +310,14 @@ class Model:
 
                 feat = self.conv0(x)
                 feat = self.attn(feat)
+                shtcut = self.shrtcut(feat)
                 feat = self.conv1(feat)
                 feat = self.convblock(feat)
 
                 feat_deep = self.conv2(feat)
                 feat_deep = self.convblock_deep(feat_deep)
 
-                feat = self.shrtcut(feat) + self.mix(torch.cat((feat, feat_deep), 1))
+                feat = shtcut + self.mix(torch.cat((feat, feat_deep), 1))
                 feat = self.convblock_mix(feat)
                 tmp = self.lastconv(feat)
 
