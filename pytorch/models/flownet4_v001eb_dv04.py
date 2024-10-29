@@ -254,24 +254,29 @@ class Model:
         class FlownetDeepSingleHead(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                self.conv0 = conv_mish(in_planes, c//2, 3, 2, 1)
-                self.conv1 = conv_mish(c//2, c, 3, 2, 1)
-                self.conv2 = conv_mish(c, c*2, 3, 2, 1)
+                self.conv0 = conv(in_planes, c//2, 3, 2, 1)
+                self.conv1 = conv(c//2, c, 3, 2, 1)
+                self.conv2 = conv(c, c*2, 3, 2, 1)
                 self.attn = CBAM(c//2)
+                self.conv_deep = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
+                self.beta_deep = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.relu_deep = torch.nn.LeakyReLU(0.2, True)
                 self.convblock_deep = torch.nn.Sequential(
-                    ResConvMish(c*2),
-                    ResConvMish(c*2),
-                    ResConvMish(c*2),
-                    ResConvMish(c*2),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    ResConv(c*2),
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                 )
                 self.convblock = torch.nn.Sequential(
-                    ResConvMish(c),
-                    ResConvMish(c),
-                    ResConvMish(c),
-                    ResConvMish(c),
-                    ResConvMish(c),
-                    ResConvMish(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
@@ -306,7 +311,7 @@ class Model:
                 feat_deep = self.conv2(feat)
                 feat_deep = self.convblock_deep(feat_deep)
 
-                feat = feat + feat_deep
+                feat = self.relu_deep(self.conv_deep(feat_deep) * self.beta_deep + feat)
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
 
