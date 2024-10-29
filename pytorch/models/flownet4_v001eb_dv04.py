@@ -260,13 +260,13 @@ class Model:
                 self.attn = CBAM(c//2)
                 self.conv_deep = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
                 self.beta_deep = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu_deep = torch.nn.LeakyReLU(0.2, True)
+                self.relu = torch.nn.LeakyReLU(0.2, True)
                 self.convblock_shallow = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
-                ) 
+                )
                 self.convblock_deep = torch.nn.Sequential(
                     ResConv(c*2),
                     ResConv(c*2),
@@ -331,7 +331,9 @@ class Model:
                 feat_deep = self.conv2(feat)
                 feat_deep = self.convblock_deep(feat_deep)
 
-                feat = self.relu_deep(self.conv_deep(feat_deep) * self.beta_deep + feat)
+                feat = self.convblock_shallow(feat)
+
+                feat = self.relu(self.conv_deep(feat_deep) * self.beta_deep + feat)
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
 
