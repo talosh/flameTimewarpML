@@ -1,4 +1,11 @@
 class Model:
+
+    info = {
+        'name': 'Flownet4_v001_baseline',
+        'file': 'flownet4_v001_baseline.py',
+        'ratio_support': True
+    }
+
     def __init__(self, status = dict(), torch = None):
         if torch is None:
             import torch
@@ -185,19 +192,14 @@ class Model:
 
         self.model = FlownetCas
         self.training_model = FlownetCas
-
+        
     @staticmethod
     def get_info():
-        info = {
-            'name': 'Flownet4_v001',
-            'file': 'flownet4_v001.py',
-            'ratio_support': True
-        }
-        return info
+        return Model.info
 
     @staticmethod
     def get_name():
-        return 'TWML_Flownet_v001'
+        return Model.info.get('name')
 
     @staticmethod
     def input_channels(model_state_dict):
