@@ -786,7 +786,9 @@ def get_dataset(
             return resized_tensor
 
         def getimg(self, index):
-            return self.frames_queue.get()
+            new_data = self.frames_queue.get()
+            self.train_data_index = new_data['index']
+            return new_data
             '''
             if not self.last_train_data:
                 new_data = self.frames_queue.get_nowait()
