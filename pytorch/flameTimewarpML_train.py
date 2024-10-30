@@ -2253,7 +2253,8 @@ def main():
     avg_pnsr = 0
     avg_lpips = 0
 
-    preview_maxmin_steps = args.preview_maxmin_steps if args.preview_maxmin_steps < len(dataset)*dataset.repeat_count else len(dataset)*dataset.repeat_count
+    repeat_count = dataset.repeat_count if dataset.repeat_count > 0 else 1
+    preview_maxmin_steps = args.preview_maxmin_steps if args.preview_maxmin_steps < len(dataset)*repeat_count else len(dataset)*repeat_count
     max_values = MaxNValues(n=args.preview_max if args.preview_max else 10)
     min_values = MinNValues(n=args.preview_min if args.preview_min else 10)
 
@@ -2456,9 +2457,6 @@ def main():
 
         max_values.add(loss.item(), min_max_item)
         min_values.add(loss.item(), min_max_item)
-
-        print (step)
-        print (preview_maxmin_steps)
 
         if (args.preview_max > 0) and ((step+1 % preview_maxmin_steps) == 1 or ( idx + 1 ) == len(dataset)):
             max_preview_folder = os.path.join(
