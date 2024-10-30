@@ -2457,6 +2457,8 @@ def main():
         max_values.add(loss.item(), min_max_item)
         min_values.add(loss.item(), min_max_item)
 
+        print (step)
+        print (preview_maxmin_steps)
 
         if (args.preview_max > 0) and ((step+1 % preview_maxmin_steps) == 1 or ( idx + 1 ) == len(dataset)):
             max_preview_folder = os.path.join(
