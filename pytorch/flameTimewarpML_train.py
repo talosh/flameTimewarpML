@@ -2457,89 +2457,92 @@ def main():
         max_values.add(loss.item(), min_max_item)
         min_values.add(loss.item(), min_max_item)
 
-        if (args.preview_max > 0) and ((step % preview_maxmin_steps) == 1 or ( idx + 1 ) == len(dataset)):
-            max_preview_folder = os.path.join(
-                args.dataset_path,
-                'preview',
-                os.path.splitext(os.path.basename(trained_model_path))[0],
-                'max')
-            if not os.path.isdir(max_preview_folder):
-                os.makedirs(max_preview_folder)
-            max_loss_values = max_values.get_values()
-            index = 0
-            item = None
-            for index, item in enumerate(max_loss_values):
-                item_data = item[1]
-                n, c, h, w = item_data['img0_orig'].shape
-                for b_indx in range(n):
-                    write_eval_image_queue.put(
-                    {
-                        'preview_folder': max_preview_folder,
-                        'sample_source1': item_data['img0_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_source1_name': f'{index:04}_{b_indx:02}_A_incomng.exr',
-                        'sample_source2': item_data['img2_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_source2_name': f'{index:04}_{b_indx:02}_B_outgoing.exr',
-                        'sample_target': item_data['img1_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_target_name': f'{index:04}_{b_indx:02}_C_target.exr',
-                        'sample_output': item_data['output'][b_indx].transpose(1, 2, 0),
-                        'sample_output_name': f'{index:04}_{b_indx:02}_D_output.exr',
-                        'sample_output_diff': item_data['diff'][b_indx].transpose(1, 2, 0),
-                        'sample_output_diff_name': f'{index:04}_{b_indx:02}_E_diff.exr',
-                        'sample_output_conf': item_data['conf'][b_indx].transpose(1, 2, 0),
-                        'sample_output_conf_name': f'{index:04}_{b_indx:02}_F_conf.exr',
-                        'sample_output_mask': item_data['mask'][b_indx].transpose(1, 2, 0),
-                        'sample_output_mask_name': f'{index:04}_{b_indx:02}_G_mask.exr',
-                    }
-                    )
-                    json_filename = os.path.join(
-                        max_preview_folder,
-                        f'{index:04}_{b_indx:02}.json'
-                    )
-                    with open(json_filename, 'w', encoding='utf-8') as json_file:
-                        json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
-            del index, item
+        try:
+            if (args.preview_max > 0) and ((step % preview_maxmin_steps) == 1 or ( idx + 1 ) == len(dataset)):
+                max_preview_folder = os.path.join(
+                    args.dataset_path,
+                    'preview',
+                    os.path.splitext(os.path.basename(trained_model_path))[0],
+                    'max')
+                if not os.path.isdir(max_preview_folder):
+                    os.makedirs(max_preview_folder)
+                max_loss_values = max_values.get_values()
+                index = 0
+                item = None
+                for index, item in enumerate(max_loss_values):
+                    item_data = item[1]
+                    n, c, h, w = item_data['img0_orig'].shape
+                    for b_indx in range(n):
+                        write_eval_image_queue.put(
+                        {
+                            'preview_folder': max_preview_folder,
+                            'sample_source1': item_data['img0_orig'][b_indx].transpose(1, 2, 0),
+                            'sample_source1_name': f'{index:04}_{b_indx:02}_A_incomng.exr',
+                            'sample_source2': item_data['img2_orig'][b_indx].transpose(1, 2, 0),
+                            'sample_source2_name': f'{index:04}_{b_indx:02}_B_outgoing.exr',
+                            'sample_target': item_data['img1_orig'][b_indx].transpose(1, 2, 0),
+                            'sample_target_name': f'{index:04}_{b_indx:02}_C_target.exr',
+                            'sample_output': item_data['output'][b_indx].transpose(1, 2, 0),
+                            'sample_output_name': f'{index:04}_{b_indx:02}_D_output.exr',
+                            'sample_output_diff': item_data['diff'][b_indx].transpose(1, 2, 0),
+                            'sample_output_diff_name': f'{index:04}_{b_indx:02}_E_diff.exr',
+                            'sample_output_conf': item_data['conf'][b_indx].transpose(1, 2, 0),
+                            'sample_output_conf_name': f'{index:04}_{b_indx:02}_F_conf.exr',
+                            'sample_output_mask': item_data['mask'][b_indx].transpose(1, 2, 0),
+                            'sample_output_mask_name': f'{index:04}_{b_indx:02}_G_mask.exr',
+                        }
+                        )
+                        json_filename = os.path.join(
+                            max_preview_folder,
+                            f'{index:04}_{b_indx:02}.json'
+                        )
+                        with open(json_filename, 'w', encoding='utf-8') as json_file:
+                            json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
+                del index, item
 
-        if (args.preview_min > 0) and ((step % preview_maxmin_steps) == 1 or ( idx + 1 ) == len(dataset)):
-            min_preview_folder = os.path.join(
-                args.dataset_path,
-                'preview',
-                os.path.splitext(os.path.basename(trained_model_path))[0],
-                'min')
-            if not os.path.isdir(min_preview_folder):
-                os.makedirs(min_preview_folder)
-            min_loss_values = min_values.get_values()
-            index = 0
-            item = None
-            for index, item in enumerate(min_loss_values):
-                item_data = item[1]
-                n, c, h, w = item_data['img0_orig'].shape
-                for b_indx in range(n):
-                    write_eval_image_queue.put(
-                    {
-                        'preview_folder': min_preview_folder,
-                        'sample_source1': item_data['img0_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_source1_name': f'{index:04}_{b_indx:02}_A_incomng.exr',
-                        'sample_source2': item_data['img2_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_source2_name': f'{index:04}_{b_indx:02}_B_outgoing.exr',
-                        'sample_target': item_data['img1_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_target_name': f'{index:04}_{b_indx:02}_C_target.exr',
-                        'sample_output': item_data['output'][b_indx].transpose(1, 2, 0),
-                        'sample_output_name': f'{index:04}_{b_indx:02}_D_output.exr',
-                        'sample_output_diff': item_data['diff'][b_indx].transpose(1, 2, 0),
-                        'sample_output_diff_name': f'{index:04}_{b_indx:02}_E_diff.exr',
-                        'sample_output_conf': item_data['conf'][b_indx].transpose(1, 2, 0),
-                        'sample_output_conf_name': f'{index:04}_{b_indx:02}_F_conf.exr',
-                        'sample_output_mask': item_data['mask'][b_indx].transpose(1, 2, 0),
-                        'sample_output_mask_name': f'{index:04}_{b_indx:02}_G_mask.exr',
-                    }
-                    )
-                    json_filename = os.path.join(
-                        min_preview_folder,
-                        f'{index:04}_{b_indx:02}.json'
-                    )
-                    with open(json_filename, 'w', encoding='utf-8') as json_file:
-                        json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
-            del index, item
+            if (args.preview_min > 0) and ((step % preview_maxmin_steps) == 1 or ( idx + 1 ) == len(dataset)):
+                min_preview_folder = os.path.join(
+                    args.dataset_path,
+                    'preview',
+                    os.path.splitext(os.path.basename(trained_model_path))[0],
+                    'min')
+                if not os.path.isdir(min_preview_folder):
+                    os.makedirs(min_preview_folder)
+                min_loss_values = min_values.get_values()
+                index = 0
+                item = None
+                for index, item in enumerate(min_loss_values):
+                    item_data = item[1]
+                    n, c, h, w = item_data['img0_orig'].shape
+                    for b_indx in range(n):
+                        write_eval_image_queue.put(
+                        {
+                            'preview_folder': min_preview_folder,
+                            'sample_source1': item_data['img0_orig'][b_indx].transpose(1, 2, 0),
+                            'sample_source1_name': f'{index:04}_{b_indx:02}_A_incomng.exr',
+                            'sample_source2': item_data['img2_orig'][b_indx].transpose(1, 2, 0),
+                            'sample_source2_name': f'{index:04}_{b_indx:02}_B_outgoing.exr',
+                            'sample_target': item_data['img1_orig'][b_indx].transpose(1, 2, 0),
+                            'sample_target_name': f'{index:04}_{b_indx:02}_C_target.exr',
+                            'sample_output': item_data['output'][b_indx].transpose(1, 2, 0),
+                            'sample_output_name': f'{index:04}_{b_indx:02}_D_output.exr',
+                            'sample_output_diff': item_data['diff'][b_indx].transpose(1, 2, 0),
+                            'sample_output_diff_name': f'{index:04}_{b_indx:02}_E_diff.exr',
+                            'sample_output_conf': item_data['conf'][b_indx].transpose(1, 2, 0),
+                            'sample_output_conf_name': f'{index:04}_{b_indx:02}_F_conf.exr',
+                            'sample_output_mask': item_data['mask'][b_indx].transpose(1, 2, 0),
+                            'sample_output_mask_name': f'{index:04}_{b_indx:02}_G_mask.exr',
+                        }
+                        )
+                        json_filename = os.path.join(
+                            min_preview_folder,
+                            f'{index:04}_{b_indx:02}.json'
+                        )
+                        with open(json_filename, 'w', encoding='utf-8') as json_file:
+                            json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
+                del index, item
+        except:
+            pass
 
         data_time_str = str(f'{data_time:.2f}')
         data_time1_str = str(f'{data_time1:.2f}')
