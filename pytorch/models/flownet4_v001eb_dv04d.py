@@ -185,7 +185,7 @@ class Model:
         class ResConvMix(Module):
             def __init__(self, c):
                 super().__init__()
-                self.conv = torch.nn.ConvTranspose2d(c, c, 4, 2, 1)
+                self.conv = torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
@@ -195,7 +195,7 @@ class Model:
         class ResConvRevMix(Module):
             def __init__(self, c):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 3, 2, 1, padding_mode = 'reflect', bias=True)
+                self.conv = torch.nn.Conv2d(c, c*2, 3, 2, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
@@ -262,7 +262,7 @@ class Model:
                 super().__init__()
                 self.conv0 = conv(in_planes, c, 3, 2, 1)
                 self.conv1 = conv(c, c, 3, 2, 1)
-                self.conv2 = conv(c, c, 3, 2, 1)
+                self.conv2 = conv(c, c*2, 3, 2, 1)
                 self.attn = CBAM(c)
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
@@ -284,16 +284,16 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                    ResConv(c*2),
+                    ResConv(c*2),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                    ResConv(c*2),
+                    ResConv(c*2),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                    ResConv(c*2),
+                    ResConv(c*2),
                 )
                 self.mix1 = ResConvMix(c)
                 self.mix2 = ResConvMix(c)
