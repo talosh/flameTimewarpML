@@ -361,7 +361,6 @@ class Model:
 
                 feat_deep = self.convblock_deep3(tmp)
                 feat = self.convblock3(feat)
-                tmp = self.revmix3(feat, feat_deep)
                 feat = self.mix3(feat, feat_deep)
 
                 feat = self.convblock4(feat)
