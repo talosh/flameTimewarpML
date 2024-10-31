@@ -256,7 +256,6 @@ class Model:
                 self.convblock2 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
-                    ResConv(c),
                 )
                 self.convblock3 = torch.nn.Sequential(
                     ResConv(c),
@@ -280,7 +279,6 @@ class Model:
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
                     torch.nn.Conv2d(c, c*2, 3, 1, 1, padding_mode = 'reflect', bias=True),
-                    ResConv(c*2),
                     ResConv(c*2),
                     ResConv(c*2),
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
@@ -341,12 +339,14 @@ class Model:
                 feat_deep = self.convblock_deep1(feat_deep)
                 feat = self.mix1(feat, feat_deep)
 
-                feat_deep = self.convblock_deep2(feat)
                 feat = self.convblock2(feat)
+
+                feat_deep = self.convblock_deep2(feat)
                 feat = self.mix2(feat, feat_deep)
 
-                feat_deep = self.convblock_deep3(feat)
                 feat = self.convblock3(feat)
+
+                feat_deep = self.convblock_deep3(feat)
                 feat = self.mix3(feat, feat_deep)
 
                 feat = self.convblock4(feat)
