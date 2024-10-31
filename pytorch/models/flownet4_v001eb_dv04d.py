@@ -195,7 +195,7 @@ class Model:
         class ResConvRevMix(Module):
             def __init__(self, c):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, c//2, 3, 2, 1, padding_mode = 'reflect', bias=True)
+                self.conv = torch.nn.Conv2d(c, c, 3, 2, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
