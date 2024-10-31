@@ -270,7 +270,7 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c*2, 3, 1, 1, padding_mode = 'reflect', bias=True),
+                    torch.nn.Conv2d(c, c*2, 3, 2, 1, padding_mode = 'reflect', bias=True),
                     ResConv(c*2),
                     ResConv(c*2),
                     ResConv(c*2),
@@ -278,13 +278,13 @@ class Model:
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c*2, 3, 1, 1, padding_mode = 'reflect', bias=True),
+                    torch.nn.Conv2d(c, c*2, 3, 2, 1, padding_mode = 'reflect', bias=True),
                     ResConv(c*2),
                     ResConv(c*2),
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c*2, 3, 1, 1, padding_mode = 'reflect', bias=True),
+                    torch.nn.Conv2d(c, c*2, 3, 2, 1, padding_mode = 'reflect', bias=True),
                     ResConv(c*2),
                     ResConv(c*2),
                     torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
