@@ -12,8 +12,8 @@
 class Model:
 
     info = {
-        'name': 'Flownet4_v001eb_dv04b',
-        'file': 'flownet4_v001eb_dv04b.py',
+        'name': 'Flownet4_v001eb_dv04c',
+        'file': 'flownet4_v001eb_dv04c.py',
         'ratio_support': True
     }
 
@@ -185,14 +185,12 @@ class Model:
         class ResConvMix(Module):
             def __init__(self, c):
                 super().__init__()
-                self.up = torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1)
-                self.conv = torch.nn.Conv2d(c + c//2, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x, x_deep):
-                x_deep = self.up(x_deep)
-                return self.relu(self.conv(torch.cat((x, x_deep), 1)) * self.beta + x)
+                return self.relu(self.conv(x_deep) * self.beta + x)
 
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
@@ -254,13 +252,15 @@ class Model:
                 super().__init__()
                 self.conv0 = conv(in_planes, c, 3, 2, 1)
                 self.conv1 = conv(c, c, 3, 2, 1)
-                self.conv2 = conv(c, c, 3, 2, 1)
                 self.attn = CBAM(c)
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 self.convblock2 = torch.nn.Sequential(
+                    ResConv(c),
                     ResConv(c),
                     ResConv(c),
                 )
@@ -271,18 +271,29 @@ class Model:
                 self.convblock4 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                    torch.nn.Conv2d(c, c*2, 3, 1, 1, padding_mode = 'reflect', bias=True),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                    torch.nn.Conv2d(c, c*2, 3, 1, 1, padding_mode = 'reflect', bias=True),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                    torch.nn.Conv2d(c, c*2, 3, 1, 1, padding_mode = 'reflect', bias=True),
+                    ResConv(c*2),
+                    ResConv(c*2),
+                    torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
                 )
                 self.mix1 = ResConvMix(c)
                 self.mix2 = ResConvMix(c)
@@ -331,20 +342,20 @@ class Model:
                 feat = self.attn(feat)
                 feat = self.conv1(feat)
 
-                feat_deep = self.conv2(feat)
                 feat_deep = self.convblock_deep1(feat_deep)
                 feat = self.convblock1(feat)
                 feat = self.mix1(feat, feat_deep)
 
-                feat_deep = self.convblock_deep2(feat_deep)
+                feat_deep = self.convblock_deep2(feat)
                 feat = self.convblock2(feat)
                 feat = self.mix2(feat, feat_deep)
 
-                feat_deep = self.convblock_deep3(feat_deep)
+                feat_deep = self.convblock_deep3(feat)
                 feat = self.convblock3(feat)
                 feat = self.mix3(feat, feat_deep)
 
                 feat = self.convblock4(feat)
+
                 tmp = self.lastconv(feat)
 
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
