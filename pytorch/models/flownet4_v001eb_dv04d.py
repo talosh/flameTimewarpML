@@ -348,6 +348,9 @@ class Model:
                 feat_deep = self.conv2(feat)
                 feat_deep = self.convblock_deep1(feat_deep)
                 feat = self.convblock1(feat)
+
+                print (f'feat: {feat.shape}, feat_deep: {feat_deep.shape}')
+
                 tmp = self.revmix1(feat, feat_deep)
                 feat = self.mix1(feat, feat_deep)
 
