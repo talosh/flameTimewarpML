@@ -298,9 +298,8 @@ class Model:
                 self.mix1 = ResConvMix(c)
                 self.mix2 = ResConvMix(c)
                 self.mix3 = ResConvMix(c)
-                self.revmix1 = ResConvMix(c)
-                self.revmix2 = ResConvMix(c)
-                self.revmix3 = ResConvMix(c)
+                self.revmix1 = ResConvRevMix(c)
+                self.revmix2 = ResConvRevMix(c)
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
@@ -349,12 +348,8 @@ class Model:
                 feat_deep = self.convblock_deep1(feat_deep)
                 feat = self.convblock1(feat)
 
-                print (f'feat: {feat.shape}, feat_deep: {feat_deep.shape}')
-
                 tmp = self.revmix1(feat, feat_deep)
                 feat = self.mix1(feat, feat_deep)
-
-                print (f'feat: {feat.shape}, tmp: {tmp.shape}')
 
                 feat_deep = self.convblock_deep2(tmp)
                 feat = self.convblock2(feat)
