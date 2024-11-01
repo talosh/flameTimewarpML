@@ -149,7 +149,7 @@ class Model:
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 self.attn = CBAM(32, channel_scale=-0.1, spatial_scale=0.1)
-                self.relu = torch.nn.Mish(True)
+                self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x):
                 x = self.cnn0(x * 2 - 1)
@@ -261,7 +261,7 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 cd = int(1.618 * c)
-                self.conv0 = conv_mish(in_planes, c, 7, 2, 3)
+                self.conv0 = conv(in_planes, c, 7, 2, 3)
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
                 self.attn = CBAM(c)
