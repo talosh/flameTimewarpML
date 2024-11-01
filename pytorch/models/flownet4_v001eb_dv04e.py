@@ -291,7 +291,7 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
-                    CBAM(c),
+                    CBAM(cd),
                     ResConv(cd),
                     ResConv(cd),
                 )
