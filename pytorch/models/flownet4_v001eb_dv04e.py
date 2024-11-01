@@ -264,7 +264,7 @@ class Model:
                 self.conv0 = conv(in_planes, c, 7, 2, 3)
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
-                self.attn = CBAM(c)
+                self.attn = CBAM(c, channel_scale=-0.1, spatial_scale=0.1)
                 self.convblock_shallow = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
@@ -283,7 +283,7 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock4 = torch.nn.Sequential(
-                    CBAM(c),
+                    CBAM(c, channel_scale=-0.1, spatial_scale=0.1),
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
@@ -291,22 +291,22 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
-                    CBAM(cd),
+                    CBAM(cd, channel_scale=-0.1, spatial_scale=0.1),
                     ResConv(cd),
                     ResConv(cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
-                    CBAM(cd),
+                    CBAM(cd, channel_scale=-0.1, spatial_scale=0.1),
                     ResConv(cd),
                     ResConv(cd),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
-                    CBAM(cd),
+                    CBAM(cd, channel_scale=-0.1, spatial_scale=0.1),
                     ResConv(cd),
                     ResConv(cd),
                 )
                 self.convblock_deep4 = torch.nn.Sequential(
-                    CBAM(cd),
+                    CBAM(cd, channel_scale=-0.1, spatial_scale=0.1),
                     ResConv(cd),
                     ResConv(cd),
                 )
