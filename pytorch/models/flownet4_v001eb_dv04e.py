@@ -312,8 +312,11 @@ class Model:
                 self.revmix1 = ResConvRevMix(c, cd)
                 self.revmix2 = ResConvRevMix(c, cd)
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
-                    torch.nn.PixelShuffle(2)
+                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    torch.nn.ConvTranspose2d(c, 6, 4, 2, 1)
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
