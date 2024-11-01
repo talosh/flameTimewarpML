@@ -187,7 +187,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.LeakyReLU(0.2, True)
+                self.relu = torch.nn.Mish(True)
 
             def forward(self, x, x_deep):
                 return self.relu(self.conv(x_deep) * self.beta + x)
@@ -197,7 +197,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.LeakyReLU(0.2, True)
+                self.relu = torch.nn.Mish(True)
 
             def forward(self, x, x_deep):
                 return self.relu(self.conv(x) * self.beta + x_deep)
@@ -261,54 +261,54 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 cd = int(1.618 * c)
-                self.conv0 = conv(in_planes, c, 7, 2, 3)
-                self.conv1 = conv(c, c, 3, 2, 1)
-                self.conv2 = conv(c, cd, 3, 2, 1)
+                self.conv0 = conv_mish(in_planes, c, 7, 2, 3)
+                self.conv1 = conv_mish(c, c, 3, 2, 1)
+                self.conv2 = conv_mish(c, cd, 3, 2, 1)
                 self.attn = CBAM(c)
                 self.convblock_shallow = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
                 )
                 self.convblock1 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
                 )
                 self.convblock2 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
                 )
                 self.convblock3 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
                 )
                 self.convblock4 = torch.nn.Sequential(
                     CBAM(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
                     CBAM(cd),
-                    ResConv(cd),
-                    ResConv(cd),
+                    ResConvMish(cd),
+                    ResConvMish(cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
                     CBAM(cd),
-                    ResConv(cd),
-                    ResConv(cd),
+                    ResConvMish(cd),
+                    ResConvMish(cd),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
                     CBAM(cd),
-                    ResConv(cd),
-                    ResConv(cd),
+                    ResConvMish(cd),
+                    ResConvMish(cd),
                 )
                 self.convblock_deep4 = torch.nn.Sequential(
                     CBAM(cd),
-                    ResConv(cd),
-                    ResConv(cd),
+                    ResConvMish(cd),
+                    ResConvMish(cd),
                 )
                 self.mix1 = ResConvMix(c, cd)
                 self.mix2 = ResConvMix(c, cd)
