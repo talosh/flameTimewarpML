@@ -263,8 +263,7 @@ class Model:
                 cd = int(1.618 * c)
                 self.conv0 = conv(in_planes, c, 7, 2, 3)
                 self.conv1 = conv(c, c, 3, 2, 1)
-                self.conv2 = conv(c, c*2, 3, 2, 1)
-                self.reduction = torch.nn.Conv2d(c*2, cd, kernel_size=1, stride=1, padding=0)
+                self.conv2 = conv(c, cd, 3, 2, 1)
                 self.attn = CBAM(c)
                 self.convblock_shallow = torch.nn.Sequential(
                     ResConv(c),
@@ -297,14 +296,17 @@ class Model:
                     ResConv(cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
+                    CBAM(cd),
                     ResConv(cd),
                     ResConv(cd),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
+                    CBAM(cd),
                     ResConv(cd),
                     ResConv(cd),
                 )
                 self.convblock_deep4 = torch.nn.Sequential(
+                    CBAM(cd),
                     ResConv(cd),
                     ResConv(cd),
                 )
@@ -360,7 +362,6 @@ class Model:
                 feat = self.conv1(feat)
 
                 feat_deep = self.conv2(feat)
-                feat_deep = self.reduction(feat_deep)
                 feat_deep = self.convblock_deep1(feat_deep)
                 feat = self.mix1(feat, feat_deep)
 
