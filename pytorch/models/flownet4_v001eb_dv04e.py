@@ -264,7 +264,7 @@ class Model:
                 self.conv0 = conv(in_planes, c, 7, 2, 3)
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, c*2, 3, 2, 1)
-                self.reduction = torch.nn.Conv2d(c*2, cd, kernel_size=1, stride=1, padding=0),
+                self.reduction = torch.nn.Conv2d(c*2, cd, kernel_size=1, stride=1, padding=0)
                 self.attn = CBAM(c)
                 self.convblock_shallow = torch.nn.Sequential(
                     ResConv(c),
