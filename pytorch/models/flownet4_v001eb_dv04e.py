@@ -262,8 +262,8 @@ class Model:
                 super().__init__()
                 cd = int(1.618 * c)
                 self.conv0 = conv_mish(in_planes, c, 7, 2, 3)
-                self.conv1 = conv_mish(c, c, 3, 2, 1)
-                self.conv2 = conv_mish(c, cd, 3, 2, 1)
+                self.conv1 = conv(c, c, 3, 2, 1)
+                self.conv2 = conv(c, cd, 3, 2, 1)
                 self.attn = CBAM(c)
                 self.convblock_shallow = torch.nn.Sequential(
                     ResConv(c),
