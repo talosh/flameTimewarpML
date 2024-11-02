@@ -2076,6 +2076,8 @@ def main():
             param.requires_grad = True
         for param in flownet.module.block0.convblock4[-4].parameters():
             param.requires_grad = True
+        for param in flownet.module.block0.convblock4[-5].parameters():
+            param.requires_grad = True
 
         for param in flownet.module.block0.convblock_deep1[0].parameters():
             param.requires_grad = True
