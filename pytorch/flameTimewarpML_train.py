@@ -506,7 +506,7 @@ def get_dataset(
             self.frame_read_thread.start()
 
             print ('reading first block of training data...')
-            self.last_train_data_size = 11
+            self.last_train_data_size = 24
             self.last_train_data = [self.frames_queue.get()] * self.last_train_data_size
             self.new_sample_shown = False
             self.train_data_index = 0
