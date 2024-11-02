@@ -289,7 +289,6 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
-                    ResConv(c),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
                     CBAM(cd, channel_scale=-0.1, spatial_scale=0.1),
