@@ -2066,7 +2066,7 @@ def main():
         for param in flownet.module.block4.parameters():
             param.requires_grad = False
 
-        for param in flownet.block0.convblock4[-1].parameters():
+        for param in flownet.module.block0.convblock4[-1].parameters():
             param.requires_grad = True
 
         '''
