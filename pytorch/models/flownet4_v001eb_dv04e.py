@@ -223,11 +223,8 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
-                    torch.nn.Conv2d(c, c, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=False),
-                    torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
-                    torch.nn.Conv2d(c//2, 6, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=False),
+                    torch.nn.ConvTranspose2d(c, 6*4, 4, 2, 1),
+                    torch.nn.PixelShuffle(2)
                 )
                 self.noise_level = torch.nn.Parameter(torch.full((1, 1, 1, 1), 1e-4), requires_grad=True)
                 self.maxdepth = 4
@@ -324,13 +321,6 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 6*4, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
-                self.lastconv_long = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
-                    torch.nn.Conv2d(c//2, c//2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=False),
-                    torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.ConvTranspose2d(c//2, c//4, 4, 2, 1),
-                    torch.nn.Conv2d(c//4, 6, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=False),
-                )
                 self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
@@ -385,7 +375,7 @@ class Model:
                 feat = self.mix4(feat, feat_deep)
 
                 feat = self.convblock4(feat)
-                tmp = self.lastconv_long(feat)
+                tmp = self.lastconv(feat)
 
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
                 flow = tmp[:, :4][:, :, :h, :w] * scale
