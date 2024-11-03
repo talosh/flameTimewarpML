@@ -375,8 +375,10 @@ class Model:
                 feat = self.convblock4(feat)
                 tmp = self.lastconv(feat)
 
+
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
-                flow = tmp[:, :4][:, :, :h, :w] * scale
+                # flow = tmp[:, :4][:, :, :h, :w] * scale
+                flow = torch.tanh(tmp[:, :4][:, :, :h, :w])
                 mask = tmp[:, 4:5][:, :, :h, :w]
                 conf = tmp[:, 5:6][:, :, :h, :w]
 
@@ -537,7 +539,7 @@ class Model:
                     scale=scale[0]
                     )
                 
-                flow_list[0] = torch.tanh(flow.clone())
+                flow_list[0] = flow.clone()
                 flow_list[0][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[0][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 flow_list[0][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
