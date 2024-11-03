@@ -265,12 +265,15 @@ class Model:
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
                 self.attn = CBAM(c, channel_scale=-0.1, spatial_scale=0.1)
+                '''
                 self.convblock_shallow = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
                 )
+                '''
                 self.convblock1 = torch.nn.Sequential(
+                    ResConv(c),
                     ResConv(c),
                     ResConv(c),
                 )
@@ -280,10 +283,9 @@ class Model:
                 )
                 self.convblock3 = torch.nn.Sequential(
                     ResConv(c),
-                    ResConv(c),
                 )
                 self.convblock4 = torch.nn.Sequential(
-                    CBAM(c, channel_scale=-0.1, spatial_scale=0.1),
+                    ResConv(c),
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
@@ -291,23 +293,21 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
-                    CBAM(cd, channel_scale=-0.1, spatial_scale=0.1),
+                    ResConv(cd),
+                    ResConv(cd),
                     ResConv(cd),
                     ResConv(cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
-                    CBAM(cd, channel_scale=-0.1, spatial_scale=0.1),
+                    ResConv(cd),
                     ResConv(cd),
                     ResConv(cd),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
-                    CBAM(cd, channel_scale=-0.1, spatial_scale=0.1),
                     ResConv(cd),
                     ResConv(cd),
                 )
                 self.convblock_deep4 = torch.nn.Sequential(
-                    CBAM(cd, channel_scale=-0.1, spatial_scale=0.1),
-                    ResConv(cd),
                     ResConv(cd),
                 )
                 self.mix1 = ResConvMix(c, cd)
@@ -350,7 +350,7 @@ class Model:
 
                 feat = self.conv0(x)
                 feat = self.attn(feat)
-                feat = self.convblock_shallow(feat)
+                # feat = self.convblock_shallow(feat)
                 feat = self.conv1(feat)
 
                 feat_deep = self.conv2(feat)
