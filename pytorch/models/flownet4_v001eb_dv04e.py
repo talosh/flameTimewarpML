@@ -277,13 +277,11 @@ class Model:
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
                 self.attn = CBAM(ca)
-                '''
                 self.convblock_shallow = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
                 )
-                '''
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
@@ -294,6 +292,7 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock3 = torch.nn.Sequential(
+                    ResConv(c),
                     ResConv(c),
                 )
                 self.convblock4 = torch.nn.Sequential(
@@ -308,10 +307,8 @@ class Model:
                     ResConv(cd),
                     ResConv(cd),
                     ResConv(cd),
-                    ResConv(cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
-                    ResConv(cd),
                     ResConv(cd),
                     ResConv(cd),
                 )
@@ -320,6 +317,7 @@ class Model:
                     ResConv(cd),
                 )
                 self.convblock_deep4 = torch.nn.Sequential(
+                    ResConv(cd),
                     ResConv(cd),
                 )
                 self.mix1 = ResConvMix(c, cd)
@@ -375,7 +373,7 @@ class Model:
 
                 # noise = torch.rand_like(feat[:, :2, :, :]) * 2 - 1
                 feat = torch.cat((feat, y), 1)
-                # feat = self.convblock_shallow(feat)
+                feat = self.convblock_shallow(feat)
                 feat = self.conv0(feat)
                 feat = self.conv1(feat)
 
