@@ -261,7 +261,7 @@ class Model:
                 super().__init__()
                 ca = 36
                 cd = int(1.618 * c)
-                self.conv0att = conv(in_planes, ca, 3, 1, 1)
+                self.conv0att = conv(22, ca, 3, 1, 1)
                 self.conv0 = conv(ca + (in_planes - 20), c, 7, 2, 3)
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
