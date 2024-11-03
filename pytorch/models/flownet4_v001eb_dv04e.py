@@ -265,7 +265,7 @@ class Model:
                 self.conv0 = conv(ca + (in_planes - 20), c, 7, 2, 3)
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
-                self.attn = CBAM(c//2)
+                self.attn = CBAM(ca)
                 '''
                 self.convblock_shallow = torch.nn.Sequential(
                     ResConv(c),
