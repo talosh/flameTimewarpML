@@ -537,7 +537,7 @@ class Model:
                     scale=scale[0]
                     )
                 
-                flow_list[0] = flow.clone()
+                flow_list[0] = torch.tanh(flow.clone())
                 flow_list[0][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[0][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 flow_list[0][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
