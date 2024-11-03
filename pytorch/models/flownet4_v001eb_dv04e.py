@@ -364,7 +364,7 @@ class Model:
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 
                     flow = torch.nn.functional.pad(flow, padding)
-                    flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) # * 1. / scale
+                    # flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) # * 1. / scale
                     mask = torch.nn.functional.pad(mask * 2 - 1, padding)
                     y = torch.cat((flow, timestep, mask, tenGrid), 1)
                     y = torch.nn.functional.interpolate(y, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
