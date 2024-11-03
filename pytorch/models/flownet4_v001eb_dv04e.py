@@ -373,8 +373,8 @@ class Model:
 
                 # noise = torch.rand_like(feat[:, :2, :, :]) * 2 - 1
                 feat = torch.cat((feat, y), 1)
-                feat = self.convblock_shallow(feat)
                 feat = self.conv0(feat)
+                feat = self.convblock_shallow(feat)
                 feat = self.conv1(feat)
 
                 feat_deep = self.conv2(feat)
