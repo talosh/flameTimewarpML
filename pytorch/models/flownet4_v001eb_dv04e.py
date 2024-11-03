@@ -345,8 +345,8 @@ class Model:
                 tenHorizontal = torch.linspace(-1.0, 1.0, img0.shape[3]).view(1, 1, 1, img0.shape[3]).expand(img0.shape[0], -1, img0.shape[2], -1)
                 tenVertical = torch.linspace(-1.0, 1.0, img0.shape[2]).view(1, 1, img0.shape[2], 1).expand(img0.shape[0], -1, -1, img0.shape[3])
                 tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=img0.device, dtype=img0.dtype)
-                tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
-                timestep = torch.nn.functional.pad(timestep, padding, mode='replicate')
+                tenGrid = torch.nn.functional.pad(tenGrid, padding)
+                timestep = torch.nn.functional.pad(timestep, padding)
 
                 if flow is None:
                     x = torch.cat((img0, img1, f0, f1), 1)
