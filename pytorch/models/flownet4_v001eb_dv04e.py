@@ -260,11 +260,11 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 cd = int(1.618 * c)
-                self.conv0 = conv(in_planes, c//2, 7, 1, 3)
-                self.conv0a = conv(c//2 + 2, c, 3, 2, 1)
+                self.conv0 = conv(in_planes, in_planes * 2, 7, 1, 3)
+                self.conv0a = conv(in_planes * 2 + 2, c, 3, 2, 1)
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
-                self.attn = CBAM(c//2)
+                self.attn = CBAM(in_planes * 2)
                 '''
                 self.convblock_shallow = torch.nn.Sequential(
                     ResConv(c),
