@@ -21,6 +21,7 @@ class Model:
         if torch is None:
             import torch
         Module = torch.nn.Module
+        backwarp_tenGrid_norm = {}
         backwarp_tenGrid = {}
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
@@ -61,8 +62,18 @@ class Model:
                 tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
                 tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
                 backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
-            # tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
+            tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+            return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bicubic', padding_mode='border', align_corners=True)
+
+        def warp_norm(tenInput, tenFlow):
+            k = (str(tenFlow.device), str(tenFlow.size()))
+            if k not in backwarp_tenGrid_norm:
+                tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+                tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+                backwarp_tenGrid_norm[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
+            # tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
+            g = (backwarp_tenGrid_norm[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bicubic', padding_mode='border', align_corners=True)
 
         class ChannelAttention(Module):
@@ -333,20 +344,20 @@ class Model:
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, img0.shape[3]).view(1, 1, 1, img0.shape[3]).expand(img0.shape[0], -1, img0.shape[2], -1)
                 tenVertical = torch.linspace(-1.0, 1.0, img0.shape[2]).view(1, 1, img0.shape[2], 1).expand(img0.shape[0], -1, -1, img0.shape[3])
-                backwarp_tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=img0.device, dtype=img0.dtype)
-                backwarp_tenGrid = torch.nn.functional.pad(backwarp_tenGrid, padding)
+                tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=img0.device, dtype=img0.dtype)
+                tenGrid = torch.nn.functional.pad(tenGrid, padding)
                 timestep = torch.nn.functional.pad(timestep, padding)
 
                 if flow is None:
                     x = torch.cat((img0, img1, f0, f1), 1)
                     x = torch.nn.functional.pad(x, padding)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                    y = torch.cat((timestep, backwarp_tenGrid), 1)
+                    y = torch.cat((timestep, tenGrid), 1)
                 else:
-                    warped_img0 = warp(img0, flow[:, :2])
-                    warped_img1 = warp(img1, flow[:, 2:4])
-                    warped_f0 = warp(f0, flow[:, :2])
-                    warped_f1 = warp(f1, flow[:, 2:4])
+                    warped_img0 = warp_norm(img0, flow[:, :2])
+                    warped_img1 = warp_norm(img1, flow[:, 2:4])
+                    warped_f0 = warp_norm(f0, flow[:, :2])
+                    warped_f1 = warp_norm(f1, flow[:, 2:4])
                     
                     x = torch.cat((img0, img1, f0, f1, warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
                     x = torch.nn.functional.pad(x, padding)
@@ -354,7 +365,7 @@ class Model:
 
                     flow = torch.nn.functional.pad(flow, padding)
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) # * 1. / scale
-                    y = torch.cat((flow, timestep, backwarp_tenGrid), 1)
+                    y = torch.cat((flow, timestep, tenGrid), 1)
 
                     # x = torch.cat((x, flow), 1)
 
@@ -400,117 +411,11 @@ class Model:
 
                 return flow, mask, conf
 
-        class FlownetDeepDualHead(Module):
-            def __init__(self, in_planes, c=64):
-                super().__init__()
-                self.conv0 = conv(in_planes, c, 3, 2, 1)
-                self.conv1 = conv(c, c, 3, 2, 1)
-
-                self.conv0_clean = conv_mish(in_planes-5, c, 3, 2, 1)
-                self.conv1_clean = conv_mish(c, c, 3, 2, 1)
-                self.conv2_deep = conv_mish(c, c*2, 3, 2, 1)
-                self.attn = CBAM(c)
-
-                self.conv_deep = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
-                self.beta_deep = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu_deep = torch.nn.LeakyReLU(0.2, True)
-
-                self.conv_mix = torch.nn.Conv2d(c*2, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
-                self.beta_mix = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu_mix = torch.nn.LeakyReLU(0.2, True)
-
-                self.convblock_deep = torch.nn.Sequential(
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    torch.nn.ConvTranspose2d(c*2, c, 4, 2, 1),
-                )
-                self.convblock_clean = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                )
-                self.convblock_mix = torch.nn.Sequential(
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                    ResConv(c*2),
-                )
-                self.convblock = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                )
-                self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
-                    torch.nn.PixelShuffle(2)
-                )
-                self.maxdepth = 8
-
-            def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
-
-                pvalue = scale * self.maxdepth
-                _, _, h, w = img0.shape
-                ph = ((h - 1) // pvalue + 1) * pvalue
-                pw = ((w - 1) // pvalue + 1) * pvalue
-                padding = (0, pw - w, 0, ph - h)
-                
-                x_clean = torch.cat((img0, img1, f0, f1, timestep), 1)
-                x_clean = torch.nn.functional.pad(x_clean, padding)
-                x_clean = torch.nn.functional.interpolate(x_clean, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-
-                warped_img0 = warp(img0, flow[:, :2])
-                warped_img1 = warp(img1, flow[:, 2:4])
-
-                warped_f0 = warp(f0, flow[:, :2])
-                warped_f1 = warp(f1, flow[:, 2:4])
-                
-                x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
-                x = torch.nn.functional.pad(x, padding)
-                x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-
-                flow = torch.nn.functional.pad(flow, padding)
-                flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
-                x = torch.cat((x, flow), 1)
-
-                feat = self.conv0(x)
-                feat = self.conv1(feat)
-
-                feat_clean = self.conv0_clean(x_clean)
-                feat_clean = self.attn(feat_clean)
-                feat_clean = self.conv1_clean(feat_clean)
-
-                feat_deep = self.conv2_deep(feat_clean)
-                feat_deep = self.convblock_deep(feat_deep)
-
-                feat_clean = self.relu_deep(self.conv_deep(feat_deep) * self.beta_deep + feat_clean)
-                feat_clean = self.convblock_clean(feat_clean)
-                
-                feat_mix = self.convblock_mix(torch.cat((feat_clean, feat), 1))
-                feat = self.relu_mix(self.conv_mix(feat_mix) * self.beta_mix + feat)
-
-                feat = self.convblock(feat)
-                tmp = self.lastconv(feat)
-
-                tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
-                flow = tmp[:, :4][:, :, :h, :w] * scale
-                mask = tmp[:, 4:5][:, :, :h, :w]
-                conf = tmp[:, 5:6][:, :, :h, :w]
-
-                return flow, mask, conf
-
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeepSingleHead(23, c=192)
-                self.block1 = Flownet(28, c=96)
+                self.block1 = FlownetDeepSingleHead(28, c=96)
                 self.block2 = Flownet(28, c=64)
                 self.block3 = Flownet(28, c=48)
                 self.block4 = Flownet(28, c=32)
