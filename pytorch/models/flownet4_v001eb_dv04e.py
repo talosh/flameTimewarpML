@@ -260,7 +260,8 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 cd = int(1.618 * c)
-                self.conv0 = conv(in_planes, c - 2, 7, 2, 3)
+                self.conv0 = conv(in_planes, c - 2, 7, 1, 3)
+                self.conv0a = conv(c, c, 7, 2, 3)
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
                 self.attn = CBAM(c - 2)
@@ -358,6 +359,7 @@ class Model:
                 # feat = torch.cat((feat, backwarp_tenGrid, noise), 1)
 
                 # feat = self.convblock_shallow(feat)
+                feat = self.conv0a(feat)
                 feat = self.conv1(feat)
 
                 feat_deep = self.conv2(feat)
