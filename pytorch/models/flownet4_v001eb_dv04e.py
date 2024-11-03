@@ -354,7 +354,7 @@ class Model:
                 tenVertical = torch.linspace(-1.0, 1.0, feat.shape[2]).view(1, 1, feat.shape[2], 1).expand(feat.shape[0], -1, -1, feat.shape[3])
                 backwarp_tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=feat.device, dtype=feat.dtype)
                 noise = torch.rand_like(feat[:, :2, :, :]) * 2 - 1
-                feat = torch.cat((x, backwarp_tenGrid, noise), 1)
+                feat = torch.cat((feat, backwarp_tenGrid, noise), 1)
 
                 # feat = self.convblock_shallow(feat)
                 feat = self.conv1(feat)
