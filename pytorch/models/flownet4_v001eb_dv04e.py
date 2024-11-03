@@ -359,13 +359,14 @@ class Model:
                     warped_f0 = warp_norm(f0, flow[:, :2])
                     warped_f1 = warp_norm(f1, flow[:, 2:4])
                     
-                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
+                    x = torch.cat((warped_img0 * 2 - 1, warped_img1 * 2 - 1, warped_f0, warped_f1), 1)
                     x = torch.nn.functional.pad(x, padding)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 
                     flow = torch.nn.functional.pad(flow, padding)
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) # * 1. / scale
-                    y = torch.cat((flow, timestep, tenGrid), 1)
+                    mask = torch.nn.functional.pad(mask * 2 - 1, padding)
+                    y = torch.cat((flow, timestep, mask, tenGrid), 1)
 
                     # x = torch.cat((x, flow), 1)
 
