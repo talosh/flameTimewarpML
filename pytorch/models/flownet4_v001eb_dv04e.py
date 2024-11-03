@@ -159,10 +159,10 @@ class Model:
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 self.attn = CBAM(32, channel_scale=-0.1, spatial_scale=0.1)
-                self.relu = torch.nn.LeakyReLU(0.2, True)
+                self.relu = torch.nn.Mish(True)
 
             def forward(self, x):
-                x = self.cnn0(x)
+                x = self.cnn0(x * 2 - 1)
                 x = self.relu(x)
                 x = self.attn(x)
                 x = self.cnn1(x)
@@ -272,7 +272,7 @@ class Model:
                 super().__init__()
                 ca = 36
                 cd = int(1.618 * c)
-                self.conv0att = conv(6 + 16, ca, 3, 1, 1)
+                self.conv0att = conv_mish(6 + 16, ca, 3, 1, 1)
                 self.conv0 = conv(ca + (in_planes - 20), c, 7, 2, 3)
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
@@ -349,7 +349,7 @@ class Model:
                 timestep = torch.nn.functional.pad(timestep * 2 - 1, padding, mode='replicate')
 
                 if flow is None:
-                    x = torch.cat((img0, img1, f0, f1), 1)
+                    x = torch.cat((img0 * 2 - 1, img1 * 2 - 1, f0, f1), 1)
                     x = torch.nn.functional.pad(x, padding)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     y = torch.cat((timestep, tenGrid), 1)
@@ -359,7 +359,7 @@ class Model:
                     warped_f0 = warp_norm(f0, flow[:, :2])
                     warped_f1 = warp_norm(f1, flow[:, 2:4])
                     
-                    x = torch.cat((img0, img1, f0, f1, warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
+                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
                     x = torch.nn.functional.pad(x, padding)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
 
