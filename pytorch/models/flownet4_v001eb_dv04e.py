@@ -418,7 +418,7 @@ class Model:
                 super().__init__()
                 self.block0 = FlownetDeepSingleHead(23, c=192)
                 self.block1 = FlownetDeepSingleHead(28, c=96)
-                self.block2 = Flownet(28, c=64)
+                self.block2 = FlownetDeepSingleHead(28, c=64)
                 self.block3 = Flownet(28, c=48)
                 self.block4 = Flownet(28, c=32)
                 self.encode = Head()
@@ -521,11 +521,6 @@ class Model:
                 return flow_list, mask_list, conf_list, merged
                 '''
 
-                # back to old non-normalized blocks
-                flow = flow_list[1]
-                mask = mask_list[1]
-                conf = conf_list[1]
-
                 # refine step 2
                 flow_d, mask, conf_d = self.block2(
                     img0, 
@@ -542,9 +537,16 @@ class Model:
                 flow = flow + flow_d
 
                 flow_list[2] = flow.clone()
-                mask_list[2] = torch.sigmoid(mask)
-                conf_list[2] = torch.sigmoid(conf)
-                merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
+                flow_list[2][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
+                flow_list[2][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
+                flow_list[2][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
+                flow_list[2][:, 3:4, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
+                mask_list[2] = (mask + 1) / 2.0
+                conf_list[2] = (conf + 1) / 2.0
+
+                # mask_list[1] = torch.sigmoid(mask)
+                # conf_list[1] = torch.sigmoid(conf)
+                merged[2] = warp_norm(img0, flow[:, :2]) * mask_list[2] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
                 '''
                 # step training stage 03
@@ -555,6 +557,11 @@ class Model:
 
                 return flow_list, mask_list, conf_list, merged
                 '''
+                # back to old non-normalized blocks
+
+                flow = flow_list[2]
+                mask = mask_list[2]
+                conf = conf_list[2]
 
                 # refine step 3
                 flow_d, mask, conf_d = self.block3(
