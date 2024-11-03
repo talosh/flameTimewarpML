@@ -260,7 +260,7 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 cd = int(1.618 * c)
-                self.conv0 = conv(in_planes, c - 4, 7, 2, 3)
+                self.conv0 = conv(in_planes, c - 2, 7, 2, 3)
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
                 self.attn = CBAM(c)
@@ -353,8 +353,9 @@ class Model:
                 tenHorizontal = torch.linspace(-1.0, 1.0, feat.shape[3]).view(1, 1, 1, feat.shape[3]).expand(feat.shape[0], -1, feat.shape[2], -1)
                 tenVertical = torch.linspace(-1.0, 1.0, feat.shape[2]).view(1, 1, feat.shape[2], 1).expand(feat.shape[0], -1, -1, feat.shape[3])
                 backwarp_tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=x.device, dtype=x.dtype)
-                noise = torch.rand_like(feat[:, :2, :, :]) * 2 - 1
-                feat = torch.cat((x, backwarp_tenGrid, noise), 1)
+                feat = torch.cat((x, backwarp_tenGrid), 1)
+                # noise = torch.rand_like(feat[:, :2, :, :]) * 2 - 1
+                # feat = torch.cat((x, backwarp_tenGrid, noise), 1)
 
                 # feat = self.convblock_shallow(feat)
                 feat = self.conv1(feat)
