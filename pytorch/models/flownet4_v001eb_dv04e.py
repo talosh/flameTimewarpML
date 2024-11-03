@@ -347,15 +347,15 @@ class Model:
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
 
-                tenHorizontal = torch.linspace(-1.0, 1.0, x.shape[3]).view(1, 1, 1, x.shape[3]).expand(x.shape[0], -1, x.shape[2], -1)
-                tenVertical = torch.linspace(-1.0, 1.0, x.shape[2]).view(1, 1, x.shape[2], 1).expand(x.shape[0], -1, -1, x.shape[3])
-                backwarp_tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=x.device, dtype=x.dtype)
-                noise = torch.rand_like(x[:, :1, :, :]) * 2 - 1
-
-                x = torch.cat((x, backwarp_tenGrid, noise), 1)
-
                 feat = self.conv0(x)
                 feat = self.attn(feat)
+
+                tenHorizontal = torch.linspace(-1.0, 1.0, feat.shape[3]).view(1, 1, 1, feat.shape[3]).expand(feat.shape[0], -1, feat.shape[2], -1)
+                tenVertical = torch.linspace(-1.0, 1.0, feat.shape[2]).view(1, 1, feat.shape[2], 1).expand(feat.shape[0], -1, -1, feat.shape[3])
+                backwarp_tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=x.device, dtype=x.dtype)
+                noise = torch.rand_like(feat[:, :2, :, :]) * 2 - 1
+                feat = torch.cat((x, backwarp_tenGrid, noise), 1)
+
                 # feat = self.convblock_shallow(feat)
                 feat = self.conv1(feat)
 
