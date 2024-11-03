@@ -351,6 +351,9 @@ class Model:
                     x = torch.nn.functional.pad(x, padding)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     y = torch.cat((timestep, tenGrid), 1)
+
+                    print (f'x shape: {x.shape}, y shape: {y.shape}')
+
                 else:
                     warped_img0 = warp_norm(img0, flow[:, :2])
                     warped_img1 = warp_norm(img1, flow[:, 2:4])
@@ -365,6 +368,8 @@ class Model:
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) # * 1. / scale
                     mask = torch.nn.functional.pad(mask * 2 - 1, padding)
                     y = torch.cat((flow, timestep, mask, tenGrid), 1)
+
+                    print (f'x shape: {x.shape}, y shape: {y.shape}')
 
                     # x = torch.cat((x, flow), 1)
 
