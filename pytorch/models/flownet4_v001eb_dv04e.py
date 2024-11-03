@@ -260,7 +260,7 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 cd = int(1.618 * c)
-                self.conv0 = conv(in_planes + 3, c, 7, 2, 3)
+                self.conv0 = conv(in_planes, c, 7, 2, 3)
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
                 self.attn = CBAM(c)
