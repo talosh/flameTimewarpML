@@ -470,7 +470,7 @@ class Model:
 
                 # mask_list[0] = torch.sigmoid(mask)
                 # conf_list[0] = torch.sigmoid(conf)
-                merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
+                merged[0] = warp_norm(img0, flow[:, :2]) * mask_list[0] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
                 # '''
                 # step training stage 1
