@@ -279,8 +279,6 @@ class Model:
                 self.attn = CBAM(ca)
                 self.convblock_shallow = torch.nn.Sequential(
                     ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
                 )
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
@@ -307,8 +305,10 @@ class Model:
                     ResConv(cd),
                     ResConv(cd),
                     ResConv(cd),
+                    ResConv(cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
+                    ResConv(cd),
                     ResConv(cd),
                     ResConv(cd),
                 )
