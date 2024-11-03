@@ -160,9 +160,9 @@ class Model:
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 self.attn = CBAM(32, channel_scale=-0.1, spatial_scale=0.1)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
-                
+
             def forward(self, x):
-                x = self.cnn0(x * 2 - 1)
+                x = self.cnn0(x)
                 x = self.relu(x)
                 x = self.attn(x)
                 x = self.cnn1(x)
