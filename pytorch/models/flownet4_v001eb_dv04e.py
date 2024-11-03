@@ -61,10 +61,9 @@ class Model:
                 tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
                 tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
                 backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
-            tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
-
+            # tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-            return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+            return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bicubic', padding_mode='border', align_corners=True)
 
         class ChannelAttention(Module):
             def __init__(self, c, reduction_ratio=4):
@@ -539,6 +538,10 @@ class Model:
                     )
                 
                 flow_list[0] = flow.clone()
+                flow_list[0][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
+                flow_list[0][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
+                flow_list[0][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
+                flow_list[0][:, 3:4, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 mask_list[0] = torch.sigmoid(mask)
                 conf_list[0] = torch.sigmoid(conf)
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
