@@ -544,8 +544,11 @@ class Model:
                 flow_list[0][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 flow_list[0][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[0][:, 3:4, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
-                mask_list[0] = torch.sigmoid(mask)
-                conf_list[0] = torch.sigmoid(conf)
+                mask_list[0] = (mask + 1) / 2.0
+                conf_list[0] = (conf + 1) / 2.0
+
+                # mask_list[0] = torch.sigmoid(mask)
+                # conf_list[0] = torch.sigmoid(conf)
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
                 # '''
