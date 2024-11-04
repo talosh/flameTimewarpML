@@ -1777,10 +1777,20 @@ def centered_highpass_filter(rgb_image, gamma=2.4):
         torch.Tensor: Frequency-scaled image of the same shape as the input.
     """
     n, c, h, w = rgb_image.shape
-    
+
+    pattern = torch.arange(h).view(h, 1) + torch.arange(w)
+    pattern = (pattern % 2).float()  # Convert to alternating 0s and 1s
+
+    # Expand to shape (n, c, h, w)
+    checker_tensor = pattern.unsqueeze(0).unsqueeze(0).expand(n, c, h, w)
+
+
     # Step 1: Apply Fourier Transform along spatial dimensions
     freq_image = torch.fft.fft2(rgb_image, dim=(-2, -1))
     freq_image = torch.fft.fftshift(freq_image, dim=(-2, -1))  # Shift the zero-frequency component to the center
+
+    freq_ch_image = torch.fft.fft2(checker_tensor, dim=(-2, -1))
+    freq_ch_image = torch.fft.fftshift(freq_ch_image, dim=(-2, -1))  # Shift the zero-frequency component to the center
 
     # Step 2: Calculate the distance of each frequency component from the center
     center_x, center_y = h // 2, w // 2
@@ -1795,7 +1805,7 @@ def centered_highpass_filter(rgb_image, gamma=2.4):
     distance_weight = distance_weight ** (1 / gamma)
     
     # Step 3: Apply the distance weight to both real and imaginary parts of the frequency components
-    freq_image_scaled = freq_image * distance_weight.unsqueeze(0).unsqueeze(1)
+    freq_image_scaled = freq_ch_image * distance_weight.unsqueeze(0).unsqueeze(1)
 
     # Step 4: Inverse Fourier Transform to return to spatial domain
     freq_image_scaled = torch.fft.ifftshift(freq_image_scaled, dim=(-2, -1))
@@ -2636,7 +2646,7 @@ def main():
         if step % args.preview == 1:
             rgb_source1 = img0_orig
             rgb_source2 = img2_orig
-            rgb_target = diffmatte(centered_highpass_filter(img1_orig), img1_orig).repeat_interleave(3, dim=1)
+            rgb_target = centered_highpass_filter(img1_orig)
             rgb_output = output_clean
             rgb_output_mask = mask.repeat_interleave(3, dim=1)
             rgb_output_conf = conf.repeat_interleave(3, dim=1)
