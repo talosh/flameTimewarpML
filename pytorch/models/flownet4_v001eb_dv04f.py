@@ -158,7 +158,7 @@ class Model:
                 self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
-                # self.attn = CBAM(32, channel_scale=-0.1, spatial_scale=0.1)
+                self.attn = CBAM(32, channel_scale=-0.1, spatial_scale=0.1)
                 self.relu = torch.nn.Mish(True)
 
             def forward(self, x):
@@ -469,6 +469,9 @@ class Model:
 
                 img1 = torch.fft.fft2(img1, dim=(-2, -1))
                 img1 = torch.fft.fftshift(img1, dim=(-2, -1))
+
+                img0 = torch.view_as_real(img0)
+                img1 = torch.view_as_real(img1)
 
                 print (f'img0 shape: {img0.shape} img0 dtype: {img0.dtype}')
 
