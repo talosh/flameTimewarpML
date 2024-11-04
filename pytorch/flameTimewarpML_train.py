@@ -1661,7 +1661,7 @@ def sinusoidal_scale_fn(x):
     # x is a fraction of the cycle's progress (0 to 1)
     return 0.5 * (1 + math.sin(math.pi * (x - 0.5)))
 
-def centered_highpass_filter(rgb_image, gamma=2.5):
+def centered_highpass_filter(rgb_image, gamma=2.4):
     """
     Apply a centered high-pass filter to an RGB image tensor.
     
