@@ -337,7 +337,7 @@ class Model:
                 self.revmix1 = ResConvRevMix(c, cd)
                 self.revmix2 = ResConvRevMix(c, cd)
                 self.lastconv_mask = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 2*4, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c//3, 2*4, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
                 self.lastconv = torch.nn.Sequential(
