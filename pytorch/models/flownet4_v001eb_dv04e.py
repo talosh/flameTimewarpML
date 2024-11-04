@@ -278,6 +278,7 @@ class Model:
                 self.conv2 = conv(c, cd, 3, 2, 1)
                 self.conv_mask = conv_mish(c, c//3, 3, 1, 1)
                 self.attn = CBAM(ca)
+                self.attn_mask = CBAM(c//3)
                 self.convblock_shallow = torch.nn.Sequential(
                     ResConv(c),
                 )
