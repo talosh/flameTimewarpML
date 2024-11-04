@@ -2489,6 +2489,8 @@ def main():
     data_time2 = 0
     train_time = 0
 
+    flownet.to(torch.complex64)
+
     while True:
         # tracemalloc.start()
         # data_time = time.time() - time_stamp
