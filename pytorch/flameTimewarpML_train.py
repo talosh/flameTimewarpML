@@ -1742,6 +1742,7 @@ def centered_highpass_filter(rgb_image, cutoff_distance=1):
     Returns:
         torch.Tensor: High-pass filtered image of the same shape as the input.
     """
+    '''
     n, c, h, w = rgb_image.shape
 
     # Step 1: Apply Fourier Transform along spatial dimensions without shifting
@@ -1762,6 +1763,32 @@ def centered_highpass_filter(rgb_image, cutoff_distance=1):
     highpass_image = torch.fft.ifft2(freq_image_filtered, dim=(-2, -1)).real  # Take the real part only
 
     return highpass_image
+    '''
+    """
+    Compute a mono image from the max of real and imaginary parts of each frequency component in an RGB image.
+    
+    Args:
+        rgb_image (torch.Tensor): Input tensor with shape (n, 3, h, w), where values are in [0, 1].
+    
+    Returns:
+        torch.Tensor: Mono image of shape (n, 1, h, w).
+    """
+    # Step 1: Apply the 2D Fourier Transform along the spatial dimensions for each channel
+    freq_image = torch.fft.fft2(rgb_image, dim=(-2, -1))
+    
+    # Step 2: Separate real and imaginary parts
+    real_part = freq_image.real
+    imag_part = freq_image.imag
+    
+    # Step 3: Take the maximum of the real and imaginary parts across the color channels (dim=1)
+    max_real = real_part.max(dim=1, keepdim=True).values  # Shape (n, 1, h, w)
+    max_imag = imag_part.max(dim=1, keepdim=True).values  # Shape (n, 1, h, w)
+    
+    # Step 4: Compute the mono image as the average of max real and max imaginary parts
+    mono_image = (max_real + max_imag) / 2  # Shape (n, 1, h, w)
+    
+    return mono_image
+
 
 current_state_dict = {}
 
@@ -2594,7 +2621,7 @@ def main():
         if step % args.preview == 1:
             rgb_source1 = img0_orig
             rgb_source2 = img2_orig
-            rgb_target = centered_highpass_filter(img1_orig)
+            rgb_target = centered_highpass_filter(img1_orig).repeat_interleave(3, dim=1)
             rgb_output = output_clean
             rgb_output_mask = mask.repeat_interleave(3, dim=1)
             rgb_output_conf = conf.repeat_interleave(3, dim=1)
