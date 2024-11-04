@@ -2355,7 +2355,7 @@ def main():
                 print(name, param.requires_grad)
 
     for name, param in flownet.named_parameters():
-        print(name, param.requires_grad)
+        print(name, param)
 
     try:
         print ()
