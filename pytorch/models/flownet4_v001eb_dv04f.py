@@ -455,7 +455,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepSingleHead(23, c=192)
+                self.block0 = Flownet(23, c=192)
                 self.block1 = torch.nn.Identity() # FlownetDeepSingleHead(28, c=96)
                 self.block2 = torch.nn.Identity() # Flownet(28, c=64)
                 self.block3 = torch.nn.Identity() # Flownet(28, c=48)
@@ -463,6 +463,15 @@ class Model:
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
+
+                img0 = torch.fft.fft2(img0, dim=(-2, -1))
+                img0 = torch.fft.fftshift(img0, dim=(-2, -1))
+
+                img1 = torch.fft.fft2(img1, dim=(-2, -1))
+                img1 = torch.fft.fftshift(img1, dim=(-2, -1))
+
+                print (f'img0 shape: {img0.shape} img0 dtype: {img0.dtype}')
+
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 
