@@ -470,8 +470,8 @@ class Model:
                 img1 = torch.fft.fft2(img1, dim=(-2, -1))
                 img1 = torch.fft.fftshift(img1, dim=(-2, -1))
 
-                img0 = torch.view_as_real(img0)
-                img1 = torch.view_as_real(img1)
+                # img0 = torch.view_as_real(img0)
+                # simg1 = torch.view_as_real(img1)
 
                 print (f'img0 shape: {img0.shape} img0 dtype: {img0.dtype}')
 
