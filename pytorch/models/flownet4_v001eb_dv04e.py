@@ -276,6 +276,7 @@ class Model:
                 self.conv0 = conv(ca + (in_planes - 20), c, 7, 2, 3)
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
+                self.conv_mask = torch.nn.Conv2d(c, c//3, kernel_size=1, stride=1, padding=0, bias=True)
                 self.attn = CBAM(ca)
                 self.convblock_shallow = torch.nn.Sequential(
                     ResConv(c),
@@ -300,6 +301,14 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
+                )
+                self.convblock_mask = torch.nn.Sequential(
+                    ResConv(c//3),
+                    ResConv(c//3),
+                    ResConv(c//3),
+                    ResConv(c//3),
+                    ResConv(c//3),
+                    ResConv(c//3),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
                     ResConv(cd),
@@ -326,8 +335,12 @@ class Model:
                 self.mix4 = ResConvMix(c, cd)
                 self.revmix1 = ResConvRevMix(c, cd)
                 self.revmix2 = ResConvRevMix(c, cd)
+                self.lastconv_mask = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, 2*4, 4, 2, 1),
+                    torch.nn.PixelShuffle(2)
+                )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 6*4, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c, 4*4, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
@@ -400,16 +413,21 @@ class Model:
                 feat = self.convblock3(feat)
                 feat = self.mix4(feat, feat_deep)
 
+                feat_mask = self.conv_mask(feat)
+                feat_mask = self.convblock_mask(feat_mask)
+                tmp_mask = self.lastconv_mask(feat_mask)
+                tmp_mask = torch.tanh(tmp_mask)
+
                 feat = self.convblock4(feat)
                 tmp = self.lastconv(feat)
-
                 tmp = torch.tanh(tmp)
 
+                tmp_mask = torch.nn.functional.interpolate(tmp_mask, scale_factor=scale, mode="bilinear", align_corners=False)
                 tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
                 # flow = tmp[:, :4][:, :, :h, :w] * scale
-                flow = tmp[:, :4][:, :, :h, :w]
-                mask = tmp[:, 4:5][:, :, :h, :w]
-                conf = tmp[:, 5:6][:, :, :h, :w]
+                flow = tmp[:, :, :h, :w]
+                mask = tmp_mask[:, 0:1][:, :, :h, :w]
+                conf = tmp_mask[:, 1:2][:, :, :h, :w]
 
                 return flow, mask, conf
 
