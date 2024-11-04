@@ -1708,6 +1708,7 @@ def centered_highpass_filter(rgb_image, cutoff_distance=2):
     Returns:
         torch.Tensor: High-pass filtered image of the same shape as the input.
     """
+    '''
     n, c, h, w = rgb_image.shape
     
     # Step 1: Apply Fourier Transform along spatial dimensions
@@ -1729,6 +1730,37 @@ def centered_highpass_filter(rgb_image, cutoff_distance=2):
     freq_image_filtered = torch.fft.ifftshift(freq_image_filtered, dim=(-2, -1))
     highpass_image = torch.fft.ifft2(freq_image_filtered, dim=(-2, -1)).real  # Take the real part only
     
+    return highpass_image
+    '''
+    """
+    Apply an uncentered high-pass filter to an RGB image tensor.
+    
+    Args:
+        rgb_image (torch.Tensor): Input tensor of shape (n, 3, h, w).
+        cutoff_distance (int): Distance in pixels for low frequencies to be blocked.
+    
+    Returns:
+        torch.Tensor: High-pass filtered image of the same shape as the input.
+    """
+    n, c, h, w = rgb_image.shape
+
+    # Step 1: Apply Fourier Transform along spatial dimensions without shifting
+    freq_image = torch.fft.fft2(rgb_image, dim=(-2, -1))
+
+    # Step 2: Create a high-pass filter mask without centering
+    # Calculate distance from (0, 0) for each pixel in the frequency domain
+    x = torch.arange(h).view(-1, 1).repeat(1, w)
+    y = torch.arange(w).repeat(h, 1)
+    distance_from_corner = (x ** 2 + y ** 2).sqrt()
+    highpass_mask = (distance_from_corner > cutoff_distance).float()
+
+    # Step 3: Apply the mask to each color channel in the frequency domain
+    highpass_mask = highpass_mask.to(freq_image.device)  # Ensure mask is on the same device
+    freq_image_filtered = freq_image * highpass_mask.unsqueeze(0).unsqueeze(1)
+
+    # Step 4: Inverse Fourier Transform to return to the spatial domain
+    highpass_image = torch.fft.ifft2(freq_image_filtered, dim=(-2, -1)).real  # Take the real part only
+
     return highpass_image
 
 current_state_dict = {}
