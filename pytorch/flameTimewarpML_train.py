@@ -1783,6 +1783,7 @@ def centered_highpass_filter(rgb_image, gamma=2.4):
 
     # Expand to shape (n, c, h, w)
     checker_tensor = pattern.unsqueeze(0).unsqueeze(0).expand(n, c, h, w)
+    checker_tensor = checker_tensor.to(freq_image.device)
 
 
     # Step 1: Apply Fourier Transform along spatial dimensions
