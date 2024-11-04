@@ -2066,11 +2066,15 @@ def main():
         
         for param in flownet.module.block0.lastconv_mask.parameters():
             param.requires_grad = True
-        for param in flownet.module.block0.lastconv.parameters():
-            param.requires_grad = True
-        for param in flownet.module.block0.convblock4.parameters():
-            param.requires_grad = True
         for param in flownet.module.block0.convblock_mask.parameters():
+            param.requires_grad = True
+        for param in flownet.module.block0.lastconv_fw.parameters():
+            param.requires_grad = True
+        for param in flownet.module.block0.convblock_fw.parameters():
+            param.requires_grad = True
+        for param in flownet.module.block0.lastconv_bw.parameters():
+            param.requires_grad = True
+        for param in flownet.module.block0.convblock_bw.parameters():
             param.requires_grad = True
         for param in flownet.module.block0.conv_mask.parameters():
             param.requires_grad = True
