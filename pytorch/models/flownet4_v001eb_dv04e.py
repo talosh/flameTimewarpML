@@ -295,18 +295,18 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                 )
-                self.convblock_fw = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                self.convblock4 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
                 )
+                self.convblock_fw = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                )
                 self.convblock_bw = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
@@ -425,6 +425,8 @@ class Model:
                 feat_deep = self.convblock_deep4(tmp)
                 feat = self.convblock3(feat)
                 feat = self.mix4(feat, feat_deep)
+
+                feat = self.convblock4(feat)
 
                 feat_mask = self.conv_mask(feat)
                 feat_mask = self.attn_mask(feat_mask)
