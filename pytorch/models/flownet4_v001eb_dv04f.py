@@ -464,6 +464,8 @@ class Model:
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
 
+                print (f'img0 shape: {img0.shape} img0 dtype: {img0.dtype}')
+
                 img0 = torch.fft.fft2(img0, dim=(-2, -1))
                 img0 = torch.fft.fftshift(img0, dim=(-2, -1))
 
