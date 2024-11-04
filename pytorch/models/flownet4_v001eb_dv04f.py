@@ -464,13 +464,13 @@ class Model:
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
 
-                print (f'img0 shape: {img0.shape} img0 dtype: {img0.dtype}')
-
                 img0 = torch.fft.fft2(img0, dim=(-2, -1))
                 img0 = torch.fft.fftshift(img0, dim=(-2, -1))
+                img0 = torch.cat((img0.abs(), img0.angle()), 1)
 
                 img1 = torch.fft.fft2(img1, dim=(-2, -1))
                 img1 = torch.fft.fftshift(img1, dim=(-2, -1))
+                img1 = torch.cat((img1.abs(), img1.angle()), 1)
 
                 # img0 = torch.view_as_real(img0)
                 # simg1 = torch.view_as_real(img1)
