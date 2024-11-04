@@ -1704,7 +1704,7 @@ def main():
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
     parser.add_argument('--freeze', action='store_true', dest='freeze', default=False, help='Freeze custom hardcoded parameters')
-    parser.add_argument('--acescc', type=check_range_percent, default=49, help='Percentage of ACEScc encoded frames (default: 40))')
+    parser.add_argument('--acescc', type=check_range_percent, default=49, help='Percentage of ACEScc encoded frames (default: 49))')
     parser.add_argument('--generalize', type=check_range_percent, default=85, help='Generalization level (0 - 100) (default: 85)')
     parser.add_argument('--weight_decay', type=float, default=-1, help='AdamW weight decay (default: calculated from --generalize value)')
     parser.add_argument('--preview', type=int, default=100, help='Save preview each N steps (default: 100)')
