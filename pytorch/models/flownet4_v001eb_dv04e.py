@@ -415,6 +415,7 @@ class Model:
                 feat = self.mix4(feat, feat_deep)
 
                 feat_mask = self.conv_mask(feat)
+                feat_mask = self.attn_mask(feat_mask)
                 feat_mask = self.convblock_mask(feat_mask)
                 tmp_mask = self.lastconv_mask(feat_mask)
                 tmp_mask = torch.tanh(tmp_mask)
