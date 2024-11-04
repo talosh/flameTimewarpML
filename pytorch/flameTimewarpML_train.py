@@ -1909,7 +1909,7 @@ def main():
         flownet_uncompiled = Flownet().get_training_model()().to(torch.float32).cuda()
         flownet = torch.compile(flownet_uncompiled,mode='reduce-overhead')
     else:
-        flownet = Flownet().get_training_model()().to(device)
+        flownet = Flownet().get_training_model()().to(device=device, dtype=torch.complex64)
     
     if args.all_gpus:
         print ('Using nn.DataParallel')
@@ -2488,8 +2488,6 @@ def main():
     data_time1 = 0
     data_time2 = 0
     train_time = 0
-
-    flownet.to(torch.complex64)
 
     while True:
         # tracemalloc.start()
