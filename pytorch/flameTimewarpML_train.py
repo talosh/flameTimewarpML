@@ -1764,30 +1764,44 @@ def centered_highpass_filter(rgb_image, cutoff_distance=1):
 
     return highpass_image
     '''
+
+
     """
-    Compute a mono image from the max of real and imaginary parts of each frequency component in an RGB image.
+    Apply a scaling to each frequency component in an RGB image tensor,
+    where the lowest frequency is scaled to 0 and the highest frequency is scaled to 1.
     
     Args:
-        rgb_image (torch.Tensor): Input tensor with shape (n, 3, h, w), where values are in [0, 1].
+        rgb_image (torch.Tensor): Input tensor of shape (n, 3, h, w).
     
     Returns:
-        torch.Tensor: Mono image of shape (n, 1, h, w).
+        torch.Tensor: Frequency-scaled image of the same shape as the input.
     """
-    # Step 1: Apply the 2D Fourier Transform along the spatial dimensions for each channel
+    n, c, h, w = rgb_image.shape
+    
+    # Step 1: Apply Fourier Transform along spatial dimensions
     freq_image = torch.fft.fft2(rgb_image, dim=(-2, -1))
+    freq_image = torch.fft.fftshift(freq_image, dim=(-2, -1))  # Shift the zero-frequency component to the center
+
+    # Step 2: Calculate the distance of each frequency component from the center
+    center_x, center_y = h // 2, w // 2
+    x = torch.arange(h).view(-1, 1).repeat(1, w)
+    y = torch.arange(w).repeat(h, 1)
+    distance_from_center = ((x - center_x) ** 2 + (y - center_y) ** 2).sqrt()
     
-    # Step 2: Separate real and imaginary parts
-    real_part = freq_image.real
-    imag_part = freq_image.imag
+    # Normalize distance to the range [0, 1]
+    max_distance = distance_from_center.max()
+    distance_weight = distance_from_center / max_distance  # Now scaled from 0 (low freq) to 1 (high freq)
+    distance_weight = distance_weight.to(freq_image.device)  # Ensure the weight is on the same device as the image
     
-    # Step 3: Take the maximum of the real and imaginary parts across the color channels (dim=1)
-    max_real = real_part.max(dim=1, keepdim=True).values  # Shape (n, 1, h, w)
-    max_imag = imag_part.max(dim=1, keepdim=True).values  # Shape (n, 1, h, w)
+    # Step 3: Apply the distance weight to both real and imaginary parts of the frequency components
+    freq_image_scaled = freq_image * distance_weight.unsqueeze(0).unsqueeze(1)
+
+    # Step 4: Inverse Fourier Transform to return to spatial domain
+    freq_image_scaled = torch.fft.ifftshift(freq_image_scaled, dim=(-2, -1))
+    scaled_image = torch.fft.ifft2(freq_image_scaled, dim=(-2, -1)).real  # Take the real part only
     
-    # Step 4: Compute the mono image as the average of max real and max imaginary parts
-    mono_image = (max_real + max_imag) / 2  # Shape (n, 1, h, w)
-    
-    return mono_image
+    return scaled_image
+
 
 
 current_state_dict = {}
