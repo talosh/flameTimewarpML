@@ -2373,6 +2373,8 @@ def main():
         print (f'flownet.module.block0.attn_mask.spatial_scale {flownet.module.block0.attn_mask.spatial_scale.data}')
         print (f'flownet.module.block0.attn_mask.spatial_offset {flownet.module.block0.attn_mask.spatial_offset.data}')
 
+        for name, param in flownet.named_parameters():
+            print(name, param.requires_grad)
 
         '''
         print ()
