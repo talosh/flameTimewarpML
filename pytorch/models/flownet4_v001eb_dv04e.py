@@ -444,7 +444,7 @@ class Model:
                 flow = torch.cat((feat_fw, feat_bw), 1)
                 flow = torch.nn.functional.interpolate(flow, scale_factor=scale, mode="bicubic", align_corners=False)
 
-                flow = tmp[:, :, :h, :w]
+                flow = flow[:, :, :h, :w]
                 mask = tmp_mask[:, 0:1][:, :, :h, :w]
                 conf = tmp_mask[:, 1:2][:, :, :h, :w]
 
