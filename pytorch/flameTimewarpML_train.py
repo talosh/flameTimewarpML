@@ -1661,6 +1661,41 @@ def sinusoidal_scale_fn(x):
     # x is a fraction of the cycle's progress (0 to 1)
     return 0.5 * (1 + math.sin(math.pi * (x - 0.5)))
 
+def centered_highpass_filter(rgb_image, cutoff_ratio=0.1):
+    """
+    Apply a centered high-pass filter to an RGB image tensor.
+    
+    Args:
+        rgb_image (torch.Tensor): Input tensor of shape (n, 3, h, w).
+        cutoff_ratio (float): Proportion of low frequencies to block. Typical values are between 0.05 and 0.2.
+    
+    Returns:
+        torch.Tensor: High-pass filtered image of the same shape as the input.
+    """
+    n, c, h, w = rgb_image.shape
+    
+    # Step 1: Apply Fourier Transform along spatial dimensions
+    freq_image = torch.fft.fft2(rgb_image, dim=(-2, -1))
+    freq_image = torch.fft.fftshift(freq_image, dim=(-2, -1))  # Shift the zero-frequency component to the center
+
+    # Step 2: Create a high-pass filter mask
+    center_x, center_y = h // 2, w // 2
+    x = torch.arange(h).view(-1, 1).repeat(1, w)
+    y = torch.arange(w).repeat(h, 1)
+    distance_from_center = ((x - center_x) ** 2 + (y - center_y) ** 2).sqrt()
+    radius = min(h, w) * cutoff_ratio
+    highpass_mask = (distance_from_center > radius).float()
+    
+    # Step 3: Apply the mask to each color channel in the frequency domain
+    highpass_mask = highpass_mask.to(freq_image.device)  # Ensure mask is on the same device
+    freq_image_filtered = freq_image * highpass_mask.unsqueeze(0).unsqueeze(1)
+
+    # Step 4: Inverse Fourier Transform to return to spatial domain
+    freq_image_filtered = torch.fft.ifftshift(freq_image_filtered, dim=(-2, -1))
+    highpass_image = torch.fft.ifft2(freq_image_filtered, dim=(-2, -1)).real  # Take the real part only
+    
+    return highpass_image
+
 current_state_dict = {}
 
 def main():
@@ -2492,7 +2527,7 @@ def main():
         if step % args.preview == 1:
             rgb_source1 = img0_orig
             rgb_source2 = img2_orig
-            rgb_target = img1_orig
+            rgb_target = centered_highpass_filter(img1_orig)
             rgb_output = output_clean
             rgb_output_mask = mask.repeat_interleave(3, dim=1)
             rgb_output_conf = conf.repeat_interleave(3, dim=1)
