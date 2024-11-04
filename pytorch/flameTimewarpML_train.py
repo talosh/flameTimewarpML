@@ -2354,6 +2354,9 @@ def main():
             if param.requires_grad:
                 print(name, param.requires_grad)
 
+    for name, param in flownet.named_parameters():
+        print(name, param.requires_grad)
+
     try:
         print ()
         print (f'flownet.module.encoder.attn.channel_scale {flownet.module.encode.attn.channel_scale.data}')
@@ -2373,8 +2376,6 @@ def main():
         print (f'flownet.module.block0.attn_mask.spatial_scale {flownet.module.block0.attn_mask.spatial_scale.data}')
         print (f'flownet.module.block0.attn_mask.spatial_offset {flownet.module.block0.attn_mask.spatial_offset.data}')
 
-        for name, param in flownet.named_parameters():
-            print(name, param.requires_grad)
 
         '''
         print ()
