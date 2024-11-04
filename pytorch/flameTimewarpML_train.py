@@ -2354,9 +2354,6 @@ def main():
             if param.requires_grad:
                 print(name, param.requires_grad)
 
-    for name, param in flownet.named_parameters():
-        print(name, param)
-
     try:
         print ()
         print (f'flownet.module.encoder.attn.channel_scale {flownet.module.encode.attn.channel_scale.data}')
