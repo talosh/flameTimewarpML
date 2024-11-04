@@ -162,7 +162,7 @@ class Model:
                 self.relu = torch.nn.Mish(True)
 
             def forward(self, x):
-                x = self.cnn0(x * 2 - 1)
+                x = self.cnn0(x)
                 x = self.relu(x)
                 # x = self.attn(x)
                 x = self.cnn1(x)
