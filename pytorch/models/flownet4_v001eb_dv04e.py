@@ -190,7 +190,8 @@ class Model:
                 self.relu = torch.nn.Mish(True)
 
             def forward(self, x):
-                x = torch.cat((x, centered_highpass_filter(x)), 1)
+                hp = centered_highpass_filter(x)
+                x = torch.cat((x, ), 1)
                 x = self.cnn0(x * 2 - 1)
                 x = self.relu(x)
                 x = self.attn(x)
