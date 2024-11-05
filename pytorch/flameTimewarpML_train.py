@@ -1661,7 +1661,7 @@ def sinusoidal_scale_fn(x):
     # x is a fraction of the cycle's progress (0 to 1)
     return 0.5 * (1 + math.sin(math.pi * (x - 0.5)))
 
-def centered_highpass_filter(rgb_image, gamma=2.4):
+def centered_highpass_filter(rgb_image, gamma=1.8):
     """
     Apply a centered high-pass filter to an RGB image tensor.
     
@@ -1794,6 +1794,12 @@ def centered_highpass_filter(rgb_image, gamma=2.4):
     distance_weight = distance_weight.to(freq_image.device)  # Ensure the weight is on the same device as the image
     distance_weight = distance_weight ** (1 / gamma)
     
+    k = 10  # Controls the steepness of the curve
+    x0 = 0.5  # Midpoint where the function crosses 0.5
+
+    # Compute the S-like function using a sigmoid
+    distance_weight = 1 / (1 + torch.exp(-k * (distance_weight - x0)))
+
     # Step 3: Apply the distance weight to both real and imaginary parts of the frequency components
     freq_image_scaled = freq_image * distance_weight.unsqueeze(0).unsqueeze(1)
 
@@ -2641,7 +2647,7 @@ def main():
         if step % args.preview == 1:
             rgb_source1 = img0_orig
             rgb_source2 = img2_orig
-            rgb_target = img1_orig
+            rgb_target = centered_highpass_filter(img1_orig)
             rgb_output = output_clean
             rgb_output_mask = mask.repeat_interleave(3, dim=1)
             rgb_output_conf = conf.repeat_interleave(3, dim=1)
