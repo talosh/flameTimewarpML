@@ -191,7 +191,7 @@ class Model:
 
             def forward(self, x):
                 hp = centered_highpass_filter(x)
-                x = torch.cat((x, ), 1)
+                x = torch.cat((x, hp), 1)
                 x = self.cnn0(x * 2 - 1)
                 x = self.relu(x)
                 x = self.attn(x)
