@@ -179,6 +179,23 @@ class Model:
             # Compute the S-like function using a sigmoid
             distance_weight = 1 / (1 + torch.exp(-k * (distance_weight - x0)))
 
+            start=0.96
+            end=1.0
+            steepness=20
+            mask = (distance_weight >= start) & (distance_weight <= end)
+            distance_weight[mask] = 1 / (1 + torch.exp(steepness * (distance_weight[mask] - start) / (end - start)))
+            # Step 3: Apply the distance weight to both real and imaginary parts of the frequency components
+            freq_image_scaled = freq_image * distance_weight.unsqueeze(0).unsqueeze(1)
+
+            # Step 4: Inverse Fourier Transform to return to spatial domain
+            freq_image_scaled = torch.fft.ifftshift(freq_image_scaled, dim=(-2, -1))
+            scaled_image = torch.fft.ifft2(freq_image_scaled, dim=(-2, -1)).real  # Take the real part only
+            scaled_image = torch.max(scaled_image, dim=1, keepdim=True).values
+            # scaled_image = scaled_image ** (1 / 1.8)
+
+            return scaled_image[:, :, padding:-padding, padding:-padding]
+
+
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
