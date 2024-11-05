@@ -1803,9 +1803,8 @@ def centered_highpass_filter(rgb_image, gamma=1.8):
     start=0.96
     end=1.0
     steepness=20
-    x_normalized = (distance_weight - start) / (end - start)
-    distance_weight = 1 / (1 + torch.exp(steepness * x_normalized))
-
+    mask = (distance_weight >= start) & (distance_weight <= end)
+    distance_weight[mask] = 1 / (1 + torch.exp(steepness * (distance_weight[mask] - start) / (end - start)))
     # Step 3: Apply the distance weight to both real and imaginary parts of the frequency components
     freq_image_scaled = freq_image * distance_weight.unsqueeze(0).unsqueeze(1)
 
