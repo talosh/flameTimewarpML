@@ -1801,12 +1801,13 @@ def centered_highpass_filter(rgb_image, gamma=1.8):
     distance_weight = 1 / (1 + torch.exp(-k * (distance_weight - x0)))
 
     # Step 3: Apply the distance weight to both real and imaginary parts of the frequency components
-    freq_image_scaled = (freq_image ** gamma) * distance_weight.unsqueeze(0).unsqueeze(1)
+    freq_image_scaled = freq_image * distance_weight.unsqueeze(0).unsqueeze(1)
 
     # Step 4: Inverse Fourier Transform to return to spatial domain
     freq_image_scaled = torch.fft.ifftshift(freq_image_scaled, dim=(-2, -1))
     scaled_image = torch.fft.ifft2(freq_image_scaled, dim=(-2, -1)).real  # Take the real part only
-    
+    scaled_image = scaled_image * (1 / gamma)
+
     return scaled_image
 
 
