@@ -1815,6 +1815,7 @@ def centered_highpass_filter(rgb_image, gamma=1.8):
     # Step 4: Inverse Fourier Transform to return to spatial domain
     freq_image_scaled = torch.fft.ifftshift(freq_image_scaled, dim=(-2, -1))
     scaled_image = torch.fft.ifft2(freq_image_scaled, dim=(-2, -1)).real  # Take the real part only
+    scaled_image = torch.max(scaled_image, dim=1, keepdim=True).values
     # scaled_image = scaled_image ** (1 / 1.8)
 
     return scaled_image[:, :, padding:-padding, padding:-padding]
