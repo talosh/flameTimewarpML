@@ -1821,7 +1821,6 @@ def centered_highpass_filter(rgb_image, gamma=1.8):
     return scaled_image[:, :, padding:-padding, padding:-padding]
 
 
-
 current_state_dict = {}
 
 def main():
@@ -2214,8 +2213,8 @@ def main():
 
         # for param in flownet.module.encode.parameters():
         #    param.requires_grad = False
-        #for param in flownet.module.block0.parameters():
-        #    param.requires_grad = False     
+        for param in flownet.module.block0.parameters():
+            param.requires_grad = False     
         for param in flownet.module.block1.parameters():
             param.requires_grad = False
         for param in flownet.module.block2.parameters():
@@ -2658,7 +2657,7 @@ def main():
         if step % args.preview == 1:
             rgb_source1 = img0_orig
             rgb_source2 = img2_orig
-            rgb_target = centered_highpass_filter(img1_orig).repeat_interleave(3, dim=1)
+            rgb_target = img1_orig
             rgb_output = output_clean
             rgb_output_mask = mask.repeat_interleave(3, dim=1)
             rgb_output_conf = conf.repeat_interleave(3, dim=1)

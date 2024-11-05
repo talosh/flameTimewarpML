@@ -151,10 +151,38 @@ class Model:
 
                 return x
 
+        def centered_highpass_filter(rgb_image, gamma=1.8):
+            padding = 32
+
+            rgb_image = torch.nn.functional.pad(rgb_image, (padding, padding, padding, padding), mode='reflect')
+            n, c, h, w = rgb_image.shape
+
+            # Step 1: Apply Fourier Transform along spatial dimensions
+            freq_image = torch.fft.fft2(rgb_image, dim=(-2, -1))
+            freq_image = torch.fft.fftshift(freq_image, dim=(-2, -1))  # Shift the zero-frequency component to the center
+
+            # Step 2: Calculate the distance of each frequency component from the center
+            center_x, center_y = h // 2, w // 2
+            x = torch.arange(h).view(-1, 1).repeat(1, w)
+            y = torch.arange(w).repeat(h, 1)
+            distance_from_center = ((x - center_x) ** 2 + (y - center_y) ** 2).sqrt()
+            
+            # Normalize distance to the range [0, 1]
+            max_distance = distance_from_center.max()
+            distance_weight = distance_from_center / max_distance  # Now scaled from 0 (low freq) to 1 (high freq)
+            distance_weight = distance_weight.to(freq_image.device)  # Ensure the weight is on the same device as the image
+            distance_weight = distance_weight ** (1 / gamma)
+            
+            k = 11  # Controls the steepness of the curve
+            x0 = 0.5  # Midpoint where the function crosses 0.5
+
+            # Compute the S-like function using a sigmoid
+            distance_weight = 1 / (1 + torch.exp(-k * (distance_weight - x0)))
+
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
-                self.cnn0 = torch.nn.Conv2d(3, 32, 3, 2, 1)
+                self.cnn0 = torch.nn.Conv2d(4, 32, 3, 2, 1)
                 self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
@@ -162,6 +190,7 @@ class Model:
                 self.relu = torch.nn.Mish(True)
 
             def forward(self, x):
+                x = torch.cat(x, centered_highpass_filter(x))
                 x = self.cnn0(x * 2 - 1)
                 x = self.relu(x)
                 x = self.attn(x)
