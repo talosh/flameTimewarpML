@@ -1794,7 +1794,7 @@ def centered_highpass_filter(rgb_image, gamma=1.8):
     distance_weight = distance_weight.to(freq_image.device)  # Ensure the weight is on the same device as the image
     distance_weight = distance_weight ** (1 / gamma)
     
-    k = 10  # Controls the steepness of the curve
+    k = 11  # Controls the steepness of the curve
     x0 = 0.5  # Midpoint where the function crosses 0.5
 
     # Compute the S-like function using a sigmoid
@@ -1806,7 +1806,7 @@ def centered_highpass_filter(rgb_image, gamma=1.8):
     # Step 4: Inverse Fourier Transform to return to spatial domain
     freq_image_scaled = torch.fft.ifftshift(freq_image_scaled, dim=(-2, -1))
     scaled_image = torch.fft.ifft2(freq_image_scaled, dim=(-2, -1)).real  # Take the real part only
-    scaled_image = scaled_image * (1 / gamma)
+    scaled_image = scaled_image * (1 / 2.6)
 
     return scaled_image
 
