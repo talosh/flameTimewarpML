@@ -1776,6 +1776,10 @@ def centered_highpass_filter(rgb_image, gamma=1.8):
     Returns:
         torch.Tensor: Frequency-scaled image of the same shape as the input.
     """
+    
+    padding = 32
+
+    rgb_image = torch.nn.functional.pad(rgb_image, (padding, padding, padding, padding), mode='reflect')
     n, c, h, w = rgb_image.shape
 
     # Step 1: Apply Fourier Transform along spatial dimensions
@@ -1813,7 +1817,7 @@ def centered_highpass_filter(rgb_image, gamma=1.8):
     scaled_image = torch.fft.ifft2(freq_image_scaled, dim=(-2, -1)).real  # Take the real part only
     scaled_image = scaled_image ** (1 / 1.8)
 
-    return scaled_image
+    return scaled_image[:, :, padding:-padding, padding:-padding]
 
 
 
