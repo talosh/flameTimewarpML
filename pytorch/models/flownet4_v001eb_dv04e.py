@@ -329,8 +329,12 @@ class Model:
 
                 feat_fw = self.convblock_fw(feat)
                 flow_fw = self.lastconv_fw(feat_fw)
+                flow_fw = torch.tanh(flow_fw)
+
                 feat_bw = self.convblock_bw(feat)
                 flow_bw = self.lastconv_bw(feat_bw)
+                flow_bw = torch.tanh(flow_bw)
+
                 flow = torch.cat((flow_fw, flow_bw), 1)
                 flow = torch.nn.functional.interpolate(flow, scale_factor=scale, mode="bicubic", align_corners=False)
 
