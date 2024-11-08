@@ -508,7 +508,6 @@ class Model:
                 feat_mask = self.attn_mask(feat_mask)
                 feat_mask = self.convblock_mask(feat_mask)
                 tmp_mask = self.lastconv_mask(feat_mask)
-                tmp_mask = torch.tanh(tmp_mask)
                 tmp_mask = torch.nn.functional.interpolate(tmp_mask, scale_factor=scale, mode="bicubic", align_corners=False)
 
                 feat_fw = self.convblock_fw(feat)
@@ -555,11 +554,11 @@ class Model:
                 # step training
 
                 # stage 1
-                # scale[0] = 1
+                scale[0] = 1
 
                 # stage 2
-                scale[0] = scale[2]
-                scale[1] = 1
+                # scale[0] = scale[2]
+                # scale[1] = 1
 
                 # stage 3
                 # scale[0] = scale[2]
@@ -582,14 +581,14 @@ class Model:
                 flow_list[0][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 flow_list[0][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[0][:, 3:4, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
-                mask_list[0] = (mask + 1) / 2.0
-                conf_list[0] = (conf + 1) / 2.0
+                mask_list[0] = (torch.tanh(mask) + 1) / 2.0
+                conf_list[0] = (torch.tanh(conf) + 1) / 2.0
 
                 # mask_list[0] = torch.sigmoid(mask)
                 # conf_list[0] = torch.sigmoid(conf)
                 merged[0] = warp_norm(img0, flow[:, :2]) * mask_list[0] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
-                '''
+                # '''
                 # step training stage 1
                 flow_list[4] = flow_list[0]
                 mask_list[4] = mask_list[0]
@@ -597,7 +596,7 @@ class Model:
                 merged[4] = merged[0]
 
                 return flow_list, mask_list, conf_list, merged
-                '''
+                # '''
 
                 # back to old non-normalized blocks
                 flow = flow_list[0]
@@ -628,8 +627,8 @@ class Model:
                 conf_list[1] = (conf + 1) / 2.0
                 '''
 
-                mask_list[1] = torch.sigmoid((mask + 1) / 2.0)
-                conf_list[1] = torch.sigmoid((conf + 1) / 2.0)
+                mask_list[1] = (torch.tanh(mask) + 1) / 2.0
+                conf_list[1] = (torch.tanh(conf) + 1) / 2.0
                 merged[1] = warp_norm(img0, flow[:, :2]) * mask_list[1] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
                 # '''
