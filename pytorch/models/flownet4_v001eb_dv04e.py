@@ -443,7 +443,7 @@ class Model:
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
 
                 pvalue = scale * self.maxdepth
-                pvalue = int(round(pvalue / self.maxdepth) * self.maxdepth)
+                pvalue = int(round(pvalue / self.maxdepth)) * self.maxdepth
                 _, _, h, w = img0.shape
                 ph = ((h - 1) // pvalue + 1) * pvalue
                 pw = ((w - 1) // pvalue + 1) * pvalue
