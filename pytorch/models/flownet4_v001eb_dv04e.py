@@ -613,7 +613,7 @@ class Model:
                     scale=scale[1]
                 )
 
-                # conf = conf + conf_d
+                conf = conf + conf_d
                 flow = flow + flow_d
                 flow_list[1] = flow.clone()
                 '''
