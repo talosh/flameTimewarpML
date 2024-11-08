@@ -554,11 +554,11 @@ class Model:
                 # step training
 
                 # stage 1
-                scale[0] = 1
+                # scale[0] = 1
 
                 # stage 2
-                # scale[0] = scale[2]
-                # scale[1] = 1
+                scale[0] = scale[3]
+                scale[1] = 1
 
                 # stage 3
                 # scale[0] = scale[2]
@@ -588,7 +588,7 @@ class Model:
                 # conf_list[0] = torch.sigmoid(conf)
                 merged[0] = warp_norm(img0, flow[:, :2]) * mask_list[0] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
-                # '''
+                '''
                 # step training stage 1
                 flow_list[4] = flow_list[0]
                 mask_list[4] = mask_list[0]
@@ -596,12 +596,10 @@ class Model:
                 merged[4] = merged[0]
 
                 return flow_list, mask_list, conf_list, merged
-                # '''
+                '''
 
                 # back to old non-normalized blocks
                 flow = flow_list[0]
-                # mask = mask_list[0]
-                # conf = conf_list[0]
 
                 # refine step 1
                 flow_d, mask, conf_d = self.block1(
