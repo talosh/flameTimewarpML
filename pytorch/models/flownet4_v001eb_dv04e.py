@@ -561,7 +561,7 @@ class Model:
                 # scale[0] = 1
 
                 # stage 2
-                scale[0] = 1 # scale[3]
+                scale[0] = scale[3]
                 scale[1] = 1
 
                 # stage 3
