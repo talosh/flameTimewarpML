@@ -272,17 +272,17 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                 )                
                 self.convblock_fw = torch.nn.Sequential(
-                    ResConv(c),
                     ResConv(c),
                 )
                 self.convblock_bw = torch.nn.Sequential(
                     ResConv(c),
-                    ResConv(c),
                 )
                 self.convblock_mask = torch.nn.Sequential(
-                    ResConv(c),
                     ResConv(c),
                 )
                 self.lastconv_mask = torch.nn.Sequential(
