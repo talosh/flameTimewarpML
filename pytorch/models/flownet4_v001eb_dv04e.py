@@ -564,7 +564,7 @@ class Model:
                 # scale[0] = 1
 
                 # stage 2
-                scale[0] = random.choise([2.5, 2, 1.5, 1]) # scale[1]
+                scale[0] = random.uniform(1, 2.5) # scale[1]
                 scale[1] = 1
 
                 # stage 3
