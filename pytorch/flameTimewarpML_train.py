@@ -785,7 +785,7 @@ def get_dataset(
 
             return resized_tensor
 
-        def getimg(self, index):
+        def getimg(self, index):        
             if self.repeat_count == 0:
                 new_data = self.frames_queue.get()
                 self.train_data_index = new_data['index']
@@ -1820,7 +1820,6 @@ def centered_highpass_filter(rgb_image, gamma=1.8):
 
     return scaled_image[:, :, padding:-padding, padding:-padding]
 
-
 current_state_dict = {}
 
 def main():
@@ -1859,7 +1858,6 @@ def main():
     parser.add_argument('--eval_keep_all', action='store_true', dest='eval_keep_all', default=False, help='Keep eval results for each eval step')
     parser.add_argument('--eval_folder', type=str, default=None, help='Folder with clips for evaluation')
     parser.add_argument('--eval_half', action='store_true', dest='eval_half', default=False, help='Evaluate in half-precision')
-
 
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
@@ -2062,7 +2060,6 @@ def main():
 
     if args.state_file:
         trained_model_path = args.state_file
-
         try:
             checkpoint = torch.load(trained_model_path, map_location=device)
             print('loaded previously saved model checkpoint')
@@ -2211,12 +2208,12 @@ def main():
             param.requires_grad = False
         '''
 
-        # for param in flownet.module.encode.parameters():
-        #    param.requires_grad = False
-        # for param in flownet.module.block0.parameters():
-        #    param.requires_grad = False     
-        for param in flownet.module.block1.parameters():
+        for param in flownet.module.encode.parameters():
             param.requires_grad = False
+        for param in flownet.module.block0.parameters():
+            param.requires_grad = False     
+        # for param in flownet.module.block1.parameters():
+        #    param.requires_grad = False
         for param in flownet.module.block2.parameters():
             param.requires_grad = False
         for param in flownet.module.block3.parameters():
