@@ -9,6 +9,8 @@
 # Channles are 192, 96, 64 for deep and 48, 32 for standart
 # Head feature encoder added attention block
 
+import random
+
 class Model:
 
     info = {
@@ -329,11 +331,11 @@ class Model:
 
                 feat_fw = self.convblock_fw(feat)
                 flow_fw = self.lastconv_fw(feat_fw)
-                flow_fw = torch.tanh(flow_fw)
+                # flow_fw = torch.tanh(flow_fw)
 
                 feat_bw = self.convblock_bw(feat)
                 flow_bw = self.lastconv_bw(feat_bw)
-                flow_bw = torch.tanh(flow_bw)
+                # flow_bw = torch.tanh(flow_bw)
 
                 flow = torch.cat((flow_fw, flow_bw), 1)
                 flow = torch.nn.functional.interpolate(flow, scale_factor=scale, mode="bicubic", align_corners=False)
@@ -516,16 +518,16 @@ class Model:
 
                 feat_fw = self.convblock_fw(feat)
                 feat_fw = self.lastconv_fw(feat_fw)
-                feat_fw = torch.tanh(feat_fw)
+                # feat_fw = torch.tanh(feat_fw)
 
                 feat_bw = self.convblock_bw(feat)
                 feat_bw = self.lastconv_bw(feat_bw)
-                feat_bw = torch.tanh(feat_bw)
+                # feat_bw = torch.tanh(feat_bw)
 
                 flow = torch.cat((feat_fw, feat_bw), 1)
                 flow = torch.nn.functional.interpolate(flow, scale_factor=scale, mode="bicubic", align_corners=False)
 
-                flow = flow[:, :, :h, :w]
+                flow = flow[:, :, :h, :w] * scale
                 mask = tmp_mask[:, 0:1][:, :, :h, :w]
                 conf = tmp_mask[:, 1:2][:, :, :h, :w]
 
@@ -561,7 +563,7 @@ class Model:
                 # scale[0] = 1
 
                 # stage 2
-                scale[0] = 1 # scale[1]
+                scale[0] = random.choise([5, 3, 2, 1]) # scale[1]
                 scale[1] = 1
 
                 # stage 3
@@ -581,13 +583,13 @@ class Model:
                     )
                 
                 flow_list[0] = flow.detach().clone()
-                flow_list[0][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
-                flow_list[0][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
-                flow_list[0][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
-                flow_list[0][:, 3:4, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
+                # flow_list[0][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
+                # flow_list[0][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
+                # flow_list[0][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
+                # flow_list[0][:, 3:4, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 mask_list[0] = (torch.tanh(mask) + 1) / 2.0
                 conf_list[0] = (torch.tanh(conf) + 1) / 2.0
-                merged[0] = warp_norm(img0, flow[:, :2]) * mask_list[0] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[0])
+                merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
                 # '''
                 # step training stage 1
