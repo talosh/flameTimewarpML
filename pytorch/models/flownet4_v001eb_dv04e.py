@@ -611,9 +611,9 @@ class Model:
                     scale=scale[1]
                 )
 
-                # mask = mask + mask_d
-                # conf = conf + conf_d
-                # flow = flow + flow_d
+                mask = mask + mask_d
+                conf = conf + conf_d
+                flow = flow + flow_d
                 flow_list[1] = flow.detach().clone()
                 flow_list[1][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[1][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
