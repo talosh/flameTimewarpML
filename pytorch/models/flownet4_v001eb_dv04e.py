@@ -601,8 +601,8 @@ class Model:
 
                 # back to old non-normalized blocks
                 flow = flow_list[0]
-                mask = mask_list[0]
-                conf = conf_list[0]
+                # mask = mask_list[0]
+                # conf = conf_list[0]
 
                 # refine step 1
                 flow_d, mask, conf_d = self.block1(
@@ -618,7 +618,6 @@ class Model:
 
                 # conf = conf + conf_d
                 flow = flow + flow_d
-
                 flow_list[1] = flow.clone()
                 '''
                 flow_list[1][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
@@ -629,8 +628,8 @@ class Model:
                 conf_list[1] = (conf + 1) / 2.0
                 '''
 
-                mask_list[1] = torch.sigmoid(mask)
-                conf_list[1] = torch.sigmoid(conf)
+                mask_list[1] = torch.sigmoid((mask + 1) / 2.0)
+                conf_list[1] = torch.sigmoid((conf + 1) / 2.0)
                 merged[1] = warp_norm(img0, flow[:, :2]) * mask_list[1] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
                 # '''
