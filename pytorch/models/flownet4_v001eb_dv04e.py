@@ -602,7 +602,7 @@ class Model:
                 flow = flow_list[0]
 
                 # refine step 1
-                flow_d, mask, conf_d = self.block1(
+                flow_d, mask_d, conf_d = self.block1(
                     img0, 
                     img1,
                     f0,
@@ -613,6 +613,7 @@ class Model:
                     scale=scale[1]
                 )
 
+                mask = mask + mask_d
                 conf = conf + conf_d
                 flow = flow + flow_d
                 flow_list[1] = flow.clone()
