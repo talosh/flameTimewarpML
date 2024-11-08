@@ -272,17 +272,37 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                )                
+                self.convblock_fw = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
                 )
+                self.convblock_bw = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                )
+                self.convblock_mask = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                )
+                self.lastconv_mask = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c//3, 2*4, 4, 2, 1),
+                    torch.nn.PixelShuffle(2)
+                )
+                self.lastconv_fw = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, 2*4, 4, 2, 1),
+                    torch.nn.PixelShuffle(2)
+                )
+                self.lastconv_bw = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, 2*4, 4, 2, 1),
+                    torch.nn.PixelShuffle(2)
+                )
+                '''
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, 6*4, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
-                self.noise_level = torch.nn.Parameter(torch.full((1, 1, 1, 1), 1e-4), requires_grad=True)
+                '''
                 self.maxdepth = 4
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
@@ -306,11 +326,21 @@ class Model:
 
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
-                tmp = self.lastconv(feat)
-                tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
-                flow = tmp[:, :4][:, :, :h, :w] * scale
-                mask = tmp[:, 4:5][:, :, :h, :w]
-                conf = tmp[:, 5:6][:, :, :h, :w]
+
+                feat_fw = self.convblock_fw(feat)
+                flow_fw = self.lastconv_fw(feat_fw)
+                feat_bw = self.convblock_bw(feat)
+                flow_bw = self.lastconv_bw(feat_bw)
+                flow = torch.cat((flow_fw, flow_bw), 1)
+                flow = torch.nn.functional.interpolate(flow, scale_factor=scale, mode="bicubic", align_corners=False)
+
+                feat_mask = self.convblock_fw(feat)
+                tmp_mask = self.lastconv_fw(feat_mask)
+                tmp_mask = torch.nn.functional.interpolate(tmp_mask, scale_factor=scale, mode="bilinear", align_corners=False)
+
+                flow = flow[:, :, :h, :w] * scale
+                mask = tmp_mask[:, 0:1][:, :, :h, :w]
+                conf = tmp_mask[:, 1:2][:, :, :h, :w]
                 return flow, mask, conf
 
         class FlownetDeepSingleHead(Module):
