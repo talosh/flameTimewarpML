@@ -2120,6 +2120,7 @@ def main():
         current_epoch = 0
         preview_index = 0
     
+    '''
     if args.onecycle != -1:
         try:
             optimizer_flownet.load_state_dict(checkpoint['optimizer_flownet_state_dict'])
@@ -2159,6 +2160,9 @@ def main():
                         scale_fn=sinusoidal_scale_fn,  # Custom sinusoidal function
                         scale_mode='cycle'  # Apply scaling once per cycle
                     )
+    '''
+
+    scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, 'min', patience=10)
 
     # LPIPS Init
 
@@ -2595,6 +2599,7 @@ def main():
 
         optimizer_flownet.step()
 
+        '''
         try:
             scheduler_flownet.step()
         except Exception as e:
@@ -2618,14 +2623,15 @@ def main():
                         )
             
             # current_lr = float(optimizer_flownet.param_groups[0]["lr"])
+        '''
             
-            '''
-            scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimizer_flownet,
-                T_max=pulse_period, 
-                eta_min = lr/10 - (( lr / 100 ) * pulse_dive)
-                )
-            '''
+        '''
+        scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer_flownet,
+            T_max=pulse_period, 
+            eta_min = lr/10 - (( lr / 100 ) * pulse_dive)
+            )
+        '''
 
         train_time = time.time() - time_stamp
         time_stamp = time.time()
@@ -2856,6 +2862,7 @@ def main():
             avg_lpips = 0
             epoch = epoch + 1
             batch_idx = 0
+            scheduler_flownet.step(avg_l1)
             
             while  ( idx + 1 ) == len(dataset):
                 img0, img1, img2, ratio, idx, current_desc = dataset[batch_idx]
