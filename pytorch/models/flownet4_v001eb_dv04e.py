@@ -450,12 +450,12 @@ class Model:
                 tenHorizontal = torch.linspace(-1.0, 1.0, img0.shape[3]).view(1, 1, 1, img0.shape[3]).expand(img0.shape[0], -1, img0.shape[2], -1)
                 tenVertical = torch.linspace(-1.0, 1.0, img0.shape[2]).view(1, 1, img0.shape[2], 1).expand(img0.shape[0], -1, -1, img0.shape[3])
                 tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=img0.device, dtype=img0.dtype)
-                # tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
-                # timestep = torch.nn.functional.pad(timestep * 2 - 1, padding, mode='replicate')
+                tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
+                timestep = torch.nn.functional.pad(timestep * 2 - 1, padding, mode='replicate')
 
                 if flow is None:
                     x = torch.cat((img0 * 2 - 1, img1 * 2 - 1, f0, f1), 1)
-                    # x = torch.nn.functional.pad(x, padding)
+                    x = torch.nn.functional.pad(x, padding)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bicubic", align_corners=False)
                     y = torch.cat((timestep, tenGrid), 1)
                     y = torch.nn.functional.interpolate(y, scale_factor= 1. / scale, mode="bicubic", align_corners=False)
@@ -467,12 +467,12 @@ class Model:
                     warped_f1 = warp_norm(f1, flow[:, 2:4])
                     
                     x = torch.cat((warped_img0 * 2 - 1, warped_img1 * 2 - 1, warped_f0, warped_f1), 1)
-                    # x = torch.nn.functional.pad(x, padding)
+                    x = torch.nn.functional.pad(x, padding)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bicubic", align_corners=False)
 
-                    # flow = torch.nn.functional.pad(flow, padding)
+                    flow = torch.nn.functional.pad(flow, padding)
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) # * 1. / scale
-                    # mask = torch.nn.functional.pad(mask * 2 - 1, padding)
+                    mask = torch.nn.functional.pad(mask * 2 - 1, padding)
                     y = torch.cat((timestep, mask, tenGrid), 1)
                     y = torch.nn.functional.interpolate(y, scale_factor= 1. / scale, mode="bicubic", align_corners=False)
                     y = torch.cat((y, flow), 1)
