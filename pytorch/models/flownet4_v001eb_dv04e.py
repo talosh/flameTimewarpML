@@ -428,16 +428,16 @@ class Model:
                 self.revmix1 = ResConvRevMix(c, cd)
                 self.revmix2 = ResConvRevMix(c, cd)
                 self.lastconv_mask = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c//3, 2*4, 4, 2, 1),
-                    torch.nn.PixelShuffle(2)
+                    torch.nn.Upsample(scale_factor=4, mode='bilinear'),
+                    torch.nn.Conv2d(c//3, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
                 )
                 self.lastconv_fw = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 2*4, 4, 2, 1),
-                    torch.nn.PixelShuffle(2)
+                    torch.nn.Upsample(scale_factor=4, mode='bilinear'),
+                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
                 )
                 self.lastconv_bw = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 2*4, 4, 2, 1),
-                    torch.nn.PixelShuffle(2)
+                    torch.nn.Upsample(scale_factor=4, mode='bilinear'),
+                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
                 )
                 self.maxdepth = 8
 
