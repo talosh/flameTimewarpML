@@ -481,7 +481,7 @@ class Model:
                     # x = torch.cat((x, flow), 1)
 
                 # '''
-                spvalue = self.maxdepth * 3
+                spvalue = self.maxdepth * 4
                 _, _, sh, sw = x.shape
                 sph = ((sh - 1) // spvalue + 1) * spvalue
                 spw = ((sw - 1) // spvalue + 1) * spvalue
