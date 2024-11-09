@@ -485,8 +485,8 @@ class Model:
                 sph = ((sh - 1) // spvalue + 1) * spvalue
                 spw = ((sw - 1) // spvalue + 1) * spvalue
                 spadding = (0, spw - sw, 0, sph - sh)
-                x = torch.nn.functional.pad(x, spadding, mode='replicate')
-                y = torch.nn.functional.pad(y, spadding, mode='replicate')
+                x = torch.nn.functional.pad(x, spadding)
+                y = torch.nn.functional.pad(y, spadding)
                 # '''
 
                 feat = self.conv0att(x)
