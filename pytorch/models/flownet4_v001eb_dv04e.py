@@ -443,7 +443,7 @@ class Model:
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
                 n, c, h, w = img0.shape
-                sh, sw = h * (1 / scale), w * (1 / scale)
+                sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw)
