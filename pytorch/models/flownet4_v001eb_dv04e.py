@@ -479,6 +479,7 @@ class Model:
 
                     # x = torch.cat((x, flow), 1)
 
+                '''
                 spvalue = self.maxdepth
                 _, _, sh, sw = x.shape
                 sph = ((sh - 1) // spvalue + 1) * spvalue
@@ -486,6 +487,7 @@ class Model:
                 spadding = (0, spw - sw, 0, sph - sh)
                 x = torch.nn.functional.pad(x, spadding)
                 y = torch.nn.functional.pad(y, spadding)
+                '''
 
                 feat = self.conv0att(x)
                 feat = self.attn(feat)
