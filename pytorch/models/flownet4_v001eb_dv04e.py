@@ -572,7 +572,7 @@ class Model:
                 # scale[0] = 1
 
                 # stage 2
-                scale[0] = random.randint(1, 5) # scale[1]
+                scale[0] = 1 # random.uniform(0.8, 1) # scale[1]
                 scale[1] = 1
 
                 # stage 3
