@@ -442,7 +442,7 @@ class Model:
                 self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
-                pvalue = math.ceil(scale * self.maxdepth)
+                pvalue = scale * self.maxdepth
                 _, _, h, w = img0.shape
                 ph = ((h - 1) // pvalue + 1) * pvalue
                 pw = ((w - 1) // pvalue + 1) * pvalue
@@ -480,7 +480,7 @@ class Model:
 
                     # x = torch.cat((x, flow), 1)
 
-                # '''
+                '''
                 spvalue = self.maxdepth * 64
                 _, _, sh, sw = x.shape
                 sph = ((sh - 1) // spvalue + 1) * spvalue
@@ -488,7 +488,7 @@ class Model:
                 spadding = (0, spw - sw, 0, sph - sh)
                 x = torch.nn.functional.pad(x, spadding)
                 y = torch.nn.functional.pad(y, spadding)
-                # '''
+                '''
 
                 feat = self.conv0att(x)
                 feat = self.attn(feat)
@@ -536,8 +536,8 @@ class Model:
 
                 flow = torch.cat((feat_fw, feat_bw), 1)
 
-                tmp_mask = torch.nn.functional.interpolate(tmp_mask[:, :, :sh, :sw], scale_factor=scale, mode="bicubic", align_corners=False)
-                flow = torch.nn.functional.interpolate(flow[:, :, :sh, :sw], scale_factor=scale, mode="bicubic", align_corners=False)
+                tmp_mask = torch.nn.functional.interpolate(tmp_mask, scale_factor=scale, mode="bicubic", align_corners=False)
+                flow = torch.nn.functional.interpolate(flow, scale_factor=scale, mode="bicubic", align_corners=False)
 
                 flow = flow[:, :, :h, :w] # * scale
                 mask = tmp_mask[:, 0:1][:, :, :h, :w]
