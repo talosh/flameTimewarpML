@@ -441,8 +441,7 @@ class Model:
                 self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
-
-                pvalue = scale * self.maxdepth
+                pvalue = self.maxdepth
                 _, _, h, w = img0.shape
                 ph = ((h - 1) // pvalue + 1) * pvalue
                 pw = ((w - 1) // pvalue + 1) * pvalue
@@ -451,12 +450,12 @@ class Model:
                 tenHorizontal = torch.linspace(-1.0, 1.0, img0.shape[3]).view(1, 1, 1, img0.shape[3]).expand(img0.shape[0], -1, img0.shape[2], -1)
                 tenVertical = torch.linspace(-1.0, 1.0, img0.shape[2]).view(1, 1, img0.shape[2], 1).expand(img0.shape[0], -1, -1, img0.shape[3])
                 tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=img0.device, dtype=img0.dtype)
-                tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
-                timestep = torch.nn.functional.pad(timestep * 2 - 1, padding, mode='replicate')
+                # tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
+                # timestep = torch.nn.functional.pad(timestep * 2 - 1, padding, mode='replicate')
 
                 if flow is None:
                     x = torch.cat((img0 * 2 - 1, img1 * 2 - 1, f0, f1), 1)
-                    x = torch.nn.functional.pad(x, padding)
+                    # x = torch.nn.functional.pad(x, padding)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bicubic", align_corners=False)
                     y = torch.cat((timestep, tenGrid), 1)
                     y = torch.nn.functional.interpolate(y, scale_factor= 1. / scale, mode="bicubic", align_corners=False)
@@ -468,17 +467,25 @@ class Model:
                     warped_f1 = warp_norm(f1, flow[:, 2:4])
                     
                     x = torch.cat((warped_img0 * 2 - 1, warped_img1 * 2 - 1, warped_f0, warped_f1), 1)
-                    x = torch.nn.functional.pad(x, padding)
+                    # x = torch.nn.functional.pad(x, padding)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bicubic", align_corners=False)
 
-                    flow = torch.nn.functional.pad(flow, padding)
-                    flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
-                    mask = torch.nn.functional.pad(mask * 2 - 1, padding)
+                    # flow = torch.nn.functional.pad(flow, padding)
+                    flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) # * 1. / scale
+                    # mask = torch.nn.functional.pad(mask * 2 - 1, padding)
                     y = torch.cat((timestep, mask, tenGrid), 1)
                     y = torch.nn.functional.interpolate(y, scale_factor= 1. / scale, mode="bicubic", align_corners=False)
                     y = torch.cat((y, flow), 1)
 
                     # x = torch.cat((x, flow), 1)
+
+                spvalue = self.maxdepth
+                _, _, sh, sw = x.shape
+                sph = ((sh - 1) // spvalue + 1) * spvalue
+                spw = ((sw - 1) // spvalue + 1) * spvalue
+                spadding = (0, spw - sw, 0, sph - sh)
+                x = torch.nn.functional.pad(x, spadding)
+                y = torch.nn.functional.pad(y, spadding)
 
                 feat = self.conv0att(x)
                 feat = self.attn(feat)
@@ -515,20 +522,21 @@ class Model:
                 feat_mask = self.attn_mask(feat_mask)
                 feat_mask = self.convblock_mask(feat_mask)
                 tmp_mask = self.lastconv_mask(feat_mask)
-                tmp_mask = torch.nn.functional.interpolate(tmp_mask, scale_factor=scale, mode="bicubic", align_corners=False)
 
                 feat_fw = self.convblock_fw(feat)
                 feat_fw = self.lastconv_fw(feat_fw)
-                # feat_fw = torch.tanh(feat_fw)
+                feat_fw = torch.tanh(feat_fw)
 
                 feat_bw = self.convblock_bw(feat)
                 feat_bw = self.lastconv_bw(feat_bw)
-                # feat_bw = torch.tanh(feat_bw)
+                feat_bw = torch.tanh(feat_bw)
 
                 flow = torch.cat((feat_fw, feat_bw), 1)
-                flow = torch.nn.functional.interpolate(flow, scale_factor=scale, mode="bicubic", align_corners=False)
 
-                flow = flow[:, :, :h, :w] * scale
+                tmp_mask = torch.nn.functional.interpolate(tmp_mask[:, :, :sh, :sw], scale_factor=scale, mode="bicubic", align_corners=False)
+                flow = torch.nn.functional.interpolate(flow[:, :, :sh, :sw], scale_factor=scale, mode="bicubic", align_corners=False)
+
+                flow = flow[:, :, :h, :w] # * scale
                 mask = tmp_mask[:, 0:1][:, :, :h, :w]
                 conf = tmp_mask[:, 1:2][:, :, :h, :w]
 
@@ -584,13 +592,13 @@ class Model:
                     )
                 
                 flow_list[0] = flow.detach().clone()
-                # flow_list[0][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
-                # flow_list[0][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
-                # flow_list[0][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
-                # flow_list[0][:, 3:4, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
+                flow_list[0][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
+                flow_list[0][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
+                flow_list[0][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
+                flow_list[0][:, 3:4, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 mask_list[0] = (torch.tanh(mask) + 1) / 2.0
                 conf_list[0] = (torch.tanh(conf) + 1) / 2.0
-                merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
+                merged[0] = warp_norm(img0, flow[:, :2]) * mask_list[0] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
                 # '''
                 # step training stage 1
