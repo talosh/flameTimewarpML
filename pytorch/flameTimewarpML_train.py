@@ -2218,12 +2218,12 @@ def main():
             param.requires_grad = False     
         #for param in flownet.module.block1.parameters():
         #    param.requires_grad = False
-        for param in flownet.module.block2.parameters():
-            param.requires_grad = False
-        for param in flownet.module.block3.parameters():
-            param.requires_grad = False
-        for param in flownet.module.block4.parameters():
-            param.requires_grad = False
+        # for param in flownet.module.block2.parameters():
+        #    param.requires_grad = False
+        #for param in flownet.module.block3.parameters():
+        #    param.requires_grad = False
+        #for param in flownet.module.block4.parameters():
+        #    param.requires_grad = False
         
         '''
         for param in flownet.module.block0.convblock4.parameters():

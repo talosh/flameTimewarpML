@@ -572,8 +572,6 @@ class Model:
                 scale[1] = random.uniform(scale[1], scale[2])
                 scale[2] = random.uniform(scale[2], scale[3])
                 scale[3] = random.uniform(scale[1], 1)
-                scale[4] = 1
-
 
                 flow, mask, conf = self.block0(
                     img0, 
