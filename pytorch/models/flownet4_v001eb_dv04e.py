@@ -638,11 +638,6 @@ class Model:
                 return flow_list, mask_list, conf_list, merged
                 '''
 
-                # back to old non-normalized blocks
-                flow = flow_list[1]
-                mask = mask_list[1]
-                conf = conf_list[1]
-
                 # refine step 2
                 flow_d, mask, conf_d = self.block2(
                     img0, 
