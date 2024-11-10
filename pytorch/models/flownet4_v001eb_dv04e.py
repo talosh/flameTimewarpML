@@ -538,9 +538,9 @@ class Model:
                 super().__init__()
                 self.block0 = FlownetDeepSingleHead(23, c=192)
                 self.block1 = FlownetDeepSingleHead(28, c=96) # Flownet(28, c=96)
-                self.block2 = torch.nn.Identity() # Flownet(28, c=64)
-                self.block3 = torch.nn.Identity() # Flownet(28, c=48)
-                self.block4 = torch.nn.Identity() # Flownet(28, c=32)
+                self.block2 = Flownet(28, c=64)
+                self.block3 = Flownet(28, c=48)
+                self.block4 = Flownet(28, c=32)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
@@ -560,13 +560,20 @@ class Model:
                 # scale[0] = 1
 
                 # stage 2
-                scale[0] = random.uniform(scale[2], scale[0]) # scale[1]
-                scale[1] = random.uniform(1, scale[2])
+                # scale[0] = random.uniform(scale[0], scale[1]) # scale[1]
+                # scale[1] = random.uniform(1, scale[2])
 
                 # stage 3
                 # scale[0] = scale[2]
                 # scale[1] = scale[3]
                 # scale[2] = 1
+
+                scale[0] = random.uniform(scale[0], scale[1]) # scale[1]
+                scale[1] = random.uniform(scale[1], scale[2])
+                scale[2] = random.uniform(scale[2], scale[3])
+                scale[3] = random.uniform(scale[1], 1)
+                scale[4] = 1
+
 
                 flow, mask, conf = self.block0(
                     img0, 
@@ -623,7 +630,7 @@ class Model:
                 conf_list[1] = (torch.tanh(conf) + 1) / 2.0
                 merged[1] = warp_norm(img0, flow[:, :2]) * mask_list[1] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
-                # '''
+                '''
                 # step training stage 2
                 flow_list[4] = flow_list[1]
                 mask_list[4] = mask_list[1]
@@ -631,7 +638,7 @@ class Model:
                 merged[4] = merged[1]
 
                 return flow_list, mask_list, conf_list, merged
-                # '''
+                '''
 
                 # back to old non-normalized blocks
                 flow = flow_list[1]
@@ -650,13 +657,18 @@ class Model:
                     scale=scale[2]
                 )
 
+                mask = mask + mask_d
                 conf = conf + conf_d
                 flow = flow + flow_d
 
-                flow_list[2] = flow.clone()
-                mask_list[2] = torch.sigmoid(mask)
-                conf_list[2] = torch.sigmoid(conf)
-                merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
+                flow_list[2] = flow.detach().clone()
+                flow_list[2][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
+                flow_list[2][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
+                flow_list[2][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
+                flow_list[2][:, 3:4, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
+                mask_list[2] = (torch.tanh(mask) + 1) / 2.0
+                conf_list[2] = (torch.tanh(conf) + 1) / 2.0
+                merged[2] = warp_norm(img0, flow[:, :2]) * mask_list[2] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
                 '''
                 # step training stage 03
@@ -680,13 +692,18 @@ class Model:
                     scale=scale[3]
                 )
 
+                mask = mask + mask_d
                 conf = conf + conf_d
                 flow = flow + flow_d
 
-                flow_list[3] = flow
-                mask_list[3] = torch.sigmoid(mask)
-                conf_list[3] = torch.sigmoid(conf)
-                merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
+                flow_list[3] = flow.detach().clone()
+                flow_list[3][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
+                flow_list[3][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
+                flow_list[3][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
+                flow_list[3][:, 3:4, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
+                mask_list[3] = (torch.tanh(mask) + 1) / 2.0
+                conf_list[3] = (torch.tanh(conf) + 1) / 2.0
+                merged[3] = warp_norm(img0, flow[:, :2]) * mask_list[3] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 # refine step 4
                 flow_d, mask, conf_d = self.block4(
@@ -700,13 +717,18 @@ class Model:
                     scale=1
                 )
 
+                mask = mask + mask_d
                 conf = conf + conf_d
                 flow = flow + flow_d
 
-                flow_list[4] = flow
-                mask_list[4] = torch.sigmoid(mask)
-                conf_list[4] = torch.sigmoid(conf)
-                merged[4] = warp(img0, flow[:, :2]) * mask_list[4] + warp(img1, flow[:, 2:4]) * (1 - mask_list[4])
+                flow_list[4] = flow.detach().clone()
+                flow_list[4][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
+                flow_list[4][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
+                flow_list[4][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
+                flow_list[4][:, 3:4, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
+                mask_list[4] = (torch.tanh(mask) + 1) / 2.0
+                conf_list[4] = (torch.tanh(conf) + 1) / 2.0
+                merged[4] = warp_norm(img0, flow[:, :2]) * mask_list[4] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[4])
 
                 return flow_list, mask_list, conf_list, merged
 
