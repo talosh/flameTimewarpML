@@ -36,7 +36,7 @@ class Model:
                     stride=stride,
                     padding=padding, 
                     dilation=dilation,
-                    padding_mode='reflect',
+                    padding_mode='zeros',
                     bias=True
                 ),
                 torch.nn.LeakyReLU(0.2, True)
@@ -51,7 +51,7 @@ class Model:
                     stride=stride,
                     padding=padding, 
                     dilation=dilation,
-                    padding_mode='reflect',
+                    padding_mode='zeros',
                     bias=True
                 ),
                 torch.nn.Mish(True)
@@ -66,7 +66,7 @@ class Model:
                 backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
             tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-            return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bicubic', padding_mode='border', align_corners=True)
+            return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
         def warp_norm(tenInput, tenFlow):
             k = (str(tenFlow.device), str(tenFlow.size()))
@@ -76,7 +76,7 @@ class Model:
                 backwarp_tenGrid_norm[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
             # tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
             g = (backwarp_tenGrid_norm[k] + tenFlow).permute(0, 2, 3, 1)
-            return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bicubic', padding_mode='border', align_corners=True)
+            return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
         class ChannelAttention(Module):
             def __init__(self, c, reduction_ratio=4):
@@ -116,7 +116,7 @@ class Model:
             def __init__(self, kernel_size=5):
                 super(SpatialAttention, self).__init__()
                 padding = kernel_size // 2  # Ensure same spatial dimensions
-                self.conv0 = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, padding_mode='reflect', bias=False)
+                self.conv0 = torch.nn.Conv2d(2, 1, kernel_size, padding=padding, padding_mode='zeros', bias=False)
                 self.sigmoid = torch.nn.Sigmoid()
 
             def forward(self, x):
@@ -156,7 +156,7 @@ class Model:
         def centered_highpass_filter(rgb_image, gamma=1.8):
             padding = 32
 
-            rgb_image = torch.nn.functional.pad(rgb_image, (padding, padding, padding, padding), mode='reflect')
+            rgb_image = torch.nn.functional.pad(rgb_image, (padding, padding, padding, padding), mode='zeros')
             n, c, h, w = rgb_image.shape
 
             # Step 1: Apply Fourier Transform along spatial dimensions
@@ -226,7 +226,7 @@ class Model:
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
@@ -236,7 +236,7 @@ class Model:
         class ResConvMish(Module):
             def __init__(self, c):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.Mish(True)
 
@@ -256,7 +256,7 @@ class Model:
         class ResConvRevMix(Module):
             def __init__(self, c, cd):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'reflect', bias=True)
+                self.conv = torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
@@ -294,19 +294,19 @@ class Model:
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     conv(c, c, 3, 1, 1),
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
+                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
                 self.lastconv_fw = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     conv(c, c, 3, 1, 1),
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
+                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
                 self.lastconv_bw = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     conv(c, c, 3, 1, 1),
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
+                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
@@ -330,14 +330,14 @@ class Model:
                 warped_f0 = warp(f0, flow[:, :2])
                 warped_f1 = warp(f1, flow[:, 2:4])
                 x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask), 1)
-                x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
+                x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
                 flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) # * 1. / scale
                 x = torch.cat((x, flow, timestep, tenGrid), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
                 padding = (0, pw, 0, ph)
-                x = torch.nn.functional.pad(x, padding, mode='reflect')
+                x = torch.nn.functional.pad(x, padding, mode='zeros')
 
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
@@ -384,13 +384,13 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv_mask = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
+                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
                 self.lastconv_fw = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
+                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
                 self.lastconv_bw = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
+                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
@@ -418,7 +418,7 @@ class Model:
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
                 padding = (0, pw, 0, ph)
-                x = torch.nn.functional.pad(x, padding, mode='reflect')
+                x = torch.nn.functional.pad(x, padding, mode='zeros')
 
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
@@ -468,15 +468,15 @@ class Model:
                 )
                 self.lastconv_mask = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
+                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
                 self.lastconv_fw = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
+                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
                 self.lastconv_bw = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
+                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
@@ -500,14 +500,14 @@ class Model:
                 warped_f0 = warp(f0, flow[:, :2])
                 warped_f1 = warp(f1, flow[:, 2:4])
                 x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask), 1)
-                x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
+                x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
                 flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) # * 1. / scale
                 x = torch.cat((x, flow, timestep, tenGrid), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
                 padding = (0, pw, 0, ph)
-                x = torch.nn.functional.pad(x, padding, mode='reflect')
+                x = torch.nn.functional.pad(x, padding, mode='zeros')
 
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
@@ -590,19 +590,19 @@ class Model:
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     conv(c//3, c//6, 3, 1, 1),
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c//6, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
+                    torch.nn.Conv2d(c//6, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
                 self.lastconv_fw = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     conv(c, c//2, 3, 1, 1),
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c//2, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
+                    torch.nn.Conv2d(c//2, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
                 self.lastconv_bw = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     conv(c, c//2, 3, 1, 1),
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c//2, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
+                    torch.nn.Conv2d(c//2, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
                 self.maxdepth = 8
 
@@ -612,7 +612,7 @@ class Model:
 
                 if flow is None:
                     x = torch.cat((img0 * 2 - 1, img1 * 2 - 1, f0, f1), 1)
-                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
+                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
 
                 else:
                     warped_img0 = warp_norm(img0, flow[:, :2])
@@ -621,7 +621,7 @@ class Model:
                     warped_f1 = warp_norm(f1, flow[:, 2:4])
                     
                     x = torch.cat((warped_img0 * 2 - 1, warped_img1 * 2 - 1, warped_f0, warped_f1), 1)
-                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
+                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
 
                     y = torch.cat((mask, flow), 1)
                     y = torch.nn.functional.interpolate(y, size=(sh, sw), mode="bilinear", align_corners=False) # * 1. / scale
@@ -630,7 +630,7 @@ class Model:
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
                 padding = (0, pw, 0, ph)
-                x = torch.nn.functional.pad(x, padding, mode='reflect')
+                x = torch.nn.functional.pad(x, padding, mode='zeros')
                 _, _, xh, xw = x.shape
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, xw//2).view(1, 1, 1, xw//2).expand(n, -1, xh//2, -1)
