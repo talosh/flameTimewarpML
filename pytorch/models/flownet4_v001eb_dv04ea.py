@@ -648,7 +648,7 @@ class Model:
                 pw = self.maxdepth - (sw % self.maxdepth)
                 padding = (0, pw, 0, ph)
                 x = torch.nn.functional.pad(x, padding, mode='reflect')
-                _, _, xh, xw = img0.shape
+                _, _, xh, xw = x.shape
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, xw//2).view(1, 1, 1, xw//2).expand(n, -1, xh//2, -1)
                 tenVertical = torch.linspace(-1.0, 1.0, xh//2).view(1, 1, xh//2, 1).expand(n, -1, -1, xw//2)
