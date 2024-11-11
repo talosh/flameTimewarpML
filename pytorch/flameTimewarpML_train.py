@@ -1921,7 +1921,7 @@ def main():
     
     if args.compile:
         flownet_uncompiled = Flownet().get_training_model()().to(torch.float32).cuda()
-        flownet = torch.compile(flownet_uncompiled,mode='reduce-overhead')
+        flownet = torch.compile(flownet_uncompiled, mode='reduce-overhead')
     else:
         flownet = Flownet().get_training_model()().to(device)
     
@@ -2218,12 +2218,12 @@ def main():
             param.requires_grad = False     
         #for param in flownet.module.block1.parameters():
         #    param.requires_grad = False
-        # for param in flownet.module.block2.parameters():
-        #    param.requires_grad = False
-        #for param in flownet.module.block3.parameters():
-        #    param.requires_grad = False
-        #for param in flownet.module.block4.parameters():
-        #    param.requires_grad = False
+        for param in flownet.module.block2.parameters():
+            param.requires_grad = False
+        for param in flownet.module.block3.parameters():
+            param.requires_grad = False
+        for param in flownet.module.block4.parameters():
+            param.requires_grad = False
         
         '''
         for param in flownet.module.block0.convblock4.parameters():
