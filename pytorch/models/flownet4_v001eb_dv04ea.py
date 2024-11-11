@@ -531,8 +531,8 @@ class Model:
                 super().__init__()
                 ca = 36
                 cd = int(1.618 * c)
-                self.conv0att = conv_mish(6 + 16, ca, 3, 1, 1)
-                self.conv0 = conv(ca + (in_planes - 20), c, 7, 2, 3)
+                self.conv0att = conv_mish(6 + 16, ca, 5, 1, 2)
+                self.conv0 = conv(ca, c, 5, 2, 2)
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
                 self.conv_mask = conv_mish(c, c//3, 3, 1, 1)
@@ -604,15 +604,21 @@ class Model:
                 self.revmix1 = ResConvRevMix(c, cd)
                 self.revmix2 = ResConvRevMix(c, cd)
                 self.lastconv_mask = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=4, mode='bilinear'),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
+                    conv(c//3, c//3, 3, 1, 1),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     torch.nn.Conv2d(c//3, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
                 )
                 self.lastconv_fw = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=4, mode='bilinear'),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
+                    conv(c, c, 3, 1, 1),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
                 )
                 self.lastconv_bw = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=4, mode='bilinear'),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
+                    conv(c, c, 3, 1, 1),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
                 )
                 self.maxdepth = 8
@@ -621,15 +627,9 @@ class Model:
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
-                tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1)
-                tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw)
-                tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=img0.device, dtype=img0.dtype)
-                timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
-
                 if flow is None:
                     x = torch.cat((img0 * 2 - 1, img1 * 2 - 1, f0, f1), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
-                    y = torch.cat((timestep, tenGrid), 1)
 
                 else:
                     warped_img0 = warp_norm(img0, flow[:, :2])
@@ -648,16 +648,21 @@ class Model:
                 pw = self.maxdepth - (sw % self.maxdepth)
                 padding = (0, pw, 0, ph)
                 x = torch.nn.functional.pad(x, padding, mode='reflect')
-                y = torch.nn.functional.pad(y, padding, mode='replicate')
+                _, _, xh, xw = img0.shape
+
+                tenHorizontal = torch.linspace(-1.0, 1.0, xw//2).view(1, 1, 1, xw//2).expand(n, -1, xh//2, -1)
+                tenVertical = torch.linspace(-1.0, 1.0, xh//2).view(1, 1, xh//2, 1).expand(n, -1, -1, xw//2)
+                tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=img0.device, dtype=img0.dtype)
+                timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
+                y = torch.cat((timestep, tenGrid), 1)
 
                 feat = self.conv0att(x)
                 feat = self.attn(feat)
 
-                # noise = torch.rand_like(feat[:, :2, :, :]) * 2 - 1
-                feat = torch.cat((feat, y), 1)
                 feat = self.conv0(feat)
                 feat = self.convblock_shallow(feat)
-                feat = self.conv1(feat)
+
+                feat = self.conv1(torch.cat((feat, y), 1))
 
                 feat_deep = self.conv2(feat)
                 feat_deep = self.convblock_deep1(feat_deep)
