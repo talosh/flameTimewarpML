@@ -93,6 +93,7 @@ def main():
 
     if args.frame_size:
         h, w = args.frame_size.split('x')
+        h, w = int(h), int(w)
     else:
         h, w = 1716, 4096
 
