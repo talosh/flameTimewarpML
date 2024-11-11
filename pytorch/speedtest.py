@@ -90,7 +90,13 @@ def main():
     args = parser.parse_args()
 
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device('cuda')
-    shape = (1, 3, 1716, 4096)
+
+    if args.frame_size:
+        h, w = args.frame_size.split('x')
+    else:
+        h, w = 1716, 4096
+
+    shape = (1, 3, h, w)
     img = torch.randn(shape).to(device)
 
     model = args.model if args.model else 'Flownet4_v001_baseline'
