@@ -699,8 +699,8 @@ class Model:
                 self.block0 = FlownetDeepSingleHead(23, c=32)
                 self.block1 = Flownet(28, c=32)
                 self.block2 = Flownet_d2(28, c=32)
-                self.block3 = Flownet_d1(8, c=24)
-                self.block4 = Flownet_d1(8, c=24)
+                self.block3 = Flownet_d1(12, c=24)
+                self.block4 = Flownet_d1(12, c=24)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
