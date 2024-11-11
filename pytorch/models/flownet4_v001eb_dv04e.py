@@ -479,7 +479,7 @@ class Model:
                     torch.nn.PixelShuffle(2)
                 )
                 '''
-                self.maxdepth = 4
+                self.maxdepth = 2
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
                 n, c, h, w = img0.shape
