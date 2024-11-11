@@ -615,7 +615,7 @@ class Model:
                     scale=scale[1]
                 )
 
-                mask = mask + mask_d
+                mask = mask_d
                 conf = conf + conf_d
                 flow = flow + flow_d
                 
@@ -650,7 +650,7 @@ class Model:
                     scale=scale[2]
                 )
 
-                mask = mask + mask_d
+                mask = mask_d
                 conf = conf + conf_d
                 flow = flow + flow_d
 
@@ -685,7 +685,7 @@ class Model:
                     scale=scale[3]
                 )
 
-                mask = mask + mask_d
+                mask = mask_d
                 conf = conf + conf_d
                 flow = flow + flow_d
 
@@ -710,7 +710,7 @@ class Model:
                     scale=1
                 )
 
-                mask = mask + mask_d
+                mask = mask_d
                 conf = conf + conf_d
                 flow = flow + flow_d
 
