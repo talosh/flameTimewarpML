@@ -742,6 +742,7 @@ class Model:
                     scale=scale[0]
                     )
                 
+                '''
                 flow_list[0] = torch.tanh(flow.detach().clone())
                 flow_list[0][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[0][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
@@ -750,6 +751,7 @@ class Model:
                 mask_list[0] = (torch.tanh(mask) + 1) / 2.0
                 conf_list[0] = (torch.tanh(conf) + 1) / 2.0
                 merged[0] = warp_norm(img0, flow[:, :2]) * mask_list[0] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[0])
+                '''
 
                 '''
                 # step training stage 1
@@ -776,7 +778,8 @@ class Model:
                 mask = mask_d # mask + mask_d
                 conf = conf_d # conf + conf_d
                 flow = flow_d # flow + flow_d
-                
+
+                '''
                 flow_list[1] = torch.tanh(flow.detach().clone())
                 flow_list[1][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[1][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
@@ -785,6 +788,7 @@ class Model:
                 mask_list[1] = (torch.tanh(mask) + 1) / 2.0
                 conf_list[1] = (torch.tanh(conf) + 1) / 2.0
                 merged[1] = warp_norm(img0, flow[:, :2]) * mask_list[1] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[1])
+                '''
 
                 '''
                 # step training stage 2
@@ -812,6 +816,7 @@ class Model:
                 conf = conf_d # conf + conf_d
                 flow = flow_d # flow + flow_d
 
+                '''
                 flow_list[2] = torch.tanh(flow.detach().clone())
                 flow_list[2][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[2][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
@@ -820,6 +825,7 @@ class Model:
                 mask_list[2] = (torch.tanh(mask) + 1) / 2.0
                 conf_list[2] = (torch.tanh(conf) + 1) / 2.0
                 merged[2] = warp_norm(img0, flow[:, :2]) * mask_list[2] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[2])
+                '''
 
                 '''
                 # step training stage 03
@@ -847,6 +853,7 @@ class Model:
                 conf = conf_d # conf + conf_d
                 flow = flow_d # flow + flow_d
 
+                '''
                 flow_list[3] = torch.tanh(flow.detach().clone())
                 flow_list[3][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[3][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
@@ -855,7 +862,8 @@ class Model:
                 mask_list[3] = (torch.tanh(mask) + 1) / 2.0
                 conf_list[3] = (torch.tanh(conf) + 1) / 2.0
                 merged[3] = warp_norm(img0, flow[:, :2]) * mask_list[3] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[3])
-
+                '''
+                
                 # refine step 4
                 flow_d, mask, conf_d = self.block4(
                     img0, 
