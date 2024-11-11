@@ -406,9 +406,10 @@ class Model:
 
                 warped_img0 = warp(img0, flow[:, :2])
                 warped_img1 = warp(img1, flow[:, :2])
-                warped_f0 = warp(f0, flow[:, :2])
-                warped_f1 = warp(f1, flow[:, 2:4])
-                x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask), 1)
+                # warped_f0 = warp(f0, flow[:, :2])
+                # warped_f1 = warp(f1, flow[:, 2:4])
+                # x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask), 1)
+                x = torch.cat((warped_img0, warped_img1, mask), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                 timestep = (x[:, :1].clone() * 0 + 1) * timestep
                 flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) # * 1. / scale
