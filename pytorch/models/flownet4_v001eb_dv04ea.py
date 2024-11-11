@@ -699,9 +699,9 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepSingleHead(23, c=144)
-                self.block1 = Flownet(28, c=96)
-                self.block2 = Flownet_d2(28, c=48)
+                self.block0 = FlownetDeepSingleHead(23, c=32)
+                self.block1 = Flownet(28, c=32)
+                self.block2 = Flownet_d2(28, c=32)
                 self.block3 = Flownet_d1(28, c=32)
                 self.block4 = Flownet_d1(28, c=32)
                 self.encode = Head()
