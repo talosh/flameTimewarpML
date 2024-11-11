@@ -614,10 +614,10 @@ class Model:
                     flow, 
                     scale=scale[1]
                 )
-
-                mask = mask_d
-                conf = conf + conf_d
-                flow = flow + flow_d
+ 
+                mask = mask_d # mask + mask_d
+                conf = conf_d # conf + conf_d
+                flow = flow_d # flow + flow_d
                 
                 flow_list[1] = flow.detach().clone()
                 flow_list[1][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
@@ -650,9 +650,9 @@ class Model:
                     scale=scale[2]
                 )
 
-                mask = mask_d
-                conf = conf + conf_d
-                flow = flow + flow_d
+                mask = mask_d # mask + mask_d
+                conf = conf_d # conf + conf_d
+                flow = flow_d # flow + flow_d
 
                 flow_list[2] = flow.detach().clone()
                 flow_list[2][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
@@ -685,9 +685,9 @@ class Model:
                     scale=scale[3]
                 )
 
-                mask = mask_d
-                conf = conf + conf_d
-                flow = flow + flow_d
+                mask = mask_d # mask + mask_d
+                conf = conf_d # conf + conf_d
+                flow = flow_d # flow + flow_d
 
                 flow_list[3] = flow.detach().clone()
                 flow_list[3][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
@@ -710,9 +710,9 @@ class Model:
                     scale=1
                 )
 
-                mask = mask_d
-                conf = conf + conf_d
-                flow = flow + flow_d
+                mask = mask_d # mask + mask_d
+                conf = conf_d # conf + conf_d
+                flow = flow_d # flow + flow_d
 
                 flow_list[4] = flow.detach().clone()
                 flow_list[4][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
