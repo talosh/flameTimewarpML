@@ -288,15 +288,21 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv_mask = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=4, mode='bilinear'),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
+                    conv(c, c, 3, 1, 1),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
                 )
                 self.lastconv_fw = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=4, mode='bilinear'),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
+                    conv(c, c, 3, 1, 1),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
                 )
                 self.lastconv_bw = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=4, mode='bilinear'),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
+                    conv(c, c, 3, 1, 1),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
                 )
                 '''
