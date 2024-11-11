@@ -30,6 +30,9 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None, 
 
     if model_file:
         module_name = model_file[:-3]  # Remove '.py' from filename to get module name
+
+        print (module_name)
+
         module_path = f"models.{module_name}"
         module = importlib.import_module(module_path)
         model_object = getattr(module, 'Model')
