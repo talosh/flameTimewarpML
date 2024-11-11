@@ -366,7 +366,7 @@ class Model:
             def __init__(self, in_planes, c=32):
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
-                    conv(in_planes + 2, c, 3, 1, 1),
+                    conv(in_planes, c, 3, 1, 1),
                     )
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
@@ -404,19 +404,15 @@ class Model:
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
-                tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1)
-                tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw)
-                tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=img0.device, dtype=img0.dtype)
-                timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
-
                 warped_img0 = warp(img0, flow[:, :2])
                 warped_img1 = warp(img1, flow[:, :2])
                 warped_f0 = warp(f0, flow[:, :2])
                 warped_f1 = warp(f1, flow[:, 2:4])
                 x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
+                timestep = (x[:, :1].clone() * 0 + 1) * timestep
                 flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) # * 1. / scale
-                x = torch.cat((x, flow, timestep, tenGrid), 1)
+                x = torch.cat((x, flow, timestep), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
@@ -699,8 +695,8 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepSingleHead(23, c=64)
-                self.block1 = Flownet(28, c=92)
+                self.block0 = FlownetDeepSingleHead(23, c=192)
+                self.block1 = Flownet(28, c=96)
                 self.block2 = Flownet_d2(28, c=64)
                 self.block3 = Flownet_d1(28, c=48)
                 self.block4 = Flownet_d1(28, c=32)
