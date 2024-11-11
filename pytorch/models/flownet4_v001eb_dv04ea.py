@@ -702,7 +702,7 @@ class Model:
                 self.block0 = FlownetDeepSingleHead(23, c=64)
                 self.block1 = Flownet(28, c=64)
                 self.block2 = Flownet_d2(28, c=48)
-                self.block3 = Flownet_d1(28, c=32)
+                self.block3 = Flownet_d1(28, c=48)
                 self.block4 = Flownet_d1(28, c=32)
                 self.encode = Head()
 
