@@ -209,7 +209,10 @@ class Model:
                 self.relu = torch.nn.Mish(True)
 
             def forward(self, x):
+                dtype = x.dtype
+                x = x.to(dtype = torch.float32)
                 x = torch.cat((x, centered_highpass_filter(x)), 1)
+                x = x.to(dtype = dtype)
                 x = self.cnn0(x * 2 - 1)
                 x = self.relu(x)
                 x = self.attn(x)
