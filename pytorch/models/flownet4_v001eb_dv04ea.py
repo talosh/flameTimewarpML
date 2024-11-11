@@ -806,7 +806,7 @@ class Model:
 
                 mask = mask_d # mask + mask_d
                 conf = conf_d # conf + conf_d
-                flow = flow + flow_d
+                flow = flow_d # flow + flow_d
 
                 flow_list[2] = torch.tanh(flow.detach().clone())
                 flow_list[2][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
@@ -841,7 +841,7 @@ class Model:
 
                 mask = mask_d # mask + mask_d
                 conf = conf_d # conf + conf_d
-                flow = flow + flow_d
+                flow = flow_d # flow + flow_d
 
                 flow_list[3] = torch.tanh(flow.detach().clone())
                 flow_list[3][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
@@ -866,7 +866,7 @@ class Model:
 
                 mask = mask_d # mask + mask_d
                 conf = conf_d # conf + conf_d
-                flow = flow + flow_d
+                flow = flow_d # flow + flow_d
 
                 flow_list[4] = torch.tanh(flow.detach().clone())
                 flow_list[4][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
