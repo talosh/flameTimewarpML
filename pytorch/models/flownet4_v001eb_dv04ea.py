@@ -699,11 +699,11 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepSingleHead(23, c=32)
-                self.block1 = Flownet(28, c=32)
-                self.block2 = Flownet_d2(28, c=32)
-                self.block3 = Flownet_d1(28, c=32)
-                self.block4 = Flownet_d1(28, c=32)
+                self.block0 = FlownetDeepSingleHead(23, c=64)
+                self.block1 = Flownet(28, c=64)
+                self.block2 = Flownet_d2(28, c=64)
+                self.block3 = Flownet_d1(28, c=48)
+                self.block4 = Flownet_d1(28, c=48)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
@@ -863,7 +863,7 @@ class Model:
                 conf_list[3] = (torch.tanh(conf) + 1) / 2.0
                 merged[3] = warp_norm(img0, flow[:, :2]) * mask_list[3] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[3])
                 '''
-                
+
                 # refine step 4
                 flow_d, mask, conf_d = self.block4(
                     img0, 
