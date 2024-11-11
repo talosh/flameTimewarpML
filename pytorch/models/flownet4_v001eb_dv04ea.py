@@ -594,15 +594,15 @@ class Model:
                 )
                 self.lastconv_fw = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    conv(c, c, 3, 1, 1),
+                    conv(c, c//2, 3, 1, 1),
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
+                    torch.nn.Conv2d(c//2, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
                 )
                 self.lastconv_bw = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    conv(c, c, 3, 1, 1),
+                    conv(c, c//2, 3, 1, 1),
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
+                    torch.nn.Conv2d(c//2, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'reflect', bias=True)
                 )
                 self.maxdepth = 8
 
