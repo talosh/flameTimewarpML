@@ -93,15 +93,13 @@ def main():
     shape = (1, 3, 1716, 4096)
     img = torch.randn(shape).to(device)
 
-    Net = find_and_import_model(model_name='Flownet4_v001_baseline')
+    model = args.model if args.model else 'Flownet4_v001_baseline'
+    Net = find_and_import_model(model_name=model)
 
     print ('Net info:')
     pprint (Net.get_info())
 
     net = Net().get_training_model()().to(device)
-
-    # print (torch._dynamo.list_backends())
-    # dfdnet = torch.compile(dfdnet)
 
     with torch.no_grad():
         while True:
