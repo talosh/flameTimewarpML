@@ -90,7 +90,8 @@ def main():
     shape = (1, 3, 1716, 4096)
     img = torch.randn(shape).to(device)
 
-    Net = find_and_import_model(model_name='Flownet4_v001_baseline')
+    Net = find_and_import_model(model_name='Flownet4_v001')
+
 
     print ('Net info:')
     pprint (Net.get_info())
