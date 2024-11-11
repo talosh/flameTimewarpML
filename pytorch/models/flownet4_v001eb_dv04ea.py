@@ -555,14 +555,11 @@ class Model:
                 )
                 self.convblock_fw = torch.nn.Sequential(
                     ResConv(c),
-                    ResConv(c),
                 )
                 self.convblock_bw = torch.nn.Sequential(
                     ResConv(c),
-                    ResConv(c),
                 )
                 self.convblock_mask = torch.nn.Sequential(
-                    ResConv(c//3),
                     ResConv(c//3),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
