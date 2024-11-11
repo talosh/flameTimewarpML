@@ -782,7 +782,7 @@ class Model:
                 conf_list[1] = (torch.tanh(conf) + 1) / 2.0
                 merged[1] = warp_norm(img0, flow[:, :2]) * mask_list[1] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
-                # '''
+                '''
                 # step training stage 2
                 flow_list[4] = flow_list[1]
                 mask_list[4] = mask_list[1]
@@ -790,7 +790,7 @@ class Model:
                 merged[4] = merged[1]
 
                 return flow_list, mask_list, conf_list, merged
-                # '''
+                '''
 
                 # refine step 2
                 flow_d, mask, conf_d = self.block2(
