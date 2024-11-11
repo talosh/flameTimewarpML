@@ -700,7 +700,7 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeepSingleHead(23, c=64)
-                self.block1 = Flownet(28, c=64)
+                self.block1 = Flownet(28, c=92)
                 self.block2 = Flownet_d2(28, c=64)
                 self.block3 = Flownet_d1(28, c=48)
                 self.block4 = Flownet_d1(28, c=32)
