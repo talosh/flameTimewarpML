@@ -206,7 +206,7 @@ class Model:
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 self.attn = CBAM(32, channel_scale=-0.1, spatial_scale=0.1)
-                self.relu = torch.nn.Mish(True)
+                self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x):
                 x = torch.cat((x, centered_highpass_filter(x)), 1)
@@ -531,11 +531,11 @@ class Model:
                 super().__init__()
                 ca = 36
                 cd = int(1.618 * c)
-                self.conv0att = conv_mish(6 + 16, ca, 5, 1, 2)
+                self.conv0att = conv(6 + 16, ca, 5, 1, 2)
                 self.conv0 = conv(ca, c//2, 5, 2, 2)
                 self.conv1 = conv(c//2 + 3, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
-                self.conv_mask = conv_mish(c, c//3, 3, 1, 1)
+                self.conv_mask = conv(c, c//3, 3, 1, 1)
                 self.attn = CBAM(ca)
                 self.attn_mask = CBAM(c//3)
                 self.convblock_shallow = torch.nn.Sequential(
