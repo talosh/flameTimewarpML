@@ -53,9 +53,6 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None, 
         print(f"Directory not found: {models_abs_path}")
         return None
 
-    print (files)
-    print (model_name)
-
     # Filter files based on base_name or model_name
     if model_name:
         # Look for a specific model version
