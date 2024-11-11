@@ -731,11 +731,6 @@ class Model:
                 # scale[1] = scale[3]
                 # scale[2] = 1
 
-                scale[0] = random.uniform(scale[0], scale[1]) # scale[1]
-                scale[1] = random.uniform(scale[1], scale[2])
-                scale[2] = random.uniform(scale[2], scale[3])
-                scale[3] = random.uniform(scale[1], 1)
-
                 flow, mask, conf = self.block0(
                     img0, 
                     img1, 
