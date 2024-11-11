@@ -711,7 +711,7 @@ class Model:
                 # step training
 
                 # stage 1
-                scale[0] = 8
+                scale[0] = random.uniform(1, 3)
 
                 # stage 2
                 # scale[0] = random.uniform(scale[0], scale[1]) # scale[1]
