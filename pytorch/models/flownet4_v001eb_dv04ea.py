@@ -533,7 +533,7 @@ class Model:
                 cd = int(1.618 * c)
                 self.conv0att = conv_mish(6 + 16, ca, 5, 1, 2)
                 self.conv0 = conv(ca, c, 5, 2, 2)
-                self.conv1 = conv(c, c, 3, 2, 1)
+                self.conv1 = conv(c + 3, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
                 self.conv_mask = conv_mish(c, c//3, 3, 1, 1)
                 self.attn = CBAM(ca)
