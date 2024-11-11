@@ -516,11 +516,11 @@ class Model:
 
                 feat_fw = self.convblock_fw(feat)
                 feat_fw = self.lastconv_fw(feat_fw)
-                feat_fw = torch.tanh(feat_fw)
+                # feat_fw = torch.tanh(feat_fw)
 
                 feat_bw = self.convblock_bw(feat)
                 feat_bw = self.lastconv_bw(feat_bw)
-                feat_bw = torch.tanh(feat_bw)
+                # feat_bw = torch.tanh(feat_bw)
 
                 flow = torch.cat((feat_fw, feat_bw), 1)
 
@@ -584,7 +584,7 @@ class Model:
                     scale=scale[0]
                     )
                 
-                flow_list[0] = flow.detach().clone()
+                flow_list[0] = torch.tanh(flow.detach().clone())
                 flow_list[0][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[0][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 flow_list[0][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
@@ -619,7 +619,7 @@ class Model:
                 conf = conf_d # conf + conf_d
                 flow = flow_d # flow + flow_d
                 
-                flow_list[1] = flow.detach().clone()
+                flow_list[1] = torch.tanh(flow.detach().clone())
                 flow_list[1][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[1][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 flow_list[1][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
@@ -654,7 +654,7 @@ class Model:
                 conf = conf_d # conf + conf_d
                 flow = flow_d # flow + flow_d
 
-                flow_list[2] = flow.detach().clone()
+                flow_list[2] = torch.tanh(flow.detach().clone())
                 flow_list[2][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[2][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 flow_list[2][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
@@ -689,7 +689,7 @@ class Model:
                 conf = conf_d # conf + conf_d
                 flow = flow_d # flow + flow_d
 
-                flow_list[3] = flow.detach().clone()
+                flow_list[3] = torch.tanh(flow.detach().clone())
                 flow_list[3][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[3][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 flow_list[3][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
@@ -714,7 +714,7 @@ class Model:
                 conf = conf_d # conf + conf_d
                 flow = flow_d # flow + flow_d
 
-                flow_list[4] = flow.detach().clone()
+                flow_list[4] = torch.tanh(flow.detach().clone())
                 flow_list[4][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[4][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 flow_list[4][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
