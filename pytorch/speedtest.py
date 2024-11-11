@@ -57,6 +57,7 @@ def find_and_import_model(models_dir='models', base_name=None, model_name=None, 
     if model_name:
         # Look for a specific model version
         filtered_files = [f for f in files if f == f"{model_name}.py"]
+        print (filtered_files)
     else:
         # Find all versions of the model and select the latest one
         # regex_pattern = fr"{base_name}_v(\d+)\.py"
