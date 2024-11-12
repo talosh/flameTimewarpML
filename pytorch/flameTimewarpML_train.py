@@ -2584,7 +2584,7 @@ def main():
         output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
 
         diff_matte = diffmatte(output_clean, img1_orig)
-        mask_loss = variance_loss(mask, 2e-1)
+        mask_loss = variance_loss(mask, 4e-1)
         # diff_warps = diffmatte(warp(img0_orig, flow0), warp(img2_orig, flow1))
         loss_conf = criterion_l1(conf, diff_matte)
 
