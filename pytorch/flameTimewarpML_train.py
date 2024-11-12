@@ -2584,13 +2584,14 @@ def main():
         output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
 
         diff_matte = diffmatte(output_clean, img1_orig)
-        mask_loss = variance_loss(mask, 0.2)
-        # diff_warps = diffmatte(warp(img0_orig, flow0), warp(img2_orig, flow1))
+        loss_diff = float(torch.mean(diff_matte))
+        loss_mask = variance_loss(mask, 2e-1)
         loss_conf = criterion_l1(conf, diff_matte)
 
         lpips_weight = 0.5
         loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
-        loss = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS).item()) + 4e-3 * loss_conf + 2e-2 * float(torch.mean(diff_matte)) + mask_loss
+        loss_weighted = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS).item())
+        loss = loss_weighted + loss_mask + 4e-3 * loss_conf + 2e-2 * loss_diff
         loss_l1 = criterion_l1(output_clean, img1_orig)
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
