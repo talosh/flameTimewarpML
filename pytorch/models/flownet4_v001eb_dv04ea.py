@@ -438,7 +438,8 @@ class Model:
                 tmp_mask = self.lastconv_fw(feat_mask)
                 tmp_mask = torch.nn.functional.interpolate(tmp_mask[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
 
-                flow = flow # * scale
+                flow = torch.tanh(flow) # * scale
+
                 mask = tmp_mask[:, 0:1]
                 conf = tmp_mask[:, 1:2]
                 return flow, mask, conf
@@ -527,7 +528,8 @@ class Model:
                 tmp_mask = self.lastconv_fw(feat_mask)
                 tmp_mask = torch.nn.functional.interpolate(tmp_mask[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
 
-                flow = flow # * scale
+                flow = torch.tanh(flow) # * scale
+
                 mask = tmp_mask[:, 0:1]
                 conf = tmp_mask[:, 1:2]
                 return flow, mask, conf
@@ -543,20 +545,24 @@ class Model:
                 self.conv2 = conv(c, cd, 3, 2, 1)
                 self.conv_mask = conv_mish(c, c//3, 3, 1, 1)
                 self.attn = CBAM(ca)
-                self.attn_mask = CBAM(c//3)
+                # self.attn_mask = CBAM(c//3)
                 self.convblock_shallow = torch.nn.Sequential(
                     ResConv(c//2),
                 )
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
+                    ResConv(c),
                 )
                 self.convblock2 = torch.nn.Sequential(
+                    ResConv(c),
                     ResConv(c),
                 )
                 self.convblock3 = torch.nn.Sequential(
                     ResConv(c),
+                    ResConv(c),
                 )
                 self.convblock4 = torch.nn.Sequential(
+                    ResConv(c),
                     ResConv(c),
                 )
                 self.convblock_fw = torch.nn.Sequential(
@@ -570,14 +576,18 @@ class Model:
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
                     ResConv(cd),
+                    ResConv(cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
+                    ResConv(cd),
                     ResConv(cd),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
                     ResConv(cd),
+                    ResConv(cd),
                 )
                 self.convblock_deep4 = torch.nn.Sequential(
+                    ResConv(cd),
                     ResConv(cd),
                 )
                 self.mix1 = ResConvMix(c, cd)
@@ -670,7 +680,7 @@ class Model:
                 feat = self.convblock4(feat)
 
                 feat_mask = self.conv_mask(feat)
-                feat_mask = self.attn_mask(feat_mask)
+                # feat_mask = self.attn_mask(feat_mask)
                 feat_mask = self.convblock_mask(feat_mask)
                 tmp_mask = self.lastconv_mask(feat_mask)
 
@@ -687,7 +697,8 @@ class Model:
                 tmp_mask = torch.nn.functional.interpolate(tmp_mask[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
                 flow = torch.nn.functional.interpolate(flow[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
 
-                flow = flow # * scale
+                flow = torch.tanh(flow) # * scale
+
                 mask = tmp_mask[:, 0:1]
                 conf = tmp_mask[:, 1:2]
 
@@ -772,9 +783,9 @@ class Model:
                     scale=scale[1]
                 )
  
-                mask = mask_d # mask + mask_d
-                conf = conf_d # conf + conf_d
-                flow = flow_d # flow + flow_d
+                mask = mask + mask_d
+                conf = conf + conf_d
+                flow = flow + flow_d
 
                 '''
                 flow_list[1] = torch.tanh(flow.detach().clone())
@@ -809,9 +820,9 @@ class Model:
                     scale=scale[2]
                 )
 
-                mask = mask_d # mask + mask_d
-                conf = conf_d # conf + conf_d
-                flow = flow_d # flow + flow_d
+                mask = mask + mask_d
+                conf = conf + conf_d
+                flow = flow + flow_d
 
                 '''
                 flow_list[2] = torch.tanh(flow.detach().clone())
@@ -846,9 +857,9 @@ class Model:
                     scale=scale[3]
                 )
 
-                mask = mask_d # mask + mask_d
-                conf = conf_d # conf + conf_d
-                flow = flow_d # flow + flow_d
+                mask = mask + mask_d
+                conf = conf + conf_d
+                flow = flow + flow_d
 
                 '''
                 flow_list[3] = torch.tanh(flow.detach().clone())
@@ -873,18 +884,18 @@ class Model:
                     scale=1
                 )
 
-                mask = mask_d # mask + mask_d
-                conf = conf_d # conf + conf_d
-                flow = flow_d # flow + flow_d
-
-                flow_list[4] = torch.tanh(flow.detach().clone())
+                mask = mask + mask_d
+                conf = conf + conf_d
+                flow = flow + flow_d
+                
+                flow_list[4] = flow # torch.tanh(flow.detach().clone())
                 flow_list[4][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[4][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 flow_list[4][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[4][:, 3:4, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
-                mask_list[4] = (torch.tanh(mask) + 1) / 2.0
-                conf_list[4] = (torch.tanh(conf) + 1) / 2.0
-                merged[4] = warp_norm(img0, flow[:, :2]) * mask_list[4] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[4])
+                mask_list[4] = torch.sigmoid(mask) # (torch.tanh(mask) + 1) / 2.0
+                conf_list[4] = torch.sigmoid(conf) # (torch.tanh(conf) + 1) / 2.0
+                merged[4] = warp(img0, flow[:, :2]) * mask_list[4] + warp(img1, flow[:, 2:4]) * (1 - mask_list[4])
 
                 return flow_list, mask_list, conf_list, merged
 
