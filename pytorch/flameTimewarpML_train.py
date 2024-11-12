@@ -602,7 +602,7 @@ def get_dataset(
                             }
                             descriptions.append(fw_item)
 
-                            '''
+                            # '''
                             bw_item = {
                                 'h': h,
                                 'w': w,
@@ -614,7 +614,7 @@ def get_dataset(
                                 'ratio': 1 - (1 / (len(window) - 1) * (gt_frame_index + 1))
                             }
                             descriptions.append(bw_item)
-                            '''
+                            # '''
 
             except Exception as e:
                 print (f'\nError scanning {folder_path}: {e}')
