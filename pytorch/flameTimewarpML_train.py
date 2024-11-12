@@ -1598,6 +1598,11 @@ def diffmatte(tensor1, tensor2):
 
     return difference_normalized
 
+def variance_loss(tensor, threshold):
+    variance = torch.var(tensor)
+    # Loss is positive when variance is less than the threshold
+    return torch.relu(threshold - variance) / (threshold + 1e-8)
+
 class LossStats:
     def __init__(self):
         self.epoch_l1_loss = []
@@ -2579,12 +2584,13 @@ def main():
         output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
 
         diff_matte = diffmatte(output_clean, img1_orig)
+        mask_loss = variance_loss(mask, 2e-1)
         # diff_warps = diffmatte(warp(img0_orig, flow0), warp(img2_orig, flow1))
         loss_conf = criterion_l1(conf, diff_matte)
 
         lpips_weight = 0.5
         loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
-        loss = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS).item()) + 4e-3 * loss_conf + 0.02 * float(torch.mean(diff_matte)) # + 1e-3 * diff_warps
+        loss = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS).item()) + 4e-3 * loss_conf + 0.02 * float(torch.mean(diff_matte)) + 2e-2 * mask_loss
         loss_l1 = criterion_l1(output_clean, img1_orig)
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
