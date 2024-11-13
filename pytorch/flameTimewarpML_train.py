@@ -1601,7 +1601,7 @@ def diffmatte(tensor1, tensor2):
 def variance_loss(tensor, threshold):
     variance = torch.std(tensor)
     # Loss is positive when variance is less than the threshold
-    return torch.nn.functional.softplus(threshold - variance) # / (threshold + 1e-8)
+    return torch.nn.functional.mish(threshold - variance) # / (threshold + 1e-8)
 
 class LossStats:
     def __init__(self):
@@ -2585,7 +2585,7 @@ def main():
 
         diff_matte = diffmatte(output_clean, img1_orig)
         loss_diff = float(torch.mean(diff_matte))
-        loss_mask = variance_loss(mask, 0.01)
+        loss_mask = variance_loss(mask, 0.28)
         loss_conf = criterion_l1(conf, diff_matte)
 
         lpips_weight = 0.5
