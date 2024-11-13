@@ -2512,7 +2512,7 @@ def main():
     data_time2 = 0
     train_time = 0
 
-    torch.autograd.set_detect_anomaly(True)
+    # torch.autograd.set_detect_anomaly(True)
 
     while True:
         # tracemalloc.start()
