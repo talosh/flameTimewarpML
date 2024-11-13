@@ -366,7 +366,7 @@ class Model:
             def __init__(self, in_planes, c=32):
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
-                    conv(in_planes, c, 3, 1, 1),
+                    conv(in_planes, c, 3, 2, 1),
                     )
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
@@ -384,13 +384,13 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv_mask = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
+                    torch.nn.ConvTranspose2d(c, 2, 4, 2, 1)
                 )
                 self.lastconv_fw = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
+                    torch.nn.ConvTranspose2d(c, 2, 4, 2, 1)
                 )
                 self.lastconv_bw = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
+                    torch.nn.ConvTranspose2d(c, 2, 4, 2, 1)
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
