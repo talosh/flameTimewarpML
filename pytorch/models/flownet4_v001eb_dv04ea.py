@@ -752,7 +752,7 @@ class Model:
                     )
                 
                 # '''
-                flow_list[0] = flow # torch.tanh(flow.detach().clone())
+                flow_list[0] = flow.detach().clone() # torch.tanh(flow.detach().clone())
                 flow_list[0][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[0][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 flow_list[0][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
