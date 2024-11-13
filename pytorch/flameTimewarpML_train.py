@@ -2594,7 +2594,7 @@ def main():
         lpips_weight = 0.5
         loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
         loss_weighted = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS).item())
-        loss = loss_weighted + 1e-2 * loss_mask + 1e-2 * loss_conf + 1e-2 * loss_diff
+        loss = loss_weighted + 2e-2 * loss_mask + 1e-2 * loss_conf + 1e-3 * loss_diff
         loss_l1 = criterion_l1(output_clean, img1_orig)
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
