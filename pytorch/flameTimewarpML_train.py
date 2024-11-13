@@ -1599,9 +1599,16 @@ def diffmatte(tensor1, tensor2):
     return difference_normalized
 
 def variance_loss(tensor, threshold):
-    variance = torch.std(tensor)
+    mean = tensor.mean().item()
+    variance = tensor.var().item()
+
+    mean_deviation = abs(mean - 0.5)
+    variance_deviation = abs(variance - 1/12)
+    torch.relu(torch.tanh(mean_deviation + variance_deviation))
+
+    # variance = torch.std(tensor)
     # Loss is positive when variance is less than the threshold
-    return torch.relu(threshold - variance) # / (threshold + 1e-8)
+    # return torch.relu(threshold - variance) # / (threshold + 1e-8)
 
 class LossStats:
     def __init__(self):
