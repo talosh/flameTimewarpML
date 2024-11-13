@@ -598,9 +598,9 @@ class Model:
                 self.revmix2 = ResConvRevMix(c, cd)
                 self.lastconv_mask = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    conv(c//2, c//4, 3, 1, 1),
+                    conv(c//2, c//2, 3, 1, 1),
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c//4, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
+                    torch.nn.Conv2d(c//2, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
                 self.lastconv_fw = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
