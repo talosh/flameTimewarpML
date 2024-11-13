@@ -1602,7 +1602,7 @@ def variance_loss(tensor, threshold):
     mean = tensor.mean()
     variance = torch.abs(tensor.std())
     mean_deviation = abs(mean - 0.5)
-    return torch.relu(threshold - variance).item() / (threshold + 1e-11) + 0.02 * mean_deviation
+    return (torch.relu(threshold - variance).item() / (threshold + 1e-11)) + 0.02 * mean_deviation
 
 class LossStats:
     def __init__(self):
