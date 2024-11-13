@@ -615,6 +615,7 @@ class Model:
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     torch.nn.Conv2d(c//2, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
+                self.tanh = torch.nn.Tanh()
                 self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
@@ -698,6 +699,7 @@ class Model:
                 tmp_mask = torch.nn.functional.interpolate(tmp_mask[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
                 flow = torch.nn.functional.interpolate(flow[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
 
+                flow = self.tanh(flow)
                 # flow = torch.tanh(flow) # * scale
 
                 mask = tmp_mask[:, 0:1]
