@@ -2588,7 +2588,7 @@ def main():
 
         diff_matte = diffmatte(output_clean, img1_orig)
         loss_diff = float(torch.mean(diff_matte))
-        loss_mask = variance_loss(mask, 0.1)
+        loss_mask = variance_loss(mask, 0.28)
         loss_conf = criterion_l1(conf, diff_matte)
 
         lpips_weight = 0.5
