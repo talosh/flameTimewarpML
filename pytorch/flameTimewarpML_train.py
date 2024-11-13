@@ -1607,7 +1607,7 @@ def variance_loss(tensor, threshold):
     torch.relu(torch.tanh(mean_deviation + variance_deviation))
 
     # variance = torch.std(tensor)
-    # Loss is positive when variance is less than the threshold
+    # Loss is positive when variance    is less than the threshold
     # return torch.relu(threshold - variance) # / (threshold + 1e-8)
 
 class LossStats:
