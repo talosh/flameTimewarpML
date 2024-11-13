@@ -438,7 +438,7 @@ class Model:
                 tmp_mask = self.lastconv_fw(feat_mask)
                 tmp_mask = torch.nn.functional.interpolate(tmp_mask[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
 
-                flow = torch.tanh(flow) # * scale
+                # flow = torch.tanh(flow) # * scale
 
                 mask = tmp_mask[:, 0:1]
                 conf = tmp_mask[:, 1:2]
@@ -757,8 +757,8 @@ class Model:
                 flow_list[0][:, 1:2, :, :] = flow_list[0][:, 1:2, :, :] * ((flow.shape[2] - 1.0) / 2.0)
                 flow_list[0][:, 2:3, :, :] = flow_list[0][:, 2:3, :, :] * ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[0][:, 3:4, :, :] = flow_list[0][:, 3:4, :, :] * ((flow.shape[2] - 1.0) / 2.0)
-                mask_list[0] = (torch.tanh(mask) + 1) / 2.0
-                conf_list[0] = (torch.tanh(conf) + 1) / 2.0
+                mask_list[0] = torch.sigmoid(mask) # (torch.tanh(mask) + 1) / 2.0
+                conf_list[0] = torch.sigmoid(conf) # (torch.tanh(conf) + 1) / 2.0
                 merged[0] = warp(img0, flow_list[0][:, :2]) * mask_list[0] + warp(img1, flow_list[0][:, 2:4]) * (1 - mask_list[0])
                 # '''
 
