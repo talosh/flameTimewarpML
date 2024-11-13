@@ -1599,7 +1599,7 @@ def diffmatte(tensor1, tensor2):
     return difference_normalized
 
 def variance_loss(tensor, threshold):
-    variance = torch.var(tensor)
+    variance = torch.std(tensor)
     # Loss is positive when variance is less than the threshold
     return torch.nn.functional.softplus(threshold - variance) # / (threshold + 1e-8)
 
@@ -2813,7 +2813,7 @@ def main():
 
         clear_lines(2)
         print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{data_time1_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
-        print(f'\r[Epoch] Min: {min_l1:.6f} Avg: {avg_l1:.6f}, Max: {max_l1:.6f} LPIPS: {avg_lpips:.4f} var: {mask.std()}')
+        print(f'\r[Epoch] Min: {min_l1:.6f} Avg: {avg_l1:.6f}, Max: {max_l1:.6f} LPIPS: {avg_lpips:.4f} var: {loss_mask}')
 
         '''
         if len(stats) < 9999:
