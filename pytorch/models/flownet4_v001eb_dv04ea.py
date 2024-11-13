@@ -528,7 +528,7 @@ class Model:
                 tmp_mask = self.lastconv_fw(feat_mask)
                 tmp_mask = torch.nn.functional.interpolate(tmp_mask[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
 
-                flow = torch.tanh(flow) # * scale
+                # flow = torch.tanh(flow) # * scale
 
                 mask = tmp_mask[:, 0:1]
                 conf = tmp_mask[:, 1:2]
