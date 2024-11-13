@@ -729,7 +729,7 @@ class Model:
                 # step training
 
                 # stage 1
-                # scale[0] = random.uniform(1, 3)
+                scale[0] = 1 # random.uniform(1, 3)
 
                 # stage 2
                 # scale[0] = random.uniform(scale[0], scale[1]) # scale[1]
@@ -751,18 +751,18 @@ class Model:
                     scale=scale[0]
                     )
                 
-                '''
-                flow_list[0] = torch.tanh(flow.detach().clone())
+                # '''
+                flow_list[0] = flow # torch.tanh(flow.detach().clone())
                 flow_list[0][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[0][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 flow_list[0][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[0][:, 3:4, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
                 mask_list[0] = (torch.tanh(mask) + 1) / 2.0
                 conf_list[0] = (torch.tanh(conf) + 1) / 2.0
-                merged[0] = warp_norm(img0, flow[:, :2]) * mask_list[0] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[0])
-                '''
+                merged[0] = warp(img0, flow[0][:, :2]) * mask_list[0] + warp(img1, flow_list[0][:, 2:4]) * (1 - mask_list[0])
+                # '''
 
-                '''
+                # '''
                 # step training stage 1
                 flow_list[4] = flow_list[0]
                 mask_list[4] = mask_list[0]
@@ -770,7 +770,7 @@ class Model:
                 merged[4] = merged[0]
 
                 return flow_list, mask_list, conf_list, merged
-                '''
+                # '''
 
                 # refine step 1
                 flow_d, mask_d, conf_d = self.block1(
