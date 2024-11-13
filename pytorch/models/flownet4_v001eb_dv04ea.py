@@ -551,18 +551,14 @@ class Model:
                 )
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
-                    ResConv(c),
                 )
                 self.convblock2 = torch.nn.Sequential(
-                    ResConv(c),
                     ResConv(c),
                 )
                 self.convblock3 = torch.nn.Sequential(
                     ResConv(c),
-                    ResConv(c),
                 )
                 self.convblock4 = torch.nn.Sequential(
-                    ResConv(c),
                     ResConv(c),
                 )
                 self.convblock_fw = torch.nn.Sequential(
@@ -576,18 +572,14 @@ class Model:
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
                     ResConv(cd),
-                    ResConv(cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
-                    ResConv(cd),
                     ResConv(cd),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
                     ResConv(cd),
-                    ResConv(cd),
                 )
                 self.convblock_deep4 = torch.nn.Sequential(
-                    ResConv(cd),
                     ResConv(cd),
                 )
                 self.mix1 = ResConvMix(c, cd)
