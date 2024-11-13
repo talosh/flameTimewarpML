@@ -2588,7 +2588,8 @@ def main():
         output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
 
         diff_matte = diffmatte(output_clean, img1_orig)
-        # diff_warps = diffmatte(warp(img0_orig, flow0), warp(img2_orig, flow1))
+        diff_warps = diffmatte(warp(img0_orig, flow0), warp(img2_orig, flow1))
+        loss_diff_warps = loss_fn_alex(mask * 2 - 1, diff_warps * 2 - 1)
         loss_diff = float(torch.mean(diff_matte))
         loss_mask = variance_loss(mask, 0.1)
         loss_conf = criterion_l1(conf, diff_matte)
