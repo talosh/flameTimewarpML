@@ -1604,7 +1604,7 @@ def variance_loss(tensor, threshold):
 
     mean_deviation = abs(mean - 0.5)
     variance_deviation = abs(variance - 1/12)
-    torch.relu(torch.tanh(mean_deviation + variance_deviation))
+    return mean_deviation + variance_deviation
 
     # variance = torch.std(tensor)
     # Loss is positive when variance    is less than the threshold
