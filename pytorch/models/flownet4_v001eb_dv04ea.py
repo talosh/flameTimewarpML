@@ -468,16 +468,13 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv_mask = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
+                    torch.nn.ConvTranspose2d(c, 2, 4, 2, 1)
                 )
                 self.lastconv_fw = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
+                    torch.nn.ConvTranspose2d(c, 2, 4, 2, 1)
                 )
                 self.lastconv_bw = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
+                    torch.nn.ConvTranspose2d(c, 2, 4, 2, 1)
                 )
                 '''
                 self.lastconv = torch.nn.Sequential(
