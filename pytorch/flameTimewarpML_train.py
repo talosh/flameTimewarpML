@@ -1602,7 +1602,7 @@ def variance_loss(tensor, threshold):
     mean = tensor.mean()
     variance = tensor.std()
     mean_deviation = abs(mean - 0.5)
-    return torch.relu(threshold - variance) / (threshold + 1e-8) + mean_deviation
+    return torch.relu(threshold - variance) / (threshold + 1e-8) # + mean_deviation
 
 class LossStats:
     def __init__(self):
@@ -2588,7 +2588,7 @@ def main():
 
         diff_matte = diffmatte(output_clean, img1_orig)
         loss_diff = float(torch.mean(diff_matte))
-        loss_mask = variance_loss(mask, 0.28)
+        loss_mask = variance_loss(mask, 0.1)
         loss_conf = criterion_l1(conf, diff_matte)
 
         lpips_weight = 0.5
