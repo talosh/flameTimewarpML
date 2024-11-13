@@ -539,7 +539,7 @@ class Model:
                 super().__init__()
                 ca = 36
                 cd = int(1.618 * c)
-                self.conv0att = conv_mish(6 + 16, ca, 5, 1, 2)
+                self.conv0att = conv(6 + 16, ca, 5, 1, 2)
                 self.conv0 = conv(ca, c//2, 5, 2, 2)
                 self.conv1 = conv(c//2 + 3, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
