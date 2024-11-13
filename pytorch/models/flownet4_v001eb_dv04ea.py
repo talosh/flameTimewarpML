@@ -575,7 +575,6 @@ class Model:
                 )
                 self.convblock_mask = torch.nn.Sequential(
                     ResConv(c),
-                    ResConv(c),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
                     ResConv(cd),
