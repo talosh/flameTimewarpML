@@ -572,8 +572,7 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock_mask = torch.nn.Sequential(
-                    ResConv(c//3),
-                    ResConv(c//3),
+                    ResConv(c),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
                     ResConv(cd),
@@ -599,9 +598,9 @@ class Model:
                 self.revmix2 = ResConvRevMix(c, cd)
                 self.lastconv_mask = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    conv(c//3, c//6, 3, 1, 1),
+                    conv(c, c//2, 3, 1, 1),
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c//6, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
+                    torch.nn.Conv2d(c//2, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
                 self.lastconv_fw = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
@@ -681,9 +680,9 @@ class Model:
 
                 feat = self.convblock4(feat)
 
-                feat_mask = self.conv_mask(feat)
+                # feat_mask = self.conv_mask(feat)
                 # feat_mask = self.attn_mask(feat_mask)
-                feat_mask = self.convblock_mask(feat_mask)
+                feat_mask = self.convblock_mask(feat)
                 tmp_mask = self.lastconv_mask(feat_mask)
 
                 feat_fw = self.convblock_fw(feat)
