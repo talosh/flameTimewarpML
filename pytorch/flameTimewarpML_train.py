@@ -508,8 +508,19 @@ def get_dataset(
             print ('reading first block of training data...')
             self.last_train_data_size = 24
             self.last_train_data = [self.frames_queue.get()] * self.last_train_data_size
+            self.new_sample = [None]
             self.new_sample_shown = False
             self.train_data_index = 0
+
+            def new_sample_fetch(frames_queue, new_sample):
+                try:
+                    if new_sample[0] is None:
+                        new_sample[0] = frames_queue.get_nowait()
+                except queue.Empty:
+                    time.sleep(1e-8)
+            self.new_sample_fetcher = threading.Thread(target=new_sample_fetch, args=(self.frames_queue, self.new_sample))
+            self.frame_read_thread.daemon = True
+            self.frame_read_thread.start()
 
             self.repeat_count = repeat
             self.repeat_counter = 1
@@ -792,6 +803,13 @@ def get_dataset(
             
             if self.repeat_counter >= self.repeat_count:
                 self.repeat_counter = 1
+                if self.new_sample[0] is not None:
+                    new_data = self.new_sample[0].copy()
+                    self.new_sample[0] = None
+                    self.last_train_data[random.randint(0, len(self.last_train_data) - 1)] = new_data
+                    self.train_data_index = new_data['index']
+                    return new_data
+                '''
                 try:
                     new_data = self.frames_queue.get_nowait()
                     self.last_train_data[random.randint(0, len(self.last_train_data) - 1)] = new_data
@@ -799,6 +817,7 @@ def get_dataset(
                     return new_data
                 except queue.Empty:
                     return random.choice(self.last_train_data)
+                '''
             else:
                 self.repeat_counter += 1
                 return random.choice(self.last_train_data)
@@ -1782,6 +1801,29 @@ def centered_highpass_filter(rgb_image, gamma=1.8):
     # scaled_image = scaled_image ** (1 / 1.8)
 
     return scaled_image[:, :, padding:-padding, padding:-padding]
+
+def highpass(img0, img1):
+    def gauss_kernel(size=5, channels=3):
+        kernel = torch.tensor([[1., 4., 6., 4., 1],
+                            [4., 16., 24., 16., 4.],
+                            [6., 24., 36., 24., 6.],
+                            [4., 16., 24., 16., 4.],
+                            [1., 4., 6., 4., 1.]])
+        kernel /= 256.
+        kernel = kernel.repeat(channels, 1, 1, 1)
+        return kernel
+    
+    def conv_gauss(img, kernel):
+        img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+        out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+        return out
+
+    
+    gkernel = gauss_kernel()
+    gkernel = gkernel.to(device=img0.device, dtype=img0.dtype)
+    hp0 = img0 - conv_gauss(img0, gkernel)
+    hp1 = img1 - conv_gauss(img1, gkernel)
+
 
 current_state_dict = {}
 
