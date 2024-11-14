@@ -357,35 +357,20 @@ class Model:
 
 
         class Flownet_d1(Module):
-            def __init__(self, in_planes, c=32):
+            def __init__(self, in_planes, c=24):
                 super().__init__()
-                self.conv0 = torch.nn.Sequential(
-                    conv(in_planes, c, 3, 2, 1),
-                    )
+                self.conv0 = conv(in_planes, c, 5, 2, 2)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
-                )                
-                self.convblock_fw = torch.nn.Sequential(
-                    ResConv(c),
-                )
-                self.convblock_bw = torch.nn.Sequential(
-                    ResConv(c),
                 )
                 self.convblock_mask = torch.nn.Sequential(
                     ResConv(c),
                 )
-                self.lastconv_mask = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 2, 4, 2, 1)
-                )
-                self.lastconv_fw = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 2, 4, 2, 1)
-                )
-                self.lastconv_bw = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 2, 4, 2, 1)
-                )
+                self.lastconv_flow = torch.nn.ConvTranspose2d(c, 4, 4, 2, 1)
+                self.lastconv_mask = torch.nn.ConvTranspose2d(c, 2, 4, 2, 1)
                 '''
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, 6*4, 4, 2, 1),
@@ -398,15 +383,11 @@ class Model:
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
-                warped_img0 = warp(img0, flow[:, :2])
-                warped_img1 = warp(img1, flow[:, :2])
-                # warped_f0 = warp(f0, flow[:, :2])
-                # warped_f1 = warp(f1, flow[:, 2:4])
-                # x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask), 1)
-                x = torch.cat((warped_img0, warped_img1, mask), 1)
-                x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
+                warped_img0 = warp_norm(img0, flow[:, :2])
+                warped_img1 = warp_norm(img1, flow[:, :2])
+                x = torch.cat((warped_img0, warped_img1, mask, flow, timestep), 1)
+                x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
                 timestep = (x[:, :1].clone() * 0 + 1) * timestep
-                flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) # * 1. / scale
                 x = torch.cat((x, flow, timestep), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
@@ -416,23 +397,13 @@ class Model:
 
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
+                flow = self.lastconv_flow(feat)
 
-                feat_fw = self.convblock_fw(feat)
-                flow_fw = self.lastconv_fw(feat_fw)
-                # flow_fw = torch.tanh(flow_fw)
-
-                feat_bw = self.convblock_bw(feat)
-                flow_bw = self.lastconv_bw(feat_bw)
-                # flow_bw = torch.tanh(flow_bw)
-
-                flow = torch.cat((flow_fw, flow_bw), 1)
                 flow = torch.nn.functional.interpolate(flow[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
 
-                feat_mask = self.convblock_fw(feat)
-                tmp_mask = self.lastconv_fw(feat_mask)
-                tmp_mask = torch.nn.functional.interpolate(tmp_mask[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
-
-                # flow = torch.tanh(flow) # * scale
+                feat = self.convblock_mask(feat)
+                feat = self.lastconv_mask(feat)
+                tmp_mask = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
 
                 mask = tmp_mask[:, 0:1]
                 conf = tmp_mask[:, 1:2]
@@ -698,7 +669,7 @@ class Model:
                 self.block1 = Flownet(2*3 + 2*8 + 4 + 1, c=128)
                 self.block2 = Flownet(2*3 + 2*8 + 4 + 1, c=96)
                 self.block3 = Flownet(2*3 + 2*8 + 4 + 1, c=64)
-                self.block4 = Flownet(2*3 + 2*8 + 4 + 1, c=48)
+                self.block4 = Flownet_d1(2*3 + 4 + 2, c=24)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
