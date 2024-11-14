@@ -278,8 +278,6 @@ class Model:
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-
-
                 self.conv0 = conv(in_planes, c//2, 5, 2, 2)
                 self.conv1 = conv(c//2 + 3, c, 3, 2, 1)
                 self.convblock = torch.nn.Sequential(
@@ -327,7 +325,6 @@ class Model:
                     warped_img1 = warp_norm(img1, flow[:, 2:4])
                     warped_f0 = warp_norm(f0, flow[:, :2])
                     warped_f1 = warp_norm(f1, flow[:, 2:4])
-                    
                     x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask, flow), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
 
@@ -697,11 +694,11 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = Flownet(6 + 8, c=192)
-                self.block1 = Flownet(6 + 8 + 4 + 1, c=128)
-                self.block2 = Flownet(6 + 8 + 4 + 1, c=96)
-                self.block3 = Flownet(6 + 8 + 4 + 1, c=64)
-                self.block4 = Flownet(6 + 8 + 4 + 1, c=48)
+                self.block0 = Flownet(6 + 16, c=192)
+                self.block1 = Flownet(6 + 16 + 4 + 1, c=128)
+                self.block2 = Flownet(6 + 16 + 4 + 1, c=96)
+                self.block3 = Flownet(6 + 16 + 4 + 1, c=64)
+                self.block4 = Flownet(6 + 16 + 4 + 1, c=48)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
@@ -730,12 +727,12 @@ class Model:
                 # scale[2] = 1
 
                 flow, mask, conf = self.block0(
-                    img0, 
-                    img1, 
-                    f0, 
-                    f1, 
-                    timestep, 
-                    None, 
+                    img0,
+                    img1,
+                    f0,
+                    f1,
+                    timestep,
+                    None,
                     None,
                     scale=scale[0]
                     )
