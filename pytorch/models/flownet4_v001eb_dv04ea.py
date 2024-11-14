@@ -511,7 +511,7 @@ class Model:
                 self.attn = CBAM(ca)
                 # self.attn_mask = CBAM(c//3)
                 self.convblock_shallow = torch.nn.Sequential(
-                    ResConv(c//2),
+                    ResConv(ca),
                 )
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
@@ -564,7 +564,7 @@ class Model:
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
                 if flow is None:
-                    x = torch.cat((img0 * 2 - 1, img1 * 2 - 1, f0, f1), 1)
+                    x = torch.cat((img0, img1, f0, f1), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
                 else:
                     warped_img0 = warp_norm(img0, flow[:, :2])
@@ -572,32 +572,32 @@ class Model:
                     warped_f0 = warp_norm(f0, flow[:, :2])
                     warped_f1 = warp_norm(f1, flow[:, 2:4])
                     
-                    x = torch.cat((warped_img0 * 2 - 1, warped_img1 * 2 - 1, warped_f0, warped_f1), 1)
+                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
 
                     y = torch.cat((mask, flow), 1)
                     y = torch.nn.functional.interpolate(y, size=(sh, sw), mode="bilinear", align_corners=False) # * 1. / scale
-                    y = torch.cat((timestep, tenGrid, y), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
                 padding = (0, pw, 0, ph)
                 x = torch.nn.functional.pad(x, padding, mode='constant')
-                _, _, xh, xw = x.shape
+                y = torch.nn.functional.pad(y, padding, mode='constant')
 
+                _, _, xh, xw = x.shape
                 tenHorizontal = torch.linspace(-1.0, 1.0, xw//2).view(1, 1, 1, xw//2).expand(n, -1, xh//2, -1)
                 tenVertical = torch.linspace(-1.0, 1.0, xh//2).view(1, 1, xh//2, 1).expand(n, -1, -1, xw//2)
                 tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=img0.device, dtype=img0.dtype)
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
-                y = torch.cat((timestep, tenGrid), 1)
+                z = torch.cat((timestep, tenGrid), 1)
 
                 feat = self.conv0att(x)
                 feat = self.attn(feat)
+                feat = self.convblock_shallow(feat)
+                feat = self.conv1(torch.cat((feat, y), 1))
 
                 feat = self.conv0(feat)
-                feat = self.convblock_shallow(feat)
-
-                feat = self.conv1(torch.cat((feat, y), 1))
+                feat = self.conv1(torch.cat((feat, z), 1))
 
                 feat_deep = self.conv2(feat)
                 feat_deep = self.convblock_deep1(feat_deep)
