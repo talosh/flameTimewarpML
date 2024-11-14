@@ -694,11 +694,11 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = Flownet(6 + 16, c=192)
-                self.block1 = Flownet(6 + 16 + 4 + 1, c=128)
-                self.block2 = Flownet(6 + 16 + 4 + 1, c=96)
-                self.block3 = Flownet(6 + 16 + 4 + 1, c=64)
-                self.block4 = Flownet(6 + 16 + 4 + 1, c=48)
+                self.block0 = Flownet(2*3 + 2*8, c=192)
+                self.block1 = Flownet(2*3 + 2*8 + 4 + 1, c=128)
+                self.block2 = Flownet(2*3 + 2*8 + 4 + 1, c=96)
+                self.block3 = Flownet(2*3 + 2*8 + 4 + 1, c=64)
+                self.block4 = Flownet(2*3 + 2*8 + 4 + 1, c=48)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
