@@ -2612,16 +2612,16 @@ def main():
         loss = loss / accum_iter
         loss.backward()
 
-        if ((batch_idx + 1) % accum_iter == 0) or (idx + 1 == len(dataset)):
-            torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
+        # if ((batch_idx + 1) % accum_iter == 0) or (idx + 1 == len(dataset)):
+        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
 
-            if platform.system() == 'Darwin':
-                torch.mps.synchronize()
-            else:
-                torch.cuda.synchronize(device=device)
+        if platform.system() == 'Darwin':
+            torch.mps.synchronize()
+        else:
+            torch.cuda.synchronize(device=device)
 
-            optimizer_flownet.step()
-            optimizer_flownet.zero_grad()
+        optimizer_flownet.step()
+        optimizer_flownet.zero_grad()
 
         '''
         try:
