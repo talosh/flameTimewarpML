@@ -148,7 +148,7 @@ class Model:
                 conf_list = [None] * 5
                 merged = [None] * 5
 
-                scale = [8, 4, 2, 2] if scale == [8, 4, 2, 1] else scale
+                scale = [8, 4, 4, 2] if scale == [8, 4, 2, 1] else scale
 
                 flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, scale=scale[0])
 
