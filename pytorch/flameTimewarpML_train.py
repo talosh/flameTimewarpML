@@ -2169,7 +2169,7 @@ def main():
                     )
     '''
 
-    scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, 'min', factor=0.2, patience=4)
+    scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, 'min', factor=0.5, patience=10)
 
     # LPIPS Init
 
