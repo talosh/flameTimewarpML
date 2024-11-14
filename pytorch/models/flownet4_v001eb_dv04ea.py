@@ -278,7 +278,7 @@ class Model:
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                self.conv0 = conv(in_planes, c//2, 3, 2, 1)
+                self.conv0 = conv(in_planes, c//2, 5, 2, 2)
                 self.conv1 = conv(c//2 + 3, c, 3, 2, 1)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
