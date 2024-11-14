@@ -1818,11 +1818,22 @@ def highpass(img0, img1):
         out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
         return out
 
+    def normalize(tensor, min_val, max_val):
+        return (tensor - min_val) / (max_val - min_val)
+
     
     gkernel = gauss_kernel()
     gkernel = gkernel.to(device=img0.device, dtype=img0.dtype)
     hp0 = img0 - conv_gauss(img0, gkernel)
     hp1 = img1 - conv_gauss(img1, gkernel)
+
+    global_min = min(hp0.min(), hp1.min())
+    global_max = max(hp0.max(), hp1.max())
+
+    hp0 = normalize(hp0, global_min, global_max)
+    hp1 = normalize(hp1, global_min, global_max)
+
+    return (hp0, hp1)
 
 
 current_state_dict = {}
