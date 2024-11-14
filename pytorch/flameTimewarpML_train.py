@@ -789,50 +789,7 @@ def get_dataset(
                 new_data = self.frames_queue.get()
                 self.train_data_index = new_data['index']
                 return new_data
-        
-            '''
-            if not self.last_train_data:
-                new_data = self.frames_queue.get_nowait()
-                self.last_train_data = [new_data]
-                del new_data
-            if self.repeat_counter >= self.repeat_count:
-                try:
-                    if len(self.last_train_data) == self.last_train_data_size:
-                        data_to_delete = self.last_train_data.pop(0)
-                        del data_to_delete
-                    elif len(self.last_train_data) == self.last_train_data_size:
-                        self.last_train_data = self.last_train_data[:-(self.last_train_data_size - 1)]
-                    new_data = self.frames_queue.get_nowait()
-                    self.train_data_index = new_data['index']
-                    self.last_train_data.append(new_data)
-                    self.new_sample_shown = False
-                    del new_data
-                    self.repeat_counter = 0
-                except queue.Empty:
-                    pass
-
-            self.repeat_counter += 1
-            if not self.new_sample_shown:
-                self.new_sample_shown = True
-                return self.last_train_data[-1]
-            else:
-                return self.last_train_data[random.randint(0, len(self.last_train_data) - 1)]
-            '''
-
-            '''
-            if self.repeat_counter >= self.repeat_count:
-                try:
-                    self.last_train_data = [self.frames_queue.get_nowait()]
-                except queue.Empty:
-                    pass
-                self.repeat_counter = 0
-                self.train_data_index = self.last_train_data[0]['index']
-            else:
-                self.repeat_counter += 1
             
-            return self.last_train_data[0]
-            '''
-
             if self.repeat_counter >= self.repeat_count:
                 self.repeat_counter = 1
                 try:
