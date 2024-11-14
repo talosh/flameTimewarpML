@@ -385,10 +385,10 @@ class Model:
 
                 warped_img0 = warp_norm(img0, flow[:, :2])
                 warped_img1 = warp_norm(img1, flow[:, :2])
-                x = torch.cat((warped_img0, warped_img1, mask, flow, timestep), 1)
+                x = torch.cat((warped_img0, warped_img1, mask, flow), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
                 timestep = (x[:, :1].clone() * 0 + 1) * timestep
-                x = torch.cat((x, flow, timestep), 1)
+                x = torch.cat((x, timestep), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
