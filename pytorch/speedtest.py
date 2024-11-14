@@ -108,6 +108,22 @@ def main():
 
     net = Net().get_training_model()().to(device)
 
+    import signal
+    def create_graceful_exit():
+        def graceful_exit(signum, frame):
+            '''
+            print(f'\nSaving current state to {current_state_dict["trained_model_path"]}...')
+            print (f'Epoch: {current_state_dict["epoch"] + 1}, Step: {current_state_dict["step"]:11}')
+            torch.save(current_state_dict, current_state_dict['trained_model_path'])
+            exit_event.set()  # Signal threads to stop
+            process_exit_event.set()  # Signal processes to stop
+            '''
+            exit(0)
+            # signal.signal(signum, signal.SIG_DFL)
+            # os.kill(os.getpid(), signal.SIGINT)
+        return graceful_exit
+    signal.signal(signal.SIGINT, create_graceful_exit())
+
     with torch.no_grad():
         while True:
             start_time = time.time()
