@@ -118,6 +118,7 @@ def main():
             exit_event.set()  # Signal threads to stop
             process_exit_event.set()  # Signal processes to stop
             '''
+            print('\n')
             exit(0)
             # signal.signal(signum, signal.SIG_DFL)
             # os.kill(os.getpid(), signal.SIGINT)
