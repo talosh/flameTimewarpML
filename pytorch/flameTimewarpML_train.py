@@ -2514,6 +2514,7 @@ def main():
     train_time = 0
 
     # torch.autograd.set_detect_anomaly(True)
+    accum_iter = 4
 
     while True:
         # tracemalloc.start()
@@ -2536,7 +2537,6 @@ def main():
         img2 = normalize(img2)
 
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
-        optimizer_flownet.zero_grad()
 
         # scale list augmentation
         random_scales = [
@@ -2609,15 +2609,19 @@ def main():
         avg_lpips = float(torch.mean(loss_LPIPS).item()) if batch_idx == 0 else (avg_lpips * (batch_idx - 1) + float(torch.mean(loss_LPIPS).item())) / batch_idx
         avg_pnsr = float(psnr_torch(output_clean, img1_orig)) if batch_idx == 0 else (avg_pnsr * (batch_idx - 1) + float(psnr_torch(output_clean, img1_orig))) / batch_idx
 
+        loss = loss / accum_iter
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
 
-        if platform.system() == 'Darwin':
-            torch.mps.synchronize()
-        else:
-            torch.cuda.synchronize(device=device)
+        if ((batch_idx + 1) % accum_iter == 0) or (idx + 1 == len(dataset)):
+            torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
 
-        optimizer_flownet.step()
+            if platform.system() == 'Darwin':
+                torch.mps.synchronize()
+            else:
+                torch.cuda.synchronize(device=device)
+
+            optimizer_flownet.step()
+            optimizer_flownet.zero_grad()
 
         '''
         try:
