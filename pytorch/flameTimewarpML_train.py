@@ -519,8 +519,8 @@ def get_dataset(
                 except queue.Empty:
                     time.sleep(1e-8)
             self.new_sample_fetcher = threading.Thread(target=new_sample_fetch, args=(self.frames_queue, self.new_sample))
-            self.frame_read_thread.daemon = True
-            self.frame_read_thread.start()
+            self.new_sample_fetcher.daemon = True
+            self.new_sample_fetcher.start()
 
             self.repeat_count = repeat
             self.repeat_counter = 1
