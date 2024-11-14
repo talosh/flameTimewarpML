@@ -504,13 +504,13 @@ class Model:
                 ca = 36
                 cd = int(1.618 * c)
                 self.conv0att = conv(6 + 16, ca, 5, 1, 2)
-                self.conv0 = conv(ca, c//2, 5, 2, 2)
-                self.conv1 = conv(c//2 + 3, c, 3, 2, 1)
+                self.conv0 = conv(ca + (in_planes - 22), c, 5, 2, 2)
+                self.conv1 = conv(c + 3, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
                 self.conv_mask = conv(c, c//3, 3, 1, 1)
                 self.attn = CBAM(ca)
                 # self.attn_mask = CBAM(c//3)
-                self.convblock_shallow = torch.nn.Sequential(
+                self.convblock_attn = torch.nn.Sequential(
                     ResConv(ca),
                 )
                 self.convblock1 = torch.nn.Sequential(
@@ -593,8 +593,10 @@ class Model:
 
                 feat = self.conv0att(x)
                 feat = self.attn(feat)
-                feat = self.convblock_shallow(feat)
-                feat = self.conv1(torch.cat((feat, y), 1))
+                feat = self.convblock_attn(feat)
+
+                if flow is not None:
+                    feat = torch.cat((feat, y), 1)
 
                 feat = self.conv0(feat)
                 feat = self.conv1(torch.cat((feat, z), 1))
