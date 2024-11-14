@@ -6,8 +6,8 @@
 class Model:
 
     info = {
-        'name': 'Flownet4_v001a',
-        'file': 'flownet4_v001a.py',
+        'name': 'Flownet4_v001b',
+        'file': 'flownet4_v001b.py',
         'ratio_support': True
     }
 
@@ -95,6 +95,7 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
+                self.maxdepth = 4
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
                 n, c, h, w = img0.shape
@@ -104,15 +105,15 @@ class Model:
                 
                 if flow is None:
                     x = torch.cat((img0, img1, f0, f1, timestep), 1)
-                    x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
                 else:
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
                     x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
-                    x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                    flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
+                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
+                    flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
@@ -136,6 +137,7 @@ class Model:
                 self.block1 = Flownet(8+4+16, c=128)
                 self.block2 = Flownet(8+4+16, c=96)
                 self.block3 = Flownet(8+4+16, c=64)
+                self.block4 = Flownet(8+4+16, c=48)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1):
@@ -144,10 +146,12 @@ class Model:
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 
-                flow_list = [None] * 4
-                mask_list = [None] * 4
-                conf_list = [None] * 4
-                merged = [None] * 4
+                flow_list = [None] * 5
+                mask_list = [None] * 5
+                conf_list = [None] * 5
+                merged = [None] * 5
+
+                scale = [8, 5, 3, 2] if scale == [8, 4, 2, 1] else scale
 
                 flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, scale=scale[0])
 
@@ -209,6 +213,24 @@ class Model:
                 conf_list[3] = torch.sigmoid(conf)
                 mask_list[3] = torch.sigmoid(mask)
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
+
+                for iteration in range(iterations):
+                    flow_d, mask, conf = self.block4(
+                        img0, 
+                        img1,
+                        f0,
+                        f1,
+                        timestep,
+                        mask,
+                        flow, 
+                        scale=1
+                    )
+                    flow = flow + flow_d
+
+                flow_list[4] = flow
+                conf_list[4] = torch.sigmoid(conf)
+                mask_list[4] = torch.sigmoid(mask)
+                merged[4] = warp(img0, flow[:, :2]) * mask_list[4] + warp(img1, flow[:, 2:4]) * (1 - mask_list[4])
 
                 return flow_list, mask_list, conf_list, merged
 
