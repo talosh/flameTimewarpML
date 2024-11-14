@@ -1601,8 +1601,7 @@ def variance_loss(tensor, threshold):
     mean = tensor.mean()
     variance = tensor.std()
     mean_deviation = abs(mean - 0.5)
-    variance_loss = threshold - variance if threshold - variance > 0 else 0
-    # variance_loss = torch.relu(threshold - variance).item() # / (threshold + 1e-11)
+    variance_loss = torch.relu(threshold - variance).item() # / (threshold + 1e-11)
     return variance_loss + 0.1 * mean_deviation
 
 class LossStats:
@@ -2824,7 +2823,7 @@ def main():
 
         clear_lines(2)
         print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{data_time1_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
-        print(f'\r[Epoch] Min: {min_l1:.6f} Avg: {avg_l1:.6f}, Max: {max_l1:.6f} LPIPS: {avg_lpips:.4f} var: {loss_mask}')
+        print(f'\r[Epoch] Min: {min_l1:.6f} Avg: {avg_l1:.6f}, Max: {max_l1:.6f} LPIPS: {avg_lpips:.4f} var: {loss_mask:.8f}')
 
         '''
         if len(stats) < 9999:
