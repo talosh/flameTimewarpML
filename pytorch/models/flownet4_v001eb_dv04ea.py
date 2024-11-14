@@ -550,7 +550,7 @@ class Model:
                 self.lastconv_flow = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
                     torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c//2, 2, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
+                    torch.nn.Conv2d(c//2, 4, kernel_size=3, stride=1, padding=1, padding_mode = 'zeros', bias=True)
                 )
                 self.lastconv_mask = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
@@ -620,11 +620,11 @@ class Model:
                 feat = self.mix4(feat, feat_deep)
 
                 feat = self.convblock4(feat)
-
-                tmp_mask = torch.nn.functional.interpolate(tmp_mask[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
+                flow = self.lastconv_flow(feat)
                 flow = torch.nn.functional.interpolate(flow[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
 
-                # flow = torch.tanh(flow) # * scale
+                feat = self.lastconv_mask(feat)
+                tmp_mask = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
 
                 mask = tmp_mask[:, 0:1]
                 conf = tmp_mask[:, 1:2]
