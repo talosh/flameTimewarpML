@@ -655,7 +655,7 @@ class Model:
                 conf_list = [None] * 5
                 merged = [None] * 5
 
-                scale = [8, 5, 3, 2] if scale == [8, 4, 2, 1] else scale                
+                scale = [8, 5, 3, 2] if scale == [8, 4, 2, 1] else scale
                 
                 # step training
 
