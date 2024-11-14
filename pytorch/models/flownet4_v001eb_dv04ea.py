@@ -278,6 +278,8 @@ class Model:
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
+
+
                 self.conv0 = conv(in_planes, c//2, 5, 2, 2)
                 self.conv1 = conv(c//2 + 3, c, 3, 2, 1)
                 self.convblock = torch.nn.Sequential(
@@ -355,6 +357,7 @@ class Model:
                 mask = tmp[:, 0:1]
                 conf = tmp[:, 1:2]
                 return flow, mask, conf
+
 
         class Flownet_d1(Module):
             def __init__(self, in_planes, c=32):
@@ -437,6 +440,7 @@ class Model:
                 mask = tmp_mask[:, 0:1]
                 conf = tmp_mask[:, 1:2]
                 return flow, mask, conf
+
 
         class Flownet_d2(Module):
             def __init__(self, in_planes, c=64):
@@ -524,6 +528,7 @@ class Model:
                 mask = tmp_mask[:, 0:1]
                 conf = tmp_mask[:, 1:2]
                 return flow, mask, conf
+
 
         class FlownetDeepSingleHead(Module):
             def __init__(self, in_planes, c=64):
@@ -688,14 +693,15 @@ class Model:
 
                 return flow, mask, conf
 
+
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepSingleHead(23, c=192)
-                self.block1 = Flownet(28, c=64)
-                self.block2 = Flownet_d2(28, c=48)
-                self.block3 = Flownet_d1(12, c=24)
-                self.block4 = Flownet_d1(12, c=24)
+                self.block0 = Flownet(6 + 8, c=192)
+                self.block1 = Flownet(6 + 8 + 4 + 1, c=128)
+                self.block2 = Flownet(6 + 8 + 4 + 1, c=96)
+                self.block3 = Flownet(6 + 8 + 4 + 1, c=64)
+                self.block4 = Flownet(6 + 8 + 4 + 1, c=48)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
