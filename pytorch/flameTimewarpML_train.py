@@ -602,19 +602,18 @@ def get_dataset(
                             }
                             descriptions.append(fw_item)
 
-                            # '''
-                            bw_item = {
-                                'h': h,
-                                'w': w,
-                                # 'pre_start': exr_files[min(end_frame_index + 1, len(exr_files) - 1)],
-                                'start': end_frame,
-                                'gt': gt_frame,
-                                'end': start_frame,
-                                # 'after_end': exr_files[max(start_frame_index - 1, 0)],
-                                'ratio': 1 - (1 / (len(window) - 1) * (gt_frame_index + 1))
-                            }
-                            descriptions.append(bw_item)
-                            # '''
+                            if not self.sequential:
+                                bw_item = {
+                                    'h': h,
+                                    'w': w,
+                                    # 'pre_start': exr_files[min(end_frame_index + 1, len(exr_files) - 1)],
+                                    'start': end_frame,
+                                    'gt': gt_frame,
+                                    'end': start_frame,
+                                    # 'after_end': exr_files[max(start_frame_index - 1, 0)],
+                                    'ratio': 1 - (1 / (len(window) - 1) * (gt_frame_index + 1))
+                                }
+                                descriptions.append(bw_item)
 
             except Exception as e:
                 print (f'\nError scanning {folder_path}: {e}')
@@ -1972,7 +1971,7 @@ def main():
         acescc_rate=args.acescc,
         generalize=args.generalize,
         repeat=args.repeat,
-        sequential = args.sequential
+        sequential = True
         )
     else:
         eval_dataset = dataset
