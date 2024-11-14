@@ -512,15 +512,18 @@ def get_dataset(
             self.new_sample_shown = False
             self.train_data_index = 0
 
-            def new_sample_fetch(frames_queue, new_sample):
-                try:
-                    if new_sample[0] is None:
-                        new_sample[0] = frames_queue.get_nowait()
-                except queue.Empty:
-                    time.sleep(1e-8)
-            self.new_sample_fetcher = threading.Thread(target=new_sample_fetch, args=(self.frames_queue, self.new_sample))
-            self.new_sample_fetcher.daemon = True
-            self.new_sample_fetcher.start()
+            def new_sample_fetch(frames_queue, new_sample_queue):
+                while not exit_event.is_set():
+                    try:
+                        new_sample = frames_queue.get_nowait()
+                        new_sample_queue.put(new_sample)
+                    except queue.Empty:
+                        time.sleep(1e-8)
+
+            self.new_sample_queue = queue.Queue(maxsize=1)
+            self.new_sample_thread = threading.Thread(target=new_sample_fetch, args=(self.frames_queue, self.new_sample_queue))
+            self.new_sample_thread.daemon = True
+            self.new_sample_thread.start()
 
             self.repeat_count = repeat
             self.repeat_counter = 1
@@ -800,24 +803,16 @@ def get_dataset(
                 new_data = self.frames_queue.get()
                 self.train_data_index = new_data['index']
                 return new_data
-            
+        
             if self.repeat_counter >= self.repeat_count:
                 self.repeat_counter = 1
-                if self.new_sample[0] is not None:
-                    new_data = self.new_sample[0].copy()
-                    self.new_sample[0] = None
-                    self.last_train_data[random.randint(0, len(self.last_train_data) - 1)] = new_data
-                    self.train_data_index = new_data['index']
-                    return new_data
-                '''
                 try:
-                    new_data = self.frames_queue.get_nowait()
+                    new_data = self.new_sample_queue.get_nowait()
                     self.last_train_data[random.randint(0, len(self.last_train_data) - 1)] = new_data
                     self.train_data_index = new_data['index']
                     return new_data
                 except queue.Empty:
                     return random.choice(self.last_train_data)
-                '''
             else:
                 self.repeat_counter += 1
                 return random.choice(self.last_train_data)
@@ -1814,18 +1809,20 @@ def highpass(img0, img1):
         return kernel
     
     def conv_gauss(img, kernel):
-        img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
-        out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+        # img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+        out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1], padding='same')
         return out
 
     def normalize(tensor, min_val, max_val):
         return (tensor - min_val) / (max_val - min_val)
 
-    
     gkernel = gauss_kernel()
     gkernel = gkernel.to(device=img0.device, dtype=img0.dtype)
-    hp0 = img0 - conv_gauss(img0, gkernel)
-    hp1 = img1 - conv_gauss(img1, gkernel)
+    hp0 = img0 - conv_gauss(img0, gkernel) + 0.5
+    hp1 = img1 - conv_gauss(img1, gkernel) + 0.5
+
+    hp0 = torch.clamp(hp0, 0.48, 0.52)
+    hp1 = torch.clamp(hp1, 0.48, 0.52)
 
     global_min = min(hp0.min(), hp1.min())
     global_max = max(hp0.max(), hp1.max())
@@ -2505,6 +2502,12 @@ def main():
             # os.kill(os.getpid(), signal.SIGINT)
         return graceful_exit
     signal.signal(signal.SIGINT, create_graceful_exit(current_state_dict))
+
+    def exeption_handler(exctype, value, tb):
+        exit_event.set()
+        process_exit_event.set()
+        sys.__excepthook__(exctype, value, tb)
+    sys.excepthook = exeption_handler
 
     min_l1 = float(sys.float_info.max)
     avg_l1 = 0
