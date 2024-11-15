@@ -508,8 +508,6 @@ def get_dataset(
             print ('reading first block of training data...')
             self.last_train_data_size = 24
             self.last_train_data = [self.frames_queue.get()] * self.last_train_data_size
-            self.new_sample = [None]
-            self.new_sample_shown = False
             self.train_data_index = 0
 
             def new_sample_fetch(frames_queue, new_sample_queue):
@@ -1797,7 +1795,7 @@ def centered_highpass_filter(rgb_image, gamma=1.8):
 
     return scaled_image[:, :, padding:-padding, padding:-padding]
 
-def highpass(img0, img1):
+def highpass(img):
     def gauss_kernel(size=5, channels=3):
         kernel = torch.tensor([[1., 4., 6., 4., 1],
                             [4., 16., 24., 16., 4.],
@@ -1809,29 +1807,20 @@ def highpass(img0, img1):
         return kernel
     
     def conv_gauss(img, kernel):
-        # img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
-        out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1], padding='same')
+        img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+        out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
         return out
 
     def normalize(tensor, min_val, max_val):
         return (tensor - min_val) / (max_val - min_val)
 
     gkernel = gauss_kernel()
-    gkernel = gkernel.to(device=img0.device, dtype=img0.dtype)
-    hp0 = img0 - conv_gauss(img0, gkernel) + 0.5
-    hp1 = img1 - conv_gauss(img1, gkernel) + 0.5
-
-    hp0 = torch.clamp(hp0, 0.48, 0.52)
-    hp1 = torch.clamp(hp1, 0.48, 0.52)
-
-    global_min = min(hp0.min(), hp1.min())
-    global_max = max(hp0.max(), hp1.max())
-
-    hp0 = normalize(hp0, global_min, global_max)
-    hp1 = normalize(hp1, global_min, global_max)
-
-    return (hp0, hp1)
-
+    gkernel = gkernel.to(device=img.device, dtype=img.dtype)
+    hp = img - conv_gauss(img, gkernel) + 0.5
+    hp = torch.clamp(hp, 0.49, 0.51)
+    hp = normalize(hp, hp.min(), hp.max())
+    hp = torch.max(hp, dim=1, keepdim=True).values
+    return hp
 
 current_state_dict = {}
 
@@ -2175,12 +2164,13 @@ def main():
                     )
     '''
 
-    scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, 'min', factor=0.5, patience=10)
+    scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, 'min', factor=0.25, patience=10)
 
     # LPIPS Init
 
     import warnings
     warnings.filterwarnings('ignore', category=UserWarning)
+    warnings.filterwarnings('ignore', category=FutureWarning)
 
     import lpips
     os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
@@ -2514,6 +2504,7 @@ def main():
     max_l1 = 0
     avg_pnsr = 0
     avg_lpips = 0
+    avg_loss = 0
 
     repeat_count = dataset.repeat_count if dataset.repeat_count > 0 else 1
     preview_maxmin_steps = args.preview_maxmin_steps if args.preview_maxmin_steps < len(dataset)*repeat_count else len(dataset)*repeat_count
@@ -2618,6 +2609,7 @@ def main():
 
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
+        avg_loss = float(loss.item()) if batch_idx == 0 else (avg_loss * (batch_idx - 1) + float(loss.item())) / batch_idx 
         avg_l1 = float(loss_l1.item()) if batch_idx == 0 else (avg_l1 * (batch_idx - 1) + float(loss_l1.item())) / batch_idx 
         avg_lpips = float(torch.mean(loss_LPIPS).item()) if batch_idx == 0 else (avg_lpips * (batch_idx - 1) + float(torch.mean(loss_LPIPS).item())) / batch_idx
         avg_pnsr = float(psnr_torch(output_clean, img1_orig)) if batch_idx == 0 else (avg_pnsr * (batch_idx - 1) + float(psnr_torch(output_clean, img1_orig))) / batch_idx
@@ -2836,7 +2828,7 @@ def main():
 
         clear_lines(2)
         print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{data_time1_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
-        print(f'\r[Epoch] Min: {min_l1:.6f} Avg: {avg_l1:.6f}, Max: {max_l1:.6f} LPIPS: {avg_lpips:.4f} var: {loss_mask:.8f}')
+        print(f'\r[Epoch] Min L1: {min_l1:.6f} Avg L1: {avg_l1:.6f}, Max L1: {max_l1:.6f} LPIPS: {avg_lpips:.4f} Avg: {avg_loss:.8f}')
 
         '''
         if len(stats) < 9999:
@@ -2891,15 +2883,15 @@ def main():
                     optimizer_flownet.load_state_dict(optimizer_state_dict)
                 print (f'setting OneCycleLR after first cycle with max_lr={args.lr}, steps={step}\n\n')
             '''
-
+            scheduler_flownet.step(avg_loss)
             min_l1 = float(sys.float_info.max)
             max_l1 = 0
             avg_l1 = 0
             avg_pnsr = 0
             avg_lpips = 0
+            avg_loss = 0
             epoch = epoch + 1
             batch_idx = 0
-            scheduler_flownet.step(avg_l1)
             
             while  ( idx + 1 ) == len(dataset):
                 img0, img1, img2, ratio, idx, current_desc = dataset[batch_idx]
