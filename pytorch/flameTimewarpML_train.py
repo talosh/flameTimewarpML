@@ -1795,7 +1795,7 @@ def centered_highpass_filter(rgb_image, gamma=1.8):
 
     return scaled_image[:, :, padding:-padding, padding:-padding]
 
-def highpass(img):
+def highpass(img):  
     def gauss_kernel(size=5, channels=3):
         kernel = torch.tensor([[1., 4., 6., 4., 1],
                             [4., 16., 24., 16., 4.],
@@ -2164,7 +2164,7 @@ def main():
                     )
     '''
 
-    scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, 'min', factor=0.25, patience=10)
+    scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, 'min', factor=0.1, patience=4)
 
     # LPIPS Init
 
@@ -2601,7 +2601,11 @@ def main():
         lpips_weight = 0.5
         loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
         loss_weighted = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS).item())
-        loss = loss_weighted + 4e-2 * loss_mask + 1e-2 * loss_conf + 1e-3 * loss_diff
+
+        loss_hpass_LPIPS = loss_fn_alex(highpass(output_clean) * 2 - 1, highpass(img1_orig) * 2 - 1)
+        loss_hpass_weighted = (1 - lpips_weight ) * criterion_l1(highpass(output_clean), highpass(img1_orig)) + lpips_weight * 0.2 * float(torch.mean(loss_hpass_LPIPS).item())
+        
+        loss = loss_weighted + 4e-2 * loss_mask + 1e-2 * loss_conf + 1e-3 * loss_diff + 0.1 * loss_hpass_weighted
         loss_l1 = criterion_l1(output_clean, img1_orig)
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
