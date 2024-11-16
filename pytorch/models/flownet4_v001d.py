@@ -40,7 +40,7 @@ class Model:
                 tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
                 tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
                 backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
-            tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
+            # tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
@@ -109,7 +109,7 @@ class Model:
                     warped_f1 = warp(f1, flow[:, 2:4])
                     x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask), 1)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                    flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
+                    flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) # * 1. / scale
                     x = torch.cat((x, flow), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
@@ -135,9 +135,15 @@ class Model:
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
                 tmp = torch.nn.functional.interpolate(tmp[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
-                flow = tmp[:, :4] * scale
+                flow = tmp[:, :4] # * scale
                 mask = tmp[:, 4:5]
                 conf = tmp[:, 5:6]
+
+                flow[:, 0:1, :, :] = flow[:, 0:1, :, :] * ((flow.shape[3] - 1.0) / 2.0)
+                flow[:, 1:2, :, :] = flow[:, 1:2, :, :] * ((flow.shape[2] - 1.0) / 2.0)
+                flow[:, 2:3, :, :] = flow[:, 2:3, :, :] * ((flow.shape[3] - 1.0) / 2.0)
+                flow[:, 3:4, :, :] = flow[:, 3:4, :, :] * ((flow.shape[2] - 1.0) / 2.0)
+
                 return flow, mask, conf
 
         class FlownetCas(Module):
