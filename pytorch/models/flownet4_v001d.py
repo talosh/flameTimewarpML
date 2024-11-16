@@ -99,8 +99,6 @@ class Model:
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
-
-                timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 
                 if flow is None:
                     x = torch.cat((img0, img1, f0, f1), 1)
