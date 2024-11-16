@@ -125,8 +125,6 @@ class Model:
 
                 n, _, xh, xw = x.shape
 
-                print (x.shape)
-
                 tenHorizontal = torch.linspace(-1.0, 1.0, xw//2).view(1, 1, 1, xw//2).expand(n, -1, xh//2, -1)
                 tenVertical = torch.linspace(-1.0, 1.0, xh//2).view(1, 1, xh//2, 1).expand(n, -1, -1, xw//2)
                 tenGrid = torch.cat([ 
