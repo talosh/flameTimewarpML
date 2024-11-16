@@ -6,8 +6,8 @@
 class Model:
 
     info = {
-        'name': 'Flownet4_v001b',
-        'file': 'flownet4_v001b.py',
+        'name': 'Flownet4_v001d',
+        'file': 'flownet4_v001d.py',
         'ratio_support': True
     }
 
@@ -77,10 +77,8 @@ class Model:
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                self.conv0 = torch.nn.Sequential(
-                    conv(in_planes, c//2, 3, 2, 1),
-                    conv(c//2, c, 3, 2, 1),
-                    )
+                self.conv0 = conv(in_planes, c//2, 3, 2, 1)
+                self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
