@@ -53,7 +53,7 @@ class Model:
                 backwarp_tenGrid_norm[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
             tenFlow = torch.cat(
                 [ 
-                    tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), 
+                    tenFlow[:, 0:1, :, :] / 1., 
                     tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0)
                     ], 1
             )
