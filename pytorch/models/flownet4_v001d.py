@@ -54,7 +54,7 @@ class Model:
             tenFlow = torch.cat(
                 [ 
                     tenFlow[:, 0:1, :, :] + 0, 
-                    tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.)
+                    tenFlow[:, 1:2, :, :] + 0
                     ], 1
             )
             g = (backwarp_tenGrid_norm[k] + tenFlow).permute(0, 2, 3, 1)
