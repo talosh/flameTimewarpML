@@ -16,6 +16,7 @@ class Model:
             import torch
         Module = torch.nn.Module
         backwarp_tenGrid = {}
+        backwarp_tenGrid_norm = {}
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
@@ -42,6 +43,16 @@ class Model:
             tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
 
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+            return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+
+        def warp_norm(tenInput, tenFlow):
+            k = (str(tenFlow.device), str(tenFlow.size()))
+            if k not in backwarp_tenGrid_norm:
+                tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+                tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+                backwarp_tenGrid_norm[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
+            # tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
+            g = (backwarp_tenGrid_norm[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
         class Head(Module):
@@ -211,10 +222,10 @@ class Model:
                     )
                     flow = flow + flow_d
 
-                fs2 = ((flow.shape[2] - 1.0) / 2.0)
-                fs3 = ((flow.shape[3] - 1.0) / 2.0)
-                flow[:, 0:1, :, :] = flow[:, 0:1, :, :] * fs3
-                flow[:, 1:2, :, :] = flow[:, 1:2, :, :] * fs2
+                # fs2 = ((flow.shape[2] - 1.0) / 2.0)
+                # fs3 = ((flow.shape[3] - 1.0) / 2.0)
+                # flow[:, 0:1, :, :] = flow[:, 0:1, :, :] * fs3
+                # flow[:, 1:2, :, :] = flow[:, 1:2, :, :] * fs2
 
                 '''
                 flow_list[3] = flow # .detach().clone() # torch.tanh(flow.detach().clone())
