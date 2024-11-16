@@ -103,15 +103,16 @@ class Model:
                     x = torch.cat((img0, img1, f0, f1), 1)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 else:
-                    flow[:, 0:1, :, :] = flow[:, 0:1, :, :] / ((flow.shape[3] - 1.0) / 2.0)
-                    flow[:, 1:2, :, :] = flow[:, 1:2, :, :] / ((flow.shape[2] - 1.0) / 2.0)
-                    flow[:, 2:3, :, :] = flow[:, 2:3, :, :] / ((flow.shape[3] - 1.0) / 2.0)
-                    flow[:, 3:4, :, :] = flow[:, 3:4, :, :] / ((flow.shape[2] - 1.0) / 2.0)
-
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
+                    
+                    flow[:, 0:1, :, :] = flow[:, 0:1, :, :] / ((flow.shape[3] - 1.0) / 2.0)
+                    flow[:, 1:2, :, :] = flow[:, 1:2, :, :] / ((flow.shape[2] - 1.0) / 2.0)
+                    flow[:, 2:3, :, :] = flow[:, 2:3, :, :] / ((flow.shape[3] - 1.0) / 2.0)
+                    flow[:, 3:4, :, :] = flow[:, 3:4, :, :] / ((flow.shape[2] - 1.0) / 2.0)
+                    
                     x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask), 1)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) # * 1. / scale
