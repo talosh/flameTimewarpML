@@ -79,7 +79,7 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = conv(in_planes - 1, c//2, 3, 2, 1)
-                self.conv1 = conv(c//2 + 3, c, 3, 2, 1)
+                self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
@@ -129,7 +129,7 @@ class Model:
                 y = torch.cat((timestep, tenGrid), 1)
 
                 feat = self.conv0(x)
-                feat = torch.cat((feat, y), 1)
+                # feat = torch.cat((feat, y), 1)
                 feat = self.conv1(feat)
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
