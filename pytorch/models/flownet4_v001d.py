@@ -58,7 +58,7 @@ class Model:
                     ], 1
             )
             g = (backwarp_tenGrid_norm[k] + tenFlow).permute(0, 2, 3, 1)
-            return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
+            return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='zeros', align_corners=True)
 
         class Head(Module):
             def __init__(self):
