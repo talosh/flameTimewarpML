@@ -130,7 +130,7 @@ class Model:
                 y = torch.cat((timestep, tenGrid), 1)
                 '''
 
-                y = torch.zeros(n, 3, xh, xw)
+                y = torch.zeros(n, 3, xh, xw).to(device=x.device, dtype=x.dtype)
 
                 feat = self.conv0(x)
                 feat = torch.cat((feat, y), 1)
