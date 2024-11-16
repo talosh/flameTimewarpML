@@ -119,18 +119,16 @@ class Model:
                 x = torch.nn.functional.pad(x, padding, mode='constant')
 
                 n, _, xh, xw = x.shape
-                '''
                 tenHorizontal = torch.linspace(-1.0, 1.0, xw//2).view(1, 1, 1, xw//2).expand(n, -1, xh//2, -1)
                 tenVertical = torch.linspace(-1.0, 1.0, xh//2).view(1, 1, xh//2, 1).expand(n, -1, -1, xw//2)
                 tenGrid = torch.cat([ 
-                    tenHorizontal * ((xw - 1.0) / 4.0),
-                    tenVertical * ((xh - 1.0) / 4.0)
+                    tenHorizontal,
+                    tenVertical
                     ], 1).to(device=img0.device, dtype=img0.dtype)
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 y = torch.cat((timestep, tenGrid), 1)
-                '''
 
-                y = torch.zeros(n, 3, xh//2, xw//2).to(device=x.device, dtype=x.dtype)
+                # y = torch.zeros(n, 3, xh//2, xw//2).to(device=x.device, dtype=x.dtype)
 
                 feat = self.conv0(x)
                 feat = torch.cat((feat, y), 1)
