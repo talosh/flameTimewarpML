@@ -34,7 +34,7 @@ class Model:
                 # torch.nn.SELU(inplace = True)
             )
 
-        def warp_old(tenInput, tenFlow):
+        def warp(tenInput, tenFlow):
             k = (str(tenFlow.device), str(tenFlow.size()))
             if k not in backwarp_tenGrid:
                 tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
@@ -43,15 +43,6 @@ class Model:
             tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
 
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-            return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
-
-        def warp(tenInput, tenFlow):
-            k = (str(tenFlow.device), str(tenFlow.size()))
-            if k not in backwarp_tenGrid_norm:
-                tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
-                tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
-                backwarp_tenGrid_norm[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
-            g = (backwarp_tenGrid_norm[k] + torch.clamp(tenFlow, 0, 0)).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
         class Head(Module):
@@ -189,7 +180,7 @@ class Model:
                 '''
 
                 for iteration in range(iterations):
-                    flow_d, mask, conf = self.block2(
+                    flow_d, mask_d, conf_d = self.block2(
                         img0, 
                         img1,
                         f0,
@@ -200,6 +191,8 @@ class Model:
                         scale=scale[2]
                     )
                     flow = flow + flow_d
+                    mask = mask + mask_d
+                    conf = conf + conf_d
 
                 '''
                 flow_list[2] = flow.clone()
@@ -209,7 +202,7 @@ class Model:
                 '''
 
                 for iteration in range(iterations):
-                    flow_d, mask, conf = self.block3(
+                    flow_d, mask_d, conf_d = self.block3(
                         img0, 
                         img1,
                         f0,
@@ -220,6 +213,8 @@ class Model:
                         scale=scale[3]
                     )
                     flow = flow + flow_d
+                    mask = mask + mask_d
+                    conf = conf + conf_d
 
                 # fs2 = ((flow.shape[2] - 1.0) / 2.0)
                 # fs3 = ((flow.shape[3] - 1.0) / 2.0)
