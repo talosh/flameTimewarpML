@@ -93,7 +93,7 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
-                self.maxdepth = 8
+                self.maxdepth = 4
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
                 n, c, h, w = img0.shape
@@ -101,7 +101,7 @@ class Model:
                 
                 if flow is None:
                     x = torch.cat((img0, img1, f0, f1), 1)
-                    x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
                 else:
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
@@ -113,10 +113,10 @@ class Model:
                     flow[:, 2:3, :, :] = flow[:, 2:3, :, :] / ((flow.shape[3] - 1.0) / 2.0)
                     flow[:, 3:4, :, :] = flow[:, 3:4, :, :] / ((flow.shape[2] - 1.0) / 2.0)
                     
-                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask), 1)
-                    x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                    flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) # * 1. / scale
-                    x = torch.cat((x, flow), 1)
+                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask, flow), 1)
+                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
+                    # flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) # * 1. / scale
+                    # x = torch.cat((x, flow), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
