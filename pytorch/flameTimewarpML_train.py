@@ -2557,13 +2557,11 @@ def main():
             training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
         else:
             training_scale = [8, 4, 2, 1]
-        '''
-        training_scale = [8, 5, 3, 2] if training_scale == [8, 4, 2, 1] else training_scale
+        # training_scale = [8, 5, 3, 2] if training_scale == [8, 4, 2, 1] else training_scale
         training_scale[0] = random.uniform(training_scale[0], training_scale[1])
         training_scale[1] = random.uniform(training_scale[1], training_scale[2])
         training_scale[2] = random.uniform(training_scale[2], training_scale[3])
         # training_scale[3] = random.uniform(training_scale[1], 1)
-        '''
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig
         # continue
