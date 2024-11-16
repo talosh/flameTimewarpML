@@ -211,14 +211,10 @@ class Model:
                     )
                     flow = flow + flow_d
 
-                flow_list[3] = flow # .detach().clone() # torch.tanh(flow.detach().clone())
-                flow_list[3][:, 0:1, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
-                flow_list[3][:, 1:2, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
-                flow_list[3][:, 2:3, :, :] *= ((flow.shape[3] - 1.0) / 2.0)
-                flow_list[3][:, 3:4, :, :] *= ((flow.shape[2] - 1.0) / 2.0)
-                mask_list[3] = torch.sigmoid(mask) # (torch.tanh(mask) + 1) / 2.0
-                conf_list[3] = torch.sigmoid(conf) # (torch.tanh(conf) + 1) / 2.0
-                merged[3] = warp(img0, flow_list[3][:, :2]) * mask_list[3] + warp(img1, flow_list[3][:, 2:4]) * (1 - mask_list[3])
+                flow_list[3] = flow
+                conf_list[3] = torch.sigmoid(conf)
+                mask_list[3] = torch.sigmoid(mask)
+                merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 return flow_list, mask_list, conf_list, merged
 
