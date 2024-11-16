@@ -78,7 +78,7 @@ class Model:
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                self.conv0 = conv(in_planes, c//2, 3, 2, 1)
+                self.conv0 = conv(in_planes - 1, c//2, 3, 2, 1)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
@@ -103,14 +103,14 @@ class Model:
                 timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 
                 if flow is None:
-                    x = torch.cat((img0, img1, f0, f1, timestep), 1)
+                    x = torch.cat((img0, img1, f0, f1), 1)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 else:
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
+                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask), 1)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
@@ -119,6 +119,13 @@ class Model:
                 pw = self.maxdepth - (sw % self.maxdepth)
                 padding = (0, pw, 0, ph)
                 x = torch.nn.functional.pad(x, padding, mode='constant')
+
+                _, _, xh, xw = x.shape
+                tenHorizontal = torch.linspace(-1.0, 1.0, xw//2).view(1, 1, 1, xw//2).expand(n, -1, xh//2, -1)
+                tenVertical = torch.linspace(-1.0, 1.0, xh//2).view(1, 1, xh//2, 1).expand(n, -1, -1, xw//2)
+                tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=img0.device, dtype=img0.dtype)
+                timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
+                y = torch.cat((timestep, tenGrid), 1)
 
                 feat = self.conv0(x)
                 feat = self.conv1(feat)
