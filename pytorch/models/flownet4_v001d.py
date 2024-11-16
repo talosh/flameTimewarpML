@@ -122,8 +122,8 @@ class Model:
                 tenHorizontal = torch.linspace(-1.0, 1.0, xw//2).view(1, 1, 1, xw//2).expand(n, -1, xh//2, -1)
                 tenVertical = torch.linspace(-1.0, 1.0, xh//2).view(1, 1, xh//2, 1).expand(n, -1, -1, xw//2)
                 tenGrid = torch.cat([ 
-                    tenHorizontal * ((flow.shape[3] - 1.0) / 4.0),
-                    tenVertical * ((flow.shape[2] - 1.0) / 4.0)
+                    tenHorizontal * ((xw - 1.0) / 4.0),
+                    tenVertical * ((xh - 1.0) / 4.0)
                     ], 1).to(device=img0.device, dtype=img0.dtype)
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 y = torch.cat((timestep, tenGrid), 1)
