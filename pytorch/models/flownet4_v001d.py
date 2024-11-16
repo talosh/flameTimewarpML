@@ -173,7 +173,7 @@ class Model:
                 '''
 
                 for iteration in range(iterations):
-                    flow_d, mask, conf = self.block1(
+                    flow_d, mask_d, conf_d = self.block1(
                         img0, 
                         img1,
                         f0,
@@ -184,6 +184,8 @@ class Model:
                         scale=scale[1]
                     )
                     flow = flow + flow_d
+                    mask = mask + mask_d
+                    conf = conf + conf_d
 
                 '''
                 flow_list[1] = flow.clone()
@@ -193,7 +195,7 @@ class Model:
                 '''
 
                 for iteration in range(iterations):
-                    flow_d, mask, conf = self.block2(
+                    flow_d, mask_d, conf_d = self.block2(
                         img0, 
                         img1,
                         f0,
@@ -204,6 +206,8 @@ class Model:
                         scale=scale[2]
                     )
                     flow = flow + flow_d
+                    mask = mask + mask_d
+                    conf = conf + conf_d
 
                 '''
                 flow_list[2] = flow.clone()
@@ -213,7 +217,7 @@ class Model:
                 '''
 
                 for iteration in range(iterations):
-                    flow_d, mask, conf = self.block3(
+                    flow_d, mask_d, conf_d = self.block3(
                         img0, 
                         img1,
                         f0,
@@ -224,6 +228,8 @@ class Model:
                         scale=scale[3]
                     )
                     flow = flow + flow_d
+                    mask = mask + mask_d
+                    conf = conf + conf_d
 
                 flow_list[3] = flow # .detach().clone() # torch.tanh(flow.detach().clone())
                 flow_list[3][:, 0:1, :, :] = flow[:, 0:1, :, :] * ((flow.shape[3] - 1.0) / 2.0)
