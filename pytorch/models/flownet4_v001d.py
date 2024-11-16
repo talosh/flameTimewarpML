@@ -213,6 +213,7 @@ class Model:
 
                 fs2 = ((flow.shape[2] - 1.0) / 2.0)
                 fs3 = ((flow.shape[3] - 1.0) / 2.0)
+                flow[:, 0:1, :, :] = flow[:, 0:1, :, :] * fs3
 
                 '''
                 flow_list[3] = flow # .detach().clone() # torch.tanh(flow.detach().clone())
