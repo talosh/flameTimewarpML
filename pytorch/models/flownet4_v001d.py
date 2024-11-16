@@ -241,7 +241,7 @@ class Model:
                 flow_list[3] = flow
                 conf_list[3] = torch.sigmoid(conf)
                 mask_list[3] = torch.sigmoid(mask)
-                merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
+                merged[3] = warp_norm(img0, flow[:, :2]) * mask_list[3] + warp_norm(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 return flow_list, mask_list, conf_list, merged
 
