@@ -129,6 +129,7 @@ class Model:
                 y = torch.cat((timestep, tenGrid), 1)
 
                 feat = self.conv0(x)
+                feat = torch.cat((feat, y), 1)
                 feat = self.conv1(feat)
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
