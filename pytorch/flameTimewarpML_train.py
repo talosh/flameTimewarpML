@@ -2731,8 +2731,11 @@ def main():
                 'output': output_clean.numpy(force=True).copy(),
         }
 
-        max_values.add(float(loss.item()), min_max_item)
-        min_values.add(float(loss.item()), min_max_item)
+        try:
+            max_values.add(float(loss.item()), min_max_item)
+            min_values.add(float(loss.item()), min_max_item)
+        except:
+            pass
 
         if (args.preview_max > 0) and ((step+1 % preview_maxmin_steps) == 1 or ( idx + 1 ) == len(dataset)):
             max_preview_folder = os.path.join(
