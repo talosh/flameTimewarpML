@@ -110,7 +110,7 @@ class Model:
                                         
                     x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
-                    flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
+                    flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
