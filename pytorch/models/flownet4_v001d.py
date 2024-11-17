@@ -40,7 +40,7 @@ class Model:
                 tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
                 tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
                 backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
-            tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
+            # tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
@@ -108,10 +108,10 @@ class Model:
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
                                         
-                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask), 1)
+                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask, flow), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
-                    flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
-                    x = torch.cat((x, flow), 1)
+                    # flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
+                    # x = torch.cat((x, flow), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
@@ -123,8 +123,8 @@ class Model:
                 tenHorizontal = torch.linspace(-1.0, 1.0, xw//2).view(1, 1, 1, xw//2).expand(n, -1, xh//2, -1)
                 tenVertical = torch.linspace(-1.0, 1.0, xh//2).view(1, 1, xh//2, 1).expand(n, -1, -1, xw//2)
                 tenGrid = torch.cat([ 
-                    tenHorizontal * ((xw - 1.0) / 2.0),
-                    tenVertical * ((xh - 1.0) / 2.0)
+                    tenHorizontal,
+                    tenVertical
                     ], 1).to(device=img0.device, dtype=img0.dtype)
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 y = torch.cat((timestep, tenGrid), 1)
@@ -137,7 +137,7 @@ class Model:
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
                 tmp = torch.nn.functional.interpolate(tmp[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
-                flow = tmp[:, :4] * scale
+                flow = tmp[:, :4] # * scale
                 mask = tmp[:, 4:5]
                 conf = tmp[:, 5:6]
                 return flow, mask, conf
@@ -229,7 +229,6 @@ class Model:
                 # flow[:, 0:1, :, :] = flow[:, 0:1, :, :] * fs3
                 # flow[:, 1:2, :, :] = flow[:, 1:2, :, :] * fs2
 
-                '''
                 flow_list[3] = flow # .detach().clone() # torch.tanh(flow.detach().clone())
                 flow_list[3][:, 0:1, :, :] = flow[:, 0:1, :, :] * ((flow.shape[3] - 1.0) / 2.0)
                 flow_list[3][:, 1:2, :, :] = flow[:, 1:2, :, :] * ((flow.shape[2] - 1.0) / 2.0)
@@ -238,12 +237,13 @@ class Model:
                 mask_list[3] = torch.sigmoid(mask) # (torch.tanh(mask) + 1) / 2.0
                 conf_list[3] = torch.sigmoid(conf) # (torch.tanh(conf) + 1) / 2.0
                 merged[3] = warp(img0, flow_list[3][:, :2]) * mask_list[3] + warp(img1, flow_list[3][:, 2:4]) * (1 - mask_list[3])
-                '''
 
+                '''
                 flow_list[3] = flow
                 conf_list[3] = torch.sigmoid(conf)
                 mask_list[3] = torch.sigmoid(mask)
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
+                '''
 
                 return flow_list, mask_list, conf_list, merged
 
