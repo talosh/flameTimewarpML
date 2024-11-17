@@ -107,16 +107,11 @@ class Model:
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    
-                    flow[:, 0:1, :, :] = flow[:, 0:1, :, :] / ((flow.shape[3] - 1.0) / 2.0)
-                    flow[:, 1:2, :, :] = flow[:, 1:2, :, :] / ((flow.shape[2] - 1.0) / 2.0)
-                    flow[:, 2:3, :, :] = flow[:, 2:3, :, :] / ((flow.shape[3] - 1.0) / 2.0)
-                    flow[:, 3:4, :, :] = flow[:, 3:4, :, :] / ((flow.shape[2] - 1.0) / 2.0)
-                    
-                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask, flow), 1)
+                                        
+                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
-                    # flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) # * 1. / scale
-                    # x = torch.cat((x, flow), 1)
+                    flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
+                    x = torch.cat((x, flow), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
@@ -128,8 +123,8 @@ class Model:
                 tenHorizontal = torch.linspace(-1.0, 1.0, xw//2).view(1, 1, 1, xw//2).expand(n, -1, xh//2, -1)
                 tenVertical = torch.linspace(-1.0, 1.0, xh//2).view(1, 1, xh//2, 1).expand(n, -1, -1, xw//2)
                 tenGrid = torch.cat([ 
-                    tenHorizontal,
-                    tenVertical
+                    tenHorizontal * ((xw - 1.0) / 2.0),
+                    tenVertical * ((xh - 1.0) / 2.0)
                     ], 1).to(device=img0.device, dtype=img0.dtype)
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 y = torch.cat((timestep, tenGrid), 1)
@@ -142,15 +137,9 @@ class Model:
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
                 tmp = torch.nn.functional.interpolate(tmp[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
-                flow = tmp[:, :4] # * scale
+                flow = tmp[:, :4] * scale
                 mask = tmp[:, 4:5]
                 conf = tmp[:, 5:6]
-
-                flow[:, 0:1, :, :] = flow[:, 0:1, :, :] * ((flow.shape[3] - 1.0) / 2.0)
-                flow[:, 1:2, :, :] = flow[:, 1:2, :, :] * ((flow.shape[2] - 1.0) / 2.0)
-                flow[:, 2:3, :, :] = flow[:, 2:3, :, :] * ((flow.shape[3] - 1.0) / 2.0)
-                flow[:, 3:4, :, :] = flow[:, 3:4, :, :] * ((flow.shape[2] - 1.0) / 2.0)
-
                 return flow, mask, conf
 
         class FlownetCas(Module):
@@ -183,7 +172,7 @@ class Model:
                 '''
 
                 for iteration in range(iterations):
-                    flow_d, mask_d, conf_d = self.block1(
+                    flow_d, mask, conf = self.block1(
                         img0, 
                         img1,
                         f0,
@@ -194,8 +183,6 @@ class Model:
                         scale=scale[1]
                     )
                     flow = flow + flow_d
-                    mask = mask + mask_d
-                    conf = conf + conf_d
 
                 '''
                 flow_list[1] = flow.clone()
@@ -205,7 +192,7 @@ class Model:
                 '''
 
                 for iteration in range(iterations):
-                    flow_d, mask_d, conf_d = self.block2(
+                    flow_d, mask, conf = self.block2(
                         img0, 
                         img1,
                         f0,
@@ -216,8 +203,6 @@ class Model:
                         scale=scale[2]
                     )
                     flow = flow + flow_d
-                    mask = mask + mask_d
-                    conf = conf + conf_d
 
                 '''
                 flow_list[2] = flow.clone()
@@ -227,7 +212,7 @@ class Model:
                 '''
 
                 for iteration in range(iterations):
-                    flow_d, mask_d, conf_d = self.block3(
+                    flow_d, mask, conf = self.block3(
                         img0, 
                         img1,
                         f0,
@@ -238,8 +223,6 @@ class Model:
                         scale=scale[3]
                     )
                     flow = flow + flow_d
-                    mask = mask + mask_d
-                    conf = conf + conf_d
 
                 # fs2 = ((flow.shape[2] - 1.0) / 2.0)
                 # fs3 = ((flow.shape[3] - 1.0) / 2.0)
