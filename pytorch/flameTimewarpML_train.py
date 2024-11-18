@@ -2603,7 +2603,17 @@ def main():
         loss_hpass_LPIPS = loss_fn_alex(highpass(output_clean) * 2 - 1, highpass(img1_orig) * 2 - 1)
         loss_hpass_weighted = (1 - lpips_weight ) * criterion_l1(highpass(output_clean), highpass(img1_orig)) + lpips_weight * 0.2 * float(torch.mean(loss_hpass_LPIPS).item())
         
-        loss = loss_weighted + 4e-2 * loss_mask + 1e-2 * loss_conf + 1e-3 * loss_diff # + 0.1 * loss_hpass_weighted
+        freq_output_clean = torch.fft.fft2(output_clean, dim=(-2, -1))
+        freq_output_clean[..., 0, 0] = 0
+        freq_output_clean = torch.fft.fftshift(freq_output_clean, dim=(-2, -1))
+
+        freq_img1_orig = torch.fft.fft2(img1_orig, dim=(-2, -1))
+        freq_img1_orig[..., 0, 0] = 0
+        freq_img1_orig = torch.fft.fftshift(freq_img1_orig, dim=(-2, -1))
+
+        loss_freq_l1 = criterion_l1(freq_output_clean.abs(), freq_img1_orig.abs())
+
+        loss = loss_freq_l1 # loss_weighted + 4e-2 * loss_mask + 1e-2 * loss_conf + 1e-3 * loss_diff # + 0.1 * loss_hpass_weighted
         loss_l1 = criterion_l1(output_clean, img1_orig)
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
