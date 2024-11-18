@@ -6,8 +6,8 @@
 class Model:
 
     info = {
-        'name': 'Flownet4_v001b',
-        'file': 'flownet4_v001b.py',
+        'name': 'Flownet4_v001batt',
+        'file': 'flownet4_v001batt.py',
         'ratio_support': True
     }
 
