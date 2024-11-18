@@ -2611,7 +2611,8 @@ def main():
         freq_img1_orig[..., 0, 0] = 0
         freq_img1_orig = torch.fft.fftshift(freq_img1_orig, dim=(-2, -1))
 
-        loss_freq_l1 = criterion_l1(freq_output_clean, freq_img1_orig)
+        loss_freq_lpips = loss_fn_alex(freq_output_clean.abs() * 2 - 1, freq_img1_orig.abs() * 2 - 1)
+        loss_freq_l1 = float(torch.mean(loss_freq_lpips).item())
 
         loss = loss_freq_l1 + loss_conf + 1e-3 * loss_diff # loss_weighted + 4e-2 * loss_mask + 1e-2 * loss_conf + 1e-3 * loss_diff # + 0.1 * loss_hpass_weighted
         loss_l1 = criterion_l1(output_clean, img1_orig)
