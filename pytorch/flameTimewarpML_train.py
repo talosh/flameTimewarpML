@@ -2613,7 +2613,7 @@ def main():
 
         loss_freq_l1 = criterion_l1(freq_output_clean.abs(), freq_img1_orig.abs())
 
-        loss = loss_freq_l1 # loss_weighted + 4e-2 * loss_mask + 1e-2 * loss_conf + 1e-3 * loss_diff # + 0.1 * loss_hpass_weighted
+        loss = loss_freq_l1 + loss_conf + 1e-3 * loss_diff # loss_weighted + 4e-2 * loss_mask + 1e-2 * loss_conf + 1e-3 * loss_diff # + 0.1 * loss_hpass_weighted
         loss_l1 = criterion_l1(output_clean, img1_orig)
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
