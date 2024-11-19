@@ -126,9 +126,7 @@ class Model:
                 self.relu = torch.nn.LeakyReLU(0.2, True)
                 self.attn = CBAM(32)
 
-            def highpass(self, img):
-                return torch.max(img, dim=1, keepdim=True).values
-            
+            def highpass(self, img):            
                 def gauss_kernel(size=5, channels=3):
                     kernel = torch.tensor([[1., 4., 6., 4., 1],
                                         [4., 16., 24., 16., 4.],
