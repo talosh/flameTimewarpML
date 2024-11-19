@@ -2538,9 +2538,9 @@ def main():
         sh, sw = round(nh * (1 / scale_augm)), round(nw * (1 / scale_augm))
         sh += 4 - (sh % 4)
         sw += 4 - (sw % 4)
-        img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bilinear", align_corners=False)
-        img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bilinear", align_corners=False)
-        img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bilinear", align_corners=False)
+        img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
+        img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
+        img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=False)
 
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
