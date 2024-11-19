@@ -1,8 +1,8 @@
 class Model:
 
     info = {
-        'name': 'Flownet4_v001hp5',
-        'file': 'flownet4_v001hp5.py',
+        'name': 'Flownet4_v001fp4',
+        'file': 'flownet4_v001fp4.py',
         'ratio_support': True
     }
 
