@@ -352,6 +352,7 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 4*4, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
+                self.hardtanh = torch.nn.Hardtanh()
                 self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1, encoder = None):
@@ -379,7 +380,7 @@ class Model:
                         mask,
                         conf), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
-                    flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
+                    flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) # * 1. / scale
                     x = torch.cat((x, flow), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
@@ -428,7 +429,7 @@ class Model:
                 tmp_mask = torch.nn.functional.interpolate(tmp_mask[:, :, :sh, :sw], size=(h, w), mode="bicubic", align_corners=False)
                 flow = torch.nn.functional.interpolate(flow[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
 
-                flow = flow * scale
+                flow = self.hardtanh(flow) # * scale
                 mask = tmp_mask[:, 0:1]
                 conf = tmp_mask[:, 1:2]
 
