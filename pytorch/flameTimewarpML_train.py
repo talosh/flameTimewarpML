@@ -2598,6 +2598,11 @@ def main():
         loss_conf = criterion_l1(conf, diff_matte)
 
         lpips_weight = 0.5
+
+        loss_deep_l1 = 0
+        for i in range(len(merged)):
+            loss_deep_l1 = loss_deep_l1 + criterion_l1(merged[i], img1)
+
         loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
         loss_weighted = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS).item())
 
@@ -2614,7 +2619,7 @@ def main():
 
         loss_freq_l1 = criterion_l1(freq_output_clean, freq_img1_orig)
 
-        loss = loss_weighted + 4e-2 * loss_mask + 1e-2 * loss_conf + 1e-3 * loss_diff # + 0.1 * loss_hpass_weighted
+        loss = loss_deep_l1 + loss_weighted + 4e-2 * loss_mask + 1e-2 * loss_conf + 1e-3 * loss_diff # + 0.1 * loss_hpass_weighted
         loss_l1 = criterion_l1(output_clean, img1_orig)
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
