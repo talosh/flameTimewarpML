@@ -366,7 +366,7 @@ class Model:
                     x = torch.cat((img0, img1, f0, f1, conf, timestep), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
                 else:
-                    merged = warp(img0, flow[:, :2]) * mask + warp(img1, flow[:, 2:4]) * (1 - mask)
+                    merged = warp(img0, flow[:, :2]) * torch.sigmoid(mask) + warp(img1, flow[:, 2:4]) * (1 - torch.sigmoid(mask))
                     fm = encoder(merged)
 
                     x = torch.cat((
