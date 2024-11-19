@@ -350,7 +350,8 @@ class Model:
                     conf,
                     flow, 
                     scale=scale[2],
-                    encoder = self.encode
+                    encoder = self.encode,
+                    warpit = True
                 )
 
                 flow_list[2] = flow.clone()
