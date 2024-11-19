@@ -201,7 +201,7 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
-                    conv(in_planes, c, 3, 2, 1),
+                    conv(in_planes, c, 5, 2, 2),
                     conv(c, c, 3, 2, 1),
                     )
                 self.convblock = torch.nn.Sequential(
