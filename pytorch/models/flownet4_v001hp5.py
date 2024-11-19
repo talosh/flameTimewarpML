@@ -439,7 +439,7 @@ class Model:
                 self.block0 = FlownetDeepSingleHead(6+16+1+1+2, c=144)
                 self.block1 = FlownetDeepSingleHead(9+24+1+1+1+4+2, c=112)
                 self.block2 = FlownetDeepSingleHead(9+24+1+1+1+4+2, c=96)
-                self.block3 = FlownetDeepSingleHead(9+24+1+1+1+4+2, c=64)
+                self.block3 = FlownetDeepSingleHead(9+24+1+1+1+4+2, c=84)
                 self.block4 = FlownetDeepSingleHead(9+24+1+1+1+4+2, c=48) # Flownet(8+4+16+1, c=64)
                 self.encode = Head()
 
