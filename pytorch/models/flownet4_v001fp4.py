@@ -73,7 +73,6 @@ class Model:
                 # Scale input feature maps
                 return out
 
-
         class SpatialAttention(Module):
             def __init__(self, kernel_size=5):
                 super(SpatialAttention, self).__init__()
@@ -95,7 +94,6 @@ class Model:
                 out = out.expand_as(x)
 
                 return out
-
 
         class CBAM(Module):
             def __init__(self, c, reduction_ratio=4, spatial_kernel_size=7, channel_scale=0., spatial_scale=0.):
@@ -188,17 +186,6 @@ class Model:
                 x = self.relu(x)
                 x = self.cnn3(x)
                 return x
-
-        class ResConvAttn(Module):
-            def __init__(self, c, dilation=1):
-                super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.attn = CBAM(c)       
-                self.relu = torch.nn.LeakyReLU(0.2, True) # torch.nn.SELU(inplace = True)
-
-            def forward(self, x):
-                return self.relu(self.attn(self.conv(x)) * self.beta + x)
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
@@ -293,27 +280,6 @@ class Model:
                 mask = tmp[:, 4:5]
                 conf = tmp[:, 5:6]
                 return flow, mask, conf
-
-        class ResConvMix(Module):
-            def __init__(self, c, cd):
-                super().__init__()
-                self.conv = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.LeakyReLU(0.2, True)
-
-            def forward(self, x, x_deep):
-                return self.relu(self.conv(x_deep) * self.beta + x)
-
-
-        class ResConvRevMix(Module):
-            def __init__(self, c, cd):
-                super().__init__()
-                self.conv = torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'zeros', bias=True)
-                self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.LeakyReLU(0.2, True)
-
-            def forward(self, x, x_deep):
-                return self.relu(self.conv(x) * self.beta + x_deep)
 
         class FlownetCas(Module):
             def __init__(self):
