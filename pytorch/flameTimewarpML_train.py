@@ -2991,11 +2991,7 @@ def main():
                 
             if args.eval_half:
                 evalnet.half()
-                for param in evalnet.parameters():
-                    # Check if parameter dtype is  Float (float32)
-                    if param.dtype == torch.float32:
-                        param.data = param.data.to(torch.float16)
-
+                
             evalnet.eval()
             with torch.no_grad():
                 # for ev_item_index, description in enumerate(descriptions):
