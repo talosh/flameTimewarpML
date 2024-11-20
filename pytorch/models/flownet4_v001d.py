@@ -264,7 +264,7 @@ class Model:
                 x = torch.nn.functional.pad(x, padding)
 
                 # noise = torch.rand_like(feat[:, :2, :, :]) * 2 - 1
-                feat = self.conv0(feat)
+                feat = self.conv0(x)
                 feat = self.convblock_shallow(feat)
                 feat = self.conv1(feat)
 
