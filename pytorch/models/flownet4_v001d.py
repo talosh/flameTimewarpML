@@ -98,7 +98,7 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
-                    conv(in_planes, c//2, 3, 2, 1),
+                    conv(in_planes, c//2, 5, 2, 2),
                     conv(c//2, c, 3, 2, 1),
                     )
                 self.convblock = torch.nn.Sequential(
@@ -137,6 +137,58 @@ class Model:
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
+
+                ph = self.maxdepth - (sh % self.maxdepth)
+                pw = self.maxdepth - (sw % self.maxdepth)
+                padding = (0, pw, 0, ph)
+                x = torch.nn.functional.pad(x, padding, mode='constant')
+
+                feat = self.conv0(x)
+                feat = self.convblock(feat)
+                tmp = self.lastconv(feat)
+                tmp = torch.nn.functional.interpolate(tmp[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
+                flow = tmp[:, :4] * scale
+                mask = tmp[:, 4:5]
+                conf = tmp[:, 5:6]
+                return flow, mask, conf
+
+        class FlownetLT(Module):
+            def __init__(self, in_planes, c=64):
+                super().__init__()
+                self.conv0 = torch.nn.Sequential(
+                    conv(in_planes, c, 3, 2, 1),
+                    conv(c, c, 3, 2, 1),
+                    )
+                self.convblock = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                )
+                self.lastconv = torch.nn.Sequential(
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
+                    conv(c, c, 3, 1, 1),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
+                    torch.nn.Conv2d(c, 6, kernel_size=3, stride=1, padding=1, bias=True)
+                )
+                self.maxdepth = 4
+
+            def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
+                n, c, h, w = img0.shape
+                sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
+
+                timestep = (img0[:, :1].clone() * 0 + 1) * timestep
+                
+                warped_img0 = warp(img0, flow[:, :2])
+                warped_img1 = warp(img1, flow[:, 2:4])
+                x = torch.cat((warped_img0, warped_img1, timestep, mask), 1)
+                x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
+                flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
+                x = torch.cat((x, flow), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
@@ -338,7 +390,7 @@ class Model:
                 self.block0 = FlownetDeepSingleHead(6+16+1+2+2, c=192) # images + feat + timetep + lineargrid + fft
                 self.block1 = Flownet(8+4+16, c=144)
                 self.block2 = Flownet(8+4+16, c=96)
-                self.block3 = Flownet(8+4+16, c=56)
+                self.block3 = FlownetLT(8+4, c=48)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1):
