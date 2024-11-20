@@ -249,25 +249,25 @@ class Model:
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
-                img0_grayscale = (
+                img0_gray = (
                     0.2989 * img0[:, 0, :, :] +  # Red channel
                     0.5870 * img0[:, 1, :, :] +  # Green channel
                     0.1140 * img0[:, 2, :, :]    # Blue channel
                 )
 
-                img1_grayscale = (
+                img1_gray = (
                     0.2989 * img1[:, 0, :, :] +  # Red channel
                     0.5870 * img1[:, 1, :, :] +  # Green channel
                     0.1140 * img1[:, 2, :, :]    # Blue channel
                 )
 
-                fft0 = torch.fft.fft2(img0_grayscale, dim=(-2, -1))
+                fft0 = torch.fft.fft2(img0_gray.unsqueeze(1), dim=(-2, -1))
                 # img0_fft[..., 0, 0] = 0
-                fft0 = torch.fft.fftshift(fft0, dim=(-2, -1))
+                fft0 = torch.fft.fftshift(fft0, dim=(-2, -1)).abs()
 
-                fft1 = torch.fft.fft2(img1, dim=(-2, -1))
+                fft1 = torch.fft.fft2(img1_gray.unsqueeze(1), dim=(-2, -1))
                 # img1_fft[..., 0, 0] = 0
-                fft1 = torch.fft.fftshift(fft1, dim=(-2, -1))
+                fft1 = torch.fft.fftshift(fft1, dim=(-2, -1)).abs()
 
                 x = torch.cat((img0, img1, f0, f1, fft0, fft1), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
