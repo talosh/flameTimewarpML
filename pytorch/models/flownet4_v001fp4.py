@@ -321,6 +321,7 @@ class Model:
 
                 flow_list[0] = flow.clone()
                 mask_list[0] = torch.sigmoid(mask.clone())
+                conf_list[0] = torch.sigmoid(conf)
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
 
                 flow, mask, conf = self.block1(
@@ -338,6 +339,7 @@ class Model:
 
                 flow_list[1] = flow.clone()
                 mask_list[1] = torch.sigmoid(mask.clone())
+                conf_list[1] = torch.sigmoid(conf)
                 merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
                 flow, mask, conf = self.block2(
@@ -356,6 +358,7 @@ class Model:
 
                 flow_list[2] = flow.clone()
                 mask_list[2] = torch.sigmoid(mask.clone())
+                conf_list[2] = torch.sigmoid(conf)
                 merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
                 flow_d, mask_d, conf_d = self.block3(
