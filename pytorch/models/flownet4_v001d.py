@@ -256,7 +256,7 @@ class Model:
 
                 x = torch.cat((img0, img1, f0, f1), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
-                x = torch.cat((timestep, tenGrid), 1)
+                x = torch.cat((x, timestep, tenGrid), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
