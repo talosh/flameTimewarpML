@@ -265,7 +265,7 @@ class Model:
                 # img0_fft[..., 0, 0] = 0
                 fft0 = torch.fft.fftshift(fft0, dim=(-2, -1))
 
-                fft1 = torch.fft.fft2(fft1, dim=(-2, -1))
+                fft1 = torch.fft.fft2(img1, dim=(-2, -1))
                 # img1_fft[..., 0, 0] = 0
                 fft1 = torch.fft.fftshift(fft1, dim=(-2, -1))
 
