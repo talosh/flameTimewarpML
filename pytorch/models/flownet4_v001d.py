@@ -112,9 +112,9 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=2, mode='linear'),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     conv(c, c//2, 3, 1, 1),
-                    torch.nn.Upsample(scale_factor=2, mode='linear'),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     torch.nn.Conv2d(c//2, 6, kernel_size=3, stride=1, padding=1, bias=True)
                 )
                 self.maxdepth = 4
@@ -226,21 +226,21 @@ class Model:
                 self.revmix1 = ResConvRevMix(c, cd)
                 self.revmix2 = ResConvRevMix(c, cd)
                 self.lastconv_mask = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=2, mode='linear'),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     conv(c//3, c//3, 3, 1, 1),
-                    torch.nn.Upsample(scale_factor=2, mode='linear'),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     torch.nn.Conv2d(c//3, 2, kernel_size=3, stride=1, padding=1, bias=True)
                 )
                 self.lastconv_fw = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=2, mode='linear'),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     conv(c, c//2, 3, 1, 1),
-                    torch.nn.Upsample(scale_factor=2, mode='linear'),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     torch.nn.Conv2d(c//2, 2, kernel_size=3, stride=1, padding=1, bias=True)
                 )
                 self.lastconv_bw = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=2, mode='linear'),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     conv(c, c//2, 3, 1, 1),
-                    torch.nn.Upsample(scale_factor=2, mode='linear'),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
                     torch.nn.Conv2d(c//2, 2, kernel_size=3, stride=1, padding=1, bias=True)
                 )
                 self.maxdepth = 8
