@@ -301,6 +301,7 @@ class Model:
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
+                '''
                 img0_gray = (
                     0.2989 * img0[:, 0, :, :] +  # Red channel
                     0.5870 * img0[:, 1, :, :] +  # Green channel
@@ -320,9 +321,9 @@ class Model:
                 fft1 = torch.fft.fft2(img1_gray.unsqueeze(1).float(), dim=(-2, -1))
                 # img1_fft[..., 0, 0] = 0
                 fft1 = torch.fft.fftshift(fft1, dim=(-2, -1)).abs().to(dtype = img1.dtype)
-                
+                '''
 
-                x = torch.cat((img0, img1, f0, f1, fft0, fft1), 1)
+                x = torch.cat((img0, img1, f0, f1), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1)
@@ -388,7 +389,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepSingleHead(6+16+1+2+2, c=192) # images + feat + timetep + lineargrid + fft
+                self.block0 = FlownetDeepSingleHead(6+16+1+2, c=192) # images + feat + timetep + lineargrid + fft
                 self.block1 = Flownet(8+4+16, c=144)
                 self.block2 = Flownet(8+4+16, c=96)
                 self.block3 = FlownetLT(8+4, c=48)
