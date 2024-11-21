@@ -313,13 +313,14 @@ class Model:
                     0.1140 * img1[:, 2, :, :]    # Blue channel
                 )
 
-                fft0 = torch.fft.fft2(img0_gray.unsqueeze(1), dim=(-2, -1))
+                fft0 = torch.fft.fft2(img0_gray.unsqueeze(1).float(), dim=(-2, -1))
                 # img0_fft[..., 0, 0] = 0
-                fft0 = torch.fft.fftshift(fft0, dim=(-2, -1)).abs()
+                fft0 = torch.fft.fftshift(fft0, dim=(-2, -1)).abs().to(device = img0.device)
 
-                fft1 = torch.fft.fft2(img1_gray.unsqueeze(1), dim=(-2, -1))
+                fft1 = torch.fft.fft2(img1_gray.unsqueeze(1).float(), dim=(-2, -1))
                 # img1_fft[..., 0, 0] = 0
-                fft1 = torch.fft.fftshift(fft1, dim=(-2, -1)).abs()
+                fft1 = torch.fft.fftshift(fft1, dim=(-2, -1)).abs().to(device = img1.device)
+                
 
                 x = torch.cat((img0, img1, f0, f1, fft0, fft1), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
