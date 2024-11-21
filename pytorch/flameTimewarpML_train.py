@@ -3095,6 +3095,13 @@ def main():
                         
                         eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :eh, :ew]) * eval_mask_list[-1][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[-1][:, :, :eh, :ew])
 
+                        if torch.isnan(eval_result).any():
+                            print (f'eval: result has NaN: {description}')
+                            sys.exit()
+                        if torch.isnan(eval_img1).any():
+                            print (f'eval: eval_img1 has NaN: {description}')
+                            sys.exit()
+
                         eval_loss_l1 = criterion_l1(eval_result, eval_img1)
                         eval_loss.append(float(eval_loss_l1.item()))
                         eval_psnr.append(float(psnr_torch(eval_result, eval_img1)))
