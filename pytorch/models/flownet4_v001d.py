@@ -44,6 +44,33 @@ class Model:
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
+        def hpass(img):  
+            def gauss_kernel(size=5, channels=3):
+                kernel = torch.tensor([[1., 4., 6., 4., 1],
+                                    [4., 16., 24., 16., 4.],
+                                    [6., 24., 36., 24., 6.],
+                                    [4., 16., 24., 16., 4.],
+                                    [1., 4., 6., 4., 1.]])
+                kernel /= 256.
+                kernel = kernel.repeat(channels, 1, 1, 1)
+                return kernel
+            
+            def conv_gauss(img, kernel):
+                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+                out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+                return out
+
+            def normalize(tensor, min_val, max_val):
+                return (tensor - min_val) / (max_val - min_val)
+
+            gkernel = gauss_kernel()
+            gkernel = gkernel.to(device=img.device, dtype=img.dtype)
+            hp = img - conv_gauss(img, gkernel) + 0.5
+            hp = torch.clamp(hp, 0.49, 0.51)
+            hp = normalize(hp, hp.min(), hp.max())
+            hp = torch.max(hp, dim=1, keepdim=True).values
+            return hp
+
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
@@ -323,7 +350,7 @@ class Model:
                 fft1 = torch.fft.fftshift(fft1, dim=(-2, -1)).abs().to(dtype = img1.dtype)
                 '''
 
-                x = torch.cat((img0, img1, f0, f1), 1)
+                x = torch.cat((img0, hpass(img0), img1, hpass(img1), f0, f1), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1)
@@ -389,7 +416,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepSingleHead(6+16+1+2, c=192) # images + feat + timetep + lineargrid + fft
+                self.block0 = FlownetDeepSingleHead(6+2+16+1+2, c=192) # images + hpass + feat + timestep + lineargrid
                 self.block1 = Flownet(8+4+16, c=144)
                 self.block2 = Flownet(8+4+16, c=96)
                 self.block3 = FlownetLT(8+4, c=48)
