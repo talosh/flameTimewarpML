@@ -239,17 +239,16 @@ class Model:
                 self.conv1 = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
                 self.conv_mask = conv(c, c//3, 3, 1, 1)
-                self.convblock_shallow = torch.nn.Sequential(
-                    ResConv(c),
-                )
                 self.convblock1 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
                 )
                 self.convblock2 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
                 )
                 self.convblock3 = torch.nn.Sequential(
                     ResConv(c),
@@ -258,24 +257,14 @@ class Model:
                 self.convblock4 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
                 )
                 self.convblock_fw = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
                     ResConv(c),
                 )
                 self.convblock_bw = torch.nn.Sequential(
                     ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
                 )
                 self.convblock_mask = torch.nn.Sequential(
-                    ResConv(c//3),
-                    ResConv(c//3),
-                    ResConv(c//3),
-                    ResConv(c//3),
                     ResConv(c//3),
                     ResConv(c//3),
                 )
