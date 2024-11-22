@@ -302,16 +302,16 @@ class Model:
                     torch.nn.Conv2d(c//3, 2, kernel_size=3, stride=1, padding=1, bias=True)
                 )
                 self.lastconv_fw = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    conv(c, c//2, 3, 1, 1),
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c//2, 2, kernel_size=3, stride=1, padding=1, bias=True)
+                    torch.nn.ConvTranspose2d(c, c, 6, 2, 2),
+                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
+                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
+                    torch.nn.Conv2d(c, 2, kernel_size=1, stride=1, padding=0, bias=True),
                 )
                 self.lastconv_bw = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    conv(c, c//2, 3, 1, 1),
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c//2, 2, kernel_size=3, stride=1, padding=1, bias=True)
+                    torch.nn.ConvTranspose2d(c, c, 6, 2, 2),
+                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
+                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
+                    torch.nn.Conv2d(c, 2, kernel_size=1, stride=1, padding=0, bias=True),
                 )
                 self.maxdepth = 8
 
