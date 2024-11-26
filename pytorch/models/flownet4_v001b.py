@@ -150,7 +150,15 @@ class Model:
                 conf_list = [None] * 4
                 merged = [None] * 4
 
+                scale[0] = 1
+
                 flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, scale=scale[0])
+
+                flow_list[3] = flow
+                conf_list[3] = torch.sigmoid(conf)
+                mask_list[3] = torch.sigmoid(mask)
+                merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
+                return flow_list, mask_list, conf_list, merged
 
                 flow_list[0] = flow.clone()
                 conf_list[0] = torch.sigmoid(conf.clone())
