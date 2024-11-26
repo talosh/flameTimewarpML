@@ -2532,7 +2532,6 @@ def main():
         img1 = img1.to(device, non_blocking = True)
         img2 = img2.to(device, non_blocking = True)
 
-        '''
         scale_augm = random.uniform(1, 3)        
         nn, nc, nh, nw = img0.shape
         sh, sw = round(nh * (1 / scale_augm)), round(nw * (1 / scale_augm))
@@ -2541,7 +2540,6 @@ def main():
         img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
         img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
         img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=False)
-        '''
 
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
@@ -2641,10 +2639,7 @@ def main():
         loss_freq_l1 = criterion_l1(freq_output_clean, freq_img1_orig)
         loss_l1_norm = criterion_l1(normalize(output_clean), normalize(img1_orig))
         loss_l1 = criterion_l1(output_clean, img1_orig)
-
-        loss = loss_l1_norm
-
-        # loss = loss_deep_l1 + loss_l1_norm + 1e-2 * loss_conf # + 1e-3 * loss_diff # + 0.1 * loss_hpass_weighted
+        loss = loss_deep_l1 + loss_l1_norm + 1e-2 * loss_conf # + 1e-3 * loss_diff # + 0.1 * loss_hpass_weighted
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
         # continue
