@@ -71,26 +71,86 @@ class Model:
             hp = torch.max(hp, dim=1, keepdim=True).values
             return hp
 
+        def blur(img):  
+            def gauss_kernel(size=5, channels=3):
+                kernel = torch.tensor([[1., 4., 6., 4., 1],
+                                    [4., 16., 24., 16., 4.],
+                                    [6., 24., 36., 24., 6.],
+                                    [4., 16., 24., 16., 4.],
+                                    [1., 4., 6., 4., 1.]])
+                kernel /= 256.
+                kernel = kernel.repeat(channels, 1, 1, 1)
+                return kernel
+            
+            def conv_gauss(img, kernel):
+                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+                out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+                return out
+
+            gkernel = gauss_kernel()
+            gkernel = gkernel.to(device=img.device, dtype=img.dtype)
+            return conv_gauss(img, gkernel)
+
+        def centered_highpass_filter(rgb_image, gamma=1.8):
+            padding = 32
+
+            rgb_image = torch.nn.functional.pad(rgb_image, (padding, padding, padding, padding), mode='reflect')
+            n, c, h, w = rgb_image.shape
+
+            # Step 1: Apply Fourier Transform along spatial dimensions
+            freq_image = torch.fft.fft2(rgb_image, dim=(-2, -1))
+            freq_image = torch.fft.fftshift(freq_image, dim=(-2, -1))  # Shift the zero-frequency component to the center
+
+            # Step 2: Calculate the distance of each frequency component from the center
+            center_x, center_y = h // 2, w // 2
+            x = torch.arange(h).view(-1, 1).repeat(1, w)
+            y = torch.arange(w).repeat(h, 1)
+            distance_from_center = ((x - center_x) ** 2 + (y - center_y) ** 2).sqrt()
+            
+            # Normalize distance to the range [0, 1]
+            max_distance = distance_from_center.max()
+            distance_weight = distance_from_center / max_distance  # Now scaled from 0 (low freq) to 1 (high freq)
+            distance_weight = distance_weight.to(freq_image.device)  # Ensure the weight is on the same device as the image
+            distance_weight = distance_weight ** (1 / gamma)
+            
+            k = 11  # Controls the steepness of the curve
+            x0 = 0.5  # Midpoint where the function crosses 0.5
+
+            # Compute the S-like function using a sigmoid
+            distance_weight = 1 / (1 + torch.exp(-k * (distance_weight - x0)))
+            # Step 3: Apply the distance weight to both real and imaginary parts of the frequency components
+            freq_image_scaled = freq_image * distance_weight.unsqueeze(0).unsqueeze(1)
+
+            # Step 4: Inverse Fourier Transform to return to spatial domain
+            freq_image_scaled = torch.fft.ifftshift(freq_image_scaled, dim=(-2, -1))
+            scaled_image = torch.fft.ifft2(freq_image_scaled, dim=(-2, -1)).real  # Take the real part only
+            scaled_image = torch.max(scaled_image, dim=1, keepdim=True).values
+            # scaled_image = scaled_image ** (1 / 1.8)
+
+            return scaled_image[:, :, padding:-padding, padding:-padding]
+
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
-                self.cnn0 = torch.nn.Conv2d(3, 32, 3, 2, 1)
-                self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-                self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-                self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
-                self.relu = torch.nn.LeakyReLU(0.2, True)
+                self.cnn0 = torch.nn.Conv2d(3+1+3, 36, 3, 2, 1)
+                self.cnn1 = torch.nn.Conv2d(36, 36, 3, 1, 1)
+                self.cnn2 = torch.nn.Conv2d(36, 36, 3, 1, 1)
+                self.cnn3 = torch.nn.ConvTranspose2d(36, 9, 4, 2, 1)
+                self.relu = torch.nn.Mish(True)
 
-            def forward(self, x, feat=False):
-                x0 = self.cnn0(x)
-                x = self.relu(x0)
-                x1 = self.cnn1(x)
-                x = self.relu(x1)
-                x2 = self.cnn2(x)
-                x = self.relu(x2)
-                x3 = self.cnn3(x)
-                if feat:
-                    return [x0, x1, x2, x3]
-                return x3
+            def forward(self, x):
+                hp = centered_highpass_filter(x.float())
+                hp = hp.to(dtype = x.dtype)
+                blurred = blur(x)
+                x = torch.cat((x, hp, blurred), 1)
+                x = self.cnn0(x)
+                x = self.relu(x)
+                x = self.cnn1(x)
+                x = self.relu(x)
+                x = self.cnn2(x)
+                x = self.relu(x)
+                x = self.cnn3(x)
+                return x
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
@@ -395,11 +455,11 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepSingleHead(6+2+16+1+2, c=192) # images + hpass + feat + timestep + lineargrid
-                self.block0ref = FlownetDeepSingleHead(6+2+16+1+2, c=192) # images + hpass + feat + timestep + lineargrid
+                self.block0 = FlownetDeepSingleHead(6+18+1+2, c=192) # images + feat + timestep + lineargrid
+                self.block0ref = FlownetDeepSingleHead(6+18+1+1+1+4+2, c=192) # images + feat + timestep + mask + conf + flow + lineargrid
                 self.block1 = Flownet(8+4+16, c=144)
                 self.block2 = Flownet(8+4+16, c=96)
-                self.block3 = FlownetLT(8+4, c=48)
+                self.block3 = Flownet(8+4+16, c=64)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1):
