@@ -2611,7 +2611,8 @@ def main():
 
         loss_deep_l1 = 0
         for i in range(len(merged)):
-            loss_deep_l1 = loss_deep_l1 + criterion_l1(merged[i], img1)
+            if merged[i] is not None:
+                loss_deep_l1 = loss_deep_l1 + criterion_l1(merged[i], img1)
 
         loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
         loss_weighted = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS).item())
