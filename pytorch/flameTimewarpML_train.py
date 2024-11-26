@@ -2525,6 +2525,7 @@ def main():
         img1 = img1.to(device, non_blocking = True)
         img2 = img2.to(device, non_blocking = True)
 
+        '''
         scale_augm = random.uniform(1, 3)        
         nn, nc, nh, nw = img0.shape
         sh, sw = round(nh * (1 / scale_augm)), round(nw * (1 / scale_augm))
@@ -2533,6 +2534,7 @@ def main():
         img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
         img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
         img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=False)
+        '''
 
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
@@ -2574,12 +2576,14 @@ def main():
 
         flownet.train()
         
+        '''
         if random.uniform(0, 1) < (args.generalize / 100):
             # add noise
             if random.uniform(0, 1) < 0.2:
                 delta = random.uniform(0, 1e-2)
                 img0 += torch.rand_like(img0) * delta
                 img2 += torch.rand_like(img1) * delta
+        '''
 
         flow_list, mask_list, conf_list, merged = flownet(
             img0,
