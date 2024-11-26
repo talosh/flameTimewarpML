@@ -199,14 +199,14 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    conv(c, c//2, 3, 1, 1),
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c//2, 6, kernel_size=3, stride=1, padding=1, bias=True)
+                    torch.nn.ConvTranspose2d(c, c, 6, 2, 2),
+                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
+                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
+                    torch.nn.Conv2d(c, 6, kernel_size=1, stride=1, padding=0, bias=True),
                 )
                 self.maxdepth = 4
 
-            def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
+            def forward(self, img0, img1, f0, f1, timestep, mask, flow, conf, scale=1):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
@@ -220,7 +220,7 @@ class Model:
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
+                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, conf), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
@@ -257,10 +257,10 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    conv(c, c, 3, 1, 1),
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear'),
-                    torch.nn.Conv2d(c, 6, kernel_size=3, stride=1, padding=1, bias=True)
+                    torch.nn.ConvTranspose2d(c, c, 6, 2, 2),
+                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
+                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
+                    torch.nn.Conv2d(c, 6, kernel_size=1, stride=1, padding=0, bias=True),
                 )
                 self.maxdepth = 4
 
@@ -457,9 +457,9 @@ class Model:
                 super().__init__()
                 self.block0 = FlownetDeepSingleHead(6+18+1+2, c=192) # images + feat + timestep + lineargrid
                 self.block0ref = FlownetDeepSingleHead(6+18+1+1+1+4+2, c=192) # images + feat + timestep + mask + conf + flow + lineargrid
-                self.block1 = Flownet(8+4+16, c=144)
-                self.block2 = Flownet(8+4+16, c=96)
-                self.block3 = Flownet(8+4+16, c=64)
+                self.block1 = Flownet(6+18+1+1+1+4, c=144) # images + feat + timestep + mask + conf + flow
+                self.block2 = Flownet(6+18+1+1+1+4, c=96)
+                self.block3 = Flownet(6+18+1+1+1+4, c=64)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1):
@@ -499,7 +499,8 @@ class Model:
                     f1,
                     timestep,
                     mask,
-                    flow, 
+                    flow,
+                    conf,
                     scale=scale[1]
                 )
                 flow = flow + flow_d
@@ -518,7 +519,8 @@ class Model:
                     f1,
                     timestep,
                     mask,
-                    flow, 
+                    flow,
+                    conf,
                     scale=scale[2]
                 )
                 flow = flow + flow_d
@@ -537,7 +539,8 @@ class Model:
                     f1,
                     timestep,
                     mask,
-                    flow, 
+                    flow,
+                    conf,
                     scale=scale[3]
                 )
                 flow = flow + flow_d
