@@ -456,10 +456,10 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeepSingleHead(6+18+1+2, c=192) # images + feat + timestep + lineargrid
-                self.block0ref = FlownetDeepSingleHead(6+18+1+1+1+4+2, c=192) # images + feat + timestep + mask + conf + flow + lineargrid
-                self.block1 = Flownet(6+18+1+1+1+4, c=144) # images + feat + timestep + mask + conf + flow
-                self.block2 = Flownet(6+18+1+1+1+4, c=96)
-                self.block3 = Flownet(6+18+1+1+1+4, c=64)
+                self.block0ref = None # FlownetDeepSingleHead(6+18+1+1+1+4+2, c=192) # images + feat + timestep + mask + conf + flow + lineargrid
+                self.block1 = None # Flownet(6+18+1+1+1+4, c=144) # images + feat + timestep + mask + conf + flow
+                self.block2 = None # Flownet(6+18+1+1+1+4, c=96)
+                self.block3 = None # Flownet(6+18+1+1+1+4, c=64)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1):
@@ -473,7 +473,15 @@ class Model:
                 conf_list = [None] * 4
                 merged = [None] * 4
 
-                flow_init, mask_init, conf_init = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
+                scale[0] = 1
+
+                flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
+
+                flow_list[3] = flow
+                conf_list[3] = torch.sigmoid(conf)
+                mask_list[3] = torch.sigmoid(mask)
+                merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
+                return flow_list, mask_list, conf_list, merged
 
                 flow, mask, conf = self.block0ref(
                     img0, 
