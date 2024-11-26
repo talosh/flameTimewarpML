@@ -936,14 +936,6 @@ def get_dataset(
                         img2 = img2 * multipliers
                         del multipliers
                     
-                    if random.uniform(0, 1) < (self.generalize / 100):
-                        # add noise
-                        if random.uniform(0, 1) < 0.2:
-                            delta = random.uniform(0, 1e-2)
-                            img0 += torch.rand_like(img0) * delta
-                            img1 += torch.rand_like(img1) * delta
-                            img2 += torch.rand_like(img1) * delta
-
                     def gamma_up(img, gamma = 1.18):
                         return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
                     
@@ -2567,12 +2559,12 @@ def main():
             training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
         else:
             training_scale = [8, 4, 2, 1]
-        
-        training_scale = [8, 5, 3, 2] if training_scale == [8, 4, 2, 1] else training_scale
-        training_scale[0] = random.uniform(training_scale[0], training_scale[1])
-        training_scale[1] = random.uniform(training_scale[1], training_scale[2])
-        training_scale[2] = random.uniform(training_scale[2], training_scale[3])
-        training_scale[3] = random.uniform(training_scale[1], 1)
+
+        # training_scale = [8, 5, 3, 2] if training_scale == [8, 4, 2, 1] else training_scale
+        # training_scale[0] = random.uniform(training_scale[0], training_scale[1])
+        # training_scale[1] = random.uniform(training_scale[1], training_scale[2])
+        # training_scale[2] = random.uniform(training_scale[2], training_scale[3])
+        # training_scale[3] = random.uniform(training_scale[1], 1)
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig
         # continue
@@ -2582,6 +2574,13 @@ def main():
 
         flownet.train()
         
+        if random.uniform(0, 1) < (args.generalize / 100):
+            # add noise
+            if random.uniform(0, 1) < 0.2:
+                delta = random.uniform(0, 1e-2)
+                img0 += torch.rand_like(img0) * delta
+                img2 += torch.rand_like(img1) * delta
+
         flow_list, mask_list, conf_list, merged = flownet(
             img0,
             img2,
