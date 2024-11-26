@@ -2635,7 +2635,9 @@ def main():
         loss_l1_norm = criterion_l1(normalize(output_clean), normalize(img1_orig))
         loss_l1 = criterion_l1(output_clean, img1_orig)
 
-        loss = loss_deep_l1 + loss_l1_norm + 1e-2 * loss_conf # + 1e-3 * loss_diff # + 0.1 * loss_hpass_weighted
+        loss = loss_l1_norm
+
+        # loss = loss_deep_l1 + loss_l1_norm + 1e-2 * loss_conf # + 1e-3 * loss_diff # + 0.1 * loss_hpass_weighted
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
         # continue
