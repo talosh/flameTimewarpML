@@ -972,7 +972,14 @@ def get_dataset(
         sequential = sequential
         )
 
-def normalize(image_array) :
+def normalize(x):
+    scale = torch.tanh(torch.tensor(1.0))
+    # Apply the function
+    return torch.where(
+        (x >= -1) & (x <= 1), scale * x,
+        torch.tanh(x)
+    )
+
     def custom_bend(x):
         linear_part = x
         exp_bend = torch.sign(x) * torch.pow(torch.abs(x), 1 / 4 )
