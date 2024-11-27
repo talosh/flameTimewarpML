@@ -71,6 +71,14 @@ class Model:
             hp = torch.max(hp, dim=1, keepdim=True).values
             return hp
 
+        def normalize(x):
+            scale = torch.tanh(torch.tensor(1.0))
+            # Apply the function
+            return torch.where(
+                (x >= -1) & (x <= 1), scale * x,
+                torch.tanh(x)
+            )
+
         def blur(img):  
             def gauss_kernel(size=5, channels=3):
                 kernel = torch.tensor([[1., 4., 6., 4., 1],
@@ -143,7 +151,7 @@ class Model:
                 hp = hp.to(dtype = x.dtype)
                 blurred = blur(x)
                 x = torch.cat((x, hp, blurred), 1)
-                x = self.cnn0(x)
+                x = self.cnn0(x * 2 - 1)
                 x = self.relu(x)
                 x = self.cnn1(x)
                 x = self.relu(x)
@@ -449,8 +457,8 @@ class Model:
                 flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
 
                 flow_list[3] = flow
-                conf_list[3] = torch.sigmoid(conf)
-                mask_list[3] = torch.sigmoid(mask)
+                conf_list[3] = ( normalize(conf) + 1 ) / 2 # torch.sigmoid(conf)
+                mask_list[3] = ( normalize(mask) + 1 ) / 2 # torch.sigmoid(mask)
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 result = {
