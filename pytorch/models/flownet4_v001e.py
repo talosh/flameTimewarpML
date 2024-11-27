@@ -44,7 +44,7 @@ class Model:
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
-        def hpass(img):  
+        def hpass(img):
             def gauss_kernel(size=5, channels=3):
                 kernel = torch.tensor([[1., 4., 6., 4., 1],
                                     [4., 16., 24., 16., 4.],
@@ -66,7 +66,7 @@ class Model:
             gkernel = gauss_kernel()
             gkernel = gkernel.to(device=img.device, dtype=img.dtype)
             hp = img - conv_gauss(img, gkernel) + 0.5
-            hp = torch.clamp(hp, 0.49, 0.51)
+            hp = torch.clamp(hp, 0.48, 0.52)
             hp = normalize(hp, hp.min(), hp.max())
             hp = torch.max(hp, dim=1, keepdim=True).values
             return hp
@@ -147,10 +147,10 @@ class Model:
                 self.relu = torch.nn.Mish(True)
 
             def forward(self, x):
-                # hp = centered_highpass_filter(x.float())
+                hp = hpass(x)
                 # hp = hp.to(dtype = x.dtype)
                 # blurred = blur(x)
-                # x = torch.cat((x, hp), 1)
+                x = torch.cat((x, hp), 1)
                 x = self.cnn0(x * 2 - 1)
                 x = self.relu(x)
                 x = self.cnn1(x)
