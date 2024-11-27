@@ -140,7 +140,7 @@ class Model:
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
-                self.cnn0 = torch.nn.Conv2d(3+1+3, 36, 3, 2, 1)
+                self.cnn0 = torch.nn.Conv2d(3+1, 36, 3, 2, 1)
                 self.cnn1 = torch.nn.Conv2d(36, 36, 3, 1, 1)
                 self.cnn2 = torch.nn.Conv2d(36, 36, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(36, 9, 4, 2, 1)
@@ -149,8 +149,8 @@ class Model:
             def forward(self, x):
                 hp = centered_highpass_filter(x.float())
                 hp = hp.to(dtype = x.dtype)
-                blurred = blur(x)
-                x = torch.cat((x, hp, blurred), 1)
+                # blurred = blur(x)
+                x = torch.cat((x, hp), 1)
                 x = self.cnn0(x * 2 - 1)
                 x = self.relu(x)
                 x = self.cnn1(x)
