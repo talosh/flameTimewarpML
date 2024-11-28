@@ -147,8 +147,9 @@ class Model:
                 self.relu = torch.nn.Mish(True)
 
             def forward(self, x):
-                hp = hpass(x)
-                # hp = hp.to(dtype = x.dtype)
+                # hp = hpass(x)
+                hp = centered_highpass_filter(x.float())
+                hp = hp.to(dtype = x.dtype)
                 # blurred = blur(x)
                 x = torch.cat((x, hp), 1)
                 x = self.cnn0(x * 2 - 1)
