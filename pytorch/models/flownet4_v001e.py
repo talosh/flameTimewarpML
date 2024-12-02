@@ -141,7 +141,7 @@ class Model:
                 x = torch.cat((x, hp), 1)
 
                 xf = self.cnn0f(to_freq(x))
-                xf = self.relu(x)
+                xf = self.relu(xf)
                 xf = self.cnn1f(xf)
                 xf = self.relu(xf)
                 xf = self.cnn2f(xf)
