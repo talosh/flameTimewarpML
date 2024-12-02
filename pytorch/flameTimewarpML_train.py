@@ -1862,8 +1862,10 @@ class LapLoss(torch.nn.Module):
         pyr = []
         for level in range(max_levels):
             filtered = self.conv_gauss(current, kernel)
-            down = self.downsample(filtered)
-            up = self.upsample(down)
+            n, c, h, w = filtered.shape
+            sh, sw = round(h * (1 / 2)), round(w * (1 / 2))
+            down = torch.nn.functional.interpolate(filtered, size=(sh, sw), mode="bilinear", align_corners=False)
+            up = torch.nn.functional.interpolate(down, size=(h, w), mode="bilinear", align_corners=False)
             diff = current-up
             pyr.append(diff)
             current = down
@@ -1876,13 +1878,15 @@ class LapLoss(torch.nn.Module):
         self.gk = self.gauss_kernel(channels=channels)
         
     def forward(self, input, target):
+        '''
         n, c, sh, sw = input.shape
         ph = self.maxdepth - (sh % self.maxdepth)
         pw = self.maxdepth - (sw % self.maxdepth)
         padding = (0, pw, 0, ph)
         input = torch.nn.functional.pad(input, padding)
         target = torch.nn.functional.pad(target, padding)
-
+        '''
+        
         self.gk = self.gk.to(device = input.device)
         pyr_input  = self.laplacian_pyramid(img=input, kernel=self.gk, max_levels=self.max_levels)
         pyr_target = self.laplacian_pyramid(img=target, kernel=self.gk, max_levels=self.max_levels)
