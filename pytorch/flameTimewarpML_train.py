@@ -1874,6 +1874,13 @@ class LapLoss(torch.nn.Module):
         self.gk = self.gauss_kernel(channels=channels)
         
     def forward(self, input, target):
+        n, c, sh, sw = input.shape
+        ph = self.max_levels - (sh % self.max_levels)
+        pw = self.max_levels - (sw % self.max_levels)
+        padding = (0, pw, 0, ph)
+        input = torch.nn.functional.pad(input, padding)
+        target = torch.nn.functional.pad(target, padding)
+
         self.gk = self.gk.to(device = input.device)
         pyr_input  = self.laplacian_pyramid(img=input, kernel=self.gk, max_levels=self.max_levels)
         pyr_target = self.laplacian_pyramid(img=target, kernel=self.gk, max_levels=self.max_levels)
