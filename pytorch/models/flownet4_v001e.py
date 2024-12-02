@@ -71,7 +71,7 @@ class Model:
             hp = torch.max(hp, dim=1, keepdim=True).values
             return hp
 
-        def compress(x):
+        def normalize(x):
             x = x * 2 - 1
             scale = torch.tanh(torch.tensor(1.0))
             x = torch.where(
@@ -435,7 +435,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepSingleHead(6+18+1+2, c=192) # images + feat + timestep + lineargrid
+                self.block0 = FlownetDeepSingleHead(6+20+1+2, c=192) # images + feat + timestep + lineargrid
                 self.block0ref = None # FlownetDeepSingleHead(6+18+1+1+1+4+2, c=192) # images + feat + timestep + mask + conf + flow + lineargrid
                 self.block1 = None # Flownet(6+18+1+1+1+4, c=144) # images + feat + timestep + mask + conf + flow
                 self.block2 = None # Flownet(6+18+1+1+1+4, c=96)
@@ -443,8 +443,8 @@ class Model:
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1):
-                img0 = img0
-                img1 = img1
+                img0 = normalize(img0)
+                img1 = normalize(img1)
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 
@@ -469,7 +469,7 @@ class Model:
                     'merged': merged
                 }
 
-                return flow_list, mask_list, conf_list, merged
+                return result
 
                 flow, mask, conf = self.block0ref(
                     img0, 
