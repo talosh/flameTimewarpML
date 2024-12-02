@@ -1840,6 +1840,7 @@ class LapLoss(torch.nn.Module):
         # return x[:, :, ::2, ::2]
 
     def upsample(self, x):
+        return torch.nn.functional.interpolate(x, scale_factor= 2, mode="bilinear", align_corners=False)
         device = x.device
         cc = torch.cat([x, torch.zeros(x.shape[0], x.shape[1], x.shape[2], x.shape[3]).to(device)], dim=3)
         cc = cc.view(x.shape[0], x.shape[1], x.shape[2]*2, x.shape[3])
