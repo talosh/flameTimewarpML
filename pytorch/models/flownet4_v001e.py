@@ -441,8 +441,8 @@ class Model:
                 flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
 
                 flow_list[3] = flow
-                conf_list[3] = ( normalize(conf) + 1 ) / 2 # torch.sigmoid(conf)
-                mask_list[3] = ( normalize(mask) + 1 ) / 2 # torch.sigmoid(mask)
+                conf_list[3] = torch.sigmoid(conf) # ( normalize(conf) + 1 ) / 2 # torch.sigmoid(conf)
+                mask_list[3] = torch.sigmoid(mask) # ( normalize(mask) + 1 ) / 2 # torch.sigmoid(mask)
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 result = {
