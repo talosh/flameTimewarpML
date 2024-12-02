@@ -3140,8 +3140,8 @@ def main():
 
                         eval_img0_orig = eval_img0.clone()
                         eval_img2_orig = eval_img2.clone()
-                        eval_img0 = normalize(eval_img0)
-                        eval_img2 = normalize(eval_img2)
+                        # eval_img0 = normalize(eval_img0)
+                        # eval_img2 = normalize(eval_img2)
 
                         pvalue = model_info.get('padding', 64)
                         n, c, eh, ew = eval_img0.shape
