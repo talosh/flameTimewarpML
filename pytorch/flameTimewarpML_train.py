@@ -3143,7 +3143,7 @@ def main():
                         # eval_img0 = normalize(eval_img0)
                         # eval_img2 = normalize(eval_img2)
 
-                        '''
+                        # '''
                         pvalue = model_info.get('padding', 64)
                         n, c, eh, ew = eval_img0.shape
                         ph = ((eh - 1) // pvalue + 1) * pvalue
@@ -3152,7 +3152,7 @@ def main():
                         
                         eval_img0 = torch.nn.functional.pad(eval_img0, padding)
                         eval_img2 = torch.nn.functional.pad(eval_img2, padding)
-                        '''
+                        # '''
 
                         if args.eval_half:
                             eval_img0 = eval_img0.half()
@@ -3174,8 +3174,8 @@ def main():
                             eval_flow_list[-1] = eval_flow_list[-1].float()
                             eval_mask_list[-1] = eval_mask_list[-1].float()
 
-                        eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :, :]) * eval_mask_list[-1][:, :, :, :] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :, :]) * (1 - eval_mask_list[-1][:, :, :, :])
-                        # eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :eh, :ew]) * eval_mask_list[-1][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[-1][:, :, :eh, :ew])
+                        # eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :, :]) * eval_mask_list[-1][:, :, :, :] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :, :]) * (1 - eval_mask_list[-1][:, :, :, :])
+                        eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :eh, :ew]) * eval_mask_list[-1][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[-1][:, :, :eh, :ew])
 
                         if torch.isnan(eval_result).any():
                             print (f'eval: result has NaN: {description["start"]}')
@@ -3192,9 +3192,9 @@ def main():
                         eval_loss_LPIPS = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
                         eval_lpips.append(float(torch.mean(eval_loss_LPIPS).item()))
 
-                        eval_rgb_output_mask = eval_mask_list[-1][:, :, :, :].repeat_interleave(3, dim=1)
-                        eval_rgb_conf = eval_conf_list[-1][:, :, :, :].repeat_interleave(3, dim=1)
-                        eval_rgb_diff = diffmatte(eval_result, eval_img1)[:, :, :, :].repeat_interleave(3, dim=1)
+                        eval_rgb_output_mask = eval_mask_list[-1][:, :, :eh, :ew].repeat_interleave(3, dim=1)
+                        eval_rgb_conf = eval_conf_list[-1][:, :, :eh, :ew].repeat_interleave(3, dim=1)
+                        eval_rgb_diff = diffmatte(eval_result, eval_img1)[:, :, :eh, :ew].repeat_interleave(3, dim=1)
 
                         if args.eval_save_imgs:
                             write_eval_image_queue.put(
