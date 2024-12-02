@@ -3158,17 +3158,17 @@ def main():
                             eval_img0 = eval_img0.half()
                             eval_img2 = eval_img2.half()
 
-                        eval_result = evalnet(
+                        result = evalnet(
                             eval_img0, 
                             eval_img2,
                             eval_ratio, 
                             iterations = args.iterations
                             )
                         
-                        eval_flow_list = eval_result['flow_list']
-                        eval_mask_list = eval_result['mask_list']
-                        eval_conf_list = eval_result['conf_list']
-                        eval_merged = eval_result['merged']
+                        eval_flow_list = result['flow_list']
+                        eval_mask_list = result['mask_list']
+                        eval_conf_list = result['conf_list']
+                        eval_merged = result['merged']
 
                         if args.eval_half:
                             eval_flow_list[-1] = eval_flow_list[-1].float()
