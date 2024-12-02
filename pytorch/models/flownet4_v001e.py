@@ -72,8 +72,6 @@ class Model:
             return hp
 
         def normalize(x):
-            src_dtype = x.dtype
-            x = x.float()
             x = x * 2 - 1
             scale = torch.tanh(torch.tensor(1.0))
             x = torch.where(
@@ -81,7 +79,6 @@ class Model:
                 torch.tanh(x)
             )
             x = (x + 1) / 2
-            x = x.to(dtype = src_dtype)
             return x
 
         def blur(img):  
