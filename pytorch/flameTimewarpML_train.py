@@ -3143,6 +3143,7 @@ def main():
                         # eval_img0 = normalize(eval_img0)
                         # eval_img2 = normalize(eval_img2)
 
+                        '''
                         pvalue = model_info.get('padding', 64)
                         n, c, eh, ew = eval_img0.shape
                         ph = ((eh - 1) // pvalue + 1) * pvalue
@@ -3151,6 +3152,7 @@ def main():
                         
                         eval_img0 = torch.nn.functional.pad(eval_img0, padding)
                         eval_img2 = torch.nn.functional.pad(eval_img2, padding)
+                        '''
 
                         if args.eval_half:
                             eval_img0 = eval_img0.half()
