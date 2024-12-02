@@ -140,22 +140,20 @@ class Model:
                 hp = hp.to(dtype = x.dtype)
                 x = torch.cat((x, hp), 1)
 
-                x = self.cnn0(x * 2 - 1)
-                x = self.relu(x)
-
                 xf = self.cnn0f(to_freq(x))
                 xf = self.relu(x)
-
-                x = self.cnn1(x)
-                x = self.relu(x)
-                x = self.cnn2(x)
-                x = self.relu(x)
-                
                 xf = self.cnn1f(xf)
                 xf = self.relu(xf)
                 xf = self.cnn2f(xf)
                 xf = self.relu(xf)
                 xf = to_spat(xf)
+
+                x = self.cnn0(x * 2 - 1)
+                x = self.relu(x)
+                x = self.cnn1(x)
+                x = self.relu(x)
+                x = self.cnn2(x)
+                x = self.relu(x)
                 
                 x = torch.cat((x, xf), 1)
                 x = self.cnn3(x)
