@@ -426,9 +426,9 @@ class Model:
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1, gt=None):
-                src_dtype = img0.dtype
-                img0 = img0.float()
-                img1 = img1.float()
+                # src_dtype = img0.dtype
+                # img0 = img0.float()
+                # img1 = img1.float()
 
                 img0 = normalize(img0)
                 img1 = normalize(img1)
@@ -444,11 +444,11 @@ class Model:
 
                 flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
 
-                flow = flow.to(dtype = src_dtype)
-                mask = mask.to(dtype = src_dtype)
-                conf = conf.to(dtype = src_dtype)
-                img0 = img0.to(dtype = src_dtype)
-                img1 = img1.to(dtype = src_dtype)
+                # flow = flow.to(dtype = src_dtype)
+                # mask = mask.to(dtype = src_dtype)
+                # conf = conf.to(dtype = src_dtype)
+                # img0 = img0.to(dtype = src_dtype)
+                # img1 = img1.to(dtype = src_dtype)
 
                 flow_list[3] = flow
                 conf_list[3] = ( normalize(conf) + 1 ) / 2 # torch.sigmoid(conf)
