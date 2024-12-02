@@ -396,13 +396,13 @@ class Model:
                 feat_deep = self.revmix1(to_freq(feat), feat_deep)
 
                 feat = self.convblock2(feat_tmp)
-                feat_deep = self.convblock_deep2(to_freq(feat_deep))
+                feat_deep = self.convblock_deep2(feat_deep)
 
                 feat_tmp = self.mix2(feat, to_spat(feat_deep))
                 feat_deep = self.revmix2(to_freq(feat), feat_deep)
 
                 feat = self.convblock3(feat_tmp)
-                feat_deep = self.convblock_deep3(to_freq(feat_deep))
+                feat_deep = self.convblock_deep3(feat_deep)
 
                 feat = self.mix3(feat, to_spat(feat_deep))
                 feat = self.convblock_last(feat)
