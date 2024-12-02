@@ -387,6 +387,7 @@ class Model:
                 feat = self.conv0(x)
                 # potential attention or insertion here
                 feat = self.conv1(feat)
+                
                 feat_deep = self.conv2(to_freq(feat))
 
                 feat = self.convblock1(feat)
@@ -405,6 +406,7 @@ class Model:
                 feat_deep = self.convblock_deep3(feat_deep)
 
                 feat = self.mix3(feat, to_spat(feat_deep))
+
                 feat = self.convblock_last(feat)
 
                 feat_tmp = self.lastconv(feat)
