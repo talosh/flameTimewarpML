@@ -3179,9 +3179,11 @@ def main():
 
                         if torch.isnan(eval_result).any():
                             print (f'eval: result has NaN: {description["start"]}')
+                            description = read_eval_image_queue.get()
                             continue
                         if torch.isnan(eval_img1).any():
                             print (f'eval: eval_img1 has NaN: {description["start"]}')
+                            description = read_eval_image_queue.get()
                             continue
 
                         eval_loss_l1 = criterion_l1(eval_result, eval_img1)
