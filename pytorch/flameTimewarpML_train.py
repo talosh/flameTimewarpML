@@ -3192,9 +3192,9 @@ def main():
                         eval_loss_LPIPS = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
                         eval_lpips.append(float(torch.mean(eval_loss_LPIPS).item()))
 
-                        eval_rgb_output_mask = eval_mask_list[-1][:, :, :eh, :ew].repeat_interleave(3, dim=1)
-                        eval_rgb_conf = eval_conf_list[-1][:, :, :eh, :ew].repeat_interleave(3, dim=1)
-                        eval_rgb_diff = diffmatte(eval_result, eval_img1)[:, :, :eh, :ew].repeat_interleave(3, dim=1)
+                        eval_rgb_output_mask = eval_mask_list[-1][:, :, :, :].repeat_interleave(3, dim=1)
+                        eval_rgb_conf = eval_conf_list[-1][:, :, :, :].repeat_interleave(3, dim=1)
+                        eval_rgb_diff = diffmatte(eval_result, eval_img1)[:, :, :, :].repeat_interleave(3, dim=1)
 
                         if args.eval_save_imgs:
                             write_eval_image_queue.put(
