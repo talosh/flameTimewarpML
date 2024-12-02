@@ -3168,7 +3168,6 @@ def main():
                         eval_conf_list = eval_result['conf_list']
                         eval_merged = eval_result['merged']
 
-
                         if args.eval_half:
                             eval_flow_list[-1] = eval_flow_list[-1].float()
                             eval_mask_list[-1] = eval_mask_list[-1].float()
