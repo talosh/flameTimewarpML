@@ -113,16 +113,16 @@ class Model:
         def to_spat(x):
             n, c, h, w = x.shape
             src_dtype = x.dtype
-            x = x.view(n, c, 2, h, w).float()
+            x = x.view(n, c//2, 2, h, w).float()
             x = torch.complex(
                 x[:, :, 0, :, :],
                 x[:, :, 1, :, :]
             )
             x = torch.fft.ifftshift(x, dim=(-2, -1))
             x = torch.fft.ifft2(x, dim=(-2, -1)).real
-            x = x.to(dtype = src_dtype)
+            x = x.to(dtype=src_dtype)
             return x
-
+        
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
