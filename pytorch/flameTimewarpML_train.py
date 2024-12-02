@@ -3079,7 +3079,8 @@ def main():
             evalnet.load_state_dict(original_state_dict)
                 
             if args.eval_half:
-                evalnet.half()
+                pass
+                # evalnet.half()
 
             evalnet.eval()
             with torch.no_grad():
