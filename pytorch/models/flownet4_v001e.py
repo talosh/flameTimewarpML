@@ -71,13 +71,15 @@ class Model:
             hp = torch.max(hp, dim=1, keepdim=True).values
             return hp
 
-        def normalize(x):
+        def compress(x):
+            x = x * 2 - 1
             scale = torch.tanh(torch.tensor(1.0))
-            # Apply the function
-            return torch.where(
+            x = torch.where(
                 (x >= -1) & (x <= 1), scale * x,
                 torch.tanh(x)
             )
+            x = (x + 1) / 2
+            return x
 
         def blur(img):  
             def gauss_kernel(size=5, channels=3):
@@ -99,65 +101,63 @@ class Model:
             gkernel = gkernel.to(device=img.device, dtype=img.dtype)
             return conv_gauss(img, gkernel)
 
-        def centered_highpass_filter(rgb_image, gamma=1.8):
-            padding = 32
+        def to_freq(x):
+            n, c, h, w = x.shape
+            src_dtype = x.dtype
+            x = torch.fft.fft2(x.float(), dim=(-2, -1))
+            x = torch.fft.fftshift(x, dim=(-2, -1))
+            x = torch.cat([x.real.unsqueeze(2), x.imag.unsqueeze(2)], dim=2).view(n, c * 2, h, w)
+            x = x.to(dtype = src_dtype)
+            return x
 
-            rgb_image = torch.nn.functional.pad(rgb_image, (padding, padding, padding, padding), mode='reflect')
-            n, c, h, w = rgb_image.shape
-
-            # Step 1: Apply Fourier Transform along spatial dimensions
-            freq_image = torch.fft.fft2(rgb_image, dim=(-2, -1))
-            freq_image = torch.fft.fftshift(freq_image, dim=(-2, -1))  # Shift the zero-frequency component to the center
-
-            # Step 2: Calculate the distance of each frequency component from the center
-            center_x, center_y = h // 2, w // 2
-            x = torch.arange(h).view(-1, 1).repeat(1, w)
-            y = torch.arange(w).repeat(h, 1)
-            distance_from_center = ((x - center_x) ** 2 + (y - center_y) ** 2).sqrt()
-            
-            # Normalize distance to the range [0, 1]
-            max_distance = distance_from_center.max()
-            distance_weight = distance_from_center / max_distance  # Now scaled from 0 (low freq) to 1 (high freq)
-            distance_weight = distance_weight.to(freq_image.device)  # Ensure the weight is on the same device as the image
-            distance_weight = distance_weight ** (1 / gamma)
-            
-            k = 11  # Controls the steepness of the curve
-            x0 = 0.5  # Midpoint where the function crosses 0.5
-
-            # Compute the S-like function using a sigmoid
-            distance_weight = 1 / (1 + torch.exp(-k * (distance_weight - x0)))
-            # Step 3: Apply the distance weight to both real and imaginary parts of the frequency components
-            freq_image_scaled = freq_image * distance_weight.unsqueeze(0).unsqueeze(1)
-
-            # Step 4: Inverse Fourier Transform to return to spatial domain
-            freq_image_scaled = torch.fft.ifftshift(freq_image_scaled, dim=(-2, -1))
-            scaled_image = torch.fft.ifft2(freq_image_scaled, dim=(-2, -1)).real  # Take the real part only
-            scaled_image = torch.max(scaled_image, dim=1, keepdim=True).values
-            # scaled_image = scaled_image ** (1 / 1.8)
-
-            return scaled_image[:, :, padding:-padding, padding:-padding]
+        def to_spat(x):
+            n, c, h, w = x.shape
+            src_dtype = x.dtype
+            x = x.view(n, c, 2, h, w).float()
+            x = torch.complex(
+                x[:, :, 0, :, :],
+                x[:, :, 1, :, :]
+            )
+            x = torch.fft.ifftshift(x, dim=(-2, -1))
+            x = torch.fft.ifft2(x, dim=(-2, -1)).real
+            x = x.to(dtype = src_dtype)
+            return x
 
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
-                self.cnn0 = torch.nn.Conv2d(3 + 1, 36, 3, 2, 1)
-                self.cnn1 = torch.nn.Conv2d(36, 36, 3, 1, 1)
-                self.cnn2 = torch.nn.Conv2d(36, 36, 3, 1, 1)
-                self.cnn3 = torch.nn.ConvTranspose2d(36, 9, 4, 2, 1)
+                self.cnn0 = torch.nn.Conv2d(4, 32, 3, 2, 1)
+                self.cnn0f = torch.nn.Conv2d(8, 48, 3, 2, 1)
+                self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
+                self.cnn1f = torch.nn.Conv2d(48, 48, 3, 1, 1)
+                self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
+                self.cnn2f = torch.nn.Conv2d(48, 48, 3, 1, 1)
+                self.cnn3 = torch.nn.ConvTranspose2d(56, 10, 4, 2, 1)
                 self.relu = torch.nn.Mish(True)
 
             def forward(self, x):
-                # hp = hpass(x)
-                hp = centered_highpass_filter(x.float())
+                hp = hpass(x)
                 hp = hp.to(dtype = x.dtype)
-                # blurred = blur(x)
                 x = torch.cat((x, hp), 1)
+
                 x = self.cnn0(x * 2 - 1)
                 x = self.relu(x)
+
+                xf = self.cnn0f(to_freq(x))
+                xf = self.relu(x)
+
                 x = self.cnn1(x)
                 x = self.relu(x)
                 x = self.cnn2(x)
                 x = self.relu(x)
+                
+                xf = self.cnn1f(xf)
+                xf = self.relu(xf)
+                xf = self.cnn2f(xf)
+                xf = self.relu(xf)
+                xf = to_spat(xf)
+                
+                x = torch.cat((x, xf), 1)
                 x = self.cnn3(x)
                 return x
 

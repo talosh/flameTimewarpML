@@ -973,12 +973,14 @@ def get_dataset(
         )
 
 def normalize(x):
+    x = x * 2 - 1
     scale = torch.tanh(torch.tensor(1.0))
-    # Apply the function
-    return torch.where(
+    x = torch.where(
         (x >= -1) & (x <= 1), scale * x,
         torch.tanh(x)
     )
+    x = (x + 1) / 2
+    return x
 
     def custom_bend(x):
         linear_part = x
@@ -1821,6 +1823,62 @@ def highpass(img):
     hp = torch.max(hp, dim=1, keepdim=True).values
     return hp
 
+class LapLoss(torch.nn.Module):
+    def gauss_kernel(self, size=5, channels=3):
+        kernel = torch.tensor([[1., 4., 6., 4., 1],
+                            [4., 16., 24., 16., 4.],
+                            [6., 24., 36., 24., 6.],
+                            [4., 16., 24., 16., 4.],
+                            [1., 4., 6., 4., 1.]])
+        kernel /= 256.
+        kernel = kernel.repeat(channels, 1, 1, 1)
+        # kernel = kernel.to(device)
+        return kernel
+
+    def downsample(self, x):
+        return torch.nn.functional.interpolate(x, scale_factor= 1. / 2, mode="bilinear", align_corners=False)
+        # return x[:, :, ::2, ::2]
+
+    def upsample(self, x):
+        device = x.device
+        cc = torch.cat([x, torch.zeros(x.shape[0], x.shape[1], x.shape[2], x.shape[3]).to(device)], dim=3)
+        cc = cc.view(x.shape[0], x.shape[1], x.shape[2]*2, x.shape[3])
+        cc = cc.permute(0,1,3,2)
+        cc = torch.cat([cc, torch.zeros(x.shape[0], x.shape[1], x.shape[3], x.shape[2]*2).to(device)], dim=3)
+        cc = cc.view(x.shape[0], x.shape[1], x.shape[3]*2, x.shape[2]*2)
+        x_up = cc.permute(0,1,3,2)
+        gauss_kernel = self.gauss_kernel(channels=x.shape[1])
+        gauss_kernel = gauss_kernel.to(device)
+        return self.conv_gauss(x_up, 4*gauss_kernel)
+
+    def conv_gauss(self, img, kernel):
+        img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+        out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+        return out
+
+    def laplacian_pyramid(self, img, kernel, max_levels=3):
+        current = img
+        pyr = []
+        for level in range(max_levels):
+            filtered = self.conv_gauss(current, kernel)
+            down = self.downsample(filtered)
+            up = self.upsample(down)
+            diff = current-up
+            pyr.append(diff)
+            current = down
+        return pyr
+
+    def __init__(self, max_levels=5, channels=3):
+        super(LapLoss, self).__init__()
+        self.max_levels = max_levels
+        self.gk = self.gauss_kernel(channels=channels)
+        
+    def forward(self, input, target):
+        self.gk = self.gk.to(device = input.device)
+        pyr_input  = self.laplacian_pyramid(img=input, kernel=self.gk, max_levels=self.max_levels)
+        pyr_target = self.laplacian_pyramid(img=target, kernel=self.gk, max_levels=self.max_levels)
+        return sum(torch.nn.functional.l1_loss(a, b) for a, b in zip(pyr_input, pyr_target))
+
 current_state_dict = {}
 
 def main():
@@ -2039,6 +2097,7 @@ def main():
 
     criterion_mse = torch.nn.MSELoss()
     criterion_l1 = torch.nn.L1Loss()
+    criterion_lap = LapLoss()
     criterion_huber = torch.nn.HuberLoss(delta=0.001)
 
     weight_decay = 10 ** (-2 - 0.02 * (args.generalize - 1)) if args.generalize > 1 else 1e-4
@@ -2544,9 +2603,10 @@ def main():
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
         img2_orig = img2.detach().clone()
-        img0 = normalize(img0)
-        img1 = normalize(img1)
-        img2 = normalize(img2)
+
+        # img0 = normalize(img0)
+        # img1 = normalize(img1)
+        # img2 = normalize(img2)
 
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
 
@@ -2588,15 +2648,21 @@ def main():
                 img0 += torch.rand_like(img0) * delta
                 img2 += torch.rand_like(img1) * delta
 
-        flow_list, mask_list, conf_list, merged = flownet(
+        result = flownet(
             img0,
             img2,
             ratio,
             scale=training_scale,
-            iterations = args.iterations
+            iterations = args.iterations,
+            gt = img1
             )
 
         # continue
+        # flow_list, mask_list, conf_list, merged
+        flow_list = result['flow_list']
+        mask_list = result['mask_list']
+        conf_list = result['conf_list']
+        merged = result['merged']
 
         flow0 = flow_list[-1][:, :2]
         flow1 = flow_list[-1][:, 2:4]
@@ -2608,7 +2674,6 @@ def main():
 
         diff_matte = diffmatte(output_clean, img1_orig)
         diff_warps = diffmatte(warp(img0_orig, flow0), warp(img2_orig, flow1))
-        loss_diff_warps = loss_fn_alex(mask * 2 - 1, diff_warps * 2 - 1)
         loss_diff = float(torch.mean(diff_matte))
         loss_mask = variance_loss(mask, 0.1)
         loss_conf = criterion_l1(conf, diff_matte)
@@ -2622,22 +2687,11 @@ def main():
 
         loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
         loss_weighted = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS).item())
-
-        loss_hpass_LPIPS = loss_fn_alex(highpass(output_clean) * 2 - 1, highpass(img1_orig) * 2 - 1)
-        loss_hpass_weighted = (1 - lpips_weight ) * criterion_l1(highpass(output_clean), highpass(img1_orig)) + lpips_weight * 0.2 * float(torch.mean(loss_hpass_LPIPS).item())
         
-        freq_output_clean = torch.fft.fft2(output_clean, dim=(-2, -1))
-        freq_output_clean[..., 0, 0] = 0
-        freq_output_clean = torch.fft.fftshift(freq_output_clean, dim=(-2, -1))
-
-        freq_img1_orig = torch.fft.fft2(img1_orig, dim=(-2, -1))
-        freq_img1_orig[..., 0, 0] = 0
-        freq_img1_orig = torch.fft.fftshift(freq_img1_orig, dim=(-2, -1))
-
-        loss_freq_l1 = criterion_l1(freq_output_clean, freq_img1_orig)
         loss_l1_norm = criterion_l1(normalize(output_clean), normalize(img1_orig))
         loss_l1 = criterion_l1(output_clean, img1_orig)
-        loss = loss_deep_l1 + loss_l1_norm + 2e-3 * loss_conf + 1e-3 * loss_diff # + 0.1 * loss_hpass_weighted
+        loss_lap = criterion_lap(output_clean, img1_orig)
+        loss = loss_deep_l1 + loss_l1_norm + loss_lap + 1e-3 * loss_conf + 1e-3 * loss_mask
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
         # continue
