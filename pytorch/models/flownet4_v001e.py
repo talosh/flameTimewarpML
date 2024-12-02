@@ -306,7 +306,7 @@ class Model:
                 cd = int(1.618 * c)
                 self.conv0 = conv(in_planes, c//2, 5, 2, 2)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
-                self.conv2 = conv(c, cd, 3, 2, 1)
+                self.conv2 = conv(2*c, 2*cd, 3, 2, 1)
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
@@ -322,10 +322,6 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                 )
-                self.convblock4 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                )
                 self.convblock_last = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
@@ -333,31 +329,26 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
-                    ResConv(cd),
-                    ResConv(cd),
-                    ResConv(cd),
-                    ResConv(cd),
+                    ResConv(2*cd),
+                    ResConv(2*cd),
+                    ResConv(2*cd),
+                    ResConv(2*cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
-                    ResConv(cd),
-                    ResConv(cd),
-                    ResConv(cd),
+                    ResConv(2*cd),
+                    ResConv(2*cd),
+                    ResConv(2*cd),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
-                    ResConv(cd),
-                    ResConv(cd),
+                    ResConv(2*cd),
+                    ResConv(2*cd),
                 )
-                self.convblock_deep4 = torch.nn.Sequential(
-                    ResConv(cd),
-                    ResConv(cd),
-                )
+                
                 self.mix1 = ResConvMix(c, cd)
                 self.mix2 = ResConvMix(c, cd)
                 self.mix3 = ResConvMix(c, cd)
-                self.mix4 = ResConvMix(c, cd)
-                self.revmix1 = ResConvRevMix(c, cd)
-                self.revmix2 = ResConvRevMix(c, cd)
-                self.revmix3 = ResConvRevMix(c, cd)
+                self.revmix1 = ResConvRevMix(2*c, 2*cd)
+                self.revmix2 = ResConvRevMix(2*c, 2*cd)
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
@@ -398,30 +389,24 @@ class Model:
                 feat = self.conv0(x)
                 # potential attention or insertion here
                 feat = self.conv1(feat)
-                feat_deep = self.conv2(feat)
+                feat_deep = self.conv2(to_freq(feat))
 
                 feat = self.convblock1(feat)
                 feat_deep = self.convblock_deep1(feat_deep)
 
-                feat_tmp = self.mix1(feat, feat_deep)
-                feat_deep = self.revmix1(feat, feat_deep)
+                feat_tmp = self.mix1(feat, to_spat(feat_deep))
+                feat_deep = self.revmix1(to_freq(feat), feat_deep)
 
                 feat = self.convblock2(feat_tmp)
-                feat_deep = self.convblock_deep2(feat_deep)
+                feat_deep = self.convblock_deep2(to_freq(feat_deep))
 
-                feat_tmp = self.mix2(feat, feat_deep)
-                feat_deep = self.revmix2(feat, feat_deep)
+                feat_tmp = self.mix2(feat, to_spat(feat_deep))
+                feat_deep = self.revmix2(to_freq(feat), feat_deep)
 
                 feat = self.convblock3(feat_tmp)
-                feat_deep = self.convblock_deep3(feat_deep)
+                feat_deep = self.convblock_deep3(to_freq(feat_deep))
 
-                feat_tmp = self.mix3(feat, feat_deep)
-                feat_deep = self.revmix3(feat, feat_deep)
-
-                feat = self.convblock4(feat_tmp)
-                feat_deep = self.convblock_deep4(feat_deep)
-
-                feat = self.mix4(feat, feat_deep)
+                feat = self.mix3(feat, to_spat(feat_deep))
                 feat = self.convblock_last(feat)
 
                 feat_tmp = self.lastconv(feat)
