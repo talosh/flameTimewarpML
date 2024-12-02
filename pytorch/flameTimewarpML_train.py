@@ -3179,10 +3179,10 @@ def main():
 
                         if torch.isnan(eval_result).any():
                             print (f'eval: result has NaN: {description["start"]}')
-                            sys.exit()
+                            continue
                         if torch.isnan(eval_img1).any():
                             print (f'eval: eval_img1 has NaN: {description["start"]}')
-                            sys.exit()
+                            continue
 
                         eval_loss_l1 = criterion_l1(eval_result, eval_img1)
                         eval_loss.append(float(eval_loss_l1.item()))
