@@ -426,6 +426,10 @@ class Model:
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1, gt=None):
+                src_dtype = img0.dtype
+                img0 = img0.float()
+                img1 = img1.float()
+
                 img0 = normalize(img0)
                 img1 = normalize(img1)
                 f0 = self.encode(img0)
@@ -446,10 +450,10 @@ class Model:
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 result = {
-                    'flow_list': flow_list,
-                    'mask_list': mask_list,
-                    'conf_list': conf_list,
-                    'merged': merged
+                    'flow_list': flow_list.to(dtype = src_dtype),
+                    'mask_list': mask_list.to(dtype = src_dtype),
+                    'conf_list': conf_list.to(dtype = src_dtype),
+                    'merged': merged.to(dtype = src_dtype)
                 }
 
                 return result
