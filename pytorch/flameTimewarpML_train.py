@@ -1872,12 +1872,13 @@ class LapLoss(torch.nn.Module):
     def __init__(self, max_levels=5, channels=3):
         super(LapLoss, self).__init__()
         self.max_levels = max_levels
+        self.maxdepth = 2 * max_levels
         self.gk = self.gauss_kernel(channels=channels)
         
     def forward(self, input, target):
         n, c, sh, sw = input.shape
-        ph = self.max_levels - (sh % self.max_levels)
-        pw = self.max_levels - (sw % self.max_levels)
+        ph = self.maxdepth - (sh % self.maxdepth)
+        pw = self.maxdepth - (sw % self.maxdepth)
         padding = (0, pw, 0, ph)
         input = torch.nn.functional.pad(input, padding)
         target = torch.nn.functional.pad(target, padding)
