@@ -205,6 +205,7 @@ class Model:
                 self.conv1 = conv(c, c//2, 3, 1, 1)
                 self.conv2 = conv(c//2, c//4, 3, 1, 1)
                 self.lastconv = torch.nn.Conv2d(c//2, c_out, kernel_size=3, stride=1, padding=1)
+                
             def forward(self, x):
                 n, c, h, w = x.shape
                 d = self.up4(x[:, :c // 4, :, :])
