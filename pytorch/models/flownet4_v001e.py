@@ -190,12 +190,28 @@ class Model:
         class ResConvRevMix(Module):
             def __init__(self, c, cd):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'zeros', bias=True)
-                self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
+                self.conv = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x, x_deep):
-                return self.relu(self.conv(x) * self.beta + x_deep)
+                return self.relu(self.conv(x_deep) * self.beta + x)
+
+        class LastConv(Module):
+            def __init__(self, c, c_out):
+                super().__init__()
+                self.up2 = torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
+                self.up4 = torch.nn.Upsample(scale_factor=4, mode='bilinear', align_corners=False)
+                self.conv1 = conv(c, c//2, 3, 1, 1)
+                self.conv2 = conv(c//2, c//4, 3, 1, 1)
+                self.lastconv = torch.nn.Conv2d(c//2, c_out, kernel_size=3, stride=1, padding=1)
+            def forward(self, x):
+                n, c, h, w = x.shape
+                d = self.up4(x[:, :c // 4, :, :])
+                x = self.conv1(self.up2(x))
+                x = self.conv2(self.up2(x))
+                x = torch.cat((d, x), 1)
+                return self.lastconv(x)
 
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
@@ -356,6 +372,8 @@ class Model:
                 self.mix3 = ResConvMix(c, cd)
                 self.revmix1 = ResConvRevMix(2*c, 2*cd)
                 self.revmix2 = ResConvRevMix(2*c, 2*cd)
+                self.lastconv = LastConv(c, 6)
+                '''
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
                     conv(c, c//2, 3, 1, 1),
@@ -365,6 +383,7 @@ class Model:
                     # torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     # torch.nn.PixelShuffle(2)
                 )
+                '''
                 self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, conf, scale=1):
