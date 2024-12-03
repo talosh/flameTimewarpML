@@ -190,7 +190,7 @@ class Model:
         class ResConvRevMix(Module):
             def __init__(self, c, cd):
                 super().__init__()
-                self.conv = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
+                self.conv = torch.nn.ConvTranspose2d(c, cd, 4, 2, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
@@ -205,7 +205,7 @@ class Model:
                 self.conv1 = conv(c, c//2, 3, 1, 1)
                 self.conv2 = conv(c//2, c//4, 3, 1, 1)
                 self.lastconv = torch.nn.Conv2d(c//2, c_out, kernel_size=3, stride=1, padding=1)
-                
+
             def forward(self, x):
                 n, c, h, w = x.shape
                 d = self.up4(x[:, :c // 4, :, :])
