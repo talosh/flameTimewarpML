@@ -81,6 +81,15 @@ class Model:
             x = (x + 1) / 2
             return x
 
+        def compress(x):
+            scale = torch.tanh(torch.tensor(1.0))
+            x = torch.where(
+                (x >= -1) & (x <= 1), scale * x,
+                torch.tanh(x)
+            )
+            x = (x + 1) / 2
+            return x
+
         def blur(img):  
             def gauss_kernel(size=5, channels=3):
                 kernel = torch.tensor([[1., 4., 6., 4., 1],
@@ -387,7 +396,6 @@ class Model:
                 feat = self.conv0(x)
                 # potential attention or insertion here
                 feat = self.conv1(feat)
-                
                 feat_deep = self.conv2(to_freq(feat))
 
                 feat = self.convblock1(feat)
@@ -453,8 +461,8 @@ class Model:
                 # img1 = img1.to(dtype = src_dtype)
 
                 flow_list[3] = flow
-                conf_list[3] = ( normalize(conf) + 1 ) / 2 # torch.sigmoid(conf)
-                mask_list[3] = ( normalize(mask) + 1 ) / 2 # torch.sigmoid(mask)
+                conf_list[3] = compress(conf) # torch.sigmoid(conf)
+                mask_list[3] = compress(mask) # torch.sigmoid(mask)
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 result = {
