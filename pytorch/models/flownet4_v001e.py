@@ -190,12 +190,12 @@ class Model:
         class ResConvRevMix(Module):
             def __init__(self, c, cd):
                 super().__init__()
-                self.conv = torch.nn.ConvTranspose2d(c, cd, 4, 2, 1)
+                self.conv = torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x, x_deep):
-                return self.relu(self.conv(x_deep) * self.beta + x)
+                return self.relu(self.conv(x) * self.beta + x_deep)
 
         class LastConv(Module):
             def __init__(self, c, c_out):
