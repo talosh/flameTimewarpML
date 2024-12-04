@@ -149,7 +149,7 @@ class Model:
                 hp = hp.to(dtype = x.dtype)
                 x = torch.cat((x, hp), 1)
 
-                xf = self.cnn0f(to_freq(x))
+                xf = self.cnn0f(to_freq(x * 2 - 1))
                 xf = self.relu(xf)
                 xf = self.cnn1f(xf)
                 xf = self.relu(xf)
