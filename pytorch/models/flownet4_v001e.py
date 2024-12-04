@@ -373,8 +373,7 @@ class Model:
                 self.mix3 = ResConvMix(c, cd)
                 self.revmix1 = ResConvRevMix(2*c, 2*cd)
                 self.revmix2 = ResConvRevMix(2*c, 2*cd)
-                self.lastconv = LastConv(c, 6)
-                '''
+                # self.lastconv = LastConv(c, 6)
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
                     conv(c, c//2, 3, 1, 1),
@@ -384,7 +383,6 @@ class Model:
                     # torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     # torch.nn.PixelShuffle(2)
                 )
-                '''
                 self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, conf, scale=1):
