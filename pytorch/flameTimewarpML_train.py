@@ -3230,6 +3230,9 @@ def main():
                             )
 
                     except Exception as e:
+                        del description['eval_img0']
+                        del description['eval_img1']
+                        del description['eval_img2']
                         print (f'\nerror while evaluating: {e}\n{description}\n\n')
                     description = read_eval_image_queue.get()
 
