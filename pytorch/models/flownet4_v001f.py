@@ -413,7 +413,7 @@ class Model:
                 super().__init__()
                 cd = int(1.618 * c)
                 self.conv0 = conv(in_planes, c//2, 5, 2, 2)
-                self.conv0ft = conv(in_planes, c, 5, 2, 2)
+                self.conv0ft = conv(2*in_planes, c, 5, 2, 2)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv1ft = conv(c, 2*c, 3, 2, 1)
                 self.conv2 = conv(2*c, 2*cd, 3, 2, 1)
