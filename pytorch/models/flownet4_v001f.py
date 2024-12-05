@@ -570,7 +570,7 @@ class Model:
                     'conf_list': conf_list,
                     'merged': merged,
                     'merged_distill': merged_dist,
-                    'loss_distill': None
+                    'loss_distill': 0
                 }
 
                 return result
