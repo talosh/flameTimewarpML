@@ -494,7 +494,7 @@ class Model:
                 self.block1 = None # Flownet(6+18+1+1+1+4, c=144) # images + feat + timestep + mask + conf + flow
                 self.block2 = None # Flownet(6+18+1+1+1+4, c=96)
                 self.block3 = None # Flownet(6+18+1+1+1+4, c=64)
-                self.block_distill = Flownet(3+20+1+1+1+4+3+10, c=96) # images + feat + timestep + mask + conf + flow + gt + fgt
+                self.block_distill = Flownet(6+20+1+1+1+4+3+10, c=96) # images + feat + timestep + mask + conf + flow + gt + fgt
                 self.encode = Head()
                 self.encodeft = HeadFreq()
 
