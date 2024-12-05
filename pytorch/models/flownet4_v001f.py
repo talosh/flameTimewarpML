@@ -445,15 +445,18 @@ class Model:
                     ResConv(2*cd),
                     ResConv(2*cd),
                     ResConv(2*cd),
+                    torch.nn.Conv2d(2*cd, 2*cd, 1, 1, 0),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
                     ResConv(2*cd),
                     ResConv(2*cd),
                     ResConv(2*cd),
+                    torch.nn.Conv2d(2*cd, 2*cd, 1, 1, 0),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
                     ResConv(2*cd),
                     ResConv(2*cd),
+                    torch.nn.Conv2d(2*cd, 2*cd, 1, 1, 0),
                 )
                 
                 self.mix1 = ResConvMix(c, cd)
