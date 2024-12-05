@@ -251,27 +251,38 @@ class Model:
                 )
                 self.maxdepth = 4
 
-            def forward(self, img0, img1, f0, f1, timestep, mask, flow, conf, scale=1, gt = None):
+            def forward(self, img0, img1, f0, f1, timestep, mask, flow, conf, scale=1, gt = None, fgt = None):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
                 timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 
                 if gt is not None:
-                        img0 = torch.cat((img0, gt), 1)
-                        
-                if flow is None:
-                    x = torch.cat((img0, img1, f0, f1, timestep), 1)
-                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
+                    if flow is None:
+                        x = torch.cat((img0, gt, img1, f0, fgt, f1, timestep), 1)
+                        x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
+                    else:
+                        warped_img0 = warp(img0, flow[:, :2])
+                        warped_img1 = warp(img1, flow[:, 2:4])
+                        warped_f0 = warp(f0, flow[:, :2])
+                        warped_f1 = warp(f1, flow[:, 2:4])
+                        x = torch.cat((warped_img0, gt, warped_img1, warped_f0, fgt, warped_f1, timestep, mask, conf), 1)
+                        x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
+                        flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
+                        x = torch.cat((x, flow), 1)
                 else:
-                    warped_img0 = warp(img0, flow[:, :2])
-                    warped_img1 = warp(img1, flow[:, 2:4])
-                    warped_f0 = warp(f0, flow[:, :2])
-                    warped_f1 = warp(f1, flow[:, 2:4])
-                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, conf), 1)
-                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
-                    flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
-                    x = torch.cat((x, flow), 1)
+                    if flow is None:
+                        x = torch.cat((img0, img1, f0, f1, timestep), 1)
+                        x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
+                    else:
+                        warped_img0 = warp(img0, flow[:, :2])
+                        warped_img1 = warp(img1, flow[:, 2:4])
+                        warped_f0 = warp(f0, flow[:, :2])
+                        warped_f1 = warp(f1, flow[:, 2:4])
+                        x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, conf), 1)
+                        x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
+                        flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
+                        x = torch.cat((x, flow), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
@@ -523,19 +534,21 @@ class Model:
                 loss_distill = 0
 
                 if gt is not None:
+                    fgt = self.encode(gt)
                     flow_dist, mask_dist, conf_dist = self.block_distill(
-                        warp(img0, flow[:, :2]), 
-                        warp(img1, flow[:, 2:4]),
-                        warp(f0, flow[:, :2]),
-                        warp(f1, flow[:, 2:4]),
+                        img0, 
+                        img1,
+                        f0,
+                        f1,
                         timestep,
                         mask,
                         flow, 
                         scale=scale[3],
-                        gt = gt
+                        gt = gt,
+                        fgt = fgt
                     )
                     flow_dist = flow + flow_dist
-                    mask_dist = torch.sigmoid(mask_dist)
+                    mask_dist = compress(mask_dist)
                     merged_dist = warp(img0, flow_dist[:, :2]) * mask_dist + warp(img1, flow_dist[:, 2:4]) * (1 - mask_dist)
 
                     for i in range(3):
