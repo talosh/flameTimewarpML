@@ -565,6 +565,7 @@ class Model:
                     'mask_list': mask_list,
                     'conf_list': conf_list,
                     'merged': merged,
+                    'flow_distill': flow_dist,
                     'merged_distill': merged_dist,
                     'gt_distill': gt_distill
                 }
