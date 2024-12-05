@@ -437,7 +437,8 @@ class Model:
                 f1ft = torch.nn.functional.pad(f1ft, padding)
 
                 feat = self.conv0(x)
-                feat_ft = self.conv0ft(torch.cat((f0ft, f1ft)), 1)
+                feat_ft = torch.cat((f0ft, f1ft), 1)
+                feat_ft = self.conv0ft(feat_ft)
                 # potential attention or insertion here
                 feat_ft = torch.cat((to_freq(feat), feat_ft), 1)
                 feat_ft = self.conv1ft(feat_ft)
