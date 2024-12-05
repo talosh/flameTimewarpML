@@ -531,7 +531,7 @@ class Model:
                 mask_list[3] = compress(mask) # torch.sigmoid(mask)
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
-                loss_distill = 0
+                loss_distill = 0.
 
                 if gt is not None:
                     fgt = self.encode(gt)
