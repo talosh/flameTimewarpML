@@ -563,8 +563,7 @@ class Model:
                     'flow_list': flow_list,
                     'mask_list': mask_list,
                     'conf_list': conf_list,
-                    'merged': merged,
-                    'loss_distill': loss_distill
+                    'merged': merged
                 }
 
                 return result
