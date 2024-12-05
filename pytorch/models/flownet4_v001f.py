@@ -226,6 +226,7 @@ class Model:
                 xf = self.relu(xf)
                 xf = self.cnn2f(xf)
                 xf = self.relu(xf)
+                xf = self.cnn3f(xf)
                 xf = to_spat(xf)
 
                 x = self.cnn0(x * 2 - 1)
