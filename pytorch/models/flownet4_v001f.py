@@ -552,8 +552,8 @@ class Model:
                     mask_dist = compress(mask_dist)
                     merged_dist = warp(img0, flow_dist[:, :2]) * mask_dist + warp(img1, flow_dist[:, 2:4]) * (1 - mask_dist)
                     
-                    loss_mask = ((merged[3] - gt).abs().mean(1, True) > (merged_dist - gt).abs().mean(1, True) + 0.01).float().detach()
-                    loss_distill = 0 # (((flow_dist.detach() - flow_list[3]) ** 2).mean(1, True) ** 0.5 * loss_mask).mean()
+                    # loss_mask = ((merged[3] - gt).abs().mean(1, True) > (merged_dist - gt).abs().mean(1, True) + 0.01).float().detach()
+                    # loss_distill = 0 # (((flow_dist.detach() - flow_list[3]) ** 2).mean(1, True) ** 0.5 * loss_mask).mean()
 
                     '''
                     for i in range(3):
