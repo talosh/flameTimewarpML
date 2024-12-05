@@ -202,6 +202,42 @@ class Model:
                 xf = self.cnn3(xf)
                 return xf
 
+        class HeadMixed(Module):
+            def __init__(self):
+                super().__init__()
+                self.cnn0 = torch.nn.Conv2d(4, 32, 3, 2, 1)
+                self.cnn0f = torch.nn.Conv2d(8, 48, 3, 2, 1)
+                self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
+                self.cnn1f = torch.nn.Conv2d(48, 48, 3, 1, 1)
+                self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
+                self.cnn2f = torch.nn.Conv2d(48, 48, 3, 1, 1)
+                self.cnn3 = torch.nn.ConvTranspose2d(56, 10, 4, 2, 1)
+                self.relu = torch.nn.Mish(True)
+
+            def forward(self, x):
+                hp = hpass(x)
+                hp = hp.to(dtype = x.dtype)
+                x = torch.cat((x, hp), 1)
+
+                xf = self.cnn0f(to_freq(x * 2 - 1))
+                xf = self.relu(xf)
+                xf = self.cnn1f(xf)
+                xf = self.relu(xf)
+                xf = self.cnn2f(xf)
+                xf = self.relu(xf)
+                xf = to_spat(xf)
+
+                x = self.cnn0(x * 2 - 1)
+                x = self.relu(x)
+                x = self.cnn1(x)
+                x = self.relu(x)
+                x = self.cnn2(x)
+                x = self.relu(x)
+                
+                x = torch.cat((x, xf), 1)
+                x = self.cnn3(x)
+                return x
+
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
@@ -377,7 +413,7 @@ class Model:
                 super().__init__()
                 cd = int(1.618 * c)
                 self.conv0 = conv(in_planes, c//2, 5, 2, 2)
-                self.conv0ft = conv(in_planes*2 + 16, c, 5, 2, 2)
+                self.conv0ft = conv(in_planes, c, 5, 2, 2)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv1ft = conv(c, 2*c, 3, 2, 1)
                 self.conv2 = conv(2*c, 2*cd, 3, 2, 1)
@@ -435,7 +471,7 @@ class Model:
                 )
                 self.maxdepth = 8
 
-            def forward(self, img0, img1, f0, f1, f0ft, f1ft, timestep, mask, flow, conf, scale=1):
+            def forward(self, img0, img1, f0, f1, timestep, mask, flow, conf, scale=1):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
@@ -452,9 +488,6 @@ class Model:
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
 
-                f0ft = torch.nn.functional.interpolate(f0ft, size=(sh, sw), mode="bilinear", align_corners=False)
-                f1ft = torch.nn.functional.interpolate(f1ft, size=(sh, sw), mode="bilinear", align_corners=False)
-
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw)
                 tenGrid = torch.cat((
@@ -469,12 +502,8 @@ class Model:
                 padding = (0, pw, 0, ph)
                 x = torch.nn.functional.pad(x, padding)
 
-                f0ft = torch.nn.functional.pad(f0ft, padding)
-                f1ft = torch.nn.functional.pad(f1ft, padding)
-
                 feat = self.conv0(x)
-                feat_ft = torch.cat((to_freq(x), f0ft, f1ft), 1)
-                feat_ft = self.conv0ft(feat_ft)
+                feat_ft = self.conv0ft(to_freq(x))
                 # potential attention or insertion here
                 feat_ft = self.conv1ft(feat_ft)
                 feat_deep = self.conv2(feat_ft)
@@ -517,8 +546,7 @@ class Model:
                 self.block2 = None # Flownet(6+18+1+1+1+4, c=96)
                 self.block3 = None # Flownet(6+18+1+1+1+4, c=64)
                 self.block_distill = Flownet(6+20+1+1+1+4+3+10, c=96) # images + feat + timestep + mask + conf + flow + gt + fgt
-                self.encode = Head()
-                self.encodeft = HeadFreq()
+                self.encode = HeadMixed()
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1, gt=None):
                 # src_dtype = img0.dtype
@@ -529,18 +557,15 @@ class Model:
                 img1 = normalize(img1)
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
-                f0ft = self.encodeft(img0)
-                f1ft = self.encodeft(img1)
 
                 flow_list = [None] * 4
                 mask_list = [None] * 4
                 conf_list = [None] * 4
                 merged = [None] * 4
 
-
                 scale[0] = 1
 
-                flow, mask, conf = self.block0(img0, img1, f0, f1, f0ft, f1ft, timestep, None, None, None, scale=scale[0])
+                flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
 
                 # flow = flow.to(dtype = src_dtype)
                 # mask = mask.to(dtype = src_dtype)
@@ -556,7 +581,7 @@ class Model:
                 flow_dist = None
                 merged_dist = None
                 gt_distill = None
-                
+
                 if gt is not None:
                     gt_distill = normalize(gt)
                     fgt = self.encode(gt_distill)
