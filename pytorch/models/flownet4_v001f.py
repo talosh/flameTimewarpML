@@ -565,7 +565,7 @@ class Model:
                     'conf_list': conf_list,
                     'merged': merged,
                     'merged_distill': merged_dist,
-                    'loss_distill': loss_distill
+                    'loss_distill': float(loss_distill)
                 }
 
                 return result
