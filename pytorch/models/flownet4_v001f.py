@@ -135,7 +135,7 @@ class Model:
         
         class Head(Module):
             def __init__(self):
-                super(Head, self).__init__()
+                super().__init__()
                 self.cnn0 = torch.nn.Conv2d(4, 32, 3, 2, 1)
                 self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
@@ -159,7 +159,7 @@ class Model:
 
         class HeadFreq(Module):
             def __init__(self):
-                super(Head, self).__init__()
+                super().__init__()
                 self.cnn0f = torch.nn.Conv2d(8, 48, 3, 2, 1)
                 self.cnn1f = torch.nn.Conv2d(48, 48, 3, 1, 1)
                 self.cnn2f = torch.nn.Conv2d(48, 48, 3, 1, 1)
@@ -510,7 +510,7 @@ class Model:
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 loss_distill = 0
-                
+
                 if gt is not None:
                     flow_dist, mask_dist, conf_dist = self.block_distill(
                         warp(img0, flow[:, :2]), 
