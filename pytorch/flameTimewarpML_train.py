@@ -2689,10 +2689,13 @@ def main():
         output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
 
         loss_distill = 0.
+        loss_teacher = 0.
         if gt_distill is not None:
             loss_mask = ((merged[3] - gt_distill).abs().mean(1, True) > (merged_distill - gt_distill).abs().mean(1, True) + 0.01).float().detach()
-            loss_distill += (((flow_dist.detach() - flow_list[i]) ** 2).mean(1, True) ** 0.5 * loss_mask).mean()
+            loss_distill += (((flow_distill.detach() - flow_list[3]) ** 2).mean(1, True) ** 0.5 * loss_mask).mean()
 
+            output_teacher = warp(img0_orig, flow_distill[:, :2]) * mask + warp(img2_orig, flow_distill[:, 2:4]) * (1 - mask)
+            loss_teacher = criterion_l1(output_teacher, img1_orig) +  criterion_lap(output_teacher, img1_orig)
 
         diff_matte = diffmatte(output_clean, img1_orig)
         diff_warps = diffmatte(warp(img0_orig, flow0), warp(img2_orig, flow1))
@@ -2713,7 +2716,7 @@ def main():
         loss_l1_norm = criterion_l1(normalize(output_clean), normalize(img1_orig))
         loss_l1 = criterion_l1(output_clean, img1_orig)
         loss_lap = criterion_lap(output_clean, img1_orig)
-        loss = loss_deep_l1 + loss_l1_norm + loss_lap + 1e-3 * loss_conf + 1e-3 * loss_mask
+        loss = loss_deep_l1 + loss_l1_norm + loss_lap + loss_teacher + 1e-2*loss_distill + 1e-3*loss_conf + 1e-3*loss_mask
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
         # continue
