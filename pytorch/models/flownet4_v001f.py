@@ -115,12 +115,34 @@ class Model:
             src_dtype = x.dtype
             x = torch.fft.fft2(x.float(), dim=(-2, -1))
             x = torch.fft.fftshift(x, dim=(-2, -1))
+            x = torch.cat([x.real.unsqueeze(2), x.imag.unsqueeze(2)], dim=2).view(n, c * 2, h, w)
+            x = x.to(dtype = src_dtype)
+            return x
+
+        def to_spat(x):
+            n, c, h, w = x.shape
+            src_dtype = x.dtype
+            x = x.view(n, c//2, 2, h, w).float()
+            x = torch.complex(
+                x[:, :, 0, :, :],
+                x[:, :, 1, :, :]
+            )
+            x = torch.fft.ifftshift(x, dim=(-2, -1))
+            x = torch.fft.ifft2(x, dim=(-2, -1)).real
+            x = x.to(dtype=src_dtype)
+            return x
+
+        def to_freq_aa(x):
+            n, c, h, w = x.shape
+            src_dtype = x.dtype
+            x = torch.fft.fft2(x.float(), dim=(-2, -1))
+            x = torch.fft.fftshift(x, dim=(-2, -1))
             # x = torch.cat([x.real.unsqueeze(2), x.imag.unsqueeze(2)], dim=2).view(n, c * 2, h, w)
             x = torch.cat([x.abs().unsqueeze(2), x.angle().unsqueeze(2)], dim=2).view(n, c * 2, h, w)
             x = x.to(dtype = src_dtype)
             return x
 
-        def to_spat(x):
+        def to_spat_aa(x):
             n, c, h, w = x.shape
             src_dtype = x.dtype
             x = x.view(n, c//2, 2, h, w).float()
