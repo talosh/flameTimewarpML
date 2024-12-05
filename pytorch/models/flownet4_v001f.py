@@ -563,7 +563,8 @@ class Model:
                     'flow_list': flow_list,
                     'mask_list': mask_list,
                     'conf_list': conf_list,
-                    'merged': merged
+                    'merged': merged,
+                    'merged_dist': merged_dist
                 }
 
                 return result
