@@ -2677,7 +2677,7 @@ def main():
         conf_list = result['conf_list']
         merged = result['merged']
         merged_distill = result.get('merged_distill')
-        loss_distill = result.get('loss_distill')
+        loss_distill = result.get('loss_distill', 0)
 
         flow0 = flow_list[-1][:, :2]
         flow1 = flow_list[-1][:, 2:4]
