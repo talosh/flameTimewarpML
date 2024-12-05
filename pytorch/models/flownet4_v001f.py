@@ -341,6 +341,7 @@ class Model:
                 super().__init__()
                 cd = int(1.618 * c)
                 self.conv0 = conv(in_planes, c//2, 5, 2, 2)
+                self.conv0ft = conv(16, c//2, 5, 2, 2)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv1ft = conv(c + 16, 2*c, 3, 2, 1)
                 self.conv2 = conv(2*c, 2*cd, 3, 2, 1)
@@ -436,8 +437,9 @@ class Model:
                 f1ft = torch.nn.functional.pad(f1ft, padding)
 
                 feat = self.conv0(x)
+                feat_ft = self.conv0ft(torch.cat(f0ft, f1ft), 1)
                 # potential attention or insertion here
-                feat_ft = torch.cat((to_freq(feat), f0ft, f1ft), 1)
+                feat_ft = torch.cat((to_freq(feat), feat_ft), 1)
                 feat_ft = self.conv1ft(feat_ft)
                 feat_deep = self.conv2(feat_ft)
 
