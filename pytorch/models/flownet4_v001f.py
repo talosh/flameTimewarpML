@@ -510,6 +510,7 @@ class Model:
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 loss_distill = 0
+                
                 if gt is not None:
                     flow_dist, mask_dist, conf_dist = self.block_distill(
                         warp(img0, flow[:, :2]), 
