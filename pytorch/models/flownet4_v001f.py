@@ -251,12 +251,15 @@ class Model:
                 )
                 self.maxdepth = 4
 
-            def forward(self, img0, img1, f0, f1, timestep, mask, flow, conf, scale=1):
+            def forward(self, img0, img1, f0, f1, timestep, mask, flow, conf, scale=1, gt = None):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
                 timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 
+                if gt is not None:
+                        img0 = torch.cat((img0, gt), 1)
+                        
                 if flow is None:
                     x = torch.cat((img0, img1, f0, f1, timestep), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
