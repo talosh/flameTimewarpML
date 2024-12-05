@@ -13,6 +13,7 @@ import platform
 import heapq
 import json
 from copy import deepcopy
+import traceback
 
 import tracemalloc
 
@@ -3233,7 +3234,7 @@ def main():
                         del description['eval_img0']
                         del description['eval_img1']
                         del description['eval_img2']
-                        print (f'\nerror while evaluating: {e}\n{description}\n\n')
+                        print (f'\nerror while evaluating: {e}\n{description}\n{traceback.format_exc()}\n\n')
                     description = read_eval_image_queue.get()
 
             del evalnet
