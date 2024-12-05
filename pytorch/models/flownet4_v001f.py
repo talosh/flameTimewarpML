@@ -467,7 +467,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepSingleHead(6+20+1+2, c=192) # images + feat + timestep + lineargrid
+                self.block0 = FlownetDeepSingleHead(6+16+1+2, c=192) # images + feat + timestep + lineargrid
                 self.block0ref = None # FlownetDeepSingleHead(6+18+1+1+1+4+2, c=192) # images + feat + timestep + mask + conf + flow + lineargrid
                 self.block1 = None # Flownet(6+18+1+1+1+4, c=144) # images + feat + timestep + mask + conf + flow
                 self.block2 = None # Flownet(6+18+1+1+1+4, c=96)
