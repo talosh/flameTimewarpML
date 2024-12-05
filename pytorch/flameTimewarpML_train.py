@@ -2685,6 +2685,10 @@ def main():
         mask = mask_list[-1]
         conf = conf_list[-1]
 
+        print (len(flow_list))
+        print (flow0.shape)
+        print ('\n\n')
+
         output = merged[-1]
         output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
 
