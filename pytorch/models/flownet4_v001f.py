@@ -550,15 +550,6 @@ class Model:
                     flow_dist = flow + flow_dist
                     mask_dist = compress(mask_dist)
                     merged_dist = warp(img0, flow_dist[:, :2]) * mask_dist + warp(img1, flow_dist[:, 2:4]) * (1 - mask_dist)
-                    
-                    '''
-                    for i in range(3):
-                        if merged[i] is None:
-                            continue
-                        loss_mask = ((merged[i] - gt).abs().mean(1, True) > (merged_dist - gt).abs().mean(1, True) + 0.01).float().detach()
-                        loss_distill += (((flow_dist.detach() - flow_list[i]) ** 2).mean(1, True) ** 0.5 * loss_mask).mean()
-                    '''
-
 
                 result = {
                     'flow_list': flow_list,
