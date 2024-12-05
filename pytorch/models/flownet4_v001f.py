@@ -163,7 +163,7 @@ class Model:
                 self.cnn0f = torch.nn.Conv2d(8, 48, 3, 2, 1)
                 self.cnn1f = torch.nn.Conv2d(48, 48, 3, 1, 1)
                 self.cnn2f = torch.nn.Conv2d(48, 48, 3, 1, 1)
-                self.cnn3 = torch.nn.Conv2d(48, 8, 3, 1, 1)
+                self.cnn3 = torch.nn.ConvTranspose2d(48, 8, 4, 2, 1)
                 self.relu = torch.nn.Mish(True)
 
             def forward(self, x):
@@ -415,8 +415,8 @@ class Model:
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
 
-                f0ft = torch.nn.functional.interpolate(f0ft, size=(sh//2, sw//2), mode="bilinear", align_corners=False)
-                f1ft = torch.nn.functional.interpolate(f1ft, size=(sh//2, sw//2), mode="bilinear", align_corners=False)
+                f0ft = torch.nn.functional.interpolate(f0ft, size=(sh, sw), mode="bilinear", align_corners=False)
+                f1ft = torch.nn.functional.interpolate(f1ft, size=(sh, sw), mode="bilinear", align_corners=False)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw)
@@ -431,6 +431,9 @@ class Model:
                 pw = self.maxdepth - (sw % self.maxdepth)
                 padding = (0, pw, 0, ph)
                 x = torch.nn.functional.pad(x, padding)
+
+                f0ft = torch.nn.functional.pad(f0ft, padding)
+                f1ft = torch.nn.functional.pad(f1ft, padding)
 
                 feat = self.conv0(x)
                 # potential attention or insertion here
