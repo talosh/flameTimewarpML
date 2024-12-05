@@ -2676,9 +2676,8 @@ def main():
         mask_list = result['mask_list']
         conf_list = result['conf_list']
         merged = result['merged']
-        merged_distill = result['merged_distill']
-
-        loss_distill = 0 # result['loss_distill']
+        merged_distill = result.get('merged_distill')
+        loss_distill = result.get('loss_distill')
 
         flow0 = flow_list[-1][:, :2]
         flow1 = flow_list[-1][:, 2:4]
