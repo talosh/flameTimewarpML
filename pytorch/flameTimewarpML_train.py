@@ -2676,6 +2676,7 @@ def main():
         mask_list = result['mask_list']
         conf_list = result['conf_list']
         merged = result['merged']
+        loss_distill = result['loss_distill']
 
         flow0 = flow_list[-1][:, :2]
         flow1 = flow_list[-1][:, 2:4]
@@ -2704,7 +2705,7 @@ def main():
         loss_l1_norm = criterion_l1(normalize(output_clean), normalize(img1_orig))
         loss_l1 = criterion_l1(output_clean, img1_orig)
         loss_lap = criterion_lap(output_clean, img1_orig)
-        loss = loss_deep_l1 + loss_l1_norm + loss_lap + 1e-3 * loss_conf + 1e-3 * loss_mask
+        loss = loss_deep_l1 + loss_l1_norm + loss_lap + 1e-2 * loss_distill + 1e-3 * loss_conf + 1e-3 * loss_mask
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
         # continue
