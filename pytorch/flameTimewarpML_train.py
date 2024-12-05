@@ -2676,8 +2676,9 @@ def main():
         mask_list = result['mask_list']
         conf_list = result['conf_list']
         merged = result['merged']
-        merged_distill = result.get('merged_distill')
         gt_distill = result.get('gt_distill')
+        merged_distill = result.get('merged_distill')
+        flow_distill = result.get('flow_distill')
 
         flow0 = flow_list[-1][:, :2]
         flow1 = flow_list[-1][:, 2:4]
@@ -2686,6 +2687,12 @@ def main():
 
         output = merged[-1]
         output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
+
+        loss_distill = 0.
+        if gt_distill is not None:
+            loss_mask = ((merged[3] - gt_distill).abs().mean(1, True) > (merged_distill - gt_distill).abs().mean(1, True) + 0.01).float().detach()
+            loss_distill += (((flow_dist.detach() - flow_list[i]) ** 2).mean(1, True) ** 0.5 * loss_mask).mean()
+
 
         diff_matte = diffmatte(output_clean, img1_orig)
         diff_warps = diffmatte(warp(img0_orig, flow0), warp(img2_orig, flow1))
