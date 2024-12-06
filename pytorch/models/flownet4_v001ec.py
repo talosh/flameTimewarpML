@@ -191,7 +191,7 @@ class Model:
                 self.relu = CauchyActivation()    
                 # self.relu = torch.nn.LeakyReLU(0.2, True) # torch.nn.SELU(inplace = True)
             def forward(self, x):
-                return self.relu(self.conv(self.relu(self.conv(x))) * self.beta + x) # self.relu(self.conv(x) * self.beta + x)
+                return self.relu(self.conv(self.relu(self.conv(x))) * self.beta + x)
 
         class ResConvMix(Module):
             def __init__(self, c, cd):
