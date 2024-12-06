@@ -142,7 +142,7 @@ class Model:
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn2f = torch.nn.Conv2d(48, 48, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(56, 10, 4, 2, 1)
-                self.relu = torch.nn.Mish(True)
+                self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x):
                 hp = hpass(x)
