@@ -3090,6 +3090,8 @@ def main():
 
             evalnet = Flownet().get_model()().to(device)
             evalnet.load_state_dict(original_state_dict)
+            for param in evalnet.parameters():
+                param.requires_grad = False
                 
             if args.eval_half:
                 evalnet.half()
