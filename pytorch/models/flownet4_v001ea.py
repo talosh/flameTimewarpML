@@ -188,10 +188,12 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu = CauchyActivation()    
+                self.relu = CauchyActivation()
+                self.relu1 = CauchyActivation()
+
                 # self.relu = torch.nn.LeakyReLU(0.2, True) # torch.nn.SELU(inplace = True)
             def forward(self, x):
-                return self.relu(self.conv(self.relu(self.conv(x))) * self.beta + x) # self.relu(self.conv(x) * self.beta + x)
+                return self.relu(self.conv(self.relu1(self.conv(x))) * self.beta + x) # self.relu(self.conv(x) * self.beta + x)
 
         class ResConvMix(Module):
             def __init__(self, c, cd):
