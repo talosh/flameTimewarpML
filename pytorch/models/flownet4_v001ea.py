@@ -153,7 +153,6 @@ class Model:
                 self.cnn1f = torch.nn.Conv2d(48, 48, 3, 1, 1)
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn2f = torch.nn.Conv2d(48, 48, 3, 1, 1)
-                self.cnn3f = torch.nn.Conv2d(48, 48, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(56, 10, 4, 2, 1)
                 self.relu = CauchyActivation()
                 # self.relu = torch.nn.Mish(True)
@@ -169,7 +168,6 @@ class Model:
                 xf = self.relu(xf)
                 xf = self.cnn2f(xf)
                 xf = self.relu(xf)
-                xf = self.cnn3f(xf)
                 xf = to_spat(xf)
 
                 x = self.cnn0(x * 2 - 1)
@@ -189,11 +187,9 @@ class Model:
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = CauchyActivation()
-                self.relu1 = CauchyActivation()
-
                 # self.relu = torch.nn.LeakyReLU(0.2, True) # torch.nn.SELU(inplace = True)
             def forward(self, x):
-                return self.relu(self.conv(self.relu1(self.conv(x))) * self.beta + x) # self.relu(self.conv(x) * self.beta + x)
+                return self.relu(self.conv(x) * self.beta + x) # self.relu(self.conv(x) * self.beta + x)
 
         class ResConvMix(Module):
             def __init__(self, c, cd):
