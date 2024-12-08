@@ -141,9 +141,8 @@ class Model:
                 self.cnn1f = torch.nn.Conv2d(48, 48, 3, 1, 1)
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn2f = torch.nn.Conv2d(48, 48, 3, 1, 1)
-                self.cnn3f = torch.nn.Conv2d(48, 48, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(56, 10, 4, 2, 1)
-                self.relu = torch.nn.Mish(True)
+                self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x):
                 hp = hpass(x)
@@ -156,7 +155,6 @@ class Model:
                 xf = self.relu(xf)
                 xf = self.cnn2f(xf)
                 xf = self.relu(xf)
-                xf = self.cnn3f(xf)
                 xf = to_spat(xf)
 
                 x = self.cnn0(x * 2 - 1)
@@ -187,7 +185,7 @@ class Model:
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x, x_deep):
-                return self.relu(to_spat(self.conv(x_deep)) * self.beta + x)
+                return self.relu(self.conv(x_deep) * self.beta + x)
 
         class ResConvRevMix(Module):
             def __init__(self, c, cd):
@@ -198,23 +196,6 @@ class Model:
 
             def forward(self, x, x_deep):
                 return self.relu(self.conv(x) * self.beta + x_deep)
-
-        class LastConv(Module):
-            def __init__(self, c, c_out):
-                super().__init__()
-                self.up2 = torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
-                self.up4 = torch.nn.Upsample(scale_factor=4, mode='bilinear', align_corners=False)
-                self.conv1 = conv(c, c//2, 3, 1, 1)
-                self.conv2 = conv(c//2, c//4, 3, 1, 1)
-                self.lastconv = torch.nn.Conv2d(c//2, c_out, kernel_size=3, stride=1, padding=1)
-
-            def forward(self, x):
-                n, c, h, w = x.shape
-                d = self.up4(x[:, :c // 4, :, :])
-                x = self.conv1(self.up2(x))
-                x = self.conv2(self.up2(x))
-                x = torch.cat((d, x), 1)
-                return self.lastconv(x)
 
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
@@ -377,13 +358,13 @@ class Model:
                 self.revmix2 = ResConvRevMix(2*c, 2*cd)
                 # self.lastconv = LastConv(c, 6)
                 self.lastconv = torch.nn.Sequential(
-                    # torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-                    # conv(c, c//2, 3, 1, 1),
-                    # conv(c//2, c//2, 3, 1, 1),
-                    # torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-                    # torch.nn.Conv2d(c//2, 6, kernel_size=3, stride=1, padding=1),
-                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
-                    torch.nn.PixelShuffle(2)
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+                    conv(c, c//2, 3, 1, 1),
+                    torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+                    conv(c//2, c//2, 3, 1, 1),
+                    torch.nn.Conv2d(c//2, 6, kernel_size=3, stride=1, padding=1),
+                    # torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    # torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
 
@@ -426,19 +407,19 @@ class Model:
                 feat = self.convblock1(feat)
                 feat_deep = self.convblock_deep1(feat_deep)
 
-                feat_tmp = self.mix1(feat, feat_deep)
+                feat_tmp = self.mix1(feat, to_spat(feat_deep))
                 feat_deep = self.revmix1(to_freq(feat), feat_deep)
 
                 feat = self.convblock2(feat_tmp)
                 feat_deep = self.convblock_deep2(feat_deep)
 
-                feat_tmp = self.mix2(feat, feat_deep)
+                feat_tmp = self.mix2(feat, to_spat(feat_deep))
                 feat_deep = self.revmix2(to_freq(feat), feat_deep)
 
                 feat = self.convblock3(feat_tmp)
                 feat_deep = self.convblock_deep3(feat_deep)
 
-                feat = self.mix3(feat, feat_deep)
+                feat = self.mix3(feat, to_spat(feat_deep))
 
                 feat = self.convblock_last(feat)
 
