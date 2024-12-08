@@ -180,7 +180,7 @@ class Model:
         class ResConvMix(Module):
             def __init__(self, c, cd):
                 super().__init__()
-                self.conv = torch.nn.ConvTranspose2d(2*cd, 2*c, 4, 2, 1)
+                self.conv = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
