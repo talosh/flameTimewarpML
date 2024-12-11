@@ -253,7 +253,7 @@ class Model:
                 featD = self.revmix(feat, featD)
 
                 feat = self.convblock1(tmp)
-                featD = self.convblock1(featD)
+                featD = self.convblock1D(featD)
 
                 tmp = self.lastconv(feat)
                 tmp = torch.nn.functional.interpolate(tmp[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
