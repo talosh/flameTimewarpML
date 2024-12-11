@@ -195,9 +195,8 @@ class Model:
                     torch.nn.PixelShuffle(2),
                 )
                 self.lastconvD = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(cd, 4*6, 4, 2, 1),
-                    torch.nn.PixelShuffle(2),
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
+                    torch.nn.Conv2d(cd, 6, 4, 2, 1),
+                    torch.nn.Upsample(scale_factor=4, mode='bilinear', align_corners=False)
                 )
                 self.maxdepth = 8
 
