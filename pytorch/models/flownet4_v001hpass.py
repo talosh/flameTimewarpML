@@ -205,7 +205,10 @@ class Model:
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
-                
+
+                img0 = normalize(img0, img0.min(), img0.max())
+                img1 = normalize(img1, img1.min(), img1.max())
+
                 if flow is None:
                     x = torch.cat((img0, img1, f0, f1), 1)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
