@@ -247,7 +247,7 @@ class Model:
                 feat = self.conv0(x)
                 featD = self.conv0D(x)
                 feat = self.convblock0(feat)
-                featD = self.convblock0D(feat)
+                featD = self.convblock0D(featD)
 
                 tmp = self.mix(feat, featD)
                 featD = self.revmix(feat, featD)
