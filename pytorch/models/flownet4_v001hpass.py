@@ -170,13 +170,18 @@ class Model:
                 super().__init__()
                 cd = round(1.618 * c)
                 self.conv0 = torch.nn.Sequential(
-                    conv(in_planes, c//2, 3, 2, 1),
-                    conv(c//2, c, 3, 2, 1),
+                    torch.nn.Conv2d(in_planes, c//2, 3, 2, 1, padding_mode = 'reflect'),
+                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.Conv2d(c//2, c, 3, 2, 1, padding_mode = 'reflect'),
+                    torch.nn.LeakyReLU(0.2, True)
                     )
                 self.conv0D = torch.nn.Sequential(
-                    conv(in_planes, c//2, 3, 2, 1),
-                    conv(c//2, c, 3, 2, 1),
-                    conv(c, cd, 3, 2, 1)
+                    torch.nn.Conv2d(in_planes, c//2, 3, 2, 1, padding_mode = 'reflect'),
+                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.Conv2d(c//2, c, 3, 2, 1, padding_mode = 'reflect'),
+                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'reflect'),
+                    torch.nn.LeakyReLU(0.2, True),
                     )
                 self.convblock0 = torch.nn.Sequential(
                     ResConv(c),
