@@ -26,7 +26,7 @@ class Model:
                     stride=stride,
                     padding=padding, 
                     dilation=dilation,
-                    padding_mode = 'zeros',
+                    padding_mode = 'reflect',
                     bias=True
                 ),
                 torch.nn.LeakyReLU(0.2, True)
@@ -44,26 +44,78 @@ class Model:
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
+        def normalize(tensor, min_val, max_val):
+            return (tensor - min_val) / (max_val - min_val)
+
+        def compress(x):
+            scale = torch.tanh(torch.tensor(1.0))
+            x = torch.where(
+                (x >= -1) & (x <= 1), scale * x,
+                torch.tanh(x)
+            )
+            x = (x + 1) / 2
+            return x
+
+        def hpass(img):
+            def gauss_kernel(size=5, channels=3):
+                kernel = torch.tensor([[1., 4., 6., 4., 1],
+                                    [4., 16., 24., 16., 4.],
+                                    [6., 24., 36., 24., 6.],
+                                    [4., 16., 24., 16., 4.],
+                                    [1., 4., 6., 4., 1.]])
+                kernel /= 256.
+                kernel = kernel.repeat(channels, 1, 1, 1)
+                return kernel
+            
+            def conv_gauss(img, kernel):
+                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+                out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+                return out
+
+            gkernel = gauss_kernel()
+            gkernel = gkernel.to(device=img.device, dtype=img.dtype)
+            hp = img - conv_gauss(img, gkernel)
+            return hp
+
+        def blur(img):  
+            def gauss_kernel(size=5, channels=3):
+                kernel = torch.tensor([[1., 4., 6., 4., 1],
+                                    [4., 16., 24., 16., 4.],
+                                    [6., 24., 36., 24., 6.],
+                                    [4., 16., 24., 16., 4.],
+                                    [1., 4., 6., 4., 1.]])
+                kernel /= 256.
+                kernel = kernel.repeat(channels, 1, 1, 1)
+                return kernel
+            
+            def conv_gauss(img, kernel):
+                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+                out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+                return out
+
+            gkernel = gauss_kernel()
+            gkernel = gkernel.to(device=img.device, dtype=img.dtype)
+            return conv_gauss(img, gkernel)
+
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
-                self.cnn0 = torch.nn.Conv2d(3, 32, 3, 2, 1)
-                self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-                self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
-                self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
-                self.relu = torch.nn.LeakyReLU(0.2, True)
+                self.encode = torch.nn.Sequential(
+                    torch.nn.Conv2d(4, 48, 3, 2, 1, padding_mode = 'reflect'),
+                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.Conv2d(48, 48, 3, 1, 1, padding_mode = 'reflect'),
+                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.Conv2d(48, 48, 3, 1, 1, padding_mode = 'reflect'),
+                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.ConvTranspose2d(48, 10, 4, 2, 1)
+                )
 
             def forward(self, x, feat=False):
-                x0 = self.cnn0(x)
-                x = self.relu(x0)
-                x1 = self.cnn1(x)
-                x = self.relu(x1)
-                x2 = self.cnn2(x)
-                x = self.relu(x2)
-                x3 = self.cnn3(x)
-                if feat:
-                    return [x0, x1, x2, x3]
-                return x3
+                x = normalize(x)
+                hp = normalize(hpass(x))
+                hp = torch.max(hp, dim=1, keepdim=True).values
+                x = torch.cat((x, hp), 1)
+                return self.encode(x)
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
@@ -149,6 +201,11 @@ class Model:
                 mask_list = [None] * 4
                 conf_list = [None] * 4
                 merged = [None] * 4
+
+                flow_list_hpass = [None] * 4
+                mask_list_hpass = [None] * 4
+                conf_list_hpass = [None] * 4
+                merged_hpass = [None] * 4
 
                 scale[0] = 1
 
