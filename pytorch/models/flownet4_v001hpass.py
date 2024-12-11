@@ -113,8 +113,8 @@ class Model:
                 )
 
             def forward(self, x, feat=False):
-                xn = normalize(x, x.min(), x.max())
-                hp = hpass(xn)
+                # xn = normalize(x, x.min(), x.max())
+                hp = hpass(x)
                 hp = normalize(hp, hp.min(), hp.max())
                 hp = torch.max(hp, dim=1, keepdim=True).values
                 x = torch.cat((x, hp), 1)
