@@ -179,8 +179,8 @@ class Model:
                     conv(c, cd, 3, 2, 1)
                     )
                 self.convblock0 = torch.nn.Sequential(
-                    ResConv(cd),
-                    ResConv(cd),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 self.convblock0D = torch.nn.Sequential(
                     ResConv(cd),
