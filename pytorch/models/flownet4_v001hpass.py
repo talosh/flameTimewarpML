@@ -131,8 +131,7 @@ class Model:
                 )
 
             def forward(self, x, feat=False):
-                x = normalize(x)
-                hp = normalize(hpass(x))
+                hp = hpass(x)
                 hp = torch.max(hp, dim=1, keepdim=True).values
                 x = torch.cat((x, hp), 1)
                 return self.encode(x)
