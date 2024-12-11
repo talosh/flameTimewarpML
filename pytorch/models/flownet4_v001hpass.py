@@ -206,9 +206,6 @@ class Model:
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
-                img0 = normalize(img0, img0.min(), img0.max())
-                img1 = normalize(img1, img1.min(), img1.max())
-
                 if flow is None:
                     x = torch.cat((img0, img1, f0, f1), 1)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
@@ -230,6 +227,8 @@ class Model:
                     ), 1).to(device=img0.device, dtype=img0.dtype)
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 x = torch.cat((x, timestep, tenGrid), 1)
+
+                x[:, :6, :, :] = normalize(x[:, :6, :, :], x[:, :6, :, :].min(), x[:, :6, :, :].max())
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
