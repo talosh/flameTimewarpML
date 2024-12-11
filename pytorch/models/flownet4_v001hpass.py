@@ -246,6 +246,8 @@ class Model:
                 padding = (0, pw, 0, ph)
                 x = torch.nn.functional.pad(x, padding, mode='constant')
 
+                print (x.shape)
+
                 feat = self.conv0(x)
                 featD = self.conv0D(x)
                 feat = self.convblock0(feat)
