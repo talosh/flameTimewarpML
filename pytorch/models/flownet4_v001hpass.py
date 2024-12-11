@@ -56,6 +56,26 @@ class Model:
             x = (x + 1) / 2
             return x
 
+        def blur(img):  
+            def gauss_kernel(size=5, channels=3):
+                kernel = torch.tensor([[1., 4., 6., 4., 1],
+                                    [4., 16., 24., 16., 4.],
+                                    [6., 24., 36., 24., 6.],
+                                    [4., 16., 24., 16., 4.],
+                                    [1., 4., 6., 4., 1.]])
+                kernel /= 256.
+                kernel = kernel.repeat(channels, 1, 1, 1)
+                return kernel
+            
+            def conv_gauss(img, kernel):
+                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+                out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+                return out
+
+            gkernel = gauss_kernel()
+            gkernel = gkernel.to(device=img.device, dtype=img.dtype)
+            return conv_gauss(img, gkernel)
+
         def hpass(img):
             def gauss_kernel(size=5, channels=3):
                 kernel = torch.tensor([[1., 4., 6., 4., 1],
@@ -262,7 +282,7 @@ class Model:
                 self.block3 = Flownet(8+4+16, c=64)
                 self.encode = Head()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1):
+            def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1, gt=None):
                 img0 = compress(img0 * 2 - 1)
                 img1 = compress(img1 * 2 - 1)
                 f0 = self.encode(img0)
