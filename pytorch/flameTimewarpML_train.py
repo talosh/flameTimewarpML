@@ -2729,12 +2729,17 @@ def main():
         merged_distill = result.get('merged_distill')
         flow_distill = result.get('flow_distill')
 
+        loss_custom = 0.
+
         if not flow_list_hpass:
             flow0 = flow_list[-1][:, :2]
             flow1 = flow_list[-1][:, 2:4]
             mask = mask_list[-1]
             conf = conf_list[-1]
             output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
+            loss_mask = variance_loss(mask, 0.1)
+            loss_conf = criterion_l1(conf, diff_matte)
+
         else:
             flow0_hpass = flow_list_hpass[-1][:, :2]
             flow1_hpass = flow_list_hpass[-1][:, 2:4]
@@ -2752,6 +2757,12 @@ def main():
             mask = (mask + mask_hpass) / 2
             conf = (conf + conf_hpass) / 2
 
+            loss_mask = variance_loss(mask, 0.1)
+            loss_conf = criterion_l1(conf, diff_matte)
+
+            loss_custom = criterion_l1(blur(output_lowpass), blur(img1_orig)) + criterion_l1(hpass(output_hpass), hpass(img1_orig)) + criterion_lap(output_hpass, img1_orig)
+
+
         loss_distill = 0.
         loss_teacher = 0.
         if gt_distill is not None:
@@ -2762,8 +2773,6 @@ def main():
             loss_teacher = criterion_l1(output_teacher, img1_orig) +  criterion_lap(output_teacher, img1_orig)
 
         diff_matte = diffmatte(output_clean, img1_orig)
-        loss_mask = variance_loss(mask, 0.1)
-        loss_conf = criterion_l1(conf, diff_matte)
 
         lpips_weight = 0.5
 
@@ -2778,7 +2787,7 @@ def main():
         loss_l1_norm = criterion_l1(normalize(output_clean), normalize(img1_orig))
         loss_l1 = criterion_l1(output_clean, img1_orig)
         loss_lap = criterion_lap(output_clean, img1_orig)
-        loss = loss_deep_l1 + loss_l1_norm + loss_lap + loss_teacher + 1e-2*loss_distill + 1e-3*loss_conf + 1e-3*loss_mask
+        loss = loss_deep_l1 + loss_l1_norm + loss_lap + loss_custom + loss_teacher + 1e-2*loss_distill + 1e-3*loss_conf + 1e-3*loss_mask
 
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
