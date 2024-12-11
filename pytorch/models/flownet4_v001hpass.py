@@ -76,27 +76,6 @@ class Model:
             gkernel = gkernel.to(device=img.device, dtype=img.dtype)
             return conv_gauss(img, gkernel)
 
-        def hpass(img):
-            def gauss_kernel(size=5, channels=3):
-                kernel = torch.tensor([[1., 4., 6., 4., 1],
-                                    [4., 16., 24., 16., 4.],
-                                    [6., 24., 36., 24., 6.],
-                                    [4., 16., 24., 16., 4.],
-                                    [1., 4., 6., 4., 1.]])
-                kernel /= 256.
-                kernel = kernel.repeat(channels, 1, 1, 1)
-                return kernel
-            
-            def conv_gauss(img, kernel):
-                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
-                out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
-                return out
-
-            gkernel = gauss_kernel()
-            gkernel = gkernel.to(device=img.device, dtype=img.dtype)
-            hp = img - conv_gauss(img, gkernel)
-            return hp
-
         def blur(img):  
             def gauss_kernel(size=5, channels=3):
                 kernel = torch.tensor([[1., 4., 6., 4., 1],
@@ -116,6 +95,9 @@ class Model:
             gkernel = gauss_kernel()
             gkernel = gkernel.to(device=img.device, dtype=img.dtype)
             return conv_gauss(img, gkernel)
+
+        def hpass(img):
+            return img - blur(img)
 
         class Head(Module):
             def __init__(self):
