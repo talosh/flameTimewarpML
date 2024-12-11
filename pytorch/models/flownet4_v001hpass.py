@@ -113,7 +113,7 @@ class Model:
                 )
 
             def forward(self, x, feat=False):
-                # xn = normalize(x, x.min(), x.max())
+                x = normalize(x, x.min(), x.max())
                 hp = hpass(x)
                 hp = normalize(hp, hp.min(), hp.max())
                 hp = torch.max(hp, dim=1, keepdim=True).values
@@ -228,7 +228,7 @@ class Model:
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 x = torch.cat((x, timestep, tenGrid), 1)
 
-                x[:, :6, :, :] = normalize(x[:, :6, :, :], x[:, :6, :, :].min(), x[:, :6, :, :].max())
+                # x[:, :6, :, :] = normalize(x[:, :6, :, :], x[:, :6, :, :].min(), x[:, :6, :, :].max())
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
