@@ -168,7 +168,7 @@ class Model:
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                cd = int(1.618 * c)
+                cd = round(1.618 * c)
                 self.conv0 = torch.nn.Sequential(
                     conv(in_planes, c//2, 3, 2, 1),
                     conv(c//2, c, 3, 2, 1),
