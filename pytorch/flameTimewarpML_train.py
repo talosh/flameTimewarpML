@@ -2737,8 +2737,6 @@ def main():
             mask = mask_list[-1]
             conf = conf_list[-1]
             output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
-            loss_mask = variance_loss(mask, 0.1)
-            loss_conf = criterion_l1(conf, diff_matte)
 
         else:
             flow0_hpass = flow_list_hpass[-1][:, :2]
@@ -2757,9 +2755,6 @@ def main():
             mask = (mask + mask_hpass) / 2
             conf = (conf + conf_hpass) / 2
 
-            loss_mask = variance_loss(mask, 0.1)
-            loss_conf = criterion_l1(conf, diff_matte)
-
             loss_custom = criterion_l1(blur(output_lowpass), blur(img1_orig)) + criterion_l1(hpass(output_hpass), hpass(img1_orig)) + criterion_lap(output_hpass, img1_orig)
 
 
@@ -2773,6 +2768,9 @@ def main():
             loss_teacher = criterion_l1(output_teacher, img1_orig) +  criterion_lap(output_teacher, img1_orig)
 
         diff_matte = diffmatte(output_clean, img1_orig)
+
+        loss_mask = variance_loss(mask, 0.1)
+        loss_conf = criterion_l1(conf, diff_matte)
 
         lpips_weight = 0.5
 
