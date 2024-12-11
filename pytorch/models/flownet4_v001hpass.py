@@ -263,8 +263,8 @@ class Model:
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1):
-                img0 = img0
-                img1 = img1
+                img0 = compress(img0 * 2 - 1)
+                img1 = compress(img1 * 2 - 1)
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 
@@ -299,8 +299,8 @@ class Model:
                     'merged': merged,
                     'flow_list_hpass': flow_list_hpass,
                     'mask_list_hpass': mask_list_hpass,
-                    'conf_list': conf_list_hpass,
-                    'merged': merged_hpass
+                    'conf_list_hpass': conf_list_hpass,
+                    'merged_hpass': merged_hpass
                 }
 
                 return result

@@ -1112,7 +1112,7 @@ def split_to_yuv(rgb_tensor):
 def gamma_up(img, gamma = 1.18):
     return torch.sign(img) * torch.pow(torch.abs(img), 1 / gamma )
 
-def blur(img, interations = 16):
+def blurit(img, interations = 16):
     def gaussian_kernel(size, sigma):
         """Creates a 2D Gaussian kernel using the specified size and sigma."""
         ax = np.arange(-size // 2 + 1., size // 2 + 1.)
@@ -1892,6 +1892,48 @@ class LapLoss(torch.nn.Module):
         pyr_input  = self.laplacian_pyramid(img=input, kernel=self.gk, max_levels=self.max_levels)
         pyr_target = self.laplacian_pyramid(img=target, kernel=self.gk, max_levels=self.max_levels)
         return sum(torch.nn.functional.l1_loss(a, b) for a, b in zip(pyr_input, pyr_target))
+
+def hpass(img):
+    def gauss_kernel(size=5, channels=3):
+        kernel = torch.tensor([[1., 4., 6., 4., 1],
+                            [4., 16., 24., 16., 4.],
+                            [6., 24., 36., 24., 6.],
+                            [4., 16., 24., 16., 4.],
+                            [1., 4., 6., 4., 1.]])
+        kernel /= 256.
+        kernel = kernel.repeat(channels, 1, 1, 1)
+        return kernel
+    
+    def conv_gauss(img, kernel):
+        img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+        out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+        return out
+
+    gkernel = gauss_kernel()
+    gkernel = gkernel.to(device=img.device, dtype=img.dtype)
+    hp = img - conv_gauss(img, gkernel)
+    return hp
+
+def blur(img):  
+    def gauss_kernel(size=5, channels=3):
+        kernel = torch.tensor([[1., 4., 6., 4., 1],
+                            [4., 16., 24., 16., 4.],
+                            [6., 24., 36., 24., 6.],
+                            [4., 16., 24., 16., 4.],
+                            [1., 4., 6., 4., 1.]])
+        kernel /= 256.
+        kernel = kernel.repeat(channels, 1, 1, 1)
+        return kernel
+    
+    def conv_gauss(img, kernel):
+        img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+        out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+        return out
+
+    gkernel = gauss_kernel()
+    gkernel = gkernel.to(device=img.device, dtype=img.dtype)
+    return conv_gauss(img, gkernel)
+
 
 current_state_dict = {}
 
@@ -2676,18 +2718,39 @@ def main():
         flow_list = result['flow_list']
         mask_list = result['mask_list']
         conf_list = result['conf_list']
+
+        flow_list_hpass = result.get('flow_list_hpass')
+        mask_list_hpass = result.get('mask_list_hpass')
+        conf_list_hpass = result.get('conf_list_hpass')
+        merged_hpass = result.get('merged_hpass')
+
         merged = result['merged']
         gt_distill = result.get('gt_distill')
         merged_distill = result.get('merged_distill')
         flow_distill = result.get('flow_distill')
 
-        flow0 = flow_list[-1][:, :2]
-        flow1 = flow_list[-1][:, 2:4]
-        mask = mask_list[-1]
-        conf = conf_list[-1]
+        if not flow_list_hpass:
+            flow0 = flow_list[-1][:, :2]
+            flow1 = flow_list[-1][:, 2:4]
+            mask = mask_list[-1]
+            conf = conf_list[-1]
+            output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
+        else:
+            flow0_hpass = flow_list_hpass[-1][:, :2]
+            flow1_hpass = flow_list_hpass[-1][:, 2:4]
+            mask_hpass = mask_list_hpass[-1]
+            conf_hpass = conf_list_hpass[-1]
+            output_hpass = warp(img0_orig, flow0_hpass) * mask_hpass + warp(img2_orig, flow1_hpass) * (1 - mask_hpass)
 
-        output = merged[-1]
-        output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
+            flow0 = flow_list[-1][:, :2]
+            flow1 = flow_list[-1][:, 2:4]
+            mask = mask_list[-1]
+            conf = conf_list[-1]
+            output_lowpass = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
+
+            output_clean = hpass(output_hpass) + blur(output_lowpass)
+            mask = (mask + mask_hpass) / 2
+            conf = (conf + conf_hpass) / 2
 
         loss_distill = 0.
         loss_teacher = 0.
@@ -2699,8 +2762,6 @@ def main():
             loss_teacher = criterion_l1(output_teacher, img1_orig) +  criterion_lap(output_teacher, img1_orig)
 
         diff_matte = diffmatte(output_clean, img1_orig)
-        diff_warps = diffmatte(warp(img0_orig, flow0), warp(img2_orig, flow1))
-        loss_diff = float(torch.mean(diff_matte))
         loss_mask = variance_loss(mask, 0.1)
         loss_conf = criterion_l1(conf, diff_matte)
 
@@ -2712,15 +2773,12 @@ def main():
                 loss_deep_l1 = loss_deep_l1 + criterion_l1(merged[i], img1)
 
         loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
-        loss_weighted = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS).item())
+        # loss_weighted = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS).item())
         
         loss_l1_norm = criterion_l1(normalize(output_clean), normalize(img1_orig))
         loss_l1 = criterion_l1(output_clean, img1_orig)
         loss_lap = criterion_lap(output_clean, img1_orig)
         loss = loss_deep_l1 + loss_l1_norm + loss_lap + loss_teacher + 1e-2*loss_distill + 1e-3*loss_conf + 1e-3*loss_mask
-
-        # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
-        # continue
 
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
