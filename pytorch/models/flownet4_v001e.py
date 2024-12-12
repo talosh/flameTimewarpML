@@ -502,8 +502,8 @@ class Model:
                 # img1 = img1.to(dtype = src_dtype)
 
                 flow_list[3] = flow
-                conf_list[3] = compress(conf) # torch.sigmoid(conf) # compress(conf) # 
-                mask_list[3] = compress(mask) # torch.sigmoid(mask) # compress(mask) # 
+                conf_list[3] = torch.sigmoid(conf) # torch.sigmoid(conf) # compress(conf) # 
+                mask_list[3] = torch.sigmoid(mask) # torch.sigmoid(mask) # compress(mask) # 
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 result = {
