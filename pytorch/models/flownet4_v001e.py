@@ -115,7 +115,7 @@ class Model:
             x = x.to(dtype = src_dtype)
             return x
 
-        def to_freq_norm(x, eps=1e-8):
+        def to_freq_norm(x, alpha=0.1, eps=1e-8):
             n, c, h, w = x.shape
             src_dtype = x.dtype
             x = torch.fft.fft2(x.float(), dim=(-2, -1))
@@ -123,7 +123,7 @@ class Model:
             real = x.real
             imag = x.imag
         
-            magnitude = torch.sqrt(real**2 + imag**2 + eps)
+            magnitude = alpha * torch.sqrt(real**2 + imag**2 + eps) + (1 - alpha)
             real_norm = real / magnitude
             imag_norm = imag / magnitude
 
