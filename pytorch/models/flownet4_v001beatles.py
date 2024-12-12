@@ -404,8 +404,8 @@ class Model:
 
                 img0 = compress(img0 * 2 - 1)
                 img1 = compress(img1 * 2 - 1)
-                img0 = normalize(img0, -1, 1)
-                img1 = normalize(img1, -1, 1)
+                # img0 = normalize(img0, -1, 1)
+                # img1 = normalize(img1, -1, 1)
 
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
