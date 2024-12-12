@@ -110,17 +110,17 @@ class Model:
             def __init__(self):
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
-                    torch.nn.Conv2d(4, 48, 3, 2, 1, padding_mode = 'reflect'),
+                    torch.nn.Conv2d(4, 32, 3, 2, 1, padding_mode = 'reflect'),
                     torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.Conv2d(48, 48, 3, 1, 1, padding_mode = 'reflect'),
+                    torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect'),
                     torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.Conv2d(48, 48, 3, 1, 1, padding_mode = 'reflect'),
+                    torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect'),
                     torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.ConvTranspose2d(48, 10, 4, 2, 1)
+                    torch.nn.ConvTranspose2d(32, 10, 4, 2, 1)
                 )
 
-            def forward(self, x, feat=False):
-                hp = normalize(hpass(x), -1, 1)
+            def forward(self, x):
+                hp = hpass(x)
                 x = torch.cat((x, hp), 1)
                 return self.encode(x)
 
