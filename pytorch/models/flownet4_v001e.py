@@ -44,6 +44,15 @@ class Model:
             g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
+        def normalize(tensor, min_val, max_val):
+            t_min = tensor.min()
+            t_max = tensor.max()
+
+            if t_min == t_max:
+                return torch.full_like(tensor, (min_val + max_val) / 2.0)
+            
+            return ((tensor - t_min) / (t_max - t_min)) * (max_val - min_val) + min_val
+
         def hpass(img):
             def gauss_kernel(size=5, channels=3):
                 kernel = torch.tensor([[1., 4., 6., 4., 1],
@@ -60,26 +69,13 @@ class Model:
                 out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
                 return out
 
-            def normalize(tensor, min_val, max_val):
-                return (tensor - min_val) / (max_val - min_val)
-
             gkernel = gauss_kernel()
             gkernel = gkernel.to(device=img.device, dtype=img.dtype)
             hp = img - conv_gauss(img, gkernel) + 0.5
             hp = torch.clamp(hp, 0.48, 0.52)
-            hp = normalize(hp, hp.min(), hp.max())
+            hp = normalize(hp, 0, 1)
             hp = torch.max(hp, dim=1, keepdim=True).values
             return hp
-
-        def normalize(x):
-            x = x * 2 - 1
-            scale = torch.tanh(torch.tensor(1.0))
-            x = torch.where(
-                (x >= -1) & (x <= 1), scale * x,
-                torch.tanh(x)
-            )
-            x = (x + 1) / 2
-            return x
 
         def compress(x):
             scale = torch.tanh(torch.tensor(1.0))
@@ -119,6 +115,22 @@ class Model:
             x = x.to(dtype = src_dtype)
             return x
 
+        def to_freq_norm(x, eps=1e-8):
+            n, c, h, w = x.shape
+            src_dtype = x.dtype
+            x = torch.fft.fft2(x.float(), dim=(-2, -1))
+            x = torch.fft.fftshift(x, dim=(-2, -1))
+            real = x.real
+            imag = x.imag
+        
+            magnitude = torch.sqrt(real**2 + imag**2 + eps)
+            real_norm = real / magnitude
+            imag_norm = imag / magnitude
+
+            x = torch.cat([real_norm.unsqueeze(2), imag_norm.unsqueeze(2)], dim=2).view(n, c * 2, h, w)
+            x = x.to(dtype=src_dtype)
+            return x
+
         def to_spat(x):
             n, c, h, w = x.shape
             src_dtype = x.dtype
@@ -132,9 +144,9 @@ class Model:
             x = x.to(dtype=src_dtype)
             return x
         
-        class Head(Module):
+        class HeadF(Module):
             def __init__(self):
-                super(Head, self).__init__()
+                super().__init__()
                 self.cnn0 = torch.nn.Conv2d(4, 32, 3, 2, 1)
                 self.cnn0f = torch.nn.Conv2d(8, 48, 3, 2, 1)
                 self.cnn1 = torch.nn.Conv2d(32, 32, 3, 1, 1)
@@ -149,7 +161,7 @@ class Model:
                 hp = hp.to(dtype = x.dtype)
                 x = torch.cat((x, hp), 1)
 
-                xf = self.cnn0f(to_freq(x * 2 - 1))
+                xf = self.cnn0f(to_freq(x))
                 xf = self.relu(xf)
                 xf = self.cnn1f(xf)
                 xf = self.relu(xf)
@@ -167,6 +179,24 @@ class Model:
                 x = torch.cat((x, xf), 1)
                 x = self.cnn3(x)
                 return x
+
+        class Head(Module):
+            def __init__(self):
+                super(Head, self).__init__()
+                self.encode = torch.nn.Sequential(
+                    torch.nn.Conv2d(4, 32, 3, 2, 1, padding_mode = 'reflect'),
+                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect'),
+                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.Conv2d(32, 32, 3, 1, 1, padding_mode = 'reflect'),
+                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.ConvTranspose2d(32, 10, 4, 2, 1)
+                )
+
+            def forward(self, x):
+                hp = hpass(x)
+                x = torch.cat((x, hp), 1)
+                return self.encode(x)
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
@@ -313,7 +343,7 @@ class Model:
                 cd = int(1.618 * c)
                 self.conv0 = conv(in_planes, c//2, 5, 2, 2)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
-                self.conv2 = conv(2*c, 2*cd, 3, 2, 1)
+                self.conv2 = conv(2*c, cd, 3, 2, 1)
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
@@ -336,35 +366,35 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
-                    ResConv(2*cd),
-                    ResConv(2*cd),
-                    ResConv(2*cd),
-                    ResConv(2*cd),
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
-                    ResConv(2*cd),
-                    ResConv(2*cd),
-                    ResConv(2*cd),
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
-                    ResConv(2*cd),
-                    ResConv(2*cd),
+                    ResConv(cd),
+                    ResConv(cd),
                 )
                 
                 self.mix1 = ResConvMix(c, cd)
                 self.mix2 = ResConvMix(c, cd)
                 self.mix3 = ResConvMix(c, cd)
-                self.revmix1 = ResConvRevMix(2*c, 2*cd)
-                self.revmix2 = ResConvRevMix(2*c, 2*cd)
+                self.revmix1 = ResConvRevMix(2*c, cd)
+                self.revmix2 = ResConvRevMix(2*c, cd)
                 # self.lastconv = LastConv(c, 6)
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-                    conv(c, c//2, 3, 1, 1),
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-                    conv(c//2, c//2, 3, 1, 1),
-                    torch.nn.Conv2d(c//2, 6, kernel_size=3, stride=1, padding=1),
-                    # torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
-                    # torch.nn.PixelShuffle(2)
+                    # torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+                    # conv(c, c//2, 3, 1, 1),
+                    # torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+                    # conv(c//2, c//2, 3, 1, 1),
+                    # torch.nn.Conv2d(c//2, 6, kernel_size=3, stride=1, padding=1),
+                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
 
@@ -372,12 +402,17 @@ class Model:
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
+
                 if flow is None:
-                    x = torch.cat((img0, img1, f0, f1), 1)
+                    imgs = torch.cat((img0, img1), 1)
+                    imgs = normalize(imgs, 0, 1)
+                    x = torch.cat((imgs, f0, f1), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                 else:
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
+                    imgs = torch.cat((warped_img0, warped_img1), 1)
+                    imgs = normalize(imgs, 0, 1)
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
                     x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask, conf), 1)
@@ -402,19 +437,19 @@ class Model:
                 feat = self.conv0(x)
                 # potential attention or insertion here
                 feat = self.conv1(feat)
-                feat_deep = self.conv2(to_freq(feat))
+                feat_deep = self.conv2(to_freq_norm(feat))
 
                 feat = self.convblock1(feat)
                 feat_deep = self.convblock_deep1(feat_deep)
 
                 feat_tmp = self.mix1(feat, to_spat(feat_deep))
-                feat_deep = self.revmix1(to_freq(feat), feat_deep)
+                feat_deep = self.revmix1(to_freq_norm(feat), feat_deep)
 
                 feat = self.convblock2(feat_tmp)
                 feat_deep = self.convblock_deep2(feat_deep)
 
                 feat_tmp = self.mix2(feat, to_spat(feat_deep))
-                feat_deep = self.revmix2(to_freq(feat), feat_deep)
+                feat_deep = self.revmix2(to_freq_norm(feat), feat_deep)
 
                 feat = self.convblock3(feat_tmp)
                 feat_deep = self.convblock_deep3(feat_deep)
@@ -446,8 +481,8 @@ class Model:
                 # img0 = img0.float()
                 # img1 = img1.float()
 
-                img0 = normalize(img0)
-                img1 = normalize(img1)
+                img0 = compress(img0 * 2 - 1)
+                img1 = compress(img1 * 2 - 1)
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 
