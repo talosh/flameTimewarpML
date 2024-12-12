@@ -2785,7 +2785,7 @@ def main():
         loss_l1_norm = criterion_l1(normalize(output_clean), normalize(img1_orig))
         loss_l1 = criterion_l1(output_clean, img1_orig)
         loss_lap = criterion_lap(output_clean, img1_orig)
-        loss = loss_deep_l1 + loss_l1_norm + loss_lap + loss_custom + loss_teacher + 1e-2*loss_distill + 1e-3*loss_conf + 1e-3*loss_mask
+        loss = loss_deep_l1 + loss_l1_norm + loss_lap + loss_custom + loss_teacher + 1e-2*loss_distill + 1e-3*loss_conf + 1e-2*loss_mask
 
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
