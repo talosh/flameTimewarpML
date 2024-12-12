@@ -124,7 +124,6 @@ class Model:
                 x = torch.cat((x, hp), 1)
                 return self.encode(x)
 
-
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
