@@ -340,7 +340,7 @@ class Model:
         class FlownetDeepSingleHead(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                cd = int(1.618 * c)
+                cd = round(1.618 * c) + 2 - (round(1.618 * c) % 2) # self.maxdepth - (sh % self.maxdepth)
                 self.conv0 = conv(in_planes, c//2, 5, 2, 2)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv2 = conv(2*c, cd, 3, 2, 1)
@@ -381,9 +381,9 @@ class Model:
                     ResConv(cd),
                 )
                 
-                self.mix1 = ResConvMix(c, cd)
-                self.mix2 = ResConvMix(c, cd)
-                self.mix3 = ResConvMix(c, cd)
+                self.mix1 = ResConvMix(c, cd//2)
+                self.mix2 = ResConvMix(c, cd//2)
+                self.mix3 = ResConvMix(c, cd//2)
                 self.revmix1 = ResConvRevMix(2*c, cd)
                 self.revmix2 = ResConvRevMix(2*c, cd)
                 # self.lastconv = LastConv(c, 6)
