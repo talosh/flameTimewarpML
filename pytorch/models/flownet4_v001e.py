@@ -340,7 +340,7 @@ class Model:
         class FlownetDeepSingleHead(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                cd = round(1.618 * c) + 2 - (round(1.618 * c) % 2) # self.maxdepth - (sh % self.maxdepth)
+                cd = 2 * round(1.618 * c) # + 2 - (round(1.618 * c) % 2)
                 self.conv0 = conv(in_planes, c//2, 5, 2, 2)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv2 = conv(2*c, cd, 3, 2, 1)
@@ -437,19 +437,19 @@ class Model:
                 feat = self.conv0(x)
                 # potential attention or insertion here
                 feat = self.conv1(feat)
-                feat_deep = self.conv2(to_freq_norm(feat))
+                feat_deep = self.conv2(to_freq(feat))
 
                 feat = self.convblock1(feat)
                 feat_deep = self.convblock_deep1(feat_deep)
 
                 feat_tmp = self.mix1(feat, to_spat(feat_deep))
-                feat_deep = self.revmix1(to_freq_norm(feat), feat_deep)
+                feat_deep = self.revmix1(to_freq(feat), feat_deep)
 
                 feat = self.convblock2(feat_tmp)
                 feat_deep = self.convblock_deep2(feat_deep)
 
                 feat_tmp = self.mix2(feat, to_spat(feat_deep))
-                feat_deep = self.revmix2(to_freq_norm(feat), feat_deep)
+                feat_deep = self.revmix2(to_freq(feat), feat_deep)
 
                 feat = self.convblock3(feat_tmp)
                 feat_deep = self.convblock_deep3(feat_deep)
