@@ -337,7 +337,7 @@ class Model:
                 conf = tmp[:, 5:6]
                 return flow, mask, conf
 
-        class FlownetDeepSingleHead(Module):
+        class FlownetDeepDualHead(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 cd = 3 * round(1.618 * c) + 2 - (3 * round(1.618 * c) % 2)
@@ -407,18 +407,18 @@ class Model:
 
                 if flow is None:
                     imgs = torch.cat((img0, img1), 1)
-                    imgs = normalize(imgs, 0, 1)
+                    imgs = normalize(imgs, 0, 1) * 2 - 1
                     xf = torch.cat((imgs, f0, f1), 1)
-                    xf = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
+                    xf = torch.nn.functional.interpolate(xf, size=(sh, sw), mode="bicubic", align_corners=False)
                 else:
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
                     imgs = torch.cat((warped_img0, warped_img1), 1)
-                    imgs = normalize(imgs, 0, 1)
+                    imgs = normalize(imgs, 0, 1) * 2 - 1
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    xf = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask, conf), 1)
-                    xf = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
+                    xf = torch.cat((imgs, warped_f0, warped_f1, mask, conf), 1)
+                    xf = torch.nn.functional.interpolate(xf, size=(sh, sw), mode="bicubic", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
                     xf = torch.cat((xf, flow), 1)
 
@@ -429,7 +429,7 @@ class Model:
                     tenVertical * ((sh - 1.0) / 2.0)
                     ), 1).to(device=img0.device, dtype=img0.dtype)
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
-                x = torch.cat((xf, timestep, tenGrid), 1)
+                x = torch.cat((xf + tenHorizontal + tenVertical, timestep, tenGrid), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
@@ -437,7 +437,7 @@ class Model:
                 x = torch.nn.functional.pad(x, padding)
 
                 feat = self.conv0(x)
-                feat_deep = self.conv0f(to_freq(x))
+                feat_deep = self.conv0f(to_freq(xf))
                 feat_deep = self.conv1f(feat_deep)
                 feat_deep = self.conv2(feat_deep)
 
@@ -473,7 +473,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepSingleHead(6+24+1+2, c=192) # images + feat + timestep + lineargrid
+                self.block0 = FlownetDeepDualHead(6+24+1+2, c=192) # images + feat + timestep + lineargrid
                 self.block0ref = None # FlownetDeepSingleHead(6+18+1+1+1+4+2, c=192) # images + feat + timestep + mask + conf + flow + lineargrid
                 self.block1 = None # Flownet(6+18+1+1+1+4, c=144) # images + feat + timestep + mask + conf + flow
                 self.block2 = None # Flownet(6+18+1+1+1+4, c=96)
