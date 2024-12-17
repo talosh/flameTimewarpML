@@ -478,7 +478,7 @@ class Model:
                 self.block1 = None # Flownet(6+18+1+1+1+4, c=144) # images + feat + timestep + mask + conf + flow
                 self.block2 = None # Flownet(6+18+1+1+1+4, c=96)
                 self.block3 = None # Flownet(6+18+1+1+1+4, c=64)
-                self.encode = Head()
+                self.encode = HeadF()
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1, gt=None):
                 # src_dtype = img0.dtype
