@@ -434,6 +434,7 @@ class Model:
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
                 padding = (0, pw, 0, ph)
+                xf = torch.nn.functional.pad(xf, padding)
                 x = torch.nn.functional.pad(x, padding)
 
                 feat = self.conv0(x)
