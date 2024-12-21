@@ -175,7 +175,7 @@ class Model:
                     'merged': merged
                 }
 
-                return flow_list, mask_list, conf_list, merged
+                return result # flow_list, mask_list, conf_list, merged
 
 
 
