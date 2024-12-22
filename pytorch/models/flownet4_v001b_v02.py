@@ -117,7 +117,7 @@ class Model:
                 self.cnn1f = torch.nn.Conv2d(48, 48, 3, 1, 1)
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn2f = torch.nn.Conv2d(48, 48, 3, 1, 1)
-                self.cnn3 = torch.nn.ConvTranspose2d(56, 12, 4, 2, 1)
+                self.cnn3 = torch.nn.ConvTranspose2d(56, 10, 4, 2, 1)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x):
@@ -242,7 +242,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = Flownet(7+16+2, c=192)
+                self.block0 = Flownet(7+20+2, c=192)
                 self.block1 = None # Flownet(8+4+16, c=128)
                 self.block2 = None # Flownet(8+4+16, c=96)
                 self.block3 = None # Flownet(8+4+16, c=64)
