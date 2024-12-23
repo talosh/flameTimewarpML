@@ -216,6 +216,7 @@ class Model:
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
 
+                '''
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.cat((
@@ -223,7 +224,9 @@ class Model:
                     tenVertical * ((sh - 1.0) / 2.0)
                     ), 1).to(device=img0.device, dtype=img0.dtype)
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
-                x = torch.cat((x, timestep, tenGrid), 1)
+                '''
+
+                x = torch.cat((x, timestep), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
@@ -242,7 +245,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = Flownet(7+20+2, c=192)
+                self.block0 = Flownet(7+20, c=192)
                 self.block1 = None # Flownet(8+4+16, c=128)
                 self.block2 = None # Flownet(8+4+16, c=96)
                 self.block3 = None # Flownet(8+4+16, c=64)
