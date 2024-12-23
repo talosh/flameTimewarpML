@@ -204,7 +204,7 @@ class Model:
                 timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 
                 if flow is None:
-                    x = torch.cat((img0, img1, f0, f1), 1)
+                    x = torch.cat((img0, img1, f0, f1, timestep), 1)
                     x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                 else:
                     warped_img0 = warp(img0, flow[:, :2])
@@ -225,8 +225,7 @@ class Model:
                     ), 1).to(device=img0.device, dtype=img0.dtype)
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 '''
-
-                x = torch.cat((x, timestep), 1)
+                # x = torch.cat((x, timestep), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
