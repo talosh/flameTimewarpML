@@ -1,0 +1,30 @@
+{
+    "flexi_effects_definition_v1" : {
+	"effects" : [
+            {
+                "identifier": "uk.co.dirtylooks.mltimewarp",
+                "version": 1,
+                "label": "DL ML Timewarp",
+                "description": "DL ML Timewarp",
+                "licence" : "LICENCE.md",
+                "type" : "internal"
+	    }
+	],
+	"launch_command": "./bin/python3 -W ignore ./timewarp.py",
+        "install": {
+            "all": {
+                "flexi_platform": "pytorch-2.1",
+                "sources": {
+                    "flexi.py": "../flexi.py",
+                    "timewarp.py": "timewarp.py",
+                    "LICENCE.md" : "LICENCE.md"
+                },
+                "weights" : {
+                    "Flownet001" : "flownet/flownet001.pth"
+                },
+                "run": []
+            }
+        }
+    }
+}
+
