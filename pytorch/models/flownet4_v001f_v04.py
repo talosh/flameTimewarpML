@@ -324,8 +324,8 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
-                self.conv0 = conv(in_planes, c//2, 3, 2, 2)
-                self.conv0f = conv(in_planes + 4, c//2, 3, 2, 2)
+                self.conv0 = conv(in_planes, c//2, 3, 2, 1)
+                self.conv0f = conv(in_planes + 4, c//2, 3, 2, 1)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv1f = conv(c//2, c, 3, 2, 1)
                 self.conv2f = conv(c, cd, 3, 2, 1)
@@ -381,7 +381,7 @@ class Model:
                     # torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     # torch.nn.PixelShuffle(2)
                 )
-                self.maxdepth = 16
+                self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, f0xf, f1xf, timestep, mask, flow, conf, scale=1):
                 n, c, h, w = img0.shape
@@ -416,8 +416,9 @@ class Model:
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
                 padding = (0, pw, 0, ph)
-                xf = torch.nn.functional.pad(xf, padding)
+
                 x = torch.nn.functional.pad(x, padding)
+                xf = torch.nn.functional.pad(xf, padding)
 
                 feat = self.conv0(x)
                 feat_deep = self.conv0f(xf)
