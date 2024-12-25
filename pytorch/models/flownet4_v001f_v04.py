@@ -420,7 +420,7 @@ class Model:
                 x = torch.nn.functional.pad(x, padding)
 
                 feat = self.conv0(x)
-                feat_deep = self.conv0f(to_freq(xf))
+                feat_deep = self.conv0f(xf)
                 feat_deep = self.conv1f(feat_deep)
                 feat_deep = self.conv2f(feat_deep)
 
