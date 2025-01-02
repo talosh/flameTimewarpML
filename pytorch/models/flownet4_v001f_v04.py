@@ -399,9 +399,12 @@ class Model:
                 else:
                     if merge:
                         merged = warp(img0, flow[:, :2]) * mask + warp(img1, flow[:, 2:4]) * (1 - mask)
+                        xf = torch.cat((img0, merged, img1), 1)
+
                         merged = normalize(merged, 0, 1) * 2 - 1
                         x = torch.cat((merged, mask, conf), 1)
-                        xf = to_freq(x)
+                        
+                        xf = to_freq(normalize(xf, 0, 1) * 2 - 1)
                         x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                         xf = torch.nn.functional.interpolate(xf, size=(sh, sw), mode="bicubic", align_corners=False)
                         flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
@@ -483,7 +486,7 @@ class Model:
                 # self.block1 = FlownetDeepDualHead(6+20+1+2+1+1+4, c=144, noise=True)  # images + feat + timestep + lingrid + mask + conf + flow
                 # self.block2 = FlownetDeepDualHead(6+20+1+2+1+1+4, c=96, noise=True) # images + feat + timestep + lingrid + mask + conf + flow
 
-                self.refine00 = FlownetDeepDualHead(12, 11, c=48)
+                self.refine00 = FlownetDeepDualHead(12, 17, c=48)
                 # self.refine01 = FlownetDeepDualHead(12, 11, c=48)
                 # self.refine02 = FlownetDeepDualHead(12, 11, c=48)
                 # self.refine03 = FlownetDeepDualHead(12, 11, c=48)
