@@ -483,17 +483,17 @@ class Model:
                 # self.block1 = FlownetDeepDualHead(6+20+1+2+1+1+4, c=144, noise=True)  # images + feat + timestep + lingrid + mask + conf + flow
                 # self.block2 = FlownetDeepDualHead(6+20+1+2+1+1+4, c=96, noise=True) # images + feat + timestep + lingrid + mask + conf + flow
 
-                self.refine00 = FlownetDeepDualHead(12, 10, c=48)
-                self.refine01 = FlownetDeepDualHead(12, 10, c=48)
-                self.refine02 = FlownetDeepDualHead(12, 10, c=48)
-                self.refine03 = FlownetDeepDualHead(12, 10, c=48)
-                self.refine04 = FlownetDeepDualHead(12, 10, c=48)
-                self.refine05 = FlownetDeepDualHead(12, 10, c=48)
-                self.refine06 = FlownetDeepDualHead(12, 10, c=48)
-                self.refine07 = FlownetDeepDualHead(12, 10, c=48)
-                self.refine08 = FlownetDeepDualHead(12, 10, c=48)
-                self.refine09 = FlownetDeepDualHead(12, 10, c=48)
-                self.refine10 = FlownetDeepDualHead(12, 10, c=48)
+                self.refine00 = FlownetDeepDualHead(12, 11, c=48)
+                self.refine01 = FlownetDeepDualHead(12, 11, c=48)
+                self.refine02 = FlownetDeepDualHead(12, 11, c=48)
+                self.refine03 = FlownetDeepDualHead(12, 11, c=48)
+                self.refine04 = FlownetDeepDualHead(12, 11, c=48)
+                self.refine05 = FlownetDeepDualHead(12, 11, c=48)
+                self.refine06 = FlownetDeepDualHead(12, 11, c=48)
+                self.refine07 = FlownetDeepDualHead(12, 11, c=48)
+                self.refine08 = FlownetDeepDualHead(12, 11, c=48)
+                self.refine09 = FlownetDeepDualHead(12, 11, c=48)
+                self.refine10 = FlownetDeepDualHead(12, 11, c=48)
 
                 self.block0ref = None # FlownetDeepSingleHead(6+18+1+1+1+4+2, c=192) # images + feat + timestep + mask + conf + flow + lineargrid
                 self.block1 = None # Flownet(6+18+1+1+1+4, c=144) # images + feat + timestep + mask + conf + flow
