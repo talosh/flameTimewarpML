@@ -321,11 +321,11 @@ class Model:
                 return flow, mask, conf
 
         class FlownetDeepDualHead(Module):
-            def __init__(self, in_planes, c=64):
+            def __init__(self, in_planes, in_planes_fx, c=64):
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
                 self.conv0 = conv(in_planes, c//2, 3, 2, 1)
-                self.conv0f = conv(in_planes + 4, c//2, 3, 2, 1)
+                self.conv0f = conv(in_planes_fx, c//2, 3, 2, 1)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv1f = conv(c//2, c, 3, 2, 1)
                 self.conv2f = conv(c, cd, 3, 2, 1)
@@ -385,7 +385,7 @@ class Model:
                 )
                 self.maxdepth = 8
 
-            def forward(self, img0, img1, f0, f1, f0xf, f1xf, timestep, mask, flow, conf, scale=1):
+            def forward(self, img0, img1, f0, f1, f0xf, f1xf, timestep, mask, conf, flow, scale=1, noise=False, merge=False):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
@@ -397,16 +397,36 @@ class Model:
                     xf = torch.cat((to_freq(imgs), f0xf, f1xf), 1)
                     xf = torch.nn.functional.interpolate(xf, size=(sh, sw), mode="bicubic", align_corners=False)
                 else:
-                    warped_img0 = warp(img0, flow[:, :2])
-                    warped_img1 = warp(img1, flow[:, 2:4])
-                    imgs = torch.cat((warped_img0, warped_img1), 1)
-                    imgs = normalize(imgs, 0, 1) * 2 - 1
-                    warped_f0 = warp(f0, flow[:, :2])
-                    warped_f1 = warp(f1, flow[:, 2:4])
-                    xf = torch.cat((imgs, warped_f0, warped_f1, mask, conf), 1)
-                    xf = torch.nn.functional.interpolate(xf, size=(sh, sw), mode="bicubic", align_corners=False)
-                    flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
-                    xf = torch.cat((xf, flow), 1)
+                    if merge:
+                        merged = warp(img0, flow[:, :2]) * mask + warp(img1, flow[:, 2:4]) * (1 - mask)
+                        merged = normalize(merged, 0, 1) * 2 - 1
+                        x = torch.cat((merged, mask, conf), 1)
+                        xf = to_freq(x)
+                        x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
+                        xf = torch.nn.functional.interpolate(xf, size=(sh, sw), mode="bicubic", align_corners=False)
+                        flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
+                        if noise:
+                            for noise_step in range(10):
+                                gaussian_noise = torch.randn_like(flow) * min(sh, sw) * 1e-4 * noise_step
+                                flow = flow + gaussian_noise
+                        x = torch.cat((xf, flow), 1)
+                    else:
+                        warped_img0 = warp(img0, flow[:, :2])
+                        warped_img1 = warp(img1, flow[:, 2:4])
+                        imgs = torch.cat((warped_img0, warped_img1), 1)
+                        imgs = normalize(imgs, 0, 1) * 2 - 1
+                        warped_f0 = warp(f0, flow[:, :2])
+                        warped_f1 = warp(f1, flow[:, 2:4])
+                        x = torch.cat((imgs, warped_f0, warped_f1, mask, conf), 1)
+                        x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
+                        xf = torch.cat((to_freq(imgs), f0xf, f1xf, mask, conf), 1)
+                        xf = torch.nn.functional.interpolate(xf, size=(sh, sw), mode="bicubic", align_corners=False)
+                        flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
+                        if noise:
+                            for noise_step in range(10):
+                                gaussian_noise = torch.randn_like(flow) * min(sh, sw) * 1e-4 * noise_step
+                                flow = flow + gaussian_noise
+                        x = torch.cat((xf, flow), 1)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
@@ -459,7 +479,22 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepDualHead(6+20+1+2, c=192) # images + feat + timestep + lingrid
+                self.block0 = FlownetDeepDualHead(6+20+1+2, 6+20+1+2+4, c=192) # images + feat + timestep + lingrid
+                # self.block1 = FlownetDeepDualHead(6+20+1+2+1+1+4, c=144, noise=True)  # images + feat + timestep + lingrid + mask + conf + flow
+                # self.block2 = FlownetDeepDualHead(6+20+1+2+1+1+4, c=96, noise=True) # images + feat + timestep + lingrid + mask + conf + flow
+
+                self.refine00 = FlownetDeepDualHead(12, 10, c=48, noise=True, merged=True)
+                self.refine01 = FlownetDeepDualHead(12, 10, c=48, merged=True)
+                self.refine02 = FlownetDeepDualHead(12, 10, c=48, merged=True)
+                self.refine03 = FlownetDeepDualHead(12, 10, c=48, merged=True)
+                self.refine04 = FlownetDeepDualHead(12, 10, c=48, merged=True)
+                self.refine05 = FlownetDeepDualHead(12, 10, c=48, merged=True)
+                self.refine06 = FlownetDeepDualHead(12, 10, c=48, merged=True)
+                self.refine07 = FlownetDeepDualHead(12, 10, c=48, merged=True)
+                self.refine08 = FlownetDeepDualHead(12, 10, c=48, merged=True)
+                self.refine09 = FlownetDeepDualHead(12, 10, c=48, merged=True)
+                self.refine10 = FlownetDeepDualHead(12, 10, c=48, merged=True)
+
                 self.block0ref = None # FlownetDeepSingleHead(6+18+1+1+1+4+2, c=192) # images + feat + timestep + mask + conf + flow + lineargrid
                 self.block1 = None # Flownet(6+18+1+1+1+4, c=144) # images + feat + timestep + mask + conf + flow
                 self.block2 = None # Flownet(6+18+1+1+1+4, c=96)
@@ -486,9 +521,21 @@ class Model:
                 conf_list = [None] * 4
                 merged = [None] * 4
 
-                scale[0] = 1
+                # scale[0] = 1
 
                 flow, mask, conf = self.block0(img0, img1, f0, f1, f0xf, f1xf, timestep, None, None, None, scale=scale[0])
+
+                flow, mask, conf = self.refine00(img0, img1, None, None, None, None, timestep, mask, conf, flow)
+                flow, mask, conf = self.refine01(img0, img1, None, None, None, None, timestep, mask, conf, flow)
+                flow, mask, conf = self.refine02(img0, img1, None, None, None, None, timestep, mask, conf, flow)
+                flow, mask, conf = self.refine03(img0, img1, None, None, None, None, timestep, mask, conf, flow)
+                flow, mask, conf = self.refine04(img0, img1, None, None, None, None, timestep, mask, conf, flow)
+                flow, mask, conf = self.refine05(img0, img1, None, None, None, None, timestep, mask, conf, flow)
+                flow, mask, conf = self.refine06(img0, img1, None, None, None, None, timestep, mask, conf, flow)
+                flow, mask, conf = self.refine07(img0, img1, None, None, None, None, timestep, mask, conf, flow)
+                flow, mask, conf = self.refine08(img0, img1, None, None, None, None, timestep, mask, conf, flow)
+                flow, mask, conf = self.refine09(img0, img1, None, None, None, None, timestep, mask, conf, flow)
+                flow, mask, conf = self.refine10(img0, img1, None, None, None, None, timestep, mask, conf, flow)
 
                 # flow = flow.to(dtype = src_dtype)
                 # mask = mask.to(dtype = src_dtype)
