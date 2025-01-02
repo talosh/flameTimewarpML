@@ -1953,7 +1953,7 @@ def main():
     parser.add_argument('--lr', type=float, default=1e-6, help='Learning rate (default: 1e-6)')
     parser.add_argument('--type', type=int, default=1, help='Model type (int): 1 - MultiresNet, 2 - MultiresNet 4 (default: 1)')
     parser.add_argument('--pulse', type=float, default=10000, help='Period in steps to pulse learning rate (float) (default: 10K)')
-    parser.add_argument('--pulse_amplitude', type=float, default=95, help='Learning rate pulse amplitude (percentage) (default: 95)')
+    parser.add_argument('--pulse_amplitude', type=float, default=98, help='Learning rate pulse amplitude (percentage) (default: 98)')
     parser.add_argument('--onecycle', type=int, default=-1, help='Train one cycle for N epochs (default: None)')
     parser.add_argument('--cyclic', type=int, default=-1, help='Use cyclic LR scheduler')
     parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
@@ -2266,7 +2266,7 @@ def main():
         print (f'setting OneCycleLR scheduler with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.onecycle}, last: {-1 if loaded_step == 0 else loaded_step}')
         args.epochs = args.onecycle
     elif args.cyclic != -1:
-        print (f'setting CyclicLR scheduler with max_lr={args.lr}, base_lr={lr - (( lr / 100 ) * pulse_dive)}, step_size_up={args.cyclic}, last: {-1 if loaded_step == 0 else loaded_step}')
+        print (f'setting CyclicLR scheduler with max_lr={args.lr}, base_lr={lr - (( lr / 100 ) * pulse_dive):.2e}, step_size_up={args.cyclic}, last: {-1 if loaded_step == 0 else loaded_step}')
         scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
                         optimizer_flownet,
                         base_lr=lr - (( lr / 100 ) * pulse_dive),  # Lower boundary of the learning rate cycle
