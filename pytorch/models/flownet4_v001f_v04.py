@@ -483,17 +483,17 @@ class Model:
                 # self.block1 = FlownetDeepDualHead(6+20+1+2+1+1+4, c=144, noise=True)  # images + feat + timestep + lingrid + mask + conf + flow
                 # self.block2 = FlownetDeepDualHead(6+20+1+2+1+1+4, c=96, noise=True) # images + feat + timestep + lingrid + mask + conf + flow
 
-                self.refine00 = FlownetDeepDualHead(12, 10, c=48, noise=True, merged=True)
-                self.refine01 = FlownetDeepDualHead(12, 10, c=48, merged=True)
-                self.refine02 = FlownetDeepDualHead(12, 10, c=48, merged=True)
-                self.refine03 = FlownetDeepDualHead(12, 10, c=48, merged=True)
-                self.refine04 = FlownetDeepDualHead(12, 10, c=48, merged=True)
-                self.refine05 = FlownetDeepDualHead(12, 10, c=48, merged=True)
-                self.refine06 = FlownetDeepDualHead(12, 10, c=48, merged=True)
-                self.refine07 = FlownetDeepDualHead(12, 10, c=48, merged=True)
-                self.refine08 = FlownetDeepDualHead(12, 10, c=48, merged=True)
-                self.refine09 = FlownetDeepDualHead(12, 10, c=48, merged=True)
-                self.refine10 = FlownetDeepDualHead(12, 10, c=48, merged=True)
+                self.refine00 = FlownetDeepDualHead(12, 10, c=48)
+                self.refine01 = FlownetDeepDualHead(12, 10, c=48)
+                self.refine02 = FlownetDeepDualHead(12, 10, c=48)
+                self.refine03 = FlownetDeepDualHead(12, 10, c=48)
+                self.refine04 = FlownetDeepDualHead(12, 10, c=48)
+                self.refine05 = FlownetDeepDualHead(12, 10, c=48)
+                self.refine06 = FlownetDeepDualHead(12, 10, c=48)
+                self.refine07 = FlownetDeepDualHead(12, 10, c=48)
+                self.refine08 = FlownetDeepDualHead(12, 10, c=48)
+                self.refine09 = FlownetDeepDualHead(12, 10, c=48)
+                self.refine10 = FlownetDeepDualHead(12, 10, c=48)
 
                 self.block0ref = None # FlownetDeepSingleHead(6+18+1+1+1+4+2, c=192) # images + feat + timestep + mask + conf + flow + lineargrid
                 self.block1 = None # Flownet(6+18+1+1+1+4, c=144) # images + feat + timestep + mask + conf + flow
@@ -529,17 +529,17 @@ class Model:
 
                 flow, mask, conf = self.block0(img0, img1, f0, f1, f0xf, f1xf, timestep, None, None, None, scale=scale[0])
 
-                flow, mask, conf = self.refine00(img0, img1, None, None, None, None, timestep, mask, conf, flow)
-                flow, mask, conf = self.refine01(img0, img1, None, None, None, None, timestep, mask, conf, flow)
-                flow, mask, conf = self.refine02(img0, img1, None, None, None, None, timestep, mask, conf, flow)
-                flow, mask, conf = self.refine03(img0, img1, None, None, None, None, timestep, mask, conf, flow)
-                flow, mask, conf = self.refine04(img0, img1, None, None, None, None, timestep, mask, conf, flow)
-                flow, mask, conf = self.refine05(img0, img1, None, None, None, None, timestep, mask, conf, flow)
-                flow, mask, conf = self.refine06(img0, img1, None, None, None, None, timestep, mask, conf, flow)
-                flow, mask, conf = self.refine07(img0, img1, None, None, None, None, timestep, mask, conf, flow)
-                flow, mask, conf = self.refine08(img0, img1, None, None, None, None, timestep, mask, conf, flow)
-                flow, mask, conf = self.refine09(img0, img1, None, None, None, None, timestep, mask, conf, flow)
-                flow, mask, conf = self.refine10(img0, img1, None, None, None, None, timestep, mask, conf, flow)
+                flow, mask, conf = self.refine00(img0, img1, None, None, None, None, timestep, mask, conf, flow, noise=True, merged=True)
+                flow, mask, conf = self.refine01(img0, img1, None, None, None, None, timestep, mask, conf, flow, merged=True)
+                flow, mask, conf = self.refine02(img0, img1, None, None, None, None, timestep, mask, conf, flow, merged=True)
+                flow, mask, conf = self.refine03(img0, img1, None, None, None, None, timestep, mask, conf, flow, merged=True)
+                flow, mask, conf = self.refine04(img0, img1, None, None, None, None, timestep, mask, conf, flow, merged=True)
+                flow, mask, conf = self.refine05(img0, img1, None, None, None, None, timestep, mask, conf, flow, merged=True)
+                flow, mask, conf = self.refine06(img0, img1, None, None, None, None, timestep, mask, conf, flow, merged=True)
+                flow, mask, conf = self.refine07(img0, img1, None, None, None, None, timestep, mask, conf, flow, merged=True)
+                flow, mask, conf = self.refine08(img0, img1, None, None, None, None, timestep, mask, conf, flow, merged=True)
+                flow, mask, conf = self.refine09(img0, img1, None, None, None, None, timestep, mask, conf, flow, merged=True)
+                flow, mask, conf = self.refine10(img0, img1, None, None, None, None, timestep, mask, conf, flow, merged=True)
 
                 # flow = flow.to(dtype = src_dtype)
                 # mask = mask.to(dtype = src_dtype)
