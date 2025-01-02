@@ -409,7 +409,7 @@ class Model:
                             for noise_step in range(10):
                                 gaussian_noise = torch.randn_like(flow) * min(sh, sw) * 1e-4 * noise_step
                                 flow = flow + gaussian_noise
-                        x = torch.cat((xf, flow), 1)
+                        x = torch.cat((x, flow), 1)
                     else:
                         warped_img0 = warp(img0, flow[:, :2])
                         warped_img1 = warp(img1, flow[:, 2:4])
