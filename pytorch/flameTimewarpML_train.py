@@ -2638,6 +2638,7 @@ def main():
         # tracemalloc.start()
         # data_time = time.time() - time_stamp
         time_stamp = time.time()
+        optimizer_flownet.zero_grad()
 
         img0, img1, img2, ratio, idx, current_desc = dataset[batch_idx]
 
@@ -2807,8 +2808,32 @@ def main():
             torch.cuda.synchronize(device=device)
 
         optimizer_flownet.step()
-        optimizer_flownet.zero_grad()
-            
+
+        if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
+            pass
+        else:
+            try:
+                scheduler_flownet.step()
+            except Exception as e:
+                # if Onecycle is over due to variable number of steps per epoch
+                # fall back to Cosine
+
+                current_lr = float(optimizer_flownet.param_groups[0]["lr"])
+                max_lr = current_lr + (( current_lr / 100 ) * pulse_dive)
+                print (f'switching to CyclicLR scheduler with base {current_lr} and max {max_lr}')
+                print (f'\n\n')
+
+                scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
+                                optimizer_flownet,
+                                base_lr=current_lr,  # Lower boundary of the learning rate cycle
+                                max_lr=max_lr,    # Upper boundary of the learning rate cycle
+                                step_size_up=pulse_period,  # Number of iterations for the increasing part of the cycle
+                                cycle_momentum=False,
+                                mode='exp_range',  # Use exp_range to enable scale_fn
+                                scale_fn=sinusoidal_scale_fn,  # Custom sinusoidal function
+                                scale_mode='cycle'  # Apply scaling once per cycle
+                            )
+
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
@@ -3022,30 +3047,6 @@ def main():
 
             if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler_flownet.step(avg_loss)
-            else:
-                try:
-                    scheduler_flownet.step()
-                except Exception as e:
-                    # if Onecycle is over due to variable number of steps per epoch
-                    # fall back to Cosine
-
-                    current_lr = float(optimizer_flownet.param_groups[0]["lr"])
-                    max_lr = current_lr + (( current_lr / 100 ) * pulse_dive)
-                    print (f'switching to CyclicLR scheduler with base {current_lr} and max {max_lr}')
-                    print (f'\n\n')
-
-                    scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
-                                    optimizer_flownet,
-                                    base_lr=current_lr,  # Lower boundary of the learning rate cycle
-                                    max_lr=max_lr,    # Upper boundary of the learning rate cycle
-                                    step_size_up=pulse_period,  # Number of iterations for the increasing part of the cycle
-                                    cycle_momentum=False,
-                                    mode='exp_range',  # Use exp_range to enable scale_fn
-                                    scale_fn=sinusoidal_scale_fn,  # Custom sinusoidal function
-                                    scale_mode='cycle'  # Apply scaling once per cycle
-                                )
-                    
-                    # current_lr = float(optimizer_flownet.param_groups[0]["lr"])
 
             min_l1 = float(sys.float_info.max)
             max_l1 = 0
