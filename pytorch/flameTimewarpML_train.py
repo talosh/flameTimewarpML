@@ -2263,9 +2263,10 @@ def main():
                 epochs=args.onecycle,
                 last_epoch = -1
                 )
-        print (f'setting OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.onecycle}, last: {-1 if loaded_step == 0 else loaded_step}')
+        print (f'setting OneCycleLR scheduler with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.onecycle}, last: {-1 if loaded_step == 0 else loaded_step}')
         args.epochs = args.onecycle
     elif args.cyclic != -1:
+        print (f'setting CyclicLR scheduler with max_lr={args.lr}, base_lr={lr - (( lr / 100 ) * pulse_dive)}, step_size_up={args.cyclic}, last: {-1 if loaded_step == 0 else loaded_step}')
         scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
                         optimizer_flownet,
                         base_lr=lr - (( lr / 100 ) * pulse_dive),  # Lower boundary of the learning rate cycle
@@ -2277,6 +2278,7 @@ def main():
                         scale_mode='cycle'  # Apply scaling once per cycle
                     )
     else:
+        print (f'setting ReduceLROnPlateau scheduler with factor={0.1}, patience={10}')
         scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, 'min', factor=0.1, patience=10)
 
     # LPIPS Init
