@@ -522,6 +522,10 @@ class Model:
                 merged = [None] * 4
 
                 # scale[0] = 1
+                if scale[0] == 8:
+                    scale[0] == 5
+                elif scale[0] == 4:
+                    scale[0] == 3
 
                 flow, mask, conf = self.block0(img0, img1, f0, f1, f0xf, f1xf, timestep, None, None, None, scale=scale[0])
 
