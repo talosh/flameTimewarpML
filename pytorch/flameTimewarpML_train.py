@@ -1955,6 +1955,7 @@ def main():
     parser.add_argument('--pulse', type=float, default=10000, help='Period in steps to pulse learning rate (float) (default: 10K)')
     parser.add_argument('--pulse_amplitude', type=float, default=25, help='Learning rate pulse amplitude (percentage) (default: 25)')
     parser.add_argument('--onecycle', type=int, default=-1, help='Train one cycle for N epochs (default: None)')
+    parser.add_argument('--cyclic', type=int, default=-1, help='Use cyclic LR scheduler')
     parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
     parser.add_argument('--model', type=str, default=None, help='Model name (optional)')
     parser.add_argument('--legacy_model', type=str, default=None, help='Model name (optional)')
@@ -2236,7 +2237,6 @@ def main():
         current_epoch = 0
         preview_index = 0
     
-    '''
     if args.onecycle != -1:
         try:
             optimizer_flownet.load_state_dict(checkpoint['optimizer_flownet_state_dict'])
@@ -2265,20 +2265,19 @@ def main():
                 )
         print (f'setting OneCycleLR with max_lr={args.lr}, steps_per_epoch={len(dataset)*dataset.repeat_count}, epochs={args.onecycle}, last: {-1 if loaded_step == 0 else loaded_step}')
         args.epochs = args.onecycle
-    else:
+    elif args.cyclic != -1:
         scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
                         optimizer_flownet,
                         base_lr=lr - (( lr / 100 ) * pulse_dive),  # Lower boundary of the learning rate cycle
                         max_lr=lr,    # Upper boundary of the learning rate cycle
-                        step_size_up=pulse_period,  # Number of iterations for the increasing part of the cycle
+                        step_size_up=args.cyclic,  # Number of iterations for the increasing part of the cycle
                         mode='exp_range',  # Use exp_range to enable scale_fn
                         cycle_momentum=False,
                         scale_fn=sinusoidal_scale_fn,  # Custom sinusoidal function
                         scale_mode='cycle'  # Apply scaling once per cycle
                     )
-    '''
-
-    scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, 'min', factor=0.1, patience=8)
+    else:
+        scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, 'min', factor=0.1, patience=10)
 
     # LPIPS Init
 
@@ -2807,41 +2806,7 @@ def main():
 
         optimizer_flownet.step()
         optimizer_flownet.zero_grad()
-
-        '''
-        try:
-            scheduler_flownet.step()
-        except Exception as e:
-            # if Onecycle is over due to variable number of steps per epoch
-            # fall back to Cosine
-
-            current_lr = float(optimizer_flownet.param_groups[0]["lr"])
-            max_lr = current_lr + (( current_lr / 100 ) * pulse_dive)
-            print (f'switching to CyclicLR scheduler with base {current_lr} and max {max_lr}')
-            print (f'\n\n')
-
-            scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
-                            optimizer_flownet,
-                            base_lr=current_lr,  # Lower boundary of the learning rate cycle
-                            max_lr=max_lr,    # Upper boundary of the learning rate cycle
-                            step_size_up=pulse_period,  # Number of iterations for the increasing part of the cycle
-                            cycle_momentum=False,
-                            mode='exp_range',  # Use exp_range to enable scale_fn
-                            scale_fn=sinusoidal_scale_fn,  # Custom sinusoidal function
-                            scale_mode='cycle'  # Apply scaling once per cycle
-                        )
             
-            # current_lr = float(optimizer_flownet.param_groups[0]["lr"])
-        '''
-            
-        '''
-        scheduler_flownet = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer_flownet,
-            T_max=pulse_period, 
-            eta_min = lr/10 - (( lr / 100 ) * pulse_dive)
-            )
-        '''
-
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
@@ -3053,20 +3018,33 @@ def main():
 
             psnr = 0
 
-            '''
-            if args.onecycle != -1:
-                if first_pass:
-                    first_pass = False
-                    optimizer_state_dict = optimizer_flownet.state_dict()
-                    scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
-                        optimizer_flownet,
-                        max_lr=args.lr, 
-                        total_steps= step * args.onecycle, 
-                        )
-                    optimizer_flownet.load_state_dict(optimizer_state_dict)
-                print (f'setting OneCycleLR after first cycle with max_lr={args.lr}, steps={step}\n\n')
-            '''
-            scheduler_flownet.step(avg_loss)
+            if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                scheduler_flownet.step(avg_loss)
+            else:
+                try:
+                    scheduler_flownet.step()
+                except Exception as e:
+                    # if Onecycle is over due to variable number of steps per epoch
+                    # fall back to Cosine
+
+                    current_lr = float(optimizer_flownet.param_groups[0]["lr"])
+                    max_lr = current_lr + (( current_lr / 100 ) * pulse_dive)
+                    print (f'switching to CyclicLR scheduler with base {current_lr} and max {max_lr}')
+                    print (f'\n\n')
+
+                    scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
+                                    optimizer_flownet,
+                                    base_lr=current_lr,  # Lower boundary of the learning rate cycle
+                                    max_lr=max_lr,    # Upper boundary of the learning rate cycle
+                                    step_size_up=pulse_period,  # Number of iterations for the increasing part of the cycle
+                                    cycle_momentum=False,
+                                    mode='exp_range',  # Use exp_range to enable scale_fn
+                                    scale_fn=sinusoidal_scale_fn,  # Custom sinusoidal function
+                                    scale_mode='cycle'  # Apply scaling once per cycle
+                                )
+                    
+                    # current_lr = float(optimizer_flownet.param_groups[0]["lr"])
+
             min_l1 = float(sys.float_info.max)
             max_l1 = 0
             avg_l1 = 0
