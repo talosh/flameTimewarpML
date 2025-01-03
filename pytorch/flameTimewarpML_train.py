@@ -3049,7 +3049,6 @@ def main():
                 append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.csv', row)
 
             psnr = 0
-
             if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler_flownet.step(avg_loss)
 
@@ -3326,6 +3325,16 @@ def main():
                         clean_thread = threading.Thread(target=lambda: os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')).start()
                     # os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')
             prev_eval_folder = eval_folder
+
+            if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                scheduler_flownet.step(avg_loss)
+
+            min_l1 = float(sys.float_info.max)
+            max_l1 = 0
+            avg_l1 = 0
+            avg_pnsr = 0
+            avg_lpips = 0
+            avg_loss = 0
 
         batch_idx = batch_idx + 1
         step = step + 1
