@@ -2817,17 +2817,6 @@ def main():
         if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
             pass
         else:
-            if args.cyclic != -1 and step % args.cyclic == 1:
-                scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
-                                optimizer_flownet,
-                                base_lr=lr * pulse_dive,        # Lower boundary of the learning rate cycle
-                                max_lr=lr,                      # Upper boundary of the learning rate cycle
-                                step_size_up=args.cyclic,       # Number of iterations for the increasing part of the cycle
-                                mode='exp_range',               # Use exp_range to enable scale_fn
-                                cycle_momentum=False,
-                                scale_fn=sinusoidal_scale_fn,   # Custom sinusoidal function
-                                scale_mode='cycle'              # Apply scaling once per cycle
-                            )
             try:
                 scheduler_flownet.step()
             except Exception as e:
@@ -2847,6 +2836,17 @@ def main():
                                 mode='exp_range',  # Use exp_range to enable scale_fn
                                 scale_fn=sinusoidal_scale_fn,  # Custom sinusoidal function
                                 scale_mode='cycle'  # Apply scaling once per cycle
+                            )
+            if args.cyclic != -1 and step % args.cyclic == 1:
+                scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
+                                optimizer_flownet,
+                                base_lr=lr * pulse_dive,        # Lower boundary of the learning rate cycle
+                                max_lr=lr,                      # Upper boundary of the learning rate cycle
+                                step_size_up=args.cyclic,       # Number of iterations for the increasing part of the cycle
+                                mode='exp_range',               # Use exp_range to enable scale_fn
+                                cycle_momentum=False,
+                                scale_fn=sinusoidal_scale_fn,   # Custom sinusoidal function
+                                scale_mode='cycle'              # Apply scaling once per cycle
                             )
 
         train_time = time.time() - time_stamp
