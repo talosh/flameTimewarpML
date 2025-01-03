@@ -3339,13 +3339,6 @@ def main():
             if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler_flownet.step(avg_loss)
 
-            min_l1 = float(sys.float_info.max)
-            max_l1 = 0
-            avg_l1 = 0
-            avg_pnsr = 0
-            avg_lpips = 0
-            avg_loss = 0
-
         batch_idx = batch_idx + 1
         step = step + 1
 
