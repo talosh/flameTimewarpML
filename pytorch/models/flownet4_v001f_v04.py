@@ -468,9 +468,9 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeepDualHead(6+20+1+2, 6+20+1+2+4, c=192) # images + feat + timestep + lingrid
-                self.block1 = FlownetDeepDualHead(6+20+1+1+4+1+2, 22+20, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
-                self.block2 = FlownetDeepDualHead(6+20+1+1+4+1+2, 22+20, c=128) # images + feat + timestep + lingrid + mask + conf + flow
-                self.block3 = FlownetDeepDualHead(6+20+1+1+4+1+2, 22+20, c=96) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block1 = FlownetDeepDualHead(6+20+1+1+4+1+2, 22+20+1, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
+                self.block2 = FlownetDeepDualHead(6+20+1+1+4+1+2, 22+20+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block3 = FlownetDeepDualHead(6+20+1+1+4+1+2, 22+20+1, c=96) # images + feat + timestep + lingrid + mask + conf + flow
                 self.encode = Head()
                 self.encode_xf = HeadF()
 
