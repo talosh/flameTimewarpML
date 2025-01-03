@@ -399,17 +399,19 @@ class Model:
                 else:
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
-                    imgs = torch.cat((warped_img0, warped_img1), 1)
+                    merged = warped_img0 * mask + warped_img1 * (1 - mask)
+                    imgs = torch.cat((warped_img0, merged, warped_img1), 1)
                     imgs = normalize(imgs, 0, 1) * 2 - 1
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    x = torch.cat((imgs, warped_f0, warped_f1, mask, conf), 1)
+                    merged_f = warped_f0 * mask + warped_f1 * (1 - mask)
+                    x = torch.cat((imgs, warped_f0, merged_f, warped_f1, mask, conf), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
 
-                    merged = warped_img0 * mask + warped_img1 * (1 - mask)
                     xf = torch.cat((img0, merged, img1, torch.sigmoid(mask), torch.sigmoid(conf)), 1)
                     xf = to_freq(normalize(xf, 0, 1) * 2 - 1)
-                    xf = torch.cat((xf, f0xf, f1xf), 1)
+                    merged_fx_spat = warp(to_spat(f0xf), flow[:, :2]) * mask + warp(to_spat(f1xf), flow[:, 2:4]) * (1 - mask)
+                    xf = torch.cat((xf, f0xf, to_freq(merged_fx_spat), f1xf), 1)
                     xf = torch.nn.functional.interpolate(xf, size=(sh, sw), mode="bicubic", align_corners=False)
 
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
@@ -468,9 +470,9 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeepDualHead(6+20+1+2, 6+20+1+2+4, c=192) # images + feat + timestep + lingrid
-                self.block1 = FlownetDeepDualHead(6+20+1+1+4+1+2, 22+20+1, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
-                self.block2 = FlownetDeepDualHead(6+20+1+1+4+1+2, 22+20+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
-                self.block3 = FlownetDeepDualHead(6+20+1+1+4+1+2, 22+20+1, c=96) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block1 = FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
+                self.block2 = FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block3 = FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=96) # images + feat + timestep + lingrid + mask + conf + flow
                 self.encode = Head()
                 self.encode_xf = HeadF()
 
