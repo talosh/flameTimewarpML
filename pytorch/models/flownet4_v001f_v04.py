@@ -385,7 +385,7 @@ class Model:
                 )
                 self.maxdepth = 8
 
-            def forward(self, img0, img1, f0, f1, f0xf, f1xf, timestep, mask, conf, flow, scale=1):
+            def forward(self, img0, img1, f0, f1, f0xf, f1xf, timestep, mask, conf, flow, scale=1, encoder = None, encoder_xf=None):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
@@ -404,14 +404,15 @@ class Model:
                     imgs = normalize(imgs, 0, 1) * 2 - 1
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    merged_f = warped_f0 * mask + warped_f1 * (1 - mask)
+                    merged_f = encoder(merged)
+                    merged_xf = encoder_xf(merged)
                     x = torch.cat((imgs, warped_f0, merged_f, warped_f1, mask, conf), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
 
                     xf = torch.cat((img0, merged, img1, torch.sigmoid(mask), torch.sigmoid(conf)), 1)
                     xf = to_freq(normalize(xf, 0, 1) * 2 - 1)
-                    merged_fx_spat = warp(to_spat(f0xf), flow[:, :2]) * mask + warp(to_spat(f1xf), flow[:, 2:4]) * (1 - mask)
-                    xf = torch.cat((xf, f0xf, to_freq(merged_fx_spat), f1xf), 1)
+                    # merged_fx_spat = warp(to_spat(f0xf), flow[:, :2]) * mask + warp(to_spat(f1xf), flow[:, 2:4]) * (1 - mask)
+                    xf = torch.cat((xf, f0xf, merged_xf, f1xf), 1)
                     xf = torch.nn.functional.interpolate(xf, size=(sh, sw), mode="bicubic", align_corners=False)
 
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
@@ -470,7 +471,7 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeepDualHead(6+20+1+2, 6+20+1+2+4, c=192) # images + feat + timestep + lingrid
-                self.block1 = FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
+                self.block1 = FlownetDeepDualHead(9+30+1+1+4+1+2, 22+20+1, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
                 self.block2 = None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
                 self.block3 = None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
                 self.encode = Head()
@@ -509,7 +510,7 @@ class Model:
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
                 '''
 
-                flow, mask, conf = self.block1(img0, img1, f0, f1, f0xf, f1xf, timestep, mask, conf, flow, scale=scale[1])
+                flow, mask, conf = self.block1(img0, img1, f0, f1, f0xf, f1xf, timestep, mask, conf, flow, scale=scale[1], encoder = self.encode, encoder_xf = self.encode_xf)
 
                 flow_list[3] = flow
                 conf_list[3] = torch.sigmoid(conf) #
