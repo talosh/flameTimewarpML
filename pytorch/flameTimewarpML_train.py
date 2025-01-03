@@ -2817,7 +2817,7 @@ def main():
         if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
             pass
         else:
-            if args.cyclic != -1 and step % args.preview == 1:
+            if args.cyclic != -1 and step % args.cyclic == 1:
                 scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
                                 optimizer_flownet,
                                 base_lr=lr * pulse_dive,        # Lower boundary of the learning rate cycle
