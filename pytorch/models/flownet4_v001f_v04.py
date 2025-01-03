@@ -385,7 +385,7 @@ class Model:
                 )
                 self.maxdepth = 8
 
-            def forward(self, img0, img1, f0, f1, f0xf, f1xf, timestep, mask, conf, flow, scale=1, encoder = None, encoder_xf=None):
+            def forward(self, img0, img1, f0, f1, f0xf, f1xf, timestep, mask, conf, flow, merged, fm, fmxf, scale=1):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
@@ -399,20 +399,16 @@ class Model:
                 else:
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
-                    merged = warped_img0 * mask + warped_img1 * (1 - mask)
                     imgs = torch.cat((warped_img0, merged, warped_img1), 1)
                     imgs = normalize(imgs, 0, 1) * 2 - 1
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    merged_f = encoder(merged)
-                    merged_xf = encoder_xf(merged)
-                    x = torch.cat((imgs, warped_f0, merged_f, warped_f1, mask, conf), 1)
+                    x = torch.cat((imgs, warped_f0, fm, warped_f1, mask, conf), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
 
                     xf = torch.cat((img0, merged, img1, torch.sigmoid(mask), torch.sigmoid(conf)), 1)
                     xf = to_freq(normalize(xf, 0, 1) * 2 - 1)
-                    # merged_fx_spat = warp(to_spat(f0xf), flow[:, :2]) * mask + warp(to_spat(f1xf), flow[:, 2:4]) * (1 - mask)
-                    xf = torch.cat((xf, f0xf, merged_xf, f1xf), 1)
+                    xf = torch.cat((xf, f0xf, fmxf, f1xf), 1)
                     xf = torch.nn.functional.interpolate(xf, size=(sh, sw), mode="bicubic", align_corners=False)
 
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
@@ -501,16 +497,18 @@ class Model:
 
                 # scale = [5 if num == 8 else 3 if num == 4 else num for num in scale]
 
-                flow, mask, conf = self.block0(img0, img1, f0, f1, f0xf, f1xf, timestep, None, None, None, scale=scale[0])
+                flow, mask, conf = self.block0(img0, img1, f0, f1, f0xf, f1xf, timestep, None, None, None, None, None, None, scale=scale[0])
 
-                '''
+                # '''
                 flow_list[0] = flow.clone()
                 conf_list[0] = torch.sigmoid(conf.clone())
                 mask_list[0] = torch.sigmoid(mask.clone())
                 merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
-                '''
+                fm = self.encode(merged[0])
+                fmxf = self.encode_xf(merged[0])
+                # '''
 
-                flow, mask, conf = self.block1(img0, img1, f0, f1, f0xf, f1xf, timestep, mask, conf, flow, scale=scale[1], encoder = self.encode, encoder_xf = self.encode_xf)
+                flow, mask, conf = self.block1(img0, img1, f0, f1, f0xf, f1xf, timestep, mask, conf, flow, merged[0], fm, fmxf, scale=scale[1])
 
                 flow_list[3] = flow
                 conf_list[3] = torch.sigmoid(conf) #
