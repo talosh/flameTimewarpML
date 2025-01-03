@@ -3052,17 +3052,6 @@ def main():
 
             if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler_flownet.step(avg_loss)
-            elif args.cyclic != -1:
-                scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
-                                optimizer_flownet,
-                                base_lr=lr - (( lr / 100 ) * pulse_dive),  # Lower boundary of the learning rate cycle
-                                max_lr=lr,    # Upper boundary of the learning rate cycle
-                                step_size_up=args.cyclic,  # Number of iterations for the increasing part of the cycle
-                                mode='exp_range',  # Use exp_range to enable scale_fn
-                                cycle_momentum=False,
-                                scale_fn=sinusoidal_scale_fn,  # Custom sinusoidal function
-                                scale_mode='cycle'  # Apply scaling once per cycle
-                            )
 
             min_l1 = float(sys.float_info.max)
             max_l1 = 0
