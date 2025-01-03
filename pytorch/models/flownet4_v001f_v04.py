@@ -406,6 +406,8 @@ class Model:
                     x = torch.cat((imgs, warped_f0, warped_f1, mask, conf), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
 
+                    print (x.shape)
+
                     merged = warped_img0 * mask + warped_img1 * (1 - mask)
                     xf = torch.cat((img0, merged, img1, torch.sigmoid(mask), torch.sigmoid(conf)), 1)
                     xf = to_freq(normalize(xf, 0, 1) * 2 - 1)
