@@ -406,8 +406,6 @@ class Model:
                     x = torch.cat((imgs, warped_f0, warped_f1, mask, conf), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
 
-                    print (x.shape)
-
                     merged = warped_img0 * mask + warped_img1 * (1 - mask)
                     xf = torch.cat((img0, merged, img1, torch.sigmoid(mask), torch.sigmoid(conf)), 1)
                     xf = to_freq(normalize(xf, 0, 1) * 2 - 1)
@@ -416,7 +414,7 @@ class Model:
 
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
                     flow = flow + torch.randn_like(flow) * min(sh, sw) * 1e-2
-                    x = torch.cat((xf, flow), 1)
+                    x = torch.cat((x, flow), 1)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
