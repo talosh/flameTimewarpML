@@ -501,17 +501,26 @@ class Model:
 
                 flow, mask, conf = self.block0(img0, img1, f0, f1, f0xf, f1xf, timestep, None, None, None, scale=scale[0])
 
+                flow_list[0] = flow.clone()
+                conf_list[0] = torch.sigmoid(conf.clone())
+                mask_list[0] = torch.sigmoid(mask.clone())
+                merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
+
                 flow, mask, conf = self.block1(img0, img1, f0, f1, f0xf, f1xf, timestep, mask, conf, flow, scale=scale[1])
+
+                flow_list[1] = flow.clone()
+                conf_list[1] = torch.sigmoid(conf.clone())
+                mask_list[1] = torch.sigmoid(mask.clone())
+                merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
                 flow, mask, conf = self.block1(img0, img1, f0, f1, f0xf, f1xf, timestep, mask, conf, flow, scale=scale[2])
 
-                flow, mask, conf = self.block1(img0, img1, f0, f1, f0xf, f1xf, timestep, mask, conf, flow, scale=scale[3])
+                flow_list[2] = flow.clone()
+                conf_list[2] = torch.sigmoid(conf.clone())
+                mask_list[2] = torch.sigmoid(mask.clone())
+                merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
-                # flow = flow.to(dtype = src_dtype)
-                # mask = mask.to(dtype = src_dtype)
-                # conf = conf.to(dtype = src_dtype)
-                # img0 = img0.to(dtype = src_dtype)
-                # img1 = img1.to(dtype = src_dtype)
+                flow, mask, conf = self.block1(img0, img1, f0, f1, f0xf, f1xf, timestep, mask, conf, flow, scale=scale[3])
 
                 flow_list[3] = flow
                 conf_list[3] = torch.sigmoid(conf) #
