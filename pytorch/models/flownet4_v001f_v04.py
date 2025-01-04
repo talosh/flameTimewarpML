@@ -228,10 +228,8 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, c, 6, 2, 2),
-                    torch.nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
-                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
-                    torch.nn.Conv2d(c, 6, kernel_size=1, stride=1, padding=0, bias=True),
+                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 4
 
@@ -467,7 +465,7 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeepDualHead(6+20+1+2, 6+20+1+2+4, c=192) # images + feat + timestep + lingrid
-                self.block1 = FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
+                self.block1 = Flownet(6+20+1+1+4, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
                 self.block2 = None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
                 self.block3 = None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
                 self.encode = Head()
