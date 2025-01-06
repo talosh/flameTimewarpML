@@ -490,7 +490,7 @@ class Model:
                 conf_list = [None] * 4
                 merged = [None] * 4
 
-                scale[0] = 1 # 5 / 3
+                scale[0] = 2 # 5 / 3
                 scale[1] = 1
 
                 # scale = [5 if num == 8 else 3 if num == 4 else num for num in scale]
