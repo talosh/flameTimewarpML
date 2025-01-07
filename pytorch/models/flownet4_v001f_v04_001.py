@@ -299,7 +299,7 @@ class Model:
                 )
                 self.maxdepth = 4
 
-            def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
+            def forward(self, img0, img1, timestep, mask, conf, flow, scale=1):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
                 ph = self.maxdepth - (sh % self.maxdepth)
