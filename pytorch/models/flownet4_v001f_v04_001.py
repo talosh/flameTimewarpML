@@ -485,7 +485,7 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeepDualHead(6+20+1+2, 6+20+1+2+4, c=192) # images + feat + timestep + lingrid
-                self.block1 = FlownetDeepDualHead(6+20+1+2+1+4, 12+20+1, c=144) # Flownet(6+20+1+1+1+4, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
+                self.block1 = FlownetDeepDualHead(6+20+1+1+2+1+4, 12+20+1, c=144) # Flownet(6+20+1+1+1+4, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
                 self.block2 = None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
                 self.block3 = None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
                 self.encode = Head()
