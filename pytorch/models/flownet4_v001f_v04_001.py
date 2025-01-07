@@ -175,11 +175,19 @@ class Model:
                     torch.nn.LeakyReLU(0.2, True),
                     torch.nn.ConvTranspose2d(32, 10, 4, 2, 1)
                 )
+                self.maxdepth = 2
 
             def forward(self, x):
                 hp = hpass(x)
                 x = torch.cat((x, hp), 1)
-                return self.encode(x)
+
+                n, c, h, w = x.shape
+                ph = self.maxdepth - (h % self.maxdepth)
+                pw = self.maxdepth - (w % self.maxdepth)
+                padding = (0, pw, 0, ph)
+                x = torch.nn.functional.pad(x, padding)
+
+                return self.encode(x)[:, :, :h, :w]
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
