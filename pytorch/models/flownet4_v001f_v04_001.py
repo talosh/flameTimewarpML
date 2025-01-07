@@ -522,9 +522,9 @@ class Model:
                 # fmxf = self.encode_xf(merged[0])
                 # '''
 
-                flow_d, mask, conf = self.block1(img0, img1, f0, f1, timestep, mask, flow, conf, scale=scale[1])
+                flow, mask, conf = self.block1(img0, img1, f0, f1, timestep, mask, flow, conf, scale=scale[1])
 
-                flow_list[3] = flow + flow_d
+                flow_list[3] = flow
                 conf_list[3] = torch.sigmoid(conf) #
                 mask_list[3] = torch.sigmoid(mask) #
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
