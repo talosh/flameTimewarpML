@@ -383,17 +383,25 @@ class Model:
                 )
                 self.maxdepth = 8
 
-            def forward(self, img0, img1, f0, f1, f0xf, f1xf, timestep, mask, conf, flow, merged, fm, fmxf, scale=1):
+            def forward(self, img0, img1, f0, f1, f0xf, f1xf, timestep, mask, conf, flow, merged, fm, fmxf, scale=1, encode_xf=None):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
                 if flow is None:
+
                     imgs = torch.cat((img0, img1), 1)
                     imgs = normalize(imgs, 0, 1) * 2 - 1
                     x = torch.cat((imgs, f0, f1), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
-                    xf = torch.cat((to_freq(imgs), f0xf, f1xf), 1)
-                    xf = torch.nn.functional.interpolate(xf, size=(sh, sw), mode="bicubic", align_corners=False)
+                    
+                    img0_scaled = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
+                    img1_scaled = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
+                    f0xf = encode_xf(img0_scaled)
+                    f1xf = encode_xf(img1_scaled)
+                    imgs_scaled = torch.cat((img0_scaled, img1_scaled), 1)
+                    imgs_scaled = normalize(imgs_scaled, 0, 1) * 2 - 1
+                    xf = torch.cat((to_freq(imgs_scaled), f0xf, f1xf), 1)
+
                 else:
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
@@ -482,9 +490,6 @@ class Model:
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 
-                f0xf = self.encode_xf(img0)
-                f1xf = self.encode_xf(img1)
-
                 flow_list = [None] * 4
                 mask_list = [None] * 4
                 conf_list = [None] * 4
@@ -495,7 +500,7 @@ class Model:
 
                 # scale = [5 if num == 8 else 3 if num == 4 else num for num in scale]
 
-                flow, mask, conf = self.block0(img0, img1, f0, f1, f0xf, f1xf, timestep, None, None, None, None, None, None, scale=scale[0])
+                flow, mask, conf = self.block0(img0, img1, f0, f1, None, None, timestep, None, None, None, None, None, None, scale=scale[0], encode_xf=self.encode_xf)
 
                 # '''
                 flow_list[0] = flow.clone()
