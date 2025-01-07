@@ -515,7 +515,7 @@ class Model:
 
                 scale = [5 if num == 8 else 3 if num == 4 else num for num in scale]
 
-                flow, mask, conf = self.block0(img0, img1, f0, f1, None, None, timestep, None, None, None, scale=scale[0], encode_xf=self.encode_xf)
+                flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0], encode_xf=self.encode_xf)
 
                 # '''
                 flow_list[0] = flow.clone()
