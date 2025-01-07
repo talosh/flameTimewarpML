@@ -392,7 +392,6 @@ class Model:
                 padding = (0, pw, 0, ph)
 
                 if flow is None:
-
                     imgs = torch.cat((img0, img1), 1)
                     imgs = normalize(imgs, 0, 1) * 2 - 1
                     x = torch.cat((imgs, f0, f1), 1)
