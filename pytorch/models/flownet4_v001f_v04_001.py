@@ -424,7 +424,7 @@ class Model:
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
                     # flow = flow + torch.randn_like(flow) * min(sh, sw) * 1e-2
-                    x = torch.cat((x, mask, flow), 1)
+                    x = torch.cat((x, mask, conf, flow), 1)
                     x = torch.nn.functional.pad(x, padding)
 
                     img0_scaled = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
@@ -523,7 +523,7 @@ class Model:
                 # fmxf = self.encode_xf(merged[0])
                 '''
 
-                flow, mask, conf = self.block1(img0, img1, f0, f1, None, None, timestep, None, None, None, scale=scale[1], encode_xf=self.encode_xf)
+                flow, mask, conf = self.block1(img0, img1, f0, f1, None, None, timestep, mask, conf, flow, scale=scale[1], encode_xf=self.encode_xf)
 
                 flow_list[3] = flow
                 conf_list[3] = torch.sigmoid(conf) #
