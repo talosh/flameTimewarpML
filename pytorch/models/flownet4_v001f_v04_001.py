@@ -423,11 +423,11 @@ class Model:
                 else:
                     imgs = torch.cat((img0, img1), 1)
                     imgs = normalize(imgs, 0, 1) * 2 - 1
-                    x = torch.cat((imgs, f0, f1), 1)
+                    x = torch.cat((imgs, f0, f1, mask, conf, ), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
                     # flow = flow + torch.randn_like(flow) * min(sh, sw) * 1e-2
-                    x = torch.cat((x, mask, conf, flow), 1)
+                    x = torch.cat((x, flow), 1)
                     x = torch.nn.functional.pad(x, padding)
 
                     img0_scaled = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
