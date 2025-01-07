@@ -302,6 +302,9 @@ class Model:
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
+                ph = self.maxdepth - (sh % self.maxdepth)
+                pw = self.maxdepth - (sw % self.maxdepth)
+                padding = (0, pw, 0, ph)
 
                 timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 
@@ -312,9 +315,6 @@ class Model:
                 flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
                 x = torch.cat((x, flow), 1)
 
-                ph = self.maxdepth - (sh % self.maxdepth)
-                pw = self.maxdepth - (sw % self.maxdepth)
-                padding = (0, pw, 0, ph)
                 x = torch.nn.functional.pad(x, padding, mode='constant')
 
                 feat = self.conv0(x)
