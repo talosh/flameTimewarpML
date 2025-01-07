@@ -425,6 +425,7 @@ class Model:
                     warped_f1 = warp(f1, flow[:, 2:4])
                     x = torch.cat((imgs, warped_f0, fm, warped_f1, mask, conf), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
+                    x = torch.nn.functional.pad(x, padding)
 
                     xf = torch.cat((img0, merged, img1, torch.sigmoid(mask), torch.sigmoid(conf)), 1)
                     xf = to_freq(normalize(xf, 0, 1) * 2 - 1)
@@ -438,11 +439,10 @@ class Model:
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
+                tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 x = torch.cat((x, timestep, tenGrid), 1)
                 xf = torch.cat((xf, timestep), 1)
-
-                x = torch.nn.functional.pad(x, padding)
 
                 feat = self.conv0(x)
                 feat_deep = self.conv0f(xf)
