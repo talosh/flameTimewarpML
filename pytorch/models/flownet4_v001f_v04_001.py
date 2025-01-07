@@ -387,6 +387,10 @@ class Model:
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
+                ph = self.maxdepth - (sh % self.maxdepth)
+                pw = self.maxdepth - (sw % self.maxdepth)
+                padding = (0, pw, 0, ph)
+
                 if flow is None:
 
                     imgs = torch.cat((img0, img1), 1)
@@ -396,6 +400,9 @@ class Model:
                     
                     img0_scaled = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
                     img1_scaled = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
+                    img0_scaled = torch.nn.functional.pad(img0_scaled, padding)
+                    img1_scaled = torch.nn.functional.pad(img1_scaled, padding)
+
                     f0xf = encode_xf(img0_scaled)
                     f1xf = encode_xf(img1_scaled)
                     imgs_scaled = torch.cat((img0_scaled, img1_scaled), 1)
@@ -428,12 +435,7 @@ class Model:
                 x = torch.cat((x, timestep, tenGrid), 1)
                 xf = torch.cat((xf, timestep), 1)
 
-                ph = self.maxdepth - (sh % self.maxdepth)
-                pw = self.maxdepth - (sw % self.maxdepth)
-                padding = (0, pw, 0, ph)
-
                 x = torch.nn.functional.pad(x, padding)
-                xf = torch.nn.functional.pad(xf, padding)
 
                 feat = self.conv0(x)
                 feat_deep = self.conv0f(xf)
