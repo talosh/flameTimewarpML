@@ -404,6 +404,7 @@ class Model:
                     imgs = normalize(imgs, 0, 1) * 2 - 1
                     x = torch.cat((imgs, f0, f1), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
+                    x = torch.nn.functional.pad(x, padding)
                     
                     img0_scaled = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
                     img1_scaled = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
@@ -441,6 +442,7 @@ class Model:
                 tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
+
                 x = torch.cat((x, timestep, tenGrid), 1)
                 xf = torch.cat((xf, timestep), 1)
 
