@@ -297,7 +297,7 @@ class Model:
                 )
                 self.maxdepth = 4
 
-            def forward(self, img0, img1, timestep, mask, conf, scale=1):
+            def forward(self, img0, img1, timestep, mask, conf, flow, scale=1):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
                 ph = self.maxdepth - (sh % self.maxdepth)
@@ -538,7 +538,7 @@ class Model:
                 mask_list[2] = torch.sigmoid(mask.clone())
                 merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
-                flow_d, mask_d, conf_d = self.block3(img0, img1, timestep, mask, conf, scale=scale[3])
+                flow_d, mask_d, conf_d = self.block3(img0, img1, timestep, mask, conf, flow, scale=scale[3])
 
                 flow_list[3] = flow + flow_d
                 conf_list[3] = torch.sigmoid(conf + conf_d) #
