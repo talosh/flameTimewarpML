@@ -305,6 +305,9 @@ class Model:
                 padding = (0, pw, 0, ph)
 
                 timestep = (img0[:, :1].clone() * 0 + 1) * timestep
+
+                img0 = torch.cat((img0, hpass(img0)), 1)
+                img1 = torch.cat((img1, hpass(img1)), 1)
                 
                 warped_img0 = warp(img0, flow[:, :2])
                 warped_img1 = warp(img1, flow[:, 2:4])
@@ -485,7 +488,7 @@ class Model:
                 self.block0 = FlownetDeepDualHead(6+20+1+2, 6+20+1+2+4, c=192) # images + feat + timestep + lingrid
                 self.block1 = FlownetDeepDualHead(6+20+1+1+2+1+4, 12+20+1, c=96) # Flownet(6+20+1+1+1+4, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
                 self.block2 = FlownetDeepDualHead(6+20+1+1+2+1+4, 12+20+1, c=64) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
-                self.block3 = FlownetLT(6+1+1+1+4, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block3 = FlownetLT(6+2+1+1+1+4, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
                 self.encode = Head()
                 self.encode_xf = HeadF()
 
