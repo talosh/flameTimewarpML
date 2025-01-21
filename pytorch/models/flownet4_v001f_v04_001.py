@@ -78,12 +78,15 @@ class Model:
             return hp
 
         def compress(x):
+            src_dtype = x.dtype
+            x = x.float()
             scale = torch.tanh(torch.tensor(1.0))
             x = torch.where(
                 (x >= -1) & (x <= 1), scale * x,
                 torch.tanh(x)
             )
             x = (x + 1) / 2
+            x = x.to(dtype = src_dtype)
             return x
 
         def blur(img):  
@@ -109,7 +112,8 @@ class Model:
         def to_freq(x):
             n, c, h, w = x.shape
             src_dtype = x.dtype
-            x = torch.fft.fft2(x.float(), dim=(-2, -1))
+            x = x.float()
+            x = torch.fft.fft2(x, dim=(-2, -1))
             x = torch.fft.fftshift(x, dim=(-2, -1))
             x = torch.cat([x.real.unsqueeze(2), x.imag.unsqueeze(2)], dim=2).view(n, c * 2, h, w)
             x = x.to(dtype = src_dtype)
