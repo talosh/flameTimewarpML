@@ -3158,6 +3158,9 @@ def main():
                 evalnet.half()
 
             evalnet.eval()
+
+            print ('\n\nhellooo\n\n')
+
             with torch.no_grad():
                 # for ev_item_index, description in enumerate(descriptions):
                 description = read_eval_image_queue.get()
