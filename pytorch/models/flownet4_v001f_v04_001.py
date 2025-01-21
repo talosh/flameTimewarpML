@@ -54,6 +54,8 @@ class Model:
             return ((tensor - t_min) / (t_max - t_min)) * (max_val - min_val) + min_val
 
         def hpass(img):
+            src_dtype = img.dtype
+            img = img.float()
             def gauss_kernel(size=5, channels=3):
                 kernel = torch.tensor([[1., 4., 6., 4., 1],
                                     [4., 16., 24., 16., 4.],
@@ -75,6 +77,7 @@ class Model:
             hp = torch.clamp(hp, 0.48, 0.52)
             hp = normalize(hp, 0, 1)
             hp = torch.max(hp, dim=1, keepdim=True).values
+            hp = hp.to(dtype = src_dtype)
             return hp
 
         def compress(x):
