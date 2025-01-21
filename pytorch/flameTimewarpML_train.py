@@ -3256,18 +3256,16 @@ def main():
                         print (f'\n\neval result shape: {eval_result.shape}')
 
                         if torch.isnan(eval_result).any():
-                            print (f'eval: result has NaN: {description["start"]}')
+                            print (f'eval: result has NaN: {description["start"]}\n\n')
                             description = read_eval_image_queue.get()
                             continue
                         if torch.isnan(eval_img1).any():
-                            print (f'eval: eval_img1 has NaN: {description["start"]}')
+                            print (f'eval: eval_img1 has NaN: {description["start"]}\n\n')
                             description = read_eval_image_queue.get()
                             continue
 
                         eval_loss_l1 = criterion_l1(eval_result, eval_img1)
                         eval_loss.append(float(eval_loss_l1.item()))
-
-                        print (f'eval_loss: {eval_loss}\n\n')
 
                         eval_psnr.append(float(psnr_torch(eval_result, eval_img1)))
                         eval_loss_LPIPS = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
