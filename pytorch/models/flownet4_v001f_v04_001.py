@@ -517,10 +517,10 @@ class Model:
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 
-                flow_list = [None] * 4
-                mask_list = [None] * 4
-                conf_list = [None] * 4
-                merged = [None] * 4
+                flow_list = [None] * 5
+                mask_list = [None] * 5
+                conf_list = [None] * 5
+                merged = [None] * 5
 
                 # scale[0] = 5 / 3
                 # scale[1] = 1
