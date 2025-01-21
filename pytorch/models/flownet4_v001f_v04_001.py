@@ -545,23 +545,29 @@ class Model:
                 mask_list[1] = torch.sigmoid(mask.clone())
                 merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
-                flow, mask, conf = self.block3(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[2], encode_xf=self.encode_xf)
+                flow, mask, conf = self.block2(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[2], encode_xf=self.encode_xf)
 
                 flow_list[2] = flow.clone()
                 conf_list[2] = torch.sigmoid(conf.clone())
                 mask_list[2] = torch.sigmoid(mask.clone())
                 merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
-                flow_d, mask_d, conf_d = self.blockf(img0, img1, timestep, mask, conf, flow, scale=scale[3])
-                flow = flow + flow_d
-                mask = mask + mask_d
-                conf = conf + conf_d
-                # flow, mask, conf = self.blockf(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[3], encode_xf=self.encode_xf)
+                flow, mask, conf = self.block3(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[3], encode_xf=self.encode_xf)
 
                 flow_list[3] = flow
                 conf_list[3] = torch.sigmoid(conf) #
                 mask_list[3] = torch.sigmoid(mask) #
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
+
+                flow_d, mask_d, conf_d = self.blockf(img0, img1, timestep, mask, conf, flow, scale=scale[3])
+                flow = flow + flow_d
+                mask = mask + mask_d
+                conf = conf + conf_d
+
+                flow_list[4] = flow
+                conf_list[4] = torch.sigmoid(conf) #
+                mask_list[4] = torch.sigmoid(mask) #
+                merged[4] = warp(img0, flow[:, :2]) * mask_list[4] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 result = {
                     'flow_list': flow_list,
