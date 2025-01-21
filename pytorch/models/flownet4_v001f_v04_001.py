@@ -45,13 +45,17 @@ class Model:
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
         def normalize(tensor, min_val, max_val):
+            src_dtype = tensor.dtype
+            tensor = tensor.float()
             t_min = tensor.min()
             t_max = tensor.max()
 
             if t_min == t_max:
                 return torch.full_like(tensor, (min_val + max_val) / 2.0)
             
-            return ((tensor - t_min) / (t_max - t_min)) * (max_val - min_val) + min_val
+            tensor = ((tensor - t_min) / (t_max - t_min)) * (max_val - min_val) + min_val
+            tensor = tensor.to(dtype = src_dtype)
+            return tensor
 
         def hpass(img):
             src_dtype = img.dtype
