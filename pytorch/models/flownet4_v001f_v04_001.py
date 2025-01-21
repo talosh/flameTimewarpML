@@ -517,15 +517,14 @@ class Model:
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 
-                flow_list = [None] * 5
-                mask_list = [None] * 5
-                conf_list = [None] * 5
-                merged = [None] * 5
+                flow_list = [None] * 4
+                mask_list = [None] * 4
+                conf_list = [None] * 4
+                merged = [None] * 4
 
                 # scale[0] = 5 / 3
                 # scale[1] = 1
 
-                scale = [8, 5, 3, 2] if scale == [8, 4, 2, 1] else scale
                 scale = [5 if num == 8 else 3 if num == 4 else num for num in scale]
 
                 flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0], encode_xf=self.encode_xf)
@@ -546,29 +545,23 @@ class Model:
                 mask_list[1] = torch.sigmoid(mask.clone())
                 merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
-                flow, mask, conf = self.block2(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[2], encode_xf=self.encode_xf)
+                flow, mask, conf = self.block3(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[2], encode_xf=self.encode_xf)
 
                 flow_list[2] = flow.clone()
                 conf_list[2] = torch.sigmoid(conf.clone())
                 mask_list[2] = torch.sigmoid(mask.clone())
                 merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
-                flow, mask, conf = self.block3(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[3], encode_xf=self.encode_xf)
+                flow_d, mask_d, conf_d = self.blockf(img0, img1, timestep, mask, conf, flow, scale=scale[3])
+                flow = flow + flow_d
+                mask = mask + mask_d
+                conf = conf + conf_d
+                # flow, mask, conf = self.blockf(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[3], encode_xf=self.encode_xf)
 
                 flow_list[3] = flow
                 conf_list[3] = torch.sigmoid(conf) #
                 mask_list[3] = torch.sigmoid(mask) #
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
-
-                flow_d, mask_d, conf_d = self.blockf(img0, img1, timestep, mask, conf, flow, scale=1)
-                flow = flow + flow_d
-                mask = mask + mask_d
-                conf = conf + conf_d
-
-                flow_list[4] = flow
-                conf_list[4] = torch.sigmoid(conf) #
-                mask_list[4] = torch.sigmoid(mask) #
-                merged[4] = warp(img0, flow[:, :2]) * mask_list[4] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 result = {
                     'flow_list': flow_list,
