@@ -3191,8 +3191,6 @@ def main():
                     print (f'\rEvaluating {ev_item_index} of {len(descriptions)}: Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f} LPIPS: {eval_lpips_mean:.4f} PSNR: {eval_psnr_mean:4f}')
 
                     try:    
-                        print ('\n\nhellooo\n\n')
-
                         eval_img0 = description['eval_img0']
                         eval_img1 = description['eval_img1']
                         eval_img2 = description['eval_img2']
@@ -3249,8 +3247,10 @@ def main():
                         eval_merged = result['merged']
 
                         if args.eval_half:
-                            eval_flow_list[-1] = eval_flow_list[-1].float()
-                            eval_mask_list[-1] = eval_mask_list[-1].float()
+                            if eval_flow_list:
+                                eval_flow_list[-1] = eval_flow_list[-1].float()
+                            if eval_mask_list:
+                                eval_mask_list[-1] = eval_mask_list[-1].float()
 
                         # eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :, :]) * eval_mask_list[-1][:, :, :, :] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :, :]) * (1 - eval_mask_list[-1][:, :, :, :])
                         eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :eh, :ew]) * eval_mask_list[-1][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[-1][:, :, :eh, :ew])
@@ -3299,7 +3299,7 @@ def main():
                         del description['eval_img0']
                         del description['eval_img1']
                         del description['eval_img2']
-                        print (f'\nerror while evaluating: {e}\n{description}\n{traceback.format_exc()}\n\n')
+                        print (f'\n\nerror while evaluating: {e}\n{description}\n{traceback.format_exc()}\n\n')
                     description = read_eval_image_queue.get()
 
             del evalnet
