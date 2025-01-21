@@ -118,7 +118,8 @@ class Model:
         def to_freq_norm(x, alpha=0.1, eps=1e-8):
             n, c, h, w = x.shape
             src_dtype = x.dtype
-            x = torch.fft.fft2(x.float(), dim=(-2, -1))
+            x = x.float()
+            x = torch.fft.fft2(x, dim=(-2, -1))
             x = torch.fft.fftshift(x, dim=(-2, -1))
             real = x.real
             imag = x.imag
@@ -134,7 +135,8 @@ class Model:
         def to_spat(x):
             n, c, h, w = x.shape
             src_dtype = x.dtype
-            x = x.view(n, c//2, 2, h, w).float()
+            x = x.float()
+            x = x.view(n, c//2, 2, h, w)
             x = torch.complex(
                 x[:, :, 0, :, :],
                 x[:, :, 1, :, :]
