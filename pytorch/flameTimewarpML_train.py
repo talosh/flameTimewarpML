@@ -3253,7 +3253,7 @@ def main():
                         # eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :, :]) * eval_mask_list[-1][:, :, :, :] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :, :]) * (1 - eval_mask_list[-1][:, :, :, :])
                         eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :eh, :ew]) * eval_mask_list[-1][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[-1][:, :, :eh, :ew])
 
-                        print (f'eval result shape: {eval_result.shape}')
+                        print (f'\n\neval result shape: {eval_result.shape}\n\n')
 
                         if torch.isnan(eval_result).any():
                             print (f'eval: result has NaN: {description["start"]}')
