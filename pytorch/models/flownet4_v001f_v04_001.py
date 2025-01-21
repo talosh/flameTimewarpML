@@ -538,7 +538,7 @@ class Model:
                 # fmxf = self.encode_xf(merged[0])
                 # '''
 
-                flow, mask, conf = self.block1(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[1], encode_xf=self.encode_xf)
+                flow, mask, conf = self.block2(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[1], encode_xf=self.encode_xf)
 
                 flow_list[1] = flow.clone()
                 conf_list[1] = torch.sigmoid(conf.clone())
