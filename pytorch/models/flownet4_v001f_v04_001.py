@@ -525,6 +525,7 @@ class Model:
                 # scale[0] = 5 / 3
                 # scale[1] = 1
 
+                scale = [8, 5, 3, 2] if scale == [8, 4, 2, 1] else scale
                 scale = [5 if num == 8 else 3 if num == 4 else num for num in scale]
 
                 flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0], encode_xf=self.encode_xf)
@@ -559,7 +560,7 @@ class Model:
                 mask_list[3] = torch.sigmoid(mask) #
                 merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
-                flow_d, mask_d, conf_d = self.blockf(img0, img1, timestep, mask, conf, flow, scale=scale[3])
+                flow_d, mask_d, conf_d = self.blockf(img0, img1, timestep, mask, conf, flow, scale=1)
                 flow = flow + flow_d
                 mask = mask + mask_d
                 conf = conf + conf_d
