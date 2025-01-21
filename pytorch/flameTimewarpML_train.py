@@ -3253,8 +3253,6 @@ def main():
                         # eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :, :]) * eval_mask_list[-1][:, :, :, :] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :, :]) * (1 - eval_mask_list[-1][:, :, :, :])
                         eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :eh, :ew]) * eval_mask_list[-1][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[-1][:, :, :eh, :ew])
 
-                        print (f'\n\neval result shape: {eval_result.shape}')
-
                         if torch.isnan(eval_img0_orig).any():
                             print (f'eval: eval_img0_orig has NaN: {description["start"]}\n\n')
                             description = read_eval_image_queue.get()
@@ -3274,7 +3272,6 @@ def main():
 
                         eval_loss_l1 = criterion_l1(eval_result, eval_img1)
                         eval_loss.append(float(eval_loss_l1.item()))
-
                         eval_psnr.append(float(psnr_torch(eval_result, eval_img1)))
                         eval_loss_LPIPS = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
                         eval_lpips.append(float(torch.mean(eval_loss_LPIPS).item()))
