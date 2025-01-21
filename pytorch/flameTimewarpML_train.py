@@ -3158,9 +3158,6 @@ def main():
                 evalnet.half()
 
             evalnet.eval()
-
-            print ('\n\nhellooo\n\n')
-
             with torch.no_grad():
                 # for ev_item_index, description in enumerate(descriptions):
                 description = read_eval_image_queue.get()
@@ -3193,7 +3190,9 @@ def main():
                     print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{train_time_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
                     print (f'\rEvaluating {ev_item_index} of {len(descriptions)}: Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f} LPIPS: {eval_lpips_mean:.4f} PSNR: {eval_psnr_mean:4f}')
 
-                    try:                        
+                    try:    
+                        print ('\n\nhellooo\n\n')
+
                         eval_img0 = description['eval_img0']
                         eval_img1 = description['eval_img1']
                         eval_img2 = description['eval_img2']
