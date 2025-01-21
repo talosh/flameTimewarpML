@@ -502,7 +502,7 @@ class Model:
                 self.block1 = FlownetDeepDualHead(6+20+1+1+2+1+4, 12+20+1, c=144) # Flownet(6+20+1+1+1+4, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
                 self.block2 = FlownetDeepDualHead(6+20+1+1+2+1+4, 12+20+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
                 self.block3 = FlownetDeepDualHead(6+20+1+1+2+1+4, 12+20+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
-                self.blockf = FlownetLT(13, c=48)
+                self.blockf = FlownetLT(11, c=48)
                 self.encode = Head()
                 self.encode_xf = HeadF()
 
