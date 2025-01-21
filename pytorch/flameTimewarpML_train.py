@@ -3255,6 +3255,14 @@ def main():
 
                         print (f'\n\neval result shape: {eval_result.shape}')
 
+                        if torch.isnan(eval_img0_orig).any():
+                            print (f'eval: eval_img0_orig has NaN: {description["start"]}\n\n')
+                            description = read_eval_image_queue.get()
+                            continue
+                        if torch.isnan(eval_img2_orig).any():
+                            print (f'eval: eval_img2_orig has NaN: {description["start"]}\n\n')
+                            description = read_eval_image_queue.get()
+                            continue
                         if torch.isnan(eval_result).any():
                             print (f'eval: result has NaN: {description["start"]}\n\n')
                             description = read_eval_image_queue.get()
