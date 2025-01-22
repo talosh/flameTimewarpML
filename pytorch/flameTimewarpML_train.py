@@ -2635,9 +2635,6 @@ def main():
     data_time2 = 0
     train_time = 0
 
-    # torch.autograd.set_detect_anomaly(True)
-    accum_iter = 4
-
     while True:
         # tracemalloc.start()
         # data_time = time.time() - time_stamp
@@ -2666,10 +2663,6 @@ def main():
         img1_orig = img1.detach().clone()
         img2_orig = img2.detach().clone()
 
-        # img0 = normalize(img0)
-        # img1 = normalize(img1)
-        # img2 = normalize(img2)
-
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
 
         # scale list augmentation
@@ -2690,15 +2683,6 @@ def main():
             training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
         else:
             training_scale = [8, 4, 2, 1]
-
-        # training_scale = [8, 5, 3, 2] if training_scale == [8, 4, 2, 1] else training_scale
-        # training_scale[0] = random.uniform(training_scale[0], training_scale[1])
-        # training_scale[1] = random.uniform(training_scale[1], training_scale[2])
-        # training_scale[2] = random.uniform(training_scale[2], training_scale[3])
-        # training_scale[3] = random.uniform(training_scale[1], 1)
-
-        # del img0, img1, img2, img0_orig, img1_orig, img2_orig
-        # continue
 
         data_time1 = time.time() - time_stamp
         time_stamp = time.time()
@@ -2721,79 +2705,48 @@ def main():
             gt = img1
             )
 
-        # continue
-        # flow_list, mask_list, conf_list, merged
         flow_list = result['flow_list']
         mask_list = result['mask_list']
         conf_list = result['conf_list']
 
-        flow_list_hpass = result.get('flow_list_hpass')
-        mask_list_hpass = result.get('mask_list_hpass')
-        conf_list_hpass = result.get('conf_list_hpass')
-        merged_hpass = result.get('merged_hpass')
+        loss = torch.zeros(1, device=device, requires_grad=True)
 
-        merged = result['merged']
-        gt_distill = result.get('gt_distill')
-        merged_distill = result.get('merged_distill')
-        flow_distill = result.get('flow_distill')
+        for i in range(len(flow_list)):
+            if flow_list[i] is not None:
+                scale = training_scale[i]
+                flow0 = flow_list[i][:, :2]
+                flow1 = flow_list[i][:, 2:4]
+                mask = mask_list[i]
+                conf = conf_list[i]
+                img0_scaled = torch.nn.functional.interpolate(img0_orig, scale_factor= 1. / scale, mode='bicubic')
+                img1_scaled = torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode='bicubic')
+                img2_scaled = torch.nn.functional.interpolate(img2_orig, scale_factor= 1. / scale, mode='bicubic')
+                mask_scaled = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode='bicubic')
+                conf_scaled = torch.nn.functional.interpolate(conf, scale_factor= 1. / scale, mode='bicubic')
+                flow0_scaled = torch.nn.functional.interpolate(flow0, scale_factor= 1. / scale, mode='bicubic') * 1. / scale
+                flow1_scaled = torch.nn.functional.interpolate(flow1, scale_factor= 1. / scale, mode='bicubic') * 1. / scale
+                result_scaled = warp(img0_scaled, flow0_scaled) * mask_scaled + warp(img2_scaled, flow1_scaled) * (1 - mask_scaled)
+                result1024 = torch.nn.functional.interpolate(result_scaled, size=(1024), mode='bicubic')
+                gt1024 = torch.nn.functional.interpolate(img1_scaled, size=(1024), mode='bicubic')
+                conf1024 = torch.nn.functional.interpolate(conf_scaled, size=(1024), mode='bicubic')
 
-        loss_custom = 0.
+                loss_l1_norm = criterion_l1(normalize(result1024), normalize(gt1024))
+                loss_lap = criterion_lap(result1024, gt1024)
+                loss_mask = variance_loss(mask, 0.1)
+                loss_conf = criterion_l1(conf1024, diffmatte(result1024, gt1024))
+                loss_lpips = float(torch.mean(loss_fn_alex(result1024 * 2 - 1, gt1024 * 2 - 1)).item())
 
-        if not flow_list_hpass:
-            flow0 = flow_list[-1][:, :2]
-            flow1 = flow_list[-1][:, 2:4]
-            mask = mask_list[-1]
-            conf = conf_list[-1]
-            output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
+                loss = loss + loss_l1_norm + loss_lap + 1e-2*loss_mask + 1e-2*loss_conf + 1e-2*loss_lpips
 
-        else:
-            flow0_hpass = flow_list_hpass[-1][:, :2]
-            flow1_hpass = flow_list_hpass[-1][:, 2:4]
-            mask_hpass = mask_list_hpass[-1]
-            conf_hpass = conf_list_hpass[-1]
-            output_hpass = warp(img0_orig, flow0_hpass) * mask_hpass + warp(img2_orig, flow1_hpass) * (1 - mask_hpass)
-
-            flow0 = flow_list[-1][:, :2]
-            flow1 = flow_list[-1][:, 2:4]
-            mask = mask_list[-1]
-            conf = conf_list[-1]
-            output_lowpass = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
-
-            output_clean = hpass(output_hpass) + blur(output_lowpass)
-            mask = (mask + mask_hpass) / 2
-            conf = (conf + conf_hpass) / 2
-
-            loss_custom = criterion_l1(blur(output_lowpass), blur(img1_orig)) + criterion_l1(hpass(output_hpass), hpass(img1_orig)) + criterion_lap(output_hpass, img1_orig)
-
-
-        loss_distill = 0.
-        loss_teacher = 0.
-        if gt_distill is not None:
-            loss_mask = ((merged[3] - gt_distill).abs().mean(1, True) > (merged_distill - gt_distill).abs().mean(1, True) + 0.01).float().detach()
-            loss_distill += (((flow_distill.detach() - flow_list[3]) ** 2).mean(1, True) ** 0.5 * loss_mask).mean()
-
-            output_teacher = warp(img0_orig, flow_distill[:, :2]) * mask + warp(img2_orig, flow_distill[:, 2:4]) * (1 - mask)
-            loss_teacher = criterion_l1(output_teacher, img1_orig) +  criterion_lap(output_teacher, img1_orig)
-
+        flow0 = flow_list[-1][:, :2]
+        flow1 = flow_list[-1][:, 2:4]
+        mask = mask_list[-1]
+        conf = conf_list[-1]
+        output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
         diff_matte = diffmatte(output_clean, img1_orig)
 
-        loss_mask = variance_loss(mask, 0.1)
-        loss_conf = criterion_l1(conf, diff_matte)
-
-        lpips_weight = 0.5
-
-        loss_deep_l1 = 0
-        for i in range(len(merged)):
-            if merged[i] is not None:
-                loss_deep_l1 = loss_deep_l1 + criterion_l1(merged[i], img1)
-
-        loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
-        # loss_weighted = (1 - lpips_weight ) * criterion_l1(output, img1) + lpips_weight * 0.2 * float(torch.mean(loss_LPIPS).item())
-        
-        loss_l1_norm = criterion_l1(normalize(output_clean), normalize(img1_orig))
+        loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)        
         loss_l1 = criterion_l1(output_clean, img1_orig)
-        loss_lap = criterion_lap(output_clean, img1_orig)
-        loss = loss_deep_l1 + loss_l1_norm + loss_lap + loss_custom + loss_teacher + 1e-2*loss_distill + 1e-3*loss_conf + 1e-2*loss_mask
 
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
@@ -2802,10 +2755,7 @@ def main():
         avg_lpips = float(torch.mean(loss_LPIPS).item()) if batch_idx == 0 else (avg_lpips * (batch_idx - 1) + float(torch.mean(loss_LPIPS).item())) / batch_idx
         avg_pnsr = float(psnr_torch(output_clean, img1_orig)) if batch_idx == 0 else (avg_pnsr * (batch_idx - 1) + float(psnr_torch(output_clean, img1_orig))) / batch_idx
 
-        loss = loss / accum_iter
         loss.backward()
-
-        # if ((batch_idx + 1) % accum_iter == 0) or (idx + 1 == len(dataset)):
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
 
         if platform.system() == 'Darwin':
