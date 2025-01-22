@@ -2683,7 +2683,7 @@ def main():
 
         training_scale = [5 if num == 8 else 3 if num == 4 else num for num in training_scale]
 
-        data_time1 = time.time() - time_stamp
+        data_time = time.time() - time_stamp
         time_stamp = time.time()
 
         flownet.train()
@@ -2708,7 +2708,7 @@ def main():
         mask_list = result['mask_list']
         conf_list = result['conf_list']
 
-        data_time = time.time() - time_stamp
+        model_time = time.time() - time_stamp
         time_stamp = time.time()
 
         loss = torch.zeros(1, device=device, requires_grad=True)
@@ -2959,9 +2959,9 @@ def main():
             del index, item
 
         data_time_str = str(f'{data_time:.2f}')
-        data_time1_str = str(f'{data_time1:.2f}')
-        data_time2_str = str(f'{data_time2:.2f}')
+        model_time_str = str(f'{model_time:.2f}')
         train_time_str = str(f'{train_time:.2f}')
+        data_time2_str = str(f'{data_time2:.2f}')
 
         epoch_time = time.time() - start_timestamp
         days = int(epoch_time // (24 * 3600))
@@ -2969,7 +2969,7 @@ def main():
         minutes = int((epoch_time % 3600) // 60)
 
         clear_lines(2)
-        print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{data_time1_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
+        print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{model_time_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
         print(f'\r[Epoch] Min L1: {min_l1:.6f} Avg L1: {avg_l1:.6f}, Max L1: {max_l1:.6f} LPIPS: {avg_lpips:.4f} Combined: {avg_loss:.8f}')
 
         '''
