@@ -3143,7 +3143,13 @@ def main():
             if args.all_gpus:
                 original_state_dict = convert_from_data_parallel(original_state_dict)
 
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+            elif torch.backends.mps.is_available():
+                torch.mps.synchronize()
+            
             flownet.cpu()
+
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()            
             elif torch.backends.mps.is_available():
