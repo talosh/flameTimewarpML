@@ -2726,15 +2726,23 @@ def main():
                 flow0_scaled = torch.nn.functional.interpolate(flow0, scale_factor= 1. / scale, mode='bicubic') * 1. / scale
                 flow1_scaled = torch.nn.functional.interpolate(flow1, scale_factor= 1. / scale, mode='bicubic') * 1. / scale
                 result_scaled = warp(img0_scaled, flow0_scaled) * mask_scaled + warp(img2_scaled, flow1_scaled) * (1 - mask_scaled)
+                
+                '''
                 result1024 = torch.nn.functional.interpolate(result_scaled, size=(1024), mode='bicubic')
                 gt1024 = torch.nn.functional.interpolate(img1_scaled, size=(1024), mode='bicubic')
                 conf1024 = torch.nn.functional.interpolate(conf_scaled, size=(1024), mode='bicubic')
-
                 loss_l1_norm = criterion_l1(normalize(result1024), normalize(gt1024))
                 loss_lap = criterion_lap(result1024, gt1024)
                 loss_mask = variance_loss(mask, 0.1)
                 loss_conf = criterion_l1(conf1024, diffmatte(result1024, gt1024))
                 loss_lpips = float(torch.mean(loss_fn_alex(result1024 * 2 - 1, gt1024 * 2 - 1)).item())
+                '''
+
+                loss_l1_norm = criterion_l1(normalize(result_scaled), normalize(img1_scaled))
+                loss_lap = criterion_lap(result_scaled, img1_scaled)
+                loss_mask = variance_loss(mask, 0.1)
+                loss_conf = criterion_l1(conf_scaled, diffmatte(result_scaled, img1_scaled))
+                loss_lpips = float(torch.mean(loss_fn_alex(result_scaled * 2 - 1, img1_scaled * 2 - 1)).item())
 
                 loss = loss + loss_l1_norm + loss_lap + 1e-2*loss_mask + 1e-2*loss_conf + 1e-2*loss_lpips
 
