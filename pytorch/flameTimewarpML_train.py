@@ -2643,9 +2643,6 @@ def main():
 
         img0, img1, img2, ratio, idx, current_desc = dataset[batch_idx]
 
-        data_time = time.time() - time_stamp
-        time_stamp = time.time()
-
         img0 = img0.to(device, non_blocking = True)
         img1 = img1.to(device, non_blocking = True)
         img2 = img2.to(device, non_blocking = True)
@@ -2684,6 +2681,8 @@ def main():
         else:
             training_scale = [8, 4, 2, 1]
 
+        training_scale = [5 if num == 8 else 3 if num == 4 else num for num in training_scale]
+
         data_time1 = time.time() - time_stamp
         time_stamp = time.time()
 
@@ -2708,6 +2707,9 @@ def main():
         flow_list = result['flow_list']
         mask_list = result['mask_list']
         conf_list = result['conf_list']
+
+        data_time = time.time() - time_stamp
+        time_stamp = time.time()
 
         loss = torch.zeros(1, device=device, requires_grad=True)
 
