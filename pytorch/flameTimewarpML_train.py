@@ -3305,6 +3305,11 @@ def main():
                                 }
                             )
 
+                        if torch.cuda.is_available():
+                            torch.cuda.synchronize()
+                        elif torch.backends.mps.is_available():
+                            torch.mps.synchronize()
+
                         del eval_img0, eval_img1, eval_img2, eval_img0_orig, eval_img2_orig
                         del eval_flow_list, eval_mask_list, eval_conf_list, eval_merged
                         del result, eval_result, eval_rgb_output_mask, eval_rgb_diff, eval_rgb_conf
