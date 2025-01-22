@@ -3373,10 +3373,10 @@ def main():
             read_eval_thread.join()
             del read_eval_image_queue
 
-        # End of evaluation block
+            if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                scheduler_flownet.step(avg_loss)
 
-        if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
-            scheduler_flownet.step(avg_loss)
+        # End of evaluation block
 
         batch_idx = batch_idx + 1
         step = step + 1
