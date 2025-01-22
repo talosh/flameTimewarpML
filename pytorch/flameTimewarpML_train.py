@@ -2717,8 +2717,8 @@ def main():
 
                 nn, nc, nh, nw = img0_orig.shape
                 sh, sw = round(nh * (1 / scale)), round(nw * (1 / scale))
-                sh += 2 - (sh % 2)
-                sw += 2 - (sw % 2)
+                sh += 4 - (sh % 4)
+                sw += 4 - (sw % 4)
 
                 flow0 = flow_list[i][:, :2]
                 flow1 = flow_list[i][:, 2:4]
