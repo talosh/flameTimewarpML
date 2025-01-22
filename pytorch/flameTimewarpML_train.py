@@ -2747,7 +2747,7 @@ def main():
         loss_l1 = criterion_l1(output_clean, img1_orig)
         loss_lap = criterion_lap(output_clean, img1_orig)
 
-        loss = loss + 4 * (loss_l1 + loss_lap) + 1e-2*float(torch.mean(loss_LPIPS).item())
+        loss = loss + 1e-2 * float(torch.mean(loss_LPIPS).item())
 
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
