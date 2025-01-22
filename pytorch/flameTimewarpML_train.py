@@ -2714,17 +2714,23 @@ def main():
         for i in range(len(flow_list)):
             if flow_list[i] is not None:
                 scale = training_scale[i]
+
+                nn, nc, nh, nw = img0_orig.shape
+                sh, sw = round(nh * (1 / scale)), round(nw * (1 / scale))
+                sh += 2 - (sh % 2)
+                sw += 2 - (sw % 2)
+
                 flow0 = flow_list[i][:, :2]
                 flow1 = flow_list[i][:, 2:4]
                 mask = mask_list[i]
                 conf = conf_list[i]
-                img0_scaled = torch.nn.functional.interpolate(img0_orig, scale_factor= 1. / scale, mode='bicubic')
-                img1_scaled = torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode='bicubic')
-                img2_scaled = torch.nn.functional.interpolate(img2_orig, scale_factor= 1. / scale, mode='bicubic')
-                mask_scaled = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode='bicubic')
-                conf_scaled = torch.nn.functional.interpolate(conf, scale_factor= 1. / scale, mode='bicubic')
-                flow0_scaled = torch.nn.functional.interpolate(flow0, scale_factor= 1. / scale, mode='bicubic') * 1. / scale
-                flow1_scaled = torch.nn.functional.interpolate(flow1, scale_factor= 1. / scale, mode='bicubic') * 1. / scale
+                img0_scaled = torch.nn.functional.interpolate(img0_orig, size=(sh, sw), mode='bicubic')
+                img1_scaled = torch.nn.functional.interpolate(img1_orig, size=(sh, sw), mode='bicubic')
+                img2_scaled = torch.nn.functional.interpolate(img2_orig, size=(sh, sw), mode='bicubic')
+                mask_scaled = torch.nn.functional.interpolate(mask, size=(sh, sw), mode='bicubic')
+                conf_scaled = torch.nn.functional.interpolate(conf, size=(sh, sw), mode='bicubic')
+                flow0_scaled = torch.nn.functional.interpolate(flow0, size=(sh, sw), mode='bicubic') * 1. / scale
+                flow1_scaled = torch.nn.functional.interpolate(flow1, size=(sh, sw), mode='bicubic') * 1. / scale
                 result_scaled = warp(img0_scaled, flow0_scaled) * mask_scaled + warp(img2_scaled, flow1_scaled) * (1 - mask_scaled)
                 
                 '''
