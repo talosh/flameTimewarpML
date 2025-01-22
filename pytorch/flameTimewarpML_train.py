@@ -2734,9 +2734,9 @@ def main():
                 loss_lap = criterion_lap(result1024, gt1024)
                 loss_mask = variance_loss(mask, 0.1)
                 loss_conf = criterion_l1(conf1024, diffmatte(result1024, gt1024))
-                loss_lpips = float(torch.mean(loss_fn_alex(result1024 * 2 - 1, gt1024 * 2 - 1)).item())
+                # loss_lpips = float(torch.mean(loss_fn_alex(result1024 * 2 - 1, gt1024 * 2 - 1)).item())
 
-                loss = loss + loss_l1_norm + loss_lap + 1e-2*loss_mask + 1e-2*loss_conf + 1e-2*loss_lpips
+                loss = loss + loss_l1_norm + loss_lap + 1e-2*loss_mask + 1e-2*loss_conf
 
         flow0 = flow_list[-1][:, :2]
         flow1 = flow_list[-1][:, 2:4]
@@ -2747,6 +2747,10 @@ def main():
 
         loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)        
         loss_l1 = criterion_l1(output_clean, img1_orig)
+        loss_lap = criterion_lap(output_clean, img1_orig)
+
+        loss = loss + loss_l1 + loss_lap + 1e-2*float(torch.mean(loss_LPIPS).item())
+
 
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
