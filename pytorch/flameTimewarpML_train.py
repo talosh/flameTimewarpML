@@ -2723,7 +2723,6 @@ def main():
                 output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
                 loss_l1 = criterion_l1(output_clean, img1_orig)
                 loss_mask = variance_loss(mask, 0.1)
-                loss_conf = criterion_l1(output_clean, diffmatte(output_clean, img1_orig))
 
                 # output_scaled = torch.nn.functional.interpolate(output, scale_factor= 1. / scale, mode='bilinear')
                 # img1_scaled = torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode='bilinear')
@@ -2757,6 +2756,7 @@ def main():
         diff_matte = diffmatte(output_clean, img1_orig)
         loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
         loss_lap = criterion_lap(output_clean, img1_orig)
+        loss_conf = criterion_l1(output_clean, diffmatte(output_clean, img1_orig))
         # loss_l1 = criterion_l1(output_clean, img1_orig)
         loss = loss + loss_l1 + loss_lap + 1e-2 * float(torch.mean(loss_LPIPS).item())
 
