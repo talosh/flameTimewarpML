@@ -2731,10 +2731,10 @@ def main():
                 gt1024 = torch.nn.functional.interpolate(img1_scaled, size=(1024), mode='bilinear')
                 conf1024 = torch.nn.functional.interpolate(conf_scaled, size=(1024), mode='bilinear')
                 loss_l1_norm = criterion_l1(normalize(result1024), normalize(gt1024))
-                loss_lap = criterion_lap(result1024, gt1024)
+                # loss_lap = criterion_lap(result1024, gt1024)
                 loss_mask = variance_loss(mask, 0.1)
                 loss_conf = criterion_l1(conf1024, diffmatte(result1024, gt1024))
-                # loss_lpips = float(torch.mean(loss_fn_alex(result1024 * 2 - 1, gt1024 * 2 - 1)).item())
+                loss_lpips = float(torch.mean(loss_fn_alex(result1024 * 2 - 1, gt1024 * 2 - 1)).item())
 
                 loss_l1_norm = criterion_l1(normalize(result_scaled), normalize(img1_scaled))
                 loss_lap = criterion_lap(result_scaled, img1_scaled)
@@ -2742,7 +2742,7 @@ def main():
                 loss_conf = criterion_l1(conf_scaled, diffmatte(result_scaled, img1_scaled))
                 loss_lpips = float(torch.mean(loss_fn_alex(result_scaled * 2 - 1, img1_scaled * 2 - 1)).item())
 
-                loss = loss + loss_l1_norm + loss_lap + 1e-2*loss_mask + 1e-2*loss_conf # + 1e-2*loss_lpips
+                loss = loss + loss_l1_norm + 1e-2*loss_mask + 1e-2*loss_conf + 1e-2*loss_lpips
 
         flow0 = flow_list[-1][:, :2]
         flow1 = flow_list[-1][:, 2:4]
