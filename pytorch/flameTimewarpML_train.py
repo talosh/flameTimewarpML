@@ -2713,6 +2713,7 @@ def main():
 
         loss = torch.zeros(1, device=device, requires_grad=True)
 
+        '''
         for i in range(len(flow_list)):
             if flow_list[i] is not None:
                 scale = training_scale[i]
@@ -2737,6 +2738,7 @@ def main():
                 loss_mask = variance_loss(mask, 0.1)
                 loss_conf = criterion_l1(conf1024, diffmatte(result1024, gt1024))
                 loss = loss + loss_l1_norm + loss_lap + 1e-2*loss_mask + 1e-2*loss_conf
+        '''
 
         flow0 = flow_list[-1][:, :2]
         flow1 = flow_list[-1][:, 2:4]
