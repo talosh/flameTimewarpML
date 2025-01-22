@@ -2721,8 +2721,10 @@ def main():
                 mask = mask_list[i]
                 conf = conf_list[i]
                 output = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
-                output_scaled = torch.nn.functional.interpolate(output, scale_factor= 1. / scale, mode='bilinear')
-                img1_scaled = torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode='bilinear')
+                loss_l1_norm = criterion_l1(normalize(output), normalize(img1_orig))
+
+                # output_scaled = torch.nn.functional.interpolate(output, scale_factor= 1. / scale, mode='bilinear')
+                # img1_scaled = torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode='bilinear')
 
                 '''
                 img0_scaled = torch.nn.functional.interpolate(img0_orig, scale_factor= 1. / scale, mode='bilinear')
