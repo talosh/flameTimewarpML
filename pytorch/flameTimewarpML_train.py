@@ -2715,13 +2715,15 @@ def main():
 
         for i in range(len(flow_list)):
             if flow_list[i] is not None:
-                # scale = training_scale[i]
+                scale = training_scale[i]
                 flow0 = flow_list[i][:, :2]
                 flow1 = flow_list[i][:, 2:4]
                 mask = mask_list[i]
                 conf = conf_list[i]
                 output = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
-                
+                output_scaled = torch.nn.functional.interpolate(output, scale_factor= 1. / scale, mode='bilinear')
+                img1_scaled = torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode='bilinear')
+
                 '''
                 img0_scaled = torch.nn.functional.interpolate(img0_orig, scale_factor= 1. / scale, mode='bilinear')
                 img1_scaled = torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode='bilinear')
