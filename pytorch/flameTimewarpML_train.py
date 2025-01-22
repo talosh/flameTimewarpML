@@ -2726,35 +2726,6 @@ def main():
                 loss_conf = criterion_l1(conf, diffmatte(output_clean, img1_orig))
                 loss = loss + loss_l1 + 1e-2*loss_mask + 1e-2*loss_conf
 
-                # output_scaled = torch.nn.functional.interpolate(output, scale_factor= 1. / scale, mode='bilinear')
-                # img1_scaled = torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode='bilinear')
-
-                '''
-                img0_scaled = torch.nn.functional.interpolate(img0_orig, scale_factor= 1. / scale, mode='bilinear')
-                img1_scaled = torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode='bilinear')
-                img2_scaled = torch.nn.functional.interpolate(img2_orig, scale_factor= 1. / scale, mode='bilinear')
-                mask_scaled = torch.nn.functional.interpolate(mask, scale_factor= 1. / scale, mode='bilinear')
-                conf_scaled = torch.nn.functional.interpolate(conf, scale_factor= 1. / scale, mode='bilinear')
-                flow0_scaled = torch.nn.functional.interpolate(flow0, scale_factor= 1. / scale, mode='bilinear') * 1. / scale
-                flow1_scaled = torch.nn.functional.interpolate(flow1, scale_factor= 1. / scale, mode='bilinear') * 1. / scale
-                result_scaled = warp(img0_scaled, flow0_scaled) * mask_scaled + warp(img2_scaled, flow1_scaled) * (1 - mask_scaled)
-                
-                result1024 = torch.nn.functional.interpolate(result_scaled, size=(1024), mode='bilinear')
-                gt1024 = torch.nn.functional.interpolate(img1_scaled, size=(1024), mode='bilinear')
-                conf1024 = torch.nn.functional.interpolate(conf_scaled, size=(1024), mode='bilinear')
-                loss_l1_norm = criterion_l1(normalize(result1024), normalize(gt1024))
-                loss_lap = criterion_lap(result1024, gt1024)
-                loss_mask = variance_loss(mask, 0.1)
-                loss_conf = criterion_l1(conf1024, diffmatte(result1024, gt1024))
-                loss = loss + loss_l1_norm + loss_lap + 1e-2*loss_mask + 1e-2*loss_conf
-                '''
-        '''
-        flow0 = flow_list[-1][:, :2]
-        flow1 = flow_list[-1][:, 2:4]
-        mask = mask_list[-1]
-        conf = conf_list[-1]
-        output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
-        '''
         diff_matte = diffmatte(output_clean, img1_orig)
         loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
         loss_lap = criterion_lap(output_clean, img1_orig)
