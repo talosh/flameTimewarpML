@@ -2994,8 +2994,9 @@ def main():
                 append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.csv', row)
 
             psnr = 0
-            if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                scheduler_flownet.step(avg_loss)
+            if args.eval == 0:
+                if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                    scheduler_flownet.step(avg_loss)
 
             min_l1 = float(sys.float_info.max)
             max_l1 = 0
@@ -3308,7 +3309,7 @@ def main():
             del read_eval_image_queue
 
             if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                scheduler_flownet.step(avg_loss)
+                scheduler_flownet.step(eval_loss_avg)
 
         # End of evaluation block
 
