@@ -2715,16 +2715,21 @@ def main():
 
         for i in range(len(flow_list)):
             if flow_list[i] is not None:
-                # scale = training_scale[i]
+                scale = training_scale[i]
                 flow0 = flow_list[i][:, :2]
                 flow1 = flow_list[i][:, 2:4]
                 mask = mask_list[i]
                 conf = conf_list[i]
                 output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
-                loss_l1 = criterion_l1(output_clean, img1_orig)
                 loss_mask = variance_loss(mask, 0.1)
                 loss_conf = criterion_l1(conf, diffmatte(output_clean, img1_orig))
+                loss_l1 = criterion_l1(
+                    torch.nn.functional.interpolate(output_clean, scale_factor= 1. / scale, mode="bilinear", align_corners=False),
+                    torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    )
+                
                 loss = loss + loss_l1 + 1e-2*loss_mask + 1e-2*loss_conf
+
 
         diff_matte = diffmatte(output_clean, img1_orig)
         loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
