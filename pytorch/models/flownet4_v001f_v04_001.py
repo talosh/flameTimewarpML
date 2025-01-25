@@ -445,6 +445,7 @@ class Model:
                     img1_scaled = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
                     img0_scaled = torch.nn.functional.pad(img0_scaled, padding)
                     img1_scaled = torch.nn.functional.pad(img1_scaled, padding)
+                    flow = torch.nn.functional.pad(flow, padding)
 
                     f0xf = encode_xf(img0_scaled)
                     f1xf = encode_xf(img1_scaled)
