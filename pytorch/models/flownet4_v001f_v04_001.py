@@ -450,7 +450,7 @@ class Model:
                     f1xf = encode_xf(img1_scaled)
                     imgs_scaled = torch.cat((img0_scaled, img1_scaled), 1)
                     imgs_scaled = normalize(imgs_scaled, 0, 1) * 2 - 1
-                    xf = torch.cat((to_freq(imgs_scaled), f0xf, f1xf), 1)
+                    xf = torch.cat((to_freq(imgs_scaled), f0xf, f1xf, to_freq(flow)), 1)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
@@ -500,8 +500,8 @@ class Model:
                 super().__init__()
                 self.block0 = FlownetDeepDualHead(6+20+1+2, 6+20+1+2+4, c=192) # images + feat + timestep + lingrid
                 # self.block1 = FlownetDeepDualHead(6+20+1+1+2+1+4, 12+20+1, c=144) # Flownet(6+20+1+1+1+4, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
-                self.block2 = FlownetDeepDualHead(6+20+1+1+2+1+4, 12+20+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
-                self.block3 = FlownetDeepDualHead(6+20+1+1+2+1+4, 12+20+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block2 = FlownetDeepDualHead(6+20+1+1+2+1+4+8, 12+20+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block3 = FlownetDeepDualHead(6+20+1+1+2+1+4+8, 12+20+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
                 self.blockf = FlownetLT(11, c=48)
                 self.encode = Head()
                 self.encode_xf = HeadF()
