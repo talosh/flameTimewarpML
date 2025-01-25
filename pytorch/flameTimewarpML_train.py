@@ -2726,7 +2726,7 @@ def main():
                 loss_l1 = criterion_l1(
                     torch.nn.functional.interpolate(output_clean, scale_factor= 1. / scale, mode="bilinear", align_corners=False),
                     torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                    )
+                    ) * scale
                 
                 loss = loss + loss_l1 + 1e-2*loss_mask + 1e-2*loss_conf
 
