@@ -2728,13 +2728,13 @@ def main():
                     torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
                     ) * scale
                 loss_lap = criterion_lap(
-                    torch.nn.functional.interpolate(output_clean, scale_factor= 1. / scale, mode="bilinear", align_corners=False),
-                    torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                    ) * scale
+                    output_clean,
+                    img1_orig
+                    )
                 loss = loss + loss_l1 + loss_lap + 1e-2*loss_mask + 1e-2*loss_conf
 
         diff_matte = diffmatte(output_clean, img1_orig)
-        loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
+        loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)        
         # loss_l1 = criterion_l1(output_clean, img1_orig)
         loss = loss + loss_l1 + loss_lap + 1e-2 * float(torch.mean(loss_LPIPS).item())
 
