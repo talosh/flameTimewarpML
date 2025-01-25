@@ -458,7 +458,7 @@ class Model:
                     f1xf = encode_xf(img1_scaled)
                     imgs_scaled = torch.cat((img0_scaled, img1_scaled, merged_scaled), 1)
                     imgs_scaled = normalize(imgs_scaled, 0, 1) * 2 - 1
-                    xf = torch.cat((to_freq(imgs_scaled), f0xf, f1xf, to_freq(flow), to_freq(mask)), 1)
+                    xf = torch.cat((to_freq(imgs_scaled), f0xf, f1xf, to_freq(flow), to_freq(mask_scaled)), 1)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
