@@ -434,8 +434,8 @@ class Model:
                 else:
                     mask = torch.sigmoid(mask)
                     conf = torch.sigmoid(conf)
-                    merged = warp(img0, flow[:, :2]) * mask + warp(img1, flow[:, 2:4]) * (1 - mask)
-                    imgs = torch.cat((img0, img1, merged), 1)
+                    # merged = warp(img0, flow[:, :2]) * mask + warp(img1, flow[:, 2:4]) * (1 - mask)
+                    imgs = torch.cat((img0, img1), 1)
                     imgs = normalize(imgs, 0, 1) * 2 - 1
                     x = torch.cat((imgs, f0, f1, mask, conf), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
@@ -508,8 +508,8 @@ class Model:
                 super().__init__()
                 self.block0 = FlownetDeepDualHead(6+20+1+2, 6+20+1+2+4, c=192) # images + feat + timestep + lingrid
                 # self.block1 = FlownetDeepDualHead(6+20+1+1+2+1+4, 12+20+1, c=144) # Flownet(6+20+1+1+1+4, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
-                self.block2 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
-                self.block3 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block2 = FlownetDeepDualHead(6+20+1+1+2+1+4, 12+20+8+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block3 = FlownetDeepDualHead(6+20+1+1+2+1+4, 12+20+8+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
                 self.blockf = FlownetLT(11, c=48)
                 self.encode = Head()
                 self.encode_xf = HeadF()
