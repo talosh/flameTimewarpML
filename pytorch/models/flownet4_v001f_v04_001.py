@@ -445,7 +445,7 @@ class Model:
                     delta = torch.abs(torch.max(flow) - torch.min(flow))
                     flow_noise = torch.rand_like(flow) * delta
                     # flow = flow + torch.randn_like(flow) * min(sh, sw) * 1e-2
-                    x = torch.cat((x, flow + 1e-2 * scale * flow_noise), 1)
+                    x = torch.cat((x, flow + 1e-1 * scale * flow_noise), 1)
                     
                     x = torch.nn.functional.pad(x, padding)
 
