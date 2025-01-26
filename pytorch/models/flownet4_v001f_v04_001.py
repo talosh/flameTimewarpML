@@ -440,10 +440,13 @@ class Model:
                     x = torch.cat((imgs, f0, f1, mask, conf), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
+                    # x = torch.cat((x, flow), 1)
+
                     delta = torch.abs(torch.max(flow) - torch.min(flow))
                     flow_noise = torch.rand_like(flow) * delta
                     # flow = flow + torch.randn_like(flow) * min(sh, sw) * 1e-2
                     x = torch.cat((x, flow + 1e-2 * scale * flow_noise), 1)
+                    
                     x = torch.nn.functional.pad(x, padding)
 
                     img0_scaled = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
