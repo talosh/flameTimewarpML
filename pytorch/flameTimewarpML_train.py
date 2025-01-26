@@ -2336,10 +2336,17 @@ def main():
             param.requires_grad = False
         for param in flownet.module.block0.parameters():
             param.requires_grad = False
+        for param in flownet.module.blockf.parameters():
+            param.requires_grad = False
+        
+        '''
         for param in flownet.module.block1.parameters():
             param.requires_grad = False
         for param in flownet.module.block2.parameters():
             param.requires_grad = False
+        '''
+
+
         '''
         for param in flownet.module.block3.parameters():
             param.requires_grad = False
