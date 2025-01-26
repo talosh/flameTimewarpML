@@ -345,9 +345,9 @@ class Model:
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
                 self.conv0 = conv(in_planes, c//2, 3, 2, 1)
-                self.conv0f = conv(in_planes_fx, c, 3, 2, 1)
+                self.conv0f = conv(in_planes_fx, c//2, 3, 2, 1)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
-                self.conv1f = conv(c, c, 3, 2, 1)
+                self.conv1f = conv(c//2, c, 3, 2, 1)
                 self.conv2f = conv(c, cd, 3, 2, 1)
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
@@ -446,19 +446,19 @@ class Model:
 
                     img0_scaled = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
                     img1_scaled = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
-                    merged_scaled = torch.nn.functional.interpolate(merged, size=(sh, sw), mode="bicubic", align_corners=False)
-                    mask_scaled = torch.nn.functional.interpolate(mask, size=(sh, sw), mode="bicubic", align_corners=False)
+                    # merged_scaled = torch.nn.functional.interpolate(merged, size=(sh, sw), mode="bicubic", align_corners=False)
+                    # mask_scaled = torch.nn.functional.interpolate(mask, size=(sh, sw), mode="bicubic", align_corners=False)
                     img0_scaled = torch.nn.functional.pad(img0_scaled, padding)
                     img1_scaled = torch.nn.functional.pad(img1_scaled, padding)
-                    merged_scaled = torch.nn.functional.pad(merged_scaled, padding)
-                    mask_scaled = torch.nn.functional.pad(mask_scaled, padding)
+                    # merged_scaled = torch.nn.functional.pad(merged_scaled, padding)
+                    # mask_scaled = torch.nn.functional.pad(mask_scaled, padding)
                     flow = torch.nn.functional.pad(flow, padding)
 
                     f0xf = encode_xf(img0_scaled)
                     f1xf = encode_xf(img1_scaled)
-                    imgs_scaled = torch.cat((img0_scaled, img1_scaled, merged_scaled), 1)
+                    imgs_scaled = torch.cat((img0_scaled, img1_scaled), 1)
                     imgs_scaled = normalize(imgs_scaled, 0, 1) * 2 - 1
-                    xf = torch.cat((to_freq(imgs_scaled), f0xf, f1xf, to_freq(flow), to_freq(mask_scaled)), 1)
+                    xf = torch.cat((to_freq(imgs_scaled), f0xf, f1xf, to_freq(flow)), 1)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
@@ -508,8 +508,8 @@ class Model:
                 super().__init__()
                 self.block0 = FlownetDeepDualHead(6+20+1+2, 6+20+1+2+4, c=192) # images + feat + timestep + lingrid
                 # self.block1 = FlownetDeepDualHead(6+20+1+1+2+1+4, 12+20+1, c=144) # Flownet(6+20+1+1+1+4, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
-                self.block2 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 18+20+8+2+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
-                self.block3 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 18+20+8+2+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block2 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block3 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+2+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
                 self.blockf = FlownetLT(11, c=48)
                 self.encode = Head()
                 self.encode_xf = HeadF()
