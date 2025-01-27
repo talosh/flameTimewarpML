@@ -443,14 +443,16 @@ class Model:
                     delta = 1e-2 * (sh + sw) / 2
                     if iteration == 0:
                         for i in range(4):
-                            flow = flow + (1. / ((i + 1)**2)) * delta * torch.randn_like(flow) 
-
+                            flow = flow + (1. / ((i + 1)**2)) * delta * torch.randn_like(flow)
+                    
                     # delta = torch.abs(torch.max(flow) - torch.min(flow))
                     # flow_noise = torch.rand_like(flow) * delta
                     # flow = flow + torch.randn_like(flow) * min(sh, sw) * 1e-2
                     x = torch.cat((x, flow), 1)
                     
                     x = torch.nn.functional.pad(x, padding)
+                    iteration = (x[:, :1].clone() * 0 + 1) * (1 / ((iteration + 1) ** 2))
+                    x = torch.cat((x, iteration), 1)
 
                     img0_scaled = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
                     img1_scaled = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
@@ -474,9 +476,8 @@ class Model:
                 tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
-                iteration = (tenGrid[:, :1].clone() * 0 + 1) * (1 / ((iteration + 1) ** 2))
 
-                x = torch.cat((x, timestep, iteration, tenGrid), 1)
+                x = torch.cat((x, timestep, tenGrid), 1)
                 xf = torch.cat((xf, timestep), 1)
 
                 feat = self.conv0(x)
