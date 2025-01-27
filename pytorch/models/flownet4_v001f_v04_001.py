@@ -440,9 +440,10 @@ class Model:
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
 
                     # add noise on fisrt iteration:
+                    delta = 1e-2 * (sh + sw) / 2
                     if iteration == 0:
                         for i in range(4):
-                            flow = flow + (1. / (i + 1)) * 4 * torch.randn_like(flow) 
+                            flow = flow + (1. / (i + 1)) * delta * torch.randn_like(flow) 
 
                     # delta = torch.abs(torch.max(flow) - torch.min(flow))
                     # flow_noise = torch.rand_like(flow) * delta
