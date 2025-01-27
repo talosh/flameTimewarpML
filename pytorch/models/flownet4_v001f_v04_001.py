@@ -474,8 +474,9 @@ class Model:
                 tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
+                iteration = (tenGrid[:, :1].clone() * 0 + 1) * (1 / ((iteration + 1) ** 2))
 
-                x = torch.cat((x, timestep, tenGrid), 1)
+                x = torch.cat((x, timestep, iteration, tenGrid), 1)
                 xf = torch.cat((xf, timestep), 1)
 
                 feat = self.conv0(x)
