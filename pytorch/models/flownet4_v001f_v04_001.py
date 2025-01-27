@@ -441,7 +441,7 @@ class Model:
 
                     # add noise on fisrt iteration:
                     if iteration == 0:
-                        for i in range(10):
+                        for i in range(4):
                             flow = flow + (1. / (i + 1)) * scale * torch.randn_like(flow) 
 
                     # delta = torch.abs(torch.max(flow) - torch.min(flow))
