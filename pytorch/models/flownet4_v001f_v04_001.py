@@ -521,9 +521,9 @@ class Model:
                 self.encode = Head()
                 self.encode_xf = HeadF()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=10, gt=None):
+            def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=4, gt=None):
 
-                iterations = 10
+                iterations = 4
 
                 # src_dtype = img0.dtype
                 # img0 = img0.float()
