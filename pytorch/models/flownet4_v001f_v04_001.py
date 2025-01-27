@@ -515,10 +515,9 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeepDualHead(6+20+1+2, 6+20+1+2+4, c=192) # images + feat + timestep + lingrid
-                # self.block1 = FlownetDeepDualHead(6+20+1+1+2+1+4, 12+20+1, c=144) # Flownet(6+20+1+1+1+4, c=144)  # images + feat + timestep + lingrid + mask + conf + flow
-                self.block2 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
-                self.block3 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
-                self.blockf = FlownetLT(11, c=48)
+                self.block1 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block2 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block3 = FlownetLT(11, c=48)
                 self.encode = Head()
                 self.encode_xf = HeadF()
 
@@ -555,7 +554,7 @@ class Model:
                 # '''
                 flow_clean = flow.clone()
                 for i in range(iterations):
-                    flow, mask, conf = self.block2(
+                    flow, mask, conf = self.block1(
                         img0, 
                         img1, 
                         f0, 
@@ -576,7 +575,7 @@ class Model:
 
                 flow_clean = flow.clone()
                 for i in range(iterations):
-                    flow, mask, conf = self.block3(
+                    flow, mask, conf = self.block2(
                         img0, 
                         img1, 
                         f0, 
@@ -596,7 +595,7 @@ class Model:
                 mask_list[2] = torch.sigmoid(mask.clone())
                 # merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
-                flow_d, mask_d, conf_d = self.blockf(img0, img1, timestep, mask, conf, flow, scale=scale[3])
+                flow_d, mask_d, conf_d = self.block3(img0, img1, timestep, mask, conf, flow, scale=scale[3])
                 flow = flow + flow_d
                 mask = mask + mask_d
                 conf = conf + conf_d
