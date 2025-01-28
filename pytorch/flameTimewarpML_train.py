@@ -2635,7 +2635,7 @@ def main():
     avg_lpips = 0
     avg_loss = 0
 
-    cur_size = 96
+    cur_size = 4
     cur_l1 = None
     cur_comb = None
     cur_lpips = None
@@ -2759,6 +2759,9 @@ def main():
             cur_l1 = np.full(cur_size, float(loss_l1.item()))
         if cur_lpips is None:
             cur_lpips = np.full(cur_size, float(torch.mean(loss_LPIPS).item()))
+
+        print (cur_l1)
+        print ('\n\n')
 
         cur_idx = np.random.choice(cur_size)
         cur_comb[cur_idx] = float(loss.item())
