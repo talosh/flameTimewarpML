@@ -2774,6 +2774,10 @@ def main():
         avg_lpips = float(torch.mean(loss_LPIPS).item()) if batch_idx == 0 else (avg_lpips * (batch_idx - 1) + float(torch.mean(loss_LPIPS).item())) / batch_idx
         avg_pnsr = float(psnr_torch(output_clean, img1_orig)) if batch_idx == 0 else (avg_pnsr * (batch_idx - 1) + float(psnr_torch(output_clean, img1_orig))) / batch_idx
 
+        cur_comb[cur_mask] = avg_loss
+        cur_l1[cur_mask] = avg_l1
+        cur_lpips[cur_mask] = avg_lpips
+
         loss.backward()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
 
