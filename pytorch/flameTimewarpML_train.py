@@ -1934,6 +1934,17 @@ def blur(img):
     gkernel = gkernel.to(device=img.device, dtype=img.dtype)
     return conv_gauss(img, gkernel)
 
+def compress(x):
+    src_dtype = x.dtype
+    x = x.float()
+    scale = torch.tanh(torch.tensor(1.0))
+    x = torch.where(
+        (x >= -1) & (x <= 1), scale * x,
+        torch.tanh(x)
+    )
+    x = (x + 1) / 2
+    x = x.to(dtype = src_dtype)
+    return x
 
 current_state_dict = {}
 
@@ -2845,7 +2856,7 @@ def main():
             write_model_state_queue.put(deepcopy(current_state_dict))
 
         if step % args.preview == 1:
-            rgb_source1 = img0_orig
+            rgb_source1 = compress(img0_orig * 2 - 1) # img0_orig
             rgb_source2 = img2_orig
             rgb_target = img1_orig
             rgb_output = output_clean
