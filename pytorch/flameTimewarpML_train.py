@@ -2635,7 +2635,7 @@ def main():
     avg_lpips = 0
     avg_loss = 0
 
-    cur_size = 48
+    cur_size = 100
     cur_l1 = None
     cur_comb = None
     cur_lpips = None
@@ -2986,7 +2986,7 @@ def main():
 
         clear_lines(2)
         print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{model_time_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
-        print(f'\r[Epoch] Min L1:{min_l1:.6f} Avg L1:{avg_l1:.6f} Max L1:{max_l1:.6f} [Last {cur_size}] L1:{np.mean(cur_l1):.6f} LPIPS:{np.mean(cur_lpips):.4f} Combined:{np.mean(cur_comb):.8f}')
+        print(f'\r[Epoch] Min L1:{min_l1:.6f} Avg L1:{avg_l1:.6f} Max L1:{max_l1:.6f} [Last{cur_size}] L1:{np.mean(cur_l1):.6f} LPIPS:{np.mean(cur_lpips):.4f} Combined:{np.mean(cur_comb):.8f}')
 
         '''
         if len(stats) < 9999:
