@@ -2635,7 +2635,7 @@ def main():
     avg_lpips = 0
     avg_loss = 0
 
-    cur_size = 96
+    cur_size = 48
     cur_l1 = None
     cur_comb = None
     cur_lpips = None
