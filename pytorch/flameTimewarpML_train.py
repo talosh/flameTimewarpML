@@ -2984,9 +2984,10 @@ def main():
         hours = int((epoch_time % (24 * 3600)) // 3600)
         minutes = int((epoch_time % 3600) // 60)
 
-        clear_lines(2)
+        clear_lines(3)
         print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{model_time_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
-        print(f'\r[Epoch] MinL1: {min_l1:.6f} AvgL1: {avg_l1:.6f} MaxL1: {max_l1:.6f} [Last{cur_size}] L1: {np.mean(cur_l1):.6f} LPIPS: {np.mean(cur_lpips):.4f} Combined: {np.mean(cur_comb):.8f}')
+        print(f'\r[Epoch] Min L1: {min_l1:.6f} Avg L1: {avg_l1:.6f} Max L1: {max_l1:.6f} Avg LPIPS: {avg_lpips:.4f}')
+        print(f'\r[Last {cur_size} samples] L1: {np.mean(cur_l1):.6f} LPIPS: {np.mean(cur_lpips):.4f} Combined: {np.mean(cur_comb):.8f}')
 
         '''
         if len(stats) < 9999:
