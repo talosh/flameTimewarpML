@@ -558,7 +558,7 @@ class Model:
                 # fm = self.encode(merged[0])
                 # fmxf = self.encode_xf(merged[0])
                 # '''
-                flow_clean = flow.clone()
+                flow_clean = flow_list[0]
                 for i in range(iterations):
                     flow, mask, conf = self.block1(
                         img0, 
@@ -579,7 +579,7 @@ class Model:
                 mask_list[1] = torch.sigmoid(mask.clone())
                 # merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
-                flow_clean = flow.clone()
+                flow_clean = flow_list[1]
                 for i in range(iterations):
                     flow, mask, conf = self.block2(
                         img0, 
