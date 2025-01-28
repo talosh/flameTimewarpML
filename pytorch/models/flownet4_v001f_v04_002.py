@@ -6,8 +6,8 @@
 class Model:
 
     info = {
-        'name': 'Flownet4_v001f_v04_001',
-        'file': 'flownet4_v001f_v04_001.py',
+        'name': 'Flownet4_v001f_v04_002',
+        'file': 'flownet4_v001f_v04_002.py',
         'ratio_support': True
     }
 
@@ -405,7 +405,7 @@ class Model:
                 )
                 self.maxdepth = 8
 
-            def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1, encode_xf=None):
+            def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, flow_clean=None, scale=1, encode_xf=None, iteration=0):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
@@ -438,20 +438,38 @@ class Model:
                     x = torch.cat((imgs, f0, f1, mask, conf), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
+
+                    # add noise on fisrt iteration:
+                    delta = 1e-2 * (sh + sw) / 2
+                    if iteration == 0:
+                        for i in range(4):
+                            flow = flow + (1. / ((i + 1)**2)) * delta * torch.randn_like(flow)
+                    
+                    # delta = torch.abs(torch.max(flow) - torch.min(flow))
+                    # flow_noise = torch.rand_like(flow) * delta
+                    # flow = flow + torch.randn_like(flow) * min(sh, sw) * 1e-2
                     x = torch.cat((x, flow), 1)
+                    
                     x = torch.nn.functional.pad(x, padding)
+                    iteration = (x[:, :1].clone() * 0 + 1) * (1 / ((iteration + 1) ** 2))
+                    x = torch.cat((x, iteration), 1)
 
                     img0_scaled = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
                     img1_scaled = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
+                    # merged_scaled = torch.nn.functional.interpolate(merged, size=(sh, sw), mode="bicubic", align_corners=False)
+                    # mask_scaled = torch.nn.functional.interpolate(mask, size=(sh, sw), mode="bicubic", align_corners=False)
                     img0_scaled = torch.nn.functional.pad(img0_scaled, padding)
                     img1_scaled = torch.nn.functional.pad(img1_scaled, padding)
-                    flow = torch.nn.functional.pad(flow, padding)
+                    # merged_scaled = torch.nn.functional.pad(merged_scaled, padding)
+                    # mask_scaled = torch.nn.functional.pad(mask_scaled, padding)
+                    flow_clean = torch.nn.functional.interpolate(flow_clean, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
+                    flow_clean = torch.nn.functional.pad(flow_clean, padding)
 
                     f0xf = encode_xf(img0_scaled)
                     f1xf = encode_xf(img1_scaled)
                     imgs_scaled = torch.cat((img0_scaled, img1_scaled), 1)
                     imgs_scaled = normalize(imgs_scaled, 0, 1) * 2 - 1
-                    xf = torch.cat((to_freq(imgs_scaled), f0xf, f1xf, to_freq(flow)), 1)
+                    xf = torch.cat((to_freq(imgs_scaled), f0xf, f1xf, to_freq(flow_clean)), 1)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
@@ -500,8 +518,8 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeepDualHead(6+20+1+2, 6+20+1+2+4, c=192) # images + feat + timestep + lingrid
-                self.block1 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
-                self.block2 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block1 = FlownetDeepDualHead(6+3+20+1+1+2+1+4+1, 12+20+8+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block2 = FlownetDeepDualHead(6+3+20+1+1+2+1+4+1, 12+20+8+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
                 self.block3 = FlownetLT(11, c=48)
                 self.encode = Head()
                 self.encode_xf = HeadF()
@@ -540,35 +558,42 @@ class Model:
                 # fm = self.encode(merged[0])
                 # fmxf = self.encode_xf(merged[0])
                 # '''
-                flow, mask, conf = self.block1(
-                    img0, 
-                    img1, 
-                    f0, 
-                    f1, 
-                    timestep, 
-                    mask, 
-                    conf, 
-                    flow,
-                    scale=scale[1], 
-                    encode_xf=self.encode_xf)
+                flow_clean = flow_list[0]
+                for i in range(iterations):
+                    flow, mask, conf = self.block1(
+                        img0, 
+                        img1, 
+                        f0, 
+                        f1, 
+                        timestep, 
+                        mask, 
+                        conf, 
+                        flow,
+                        flow_clean = flow_clean,
+                        scale=scale[1], 
+                        encode_xf=self.encode_xf,
+                        iteration = i)
 
                 flow_list[1] = flow.clone()
                 conf_list[1] = torch.sigmoid(conf.clone())
                 mask_list[1] = torch.sigmoid(mask.clone())
                 # merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
-                flow, mask, conf = self.block2(
-                    img0, 
-                    img1, 
-                    f0, 
-                    f1, 
-                    timestep, 
-                    mask, 
-                    conf, 
-                    flow,
-                    scale=scale[1], 
-                    encode_xf=self.encode_xf)
-                
+                flow_clean = flow_list[1]
+                for i in range(iterations):
+                    flow, mask, conf = self.block2(
+                        img0, 
+                        img1, 
+                        f0, 
+                        f1, 
+                        timestep, 
+                        mask, 
+                        conf, 
+                        flow,
+                        flow_clean = flow_clean,
+                        scale=scale[1], 
+                        encode_xf=self.encode_xf,
+                        iteration = i)
                 # flow, mask, conf = self.block3(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[2], encode_xf=self.encode_xf)
 
                 flow_list[2] = flow.clone()
