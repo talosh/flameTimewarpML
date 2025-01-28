@@ -2635,6 +2635,11 @@ def main():
     avg_lpips = 0
     avg_loss = 0
 
+    curr_avg_size = 48
+    curr_l1 = None
+    curr_comb = None
+    curr_lpips = None
+
     repeat_count = dataset.repeat_count if dataset.repeat_count > 0 else 1
     preview_maxmin_steps = args.preview_maxmin_steps if args.preview_maxmin_steps < len(dataset)*repeat_count else len(dataset)*repeat_count
     max_values = MaxNValues(n=args.preview_max if args.preview_max else 10)
@@ -2747,6 +2752,22 @@ def main():
         loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)        
         # loss_l1 = criterion_l1(output_clean, img1_orig)
         loss = loss + loss_l1 + loss_lap + 1e-2 * float(torch.mean(loss_LPIPS).item())
+
+        if curr_comb is None:
+            curr_comb = np.full(curr_avg_size, float(loss.item()))
+        else:
+            curr_comb[np.random.choice(len(curr_comb))] = float(loss.item())
+
+        if curr_l1 is None:
+            curr_l1 = np.full(curr_avg_size, float(loss_l1.item()))
+        else:
+            curr_l1[np.random.choice(len(curr_l1))] = float(loss_l1.item())
+
+        if curr_lpips is None:
+            curr_lpips = np.full(curr_avg_size, float(torch.mean(loss_LPIPS).item()))
+        else:
+            curr_lpips[np.random.choice(len(curr_lpips))] = float(torch.mean(loss_LPIPS).item())
+
 
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
@@ -2969,7 +2990,7 @@ def main():
 
         clear_lines(2)
         print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{model_time_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
-        print(f'\r[Epoch] Min L1: {min_l1:.6f} Avg L1: {avg_l1:.6f}, Max L1: {max_l1:.6f} LPIPS: {avg_lpips:.4f} Combined: {avg_loss:.8f}')
+        print(f'\r[Epoch] Min L1: {min_l1:.6f} Avg L1: {avg_l1:.6f} Max L1: {max_l1:.6f} L1: {np.median(curr_l1):.6f} LPIPS: {np.median(curr_lpips):.4f} Combined: {np.median(curr_comb):.8f}')
 
         '''
         if len(stats) < 9999:
