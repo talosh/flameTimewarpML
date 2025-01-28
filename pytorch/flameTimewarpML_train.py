@@ -2674,14 +2674,15 @@ def main():
         img1 = img1.to(device, non_blocking = True)
         img2 = img2.to(device, non_blocking = True)
 
-        scale_augm = random.uniform(1, 3)        
-        nn, nc, nh, nw = img0.shape
-        sh, sw = round(nh * (1 / scale_augm)), round(nw * (1 / scale_augm))
-        sh += 4 - (sh % 4)
-        sw += 4 - (sw % 4)
-        img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
-        img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
-        img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=False)
+        if random.uniform(0, 1) > 0.44:
+            scale_augm = random.uniform(1, 3)        
+            nn, nc, nh, nw = img0.shape
+            sh, sw = round(nh * (1 / scale_augm)), round(nw * (1 / scale_augm))
+            sh += 4 - (sh % 4)
+            sw += 4 - (sw % 4)
+            img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
+            img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
+            img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=False)
 
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
