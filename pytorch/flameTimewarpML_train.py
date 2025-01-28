@@ -2762,6 +2762,7 @@ def main():
             cur_lpips = np.full(cur_size, float(torch.mean(loss_LPIPS).item()))
 
         cur_idx = np.random.choice(cur_size)
+        cur_mask[cur_idx] = False
         cur_comb[cur_idx] = float(loss.item())
         cur_l1[cur_idx] = float(loss_l1.item())
         cur_lpips[cur_idx] = float(torch.mean(loss_LPIPS).item())
