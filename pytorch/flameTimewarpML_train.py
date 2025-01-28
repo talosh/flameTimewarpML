@@ -2636,6 +2636,7 @@ def main():
     avg_loss = 0
 
     cur_size = 10000
+    cur_mask = np.full(cur_size, True)
     cur_l1 = None
     cur_comb = None
     cur_lpips = None
