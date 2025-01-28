@@ -2856,7 +2856,7 @@ def main():
             write_model_state_queue.put(deepcopy(current_state_dict))
 
         if step % args.preview == 1:
-            rgb_source1 = compress(img0_orig * 2 - 1) # img0_orig
+            rgb_source1 = img0_orig
             rgb_source2 = img2_orig
             rgb_target = img1_orig
             rgb_output = output_clean
