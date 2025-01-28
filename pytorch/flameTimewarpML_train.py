@@ -2754,7 +2754,7 @@ def main():
         loss = loss + loss_l1 + loss_lap + 1e-2 * float(torch.mean(loss_LPIPS).item())
 
         if cur_comb is None:
-            curr_comb = np.full(cur_size, float(loss.item()))
+            cur_comb = np.full(cur_size, float(loss.item()))
         if cur_l1 is None:
             cur_l1 = np.full(cur_size, float(loss_l1.item()))
         if cur_lpips is None:
