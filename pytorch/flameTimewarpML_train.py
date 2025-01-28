@@ -3133,6 +3133,8 @@ def main():
                 evalnet.half()
 
             evalnet.eval()
+            print ()
+
             with torch.no_grad():
                 # for ev_item_index, description in enumerate(descriptions):
                 description = read_eval_image_queue.get()
@@ -3161,8 +3163,8 @@ def main():
                     hours = int((epoch_time % (24 * 3600)) // 3600)
                     minutes = int((epoch_time % 3600) // 60)
 
-                    clear_lines(2)
-                    print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{train_time_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
+                    clear_lines(1)
+                    # print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{train_time_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
                     print (f'\rEvaluating {ev_item_index} of {len(descriptions)}: Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f} LPIPS: {eval_lpips_mean:.4f} PSNR: {eval_psnr_mean:4f}')
 
                     try:
@@ -3317,7 +3319,7 @@ def main():
             for eval_row in eval_rows_to_append:
                 append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.eval.csv', eval_row)
 
-            clear_lines(2)
+            clear_lines(3)
             print(f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Eval Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f}, [PSNR] {eval_psnr_mean:.4f}, [LPIPS] {eval_lpips_mean:.4f}')
             print ('\n')
 
