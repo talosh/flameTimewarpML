@@ -2768,7 +2768,6 @@ def main():
         else:
             curr_lpips[np.random.choice(len(curr_lpips))] = float(torch.mean(loss_LPIPS).item())
 
-
         min_l1 = min(min_l1, float(loss_l1.item()))
         max_l1 = max(max_l1, float(loss_l1.item()))
         avg_loss = float(loss.item()) if batch_idx == 0 else (avg_loss * (batch_idx - 1) + float(loss.item())) / batch_idx 
