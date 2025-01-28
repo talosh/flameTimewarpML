@@ -2723,11 +2723,6 @@ def main():
                 img0 += torch.rand_like(img0) * delta
                 img2 += torch.rand_like(img1) * delta
 
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()            
-        elif torch.backends.mps.is_available():
-            torch.mps.empty_cache()
-
         result = flownet(
             img0,
             img2,
@@ -2736,11 +2731,6 @@ def main():
             iterations = args.iterations,
             gt = img1
             )
-
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()            
-        elif torch.backends.mps.is_available():
-            torch.mps.empty_cache()
 
         flow_list = result['flow_list']
         mask_list = result['mask_list']
