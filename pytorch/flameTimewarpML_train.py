@@ -2674,7 +2674,7 @@ def main():
         img1 = img1.to(device, non_blocking = True)
         img2 = img2.to(device, non_blocking = True)
 
-        if random.uniform(0, 1) > 0.44:
+        if random.uniform(0, 1) > 0.25:
             scale_augm = random.uniform(1, 3)        
             nn, nc, nh, nw = img0.shape
             sh, sw = round(nh * (1 / scale_augm)), round(nw * (1 / scale_augm))
