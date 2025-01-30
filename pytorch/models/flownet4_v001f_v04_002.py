@@ -451,8 +451,8 @@ class Model:
                     x = torch.cat((x, flow), 1)
                     
                     x = torch.nn.functional.pad(x, padding)
-                    # iteration = (x[:, :1].clone() * 0 + 1) * (1 / ((iteration + 1) ** 2))
-                    # x = torch.cat((x, iteration), 1)
+                    iteration = (x[:, :1].clone() * 0 + 1) * (1 / ((iteration + 1) ** 2))
+                    x = torch.cat((x, iteration), 1)
 
                     img0_scaled = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
                     img1_scaled = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
@@ -518,8 +518,8 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeepDualHead(6+20+1+2, 6+20+1+2+4, c=192) # images + feat + timestep + lingrid
-                self.block1 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
-                self.block2 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block1 = FlownetDeepDualHead(6+3+20+1+1+2+1+4+1, 12+20+8+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
+                self.block2 = FlownetDeepDualHead(6+3+20+1+1+2+1+4+1, 12+20+8+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
                 self.block3 = FlownetLT(11, c=48)
                 self.encode = Head()
                 self.encode_xf = HeadF()
