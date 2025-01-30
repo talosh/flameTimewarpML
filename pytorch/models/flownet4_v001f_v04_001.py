@@ -567,7 +567,7 @@ class Model:
                     mask, 
                     conf, 
                     flow,
-                    scale=scale[1], 
+                    scale=scale[2], 
                     encode_xf=self.encode_xf)
                 
                 # flow, mask, conf = self.block3(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[2], encode_xf=self.encode_xf)
