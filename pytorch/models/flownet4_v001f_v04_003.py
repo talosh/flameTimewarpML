@@ -6,8 +6,8 @@
 class Model:
 
     info = {
-        'name': 'Flownet4_v001f_v04_002',
-        'file': 'flownet4_v001f_v04_002.py',
+        'name': 'Flownet4_v001f_v04_003',
+        'file': 'flownet4_v001f_v04_003.py',
         'ratio_support': True
     }
 
@@ -440,10 +440,10 @@ class Model:
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
 
                     # add noise on fisrt iteration:
-                    # delta = 1e-2 * (sh + sw) / 2
-                    # if iteration == 0:
-                    #    for i in range(4):
-                    #        flow = flow + (1. / ((i + 1)**2)) * delta * torch.randn_like(flow)
+                    delta = 1e-2 * (sh + sw) / 2
+                    if iteration == 0:
+                        for i in range(4):
+                            flow = flow + (1. / ((i + 1)**2)) * delta * torch.randn_like(flow)
                     
                     # delta = torch.abs(torch.max(flow) - torch.min(flow))
                     # flow_noise = torch.rand_like(flow) * delta
@@ -559,22 +559,7 @@ class Model:
                 # fmxf = self.encode_xf(merged[0])
                 # '''
                 flow_clean = flow_list[0]
-                for i in range(iterations - 1):
-                    with torch.no_grad():
-                        flow, mask, conf = self.block1(
-                            img0, 
-                            img1, 
-                            f0, 
-                            f1, 
-                            timestep, 
-                            mask, 
-                            conf, 
-                            flow,
-                            flow_clean = flow_clean,
-                            scale=scale[1], 
-                            encode_xf=self.encode_xf,
-                            iteration = i)
-                        
+                for i in range(iterations):
                     flow, mask, conf = self.block1(
                         img0, 
                         img1, 
@@ -587,8 +572,7 @@ class Model:
                         flow_clean = flow_clean,
                         scale=scale[1], 
                         encode_xf=self.encode_xf,
-                        iteration = iterations - 1)
-
+                        iteration = i)
 
                 flow_list[1] = flow.clone()
                 conf_list[1] = torch.sigmoid(conf.clone())
@@ -596,23 +580,8 @@ class Model:
                 # merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
                 flow_clean = flow_list[1]
-                for i in range(iterations - 1):
-                    with torch.no_grad():
-                        flow, mask, conf = self.block2(
-                            img0, 
-                            img1, 
-                            f0, 
-                            f1, 
-                            timestep, 
-                            mask, 
-                            conf, 
-                            flow,
-                            flow_clean = flow_clean,
-                            scale=scale[1], 
-                            encode_xf=self.encode_xf,
-                            iteration = i)
-
-                    flow, mask, conf = self.block1(
+                for i in range(iterations):
+                    flow, mask, conf = self.block2(
                         img0, 
                         img1, 
                         f0, 
@@ -624,8 +593,7 @@ class Model:
                         flow_clean = flow_clean,
                         scale=scale[1], 
                         encode_xf=self.encode_xf,
-                        iteration = iterations - 1)
-
+                        iteration = i)
                 # flow, mask, conf = self.block3(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[2], encode_xf=self.encode_xf)
 
                 flow_list[2] = flow.clone()
