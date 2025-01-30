@@ -608,7 +608,7 @@ class Model:
                             conf, 
                             flow,
                             flow_clean = flow_clean,
-                            scale=scale[1], 
+                            scale=scale[2], 
                             encode_xf=self.encode_xf,
                             iteration = i)
 
@@ -622,7 +622,7 @@ class Model:
                         conf, 
                         flow,
                         flow_clean = flow_clean,
-                        scale=scale[1], 
+                        scale=scale[2], 
                         encode_xf=self.encode_xf,
                         iteration = iterations - 1)
 

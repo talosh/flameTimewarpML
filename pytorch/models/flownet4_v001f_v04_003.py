@@ -559,7 +559,22 @@ class Model:
                 # fmxf = self.encode_xf(merged[0])
                 # '''
                 flow_clean = flow_list[0]
-                for i in range(iterations):
+                for i in range(iterations - 1):
+                    with torch.no_grad():
+                        flow, mask, conf = self.block1(
+                            img0, 
+                            img1, 
+                            f0, 
+                            f1, 
+                            timestep, 
+                            mask, 
+                            conf, 
+                            flow,
+                            flow_clean = flow_clean,
+                            scale=scale[1], 
+                            encode_xf=self.encode_xf,
+                            iteration = i)
+
                     flow, mask, conf = self.block1(
                         img0, 
                         img1, 
@@ -572,7 +587,7 @@ class Model:
                         flow_clean = flow_clean,
                         scale=scale[1], 
                         encode_xf=self.encode_xf,
-                        iteration = i)
+                        iteration = iterations - 1)
 
                 flow_list[1] = flow.clone()
                 conf_list[1] = torch.sigmoid(conf.clone())
@@ -580,20 +595,36 @@ class Model:
                 # merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
 
                 flow_clean = flow_list[1]
-                for i in range(iterations):
-                    flow, mask, conf = self.block2(
-                        img0, 
-                        img1, 
-                        f0, 
-                        f1, 
-                        timestep, 
-                        mask, 
-                        conf, 
-                        flow,
-                        flow_clean = flow_clean,
-                        scale=scale[1], 
-                        encode_xf=self.encode_xf,
-                        iteration = i)
+                for i in range(iterations - 1):
+                    with torch.no_grad():
+                        flow, mask, conf = self.block2(
+                            img0, 
+                            img1, 
+                            f0, 
+                            f1, 
+                            timestep, 
+                            mask, 
+                            conf, 
+                            flow,
+                            flow_clean = flow_clean,
+                            scale=scale[2], 
+                            encode_xf=self.encode_xf,
+                            iteration = i)
+                        
+                    flow, mask, conf = self.block1(
+                    img0, 
+                    img1, 
+                    f0, 
+                    f1, 
+                    timestep, 
+                    mask, 
+                    conf, 
+                    flow,
+                    flow_clean = flow_clean,
+                    scale=scale[2], 
+                    encode_xf=self.encode_xf,
+                    iteration = iterations - 1)
+
                 # flow, mask, conf = self.block3(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[2], encode_xf=self.encode_xf)
 
                 flow_list[2] = flow.clone()
