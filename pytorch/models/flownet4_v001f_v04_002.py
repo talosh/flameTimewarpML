@@ -345,9 +345,9 @@ class Model:
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
                 self.conv0 = conv(in_planes, c//2, 3, 2, 1)
-                self.conv0f = conv(in_planes_fx, c//2, 3, 2, 1)
+                self.conv0f = conv(in_planes_fx, c, 3, 2, 1)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
-                self.conv1f = conv(c//2, c, 3, 2, 1)
+                self.conv1f = conv(c, c, 3, 2, 1)
                 self.conv2f = conv(c, cd, 3, 2, 1)
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
