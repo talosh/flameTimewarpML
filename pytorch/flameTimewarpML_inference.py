@@ -460,7 +460,6 @@ class Timewarp():
             print (k)
         print (f'{self.json_info}')
         '''
-
         self.source_folder = self.json_info.get('input')
         self.target_folder = self.json_info.get('output')
         self.clip_name = self.json_info.get('clip_name')
