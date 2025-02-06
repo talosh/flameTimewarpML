@@ -387,7 +387,7 @@ class Model:
                 )
                 
                 self.mix1 = ResConvMix(c, cd*2)
-                self.mix2 = ResConvMix(c, cd//2)
+                self.mix2 = ResConvMix(c, cd*2)
                 self.mix3 = ResConvMix(c//2, cd)
                 self.revmix1 = ResConvRevMix(c//2, cd)
                 self.revmix2 = ResConvRevMix(c//2, cd)
