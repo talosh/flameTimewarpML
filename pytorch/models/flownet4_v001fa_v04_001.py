@@ -230,7 +230,7 @@ class Model:
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x, x_deep):
-                return self.relu(self.conv(x_deep) * self.beta + self.conv0(to_spat(x)))
+                return self.relu(self.conv1(x_deep) * self.beta + self.conv0(to_spat(x)))
 
         class DownMixToSpat(Module):
             def __init__(self, c, cd):
