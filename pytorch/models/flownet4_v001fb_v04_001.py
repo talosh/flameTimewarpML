@@ -405,13 +405,13 @@ class Model:
                 # self.lastconv = LastConv(c, 6)
                 self.lastconv = torch.nn.Sequential(
                     # torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-                    torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-                    torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.Conv2d(c//2, 6, kernel_size=3, stride=1, padding=1),
-                    # torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    # torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
+                    # torch.nn.LeakyReLU(0.2, True),
+                    # torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+                    # torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
+                    # torch.nn.LeakyReLU(0.2, True),
+                    # torch.nn.Conv2d(c//2, 6, kernel_size=3, stride=1, padding=1),
+                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     # torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
