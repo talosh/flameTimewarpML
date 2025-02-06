@@ -6,8 +6,8 @@
 class Model:
 
     info = {
-        'name': 'Flownet4_v001fb_v04_001',
-        'file': 'flownet4_v001fb_v04_001.py',
+        'name': 'Flownet4_v001fc_v04_001',
+        'file': 'flownet4_v001fc_v04_001.py',
         'ratio_support': True
     }
 
@@ -356,8 +356,8 @@ class Model:
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
                 self.conv0 = conv(in_planes, c//2, 3, 2, 1)
-                self.conv0f = conv(in_planes_fx, c, 3, 2, 1)
-                self.conv1 = conv(c//2, c, 3, 2, 1)
+                self.conv0f = conv(in_planes_fx, c, 3, 1, 1)
+                self.conv1 = conv(c//2, c, 3, 1, 1)
                 self.conv1f = conv(c, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
                 self.convblock1 = torch.nn.Sequential(
@@ -404,14 +404,14 @@ class Model:
                 self.revmix2 = DownMixToSpat(c, cd)
                 # self.lastconv = LastConv(c, 6)
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+                    # torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
                     torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
                     torch.nn.LeakyReLU(0.2, True),
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-                    torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
+                    # torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+                    torch.nn.ConvTranspose2d(c//2, c//2, 4, 2, 1),
+                    # torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
+                    # torch.nn.LeakyReLU(0.2, True),
                     torch.nn.Conv2d(c//2, 6, kernel_size=3, stride=1, padding=1),
-                    # torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     # torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
