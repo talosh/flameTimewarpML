@@ -224,13 +224,13 @@ class Model:
         class UpMixToSpat(Module):
             def __init__(self, c, cd):
                 super().__init__()
-                self.conv0 = torch.nn.Conv2d(c//2, c, 3, 1, 1)
-                self.conv1 = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
+                # self.conv0 = torch.nn.Conv2d(c//2, c, 3, 1, 1)
+                self.conv = torch.nn.ConvTranspose2d(cd, c//2, 4, 2, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x, x_deep):
-                return self.relu(self.conv1(x_deep) * self.beta + self.conv0(to_spat(x)))
+                return self.relu(self.conv1(x_deep) * self.beta + to_spat(x))
 
         class DownMixToSpat(Module):
             def __init__(self, c, cd):
@@ -376,10 +376,10 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock_last = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConv(c//2),
+                    ResConv(c//2),
+                    ResConv(c//2),
+                    ResConv(c//2),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
                     ResConv(cd),
@@ -405,7 +405,7 @@ class Model:
                 # self.lastconv = LastConv(c, 6)
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-                    torch.nn.Conv2d(c, c//2, 3, 1, 1),
+                    torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
                     torch.nn.LeakyReLU(0.2, True),
                     torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
                     torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
