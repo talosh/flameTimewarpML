@@ -411,7 +411,7 @@ class Model:
                     # torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
                     # torch.nn.LeakyReLU(0.2, True),
                     # torch.nn.Conv2d(c//2, 6, kernel_size=3, stride=1, padding=1),
-                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c//2, 4*6, 4, 2, 1),
                     # torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
