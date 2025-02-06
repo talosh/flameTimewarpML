@@ -348,7 +348,7 @@ class Model:
                 self.conv0f = conv(in_planes_fx, c//2, 3, 2, 1)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv1f = conv(c//2, c, 3, 2, 1)
-                self.conv2f = conv(c, cd, 3, 2, 1)
+                self.conv2 = conv(c, cd, 3, 2, 1)
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
@@ -365,10 +365,10 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock_last = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConv(c//2),
+                    ResConv(c//2),
+                    ResConv(c//2),
+                    ResConv(c//2),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
                     ResConv(cd),
@@ -386,15 +386,15 @@ class Model:
                     ResConv(cd),
                 )
                 
-                self.mix1 = ResConvMix(c, cd//2)
+                self.mix1 = ResConvMix(c, cd*2)
                 self.mix2 = ResConvMix(c, cd//2)
-                self.mix3 = ResConvMix(c, cd//2)
-                self.revmix1 = ResConvRevMix(2*c, cd)
-                self.revmix2 = ResConvRevMix(2*c, cd)
+                self.mix3 = ResConvMix(c//2, cd)
+                self.revmix1 = ResConvRevMix(c//2, cd)
+                self.revmix2 = ResConvRevMix(c//2, cd)
                 # self.lastconv = LastConv(c, 6)
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-                    torch.nn.Conv2d(c, c//2, 3, 1, 1),
+                    torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
                     torch.nn.LeakyReLU(0.2, True),
                     torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
                     torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
@@ -462,29 +462,29 @@ class Model:
                 x = torch.cat((x, timestep, tenGrid), 1)
                 xf = torch.cat((xf, timestep), 1)
 
-                feat = self.conv0(x)
-                feat_deep = self.conv0f(xf)
-                feat_deep = self.conv1f(feat_deep)
-                feat_deep = self.conv2f(feat_deep)
+                feat = self.conv0f(xf)
+                feat_deep = self.conv0(x)
+                feat_deep = self.conv1(feat_deep)
+                feat_deep = self.conv2(feat_deep)
 
                 # potential attention or insertion here
-                feat = self.conv1(feat)
+                feat = self.conv1f(feat)
                 feat = self.convblock1(feat)
                 feat_deep = self.convblock_deep1(feat_deep)
 
-                feat = self.mix1(feat, to_spat(feat_deep))
-                feat_deep = self.revmix1(to_freq(feat), feat_deep)
+                feat = self.mix1(feat, to_freq(feat_deep))
+                feat_deep = self.revmix1(to_spat(feat), feat_deep)
 
                 feat = self.convblock2(feat)
                 feat_deep = self.convblock_deep2(feat_deep)
 
-                feat = self.mix2(feat, to_spat(feat_deep))
-                feat_deep = self.revmix2(to_freq(feat), feat_deep)
+                feat = self.mix2(feat, to_freq(feat_deep))
+                feat_deep = self.revmix2(to_spat(feat), feat_deep)
 
                 feat = self.convblock3(feat)
                 feat_deep = self.convblock_deep3(feat_deep)
 
-                feat = self.mix3(feat, to_spat(feat_deep))
+                feat = self.mix3(to_spat(feat), feat_deep)
                 feat = self.convblock_last(feat)
                 feat = self.lastconv(feat)
                 feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
