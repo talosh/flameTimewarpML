@@ -476,7 +476,7 @@ class Model:
                 feat = self.conv0f(xf)
                 feat_deep = self.conv0(x)
                 feat_deep = self.conv1(feat_deep)
-                # feat_deep = self.conv2(feat_deep)
+                feat_deep = self.conv2(feat_deep)
 
                 # potential attention or insertion here
                 feat = self.conv1f(feat)
