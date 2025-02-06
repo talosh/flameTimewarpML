@@ -224,7 +224,7 @@ class Model:
         class UpMixToSpat(Module):
             def __init__(self, c, cd):
                 super().__init__()
-                self.conv0 = torch.nn.ConvTranspose2d(c//2, c, 4, 2, 1)
+                self.conv0 = torch.nn.Conv2d(c//2, c, 3, 1, 1)
                 self.conv1 = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
