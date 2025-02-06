@@ -484,18 +484,18 @@ class Model:
                 feat_deep = self.convblock_deep1(feat_deep)
 
                 feat = self.mix1(feat, feat_deep)
-                feat_deep = self.revmix1(to_spat(feat), feat_deep)
+                feat_deep = self.revmix1(feat, feat_deep)
 
                 feat = self.convblock2(feat)
                 feat_deep = self.convblock_deep2(feat_deep)
 
-                feat = self.mix2(feat, to_freq(feat_deep))
-                feat_deep = self.revmix2(to_spat(feat), feat_deep)
+                feat = self.mix2(feat, feat_deep)
+                feat_deep = self.revmix2(feat, feat_deep)
 
                 feat = self.convblock3(feat)
                 feat_deep = self.convblock_deep3(feat_deep)
 
-                feat = self.mix3(to_spat(feat), feat_deep)
+                feat = self.mix3(feat, feat_deep)
                 feat = self.convblock_last(feat)
                 feat = self.lastconv(feat)
                 feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
