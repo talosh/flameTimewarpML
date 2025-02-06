@@ -404,9 +404,9 @@ class Model:
                 self.revmix2 = DownMixToSpat(c, cd)
                 # self.lastconv = LastConv(c, 6)
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-                    torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
+                    # torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+                    # torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
+                    # torch.nn.LeakyReLU(0.2, True),
                     torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
                     torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
                     torch.nn.LeakyReLU(0.2, True),
