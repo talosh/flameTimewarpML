@@ -167,7 +167,7 @@ class Model:
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x):
-                xf = self.cnn0f(to_freq(x * 2 - 1))
+                xf = self.cnn0f(to_freq(x / x.mean() - 1))
                 xf = self.relu(xf)
                 xf = self.cnn1f(xf)
                 xf = self.relu(xf)
