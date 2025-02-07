@@ -168,7 +168,8 @@ class Model:
 
             def forward(self, x):
                 x = x * 2 - 1
-                xf = self.cnn0f(to_freq(x / x.mean() - 1))
+                x = x - x.mean()
+                xf = self.cnn0f(to_freq(x))
                 xf = self.relu(xf)
                 xf = self.cnn1f(xf)
                 xf = self.relu(xf)
