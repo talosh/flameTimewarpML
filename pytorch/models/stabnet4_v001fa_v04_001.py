@@ -393,7 +393,7 @@ class Model:
                 )
                 self.maxdepth = 8
 
-            def forward(self, img0, img1, f0, f1, scale=1, encode_xf=None):
+            def forward(self, img0, img1, f0, f1, flow=None, scale=1, encode_xf=None):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
