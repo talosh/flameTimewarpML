@@ -445,10 +445,7 @@ class Model:
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
-                timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
-
-                x = torch.cat((x, timestep, tenGrid), 1)
-                xf = torch.cat((xf, timestep), 1)
+                x = torch.cat((x, tenGrid), 1)
 
                 feat = self.conv0f(xf)
                 feat_deep = self.conv0(x)
@@ -482,7 +479,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepDualHead(6+20+1+2, 6+20+1+2+4, c=96) # images + feat + timestep + lingrid
+                self.block0 = FlownetDeepDualHead(6+20+2, 6+20+2+4, c=96) # images + feat + timestep + lingrid
                 # self.block1 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
                 # self.block2 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
                 # self.block3 = FlownetLT(11, c=48)
@@ -496,7 +493,7 @@ class Model:
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 
-                flow = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=1, encode_xf=self.encode_xf)
+                flow = self.block0(img0, img1, f0, f1, scale=1, encode_xf=self.encode_xf)
 
                 result = {
                     'flow_list': [flow]
