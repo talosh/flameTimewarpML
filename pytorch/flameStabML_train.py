@@ -2409,6 +2409,7 @@ def main():
 
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
 
+        '''
         # scale list augmentation
         random_scales = [
             [4, 4, 2, 1],
@@ -2427,8 +2428,9 @@ def main():
             training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
         else:
             training_scale = [8, 4, 2, 1]
+        '''
 
-        training_scale = [5 if num == 8 else 3 if num == 4 else num for num in training_scale]
+        training_scale = [1]
 
         data_time = time.time() - time_stamp
         time_stamp = time.time()
