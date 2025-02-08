@@ -2458,6 +2458,18 @@ def main():
 
         loss = torch.zeros(1, device=device, requires_grad=True)
 
+        output_clean = warp(img1_orig, flow_list[0])
+        loss_l1 = criterion_l1(
+            output_clean,
+            img0_orig,
+            )
+        loss_lap = criterion_lap(
+            output_clean,
+            img0_orig
+            )
+        loss = loss + loss_l1 + loss_lap
+
+        '''
         for i in range(len(flow_list)):
             if flow_list[i] is not None:
                 scale = training_scale[i]
@@ -2471,6 +2483,7 @@ def main():
                     img0_orig
                     )
                 loss = loss + loss_l1 + loss_lap
+        '''
 
         loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img0_orig * 2 - 1)        
         loss = loss + loss_l1 + loss_lap + 1e-2 * float(torch.mean(loss_LPIPS).item())
@@ -2586,7 +2599,7 @@ def main():
             )
 
             del rgb_source, rgb_target, rgb_output
-            
+
         current_desc['loss'] = float(loss.item())
         current_desc['loss_l1'] = float(loss_l1.item())
         current_desc['lpips'] = float(torch.mean(loss_LPIPS).item())
