@@ -1733,7 +1733,7 @@ def main():
 
     if args.model:
         model_name = args.model
-        Flownet = find_and_import_model(base_name='flownet', model_name=model_name)            
+        Flownet = find_and_import_model(base_name='stabnet', model_name=model_name)            
     else:
         # Find and initialize model
         if args.state_file and os.path.isfile(args.state_file):
