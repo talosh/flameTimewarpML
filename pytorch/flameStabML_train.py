@@ -2585,8 +2585,8 @@ def main():
                 }
             )
 
-            del rgb_source1, rgb_source2, rgb_target, rgb_output1, rgb_output2
-
+            del rgb_source, rgb_target, rgb_output
+            
         current_desc['loss'] = float(loss.item())
         current_desc['loss_l1'] = float(loss_l1.item())
         current_desc['lpips'] = float(torch.mean(loss_LPIPS).item())
