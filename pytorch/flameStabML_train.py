@@ -2589,7 +2589,7 @@ def main():
                     'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                     'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                     'sample_output1': rgb_output1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output2': rgb_output1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_output2': rgb_output2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                 }
             )
 
