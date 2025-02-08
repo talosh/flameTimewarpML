@@ -473,7 +473,7 @@ class Model:
                 feat = self.convblock_last(feat)
                 feat = self.lastconv(feat)
                 feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
-                flow = feat[:, :4] * scale
+                flow = feat * scale
                 return flow
 
         class FlownetCas(Module):
