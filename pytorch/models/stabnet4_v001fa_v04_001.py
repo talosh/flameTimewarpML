@@ -210,12 +210,14 @@ class Model:
             def __init__(self, c, cd):
                 super().__init__()
                 # self.conv0 = torch.nn.Conv2d(c//2, c, 3, 1, 1)
-                self.conv = torch.nn.ConvTranspose2d(cd, c//2, 4, 2, 1)
+                self.conv0 = torch.nn.ConvTranspose2d(cd, c//2, 4, 2, 1)
+                self.conv1 = torch.nn.ConvTranspose2d(c//2, c//2, 4, 2, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c//2, 1, 1)), requires_grad=True)
+                self.gamma = torch.nn.Parameter(torch.ones((1, c//2, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x, x_deep):
-                return self.relu(self.conv(x_deep) * self.beta + to_spat(x))
+                return self.relu(self.conv(x_deep) * self.beta + self.conv1(to_spat(x)) * self.gamma)
 
         class DownMixToSpat(Module):
             def __init__(self, c, cd):
