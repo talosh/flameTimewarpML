@@ -1826,10 +1826,8 @@ def main():
                 if not os.path.isdir(preview_folder):
                     os.makedirs(preview_folder)
                 write_exr(write_data['sample_target'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_A_target.exr'), half_float = True)
-                write_exr(write_data['sample_output1'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_B_output1.exr'), half_float = True)
-                write_exr(write_data['sample_output2'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_C_output2.exr'), half_float = True)
-                write_exr(write_data['sample_source1'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_D_src1.exr'), half_float = True)
-                write_exr(write_data['sample_source2'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_E_src2.exr'), half_float = True)
+                write_exr(write_data['sample_output'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_B_output.exr'), half_float = True)
+                write_exr(write_data['sample_source'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_D_src.exr'), half_float = True)
                 del write_data
             except:
             # except queue.Empty:
@@ -2445,70 +2443,64 @@ def main():
                 img1 += torch.rand_like(img1) * delta
                 img2 += torch.rand_like(img2) * delta
 
-        timgs = [img1, img2]
-        timgs_orig = [img1_orig, img2_orig]
-        output = []
+        result = flownet(
+            img0,
+            img1,
+            scale=training_scale,
+            iterations = args.iterations,
+            gt = None
+            )
 
-        for tindx in range(2):
-            result = flownet(
-                img0,
-                timgs[tindx],
-                scale=training_scale,
-                iterations = args.iterations,
-                gt = None
-                )
+        flow_list = result['flow_list']
 
-            flow_list = result['flow_list']
+        model_time = time.time() - time_stamp
+        time_stamp = time.time()
 
-            model_time = time.time() - time_stamp
-            time_stamp = time.time()
+        loss = torch.zeros(1, device=device, requires_grad=True)
 
-            loss = torch.zeros(1, device=device, requires_grad=True)
+        for i in range(len(flow_list)):
+            if flow_list[i] is not None:
+                scale = training_scale[i]
+                output_clean = warp(img1_orig, flow_list[i])
+                loss_l1 = criterion_l1(
+                    torch.nn.functional.interpolate(output_clean, scale_factor= 1. / scale, mode="bilinear", align_corners=False),
+                    torch.nn.functional.interpolate(img0_orig, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    ) * scale
+                loss_lap = criterion_lap(
+                    output_clean,
+                    img0_orig
+                    )
+                loss = loss + loss_l1 + loss_lap
 
-            for i in range(len(flow_list)):
-                if flow_list[i] is not None:
-                    scale = training_scale[i]
-                    output_clean = warp(timgs_orig[tindx], flow_list[i])
-                    loss_l1 = criterion_l1(
-                        torch.nn.functional.interpolate(output_clean, scale_factor= 1. / scale, mode="bilinear", align_corners=False),
-                        torch.nn.functional.interpolate(img0_orig, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                        ) * scale
-                    loss_lap = criterion_lap(
-                        output_clean,
-                        img0_orig
-                        )
-                    loss = loss + loss_l1 + loss_lap
+        loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img0_orig * 2 - 1)        
+        loss = loss + loss_l1 + loss_lap + 1e-2 * float(torch.mean(loss_LPIPS).item())
 
-            loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img0_orig * 2 - 1)        
-            loss = loss + loss_l1 + loss_lap + 1e-2 * float(torch.mean(loss_LPIPS).item())
-            output.append(output_clean)
+        if cur_comb is None:
+            cur_comb = np.full(cur_size, float(loss.item()))
+        if cur_l1 is None:
+            cur_l1 = np.full(cur_size, float(loss_l1.item()))
+        if cur_lpips is None:
+            cur_lpips = np.full(cur_size, float(torch.mean(loss_LPIPS).item()))
 
-            if cur_comb is None:
-                cur_comb = np.full(cur_size, float(loss.item()))
-            if cur_l1 is None:
-                cur_l1 = np.full(cur_size, float(loss_l1.item()))
-            if cur_lpips is None:
-                cur_lpips = np.full(cur_size, float(torch.mean(loss_LPIPS).item()))
+        cur_idx = np.random.choice(cur_size)
+        cur_mask[cur_idx] = False
+        cur_comb[cur_idx] = float(loss.item())
+        cur_l1[cur_idx] = float(loss_l1.item())
+        cur_lpips[cur_idx] = float(torch.mean(loss_LPIPS).item())
 
-            cur_idx = np.random.choice(cur_size)
-            cur_mask[cur_idx] = False
-            cur_comb[cur_idx] = float(loss.item())
-            cur_l1[cur_idx] = float(loss_l1.item())
-            cur_lpips[cur_idx] = float(torch.mean(loss_LPIPS).item())
+        min_l1 = min(min_l1, float(loss_l1.item()))
+        max_l1 = max(max_l1, float(loss_l1.item()))
+        avg_loss = float(loss.item()) if batch_idx == 0 else (avg_loss * (batch_idx - 1) + float(loss.item())) / batch_idx 
+        avg_l1 = float(loss_l1.item()) if batch_idx == 0 else (avg_l1 * (batch_idx - 1) + float(loss_l1.item())) / batch_idx 
+        avg_lpips = float(torch.mean(loss_LPIPS).item()) if batch_idx == 0 else (avg_lpips * (batch_idx - 1) + float(torch.mean(loss_LPIPS).item())) / batch_idx
+        avg_pnsr = float(psnr_torch(output_clean, img1_orig)) if batch_idx == 0 else (avg_pnsr * (batch_idx - 1) + float(psnr_torch(output_clean, img1_orig))) / batch_idx
 
-            min_l1 = min(min_l1, float(loss_l1.item()))
-            max_l1 = max(max_l1, float(loss_l1.item()))
-            avg_loss = float(loss.item()) if batch_idx == 0 else (avg_loss * (batch_idx - 1) + float(loss.item())) / batch_idx 
-            avg_l1 = float(loss_l1.item()) if batch_idx == 0 else (avg_l1 * (batch_idx - 1) + float(loss_l1.item())) / batch_idx 
-            avg_lpips = float(torch.mean(loss_LPIPS).item()) if batch_idx == 0 else (avg_lpips * (batch_idx - 1) + float(torch.mean(loss_LPIPS).item())) / batch_idx
-            avg_pnsr = float(psnr_torch(output_clean, img1_orig)) if batch_idx == 0 else (avg_pnsr * (batch_idx - 1) + float(psnr_torch(output_clean, img1_orig))) / batch_idx
+        cur_comb[cur_mask] = avg_loss
+        cur_l1[cur_mask] = avg_l1
+        cur_lpips[cur_mask] = avg_lpips
 
-            cur_comb[cur_mask] = avg_loss
-            cur_l1[cur_mask] = avg_l1
-            cur_lpips[cur_mask] = avg_lpips
-
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
 
         if platform.system() == 'Darwin':
             torch.mps.synchronize()
@@ -2575,10 +2567,10 @@ def main():
 
         if step % args.preview == 1:
             rgb_target = img0_orig
-            rgb_source1 = img1_orig
-            rgb_source2 = img2_orig
-            rgb_output1 = output[0]
-            rgb_output2 = output[1]
+            rgb_source = img1_orig
+            # rgb_source2 = img2_orig
+            rgb_output = output_clean
+            # rgb_output2 = output[1]
             
             preview_index += 1
             preview_index = preview_index if preview_index < 10 else 0
@@ -2588,10 +2580,8 @@ def main():
                     'preview_folder': os.path.join(args.dataset_path, 'preview', os.path.splitext(os.path.basename(trained_model_path))[0]),
                     'preview_index': int(preview_index),
                     'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output1': rgb_output1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output2': rgb_output2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_source': rgb_source[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                 }
             )
 
