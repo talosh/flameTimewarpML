@@ -1825,13 +1825,11 @@ def main():
                 preview_folder = write_data["preview_folder"]
                 if not os.path.isdir(preview_folder):
                     os.makedirs(preview_folder)
-                write_exr(write_data['sample_source1'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_A_incomng.exr'), half_float = True)
-                write_exr(write_data['sample_source2'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_B_outgoing.exr'), half_float = True)
-                write_exr(write_data['sample_target'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_C_target.exr'), half_float = True)
-                write_exr(write_data['sample_output'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_D_output.exr'), half_float = True)
-                write_exr(write_data['sample_output_diff'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_E_output_diff.exr'), half_float = True)
-                write_exr(write_data['sample_output_conf'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_F_output_conf.exr'), half_float = True)
-                write_exr(write_data['sample_output_mask'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_G_output_mask.exr'), half_float = True)
+                write_exr(write_data['sample_target'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_A_target.exr'), half_float = True)
+                write_exr(write_data['sample_output1'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_B_output1.exr'), half_float = True)
+                write_exr(write_data['sample_output2'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_C_output2.exr'), half_float = True)
+                write_exr(write_data['sample_source1'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_D_src1.exr'), half_float = True)
+                write_exr(write_data['sample_source2'].astype(np.float16), os.path.join(preview_folder, f'{preview_index:02}_E_src2.exr'), half_float = True)
                 del write_data
             except:
             # except queue.Empty:
@@ -2442,77 +2440,73 @@ def main():
             if random.uniform(0, 1) < 0.2:
                 delta = random.uniform(0, 1e-3)
                 img0 += torch.rand_like(img0) * delta
-                img2 += torch.rand_like(img1) * delta
+                img1 += torch.rand_like(img1) * delta
+                img2 += torch.rand_like(img2) * delta
 
-        result = flownet(
-            img0,
-            img2,
-            ratio,
-            scale=training_scale,
-            iterations = args.iterations,
-            gt = img1
-            )
+        timgs = [img1, img2]
+        timgs_orig = [img1_orig, img2_orig]
+        output = []
 
-        flow_list = result['flow_list']
-        mask_list = result['mask_list']
-        conf_list = result['conf_list']
+        for tindx in range(2):
+            result = flownet(
+                img0,
+                timgs[tindx],
+                scale=training_scale,
+                iterations = args.iterations,
+                gt = None
+                )
 
-        model_time = time.time() - time_stamp
-        time_stamp = time.time()
+            flow_list = result['flow_list']
 
-        loss = torch.zeros(1, device=device, requires_grad=True)
+            model_time = time.time() - time_stamp
+            time_stamp = time.time()
 
-        for i in range(len(flow_list)):
-            if flow_list[i] is not None:
-                scale = training_scale[i]
-                flow0 = flow_list[i][:, :2]
-                flow1 = flow_list[i][:, 2:4]
-                mask = mask_list[i]
-                conf = conf_list[i]
-                output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
-                loss_mask = variance_loss(mask, 0.1)
-                loss_conf = criterion_l1(conf, diffmatte(output_clean, img1_orig))
-                loss_l1 = criterion_l1(
-                    torch.nn.functional.interpolate(output_clean, scale_factor= 1. / scale, mode="bilinear", align_corners=False),
-                    torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                    ) * scale
-                loss_lap = criterion_lap(
-                    output_clean,
-                    img1_orig
-                    )
-                loss = loss + loss_l1 + loss_lap + 1e-2*loss_mask + 1e-2*loss_conf
+            loss = torch.zeros(1, device=device, requires_grad=True)
 
-        diff_matte = diffmatte(output_clean, img1_orig)
-        loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)        
-        # loss_l1 = criterion_l1(output_clean, img1_orig)
-        loss = loss + loss_l1 + loss_lap + 1e-2 * float(torch.mean(loss_LPIPS).item())
+            for i in range(len(flow_list)):
+                if flow_list[i] is not None:
+                    scale = training_scale[i]
+                    output_clean = warp(timgs_orig[tindx], flow_list[i])
+                    loss_l1 = criterion_l1(
+                        torch.nn.functional.interpolate(output_clean, scale_factor= 1. / scale, mode="bilinear", align_corners=False),
+                        torch.nn.functional.interpolate(img0_orig, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                        ) * scale
+                    loss_lap = criterion_lap(
+                        output_clean,
+                        img0_orig
+                        )
+                    loss = loss + loss_l1 + loss_lap
 
-        if cur_comb is None:
-            cur_comb = np.full(cur_size, float(loss.item()))
-        if cur_l1 is None:
-            cur_l1 = np.full(cur_size, float(loss_l1.item()))
-        if cur_lpips is None:
-            cur_lpips = np.full(cur_size, float(torch.mean(loss_LPIPS).item()))
+            loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img0_orig * 2 - 1)        
+            loss = loss + loss_l1 + loss_lap + 1e-2 * float(torch.mean(loss_LPIPS).item())
+            output.append(output_clean)
 
-        cur_idx = np.random.choice(cur_size)
-        cur_mask[cur_idx] = False
-        cur_comb[cur_idx] = float(loss.item())
-        cur_l1[cur_idx] = float(loss_l1.item())
-        cur_lpips[cur_idx] = float(torch.mean(loss_LPIPS).item())
+            if cur_comb is None:
+                cur_comb = np.full(cur_size, float(loss.item()))
+            if cur_l1 is None:
+                cur_l1 = np.full(cur_size, float(loss_l1.item()))
+            if cur_lpips is None:
+                cur_lpips = np.full(cur_size, float(torch.mean(loss_LPIPS).item()))
 
-        min_l1 = min(min_l1, float(loss_l1.item()))
-        max_l1 = max(max_l1, float(loss_l1.item()))
-        avg_loss = float(loss.item()) if batch_idx == 0 else (avg_loss * (batch_idx - 1) + float(loss.item())) / batch_idx 
-        avg_l1 = float(loss_l1.item()) if batch_idx == 0 else (avg_l1 * (batch_idx - 1) + float(loss_l1.item())) / batch_idx 
-        avg_lpips = float(torch.mean(loss_LPIPS).item()) if batch_idx == 0 else (avg_lpips * (batch_idx - 1) + float(torch.mean(loss_LPIPS).item())) / batch_idx
-        avg_pnsr = float(psnr_torch(output_clean, img1_orig)) if batch_idx == 0 else (avg_pnsr * (batch_idx - 1) + float(psnr_torch(output_clean, img1_orig))) / batch_idx
+            cur_idx = np.random.choice(cur_size)
+            cur_mask[cur_idx] = False
+            cur_comb[cur_idx] = float(loss.item())
+            cur_l1[cur_idx] = float(loss_l1.item())
+            cur_lpips[cur_idx] = float(torch.mean(loss_LPIPS).item())
 
-        cur_comb[cur_mask] = avg_loss
-        cur_l1[cur_mask] = avg_l1
-        cur_lpips[cur_mask] = avg_lpips
+            min_l1 = min(min_l1, float(loss_l1.item()))
+            max_l1 = max(max_l1, float(loss_l1.item()))
+            avg_loss = float(loss.item()) if batch_idx == 0 else (avg_loss * (batch_idx - 1) + float(loss.item())) / batch_idx 
+            avg_l1 = float(loss_l1.item()) if batch_idx == 0 else (avg_l1 * (batch_idx - 1) + float(loss_l1.item())) / batch_idx 
+            avg_lpips = float(torch.mean(loss_LPIPS).item()) if batch_idx == 0 else (avg_lpips * (batch_idx - 1) + float(torch.mean(loss_LPIPS).item())) / batch_idx
+            avg_pnsr = float(psnr_torch(output_clean, img1_orig)) if batch_idx == 0 else (avg_pnsr * (batch_idx - 1) + float(psnr_torch(output_clean, img1_orig))) / batch_idx
 
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
+            cur_comb[cur_mask] = avg_loss
+            cur_l1[cur_mask] = avg_l1
+            cur_lpips[cur_mask] = avg_lpips
+
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
 
         if platform.system() == 'Darwin':
             torch.mps.synchronize()
@@ -2578,16 +2572,11 @@ def main():
             write_model_state_queue.put(deepcopy(current_state_dict))
 
         if step % args.preview == 1:
+            rgb_target = img0_orig
             rgb_source1 = img0_orig
             rgb_source2 = img2_orig
-            rgb_target = img1_orig
-            rgb_output = output_clean
-            rgb_output_mask = mask.repeat_interleave(3, dim=1)
-            rgb_output_conf = conf.repeat_interleave(3, dim=1)
-            rgb_output_diff = diff_matte.repeat_interleave(3, dim=1)
-            # rgb_refine = refine_list[0] + refine_list[1] + refine_list[2] + refine_list[3]
-            # rgb_refine = (rgb_refine + 1) / 2
-            # sample_refine = rgb_refine[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+            rgb_output1 = output[0]
+            rgb_output2 = output[1]
             
             preview_index += 1
             preview_index = preview_index if preview_index < 10 else 0
@@ -2596,17 +2585,15 @@ def main():
                 {
                     'preview_folder': os.path.join(args.dataset_path, 'preview', os.path.splitext(os.path.basename(trained_model_path))[0]),
                     'preview_index': int(preview_index),
+                    'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                     'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                     'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output_mask': rgb_output_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output_conf': rgb_output_conf[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output_diff': rgb_output_diff[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
+                    'sample_output1': rgb_output1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
+                    'sample_output2': rgb_output1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
                 }
             )
 
-            del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
+            del rgb_source1, rgb_source2, rgb_target, rgb_output1, rgb_output2
 
         current_desc['loss'] = float(loss.item())
         current_desc['loss_l1'] = float(loss_l1.item())
@@ -2617,9 +2604,6 @@ def main():
                 'img0_orig': img0_orig.numpy(force=True).copy(),
                 'img1_orig': img1_orig.numpy(force=True).copy(),
                 'img2_orig': img2_orig.numpy(force=True).copy(),
-                'diff': diff_matte.repeat_interleave(3, dim=1).numpy(force=True).copy(),
-                'conf': conf.repeat_interleave(3, dim=1).numpy(force=True).copy(),
-                'mask': mask.repeat_interleave(3, dim=1).numpy(force=True).copy(),
                 'output': output_clean.numpy(force=True).copy(),
         }
 
@@ -2655,12 +2639,6 @@ def main():
                         'sample_target_name': f'{index:04}_{b_indx:02}_C_target.exr',
                         'sample_output': item_data['output'][b_indx].transpose(1, 2, 0),
                         'sample_output_name': f'{index:04}_{b_indx:02}_D_output.exr',
-                        'sample_output_diff': item_data['diff'][b_indx].transpose(1, 2, 0),
-                        'sample_output_diff_name': f'{index:04}_{b_indx:02}_E_diff.exr',
-                        'sample_output_conf': item_data['conf'][b_indx].transpose(1, 2, 0),
-                        'sample_output_conf_name': f'{index:04}_{b_indx:02}_F_conf.exr',
-                        'sample_output_mask': item_data['mask'][b_indx].transpose(1, 2, 0),
-                        'sample_output_mask_name': f'{index:04}_{b_indx:02}_G_mask.exr',
                     }
                     )
                     json_filename = os.path.join(
@@ -2697,12 +2675,6 @@ def main():
                         'sample_target_name': f'{index:04}_{b_indx:02}_C_target.exr',
                         'sample_output': item_data['output'][b_indx].transpose(1, 2, 0),
                         'sample_output_name': f'{index:04}_{b_indx:02}_D_output.exr',
-                        'sample_output_diff': item_data['diff'][b_indx].transpose(1, 2, 0),
-                        'sample_output_diff_name': f'{index:04}_{b_indx:02}_E_diff.exr',
-                        'sample_output_conf': item_data['conf'][b_indx].transpose(1, 2, 0),
-                        'sample_output_conf_name': f'{index:04}_{b_indx:02}_F_conf.exr',
-                        'sample_output_mask': item_data['mask'][b_indx].transpose(1, 2, 0),
-                        'sample_output_mask_name': f'{index:04}_{b_indx:02}_G_mask.exr',
                     }
                     )
                     json_filename = os.path.join(
