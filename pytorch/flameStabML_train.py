@@ -2573,7 +2573,7 @@ def main():
 
         if step % args.preview == 1:
             rgb_target = img0_orig
-            rgb_source1 = img0_orig
+            rgb_source1 = img1_orig
             rgb_source2 = img2_orig
             rgb_output1 = output[0]
             rgb_output2 = output[1]
