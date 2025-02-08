@@ -210,10 +210,10 @@ class Model:
             def __init__(self, c, cd):
                 super().__init__()
                 # self.conv0 = torch.nn.Conv2d(c//2, c, 3, 1, 1)
-                self.conv0 = torch.nn.ConvTranspose2d(cd, c//2, 4, 2, 1)
-                self.conv1 = torch.nn.Conv2d(c//2, c//2, 3, 1, 1)
-                self.beta = torch.nn.Parameter(torch.ones((1, c//2, 1, 1)), requires_grad=True)
-                self.gamma = torch.nn.Parameter(torch.ones((1, c//2, 1, 1)), requires_grad=True)
+                self.conv0 = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
+                self.conv1 = torch.nn.Conv2d(c//2, c, 3, 1, 1)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x, x_deep):
@@ -363,10 +363,10 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock_last = torch.nn.Sequential(
-                    ResConv(c//2),
-                    ResConv(c//2),
-                    ResConv(c//2),
-                    ResConv(c//2),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
                     ResConv(cd),
@@ -390,7 +390,7 @@ class Model:
                 self.revmix1 = DownMixToSpat(c, cd)
                 self.revmix2 = DownMixToSpat(c, cd)
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c//2, 4*2, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c, 4*2, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
