@@ -341,7 +341,7 @@ class Model:
         class FlownetDeepDualHead(Module):
             def __init__(self, in_planes, in_planes_fx, c=64):
                 super().__init__()
-                cd = 2 * round(1.618 * c) + 2 - (2 * round(1.618 * c) % 2)
+                cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
                 self.conv0 = conv(in_planes, c, 3, 2, 1)
                 self.conv0f = conv(in_planes_fx, c, 3, 2, 1)
                 self.conv1 = conv(c, c, 3, 2, 1)
