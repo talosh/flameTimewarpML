@@ -6,8 +6,8 @@
 class Model:
 
     info = {
-        'name': 'Stabnet4_v001fa_v04_001',
-        'file': 'stabnet4_v001fa_v04_001.py',
+        'name': 'Stabnet4_v001fb_v04_001',
+        'file': 'stabnet4_v001fb_v04_001.py',
         'ratio_support': True
     }
 
@@ -17,7 +17,7 @@ class Model:
         Module = torch.nn.Module
         backwarp_tenGrid = {}
 
-        def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
+        def conv0(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
                 torch.nn.Conv2d(
                     in_planes, 
@@ -29,8 +29,67 @@ class Model:
                     padding_mode = 'reflect',
                     bias=True
                 ),
-                torch.nn.LeakyReLU(0.2, True)
-                # torch.nn.SELU(inplace = True)
+                torch.nn.PReLU(out_planes, 0.2)
+            )
+
+        def conv0f(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
+            return torch.nn.Sequential(
+                torch.nn.Conv2d(
+                    in_planes, 
+                    out_planes, 
+                    kernel_size=kernel_size, 
+                    stride=stride,
+                    padding=padding, 
+                    dilation=dilation,
+                    padding_mode = 'reflect',
+                    bias=True
+                ),
+                torch.nn.PReLU(out_planes, 0.2)
+            )
+
+        def conv1(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
+            return torch.nn.Sequential(
+                torch.nn.Conv2d(
+                    in_planes, 
+                    out_planes, 
+                    kernel_size=kernel_size, 
+                    stride=stride,
+                    padding=padding, 
+                    dilation=dilation,
+                    padding_mode = 'reflect',
+                    bias=True
+                ),
+                torch.nn.PReLU(out_planes, 0.2)
+            )
+
+        def conv1f(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
+            return torch.nn.Sequential(
+                torch.nn.Conv2d(
+                    in_planes, 
+                    out_planes, 
+                    kernel_size=kernel_size, 
+                    stride=stride,
+                    padding=padding, 
+                    dilation=dilation,
+                    padding_mode = 'reflect',
+                    bias=True
+                ),
+                torch.nn.PReLU(out_planes, 0.2)
+            )
+
+        def conv2(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
+            return torch.nn.Sequential(
+                torch.nn.Conv2d(
+                    in_planes, 
+                    out_planes, 
+                    kernel_size=kernel_size, 
+                    stride=stride,
+                    padding=padding, 
+                    dilation=dilation,
+                    padding_mode = 'reflect',
+                    bias=True
+                ),
+                torch.nn.PReLU(out_planes, 0.2)
             )
 
         def warp(tenInput, tenFlow):
@@ -147,17 +206,19 @@ class Model:
                 self.cnn1f = torch.nn.Conv2d(48, 48, 3, 1, 1)
                 self.cnn2f = torch.nn.Conv2d(48, 48, 3, 1, 1)
                 self.cnn3f = torch.nn.ConvTranspose2d(48, 10, 4, 2, 1)
-                self.relu = torch.nn.LeakyReLU(0.2, True)
+                self.relu1 = torch.nn.PReLU(48, 0.2)
+                self.relu2 = torch.nn.PReLU(48, 0.2)
+                self.relu3 = torch.nn.PReLU(48, 0.2)
 
             def forward(self, x):
                 x = x * 2 - 1
                 x = x - x.mean()
                 xf = self.cnn0f(to_freq(x))
-                xf = self.relu(xf)
+                xf = self.relu1(xf)
                 xf = self.cnn1f(xf)
-                xf = self.relu(xf)
+                xf = self.relu2(xf)
                 xf = self.cnn2f(xf)
-                xf = self.relu(xf)
+                xf = self.relu3(xf)
                 xf = self.cnn3f(xf)
                 return xf
 
@@ -166,11 +227,11 @@ class Model:
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, 32, 3, 2, 1),
-                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.PReLU(32, 0.2),
                     torch.nn.Conv2d(32, 32, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.PReLU(32, 0.2),
                     torch.nn.Conv2d(32, 32, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.PReLU(32, 0.2),
                     torch.nn.ConvTranspose2d(32, 10, 4, 2, 1)
                 )
                 self.maxdepth = 2
@@ -192,7 +253,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-                self.relu = torch.nn.LeakyReLU(0.2, True) # torch.nn.SELU(inplace = True)
+                self.relu = torch.nn.PReLU(c, 0.2) # torch.nn.LeakyReLU(0.2, True) # torch.nn.SELU(inplace = True)
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
 
@@ -201,7 +262,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.ConvTranspose2d(cd, c//2, 4, 2, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.LeakyReLU(0.2, True)
+                self.relu = torch.nn.PReLU(c, 0.2) # torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x, x_deep):
                 return self.relu(to_freq(self.conv(x_deep)) * self.beta + x)
@@ -214,7 +275,7 @@ class Model:
                 self.conv1 = torch.nn.Conv2d(c//2, c, 3, 1, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.LeakyReLU(0.2, True)
+                self.relu = torch.nn.PReLU(c, 0.2) # torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x, x_deep):
                 return self.relu(self.conv0(x_deep) * self.beta + self.conv1(to_spat(x)) * self.gamma)
@@ -224,7 +285,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c//2, cd, 3, 2, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.LeakyReLU(0.2, True)
+                self.relu = torch.nn.PReLU(c, 0.2) # torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x, x_deep):
                 return self.relu(self.conv(to_spat(x)) * self.beta + x_deep)
@@ -342,11 +403,11 @@ class Model:
             def __init__(self, in_planes, in_planes_fx, c=64):
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
-                self.conv0 = conv(in_planes, c, 3, 2, 1)
-                self.conv0f = conv(in_planes_fx, c, 3, 2, 1)
-                self.conv1 = conv(c, c, 3, 2, 1)
-                self.conv1f = conv(c, c, 3, 2, 1)
-                self.conv2 = conv(c, cd, 3, 2, 1)
+                self.conv0 = conv0(in_planes, c//2, 3, 2, 1)
+                self.conv0f = conv0f(in_planes_fx, c//2, 3, 2, 1)
+                self.conv1 = conv1(c//2, c, 3, 2, 1)
+                self.conv1f = conv1f(c//2, c, 3, 2, 1)
+                self.conv2 = conv2(c, cd, 3, 2, 1)
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
@@ -481,7 +542,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepDualHead(6+20+2, 6+20+2+4, c=48) # images + feat + timestep + lingrid
+                self.block0 = FlownetDeepDualHead(6+20+2, 6+20+2+4, c=64) # images + feat + timestep + lingrid
                 # self.block1 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
                 # self.block2 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
                 # self.block3 = FlownetLT(11, c=48)
