@@ -131,7 +131,7 @@ def main():
             flow, mask, conf, merged = net(
                 img,
                 img,
-                0.5,
+                # 0.5,
                 scale=[8, 4, 2, 1],
                 iterations = 1
                 )
