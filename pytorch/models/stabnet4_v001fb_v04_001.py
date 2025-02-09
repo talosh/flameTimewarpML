@@ -17,67 +17,7 @@ class Model:
         Module = torch.nn.Module
         backwarp_tenGrid = {}
 
-        def conv0(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
-            return torch.nn.Sequential(
-                torch.nn.Conv2d(
-                    in_planes, 
-                    out_planes, 
-                    kernel_size=kernel_size, 
-                    stride=stride,
-                    padding=padding, 
-                    dilation=dilation,
-                    padding_mode = 'reflect',
-                    bias=True
-                ),
-                torch.nn.PReLU(out_planes, 0.2)
-            )
-
-        def conv0f(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
-            return torch.nn.Sequential(
-                torch.nn.Conv2d(
-                    in_planes, 
-                    out_planes, 
-                    kernel_size=kernel_size, 
-                    stride=stride,
-                    padding=padding, 
-                    dilation=dilation,
-                    padding_mode = 'reflect',
-                    bias=True
-                ),
-                torch.nn.PReLU(out_planes, 0.2)
-            )
-
-        def conv1(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
-            return torch.nn.Sequential(
-                torch.nn.Conv2d(
-                    in_planes, 
-                    out_planes, 
-                    kernel_size=kernel_size, 
-                    stride=stride,
-                    padding=padding, 
-                    dilation=dilation,
-                    padding_mode = 'reflect',
-                    bias=True
-                ),
-                torch.nn.PReLU(out_planes, 0.2)
-            )
-
-        def conv1f(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
-            return torch.nn.Sequential(
-                torch.nn.Conv2d(
-                    in_planes, 
-                    out_planes, 
-                    kernel_size=kernel_size, 
-                    stride=stride,
-                    padding=padding, 
-                    dilation=dilation,
-                    padding_mode = 'reflect',
-                    bias=True
-                ),
-                torch.nn.PReLU(out_planes, 0.2)
-            )
-
-        def conv2(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
+        def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
                 torch.nn.Conv2d(
                     in_planes, 
@@ -285,7 +225,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c//2, cd, 3, 2, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.PReLU(c, 0.2) # torch.nn.LeakyReLU(0.2, True)
+                self.relu = torch.nn.PReLU(cd, 0.2) # torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x, x_deep):
                 return self.relu(self.conv(to_spat(x)) * self.beta + x_deep)
@@ -403,11 +343,11 @@ class Model:
             def __init__(self, in_planes, in_planes_fx, c=64):
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
-                self.conv0 = conv0(in_planes, c//2, 3, 2, 1)
-                self.conv0f = conv0f(in_planes_fx, c//2, 3, 2, 1)
-                self.conv1 = conv1(c//2, c, 3, 2, 1)
-                self.conv1f = conv1f(c//2, c, 3, 2, 1)
-                self.conv2 = conv2(c, cd, 3, 2, 1)
+                self.conv0 = conv(in_planes, c//2, 3, 2, 1)
+                self.conv0f = conv(in_planes_fx, c//2, 3, 2, 1)
+                self.conv1 = conv(c//2, c, 3, 2, 1)
+                self.conv1f = conv(c//2, c, 3, 2, 1)
+                self.conv2 = conv(c, cd, 3, 2, 1)
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
