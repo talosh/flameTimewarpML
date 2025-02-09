@@ -128,7 +128,7 @@ def main():
     with torch.no_grad():
         while True:
             start_time = time.time()
-            flow, mask, conf, merged = net(
+            reult = net(
                 img,
                 img,
                 # 0.5,
