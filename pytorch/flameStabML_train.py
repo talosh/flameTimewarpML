@@ -2728,6 +2728,8 @@ def main():
                         json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
             del index, item
 
+        data_time2 = time.time() - time_stamp
+
         data_time_str = str(f'{data_time:.2f}')
         model_time_str = str(f'{model_time:.2f}')
         train_time_str = str(f'{train_time:.2f}')
@@ -3111,8 +3113,6 @@ def main():
         '''
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
-        data_time2 = time.time() - time_stamp
-
         if epoch == args.epochs:
             sys.exit()
 
