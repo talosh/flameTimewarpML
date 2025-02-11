@@ -781,6 +781,19 @@ def restore_normalized_values_numpy(image_array_torch):
 
     return torch.from_numpy(image_array.copy())
 
+def normalize_min_max(tensor, min_val, max_val):
+    src_dtype = tensor.dtype
+    tensor = tensor.float()
+    t_min = tensor.min()
+    t_max = tensor.max()
+
+    if t_min == t_max:
+        return torch.full_like(tensor, (min_val + max_val) / 2.0)
+    
+    tensor = ((tensor - t_min) / (t_max - t_min)) * (max_val - min_val) + min_val
+    tensor = tensor.to(dtype = src_dtype)
+    return tensor
+
 def moving_average(data, window_size):
     return np.convolve(data, np.ones(window_size)/window_size, mode='valid')
 
@@ -1664,6 +1677,16 @@ def compress(x):
         torch.tanh(x)
     )
     x = (x + 1) / 2
+    x = x.to(dtype = src_dtype)
+    return x
+
+def to_freq(x):
+    n, c, h, w = x.shape
+    src_dtype = x.dtype
+    x = x.float()
+    x = torch.fft.fft2(x, dim=(-2, -1))
+    x = torch.fft.fftshift(x, dim=(-2, -1))
+    x = torch.cat([x.real.unsqueeze(2), x.imag.unsqueeze(2)], dim=2).view(n, c * 2, h, w)
     x = x.to(dtype = src_dtype)
     return x
 
@@ -2578,7 +2601,11 @@ def main():
             write_model_state_queue.put(deepcopy(current_state_dict))
 
         if step % args.preview == 1:
-            rgb_source1 = img0_orig
+            # rgb_source1 = img0_orig
+            rgb_source1 = compress(img0_orig * 2 - 1)
+            rgb_source1 = normalize(rgb_source1, 0, 1) * 2 - 1
+            rgb_source1 = rgb_source1 - rgb_source1.mean()
+            rgb_source1 = to_freq(rgb_source1)[:, :3, :, :]
             rgb_source2 = img2_orig
             rgb_target = img1_orig
             rgb_output = output_clean
