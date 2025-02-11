@@ -2475,13 +2475,6 @@ def main():
 
         flow_list = result['flow_list']
 
-        '''
-        if platform.system() == 'Darwin':
-            torch.mps.synchronize()
-        else:
-            torch.cuda.synchronize(device=device)
-        '''
-            
         model_time = time.time() - time_stamp
         time_stamp = time.time()
 
@@ -2581,13 +2574,11 @@ def main():
                                 scale_fn=sinusoidal_scale_fn,   # Custom sinusoidal function
                                 scale_mode='cycle'              # Apply scaling once per cycle
                             )
-
-        '''
+        
         if platform.system() == 'Darwin':
             torch.mps.synchronize()
         else:
             torch.cuda.synchronize(device=device)
-        '''
 
         train_time = time.time() - time_stamp
         time_stamp = time.time()
@@ -2727,8 +2718,6 @@ def main():
                     with open(json_filename, 'w', encoding='utf-8') as json_file:
                         json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
             del index, item
-
-        data_time2 = time.time() - time_stamp
 
         data_time_str = str(f'{data_time:.2f}')
         model_time_str = str(f'{model_time:.2f}')
@@ -3113,6 +3102,8 @@ def main():
         '''
 
         # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
+        data_time2 = time.time() - time_stamp
+
         if epoch == args.epochs:
             sys.exit()
 
