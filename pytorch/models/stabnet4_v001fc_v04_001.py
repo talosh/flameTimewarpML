@@ -417,9 +417,11 @@ class Model:
                 img1_scaled = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
                 img0_scaled = torch.nn.functional.pad(img0_scaled, padding)
                 img1_scaled = torch.nn.functional.pad(img1_scaled, padding)
-
+                img0_scaled = normalize(img0_scaled, 0, 1) * 2 - 1
+                img1_scaled = normalize(img1_scaled, 0, 1) * 2 - 1
+                img0_scaled = img0_scaled - img0_scaled.mean()
+                img1_scaled = img1_scaled - img1_scaled.mean()
                 imgs_scaled = torch.cat((img0_scaled, img1_scaled), 1)
-                imgs_scaled = normalize(imgs_scaled, 0, 1) * 2 - 1
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
