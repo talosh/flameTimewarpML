@@ -2413,6 +2413,7 @@ def main():
         img1 = img1.to(device, non_blocking = True)
         img2 = img2.to(device, non_blocking = True)
 
+        '''
         if random.uniform(0, 1) > 0.25:
             scale_augm = random.uniform(1, 3)        
             nn, nc, nh, nw = img0.shape
@@ -2422,6 +2423,7 @@ def main():
             img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
             img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
             img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=False)
+        '''
 
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
@@ -2550,7 +2552,6 @@ def main():
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        '''
 
         if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
             pass
@@ -2723,8 +2724,6 @@ def main():
                     with open(json_filename, 'w', encoding='utf-8') as json_file:
                         json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
             del index, item
-
-        '''
 
         data_time_str = str(f'{data_time:.2f}')
         model_time_str = str(f'{model_time:.2f}')
