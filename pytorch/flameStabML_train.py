@@ -2475,6 +2475,11 @@ def main():
 
         flow_list = result['flow_list']
 
+        if platform.system() == 'Darwin':
+            torch.mps.synchronize()
+        else:
+            torch.cuda.synchronize(device=device)
+
         model_time = time.time() - time_stamp
         time_stamp = time.time()
 
