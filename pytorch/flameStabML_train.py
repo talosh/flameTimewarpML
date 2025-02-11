@@ -2550,6 +2550,7 @@ def main():
         train_time = time.time() - time_stamp
         time_stamp = time.time()
 
+        '''
 
         if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
             pass
@@ -2606,13 +2607,11 @@ def main():
             write_model_state_queue.put(deepcopy(current_state_dict))
 
         if step % args.preview == 1:
-            '''
-            rgb_source1 = compress(img0_orig * 2 - 1)
-            rgb_source1 = normalize_min_max(rgb_source1, 0, 1) * 2 - 1
-            rgb_source1 = rgb_source1 - rgb_source1.mean()
-            rgb_source1 = to_freq(rgb_source1)[:, :3, :, :]
-            rgb_target = rgb_source1
-            '''
+            # rgb_source1 = compress(img0_orig * 2 - 1)
+            # rgb_source1 = normalize_min_max(rgb_source1, 0, 1) * 2 - 1
+            # rgb_source1 = rgb_source1 - rgb_source1.mean()
+            # rgb_source1 = to_freq(rgb_source1)[:, :3, :, :]
+            # rgb_target = rgb_source1
 
             rgb_target = img0_orig
             rgb_source = img1_orig
@@ -2724,6 +2723,8 @@ def main():
                     with open(json_filename, 'w', encoding='utf-8') as json_file:
                         json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
             del index, item
+
+        '''
 
         data_time_str = str(f'{data_time:.2f}')
         model_time_str = str(f'{model_time:.2f}')
