@@ -2387,7 +2387,6 @@ def main():
         # tracemalloc.start()
         # data_time = time.time() - time_stamp
         time_stamp = time.time()
-        optimizer_flownet.zero_grad()
 
         img0, img1, img2, ratio, idx, current_desc = dataset[batch_idx]
 
@@ -2514,12 +2513,8 @@ def main():
         loss.backward()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
 
-        # if platform.system() == 'Darwin':
-        #    torch.mps.synchronize()
-        #else:
-        #    torch.cuda.synchronize(device=device)
-
         optimizer_flownet.step()
+        optimizer_flownet.zero_grad()
 
         if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
             pass
@@ -2555,6 +2550,11 @@ def main():
                                 scale_fn=sinusoidal_scale_fn,   # Custom sinusoidal function
                                 scale_mode='cycle'              # Apply scaling once per cycle
                             )
+
+        if platform.system() == 'Darwin':
+            torch.mps.synchronize()
+        else:
+            torch.cuda.synchronize(device=device)
 
         train_time = time.time() - time_stamp
         time_stamp = time.time()
