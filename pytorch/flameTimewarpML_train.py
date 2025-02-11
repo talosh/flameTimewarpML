@@ -2601,15 +2601,9 @@ def main():
             write_model_state_queue.put(deepcopy(current_state_dict))
 
         if step % args.preview == 1:
-            rgb_source1 = compress(img0_orig * 2 - 1)
-            rgb_source1 = normalize(rgb_source1, 0, 1) * 2 - 1
-            rgb_source1 = rgb_source1 - rgb_source1.mean()
-            rgb_source1 = to_freq(rgb_source1)[:, :3, :, :]
-            rgb_target = rgb_source1
-
-            # rgb_source1 = img0_orig
+            rgb_source1 = img0_orig
             rgb_source2 = img2_orig
-            # rgb_target = img1_orig
+            rgb_target = img1_orig
             rgb_output = output_clean
             rgb_output_mask = mask.repeat_interleave(3, dim=1)
             rgb_output_conf = conf.repeat_interleave(3, dim=1)

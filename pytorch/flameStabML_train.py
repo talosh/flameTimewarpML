@@ -1667,6 +1667,29 @@ def compress(x):
     x = x.to(dtype = src_dtype)
     return x
 
+def normalize_min_max(tensor, min_val, max_val):
+    src_dtype = tensor.dtype
+    tensor = tensor.float()
+    t_min = tensor.min()
+    t_max = tensor.max()
+
+    if t_min == t_max:
+        return torch.full_like(tensor, (min_val + max_val) / 2.0)
+    
+    tensor = ((tensor - t_min) / (t_max - t_min)) * (max_val - min_val) + min_val
+    tensor = tensor.to(dtype = src_dtype)
+    return tensor
+
+def to_freq(x):
+    n, c, h, w = x.shape
+    src_dtype = x.dtype
+    x = x.float()
+    x = torch.fft.fft2(x, dim=(-2, -1))
+    x = torch.fft.fftshift(x, dim=(-2, -1))
+    x = torch.cat([x.real.unsqueeze(2), x.imag.unsqueeze(2)], dim=2).view(n, c * 2, h, w)
+    x = x.to(dtype = src_dtype)
+    return x
+
 current_state_dict = {}
 
 def main():
@@ -2579,7 +2602,13 @@ def main():
             write_model_state_queue.put(deepcopy(current_state_dict))
 
         if step % args.preview == 1:
-            rgb_target = img0_orig
+            rgb_source1 = compress(img0_orig * 2 - 1)
+            rgb_source1 = normalize_min_max(rgb_source1, 0, 1) * 2 - 1
+            rgb_source1 = rgb_source1 - rgb_source1.mean()
+            rgb_source1 = to_freq(rgb_source1)[:, :3, :, :]
+            rgb_target = rgb_source1
+
+            # rgb_target = img0_orig
             rgb_source = img1_orig
             # rgb_source2 = img2_orig
             rgb_output = output_clean
