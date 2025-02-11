@@ -2514,10 +2514,10 @@ def main():
         loss.backward()
         torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
 
-        if platform.system() == 'Darwin':
-            torch.mps.synchronize()
-        else:
-            torch.cuda.synchronize(device=device)
+        # if platform.system() == 'Darwin':
+        #    torch.mps.synchronize()
+        #else:
+        #    torch.cuda.synchronize(device=device)
 
         optimizer_flownet.step()
 
