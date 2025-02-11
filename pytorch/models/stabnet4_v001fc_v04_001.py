@@ -427,7 +427,7 @@ class Model:
                 tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
                 x = torch.cat((x, tenGrid), 1)
 
-                feat = self.conv0f(imgs_scaled)
+                feat = self.conv0f(to_freq(imgs_scaled))
                 feat_deep = self.conv0(x)
                 feat_deep = self.conv1(feat_deep)
                 # feat_deep = self.conv2(feat_deep)
