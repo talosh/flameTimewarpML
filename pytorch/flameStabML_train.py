@@ -2760,17 +2760,30 @@ def main():
         if len(dataset) > 10000:
             print(f'\r[10K Average] L1: {np.mean(cur_l1):.6f} LPIPS: {np.mean(cur_lpips):.4f} Combined: {np.mean(cur_comb):.8f}')
             if ( step + 1) % 10000 == 1:
-                rows_to_append = [
-                    {
-                        'Epoch': epoch,
-                        'Step': step, 
-                        'L1': np.mean(cur_l1),
-                        'LPIPS': np.mean(cur_lpips),
-                        'Combined': np.mean(cur_comb)
-                    }
-                ]
+                csv_file_name = f'{os.path.splitext(trained_model_path)[0]}_train_loss_10K.csv'
+                if not csv_file_name:
+                    create_csv_file(
+                        csv_file_name,
+                        [
+                            'Epoch',
+                            'Step',
+                            'L1',
+                            'LPIPS',
+                            'Combined',
+                        ]
+                    )
+                else:
+                    rows_to_append = [
+                        {
+                            'Epoch': epoch,
+                            'Step': step, 
+                            'L1': np.mean(cur_l1),
+                            'LPIPS': np.mean(cur_lpips),
+                            'Combined': np.mean(cur_comb)
+                        }
+                    ]
                 for row in rows_to_append:
-                    append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}_train_loss_10K.csv', row)
+                    append_row_to_csv(csv_file_name, row)
         else:
             print(f'\r[Epoch] Min L1: {min_l1:.6f} Avg L1: {avg_l1:.6f} Max L1: {max_l1:.6f} Avg LPIPS: {avg_lpips:.4f} Combined: {avg_loss:.8f}')
 
