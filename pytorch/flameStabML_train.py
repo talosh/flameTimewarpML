@@ -2628,7 +2628,7 @@ def main():
             # rgb_source1 = compress(img0_orig * 2 - 1)
             # rgb_source1 = normalize_min_max(rgb_source1, 0, 1) * 2 - 1
             # rgb_source1 = rgb_source1 - rgb_source1.mean()
-            rgb_source = img0_orig
+            rgb_source1 = img0_orig
             rgb_source1 = to_freq_mph(rgb_source1)
             rgb_target = rgb_source1[:, :3, :, :]
             rgb_source = to_spat_mph(rgb_source1)
