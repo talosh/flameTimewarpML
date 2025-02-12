@@ -6,8 +6,8 @@
 class Model:
 
     info = {
-        'name': 'Stabnet4_v001fc_v04_001',
-        'file': 'stabnet4_v001fc_v04_001.py',
+        'name': 'Stabnet4_v001fd_v04_001',
+        'file': 'stabnet4_v001fd_v04_001.py',
         'ratio_support': True
     }
 
