@@ -190,13 +190,13 @@ class Model:
             def __init__(self):
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
-                    torch.nn.Conv2d(4, 24, 3, 2, 1),
-                    torch.nn.PReLU(24, 0.2),
-                    torch.nn.Conv2d(24, 24, 3, 1, 1),
-                    torch.nn.PReLU(24, 0.2),
-                    torch.nn.Conv2d(24, 24, 3, 1, 1),
-                    torch.nn.PReLU(24, 0.2),
-                    torch.nn.ConvTranspose2d(24, 8, 4, 2, 1)
+                    torch.nn.Conv2d(4, 48, 3, 2, 1),
+                    torch.nn.PReLU(48, 0.2),
+                    torch.nn.Conv2d(48, 48, 3, 1, 1),
+                    torch.nn.PReLU(48, 0.2),
+                    torch.nn.Conv2d(48, 48, 3, 1, 1),
+                    torch.nn.PReLU(48, 0.2),
+                    torch.nn.ConvTranspose2d(48, 8, 4, 2, 1)
                 )
                 self.maxdepth = 2
 
