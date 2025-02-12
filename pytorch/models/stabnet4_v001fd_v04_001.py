@@ -146,7 +146,6 @@ class Model:
             x = torch.fft.fft2(x, dim=(-2, -1))  # Perform 2D FFT
             magnitude = torch.abs(x)  # Compute magnitude
             phase = torch.angle(x)  # Compute phase
-            phase = (phase + torch.pi) % (2 * torch.pi)
             x = torch.cat([magnitude.unsqueeze(2), phase.unsqueeze(2)], dim=2).view(n, c * 2, h, w)
             x = x.to(dtype=src_dtype)
             return x
@@ -158,7 +157,7 @@ class Model:
             x = x.view(n, c // 2, 2, h, w)
             magnitude = x[:, :, 0, :, :]
             phase = x[:, :, 1, :, :]
-            phase = (phase - torch.pi) % (2 * torch.pi)
+            phase = torch.clamp(phase, -torch.pi, torch.pi)
             x = torch.polar(magnitude, phase)  # Convert magnitude and phase back to complex
             x = torch.fft.ifft2(x, dim=(-2, -1)).real  # Perform inverse FFT
             x = x.to(dtype=src_dtype)
