@@ -1697,8 +1697,8 @@ def to_freq_mph(x):
     x = torch.fft.fft2(x, dim=(-2, -1))  # Perform 2D FFT
     magnitude = torch.abs(x)  # Compute magnitude
     phase = torch.angle(x)  # Compute phase
-    phase = torch.where(phase < 0, (-phase) + torch.pi, phase)
-    # phase = (phase + torch.pi)
+    # phase = torch.where(phase < 0, -phase, phase)
+    phase = (phase + 1)
     x = torch.cat([magnitude.unsqueeze(2), phase.unsqueeze(2)], dim=2).view(n, c * 2, h, w)
     x = x.to(dtype=src_dtype)
     return x
