@@ -1697,6 +1697,7 @@ def to_freq_mph(x):
     x = torch.fft.fft2(x, dim=(-2, -1))  # Perform 2D FFT
     magnitude = torch.abs(x)  # Compute magnitude
     phase = torch.angle(x)  # Compute phase
+    phase = (phase + torch.pi) % (2 * torch.pi)
     x = torch.cat([magnitude.unsqueeze(2), phase.unsqueeze(2)], dim=2).view(n, c * 2, h, w)
     x = x.to(dtype=src_dtype)
     return x
@@ -1708,6 +1709,7 @@ def to_spat_mph(x):
     x = x.view(n, c // 2, 2, h, w)
     magnitude = x[:, :, 0, :, :]
     phase = x[:, :, 1, :, :]
+    phase = (phase - torch.pi) % (2 * torch.pi)
     x = torch.polar(magnitude, phase)  # Convert magnitude and phase back to complex
     x = torch.fft.ifft2(x, dim=(-2, -1)).real  # Perform inverse FFT
     x = x.to(dtype=src_dtype)
@@ -2628,14 +2630,14 @@ def main():
             # rgb_source1 = compress(img0_orig * 2 - 1)
             # rgb_source1 = normalize_min_max(rgb_source1, 0, 1) * 2 - 1
             # rgb_source1 = rgb_source1 - rgb_source1.mean()
-            # rgb_source1 = img0_orig
-            # rgb_source1 = to_freq_mph(rgb_source1)
-            # rgb_target = rgb_source1[:, :3, :, :]
-            # rgb_source = (to_spat_mph(rgb_source1) + 1) / 2
+            rgb_source1 = img0_orig
+            rgb_source1 = to_freq_mph(rgb_source1)
+            rgb_target = rgb_source1[:, :3, :, :]
+            rgb_source = to_spat_mph(rgb_source1)
 
-            rgb_target = img0_orig
-            rgb_source = img1_orig
-            rgb_source2 = img2_orig
+            # rgb_target = img0_orig
+            # rgb_source = img1_orig
+            # rgb_source2 = img2_orig
             rgb_output = output_clean
             # rgb_output2 = output[1]
             
