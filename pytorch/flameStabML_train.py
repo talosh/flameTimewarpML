@@ -2761,7 +2761,7 @@ def main():
             print(f'\r[10K Average] L1: {np.mean(cur_l1):.6f} LPIPS: {np.mean(cur_lpips):.4f} Combined: {np.mean(cur_comb):.8f}')
             if ( step + 1) % 10000 == 1:
                 csv_file_name = f'{os.path.splitext(trained_model_path)[0]}_train_loss_10K.csv'
-                if not csv_file_name:
+                if not os.path.isfile(csv_file_name):
                     create_csv_file(
                         csv_file_name,
                         [
