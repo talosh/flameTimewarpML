@@ -2782,8 +2782,8 @@ def main():
                             'Combined': np.mean(cur_comb)
                         }
                     ]
-                for row in rows_to_append:
-                    append_row_to_csv(csv_file_name, row)
+                    for row in rows_to_append:
+                        append_row_to_csv(csv_file_name, row)
         else:
             print(f'\r[Epoch] Min L1: {min_l1:.6f} Avg L1: {avg_l1:.6f} Max L1: {max_l1:.6f} Avg LPIPS: {avg_lpips:.4f} Combined: {avg_loss:.8f}')
 
