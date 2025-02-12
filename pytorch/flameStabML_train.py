@@ -2630,7 +2630,7 @@ def main():
             rgb_source1 = rgb_source1 - rgb_source1.mean()
             rgb_source1 = to_freq_mph(rgb_source1)
             rgb_target = rgb_source1[:, :3, :, :]
-            rgb_source2 = to_spat_mph(rgb_source1)
+            rgb_source = to_spat_mph(rgb_source1)
 
             # rgb_target = img0_orig
             # rgb_source = img1_orig
