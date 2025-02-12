@@ -1691,27 +1691,33 @@ def to_freq(x):
     return x
 
 def to_freq_mph(x):
-    n, c, h, w = x.shape
-    src_dtype = x.dtype
-    x = x.float()
-    x = torch.fft.fft2(x, dim=(-2, -1))  # Perform 2D FFT
-    magnitude = torch.abs(x)  # Compute magnitude
-    phase = torch.angle(x)  # Compute phase
-    x = torch.cat([magnitude.unsqueeze(2), phase.unsqueeze(2)], dim=2).view(n, c * 2, h, w)
-    x = x.to(dtype=src_dtype)
+    try:
+        n, c, h, w = x.shape
+        src_dtype = x.dtype
+        x = x.float()
+        x = torch.fft.fft2(x, dim=(-2, -1))  # Perform 2D FFT
+        magnitude = torch.abs(x)  # Compute magnitude
+        phase = torch.angle(x)  # Compute phase
+        x = torch.cat([magnitude.unsqueeze(2), phase.unsqueeze(2)], dim=2).view(n, c * 2, h, w)
+        x = x.to(dtype=src_dtype)
+    except Exception as e:
+        print (f'\n\n Exception in to_freq: {e}\n\n')
     return x
 
 def to_spat_mph(x):
-    n, c, h, w = x.shape
-    src_dtype = x.dtype
-    x = x.float()
-    x = x.view(n, c // 2, 2, h, w)
-    magnitude = x[:, :, 0, :, :]
-    phase = x[:, :, 1, :, :]
-    phase = torch.clamp(phase, -torch.pi, torch.pi)
-    x = torch.polar(magnitude, phase)  # Convert magnitude and phase back to complex
-    x = torch.fft.ifft2(x, dim=(-2, -1)).real  # Perform inverse FFT
-    x = x.to(dtype=src_dtype)
+    try:
+        n, c, h, w = x.shape
+        src_dtype = x.dtype
+        x = x.float()
+        x = x.view(n, c // 2, 2, h, w)
+        magnitude = x[:, :, 0, :, :]
+        phase = x[:, :, 1, :, :]
+        phase = torch.clamp(phase, -torch.pi, torch.pi)
+        x = torch.polar(magnitude, phase)  # Convert magnitude and phase back to complex
+        x = torch.fft.ifft2(x, dim=(-2, -1)).real  # Perform inverse FFT
+        x = x.to(dtype=src_dtype)
+    except Exception as e:
+        print (f'\n\n Exception in to_spat: {e}\n\n')
     return x
 
 current_state_dict = {}
