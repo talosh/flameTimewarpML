@@ -228,7 +228,7 @@ class Model:
                 self.relu = torch.nn.PReLU(c, 0.2) # torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x, x_deep):
-                return self.relu((self.conv(torch.cat(to_freq(x_deep), to_freq_mph(x_deep)), 1)) * self.beta + x)
+                return self.relu(self.conv(torch.cat((to_freq(x_deep), to_freq_mph(x_deep)), 1)) * self.beta + x)
 
         class UpMixToSpat(Module):
             def __init__(self, c, cd):
