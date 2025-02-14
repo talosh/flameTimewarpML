@@ -1,10 +1,10 @@
-# vanilla RIFE block
+# vanilla RIFE block + PReLU
 
 class Model:
 
     info = {
-        'name': 'Stabnet4_v001',
-        'file': 'stabnet4_v001.py',
+        'name': 'Stabnet4_v000',
+        'file': 'stabnet4_v000.py',
         'ratio_support': True
     }
 
@@ -26,8 +26,7 @@ class Model:
                     padding_mode = 'reflect',
                     bias=True
                 ),
-                torch.nn.LeakyReLU(0.2, True)
-                # torch.nn.SELU(inplace = True)
+                torch.nn.PReLU(out_planes, 0.2)
             )
 
         def warp(tenInput, tenFlow):
@@ -98,11 +97,11 @@ class Model:
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, 32, 3, 2, 1),
-                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.PReLU(32, 0.2),
                     torch.nn.Conv2d(32, 32, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.PReLU(32, 0.2),
                     torch.nn.Conv2d(32, 32, 3, 1, 1),
-                    torch.nn.LeakyReLU(0.2, True),
+                    torch.nn.PReLU(32, 0.2),
                     torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 )
                 self.maxdepth = 2
@@ -124,7 +123,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-                self.relu = torch.nn.PReLU(c, 0.2)
+                self.relu = torch.nn.LeakyReLU(0.2, True)
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
 
