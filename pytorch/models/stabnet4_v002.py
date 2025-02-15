@@ -165,7 +165,7 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c//2, 4*2, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c, 4*4, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 4
@@ -186,9 +186,9 @@ class Model:
 
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
-                feat = self.lastconv(to_spat(feat))
+                feat = self.lastconv(feat)
                 feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
-                flow =  feat * scale
+                flow = to_spat(feat) * scale
                 return flow
 
         class FlownetCas(Module):
