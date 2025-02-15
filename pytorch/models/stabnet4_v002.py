@@ -90,8 +90,27 @@ class Model:
             )
             x = (x + 1) / 2
             x = x.to(dtype = src_dtype)
+
+        def to_freq(x):
+            n, c, h, w = x.shape
+            src_dtype = x.dtype
+            x = x.float()
+            x = torch.fft.rfft2(x, dim=(-2, -1), norm='ortho')  # Compute real-input FFT2
+            x = torch.cat([x.real.unsqueeze(2), x.imag.unsqueeze(2)], dim=2).view(n, c * 2, h, w // 2 + 1)
+            x = x.to(dtype=src_dtype)
             return x
 
+        def to_spat(x):
+            n, c, h, w_half = x.shape  # w_half corresponds to (w//2 + 1)
+            src_dtype = x.dtype
+            x = x.float()
+            x = x.view(n, c // 2, 2, h, w_half)  # Restore real & imaginary parts
+            x = torch.complex(x[:, :, 0, :, :], x[:, :, 1, :, :])  # Create complex tensor
+            x = torch.fft.irfft2(x, s=(h, (w_half - 1) * 2), dim=(-2, -1), norm='ortho')  # Inverse FFT2
+            x = x.to(dtype=src_dtype)
+            return x
+
+        '''
         def to_freq(x):
             n, c, h, w = x.shape
             src_dtype = x.dtype
@@ -115,6 +134,7 @@ class Model:
             x = torch.fft.ifft2(x, dim=(-2, -1), norm='ortho').real
             x = x.to(dtype=src_dtype)
             return x
+        '''
 
         class Head(Module):
             def __init__(self):
