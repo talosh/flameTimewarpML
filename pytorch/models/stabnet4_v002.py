@@ -96,7 +96,7 @@ class Model:
             n, c, h, w = x.shape
             src_dtype = x.dtype
             x = x.float()
-            x = torch.fft.fft2(x, dim=(-2, -1))
+            x = torch.fft.rfft2(x, dim=(-2, -1), norm='ortho')
             # x = torch.fft.fftshift(x, dim=(-2, -1))
             x = torch.cat([x.real.unsqueeze(2), x.imag.unsqueeze(2)], dim=2).view(n, c * 2, h, w)
             x = x.to(dtype = src_dtype)
@@ -112,7 +112,7 @@ class Model:
                 x[:, :, 1, :, :]
             )
             # x = torch.fft.ifftshift(x, dim=(-2, -1))
-            x = torch.fft.ifft2(x, dim=(-2, -1)).real
+            x = torch.fft.irfft2(x, dim=(-2, -1), norm='ortho').real
             x = x.to(dtype=src_dtype)
             return x
 
@@ -180,7 +180,8 @@ class Model:
 
                 imgs = torch.cat((img0, img1), 1)
                 imgs = normalize(imgs, 0, 1) * 2 - 1
-                x = torch.cat((to_freq(imgs), f0, f1), 1)
+                # x = torch.cat((to_freq(imgs), f0, f1), 1)
+                x = to_freq(imgs)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                 x = torch.nn.functional.pad(x, padding)
 
@@ -198,14 +199,14 @@ class Model:
                 # self.block1 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
                 # self.block2 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
                 # self.block3 = FlownetLT(11, c=48)
-                self.encode = Head()
+                # self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=4, gt=None):
                 img0 = compress(img0 * 2 - 1)
                 img1 = compress(img1 * 2 - 1)
 
-                f0 = self.encode(img0)
-                f1 = self.encode(img1)
+                f0 = None # self.encode(img0)
+                f1 = None # self.encode(img1)
 
                 flow = self.block0(img0, img1, f0, f1, scale=1)
 
