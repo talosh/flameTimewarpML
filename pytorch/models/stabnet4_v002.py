@@ -201,7 +201,7 @@ class Model:
                 imgs = torch.cat((img0, img1), 1)
                 imgs = normalize(imgs, 0, 1) * 2 - 1
                 # x = torch.cat((to_freq(imgs), f0, f1), 1)
-                x = to_freq(imgs)
+                x = imgs
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                 x = torch.nn.functional.pad(x, padding)
 
@@ -209,7 +209,7 @@ class Model:
                 feat = self.convblock(feat)
                 feat = self.lastconv(feat)
                 feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
-                flow = to_spat(feat) * scale
+                flow = feat * scale
                 return flow
 
         class FlownetCas(Module):
