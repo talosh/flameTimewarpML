@@ -96,11 +96,22 @@ class Model:
             n, c, h, w = x.shape
             src_dtype = x.dtype
             x = x.float()
+            x = torch.fft.rfft2(x, dim=(-2, -1), norm='ortho')  # Compute real-input FFT2
+            x = torch.cat([x.real.unsqueeze(2), x.imag.unsqueeze(2)], dim=2).view(n, c * 2, h, w // 2 + 1)
+            x = x.to(dtype=src_dtype)
+            return x
+
+        '''
+        def to_freq(x):
+            n, c, h, w = x.shape
+            src_dtype = x.dtype
+            x = x.float()
             x = torch.fft.fft2(x, dim=(-2, -1), norm='ortho')
             # x = torch.fft.fftshift(x, dim=(-2, -1))
             x = torch.cat([x.real.unsqueeze(2), x.imag.unsqueeze(2)], dim=2).view(n, c * 2, h, w)
             x = x.to(dtype = src_dtype)
             return x
+        '''
 
         def to_spat(x):
             n, c, h, w = x.shape
