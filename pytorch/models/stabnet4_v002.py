@@ -96,7 +96,7 @@ class Model:
             n, c, h, w = x.shape
             src_dtype = x.dtype
             x = x.float()
-            x = torch.fft.rfft2(x, dim=(-2, -1), norm='ortho')
+            x = torch.fft.fft2(x, dim=(-2, -1), norm='ortho')
             # x = torch.fft.fftshift(x, dim=(-2, -1))
             x = torch.cat([x.real.unsqueeze(2), x.imag.unsqueeze(2)], dim=2).view(n, c * 2, h, w)
             x = x.to(dtype = src_dtype)
@@ -112,7 +112,7 @@ class Model:
                 x[:, :, 1, :, :]
             )
             # x = torch.fft.ifftshift(x, dim=(-2, -1))
-            x = torch.fft.irfft2(x, dim=(-2, -1), norm='ortho').real
+            x = torch.fft.ifft2(x, dim=(-2, -1), norm='ortho').real
             x = x.to(dtype=src_dtype)
             return x
 
