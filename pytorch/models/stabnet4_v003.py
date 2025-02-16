@@ -1,7 +1,4 @@
-# Orig v001 changed to v002 main flow and signatures
-# Back from SiLU to LeakyReLU to test data flow
-# Warps moved to flownet forward
-# Different Tail from flownet 2lh (ConvTr 6x6, conv 1x1, ConvTr 4x4, conv 1x1)
+# Beatles block in spatial domain
 
 class Model:
 
