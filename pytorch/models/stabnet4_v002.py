@@ -216,8 +216,8 @@ class Model:
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
                 feat = self.lastconv(feat)
-                feat = to_spat(feat)
-                feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
+                feat = to_spat(feat[:, :, :sh, :sw])
+                feat = torch.nn.functional.interpolate(feat, size=(h, w), mode="bilinear", align_corners=False)
                 flow = feat * scale
                 return flow
 
