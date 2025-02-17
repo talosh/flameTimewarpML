@@ -146,20 +146,20 @@ class Model:
                 return self.relu(self.conv(x_deep) * self.beta + x)
 
         class UpMixToFreq(Module):
-            def __init__(self, c):
+            def __init__(self, c_freq, c_spat):
                 super().__init__()
-                self.conv = torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1)
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.PReLU(c, 0.2) # torch.nn.LeakyReLU(0.2, True)
+                self.conv = torch.nn.ConvTranspose2d(c_spat, c_freq // 2, 4, 2, 1)
+                self.beta = torch.nn.Parameter(torch.ones((1, c_freq, 1, 1)), requires_grad=True)
+                self.relu = torch.nn.PReLU(c_freq, 0.2) # torch.nn.LeakyReLU(0.2, True)
             def forward(self, x_freq, x_spat):
                 return self.relu(to_freq(self.conv(x_spat)) * self.beta + x_freq)
 
         class DownMixToSpat(Module):
-            def __init__(self, c):
+            def __init__(self, c_freq, c_spat):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c//2, c, 3, 2, 1, padding_mode = 'reflect', bias=True)
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.PReLU(c, 0.2) # torch.nn.LeakyReLU(0.2, True)
+                self.conv = torch.nn.Conv2d(c_freq * 2, c_spat, 3, 2, 1, padding_mode = 'reflect', bias=True)
+                self.beta = torch.nn.Parameter(torch.ones((1, c_spat, 1, 1)), requires_grad=True)
+                self.relu = torch.nn.PReLU(c_spat, 0.2) # torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x_spat, x_freq):
                 return self.relu(self.conv(to_spat(x_freq)) * self.beta + x_spat)
@@ -210,19 +210,19 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock1f = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConv(c//2),
+                    ResConv(c//2),
+                    ResConv(c//2),
+                    ResConv(c//2),
                 )
                 self.convblock2f = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConv(c//2),
+                    ResConv(c//2),
+                    ResConv(c//2),
                 )
                 self.convblock3f = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                    ResConv(c//2),
+                    ResConv(c//2),
                 )
                 self.convblock_last = torch.nn.Sequential(
                     ResConv(c),
@@ -247,7 +247,7 @@ class Model:
                 )
                 
                 self.mix1 = UpMix(c, cd)
-                self.mix1f = DownMixToSpat(c)
+                self.mix1f = DownMixToSpat(c//2, c)
                 self.mix2 = UpMix(c, cd)
                 self.mix2f = DownMixToSpat(c)
                 self.mix3 = Mix(c, cd)
