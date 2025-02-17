@@ -157,7 +157,7 @@ class Model:
         class DownMixToSpat(Module):
             def __init__(self, c_freq, c_spat):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c_freq, c_spat, 3, 2, 1, padding_mode = 'reflect', bias=True)
+                self.conv = torch.nn.Conv2d(c_freq // 2, c_spat, 3, 2, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c_spat, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c_spat, 0.2) # torch.nn.LeakyReLU(0.2, True)
 
