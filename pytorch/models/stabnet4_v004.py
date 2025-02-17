@@ -253,9 +253,9 @@ class Model:
                 self.mix3 = Mix(c, cd)
                 self.mix3f = DownMixToSpat(c//2, c)
                 self.revmix1 = DownMix(c, cd)
-                self.revmix1f = UpMixToFreq(c, cd)
+                self.revmix1f = UpMixToFreq(c//2, c)
                 self.revmix2 = DownMix(c, cd)
-                self.revmix2f = UpMixToFreq(c, cd)
+                self.revmix2f = UpMixToFreq(c//2, c)
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, 4*2, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
