@@ -157,7 +157,7 @@ class Model:
         class DownMixToSpat(Module):
             def __init__(self, c_freq, c_spat):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c_freq // 2, c_spat, 3, 2, 1, padding_mode = 'reflect', bias=True)
+                self.conv = torch.nn.Conv2d(c_freq, c_spat, 3, 2, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c_spat, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c_spat, 0.2) # torch.nn.LeakyReLU(0.2, True)
 
@@ -191,7 +191,7 @@ class Model:
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
                 self.conv0 = conv(in_planes, c//2, 3, 2, 1)
-                self.conv0f = conv(12, c//2, 3, 2, 1)
+                self.conv0f = conv(12, c, 3, 2, 1)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
                 self.convblock1 = torch.nn.Sequential(
@@ -210,19 +210,19 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock1f = torch.nn.Sequential(
-                    ResConv(c//2),
-                    ResConv(c//2),
-                    ResConv(c//2),
-                    ResConv(c//2),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 self.convblock2f = torch.nn.Sequential(
-                    ResConv(c//2),
-                    ResConv(c//2),
-                    ResConv(c//2),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 self.convblock3f = torch.nn.Sequential(
-                    ResConv(c//2),
-                    ResConv(c//2),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 self.convblock_last = torch.nn.Sequential(
                     ResConv(c),
