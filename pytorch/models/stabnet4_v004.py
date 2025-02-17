@@ -1,4 +1,4 @@
-# Beatles block in spatial domain + additional freq pass on 1/2 res
+# Beatles block in spatial domain + additional freq pass at 1/2 res
 
 class Model:
 
