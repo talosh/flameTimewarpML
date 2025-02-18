@@ -255,10 +255,6 @@ class Model:
                 x = torch.cat((imgs, f0, f1), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                 x = torch.nn.functional.pad(x, padding)
-
-                xf = imgs - imgs.mean(dim=(0, 2, 3), keepdim=True)
-                xf = torch.nn.functional.pad(xf, padding)
-                xf = to_freq(xf)
                 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
