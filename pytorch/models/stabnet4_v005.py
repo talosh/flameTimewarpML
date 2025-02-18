@@ -274,7 +274,7 @@ class Model:
                 feat = self.convblock1(feat)
                 feat_deep = self.convblock_deep1(feat_deep)
                 
-                feat = self.mix1f(feat, featF)
+                feat = self.mix1f(featF, feat)
                 feat_tmp = self.mix1(feat, feat_deep)
                 feat_deep = self.revmix1(feat, feat_deep)
                 featF = self.revmix1f(featF, feat_tmp)
@@ -283,7 +283,7 @@ class Model:
                 feat = self.convblock2(feat_tmp)
                 feat_deep = self.convblock_deep2(feat_deep)
 
-                feat = self.mix2f(feat, featF)
+                feat = self.mix2f(featF, feat)
                 feat_tmp = self.mix2(feat, feat_deep)
                 feat_deep = self.revmix2(feat, feat_deep)
                 featF = self.revmix2f(featF, feat_tmp)
@@ -292,7 +292,7 @@ class Model:
                 feat = self.convblock3(feat_tmp)
                 feat_deep = self.convblock_deep3(feat_deep)
 
-                feat = self.mix3f(feat, featF)
+                feat = self.mix3f(featF, feat)
                 feat = self.mix3(feat, feat_deep)
                 feat = self.convblock_last(feat)
                 feat = self.lastconv(feat)
