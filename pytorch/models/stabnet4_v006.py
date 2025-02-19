@@ -245,7 +245,7 @@ class Model:
                     torch.nn.PReLU(c//2, 0.2),
                     torch.nn.ConvTranspose2d(c//2, 2, 4, 2, 1)
                 )
-                self.maxdepth = 8
+                self.maxdepth = 16
 
             def forward(self, img0, img1, f0, f1, scale=1):
                 n, c, h, w = img0.shape
