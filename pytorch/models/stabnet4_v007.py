@@ -285,9 +285,9 @@ class Model:
                 x = torch.cat((x, tenGrid), 1)
 
                 feat = self.conv0(x)
-                feat = to_freq(feat)
+                # feat = to_freq(feat)
                 feat = self.convblock(feat)
-                feat = to_spat(feat)
+                # feat = to_spat(feat)
 
                 '''
                 _, _, shf, swf = feat.shape
@@ -302,7 +302,7 @@ class Model:
                 # feat = to_spat(feat[:, :, :sh, :sw])
                 feat = torch.nn.functional.interpolate(feat, size=(h, w), mode="bilinear", align_corners=False)
                 flow = feat * scale
-                flow = torch.cat([ flow[:, 0:1, :, :] * ((flow.shape[3] - 1.0) / 2.0), flow[:, 1:2, :, :] * ((flow.shape[2] - 1.0) / 2.0) ], 1)
+                # flow = torch.cat([ flow[:, 0:1, :, :] * ((flow.shape[3] - 1.0) / 2.0), flow[:, 1:2, :, :] * ((flow.shape[2] - 1.0) / 2.0) ], 1)
                 return flow
 
         class FlownetCas(Module):
