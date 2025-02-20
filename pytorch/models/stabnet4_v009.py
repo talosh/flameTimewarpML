@@ -101,13 +101,13 @@ class Model:
                 )
                 self.maxdepth = 2
 
-            def to_freq(x):
+            def to_freq(self, x):
                 x = torch.fft.fft2(x, dim=(-2, -1), norm='ortho')
                 magnitude = torch.abs(x)
                 phase = torch.angle(x)
                 return magnitude, phase
 
-            def to_spat(magnitude, phase):
+            def to_spat(self, magnitude, phase):
                 x = torch.polar(magnitude, phase)
                 x = torch.fft.ifft2(x, dim=(-2, -1), norm='ortho').real
                 return x
