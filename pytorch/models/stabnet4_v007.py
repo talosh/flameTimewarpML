@@ -177,11 +177,18 @@ class Model:
 
                 self.scale = (1 / (in_channels * out_channels))
 
-                self.weights1 = torch.nn.Parameter(self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
-                self.weights2 = torch.nn.Parameter(self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
-
-                print("weights shape:", self.weights1.shape)
-                print("weights dtype:", self.weights1.dtype)
+                self.weights1_real = torch.nn.Parameter(
+                    self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2)
+                )
+                self.weights1_imag = torch.nn.Parameter(
+                    self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2)
+                )
+                self.weights2_real = torch.nn.Parameter(
+                    self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2)
+                )
+                self.weights2_imag = torch.nn.Parameter(
+                    self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2)
+                )
 
             # Complex multiplication
             def compl_mul2d(self, input, weights):
@@ -189,9 +196,12 @@ class Model:
                 return torch.einsum("bixy,ioxy->boxy", input, weights)
 
             def forward(self, x):
+                weights1 = torch.complex(self.weights1_real, self.weights1_imag)
+                weights2 = torch.complex(self.weights2_real, self.weights2_imag)
+
                 print ('\n\n')
-                print("weights forward shape:", self.weights1.shape)
-                print("weights forward dtype:", self.weights1.dtype)
+                print("weights forward shape:", weights1.shape)
+                print("weights forward dtype:", weights1.dtype)
                 print ('\n\n')
 
                 # print ('\n\nweights')
@@ -205,9 +215,9 @@ class Model:
                 # Multiply relevant Fourier modes
                 out_ft = torch.zeros(batchsize, self.out_channels,  x.size(-2), x.size(-1)//2 + 1, dtype=torch.cfloat, device=x.device)
                 out_ft[:, :, :self.modes1, :self.modes2] = \
-                    self.compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
+                    self.compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], weights1)
                 out_ft[:, :, -self.modes1:, :self.modes2] = \
-                    self.compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
+                    self.compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], weights2)
 
                 #Return to physical space
                 x = torch.fft.irfft2(out_ft, s=(x.size(-2), x.size(-1)))
