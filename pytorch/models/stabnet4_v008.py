@@ -164,7 +164,7 @@ class Model:
                 super().__init__()
                 self.attnblock = torch.nn.Sequential(
                     torch.nn.Conv2d(c, c//4, 3, 1, 1),
-                    ResConv(c),
+                    ResConv(c//4),
                     torch.nn.Conv2d(c//4, c, 3, 1, 1),
                 )
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
