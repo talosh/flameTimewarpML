@@ -244,14 +244,14 @@ class Model:
                     conv(c//2, c, 3, 2, 1),
                     )
                 self.convblock = torch.nn.Sequential(
-                    ResConv(2*c),
-                    ResConv(2*c),
-                    ResConv(2*c),
-                    ResConv(2*c),
-                    ResConv(2*c),
-                    ResConv(2*c),
-                    ResConv(2*c),
-                    ResConv(2*c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, 4*2, 4, 2, 1),
