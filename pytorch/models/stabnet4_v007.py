@@ -187,9 +187,9 @@ class Model:
 
             def forward(self, x):
                 
-                print ('\n\nweights')
-                print(self.weights1.shape)
-                print ('\n\n')
+                # print ('\n\nweights')
+                # print(self.weights1.shape)
+                # print ('\n\n')
 
                 batchsize = x.shape[0]
                 #Compute Fourier coeffcients up to factor of e^(- something constant)
