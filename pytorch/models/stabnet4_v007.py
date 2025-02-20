@@ -177,6 +177,10 @@ class Model:
 
                 self.scale = (1 / (in_channels * out_channels))
 
+                self.weights1 = torch.nn.Parameter(self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
+                self.weights2 = torch.nn.Parameter(self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
+
+                '''
                 self.weights1 = torch.nn.Parameter(
                     self.scale * (torch.randn(in_channels, out_channels, self.modes1, self.modes2) +
                                 1j * torch.randn(in_channels, out_channels, self.modes1, self.modes2))
@@ -185,12 +189,10 @@ class Model:
                     self.scale * (torch.randn(in_channels, out_channels, self.modes1, self.modes2) +
                                 1j * torch.randn(in_channels, out_channels, self.modes1, self.modes2))
                 )
+                '''
 
                 print("weights1 shape:", self.weights1.shape)  # Expected: [64, 64, 12, 12] (not [64, 64, 12, 12, 2])
                 print("weights1 dtype:", self.weights1.dtype)  # Expected: torch.cfloat
-
-                # self.weights1 = torch.nn.Parameter(self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
-                # self.weights2 = torch.nn.Parameter(self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
 
             # Complex multiplication
             def compl_mul2d(self, input, weights):
