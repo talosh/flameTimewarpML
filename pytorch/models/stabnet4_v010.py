@@ -3,8 +3,8 @@
 class Model:
 
     info = {
-        'name': 'Stabnet4_v005',
-        'file': 'stabnet4_v005.py',
+        'name': 'Stabnet4_v010',
+        'file': 'stabnet4_v010.py',
         'ratio_support': True
     }
 
