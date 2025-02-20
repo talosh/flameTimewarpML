@@ -190,7 +190,9 @@ class Model:
                 return torch.einsum("bixy,ioxy->boxy", input, weights)
 
             def forward(self, x):
-                
+                self.weights1 = torch.nn.Parameter(self.weights1.to(torch.cfloat))
+                self.weights2 = torch.nn.Parameter(self.weights2.to(torch.cfloat))
+
                 print ('\n\n')
                 print("weights forward shape:", self.weights1.shape)
                 print("weights forward dtype:", self.weights1.dtype)
