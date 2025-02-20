@@ -164,7 +164,7 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c//2, 4*2, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c//2 + 2, 4*2, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 4
@@ -191,10 +191,20 @@ class Model:
 
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
-                feat = self.lastconv(to_spat(feat))[:, :, :sh, :sw]
+                feat = to_spat(feat)
+
+                tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
+                tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
+                tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
+                tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
+                feat = torch.cat((feat, tenGrid), 1)
+
+                feat = self.lastconv(feat)[:, :, :sh, :sw]
+
                 # feat = to_spat(feat[:, :, :sh, :sw])
                 feat = torch.nn.functional.interpolate(feat, size=(h, w), mode="bilinear", align_corners=False)
                 flow = feat * scale
+                flow = torch.cat([ flow[:, 0:1, :, :] * ((flow.shape[3] - 1.0) / 2.0), flow[:, 1:2, :, :] * ((flow.shape[2] - 1.0) / 2.0) ], 1)
                 return flow
 
         class FlownetCas(Module):
