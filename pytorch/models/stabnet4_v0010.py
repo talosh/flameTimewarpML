@@ -106,10 +106,9 @@ class Model:
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, 32, 3, 2, 1),
                     torch.nn.PReLU(32, 0.2),
-                    torch.nn.Conv2d(32, 32, 3, 1, 1),
-                    torch.nn.PReLU(32, 0.2),
-                    torch.nn.Conv2d(32, 32, 3, 1, 1),
-                    torch.nn.PReLU(32, 0.2),
+                    ResConv(32),
+                    ResConv(32),
+                    ResConv(32),
                     torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 )
                 self.maxdepth = 2
@@ -130,20 +129,22 @@ class Model:
             def __init__(self, c, dilation=1):
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
             def forward(self, x):
-                return self.relu(self.conv(x) * self.beta + x)
+                return self.relu(self.conv(x) * self.beta + x * self.gamma)
 
         class UpMix(Module):
             def __init__(self, c, cd):
                 super().__init__()
                 self.conv = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
 
             def forward(self, x, x_deep):
-                return self.relu(self.conv(x_deep) * self.beta + x)
+                return self.relu(self.conv(x_deep) * self.beta + x * self.gamma)
 
         class Mix(Module):
             def __init__(self, c, cd):
@@ -162,10 +163,11 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
+                self.gamma = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(cd, 0.2)
 
             def forward(self, x, x_deep):
-                return self.relu(self.conv(x) * self.beta + x_deep)
+                return self.relu(self.conv(x) * self.beta + x_deep * self.gamma)
 
         class FlownetDeepDualHead(Module):
             def __init__(self, in_planes, c=64):
