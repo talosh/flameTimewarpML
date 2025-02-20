@@ -178,19 +178,20 @@ class Model:
                 self.scale = (1 / (in_channels * out_channels))
 
                 self.weights1 = torch.nn.Parameter(
-                    self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat)
-                    )
-
+                    self.scale * (torch.randn(in_channels, out_channels, self.modes1, self.modes2) +
+                                1j * torch.randn(in_channels, out_channels, self.modes1, self.modes2))
+                )
                 self.weights2 = torch.nn.Parameter(
-                    self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat)
-                    )
+                    self.scale * (torch.randn(in_channels, out_channels, self.modes1, self.modes2) +
+                                1j * torch.randn(in_channels, out_channels, self.modes1, self.modes2))
+                )
 
                 # self.weights1 = torch.nn.Parameter(self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
                 # self.weights2 = torch.nn.Parameter(self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
 
             # Complex multiplication
             def compl_mul2d(self, input, weights):
-                weights = torch.view_as_complex(weights)
+                # weights = torch.view_as_complex(weights)
                 # (batch, in_channel, x,y ), (in_channel, out_channel, x,y) -> (batch, out_channel, x,y)
                 return torch.einsum("bixy,ioxy->boxy", input, weights)
 
