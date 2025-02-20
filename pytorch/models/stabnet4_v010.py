@@ -240,13 +240,11 @@ class Model:
                 self.revmix2 = DownMix(c, cd)
                 self.revmix2f = UpMix(c//2, c)
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-                    torch.nn.Conv2d(c, c//2, 3, 1, 1),
+                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
                     torch.nn.PReLU(c//2, 0.2),
-                    torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-                    torch.nn.Conv2d(c//2, c//3, 3, 1, 1),
+                    torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
                     torch.nn.PReLU(c//2, 0.2),
-                    torch.nn.Conv2d(c//2, 2, kernel_size=3, stride=1, padding=1),
+                    torch.nn.ConvTranspose2d(c//2, 2, 4, 2, 1)
                 )
                 self.maxdepth = 8
 
