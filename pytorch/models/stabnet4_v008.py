@@ -114,7 +114,6 @@ class Model:
         '''
 
         def to_freq(x):
-            n, c, h, w = x.shape
             x = torch.fft.fft2(x, dim=(-2, -1), norm='ortho')  # Compute full FFT2 (complex output)
             magnitude = torch.abs(x)  # Compute magnitude
             phase = torch.angle(x)  # Compute phase
@@ -165,9 +164,7 @@ class Model:
                 super().__init__()
                 self.attnblock = torch.nn.Sequential(
                     torch.nn.Conv2d(c, c//4, 3, 2, 1),
-                    ResConv(c//4),
-                    ResConv(c//4),
-                    torch.nn.ConvTranspose2d(c//4, c, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c//4, c, 4, 2, 1)
                 )
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
