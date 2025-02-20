@@ -103,12 +103,14 @@ class Model:
 
             def to_freq(self, x):
                 x = torch.fft.fft2(x, dim=(-2, -1), norm='ortho')
+                x = torch.fft.fftshift(x, dim=(-2, -1))
                 magnitude = torch.abs(x)
                 phase = torch.angle(x)
                 return magnitude, phase
 
             def to_spat(self, magnitude, phase):
                 x = torch.polar(magnitude, phase)
+                x = torch.fft.ifftshift(x, dim=(-2, -1))
                 x = torch.fft.ifft2(x, dim=(-2, -1), norm='ortho').real
                 return x
 
