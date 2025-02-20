@@ -145,7 +145,7 @@ class Model:
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 1, 1, 0, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
+                self.conv = torch.nn.Conv2d(c, c, 5, 1, 2, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.LeakyReLU(0.2, True)
             def forward(self, x):
@@ -155,8 +155,8 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
-                    conv(in_planes, c, 1, 2, 0),
-                    conv(c, c, 1, 2, 0),
+                    conv(in_planes, c, 5, 2, 2),
+                    conv(c, c, 5, 2, 2),
                     )
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
@@ -169,7 +169,7 @@ class Model:
                     ResConv(c),
                 )
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c//2, 4*4, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c//2, 4*2, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 4
