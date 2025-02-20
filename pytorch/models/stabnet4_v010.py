@@ -109,6 +109,7 @@ class Model:
                     ResConv(32),
                     ResConv(32),
                     ResConv(32),
+                    ResConv(32),
                     torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 )
                 self.maxdepth = 2
