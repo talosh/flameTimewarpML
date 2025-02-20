@@ -191,11 +191,12 @@ class Model:
                 )
                 '''
 
-                print("weights1 shape:", self.weights1.shape)  # Expected: [64, 64, 12, 12] (not [64, 64, 12, 12, 2])
-                print("weights1 dtype:", self.weights1.dtype)  # Expected: torch.cfloat
-
             # Complex multiplication
             def compl_mul2d(self, input, weights):
+
+                print("weights shape:", self.weights1.shape)  # Expected: [64, 64, 12, 12] (not [64, 64, 12, 12, 2])
+                print("weights dtype:", self.weights1.dtype)  # Expected: torch.cfloat
+
                 # weights = torch.view_as_complex(weights)
                 # (batch, in_channel, x,y ), (in_channel, out_channel, x,y) -> (batch, out_channel, x,y)
                 return torch.einsum("bixy,ioxy->boxy", input, weights)
