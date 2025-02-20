@@ -156,7 +156,7 @@ class Model:
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
-                self.attn = torch.nn.Sequential(
+                self.attnblock = torch.nn.Sequential(
                     torch.nn.Conv2d(c, c, 3, 1, 1),
                     torch.nn.PReLU(c, 0.2),
                 )
@@ -167,7 +167,7 @@ class Model:
 
             def forward(self, x):
                 m, p = to_freq(x)
-                m = self.attn(m)
+                m = self.attnblock(m)
                 x = x * torch.sigmoid(to_spat(m, p))
                 return self.relu(self.conv(x) * self.beta + x * self.gamma)
 
