@@ -185,14 +185,10 @@ class Model:
 
             # Complex multiplication
             def compl_mul2d(self, input, weights):
-                # weights = torch.view_as_complex(weights)
                 # (batch, in_channel, x,y ), (in_channel, out_channel, x,y) -> (batch, out_channel, x,y)
                 return torch.einsum("bixy,ioxy->boxy", input, weights)
 
             def forward(self, x):
-                self.weights1 = torch.nn.Parameter(self.weights1.to(torch.cfloat))
-                self.weights2 = torch.nn.Parameter(self.weights2.to(torch.cfloat))
-
                 print ('\n\n')
                 print("weights forward shape:", self.weights1.shape)
                 print("weights forward dtype:", self.weights1.dtype)
@@ -302,9 +298,7 @@ class Model:
                 x = torch.cat((x, tenGrid), 1)
 
                 feat = self.conv0(x)
-                # feat = to_freq(feat)
                 feat = self.convblock(feat)
-                # feat = to_spat(feat)
 
                 '''
                 _, _, shf, swf = feat.shape
