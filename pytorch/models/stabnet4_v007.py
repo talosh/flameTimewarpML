@@ -192,9 +192,10 @@ class Model:
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
                 feat = to_spat(feat)
+                _, _, shf, swf = feat.shape
 
-                tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
-                tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
+                tenHorizontal = torch.linspace(-1.0, 1.0, swf).view(1, 1, 1, swf).expand(n, -1, shf, -1).to(device=img0.device, dtype=img0.dtype)
+                tenVertical = torch.linspace(-1.0, 1.0, shf).view(1, 1, shf, 1).expand(n, -1, -1, swf).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
                 feat = torch.cat((feat, tenGrid), 1)
