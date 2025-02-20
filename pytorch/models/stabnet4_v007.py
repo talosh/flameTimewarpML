@@ -199,15 +199,6 @@ class Model:
                 weights1 = torch.complex(self.weights1_real, self.weights1_imag)
                 weights2 = torch.complex(self.weights2_real, self.weights2_imag)
 
-                print ('\n\n')
-                print("weights forward shape:", weights1.shape)
-                print("weights forward dtype:", weights1.dtype)
-                print ('\n\n')
-
-                # print ('\n\nweights')
-                # print(self.weights1.shape)
-                # print ('\n\n')
-
                 batchsize = x.shape[0]
                 #Compute Fourier coeffcients up to factor of e^(- something constant)
                 x_ft = torch.fft.rfft2(x)
