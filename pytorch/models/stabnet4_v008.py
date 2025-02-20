@@ -215,7 +215,7 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 4*2, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
-                self.maxdepth = 8
+                self.maxdepth = 16
 
             def forward(self, img0, img1, f0, f1, scale=1):
                 n, c, h, w = img0.shape
