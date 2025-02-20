@@ -114,6 +114,21 @@ class Model:
         '''
 
         def to_freq(x):
+            n, c, h, w = x.shape
+            x = torch.fft.rfft2(x, dim=(-2, -1), norm='ortho')
+            magnitude = torch.abs(x)  
+            phase = torch.angle(x)
+            x = torch.cat([magnitude.unsqueeze(2), phase.unsqueeze(2)], dim=2).view(n, c * 2, h, w // 2 + 1)  # Fix shape issue
+            return magnitude, phase
+
+        def to_spat(magnitude, phase):
+            n, c, h, w_half = magnitude.shape
+            x = torch.polar(magnitude, phase)
+            x = torch.fft.irfft2(x, s=(h, w_half * 2 - 1), dim=(-2, -1), norm='ortho')
+            return x
+
+        '''
+        def to_freq(x):
             x = torch.fft.fft2(x, dim=(-2, -1), norm='ortho')  # Compute full FFT2 (complex output)
             magnitude = torch.abs(x)  # Compute magnitude
             phase = torch.angle(x)  # Compute phase
@@ -123,6 +138,7 @@ class Model:
             x = torch.polar(magnitude, phase)  # Convert magnitude & phase back to complex
             x = torch.fft.ifft2(x, dim=(-2, -1), norm='ortho').real  # Inverse FFT and take real part
             return x
+        '''
 
         class Head(Module):
             def __init__(self):
