@@ -158,7 +158,7 @@ class Model:
                 super().__init__()
                 self.attn = torch.nn.Sequential(
                     torch.nn.Conv2d(c, c, 3, 1, 1),
-                    torch.nn.PReLU(c//4, 0.2),
+                    torch.nn.PReLU(c, 0.2),
                 )
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
