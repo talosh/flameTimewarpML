@@ -115,16 +115,14 @@ class Model:
 
         def to_freq(x):
             n, c, h, w = x.shape
-            x = torch.fft.rfft2(x, dim=(-2, -1), norm='ortho')
-            magnitude = torch.abs(x)  
-            phase = torch.angle(x)
-            x = torch.cat([magnitude.unsqueeze(2), phase.unsqueeze(2)], dim=2).view(n, c * 2, h, w // 2 + 1)  # Fix shape issue
+            x = torch.fft.fft2(x, dim=(-2, -1), norm='ortho')  # Compute full FFT2 (complex output)
+            magnitude = torch.abs(x)  # Compute magnitude
+            phase = torch.angle(x)  # Compute phase
             return magnitude, phase
 
         def to_spat(magnitude, phase):
-            n, c, h, w_half = magnitude.shape
-            x = torch.polar(magnitude, phase)
-            x = torch.fft.irfft2(x, s=(h, w_half * 2 - 1), dim=(-2, -1), norm='ortho')
+            x = torch.polar(magnitude, phase)  # Convert magnitude & phase back to complex
+            x = torch.fft.ifft2(x, dim=(-2, -1), norm='ortho').real  # Inverse FFT and take real part
             return x
 
         class Head(Module):
@@ -156,9 +154,20 @@ class Model:
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
+                self.relu = torch.nn.PReLU(c, 0.2)
+            def forward(self, x):
+                return self.relu(self.conv(x) * self.beta + x)
+
+        class ResConvAttn(Module):
+            def __init__(self, c, dilation=1):
+                super().__init__()
                 self.attnblock = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c, 3, 1, 1),
-                    torch.nn.PReLU(c, 0.2),
+                    torch.nn.Conv2d(c, c//4, 3, 2, 1),
+                    ResConv(c//4),
+                    ResConv(c//4),
+                    torch.nn.ConvTranspose2d(c//4, c, 4, 2, 1),
                 )
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
@@ -179,14 +188,14 @@ class Model:
                     conv(c//2, c, 3, 2, 1),
                     )
                 self.convblock = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConvAttn(c),
+                    ResConvAttn(c),
+                    ResConvAttn(c),
+                    ResConvAttn(c),
+                    ResConvAttn(c),
+                    ResConvAttn(c),
+                    ResConvAttn(c),
+                    ResConvAttn(c),
                 )
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, 4*2, 4, 2, 1),
