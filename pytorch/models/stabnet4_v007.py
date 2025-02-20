@@ -166,7 +166,7 @@ class Model:
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 5, 1, 2, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
@@ -177,8 +177,8 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
-                    conv(in_planes, c//2, 5, 2, 2),
-                    conv(c//2, c, 5, 2, 2),
+                    conv(in_planes, c//2, 3, 2, 1),
+                    conv(c//2, c, 3, 2, 1),
                     )
                 self.convblock = torch.nn.Sequential(
                     ResConv(2*c),
