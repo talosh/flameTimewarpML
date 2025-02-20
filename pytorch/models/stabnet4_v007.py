@@ -113,6 +113,7 @@ class Model:
             return x
         '''
 
+        '''
         def to_freq(x):
             n, c, h, w = x.shape
             src_dtype = x.dtype
@@ -134,6 +135,30 @@ class Model:
             phase = torch.clamp(phase, -torch.pi, torch.pi)
             x = torch.polar(magnitude, phase)  # Convert magnitude and phase back to complex
             x = torch.fft.irfft2(x, s=(h, w_half * 2 - 1), dim=(-2, -1), norm='ortho')  # Fix width reconstruction
+            x = x.to(dtype=src_dtype)
+            return x
+        '''
+
+        def to_freq(x):
+            n, c, h, w = x.shape
+            src_dtype = x.dtype
+            x = x.float()
+            x = torch.fft.fft2(x, dim=(-2, -1), norm='ortho')  # Compute full FFT2
+            real_part = x.real  # Extract real part
+            imag_part = x.imag  # Extract imaginary part
+            x = torch.cat([real_part.unsqueeze(2), imag_part.unsqueeze(2)], dim=2).view(n, c * 2, h, w)  # Keep full width
+            x = x.to(dtype=src_dtype)
+            return x
+
+        def to_spat(x):
+            n, c, h, w = x.shape
+            src_dtype = x.dtype
+            x = x.float()
+            x = x.view(n, c // 2, 2, h, w)  # Restore real & imaginary parts
+            real_part = x[:, :, 0, :, :]
+            imag_part = x[:, :, 1, :, :]
+            x = torch.complex(real_part, imag_part)  # Convert back to complex
+            x = torch.fft.ifft2(x, dim=(-2, -1), norm='ortho').real  # Compute inverse FFT2, take only real part
             x = x.to(dtype=src_dtype)
             return x
 
