@@ -92,6 +92,7 @@ class Model:
             x = x.to(dtype = src_dtype)
             return x
 
+        '''
         def to_freq(x):
             n, c, h, w = x.shape
             src_dtype = x.dtype
@@ -108,6 +109,31 @@ class Model:
             x = x.view(n, c // 2, 2, h, w_half)  # Restore real & imaginary parts
             x = torch.complex(x[:, :, 0, :, :], x[:, :, 1, :, :])  # Create complex tensor
             x = torch.fft.irfft2(x, s=(h, (w_half - 1) * 2), dim=(-2, -1))  # Inverse FFT2
+            x = x.to(dtype=src_dtype)
+            return x
+        '''
+
+        def to_freq(x):
+            n, c, h, w = x.shape
+            src_dtype = x.dtype
+            x = x.float()
+            x = torch.fft.rfft2(x, dim=(-2, -1))  # Compute real-input FFT2
+            magnitude = torch.abs(x)  # Compute magnitude
+            phase = torch.angle(x)  # Compute phase
+            x = torch.cat([magnitude.unsqueeze(2), phase.unsqueeze(2)], dim=2).view(n, c * 2, h, w // 2 + 1)  # Fix shape issue
+            x = x.to(dtype=src_dtype)
+            return x
+
+        def to_spat(x):
+            n, c, h, w_half = x.shape  # w_half corresponds to (w//2 + 1)
+            src_dtype = x.dtype
+            x = x.float()
+            x = x.view(n, c // 2, 2, h, w_half)  # Restore real & imaginary parts
+            magnitude = x[:, :, 0, :, :]
+            phase = x[:, :, 1, :, :]
+            phase = torch.clamp(phase, -torch.pi, torch.pi)
+            x = torch.polar(magnitude, phase)  # Convert magnitude and phase back to complex
+            x = torch.fft.irfft2(x, s=(h, w_half * 2 - 1), dim=(-2, -1))  # Fix width reconstruction
             x = x.to(dtype=src_dtype)
             return x
 
