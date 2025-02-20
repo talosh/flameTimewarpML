@@ -122,9 +122,7 @@ class Model:
             return magnitude, phase
 
         def to_spat(magnitude, phase):
-            n, c, h, w_half = x.shape
-            x = x.float()
-            x = x.view(n, c // 2, 2, h, w_half)
+            n, c, h, w_half = magnitude.shape
             x = torch.polar(magnitude, phase)
             x = torch.fft.irfft2(x, s=(h, w_half * 2 - 1), dim=(-2, -1), norm='ortho')
             return x
