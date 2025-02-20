@@ -113,6 +113,7 @@ class Model:
             return x
         '''
 
+        '''
         def to_freq(x):
             n, c, h, w = x.shape
             x = torch.fft.rfft2(x, dim=(-2, -1), norm='ortho')
@@ -126,8 +127,8 @@ class Model:
             x = torch.polar(magnitude, phase)
             x = torch.fft.irfft2(x, s=(h, w_half * 2 - 1), dim=(-2, -1), norm='ortho')
             return x
-
         '''
+
         def to_freq(x):
             x = torch.fft.fft2(x, dim=(-2, -1), norm='ortho')  # Compute full FFT2 (complex output)
             magnitude = torch.abs(x)  # Compute magnitude
@@ -138,7 +139,6 @@ class Model:
             x = torch.polar(magnitude, phase)  # Convert magnitude & phase back to complex
             x = torch.fft.ifft2(x, dim=(-2, -1), norm='ortho').real  # Inverse FFT and take real part
             return x
-        '''
 
         class Head(Module):
             def __init__(self):
@@ -215,7 +215,7 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 4*2, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
-                self.maxdepth = 32
+                self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, scale=1):
                 n, c, h, w = img0.shape
