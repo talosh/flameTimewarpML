@@ -101,20 +101,22 @@ class Model:
             return x
 
         class Head(Module):
-            def __init__(self):
+            def __init__(self, c=32):
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
-                    torch.nn.Conv2d(3, 32, 3, 2, 1),
-                    ResConv(32),
-                    ResConv(32),
-                    ResConv(32),
-                    ResConv(32),
-                    torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
+                    torch.nn.Conv2d(3, c, 3, 2, 1),
+                    torch.nn.PReLU(c, 0.2),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    torch.nn.ConvTranspose2d(c, 8, 4, 2, 1)
                 )
                 self.maxdepth = 2
 
             def forward(self, x):
                 hp = hpass(x)
+                x = normalize(x, 0, 1) * 2 - 1
                 n, c, h, w = x.shape
                 ph = self.maxdepth - (h % self.maxdepth)
                 pw = self.maxdepth - (w % self.maxdepth)
