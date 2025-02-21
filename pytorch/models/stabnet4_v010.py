@@ -210,6 +210,12 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                 )
+                self.convblock_last_deep = torch.nn.Sequential(
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
+                )
                 self.convblock_deep1 = torch.nn.Sequential(
                     ResConv(cd),
                     ResConv(cd),
