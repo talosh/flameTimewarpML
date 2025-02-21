@@ -297,7 +297,6 @@ class Model:
                 tenHorizontal = torch.linspace(-1.0, 1.0, fsw).view(1, 1, 1, fsw).expand(n, -1, fsh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, fsh).view(1, 1, fsh, 1).expand(n, -1, -1, fsw).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
-                tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
                 feat = torch.cat((feat, tenGrid), 1)
 
                 feat = self.convblock_last(feat)
