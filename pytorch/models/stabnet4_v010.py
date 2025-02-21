@@ -104,27 +104,27 @@ class Model:
             def __init__(self):
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
-                    torch.nn.Conv2d(4, 32, 3, 2, 1),
-                    torch.nn.PReLU(32, 0.2),
+                    torch.nn.Conv2d(3, 32, 3, 2, 1),
                     ResConv(32),
                     ResConv(32),
                     ResConv(32),
                     ResConv(32),
-                    torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
+                    torch.nn.ConvTranspose2d(32, 9, 4, 2, 1)
                 )
                 self.maxdepth = 2
 
             def forward(self, x):
                 hp = hpass(x)
-                x = torch.cat((x, hp), 1)
 
                 n, c, h, w = x.shape
                 ph = self.maxdepth - (h % self.maxdepth)
                 pw = self.maxdepth - (w % self.maxdepth)
                 padding = (0, pw, 0, ph)
                 x = torch.nn.functional.pad(x, padding)
+                x = self.encode(x)[:, :, :h, :w]
+                x = torch.cat((x, hp), 1)
 
-                return self.encode(x)[:, :, :h, :w]
+                return x
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
@@ -208,10 +208,10 @@ class Model:
                     ResConv(c//2),
                 )
                 self.convblock_last = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConv(c+2),
+                    ResConv(c+2),
+                    ResConv(c+2),
+                    ResConv(c+2),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
                     ResConv(cd),
@@ -240,7 +240,7 @@ class Model:
                 self.revmix2 = DownMix(c, cd)
                 self.revmix2f = UpMix(c//2, c)
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 4*2, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c+2, 4*2, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                     # torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
                     # torch.nn.PReLU(c//2, 0.2),
@@ -258,18 +258,12 @@ class Model:
                 pw = self.maxdepth - (sw % self.maxdepth)
                 padding = (0, pw, 0, ph)
 
-                imgs = torch.cat((img0, img1), 1)
-                imgs = normalize(imgs, 0, 1) * 2 - 1
-                x = torch.cat((imgs, f0, f1), 1)
+                # imgs = torch.cat((img0, img1), 1)
+                # imgs = normalize(imgs, 0, 1) * 2 - 1
+                x = torch.cat((f0, f1), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                 x = torch.nn.functional.pad(x, padding)
                 
-                tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
-                tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
-                tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
-                tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
-                x = torch.cat((x, tenGrid), 1)
-
                 feat = self.conv0(x)
                 featF = self.convblock1f(feat)
                 feat = self.conv1(feat)
@@ -298,6 +292,14 @@ class Model:
 
                 feat = self.mix3f(featF, feat)
                 feat = self.mix3(feat, feat_deep)
+
+                _, _, fsh, fsw = feat.shape
+                tenHorizontal = torch.linspace(-1.0, 1.0, fsw).view(1, 1, 1, fsw).expand(n, -1, fsh, -1).to(device=img0.device, dtype=img0.dtype)
+                tenVertical = torch.linspace(-1.0, 1.0, fsh).view(1, 1, fsh, 1).expand(n, -1, -1, fsw).to(device=img0.device, dtype=img0.dtype)
+                tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
+                tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
+                feat = torch.cat((feat, tenGrid), 1)
+
                 feat = self.convblock_last(feat)
                 feat = self.lastconv(feat)
                 feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
@@ -307,7 +309,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepDualHead(6+16+2, c=64) # images + feat + timestep + lingrid
+                self.block0 = FlownetDeepDualHead(20+2, c=64) # images + feat + timestep + lingrid
                 # self.block1 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=128) # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=128) # images + feat + timestep + lingrid + mask + conf + flow
                 # self.block2 = FlownetDeepDualHead(6+3+20+1+1+2+1+4, 12+20+8+1, c=96) # FlownetLT(6+2+1+1+1, c=48) # None # FlownetDeepDualHead(9+30+1+1+4+1+2, 22+30+1, c=112) # images + feat + timestep + lingrid + mask + conf + flow
                 # self.block3 = FlownetLT(11, c=48)
