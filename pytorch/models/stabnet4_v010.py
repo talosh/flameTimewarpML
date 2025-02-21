@@ -109,13 +109,12 @@ class Model:
                     ResConv(32),
                     ResConv(32),
                     ResConv(32),
-                    torch.nn.ConvTranspose2d(32, 9, 4, 2, 1)
+                    torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 )
                 self.maxdepth = 2
 
             def forward(self, x):
                 hp = hpass(x)
-
                 n, c, h, w = x.shape
                 ph = self.maxdepth - (h % self.maxdepth)
                 pw = self.maxdepth - (w % self.maxdepth)
@@ -123,7 +122,6 @@ class Model:
                 x = torch.nn.functional.pad(x, padding)
                 x = self.encode(x)[:, :, :h, :w]
                 x = torch.cat((x, hp), 1)
-
                 return x
 
         class ResConv(Module):
@@ -255,9 +253,9 @@ class Model:
                 pw = self.maxdepth - (sw % self.maxdepth)
                 padding = (0, pw, 0, ph)
 
-                # imgs = torch.cat((img0, img1), 1)
-                # imgs = normalize(imgs, 0, 1) * 2 - 1
-                x = torch.cat((f0, f1), 1)
+                imgs = torch.cat((img0, img1), 1)
+                imgs = normalize(imgs, 0, 1) * 2 - 1
+                x = torch.cat((imgs, f0, f1), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                 x = torch.nn.functional.pad(x, padding)
                 
