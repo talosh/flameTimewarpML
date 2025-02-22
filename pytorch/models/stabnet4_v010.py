@@ -100,7 +100,6 @@ class Model:
             x = x.to(dtype=src_dtype)
             return x
 
-        '''
         class Head(Module):
             def __init__(self, c=32):
                 super(Head, self).__init__()
@@ -126,8 +125,8 @@ class Model:
                 x = self.encode(x)[:, :, :h, :w]
                 x = torch.cat((x, hp), 1)
                 return x
-        '''
 
+        '''
         class Head(Module):
             def __init__(self):
                 super(Head, self).__init__()
@@ -153,6 +152,7 @@ class Model:
                 x = torch.nn.functional.pad(x, padding)
 
                 return self.encode(x)[:, :, :h, :w]
+        '''
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
@@ -273,13 +273,13 @@ class Model:
                 self.revmix2f = UpMix(c//2, c)
                 self.revmix3 = DownMix(c, cd)
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 4*2, 4, 2, 1),
-                    torch.nn.PixelShuffle(2)
-                    # torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
-                    # torch.nn.PReLU(c//2, 0.2),
-                    # torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
-                    # torch.nn.PReLU(c//2, 0.2),
-                    # torch.nn.ConvTranspose2d(c//2, 2, 4, 2, 1)
+                    # torch.nn.ConvTranspose2d(c, 4*2, 4, 2, 1),
+                    # torch.nn.PixelShuffle(2)
+                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
+                    torch.nn.PReLU(c//2, 0.2),
+                    torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
+                    torch.nn.PReLU(c//2, 0.2),
+                    torch.nn.ConvTranspose2d(c//2, 2, 4, 2, 1)
                 )
                 self.maxdepth = 8
 
