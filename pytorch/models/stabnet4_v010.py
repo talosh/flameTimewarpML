@@ -110,7 +110,7 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
-                    torch.nn.ConvTranspose2d(c, 8, 4, 2, 1)
+                    torch.nn.ConvTranspose2d(c, , 4, 2, 1)
                 )
                 self.maxdepth = 2
 
@@ -124,7 +124,7 @@ class Model:
                 padding = (0, pw, 0, ph)
                 x = torch.nn.functional.pad(x, padding)
                 x = self.encode(x)[:, :, :h, :w]
-                x = torch.cat((x, hp), 1)
+                # x = torch.cat((x, hp), 1)
                 return x
 
         class ResConv(Module):
