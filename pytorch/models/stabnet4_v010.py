@@ -247,7 +247,6 @@ class Model:
                 self.revmix3f = UpMix(c//2, c)
                 self.mix4 = Mix(c//2, c)
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c//2, c//2, 4, 2, 1),
                     torch.nn.ConvTranspose2d(c//2, 2, 4, 2, 1),
                 )
                 self.maxdepth = 8
@@ -318,7 +317,7 @@ class Model:
                 print (f'featF before mix: {featF.shape}')
                 print (f'feat before mix: {feat.shape}')
 
-                feat = self.mix4(feat, featF)
+                feat = self.mix4(featF, feat)
 
                 feat = self.lastconv(feat)
                 # feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
