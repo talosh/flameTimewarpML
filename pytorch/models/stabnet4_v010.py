@@ -265,7 +265,7 @@ class Model:
                 imgs = torch.cat((img0, img1), 1)
                 imgs = normalize(imgs, 0, 1) * 2 - 1
                 x = torch.cat((imgs, f0, f1), 1)
-                # x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
+                x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                 x = torch.nn.functional.pad(x, padding)
                 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
@@ -276,8 +276,6 @@ class Model:
 
                 feat = self.conv0(x)
                 featF = self.convblock1f(feat)
-
-                print (f'featF first: {featF.shape}')
 
                 feat = self.conv1(feat)
                 feat_deep = self.conv2(feat)
@@ -291,7 +289,6 @@ class Model:
 
 
                 featF = self.revmix1f(featF, feat_tmp)
-                print (f'featF second: {featF.shape}')
 
                 featF = self.convblock2f(featF)
                 feat = self.convblock2(feat_tmp)
@@ -309,21 +306,14 @@ class Model:
                 feat = self.mix3(feat, feat_deep)
                 
                 featF = self.revmix3f(featF, feat)
-                print (f'featF third: {featF.shape}')
 
                 feat = self.convblock_last(feat)
                 featF = self.convblock_lastf(featF)
 
-                print (f'featF before mix: {featF.shape}')
-                print (f'feat before mix: {feat.shape}')
-
                 feat = self.mix4(featF, feat)
 
                 feat = self.lastconv(feat)
-                # feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
-
-                print (f'feat after: {feat.shape}\n\n')
-
+                feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
                 flow = feat * scale
                 return flow
 
