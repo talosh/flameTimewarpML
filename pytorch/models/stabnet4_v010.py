@@ -252,9 +252,6 @@ class Model:
                 self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, scale=1):
-
-                print (f'img before: {img0.shape}')
-
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
