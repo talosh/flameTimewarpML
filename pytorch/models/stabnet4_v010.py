@@ -249,6 +249,7 @@ class Model:
                 self.upconv4f = torch.nn.ConvTranspose2d(c//2, c//2, 4, 2, 1)
                 self.mix4 = Mix(c//2, c//2)
                 self.lastconv = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1),
                     torch.nn.ConvTranspose2d(c//2, 2, 4, 2, 1),
                 )
                 self.maxdepth = 8
@@ -304,9 +305,7 @@ class Model:
 
                 feat = self.convblock_last(feat)
                 featF = self.convblock_lastf(featF)
-
-                feat = self.upconv4(feat)
-                featF = self.upconv4f(featF)
+                # feat = self.upconv4(feat)
                 feat = self.mix4(feat, featF)
 
                 feat = self.lastconv(feat)
