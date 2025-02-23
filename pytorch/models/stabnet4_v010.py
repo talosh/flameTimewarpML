@@ -211,6 +211,12 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                 )
+                self.convblock_lastf = torch.nn.Sequential(
+                    ResConv(c//2),
+                    ResConv(c//2),
+                    ResConv(c//2),
+                    ResConv(c//2),
+                )
                 self.convblock_deep1 = torch.nn.Sequential(
                     ResConv(cd),
                     ResConv(cd),
@@ -233,10 +239,12 @@ class Model:
                 self.mix2f = DownMix(c//2, c)
                 self.mix3 = Mix(c, cd)
                 self.mix3f = DownMix(c//2, c)
+                self.mix4f = DownMix(c//2, c)
                 self.revmix1 = DownMix(c, cd)
                 self.revmix1f = UpMix(c//2, c)
                 self.revmix2 = DownMix(c, cd)
                 self.revmix2f = UpMix(c//2, c)
+                self.revmix3f = UpMix(c//2, c)
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, 4*2, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
@@ -288,10 +296,15 @@ class Model:
                 featF = self.convblock3f(featF)
                 feat = self.convblock3(feat_tmp)
                 feat_deep = self.convblock_deep3(feat_deep)
-
                 feat = self.mix3f(featF, feat)
                 feat = self.mix3(feat, feat_deep)
+                featF = self.revmix3f(featF, feat)
+
                 feat = self.convblock_last(feat)
+                featF = self.convblock_lastf(featF)
+
+                feat = self.mix4f(featF, feat)
+
                 feat = self.lastconv(feat)
                 feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
                 flow = feat * scale
