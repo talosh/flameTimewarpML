@@ -304,12 +304,13 @@ class Model:
                 feat = self.mix3(feat, feat_deep)
                 
                 print (f'feat mix: {feat.shape}')
-
-
                 featF = self.revmix3f(featF, feat)
+                print (f'featF revmix: {feat.shape}')
 
                 feat = self.convblock_last(feat)
                 featF = self.convblock_lastf(featF)
+
+
                 feat = self.mix4(feat, featF)
 
                 feat = self.lastconv(feat)
