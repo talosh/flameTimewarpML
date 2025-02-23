@@ -302,6 +302,10 @@ class Model:
                 feat_deep = self.convblock_deep3(feat_deep)
                 feat = self.mix3f(featF, feat)
                 feat = self.mix3(feat, feat_deep)
+                
+                print (f'feat mix: {feat.shape}')
+
+
                 featF = self.revmix3f(featF, feat)
 
                 feat = self.convblock_last(feat)
