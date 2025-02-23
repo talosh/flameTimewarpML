@@ -246,6 +246,7 @@ class Model:
                 self.revmix2f = UpMix(c//2, c)
                 self.revmix3f = UpMix(c//2, c)
                 self.upconv4 = torch.nn.ConvTranspose2d(c, c//2, 4, 2, 1)
+                self.upconv4f = torch.nn.ConvTranspose2d(c//2, c//2, 4, 2, 1)
                 self.mix4 = Mix(c//2, c//2)
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c//2, 2, 4, 2, 1),
@@ -305,6 +306,7 @@ class Model:
                 featF = self.convblock_lastf(featF)
 
                 feat = self.upconv4(feat)
+                featF = self.upconv4f(featF)
                 feat = self.mix4(feat, featF)
 
                 feat = self.lastconv(feat)
