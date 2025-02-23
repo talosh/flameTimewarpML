@@ -255,6 +255,9 @@ class Model:
                 self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, scale=1):
+
+                print (f'img before: {img0.shape}')
+
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
@@ -265,7 +268,7 @@ class Model:
                 imgs = torch.cat((img0, img1), 1)
                 imgs = normalize(imgs, 0, 1) * 2 - 1
                 x = torch.cat((imgs, f0, f1), 1)
-                x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
+                # x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                 x = torch.nn.functional.pad(x, padding)
                 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
@@ -309,7 +312,10 @@ class Model:
                 feat = self.mix4(feat, featF)
 
                 feat = self.lastconv(feat)
-                feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
+                # feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
+
+                print (f'feat after: {feat.shape}\n\n')
+
                 flow = feat * scale
                 return flow
 
