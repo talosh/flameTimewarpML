@@ -277,6 +277,9 @@ class Model:
 
                 feat = self.conv0(x)
                 featF = self.convblock1f(feat)
+
+                print (f'feaF first: {feat.shape}')
+
                 feat = self.conv1(feat)
                 feat_deep = self.conv2(feat)
 
@@ -303,7 +306,6 @@ class Model:
                 feat = self.mix3f(featF, feat)
                 feat = self.mix3(feat, feat_deep)
                 
-                print (f'feat mix: {feat.shape}')
                 featF = self.revmix3f(featF, feat)
                 print (f'featF revmix: {feat.shape}')
 
