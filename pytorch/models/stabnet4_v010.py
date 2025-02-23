@@ -289,8 +289,9 @@ class Model:
                 feat = self.mix1f(featF, feat)
                 feat_tmp = self.mix1(feat, feat_deep)
                 feat_deep = self.revmix1(feat, feat_deep)
-                featF = self.revmix1f(featF, feat_tmp)
 
+
+                featF = self.revmix1f(featF, feat_tmp)
                 print (f'feaF second: {feat.shape}')
 
                 featF = self.convblock2f(featF)
