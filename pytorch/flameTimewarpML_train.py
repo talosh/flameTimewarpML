@@ -2511,7 +2511,7 @@ def main():
         diff_matte = diffmatte(output_clean, img1_orig)
         # loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
         # loss_l1 = criterion_l1(output_clean, img1_orig)
-        loss = loss + loss_l1 + loss_lap # + 1e-2 * float(torch.mean(loss_LPIPS).item())
+        loss = loss + loss_l1 + loss_lap + 1e-2 * float(torch.mean(loss_LPIPS).item())
 
         if cur_comb is None:
             cur_comb = np.full(cur_size, float(loss.item()))
