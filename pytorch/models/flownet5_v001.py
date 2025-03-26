@@ -88,6 +88,7 @@ class Model:
         def compress(x):
             src_dtype = x.dtype
             x = x.float()
+            x = x * 2 - 1
             scale = torch.tanh(torch.tensor(1.0))
             x = torch.where(
                 (x >= -1) & (x <= 1), scale * x,
@@ -468,8 +469,8 @@ class Model:
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=4, gt=None):
-                img0 = ACEScg2cct(img0)
-                img1 = ACEScg2cct(img1)
+                img0 = ACEScg2cct(compress(img0))
+                img1 = ACEScg2cct(compress(img1))
 
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
