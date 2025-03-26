@@ -470,8 +470,8 @@ class Model:
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=4, gt=None):
 
-                img0 = compress(ACEScg2cct(img0))
-                img1 = compress(ACEScg2cct(img1))
+                img0 = ACEScg2cct(compress(img0))
+                img1 = ACEScg2cct(compress(img1))
 
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
