@@ -139,8 +139,8 @@ class Model:
                 self.maxdepth = 2
 
             def forward(self, x):
-                hp = hpass(ACEScct2cg(x))
-                # x = normalize(x, 0, 1) * 2 - 1
+                hp = hpass(x)
+                x = normalize(x, 0, 1) * 2 - 1
                 x = torch.cat((x, hp), 1)
                 n, c, h, w = x.shape
                 ph = self.maxdepth - (h % self.maxdepth)
@@ -469,8 +469,9 @@ class Model:
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=4, gt=None):
-                img0 = ACEScg2cct(compress(img0))
-                img1 = ACEScg2cct(compress(img1))
+
+                img0 = compress(ACEScg2cct(img0))
+                img1 = compress(ACEScg2cct(img1))
 
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
