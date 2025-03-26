@@ -394,14 +394,14 @@ class Model:
 
                 if flow is None:
                     imgs = torch.cat((img0, img1), 1)
-                    # imgs = normalize(imgs, 0, 1) * 2 - 1
+                    imgs = normalize(imgs, 0, 1) * 2 - 1
                     x = torch.cat((imgs, f0, f1), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                     x = torch.nn.functional.pad(x, padding)
                 else:
                     merged = warp(img0, flow[:, :2]) * torch.sigmoid(mask) + warp(img1, flow[:, 2:4]) * (1 - torch.sigmoid(mask))
                     imgs = torch.cat((img0, img1, merged), 1)
-                    # imgs = normalize(imgs, 0, 1) * 2 - 1
+                    imgs = normalize(imgs, 0, 1) * 2 - 1
                     x = torch.cat((imgs, f0, f1, mask, conf), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=False)
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
