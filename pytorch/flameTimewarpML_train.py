@@ -173,7 +173,7 @@ def get_dataset(
         device = None, 
         frame_size=448, 
         max_window=9,
-        acescc_rate = 40,
+        acescc_rate = 0,
         generalize = 80,
         repeat = 1,
         sequential = False
@@ -669,10 +669,10 @@ def get_dataset(
                             img2 = gamma_up(img2, gamma=gamma)
 
                 # Convert to ACEScc
-                if random.uniform(0, 1) < (self.acescc_rate / 100):
-                    img0 = self.apply_acescc(torch.clamp(img0, min=0.01))
-                    img1 = self.apply_acescc(torch.clamp(img1, min=0.01))
-                    img2 = self.apply_acescc(torch.clamp(img2, min=0.01))
+                # if random.uniform(0, 1) < (self.acescc_rate / 100):
+                #    img0 = self.apply_acescc(torch.clamp(img0, min=0.01))
+                #    img1 = self.apply_acescc(torch.clamp(img1, min=0.01))
+                #    img2 = self.apply_acescc(torch.clamp(img2, min=0.01))
                 
                 batch_img0.append(img0)
                 batch_img1.append(img1)
@@ -1733,7 +1733,7 @@ def main():
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
     parser.add_argument('--freeze', action='store_true', dest='freeze', default=False, help='Freeze custom hardcoded parameters')
-    parser.add_argument('--acescc', type=check_range_percent, default=49, help='Percentage of ACEScc encoded frames (default: 49))')
+    # parser.add_argument('--acescc', type=check_range_percent, default=49, help='Percentage of ACEScc encoded frames (default: 49))')
     parser.add_argument('--generalize', type=check_range_percent, default=85, help='Generalization level (0 - 100) (default: 85)')
     parser.add_argument('--weight_decay', type=float, default=-1, help='AdamW weight decay (default: calculated from --generalize value)')
     parser.add_argument('--preview', type=int, default=100, help='Save preview each N steps (default: 100)')
@@ -1818,7 +1818,7 @@ def main():
         device=device, 
         frame_size=frame_size,
         max_window=max_dataset_window,
-        acescc_rate=args.acescc,
+        acescc_rate = 0, # args.acescc,
         generalize=args.generalize,
         repeat=args.repeat,
         sequential = args.sequential
@@ -1832,7 +1832,7 @@ def main():
         device=device, 
         frame_size=frame_size,
         max_window=max_dataset_window,
-        acescc_rate=args.acescc,
+        acescc_rate = 0, # args.acescc,
         generalize=args.generalize,
         repeat=args.repeat,
         sequential = True
