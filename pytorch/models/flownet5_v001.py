@@ -3,6 +3,8 @@
 # Warps moved to flownet forward
 # Different Tail from flownet 2lh (ConvTr 6x6, conv 1x1, ConvTr 4x4, conv 1x1)
 
+
+
 class Model:
 
     info = {
@@ -95,6 +97,32 @@ class Model:
             x = x.to(dtype = src_dtype)
             return x
 
+
+        def ACEScg2cct(image):
+            condition = image <= 0.0078125
+            value_if_true = image * 10.5402377416545 + 0.0729055341958155 
+            ACEScct = torch.where(condition, value_if_true, image)
+
+            condition = image > 0.0078125
+            value_if_true = (torch.log2(image) + 9.72) / 17.52
+            ACEScct = torch.where(condition, value_if_true, ACEScct)
+
+            return ACEScct
+
+        def ACEScct2cg(self, image):
+            condition = image < 0.155251141552511
+            value_if_true = (image - 0.0729055341958155) / 10.5402377416545
+            ACEScg = torch.where(condition, value_if_true, image)
+
+            condition = (image >= 0.155251141552511) & (image < (torch.log2(torch.tensor(65504.0)) + 9.72) / 17.52)
+            value_if_true = torch.exp2(image * 17.52 - 9.72)
+            ACEScg = torch.where(condition, value_if_true, ACEScg)
+
+            ACEScg = torch.clamp(ACEScg, max=65504.0)
+
+            return ACEScg
+
+
         class Head(Module):
             def __init__(self, c=32):
                 super(Head, self).__init__()
@@ -110,8 +138,8 @@ class Model:
                 self.maxdepth = 2
 
             def forward(self, x):
-                hp = hpass(x)
-                x = normalize(x, 0, 1) * 2 - 1
+                hp = hpass(ACEScct2cg(x))
+                # x = normalize(x, 0, 1) * 2 - 1
                 x = torch.cat((x, hp), 1)
                 n, c, h, w = x.shape
                 ph = self.maxdepth - (h % self.maxdepth)
@@ -440,8 +468,8 @@ class Model:
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=4, gt=None):
-                img0 = compress(img0 * 2 - 1)
-                img1 = compress(img1 * 2 - 1)
+                img0 = ACEScg2cct(img0)
+                img1 = ACEScg2cct(img1)
 
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
