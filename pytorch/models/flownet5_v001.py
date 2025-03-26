@@ -139,7 +139,7 @@ class Model:
                 self.maxdepth = 2
 
             def forward(self, x):
-                hp = hpass(x)
+                hp = hpass(ACEScct2cg(x))
                 x = normalize(x, 0, 1) * 2 - 1
                 x = torch.cat((x, hp), 1)
                 n, c, h, w = x.shape
