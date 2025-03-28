@@ -158,6 +158,7 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
+                    torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
                 self.encode_freq = torch.nn.Sequential(
                     torch.nn.Conv2d(2, c, 3, 2, 1),
@@ -167,7 +168,7 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                 )
-                self.lastconv = torch.nn.ConvTranspose2d(c + c // 2, 9, 4, 2, 1)
+                self.lastconv = torch.nn.ConvTranspose2d(9 + c // 2, 9, 4, 2, 1)
                 self.maxdepth = 2
 
             def forward(self, x):
