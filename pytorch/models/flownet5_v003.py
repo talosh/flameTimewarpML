@@ -26,7 +26,8 @@ class Model:
 
             def forward(self, x):
                 # alpha = self.alpha.view(1, -1, *([1] * (x.dim() - 2)))
-                return torch.where(x > 0, x, self.alpha * (torch.exp(x) - 1))
+                x = torch.where(x > 0, x, self.alpha * (torch.exp(x) - 1))
+                return x
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
