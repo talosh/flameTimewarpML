@@ -20,9 +20,10 @@ class Model:
         backwarp_tenGrid = {}
 
         class PR_ELU(Module):
-            def __init__(self, c, init_alpha=1.0, max_alpha=10.0):
+            def __init__(self, c):
                 super().__init__()
                 self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.elu = torch.nn.ELU()
 
             def forward(self, x):
                 return torch.where(x > 0, x, self.alpha * self.elu(x))
