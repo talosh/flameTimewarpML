@@ -20,24 +20,12 @@ class Model:
         backwarp_tenGrid = {}
 
         class PR_ELU(Module):
-            def __init__(self, num_channels, init_alpha=1.0, max_alpha=10.0):
+            def __init__(self, c, init_alpha=1.0, max_alpha=10.0):
                 super().__init__()
-                self.alpha_raw = torch.nn.Parameter(torch.ones(num_channels) * init_alpha)
-                self.max_alpha = max_alpha
-                self.elu = torch.nn.ELU()
+                self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
 
             def forward(self, x):
-                # Using Softplus to ensure positive alpha
-                alpha = torch.nn.functional.softplus(self.alpha_raw)
-                
-                # Optional: Clamp alpha to prevent it from becoming too large
-                alpha = torch.clamp(alpha, max=self.max_alpha)
-                
-                # Reshape alpha for broadcasting
-                alpha = alpha.view(1, -1, *([1] * (x.dim() - 2)))
-                
-                # Apply PR_ELU activation function
-                return torch.where(x > 0, x, alpha * self.elu(x))
+                return torch.where(x > 0, x, self.alpha * self.elu(x))
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
