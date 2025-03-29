@@ -41,7 +41,7 @@ class Model:
                     padding_mode = 'zeros',
                     bias=True
                 ),
-                torch.nn.PR_LU(out_planes)
+                torch.nn.PR_ELU(out_planes)
             )
 
         def warp(tenInput, tenFlow):
