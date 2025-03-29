@@ -170,7 +170,7 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
                 self.encode_freq = torch.nn.Sequential(
-                    torch.nn.Conv2d(2, c, 5, 2, 2),
+                    torch.nn.Conv2d(2, c, 3, 2, 1),
                     PR_ELU(c),
                     ResConv(c),
                     ResConv(c),
@@ -202,7 +202,7 @@ class Model:
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 5, 1, 2, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = PR_ELU(c)
 
@@ -223,7 +223,7 @@ class Model:
             def __init__(self, c, cd):
                 super().__init__()
                 self.conv0 = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
-                self.conv1 = torch.nn.Conv2d(c, c, 5, 1, 2)
+                self.conv1 = torch.nn.Conv2d(c, c, 3, 1, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = PR_ELU(c)
@@ -234,7 +234,7 @@ class Model:
         class DownMix(Module):
             def __init__(self, c, cd):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, cd, 5, 2, 2, padding_mode = 'reflect', bias=True)
+                self.conv = torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
                 self.relu = PR_ELU(cd)
 
@@ -246,7 +246,7 @@ class Model:
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
                     conv(in_planes, c//2, 5, 2, 2),
-                    conv(c//2, c, 5, 2, 2),
+                    conv(c//2, c, 3, 2, 1),
                     )
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
@@ -354,9 +354,9 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
-                self.conv0 = conv(in_planes, c//2, 5, 2, 2)
-                self.conv1 = conv(c//2, c, 5, 2, 2)
-                self.conv2 = conv(c, cd, 5, 2, 2)
+                self.conv0 = conv(in_planes, c//2, 3, 2, 1)
+                self.conv1 = conv(c//2, c, 3, 2, 1)
+                self.conv2 = conv(c, cd, 3, 2, 1)
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
