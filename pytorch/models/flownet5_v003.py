@@ -24,6 +24,7 @@ class Model:
                 super().__init__()
                 self.alpha_raw = torch.nn.Parameter(torch.ones(num_channels) * init_alpha)
                 self.max_alpha = max_alpha
+                self.elu = torch.nn.ELU()
 
             def forward(self, x):
                 # Using Softplus to ensure positive alpha
@@ -36,7 +37,7 @@ class Model:
                 alpha = alpha.view(1, -1, *([1] * (x.dim() - 2)))
                 
                 # Apply PR_ELU activation function
-                return torch.where(x > 0, x, alpha * torch.nn.ELU(x))
+                return torch.where(x > 0, x, alpha * self.elu(x))
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
