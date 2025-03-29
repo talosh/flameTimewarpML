@@ -22,10 +22,10 @@ class Model:
         class PR_ELU(Module):
             def __init__(self, num_channels, init_alpha=0.1):
                 super().__init__()
-                self.alpha = init_alpha # torch.nn.Parameter(torch.ones(num_channels) * init_alpha)
+                self.alpha = torch.tesnsor(init_alpha) # torch.nn.Parameter(torch.ones(num_channels) * init_alpha)
 
             def forward(self, x):
-                alpha = self.alpha.view(1, -1, *([1] * (x.dim() - 2)))
+                # alpha = self.alpha.view(1, -1, *([1] * (x.dim() - 2)))
                 return torch.where(x > 0, x, alpha * (torch.exp(x) - 1))
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
