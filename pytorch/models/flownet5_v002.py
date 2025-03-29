@@ -183,7 +183,8 @@ class Model:
                 x = normalize(x, 0, 1) * 2 - 1
                 x = torch.cat((x, hp), 1)
                 x = self.encode(x)
-                hp = self.encode_freq(to_freq(hp))
+                hp = to_freq(hp)
+                hp = self.encode_freq(hp)
                 hp = to_spat(hp)
                 x = torch.cat((x, hp), 1)
                 x = self.lastconv(x)[:, :, :h, :w]
