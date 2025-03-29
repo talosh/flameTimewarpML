@@ -20,7 +20,7 @@ class Model:
         backwarp_tenGrid = {}
 
         class PR_ELU(Module):
-            def __init__(self, num_channels, init_alpha=0.1):
+            def __init__(self, num_channels, init_alpha=1):
                 super().__init__()
                 self.alpha = init_alpha # torch.nn.Parameter(torch.ones(num_channels) * init_alpha)
 
@@ -41,7 +41,7 @@ class Model:
                     padding_mode = 'zeros',
                     bias=True
                 ),
-                torch.nn.ELU()
+                PR_ELU()
             )
 
         def warp(tenInput, tenFlow):
