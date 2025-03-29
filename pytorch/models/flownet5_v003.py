@@ -161,7 +161,7 @@ class Model:
             def __init__(self, c=32):
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
-                    torch.nn.Conv2d(4, c, 3, 2, 1),
+                    torch.nn.Conv2d(4, c, 5, 2, 2),
                     PR_ELU(c),
                     ResConv(c),
                     ResConv(c),
