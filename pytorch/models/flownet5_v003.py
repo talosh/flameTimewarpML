@@ -41,7 +41,7 @@ class Model:
                     padding_mode = 'zeros',
                     bias=True
                 ),
-                PR_ELU()
+                PR_ELU(out_planes)
             )
 
         def warp(tenInput, tenFlow):
