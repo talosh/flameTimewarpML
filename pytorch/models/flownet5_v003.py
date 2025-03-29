@@ -25,8 +25,11 @@ class Model:
                 self.alpha = init_alpha # torch.nn.Parameter(torch.ones(num_channels) * init_alpha)
 
             def forward(self, x):
+                criterion = x > 0
+                value_if_true = x
+                value_if_false = self.alpha * (torch.exp(x) - 1)
                 # alpha = self.alpha.view(1, -1, *([1] * (x.dim() - 2)))
-                x = torch.where(x > 0, x, self.alpha * (torch.exp(x) - 1))
+                x = torch.where(criterion, value_if_true, value_if_false)
                 return x
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
