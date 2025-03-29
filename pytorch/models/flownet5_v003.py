@@ -21,7 +21,7 @@ class Model:
 
         class PR_ELU(Module):
             def __init__(self, num_channels, init_alpha=1.0):
-                super(self).__init__()
+                super().__init__()
                 self.alpha = torch.nn.Parameter(torch.ones(num_channels) * init_alpha)
 
             def forward(self, x):
