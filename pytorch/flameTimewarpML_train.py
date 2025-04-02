@@ -509,7 +509,7 @@ def get_dataset(
                 new_w = int(x * w / h)
 
             # Resize
-            resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bilinear', align_corners=False)
+            resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bicubic', align_corners=True, antialias=True)
 
             # Adjust tensor shape back to [h, w, c]
             resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
@@ -2429,9 +2429,9 @@ def main():
             sh, sw = round(nh * (1 / scale_augm)), round(nw * (1 / scale_augm))
             sh += 4 - (sh % 4)
             sw += 4 - (sw % 4)
-            img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=False)
-            img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=False)
-            img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=False)
+            img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
+            img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
+            img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
 
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
@@ -2501,8 +2501,8 @@ def main():
                 loss_mask = variance_loss(mask, 0.1)
                 loss_conf = criterion_l1(conf, diffmatte(output_clean, img1_orig))
                 loss_l1 = criterion_l1(
-                    torch.nn.functional.interpolate(output_clean, scale_factor= 1. / scale, mode="bilinear", align_corners=False),
-                    torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    torch.nn.functional.interpolate(output_clean, scale_factor= 1. / scale, mode="bicubic", align_corners=True, antialias=True),
+                    torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode="bicubic", align_corners=True, antialias=True)
                     ) * scale
                 loss_lap = criterion_lap(
                     output_clean,
