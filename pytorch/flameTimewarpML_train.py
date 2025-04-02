@@ -2034,7 +2034,7 @@ def main():
                     )
     else:
         print (f'setting ReduceLROnPlateau scheduler with factor={0.1}, patience={25}')
-        scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, 'min', factor=0.1, patience=25)
+        scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, 'min', factor=0.1, patience=12)
 
     # LPIPS Init
 
