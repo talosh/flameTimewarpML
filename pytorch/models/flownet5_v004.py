@@ -267,12 +267,12 @@ class Model:
                 step = torch.arange(count, dtype=noise_level.dtype, device=noise_level.device) / count
                 encoding = noise_level.unsqueeze(1) * torch.exp(self.log_constant * step.unsqueeze(0))
                 encoding = torch.cat([torch.sin(encoding), torch.cos(encoding)], dim=-1)
-                return self.act(self.linear(encoding))
+                return self.act(self.linear(encoding)).view(-1, self.dim, 1, 1)
 
         class FlownetDeep(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
-                cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
+                cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)                
                 self.conv0 = conv(in_planes, c//2, 3, 2, 1)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
@@ -388,9 +388,9 @@ class Model:
                 # timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 # x = torch.cat((timestep, x, tenGrid), 1)
 
-                timestep_enc_c2 = self.enc_c2(timestep).view(-1, self.embedding_dims, 1, 1)
-                timestep_enc_c = self.enc_c(timestep).view(-1, self.embedding_dims, 1, 1)
-                timestep_enc_cd = self.enc_cd(timestep).view(-1, self.embedding_dims, 1, 1)
+                timestep_enc_c2 = self.enc_c2(timestep)
+                timestep_enc_c = self.enc_c(timestep)
+                timestep_enc_cd = self.enc_cd(timestep)
 
                 feat = self.conv0(x) + timestep_enc_c2
                 featF, _ = self.convblock1f((feat, timestep_enc_c2))
