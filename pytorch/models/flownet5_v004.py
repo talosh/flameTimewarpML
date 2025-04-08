@@ -8,8 +8,8 @@
 class Model:
 
     info = {
-        'name': 'Flownet5_v003',
-        'file': 'flownet5_v003.py',
+        'name': 'Flownet5_v004',
+        'file': 'flownet5_v004.py',
         'ratio_support': True
     }
 
