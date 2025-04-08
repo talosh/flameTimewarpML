@@ -359,7 +359,7 @@ class Model:
             def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
-                timestep = torch.full((n,), timestep)
+                timestep = torch.full((n,), timestep).to(img0.device)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
