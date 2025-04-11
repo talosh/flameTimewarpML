@@ -215,12 +215,15 @@ class Model:
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.PReLU(c, 0.2)
-                
+                self.embedding_dims = c
+                self.embedding = GammaEncoding(self.embedding_dims)
+
             def forward(self, x):
-                time_embedding = x[1]
+                time = x[1]
                 x = x[0]
+                time_embedding = self.embedding(time)
                 x = self.relu(self.conv(x) * self.beta + x) + time_embedding
-                return x, time_embedding
+                return x, time
             
         class UpMix(Module):
             def __init__(self, c, cd):
@@ -449,13 +452,13 @@ class Model:
                 timestep_enc_cd = self.enc_cd(timestep)
 
                 feat = self.conv0(x) + timestep_enc_c2
-                featF, _ = self.convblock1f((feat, timestep_enc_c2))
+                featF, _ = self.convblock1f((feat, timestep))
 
                 feat = self.conv1(feat) + timestep_enc_c
                 feat_deep = self.conv2(feat) + timestep_enc_cd
 
-                feat, _ = self.convblock1((feat, timestep_enc_c))
-                feat_deep, _ = self.convblock_deep1((feat_deep, timestep_enc_cd))
+                feat, _ = self.convblock1((feat, timestep))
+                feat_deep, _ = self.convblock_deep1((feat_deep, timestep))
                 
                 feat = self.mix1f(featF, feat)
                 feat_tmp = self.mix1(feat, feat_deep)
@@ -463,25 +466,25 @@ class Model:
 
                 featF = self.revmix1f(featF, feat_tmp)
 
-                featF, _ = self.convblock2f((featF, timestep_enc_c2))
-                feat, _ = self.convblock2((feat_tmp, timestep_enc_c))
-                feat_deep, _ = self.convblock_deep2((feat_deep, timestep_enc_cd))
+                featF, _ = self.convblock2f((featF, timestep))
+                feat, _ = self.convblock2((feat_tmp, timestep))
+                feat_deep, _ = self.convblock_deep2((feat_deep, timestep))
 
                 feat = self.mix2f(featF, feat)
                 feat_tmp = self.mix2(feat, feat_deep)
                 feat_deep = self.revmix2(feat, feat_deep)
                 featF = self.revmix2f(featF, feat_tmp)
 
-                featF, _ = self.convblock3f((featF, timestep_enc_c2))
-                feat, _ = self.convblock3((feat_tmp, timestep_enc_c))
-                feat_deep, _ = self.convblock_deep3((feat_deep, timestep_enc_cd))
+                featF, _ = self.convblock3f((featF, timestep))
+                feat, _ = self.convblock3((feat_tmp, timestep))
+                feat_deep, _ = self.convblock_deep3((feat_deep, timestep))
                 feat = self.mix3f(featF, feat)
                 feat = self.mix3(feat, feat_deep)
                 
                 featF = self.revmix3f(featF, feat)
 
-                feat, _ = self.convblock_last((feat, timestep_enc_c))
-                featF, _ = self.convblock_last_shallow((featF, timestep_enc_c2))
+                feat, _ = self.convblock_last((feat, timestep))
+                featF, _ = self.convblock_last_shallow((featF, timestep))
 
                 feat = self.mix4(featF, feat)
 
