@@ -410,9 +410,9 @@ class Model:
                     torch.nn.ConvTranspose2d(c//2, 6, 4, 2, 1),
                 )
 
-                self.enc_c2 = GammaEncoding(c//2)
-                self.enc_c = GammaEncoding(c)
-                self.enc_cd = GammaEncoding(cd)
+                self.enc0 = GammaEncoding(c//2)
+                self.enc1 = GammaEncoding(c)
+                self.enc2 = GammaEncoding(cd)
                 self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
@@ -447,15 +447,15 @@ class Model:
                 # x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * timestep, x, tenGrid), 1)
                 timestep = torch.full((n,), timestep).to(img0.device)
 
-                timestep_enc_c2 = self.enc_c2(timestep)
-                timestep_enc_c = self.enc_c(timestep)
-                timestep_enc_cd = self.enc_cd(timestep)
+                timestepenc0 = self.enc0(timestep)
+                timestepenc1 = self.enc1(timestep)
+                timestepenc2 = self.enc2(timestep)
 
-                feat = self.conv0(x) + timestep_enc_c2
+                feat = self.conv0(x) + timestepenc0
                 featF, _ = self.convblock1f((feat, timestep))
 
-                feat = self.conv1(feat) + timestep_enc_c
-                feat_deep = self.conv2(feat) + timestep_enc_cd
+                feat = self.conv1(feat) + timestepenc1
+                feat_deep = self.conv2(feat) + timestepenc2
 
                 feat, _ = self.convblock1((feat, timestep))
                 feat_deep, _ = self.convblock_deep1((feat_deep, timestep))
