@@ -3,7 +3,7 @@
 # Warps moved to flownet forward
 # Different Tail from flownet 2lh (ConvTr 6x6, conv 1x1, ConvTr 4x4, conv 1x1)
 
-
+from math import log
 
 class Model:
 
@@ -263,12 +263,12 @@ class Model:
                 self.dim = dim
                 self.linear = torch.nn.Linear(dim, dim)
                 self.act = torch.nn.PReLU(dim)
-                self.register_buffer("log_constant", torch.log(torch.tensor(1e4)))
+                # self.register_buffer("log_constant", torch.log(torch.tensor(1e4)))
 
             def forward(self, noise_level):
                 count = self.dim // 2
                 step = torch.arange(count, dtype=noise_level.dtype, device=noise_level.device) / count
-                encoding = noise_level.unsqueeze(1) * torch.exp(self.log_constant * step.unsqueeze(0))
+                encoding = noise_level.unsqueeze(1) * torch.exp(log(1e4) * step.unsqueeze(0))
                 encoding = torch.cat([torch.sin(encoding), torch.cos(encoding)], dim=-1)
                 return self.act(self.linear(encoding)).view(-1, self.dim, 1, 1)
 
