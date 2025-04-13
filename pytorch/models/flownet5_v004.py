@@ -257,7 +257,7 @@ class Model:
 
         class GammaEncoding(Module):
             def __init__(self, dim):
-                from math import log
+                # from math import log
                 super().__init__()
                 self.dim = dim
                 self.linear = torch.nn.Linear(dim, dim)
