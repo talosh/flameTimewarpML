@@ -257,13 +257,13 @@ class Model:
 
         class GammaEncoding(Module):
             def __init__(self, dim):
-                # from math import log
+                from math import log
                 super().__init__()
                 self.dim = dim
                 self.linear = torch.nn.Linear(dim, dim)
                 self.act = torch.nn.PReLU(dim)
-                # self.log_constant = log(1e4)
-                self.register_buffer("log_constant", torch.log(torch.tensor(1e4)))
+                self.log_constant = log(1e4)
+                # self.register_buffer("log_constant", torch.log(torch.tensor(1e4)))
 
             def forward(self, noise_level):
                 count = self.dim // 2
