@@ -468,7 +468,7 @@ class Model:
                 self.block3 = Flownet(31, c=64)
                 self.encode = Head()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=4, gt=None):
+            def forward(self, img0, img1, timestep=0.5, scale=[1, 1, 1, 1], iterations=4, gt=None):
 
                 img0 = ACEScg2cct(compress(img0))
                 img1 = ACEScg2cct(compress(img1))
@@ -541,7 +541,88 @@ class Model:
 
                 return result
 
-        self.model = FlownetCas
+        class FlownetCasEval(Module):
+            def __init__(self):
+                super().__init__()
+                self.block0 = FlownetDeep(24+2, c=192)
+                self.block1 = FlownetDeep(24+5+4+2, c=128)
+                self.block2 = FlownetDeep(24+5+4+2, c=96)
+                self.block3 = Flownet(31, c=64)
+                self.encode = Head()
+
+            def forward(self, img0, img1, timestep=0.5, scale=[13, 8, 5, 3, 2, 1], iterations=4, gt=None):
+
+                img0 = ACEScg2cct(compress(img0))
+                img1 = ACEScg2cct(compress(img1))
+
+                f0 = self.encode(img0)
+                f1 = self.encode(img1)
+
+                flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
+
+                flow, mask, conf = self.block1(
+                    img0, 
+                    img1, 
+                    f0, 
+                    f1, 
+                    timestep, 
+                    mask, 
+                    conf, 
+                    flow,
+                    scale=scale[1])
+
+                flow, mask, conf = self.block1(
+                    img0, 
+                    img1, 
+                    f0, 
+                    f1, 
+                    timestep, 
+                    mask, 
+                    conf, 
+                    flow,
+                    scale=scale[2])
+
+                flow, mask, conf = self.block2(
+                    img0, 
+                    img1, 
+                    f0, 
+                    f1, 
+                    timestep, 
+                    mask, 
+                    conf, 
+                    flow,
+                    scale=scale[3])
+
+                flow, mask, conf = self.block2(
+                    img0, 
+                    img1, 
+                    f0, 
+                    f1, 
+                    timestep, 
+                    mask, 
+                    conf, 
+                    flow,
+                    scale=scale[4])
+
+                flow_d, mask_d, conf_d = self.block3(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[5])
+                flow = flow + flow_d
+                mask = mask + mask_d
+                conf = conf + conf_d
+
+                mask = torch.sigmoid(mask) #
+                conf = torch.sigmoid(conf) #
+                merged = warp(img0, flow[:, :2]) * mask + warp(img1, flow[:, 2:4]) * (1 - mask)
+
+                result = {
+                    'flow_list': [flow],
+                    'mask_list': [mask],
+                    'conf_list': [conf],
+                    'merged': [merged]
+                }
+
+                return result
+
+        self.model = FlownetCasEval
         self.training_model = FlownetCas
 
     @staticmethod
