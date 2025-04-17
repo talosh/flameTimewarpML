@@ -2423,6 +2423,7 @@ def main():
         img1 = img1.to(device, non_blocking = True)
         img2 = img2.to(device, non_blocking = True)
 
+        '''
         if random.uniform(0, 1) > 0.25:
             scale_augm = random.uniform(1, 3)        
             nn, nc, nh, nw = img0.shape
@@ -2432,6 +2433,7 @@ def main():
             img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
             img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
             img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
+        '''
 
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
@@ -2439,6 +2441,7 @@ def main():
 
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
 
+        '''
         # scale list augmentation
         random_scales = [
             [4, 4, 2, 1],
@@ -2452,13 +2455,12 @@ def main():
             [1, 1, 1, 1],
             [1, 1, 1, 1],
         ]
-
-        if random.uniform(0, 1) < 0.69:
-            training_scale = random_scales[random.randint(0, len(random_scales) - 1)]
-        else:
-            training_scale = [8, 4, 2, 1]
-
-        training_scale = [5 if num == 8 else 3 if num == 4 else num for num in training_scale]
+        '''
+        training_scale = [1] * 4
+        if random.uniform(0, 1) < 0.8:
+            training_scale[0] = random.uniform(9, 1)
+            training_scale[1] = random.uniform(training_scale[0], 1)
+            training_scale[2] = random.uniform(training_scale[1], 1)
 
         data_time = time.time() - time_stamp
         time_stamp = time.time()
