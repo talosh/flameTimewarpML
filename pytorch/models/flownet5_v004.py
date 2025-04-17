@@ -517,7 +517,6 @@ class Model:
                 conf_list = [None] * 4
                 merged = [None] * 4
 
-                scale[0] = 1
                 flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
 
                 flow_list[0] = flow.clone()
