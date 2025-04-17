@@ -2468,12 +2468,14 @@ def main():
 
         flownet.train()
         
+        '''
+        # add noise
         if random.uniform(0, 1) < (args.generalize / 100):
-            # add noise
             if random.uniform(0, 1) < 0.2:
                 delta = random.uniform(0, 1e-3)
                 img0 += torch.rand_like(img0) * delta
                 img2 += torch.rand_like(img1) * delta
+        '''
 
         result = flownet(
             img0,
