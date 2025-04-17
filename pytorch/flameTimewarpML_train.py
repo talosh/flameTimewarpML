@@ -2519,7 +2519,7 @@ def main():
                     output_clean * 2 - 1, 
                     img1_orig * 2 - 1
                     )
-                loss = loss + loss_l1 + loss_lap + 1e-2*loss_mask # + 1e-2*loss_conf + 1e-2 * (1 / (i + 1)) * float(torch.mean(loss_LPIPS).item())
+                loss = loss + loss_l1 + loss_lap + 1e-2*loss_mask + 1e-2*loss_conf + 2e-2 * (1 / (i + 1)) * float(torch.mean(loss_LPIPS).item())
 
         diff_matte = diffmatte(output_clean, img1_orig)
         # loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
