@@ -1731,6 +1731,7 @@ def main():
     parser.add_argument('--eval_half', action='store_true', dest='eval_half', default=False, help='Evaluate in half-precision')
 
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
+    parser.add_argument('--resize', type=float, default=1, help='Random resize down ratio (default: 1)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
     parser.add_argument('--freeze', action='store_true', dest='freeze', default=False, help='Freeze custom hardcoded parameters')
     # parser.add_argument('--acescc', type=check_range_percent, default=49, help='Percentage of ACEScc encoded frames (default: 49))')
@@ -2423,17 +2424,16 @@ def main():
         img1 = img1.to(device, non_blocking = True)
         img2 = img2.to(device, non_blocking = True)
 
-        '''
-        if random.uniform(0, 1) > 0.25:
-            scale_augm = random.uniform(1, 3)        
-            nn, nc, nh, nw = img0.shape
-            sh, sw = round(nh * (1 / scale_augm)), round(nw * (1 / scale_augm))
-            sh += 4 - (sh % 4)
-            sw += 4 - (sw % 4)
-            img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-            img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-            img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-        '''
+        if args.resize > 1:
+            if random.uniform(0, 1) > 0.25:
+                scale_augm = random.uniform(1, args.resize)        
+                nn, nc, nh, nw = img0.shape
+                sh, sw = round(nh * (1 / scale_augm)), round(nw * (1 / scale_augm))
+                sh += 4 - (sh % 4)
+                sw += 4 - (sw % 4)
+                img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
+                img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
+                img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
 
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
@@ -2463,7 +2463,7 @@ def main():
             training_scale[1] = random.uniform(training_scale[0], 1)
             training_scale[2] = random.uniform(training_scale[1], 1)
 
-        # training_scale[0] = 1
+        training_scale[0] = 1
 
         data_time = time.time() - time_stamp
         time_stamp = time.time()
