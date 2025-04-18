@@ -1690,6 +1690,23 @@ def to_freq(x):
     x = x.to(dtype = src_dtype)
     return x
 
+def ap0_to_ap1(image):
+    """
+    Convert from AP0 (ACES2065-1) to AP1 (ACEScg) for input in [N, 3, H, W] format.
+    """
+    M = torch.tensor([
+        [ 1.45143932, -0.23651075, -0.21492857],
+        [-0.07655377,  1.17622970, -0.09967593],
+        [ 0.00831615, -0.00603245,  0.99771630]
+    ], dtype=image.dtype, device=image.device)
+
+    # Reshape from [N, 3, H, W] -> [N, H, W, 3]
+    image = image.permute(0, 2, 3, 1)
+    # Apply matrix multiplication
+    image = torch.matmul(image, M.T)
+    # Reshape back to [N, 3, H, W]
+    return image.permute(0, 3, 1, 2)
+
 current_state_dict = {}
 
 def main():
@@ -1746,6 +1763,7 @@ def main():
     parser.add_argument('--iterations', type=int, default=1, help='Process each flow refinement N times (default: 1)')
     parser.add_argument('--compile', action='store_true', dest='compile', default=False, help='Compile with torch.compile')
     parser.add_argument('--sequential', action='store_true', dest='sequential', default=False, help='Keep sequences, do not reshuffle')
+    parser.add_argument('--ap0', action='store_true', dest='ap0', default=False, help='input exrs are in ap0')
 
     args = parser.parse_args()
 
@@ -2423,6 +2441,11 @@ def main():
         img0 = img0.to(device, non_blocking = True)
         img1 = img1.to(device, non_blocking = True)
         img2 = img2.to(device, non_blocking = True)
+
+        if args.ap0:
+            img0 = ap0_to_ap1(img0)
+            img1 = ap0_to_ap1(img1)
+            img2 = ap0_to_ap1(img2)
 
         if args.resize > 1:
             if random.uniform(0, 1) > 0.25:
