@@ -295,7 +295,7 @@ class Model:
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)[:, :, :sh, :sw]
-                tmp = torch.nn.functional.interpolate(tmp[:, :, :sh, :sw], size=(h, w), mode="bicubic", align_corners=True, antialias=True)
+                tmp = torch.nn.functional.interpolate(tmp[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=True, antialias=True)
                 flow = tmp[:, :4] * scale
                 mask = tmp[:, 4:5]
                 conf = tmp[:, 5:6]
@@ -453,7 +453,7 @@ class Model:
                 feat = self.mix4(featF, feat)
 
                 feat = self.lastconv(feat)
-                feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bicubic", align_corners=True, antialias=True)
+                feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=True, antialias=True)
                 flow = feat[:, :4] * scale
                 mask = feat[:, 4:5]
                 conf = feat[:, 5:6]
