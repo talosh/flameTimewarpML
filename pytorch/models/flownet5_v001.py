@@ -231,7 +231,7 @@ class Model:
                     warped_f1 = warp(f1, flow[:, 2:4])
                     x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, conf), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-                    flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True) * 1. / scale
+                    flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=True, antialias=True) * 1. / scale
                     x = torch.cat((x, flow), 1)
 
                 ph = self.maxdepth - (sh % self.maxdepth)
@@ -404,7 +404,7 @@ class Model:
                     imgs = normalize(imgs, 0, 1) * 2 - 1
                     x = torch.cat((imgs, f0, f1, mask, conf), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-                    flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True) * 1. / scale
+                    flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=True, antialias=True) * 1. / scale
                     x = torch.cat((x, flow), 1)
                     x = torch.nn.functional.pad(x, padding)
 
