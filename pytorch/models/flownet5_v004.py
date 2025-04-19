@@ -442,9 +442,10 @@ class Model:
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
-                x = torch.cat((x, tenGrid), 1)
-                if distance is not None:
-                    x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * distance, x), 1)
+                if distance is None:
+                    x = torch.cat((x, tenGrid), 1)
+                else:
+                    x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * distance, x, tenGrid), 1)
                 timestep = torch.full((n,), timestep).to(img0.device)
 
                 time_emb0 = self.enc0(timestep)
