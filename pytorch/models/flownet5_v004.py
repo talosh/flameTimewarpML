@@ -414,7 +414,7 @@ class Model:
                 self.enc2 = GammaEncoding(cd)
                 self.maxdepth = 8
 
-            def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
+            def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1, distance=None):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
@@ -443,7 +443,9 @@ class Model:
                 tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
                 x = torch.cat((x, tenGrid), 1)
-                # x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * timestep, x, tenGrid), 1)
+                if distance is not None:
+                    distance = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * distance, x, tenGrid), 1)
+                    x = torch.cat((x, distance), 1)
                 timestep = torch.full((n,), timestep).to(img0.device)
 
                 time_emb0 = self.enc0(timestep)
@@ -498,8 +500,8 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeep(24+2, c=192)
-                self.block1 = FlownetDeep(24+5+4+2, c=144)
-                self.block2 = FlownetDeep(24+5+4+2, c=96)
+                self.block1 = FlownetDeep(24+5+4+2+1, c=144)
+                self.block2 = FlownetDeep(24+5+4+2+1, c=96)
                 self.block3 = Flownet(31, c=64)
                 self.encode = Head()
 
@@ -516,7 +518,18 @@ class Model:
                 conf_list = [None] * 4
                 merged = [None] * 4
 
-                flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
+                flow, mask, conf = self.block0(
+                    img0,
+                    img1,
+                    f0,
+                    f1,
+                    timestep,
+                    None,
+                    None,
+                    None,
+                    scale=scale[0],
+                    distance = None
+                    )
 
                 flow_list[0] = flow.clone()
                 conf_list[0] = torch.sigmoid(conf.clone())
@@ -542,7 +555,9 @@ class Model:
                     mask, 
                     conf, 
                     flow,
-                    scale=scale[1])
+                    scale=scale[1],
+                    distance = 1 - (scale[1]/scale[0])
+                    )
 
                 flow_list[1] = flow.clone()
                 conf_list[1] = torch.sigmoid(conf.clone())
@@ -558,7 +573,9 @@ class Model:
                     mask, 
                     conf, 
                     flow,
-                    scale=scale[2])
+                    scale=scale[2],
+                    distance = 1 - (scale[2]/scale[1])
+                    )
                 
                 flow_list[2] = flow.clone()
                 conf_list[2] = torch.sigmoid(conf.clone())
@@ -588,8 +605,8 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeep(24+2, c=192)
-                self.block1 = FlownetDeep(24+5+4+2, c=144)
-                self.block2 = FlownetDeep(24+5+4+2, c=96)
+                self.block1 = FlownetDeep(24+5+4+2+1, c=144)
+                self.block2 = FlownetDeep(24+5+4+2+1, c=96)
                 self.block3 = Flownet(31, c=64)
                 self.encode = Head()
 
@@ -612,7 +629,9 @@ class Model:
                     mask, 
                     conf, 
                     flow,
-                    scale=scale[1])
+                    scale=scale[1],
+                    distance = 1 - (scale[1]/scale[0])
+                    )
 
                 flow, mask, conf = self.block1(
                     img0, 
@@ -623,7 +642,9 @@ class Model:
                     mask, 
                     conf, 
                     flow,
-                    scale=scale[2])
+                    scale=scale[2],
+                    distance = 1 - (scale[2]/scale[1])
+                    )
 
                 flow, mask, conf = self.block1(
                     img0, 
@@ -634,7 +655,9 @@ class Model:
                     mask, 
                     conf, 
                     flow,
-                    scale=scale[3])
+                    scale=scale[3],
+                    distance = 1 - (scale[3]/scale[2])
+                    )
 
                 flow, mask, conf = self.block2(
                     img0, 
@@ -645,7 +668,9 @@ class Model:
                     mask, 
                     conf, 
                     flow,
-                    scale=scale[4])
+                    scale=scale[4],
+                    distance = 1 - (scale[4]/scale[3])
+                    )
 
                 flow_d, mask_d, conf_d = self.block3(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[5])
                 flow = flow + flow_d
