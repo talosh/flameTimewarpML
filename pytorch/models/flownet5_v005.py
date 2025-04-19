@@ -594,7 +594,7 @@ class Model:
                 self.block3 = Flownet(31, c=64)
                 self.encode = Head()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[13, 8, 5, 3, 2, 1], iterations=4, gt=None):
+            def forward(self, img0, img1, timestep=0.5, scale=[24, 16, 12, 8, 4, 1], iterations=1, gt=None):
 
                 img0 = ACEScg2cct(compress(img0))
                 img1 = ACEScg2cct(compress(img1))
@@ -666,7 +666,7 @@ class Model:
 
                 return result
 
-        self.model = FlownetCas
+        self.model = FlownetCasEval
         self.training_model = FlownetCas
 
     @staticmethod
