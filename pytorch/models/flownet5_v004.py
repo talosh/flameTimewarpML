@@ -443,14 +443,10 @@ class Model:
                 tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
                     
-                x = torch.cat((x, tenGrid), 1)
-                
-                '''
                 if distance is None:
                     x = torch.cat((x, tenGrid), 1)
                 else:
                     x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * distance, x, tenGrid), 1)
-                '''
 
                 timestep = torch.full((n,), timestep).to(img0.device)
 
