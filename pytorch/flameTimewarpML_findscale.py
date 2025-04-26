@@ -1884,7 +1884,7 @@ def main():
                         eval_loss_avg = -1
 
                     clear_lines(1)
-                    print (f'\rScale: {scale}, {idx+1} of {len(scales_list)}, Evaluating {ev_item_index} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}')
+                    print (f'\rScale: {scale}, {idx+1} of {len(scales_list)}, Evaluating {ev_item_index+1} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}')
 
                     eval_img0 = description['eval_img0']
                     eval_img1 = description['eval_img1']
