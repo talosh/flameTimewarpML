@@ -1890,23 +1890,21 @@ def main():
                     eval_img1 = description['eval_img1']
                     eval_img2 = description['eval_img2']
                     eval_ratio = description['ratio']
-
-                    description = read_eval_image_queue.get()
-
-                    '''
                     eval_img0 = torch.from_numpy(eval_img0)
                     eval_img1 = torch.from_numpy(eval_img1)
                     eval_img2 = torch.from_numpy(eval_img2)
                     eval_img0 = eval_img0.to(device = device, dtype = torch.float32, non_blocking = True)
                     eval_img1 = eval_img1.to(device = device, dtype = torch.float32, non_blocking = True)
                     eval_img2 = eval_img2.to(device = device, dtype = torch.float32, non_blocking = True)
-                    
                     eval_img0 = eval_img0.permute(2, 0, 1).unsqueeze(0)
                     eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
                     eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
-
                     eval_img0_orig = eval_img0.clone()
                     eval_img2_orig = eval_img2.clone()
+
+                    description = read_eval_image_queue.get()
+
+                    '''
 
                     if args.eval_half:
                         eval_img0 = eval_img0.half()
