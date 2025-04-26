@@ -1781,14 +1781,14 @@ def main():
 
     print (f'Scanning data for evaluation:')
     eval_dataset = get_dataset(
-    args.eval_folder, 
-    batch_size=args.batch_size,
+    args.dataset_path, 
+    batch_size=1,
     device=device, 
     frame_size=128,
     max_window=max_dataset_window,
     acescc_rate = 0, # args.acescc,
-    generalize=args.generalize,
-    repeat=args.repeat,
+    generalize=0,
+    repeat=1,
     sequential = True
     )
 
