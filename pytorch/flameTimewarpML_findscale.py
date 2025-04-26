@@ -1777,7 +1777,8 @@ def main():
     max_dataset_window = 11
     if not model_info.get('ratio_support'):
         max_dataset_window = 3
-    
+
+    flownet = Flownet().get_training_model()().to(device)
 
     print (f'Scanning data for evaluation:')
     eval_dataset = get_dataset(
