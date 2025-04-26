@@ -1878,19 +1878,16 @@ def main():
                 description = read_eval_image_queue.get()
                 while description is not None:
                     ev_item_index = description['ev_item_index']
-                    print (ev_item_index)
-                    description = read_eval_image_queue.get()
-
-                    
-                    '''
                     if eval_loss:
                         eval_loss_avg = float(np.array(eval_loss).mean())
                     else:
                         eval_loss_avg = -1
 
-                    # clear_lines(1)
+                    clear_lines(1)
                     print (f'\rScale: {scale}, {idx+1} of {len(scales_list)}, Evaluating {ev_item_index} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}')
+                    description = read_eval_image_queue.get()
 
+                    '''
                     eval_img0 = description['eval_img0']
                     eval_img1 = description['eval_img1']
                     eval_img2 = description['eval_img2']
