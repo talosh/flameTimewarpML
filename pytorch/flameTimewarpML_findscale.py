@@ -1826,7 +1826,7 @@ def main():
 
     if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.scale.csv'):
         create_csv_file(
-            f'{os.path.splitext(trained_model_path)[0]}.sacle.csv',
+            f'{os.path.splitext(trained_model_path)[0]}.scale.csv',
             [
                 'Loss',
                 'Scale',
