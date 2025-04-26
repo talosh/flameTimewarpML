@@ -1814,7 +1814,13 @@ def main():
         )
 
     print('\n\n')
+
+    for scale in scales_list:
+        print (scale)
+
     return
+
+
 
     while True:
         # tracemalloc.start()
