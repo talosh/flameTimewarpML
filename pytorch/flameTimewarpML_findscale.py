@@ -1914,11 +1914,6 @@ def main():
                         iterations = 1
                         )
 
-                    description = read_eval_image_queue.get()
-
-                    '''
-
-
                     eval_flow_list = result['flow_list']
                     eval_mask_list = result['mask_list']
                     eval_conf_list = result['conf_list']
@@ -1927,9 +1922,8 @@ def main():
                     if args.eval_half:
                         eval_flow_list[-1] = eval_flow_list[-1].float()
                         eval_mask_list[-1] = eval_mask_list[-1].float()
-                    
+
                     eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :, :]) * eval_mask_list[-1][:, :, :, :] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :, :]) * (1 - eval_mask_list[-1][:, :, :, :])
-                    
                     eval_loss_l1 = criterion_l1(eval_result, eval_img1)
                     eval_loss.append(float(eval_loss_l1.item()))
 
@@ -1943,8 +1937,8 @@ def main():
                     elif torch.backends.mps.is_available():
                         torch.mps.empty_cache()
 
+
                     description = read_eval_image_queue.get()
-                    '''
 
             eval_rows_to_append = [
                 {
