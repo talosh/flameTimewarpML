@@ -1778,7 +1778,7 @@ def main():
     if not model_info.get('ratio_support'):
         max_dataset_window = 3
 
-    flownet = Flownet().get_training_model()().to(device)
+    flownet = Flownet().get_model()().to(device)
 
     print (f'Scanning data for evaluation:')
     eval_dataset = get_dataset(
@@ -1812,6 +1812,8 @@ def main():
                 'Scale',
             ]
         )
+
+    criterion_l1 = torch.nn.L1Loss()
 
     print('\n\n')
 
@@ -1849,7 +1851,7 @@ def main():
         evalnet.half()
     evalnet.eval()
 
-    for scale in scales_list:
+    for idx, scale in enumerate(scales_list):
         eval_loss = []
 
         if torch.cuda.is_available():
@@ -1872,7 +1874,7 @@ def main():
                         eval_loss_avg = -1
 
                     clear_lines(1)
-                    print (f'\rScale: {scale}, Evaluating {ev_item_index} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}')
+                    print (f'\rScale: {scale}, {idx+1} of {len(scales_list)}, Evaluating {ev_item_index} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}')
 
                     eval_img0 = description['eval_img0']
                     eval_img1 = description['eval_img1']
@@ -1893,214 +1895,66 @@ def main():
                     eval_img0_orig = eval_img0.clone()
                     eval_img2_orig = eval_img2.clone()
 
+                    if args.eval_half:
+                        eval_img0 = eval_img0.half()
+                        eval_img2 = eval_img2.half()
+
+                    result = evalnet(
+                        eval_img0, 
+                        eval_img2,
+                        eval_ratio,
+                        scale = scale,
+                        iterations = args.iterations
+                        )
+
+                    eval_flow_list = result['flow_list']
+                    eval_mask_list = result['mask_list']
+                    eval_conf_list = result['conf_list']
+                    eval_merged = result['merged']
+
+                    if args.eval_half:
+                        eval_flow_list[-1] = eval_flow_list[-1].float()
+                        eval_mask_list[-1] = eval_mask_list[-1].float()
+                    
+                    eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :, :]) * eval_mask_list[-1][:, :, :, :] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :, :]) * (1 - eval_mask_list[-1][:, :, :, :])
+                    
+                    eval_loss_l1 = criterion_l1(eval_result, eval_img1)
+                    eval_loss.append(float(eval_loss_l1.item()))
+
+                    if torch.cuda.is_available():
+                        torch.cuda.synchronize()
+                    elif torch.backends.mps.is_available():
+                        torch.mps.synchronize()
+
+                    del eval_img0, eval_img1, eval_img2, eval_img0_orig, eval_img2_orig
+                    del eval_flow_list, eval_mask_list, eval_conf_list, eval_merged
+                    del result, eval_result
+                    del description['eval_img0'], description['eval_img1'], description['eval_img2']
+
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()            
+                    elif torch.backends.mps.is_available():
+                        torch.mps.empty_cache()
+
+            eval_rows_to_append = [
+                {
+                    'Loss': eval_loss_avg,
+                    'Scale': scale, 
+                }
+            ]
+
+            for eval_row in eval_rows_to_append:
+                append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.scale.csv', eval_row)
+
+            clear_lines(2)
+            print(f'\r[Scale {scale} Avg L1: {eval_loss_avg:.6f}')
+            print ('\n')
 
         except:
             pass
 
 
     return
-
-                    try:
-                        eval_img0 = description['eval_img0']
-                        eval_img1 = description['eval_img1']
-                        eval_img2 = description['eval_img2']
-                        eval_ratio = description['ratio']
-
-                        eval_img0 = torch.from_numpy(eval_img0)
-                        eval_img1 = torch.from_numpy(eval_img1)
-                        eval_img2 = torch.from_numpy(eval_img2)
-                        eval_img0 = eval_img0.to(device = device, dtype = torch.float32, non_blocking = True)
-                        eval_img1 = eval_img1.to(device = device, dtype = torch.float32, non_blocking = True)
-                        eval_img2 = eval_img2.to(device = device, dtype = torch.float32, non_blocking = True)
-                        
-                        eval_img0 = eval_img0.permute(2, 0, 1).unsqueeze(0)
-                        eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
-                        eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
-
-                        '''
-                        if args.all_gpus:
-                            eval_img0 = torch.cat([eval_img0, eval_img0], dim=0)
-                            eval_img1 = torch.cat([eval_img1, eval_img1], dim=0)
-                            eval_img2 = torch.cat([eval_img2, eval_img2], dim=0)
-                        '''
-
-                        eval_img0_orig = eval_img0.clone()
-                        eval_img2_orig = eval_img2.clone()
-                        # eval_img0 = normalize(eval_img0)
-                        # eval_img2 = normalize(eval_img2)
-
-                        '''
-                        pvalue = model_info.get('padding', 64)
-                        n, c, eh, ew = eval_img0.shape
-                        ph = ((eh - 1) // pvalue + 1) * pvalue
-                        pw = ((ew - 1) // pvalue + 1) * pvalue
-                        padding = (0, pw - ew, 0, ph - eh)
-                        
-                        eval_img0 = torch.nn.functional.pad(eval_img0, padding)
-                        eval_img2 = torch.nn.functional.pad(eval_img2, padding)
-                        '''
-
-                        if args.eval_half:
-                            eval_img0 = eval_img0.half()
-                            eval_img2 = eval_img2.half()
-
-                        result = evalnet(
-                            eval_img0, 
-                            eval_img2,
-                            eval_ratio, 
-                            iterations = args.iterations
-                            )
-                        
-                        eval_flow_list = result['flow_list']
-                        eval_mask_list = result['mask_list']
-                        eval_conf_list = result['conf_list']
-                        eval_merged = result['merged']
-
-                        if args.eval_half:
-                            eval_flow_list[-1] = eval_flow_list[-1].float()
-                            eval_mask_list[-1] = eval_mask_list[-1].float()
-
-                        eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :, :]) * eval_mask_list[-1][:, :, :, :] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :, :]) * (1 - eval_mask_list[-1][:, :, :, :])
-                        # eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :eh, :ew]) * eval_mask_list[-1][:, :, :eh, :ew] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :eh, :ew]) * (1 - eval_mask_list[-1][:, :, :eh, :ew])
-
-                        if torch.isnan(eval_img0_orig).any():
-                            print (f'eval: eval_img0_orig has NaN: {description["start"]}\n\n')
-                            description = read_eval_image_queue.get()
-                            continue
-                        if torch.isnan(eval_img2_orig).any():
-                            print (f'eval: eval_img2_orig has NaN: {description["start"]}\n\n')
-                            description = read_eval_image_queue.get()
-                            continue
-                        if torch.isnan(eval_result).any():
-                            print (f'eval: result has NaN: {description["start"]}\n\n')
-                            description = read_eval_image_queue.get()
-                            continue
-                        if torch.isnan(eval_img1).any():
-                            print (f'eval: eval_img1 has NaN: {description["start"]}\n\n')
-                            description = read_eval_image_queue.get()
-                            continue
-
-                        eval_loss_l1 = criterion_l1(eval_result, eval_img1)
-                        eval_loss.append(float(eval_loss_l1.item()))
-                        eval_psnr.append(float(psnr_torch(eval_result, eval_img1)))
-                        eval_loss_LPIPS = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
-                        eval_lpips.append(float(torch.mean(eval_loss_LPIPS).item()))
-
-                        eval_rgb_output_mask = eval_mask_list[-1].repeat_interleave(3, dim=1)
-                        eval_rgb_conf = eval_conf_list[-1].repeat_interleave(3, dim=1)
-                        eval_rgb_diff = diffmatte(eval_result, eval_img1).repeat_interleave(3, dim=1)
-
-                        # eval_rgb_output_mask = eval_mask_list[-1][:, :, :eh, :ew].repeat_interleave(3, dim=1)
-                        # eval_rgb_conf = eval_conf_list[-1][:, :, :eh, :ew].repeat_interleave(3, dim=1)
-                        # eval_rgb_diff = diffmatte(eval_result, eval_img1)[:, :, :eh, :ew].repeat_interleave(3, dim=1)
-
-                        if args.eval_save_imgs:
-                            write_eval_image_queue.put(
-                                {
-                                    'preview_folder': eval_folder,
-                                    'sample_source1': eval_img0_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_source1_name': f'{ev_item_index:08}_A_incomng.exr',
-                                    'sample_source2': eval_img2_orig[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_source2_name': f'{ev_item_index:08}_B_outgoing.exr',
-                                    'sample_target': eval_img1[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_target_name': f'{ev_item_index:08}_C_target.exr',
-                                    'sample_output': eval_result[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_output_name': f'{ev_item_index:08}_D_output.exr',
-                                    'sample_output_diff': eval_rgb_diff[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_output_diff_name': f'{ev_item_index:08}_E_diff.exr',
-                                    'sample_output_conf': eval_rgb_conf[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_output_conf_name': f'{ev_item_index:08}_F_conf.exr',
-                                    'sample_output_mask': eval_rgb_output_mask[0].permute(1, 2, 0).clone().cpu().detach().numpy(),
-                                    'sample_output_mask_name': f'{ev_item_index:08}_G_mask.exr'
-                                }
-                            )
-
-                        if torch.cuda.is_available():
-                            torch.cuda.synchronize()
-                        elif torch.backends.mps.is_available():
-                            torch.mps.synchronize()
-
-                        del eval_img0, eval_img1, eval_img2, eval_img0_orig, eval_img2_orig
-                        del eval_flow_list, eval_mask_list, eval_conf_list, eval_merged
-                        del result, eval_result, eval_rgb_output_mask, eval_rgb_diff, eval_rgb_conf
-                        del description['eval_img0'], description['eval_img1'], description['eval_img2']
-
-                        if torch.cuda.is_available():
-                            torch.cuda.empty_cache()            
-                        elif torch.backends.mps.is_available():
-                            torch.mps.empty_cache()
-
-                    except Exception as e:
-                        del description['eval_img0']
-                        del description['eval_img1']
-                        del description['eval_img2']
-                        print (f'\n\nerror while evaluating: {e}\n{description}\n{traceback.format_exc()}\n\n')
-                    description = read_eval_image_queue.get()
-
-            eval_rows_to_append = [
-                {
-                    'Epoch': epoch,
-                    'Step': step, 
-                    'Min': eval_loss_min,
-                    'Avg': eval_loss_avg,
-                    'Max': eval_loss_max,
-                    'PSNR': eval_psnr_mean,
-                    'LPIPS': eval_lpips_mean
-                 }
-            ]
-
-            for eval_row in eval_rows_to_append:
-                append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.eval.csv', eval_row)
-
-            clear_lines(2)
-            print(f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Eval Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f}, [PSNR] {eval_psnr_mean:.4f}, [LPIPS] {eval_lpips_mean:.4f}')
-            print ('\n')
-
-            if not args.eval_keep_all:
-            # print (f'prev folder: {prev_eval_folder}\n\n')
-                if prev_eval_folder:
-                    # print (f'exec "rm -rf {os.path.abspath(prev_eval_folder)}"\n\n')
-                    if os.path.isdir(prev_eval_folder):
-                        clean_thread = threading.Thread(target=lambda: os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')).start()
-                    # os.system(f'rm -rf {os.path.abspath(prev_eval_folder)}')
-            prev_eval_folder = eval_folder
-
-            del evalnet
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()            
-            elif torch.backends.mps.is_available():
-                torch.mps.empty_cache()
-
-            flownet.to(device)
-            flownet.train()
-
-            read_eval_thread.join()
-            del read_eval_image_queue
-
-            if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                scheduler_flownet.step(eval_loss_avg)
-
-        # End of evaluation block
-
-        batch_idx = batch_idx + 1
-        step = step + 1
-
-        # snapshot = tracemalloc.take_snapshot()
-        
-        '''
-        clear_lines(12)
-        print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{data_time1_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
-        print(f'\r[Epoch] Min: {min_l1:.6f} Avg: {avg_l1:.6f}, Max: {max_l1:.6f} LPIPS: {avg_lpips:.4f}')
-        top_stats = snapshot.statistics('lineno')
-        for stat in top_stats[:10]:
-            print(stat)
-        '''
-
-        # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow_list, mask_list, conf_list, merged, flow0, flow1, output, output_clean, diff_matte, loss_LPIPS
-        data_time2 = time.time() - time_stamp
-
-        if epoch == args.epochs:
-            sys.exit()
 
 if __name__ == "__main__":
     main()
