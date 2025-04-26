@@ -1960,7 +1960,8 @@ def main():
             print(f'\r[Scale {scale} Avg L1: {eval_loss_avg:.6f}')
             print ('\n')
 
-        except:
+        except Exception as e:
+            print (e)
             while description is not None:
                 description = read_eval_image_queue.get()
             read_eval_thread.join()
