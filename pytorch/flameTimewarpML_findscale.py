@@ -1902,10 +1902,6 @@ def main():
                     eval_img0_orig = eval_img0.clone()
                     eval_img2_orig = eval_img2.clone()
 
-                    description = read_eval_image_queue.get()
-
-                    '''
-
                     if args.eval_half:
                         eval_img0 = eval_img0.half()
                         eval_img2 = eval_img2.half()
@@ -1917,6 +1913,11 @@ def main():
                         scale = scale,
                         iterations = args.iterations
                         )
+
+                    description = read_eval_image_queue.get()
+
+                    '''
+
 
                     eval_flow_list = result['flow_list']
                     eval_mask_list = result['mask_list']
