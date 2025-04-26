@@ -1793,6 +1793,26 @@ def main():
     sequential = True
     )
 
+    import signal
+    def create_graceful_exit(current_state_dict):
+        def graceful_exit(signum, frame):
+            # print(f'\nSaving current state to {current_state_dict["trained_model_path"]}...')
+            # print (f'Epoch: {current_state_dict["epoch"] + 1}, Step: {current_state_dict["step"]:11}')
+            # torch.save(current_state_dict, current_state_dict['trained_model_path'])
+            exit_event.set()  # Signal threads to stop
+            process_exit_event.set()  # Signal processes to stop
+            exit(0)
+            # signal.signal(signum, signal.SIG_DFL)
+            # os.kill(os.getpid(), signal.SIGINT)
+        return graceful_exit
+    signal.signal(signal.SIGINT, create_graceful_exit(current_state_dict))
+
+    def exeption_handler(exctype, value, tb):
+        exit_event.set()
+        process_exit_event.set()
+        sys.__excepthook__(exctype, value, tb)
+    sys.excepthook = exeption_handler
+
     trained_model_path = args.state_file
     try:
         checkpoint = torch.load(trained_model_path, map_location=device)
@@ -1817,33 +1837,6 @@ def main():
 
     print('\n\n')
 
-    descriptions = list(eval_dataset.initial_train_descriptions)
-
-    def read_eval_images(read_eval_image_queue, descriptions):
-        for ev_item_index, description in enumerate(descriptions):
-            try:
-                desc_data = dict(description)
-                eval_img0 = read_image_file(description['start'])['image_data']
-                eval_img1 = read_image_file(description['gt'])['image_data']
-                eval_img2 = read_image_file(description['end'])['image_data']
-
-                desc_data['eval_img0'] = eval_img0
-                desc_data['eval_img1'] = eval_img1
-                desc_data['eval_img2'] = eval_img2
-
-                desc_data['ev_item_index'] = ev_item_index
-                read_eval_image_queue.put(desc_data)
-                del desc_data
-            
-            except Exception as e:
-                pprint (f'\nerror while reading eval images: {e}\n{description}\n\n')
-        read_eval_image_queue.put(None)
-
-    read_eval_image_queue = queue.Queue(maxsize=4)
-    read_eval_thread = threading.Thread(target=read_eval_images, args=(read_eval_image_queue, descriptions))
-    read_eval_thread.daemon = True
-    read_eval_thread.start()
-
     evalnet = flownet
     for param in evalnet.parameters():
         param.requires_grad = False
@@ -1852,16 +1845,34 @@ def main():
     evalnet.eval()
 
     for idx, scale in enumerate(scales_list):
+        descriptions = list(eval_dataset.initial_train_descriptions)
+
+        def read_eval_images(read_eval_image_queue, descriptions):
+            for ev_item_index, description in enumerate(descriptions):
+                try:
+                    desc_data = dict(description)
+                    eval_img0 = read_image_file(description['start'])['image_data']
+                    eval_img1 = read_image_file(description['gt'])['image_data']
+                    eval_img2 = read_image_file(description['end'])['image_data']
+
+                    desc_data['eval_img0'] = eval_img0
+                    desc_data['eval_img1'] = eval_img1
+                    desc_data['eval_img2'] = eval_img2
+
+                    desc_data['ev_item_index'] = ev_item_index
+                    read_eval_image_queue.put(desc_data)
+                    del desc_data
+                
+                except Exception as e:
+                    pprint (f'\nerror while reading eval images: {e}\n{description}\n\n')
+            read_eval_image_queue.put(None)
+
+        read_eval_image_queue = queue.Queue(maxsize=4)
+        read_eval_thread = threading.Thread(target=read_eval_images, args=(read_eval_image_queue, descriptions))
+        read_eval_thread.daemon = True
+        read_eval_thread.start()
         eval_loss = []
 
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
-        elif torch.backends.mps.is_available():
-            torch.mps.synchronize()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()            
-        elif torch.backends.mps.is_available():
-            torch.mps.empty_cache()
         try:
             with torch.no_grad():
                 description = read_eval_image_queue.get()
@@ -1936,6 +1947,8 @@ def main():
                     elif torch.backends.mps.is_available():
                         torch.mps.empty_cache()
 
+                    description = read_eval_image_queue.get()
+
             eval_rows_to_append = [
                 {
                     'Loss': eval_loss_avg,
@@ -1951,10 +1964,11 @@ def main():
             print ('\n')
 
         except:
-            pass
+            while description is not None:
+                description = read_eval_image_queue.get()
+            read_eval_thread.join()
 
-
-    return
+        read_eval_thread.join()
 
 if __name__ == "__main__":
     main()
