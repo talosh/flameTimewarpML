@@ -1884,7 +1884,7 @@ def main():
                     else:
                         eval_loss_avg = -1
 
-                    clear_lines(1)
+                    # clear_lines(1)
                     print (f'\rScale: {scale}, {idx+1} of {len(scales_list)}, Evaluating {ev_item_index} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}')
 
                     eval_img0 = description['eval_img0']
@@ -1937,10 +1937,12 @@ def main():
                     elif torch.backends.mps.is_available():
                         torch.mps.synchronize()
 
+                    '''
                     del eval_img0, eval_img1, eval_img2, eval_img0_orig, eval_img2_orig
                     del eval_flow_list, eval_mask_list, eval_conf_list, eval_merged
                     del result, eval_result
                     del description['eval_img0'], description['eval_img1'], description['eval_img2']
+                    '''
 
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()            
