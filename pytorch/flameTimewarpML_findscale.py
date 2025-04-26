@@ -1961,6 +1961,7 @@ def main():
             print ('\n')
 
         except Exception as e:
+            clear_lines(2)
             print (e)
             while description is not None:
                 description = read_eval_image_queue.get()
