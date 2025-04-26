@@ -1722,6 +1722,17 @@ def generate_scales(scale=24):
 
     return results
 
+def generate_scales4(scale=24):
+    results = []
+
+    for a in range(scale, 1 - 1, -1):       # First number from 32 down to 2
+        for b in range(a, 1 - 1, -1):     # Second number ≤ a
+            for c in range(b, 1 - 1, -1): # Third number ≤ b
+                d = 1
+                results.append((a, b, c, d))
+
+    return results
+
 def main():
     global current_state_dict
     parser = argparse.ArgumentParser(description='Training script.')
@@ -1821,7 +1832,7 @@ def main():
     except Exception as e:
         print (f'unable to load saved model: {e}')
 
-    scales_list = generate_scales()
+    scales_list = generate_scales4()
     print(f"Generated {len(scales_list)} scale sequences.")
 
     if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.scale.csv'):

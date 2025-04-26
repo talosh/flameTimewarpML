@@ -622,7 +622,7 @@ class Model:
 
                 return result
 
-        self.model = FlownetCasEval
+        self.model = FlownetCas
         self.training_model = FlownetCas
 
     @staticmethod
