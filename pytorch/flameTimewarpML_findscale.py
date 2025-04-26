@@ -1815,510 +1815,57 @@ def main():
 
     print('\n\n')
 
+    descriptions = list(eval_dataset.initial_train_descriptions)
+
+    def read_eval_images(read_eval_image_queue, descriptions):
+        for ev_item_index, description in enumerate(descriptions):
+            try:
+                desc_data = dict(description)
+                eval_img0 = read_image_file(description['start'])['image_data']
+                eval_img1 = read_image_file(description['gt'])['image_data']
+                eval_img2 = read_image_file(description['end'])['image_data']
+
+                desc_data['eval_img0'] = eval_img0
+                desc_data['eval_img1'] = eval_img1
+                desc_data['eval_img2'] = eval_img2
+
+                desc_data['ev_item_index'] = ev_item_index
+                read_eval_image_queue.put(desc_data)
+                del desc_data
+            
+            except Exception as e:
+                pprint (f'\nerror while reading eval images: {e}\n{description}\n\n')
+        read_eval_image_queue.put(None)
+
+    read_eval_image_queue = queue.Queue(maxsize=4)
+    read_eval_thread = threading.Thread(target=read_eval_images, args=(read_eval_image_queue, descriptions))
+    read_eval_thread.daemon = True
+    read_eval_thread.start()
+
+    evalnet = flownet
+    for param in evalnet.parameters():
+        param.requires_grad = False
+    if args.eval_half:
+        evalnet.half()
+    evalnet.eval()
+
     for scale in scales_list:
-        print (scale)
+        eval_loss = []
+
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        elif torch.backends.mps.is_available():
+            torch.mps.synchronize()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()            
+        elif torch.backends.mps.is_available():
+            torch.mps.empty_cache()
+
+        with torch.no_grad():
+            description = read_eval_image_queue.get()
 
     return
 
-
-
-    while True:
-        # tracemalloc.start()
-        # data_time = time.time() - time_stamp
-        time_stamp = time.time()
-
-        img0, img1, img2, ratio, idx, current_desc = dataset[batch_idx]
-
-        img0 = img0.to(device, non_blocking = True)
-        img1 = img1.to(device, non_blocking = True)
-        img2 = img2.to(device, non_blocking = True)
-
-        if args.ap0:
-            img0 = ap0_to_ap1(img0)
-            img1 = ap0_to_ap1(img1)
-            img2 = ap0_to_ap1(img2)
-
-        if args.resize > 1:
-            if random.uniform(0, 1) > 0.25:
-                scale_augm = random.uniform(1, args.resize)        
-                nn, nc, nh, nw = img0.shape
-                sh, sw = round(nh * (1 / scale_augm)), round(nw * (1 / scale_augm))
-                sh += 4 - (sh % 4)
-                sw += 4 - (sw % 4)
-                img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-                img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-                img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-
-        img0_orig = img0.detach().clone()
-        img1_orig = img1.detach().clone()
-        img2_orig = img2.detach().clone()
-
-        current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
-
-        '''
-        # scale list augmentation
-        random_scales = [
-            [4, 4, 2, 1],
-            [4, 2, 2, 1],
-            [4, 2, 1, 1],
-            [2, 2, 2, 1],
-            [2, 2, 1, 1],
-            [2, 1, 1, 1],
-            [1, 1, 1, 1],
-            [1, 1, 1, 1],
-            [1, 1, 1, 1],
-            [1, 1, 1, 1],
-        ]
-        '''
-
-        training_scale = [1] * 4
-        if random.uniform(0, 1) < 0.8:
-            training_scale[0] = random.uniform(10, 1)
-            training_scale[1] = random.uniform(training_scale[0], 1)
-            training_scale[2] = random.uniform(training_scale[1], 1)
-
-        # training_scale[0] = 1
-
-        data_time = time.time() - time_stamp
-        time_stamp = time.time()
-
-        flownet.train()
-        
-        '''
-        # add noise
-        if random.uniform(0, 1) < (args.generalize / 100):
-            if random.uniform(0, 1) < 0.2:
-                delta = random.uniform(0, 1e-3)
-                img0 += torch.rand_like(img0) * delta
-                img2 += torch.rand_like(img1) * delta
-        '''
-
-        result = flownet(
-            img0,
-            img2,
-            ratio,
-            scale=training_scale,
-            iterations = args.iterations,
-            gt = img1
-            )
-
-        flow_list = result['flow_list']
-        mask_list = result['mask_list']
-        conf_list = result['conf_list']
-
-        model_time = time.time() - time_stamp
-        time_stamp = time.time()
-
-        loss = torch.zeros(1, device=device, requires_grad=True)
-
-        for i in range(len(flow_list)):
-            if flow_list[i] is not None:
-                scale = training_scale[i]
-                flow0 = flow_list[i][:, :2]
-                flow1 = flow_list[i][:, 2:4]
-                mask = mask_list[i]
-                conf = conf_list[i]
-                output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
-                loss_mask = variance_loss(mask, 0.1)
-                loss_conf = criterion_l1(conf, diffmatte(output_clean, img1_orig))
-                loss_l1 = criterion_l1(
-                    torch.nn.functional.interpolate(output_clean, scale_factor= 1. / scale, mode="bicubic", align_corners=True, antialias=True),
-                    torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode="bicubic", align_corners=True, antialias=True)
-                    ) * scale
-                loss_lap = criterion_lap(
-                    output_clean,
-                    img1_orig
-                    )
-                loss_LPIPS = loss_fn_alex(
-                    output_clean * 2 - 1, 
-                    img1_orig * 2 - 1
-                    )
-                loss = loss + loss_l1 + loss_lap + 1e-2*loss_mask + 1e-2*loss_conf + 1.4e-2 * (1 / (i + 1)) * float(torch.mean(loss_LPIPS).item())
-
-        diff_matte = diffmatte(output_clean, img1_orig)
-        # loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
-        # loss_l1 = criterion_l1(output_clean, img1_orig)
-        loss = loss + loss_l1 + loss_lap + 1e-2 * float(torch.mean(loss_LPIPS).item())
-
-        if cur_comb is None:
-            cur_comb = np.full(cur_size, float(loss.item()))
-        if cur_l1 is None:
-            cur_l1 = np.full(cur_size, float(loss_l1.item()))
-        if cur_lpips is None:
-            cur_lpips = np.full(cur_size, float(torch.mean(loss_LPIPS).item()))
-
-        cur_idx = np.random.choice(cur_size)
-        cur_mask[cur_idx] = False
-        cur_comb[cur_idx] = float(loss.item())
-        cur_l1[cur_idx] = float(loss_l1.item())
-        cur_lpips[cur_idx] = float(torch.mean(loss_LPIPS).item())
-
-        min_l1 = min(min_l1, float(loss_l1.item()))
-        max_l1 = max(max_l1, float(loss_l1.item()))
-        avg_loss = float(loss.item()) if batch_idx == 0 else (avg_loss * (batch_idx - 1) + float(loss.item())) / batch_idx 
-        avg_l1 = float(loss_l1.item()) if batch_idx == 0 else (avg_l1 * (batch_idx - 1) + float(loss_l1.item())) / batch_idx 
-        avg_lpips = float(torch.mean(loss_LPIPS).item()) if batch_idx == 0 else (avg_lpips * (batch_idx - 1) + float(torch.mean(loss_LPIPS).item())) / batch_idx
-        avg_pnsr = float(psnr_torch(output_clean, img1_orig)) if batch_idx == 0 else (avg_pnsr * (batch_idx - 1) + float(psnr_torch(output_clean, img1_orig))) / batch_idx
-
-        cur_comb[cur_mask] = avg_loss
-        cur_l1[cur_mask] = avg_l1
-        cur_lpips[cur_mask] = avg_lpips
-
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
-
-        optimizer_flownet.step()
-        optimizer_flownet.zero_grad()
-
-        if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
-            pass
-        else:
-            try:
-                scheduler_flownet.step()
-            except Exception as e:
-                # if Onecycle is over due to variable number of steps per epoch
-                # fall back to Cosine
-
-                current_lr = float(optimizer_flownet.param_groups[0]["lr"])
-                print (f'switching to CyclicLR scheduler with base {current_lr * pulse_dive} and max {current_lr}')
-                print (f'\n\n')
-
-                scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
-                                optimizer_flownet,
-                                base_lr=current_lr * pulse_dive,  # Lower boundary of the learning rate cycle
-                                max_lr=current_lr,    # Upper boundary of the learning rate cycle
-                                step_size_up=pulse_period,  # Number of iterations for the increasing part of the cycle
-                                cycle_momentum=False,
-                                mode='exp_range',  # Use exp_range to enable scale_fn
-                                scale_fn=sinusoidal_scale_fn,  # Custom sinusoidal function
-                                scale_mode='cycle'  # Apply scaling once per cycle
-                            )
-            if args.cyclic != -1 and step % args.cyclic == 1:
-                scheduler_flownet = torch.optim.lr_scheduler.CyclicLR(
-                                optimizer_flownet,
-                                base_lr=lr * pulse_dive,        # Lower boundary of the learning rate cycle
-                                max_lr=lr,                      # Upper boundary of the learning rate cycle
-                                step_size_up=args.cyclic,       # Number of iterations for the increasing part of the cycle
-                                mode='exp_range',               # Use exp_range to enable scale_fn
-                                cycle_momentum=False,
-                                scale_fn=sinusoidal_scale_fn,   # Custom sinusoidal function
-                                scale_mode='cycle'              # Apply scaling once per cycle
-                            )
-
-        if platform.system() == 'Darwin':
-            torch.mps.synchronize()
-        else:
-            torch.cuda.synchronize(device=device)
-
-        train_time = time.time() - time_stamp
-        time_stamp = time.time()
-
-        # del img0, img1, img2, img0_orig, img1_orig, img2_orig, flow0, flow1, flow_list, mask, mask_list, conf, conf_list, merged, output, output_clean, diff_matte
-        # continue
-
-        current_state_dict['step'] = int(step)
-        current_state_dict['epoch'] = int(epoch)
-        current_state_dict['start_timestamp'] = start_timestamp
-        current_state_dict['lr'] = optimizer_flownet.param_groups[0]['lr']
-        current_state_dict['model_info'] = model_info
-        if args.all_gpus:
-            current_state_dict['flownet_state_dict'] = convert_from_data_parallel(flownet.state_dict())
-        else:
-            current_state_dict['flownet_state_dict'] = flownet.state_dict()
-        current_state_dict['optimizer_flownet_state_dict'] = optimizer_flownet.state_dict()
-        current_state_dict['trained_model_path'] = trained_model_path
-
-        if step % args.save == 1:
-            write_model_state_queue.put(deepcopy(current_state_dict))
-
-        if step % args.preview == 1:
-            rgb_source1 = img0_orig
-            rgb_source2 = img2_orig
-            rgb_target = img1_orig
-            rgb_output = output_clean
-            rgb_output_mask = mask.repeat_interleave(3, dim=1)
-            rgb_output_conf = conf.repeat_interleave(3, dim=1)
-            rgb_output_diff = diff_matte.repeat_interleave(3, dim=1)
-            # rgb_refine = refine_list[0] + refine_list[1] + refine_list[2] + refine_list[3]
-            # rgb_refine = (rgb_refine + 1) / 2
-            # sample_refine = rgb_refine[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
-            
-            preview_index += 1
-            preview_index = preview_index if preview_index < 10 else 0
-
-            write_image_queue.put(
-                {
-                    'preview_folder': os.path.join(args.dataset_path, 'preview', os.path.splitext(os.path.basename(trained_model_path))[0]),
-                    'preview_index': int(preview_index),
-                    'sample_source1': rgb_source1[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_source2': rgb_source2[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_target': rgb_target[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output': rgb_output[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output_mask': rgb_output_mask[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output_conf': rgb_output_conf[0].clone().cpu().detach().numpy().transpose(1, 2, 0),
-                    'sample_output_diff': rgb_output_diff[0].clone().cpu().detach().numpy().transpose(1, 2, 0)
-                }
-            )
-
-            del rgb_source1, rgb_source2, rgb_target, rgb_output, rgb_output_mask
-
-        current_desc['loss'] = float(loss.item())
-        current_desc['loss_l1'] = float(loss_l1.item())
-        current_desc['lpips'] = float(torch.mean(loss_LPIPS).item())
-
-        min_max_item = {
-                'description': current_desc,
-                'img0_orig': img0_orig.numpy(force=True).copy(),
-                'img1_orig': img1_orig.numpy(force=True).copy(),
-                'img2_orig': img2_orig.numpy(force=True).copy(),
-                'diff': diff_matte.repeat_interleave(3, dim=1).numpy(force=True).copy(),
-                'conf': conf.repeat_interleave(3, dim=1).numpy(force=True).copy(),
-                'mask': mask.repeat_interleave(3, dim=1).numpy(force=True).copy(),
-                'output': output_clean.numpy(force=True).copy(),
-        }
-
-        try:
-            max_values.add(float(loss.item()), min_max_item)
-            min_values.add(float(loss.item()), min_max_item)
-        except:
-            pass
-
-        if (args.preview_max > 0) and ((step+1 % preview_maxmin_steps) == 1 or ( idx + 1 ) == len(dataset)):
-            max_preview_folder = os.path.join(
-                args.dataset_path,
-                'preview',
-                os.path.splitext(os.path.basename(trained_model_path))[0],
-                'max')
-            if not os.path.isdir(max_preview_folder):
-                os.makedirs(max_preview_folder)
-            max_loss_values = max_values.get_values()
-            index = 0
-            item = None
-            for index, item in enumerate(max_loss_values):
-                item_data = item[1]
-                n, c, h, w = item_data['img0_orig'].shape
-                for b_indx in range(n):
-                    write_eval_image_queue.put(
-                    {
-                        'preview_folder': max_preview_folder,
-                        'sample_source1': item_data['img0_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_source1_name': f'{index:04}_{b_indx:02}_A_incomng.exr',
-                        'sample_source2': item_data['img2_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_source2_name': f'{index:04}_{b_indx:02}_B_outgoing.exr',
-                        'sample_target': item_data['img1_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_target_name': f'{index:04}_{b_indx:02}_C_target.exr',
-                        'sample_output': item_data['output'][b_indx].transpose(1, 2, 0),
-                        'sample_output_name': f'{index:04}_{b_indx:02}_D_output.exr',
-                        'sample_output_diff': item_data['diff'][b_indx].transpose(1, 2, 0),
-                        'sample_output_diff_name': f'{index:04}_{b_indx:02}_E_diff.exr',
-                        'sample_output_conf': item_data['conf'][b_indx].transpose(1, 2, 0),
-                        'sample_output_conf_name': f'{index:04}_{b_indx:02}_F_conf.exr',
-                        'sample_output_mask': item_data['mask'][b_indx].transpose(1, 2, 0),
-                        'sample_output_mask_name': f'{index:04}_{b_indx:02}_G_mask.exr',
-                    }
-                    )
-                    json_filename = os.path.join(
-                        max_preview_folder,
-                        f'{index:04}_{b_indx:02}.json'
-                    )
-                    with open(json_filename, 'w', encoding='utf-8') as json_file:
-                        json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
-            del index, item
-
-        if (args.preview_min > 0) and ((step+1 % preview_maxmin_steps) == 1 or ( idx + 1 ) == len(dataset)):
-            min_preview_folder = os.path.join(
-                args.dataset_path,
-                'preview',
-                os.path.splitext(os.path.basename(trained_model_path))[0],
-                'min')
-            if not os.path.isdir(min_preview_folder):
-                os.makedirs(min_preview_folder)
-            min_loss_values = min_values.get_values()
-            index = 0
-            item = None
-            for index, item in enumerate(min_loss_values):
-                item_data = item[1]
-                n, c, h, w = item_data['img0_orig'].shape
-                for b_indx in range(n):
-                    write_eval_image_queue.put(
-                    {
-                        'preview_folder': min_preview_folder,
-                        'sample_source1': item_data['img0_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_source1_name': f'{index:04}_{b_indx:02}_A_incomng.exr',
-                        'sample_source2': item_data['img2_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_source2_name': f'{index:04}_{b_indx:02}_B_outgoing.exr',
-                        'sample_target': item_data['img1_orig'][b_indx].transpose(1, 2, 0),
-                        'sample_target_name': f'{index:04}_{b_indx:02}_C_target.exr',
-                        'sample_output': item_data['output'][b_indx].transpose(1, 2, 0),
-                        'sample_output_name': f'{index:04}_{b_indx:02}_D_output.exr',
-                        'sample_output_diff': item_data['diff'][b_indx].transpose(1, 2, 0),
-                        'sample_output_diff_name': f'{index:04}_{b_indx:02}_E_diff.exr',
-                        'sample_output_conf': item_data['conf'][b_indx].transpose(1, 2, 0),
-                        'sample_output_conf_name': f'{index:04}_{b_indx:02}_F_conf.exr',
-                        'sample_output_mask': item_data['mask'][b_indx].transpose(1, 2, 0),
-                        'sample_output_mask_name': f'{index:04}_{b_indx:02}_G_mask.exr',
-                    }
-                    )
-                    json_filename = os.path.join(
-                        min_preview_folder,
-                        f'{index:04}_{b_indx:02}.json'
-                    )
-                    with open(json_filename, 'w', encoding='utf-8') as json_file:
-                        json.dump(item_data['description'], json_file, indent=4, ensure_ascii=False)
-            del index, item
-
-        data_time_str = str(f'{data_time:.2f}')
-        model_time_str = str(f'{model_time:.2f}')
-        train_time_str = str(f'{train_time:.2f}')
-        data_time2_str = str(f'{data_time2:.2f}')
-
-        epoch_time = time.time() - start_timestamp
-        days = int(epoch_time // (24 * 3600))
-        hours = int((epoch_time % (24 * 3600)) // 3600)
-        minutes = int((epoch_time % 3600) // 60)
-
-        clear_lines(2)
-        print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{model_time_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
-        if len(dataset) > 10000:
-            print(f'\r[10K Average] L1: {np.mean(cur_l1):.6f} LPIPS: {np.mean(cur_lpips):.4f} Combined: {np.mean(cur_comb):.8f}')
-        else:
-            print(f'\r[Epoch] Min L1: {min_l1:.6f} Avg L1: {avg_l1:.6f} Max L1: {max_l1:.6f} Avg LPIPS: {avg_lpips:.4f} Combined: {avg_loss:.8f}')
-
-        if ( idx + 1 ) == len(dataset):
-            write_model_state_queue.put(deepcopy(current_state_dict))
-
-            '''
-            psnr = float(np.array(psnr_list).mean())
-            lpips_val = float(np.array(lpips_list).mean())
-            '''
-
-            epoch_time = time.time() - start_timestamp
-            days = int(epoch_time // (24 * 3600))
-            hours = int((epoch_time % (24 * 3600)) // 3600)
-            minutes = int((epoch_time % 3600) // 60)
-
-            # clear_lines(2)
-            # print(f'\rEpoch [{epoch + 1} (Step {step:11} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PSNR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
-            # print ('\n')
-
-            rows_to_append = [
-                {
-                    'Epoch': epoch,
-                    'Step': step, 
-                    'Min': min_l1,
-                    'Avg': avg_l1,
-                    'Max': max_l1,
-                    'PSNR': avg_pnsr,
-                    'LPIPS': avg_lpips
-                 }
-            ]
-            for row in rows_to_append:
-                append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.csv', row)
-
-            psnr = 0
-            if args.eval == 0:
-                if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                    scheduler_flownet.step(avg_loss)
-
-            min_l1 = float(sys.float_info.max)
-            max_l1 = 0
-            avg_l1 = 0
-            avg_pnsr = 0
-            avg_lpips = 0
-            avg_loss = 0
-            epoch = epoch + 1
-            batch_idx = 0
-            
-            while  ( idx + 1 ) == len(dataset):
-                img0, img1, img2, ratio, idx, current_desc = dataset[batch_idx]
-
-            if not args.sequential:
-                dataset.reshuffle()
-            max_values.reset()
-            min_values.reset()
-
-        # Evaluation block
-        if ((args.eval > 0) and (step % args.eval) == 1) or (epoch == args.epochs):
-            if not args.eval_first:
-                if step == 1:
-                    batch_idx = batch_idx + 1
-                    step = step + 1
-                    continue
-
-            preview_folder = os.path.join(args.dataset_path, 'preview')
-
-            try:
-                prev_eval_folder
-            except:
-                prev_eval_folder = None
-            eval_folder = os.path.join(
-                preview_folder,
-                'eval',
-                os.path.splitext(os.path.basename(trained_model_path))[0],
-                f'Step_{step:09}'
-                )
-
-            if not os.path.isdir(eval_folder):
-                os.makedirs(eval_folder)
-            
-            descriptions = list(eval_dataset.initial_train_descriptions)
-
-            if args.eval_samples > 0:
-                rng = random.Random(args.eval_seed)
-                descriptions = rng.sample(descriptions, args.eval_samples)
-
-            def read_eval_images(read_eval_image_queue, descriptions):
-                for ev_item_index, description in enumerate(descriptions):
-                    try:
-                        desc_data = dict(description)
-                        eval_img0 = read_image_file(description['start'])['image_data']
-                        eval_img1 = read_image_file(description['gt'])['image_data']
-                        eval_img2 = read_image_file(description['end'])['image_data']
-
-                        desc_data['eval_img0'] = eval_img0
-                        desc_data['eval_img1'] = eval_img1
-                        desc_data['eval_img2'] = eval_img2
-
-                        desc_data['ev_item_index'] = ev_item_index
-                        read_eval_image_queue.put(desc_data)
-                        del desc_data
-                    
-                    except Exception as e:
-                        pprint (f'\nerror while reading eval images: {e}\n{description}\n\n')
-                read_eval_image_queue.put(None)
-
-            read_eval_image_queue = queue.Queue(maxsize=4)
-            read_eval_thread = threading.Thread(target=read_eval_images, args=(read_eval_image_queue, descriptions))
-            read_eval_thread.daemon = True
-            read_eval_thread.start()
-
-            eval_loss = []
-            eval_psnr = []
-            eval_lpips = []
-
-            original_state_dict = deepcopy(flownet.state_dict())
-            if args.all_gpus:
-                original_state_dict = convert_from_data_parallel(original_state_dict)
-
-            if torch.cuda.is_available():
-                torch.cuda.synchronize()
-            elif torch.backends.mps.is_available():
-                torch.mps.synchronize()
-            
-            flownet.cpu()
-
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()            
-            elif torch.backends.mps.is_available():
-                torch.mps.empty_cache()
-
-            evalnet = Flownet().get_model()().to(device)
-            evalnet.load_state_dict(original_state_dict)
-            for param in evalnet.parameters():
-                param.requires_grad = False
-                
-            if args.eval_half:
-                evalnet.half()
 
             evalnet.eval()
             with torch.no_grad():
