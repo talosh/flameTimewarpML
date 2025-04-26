@@ -1951,6 +1951,7 @@ def main():
 
                     description = read_eval_image_queue.get()
 
+            eval_loss_avg = float(np.array(eval_loss).mean())
             eval_rows_to_append = [
                 {
                     'Loss': eval_loss_avg,
