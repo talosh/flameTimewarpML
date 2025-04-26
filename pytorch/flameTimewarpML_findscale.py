@@ -1911,7 +1911,7 @@ def main():
                         eval_img2,
                         eval_ratio,
                         scale = scale,
-                        iterations = args.iterations
+                        iterations = 1
                         )
 
                     description = read_eval_image_queue.get()
