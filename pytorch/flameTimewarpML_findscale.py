@@ -1956,7 +1956,8 @@ def main():
 
         except Exception as e:
             clear_lines(2)
-            print (e)
+            print(f'\r[Scale {scale} Error: {e}')
+            print ('\n')
             while description is not None:
                 description = read_eval_image_queue.get()
             read_eval_thread.join()
