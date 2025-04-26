@@ -1803,92 +1803,18 @@ def main():
 
     print('\n\n')
 
+    if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.scale.csv'):
+        create_csv_file(
+            f'{os.path.splitext(trained_model_path)[0]}.sacle.csv',
+            [
+                'Loss',
+                'Scale',
+            ]
+        )
+
+    scales_list = generate_scales()
+    print(f"Generated {len(scales_list)} scale sequences.")
     return
-
-    # print("\n"*12)
-
-    current_state_dict['step'] = int(step)
-    current_state_dict['epoch'] = int(epoch)
-    current_state_dict['start_timestamp'] = start_timestamp
-    current_state_dict['lr'] = optimizer_flownet.param_groups[0]['lr']
-    current_state_dict['model_info'] = model_info
-    if args.all_gpus:
-        current_state_dict['flownet_state_dict'] = convert_from_data_parallel(flownet.state_dict())
-    else:
-        current_state_dict['flownet_state_dict'] = flownet.state_dict()
-    current_state_dict['optimizer_flownet_state_dict'] = optimizer_flownet.state_dict()
-    current_state_dict['trained_model_path'] = trained_model_path
-
-    if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.csv'):
-        create_csv_file(
-            f'{os.path.splitext(trained_model_path)[0]}.csv',
-            [
-                'Epoch',
-                'Step',
-                'Min',
-                'Avg',
-                'Max',
-                'PSNR',
-                'LPIPS'
-            ]
-        )
-
-    if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.eval.csv'):
-        create_csv_file(
-            f'{os.path.splitext(trained_model_path)[0]}.eval.csv',
-            [
-                'Epoch',
-                'Step',
-                'Min',
-                'Avg',
-                'Max',
-                'PSNR',
-                'LPIPS'
-            ]
-        )
-    
-    import signal
-    def create_graceful_exit(current_state_dict):
-        def graceful_exit(signum, frame):
-            print(f'\nSaving current state to {current_state_dict["trained_model_path"]}...')
-            print (f'Epoch: {current_state_dict["epoch"] + 1}, Step: {current_state_dict["step"]:11}')
-            torch.save(current_state_dict, current_state_dict['trained_model_path'])
-            exit_event.set()  # Signal threads to stop
-            process_exit_event.set()  # Signal processes to stop
-            exit(0)
-            # signal.signal(signum, signal.SIG_DFL)
-            # os.kill(os.getpid(), signal.SIGINT)
-        return graceful_exit
-    signal.signal(signal.SIGINT, create_graceful_exit(current_state_dict))
-
-    def exeption_handler(exctype, value, tb):
-        exit_event.set()
-        process_exit_event.set()
-        sys.__excepthook__(exctype, value, tb)
-    sys.excepthook = exeption_handler
-
-    min_l1 = float(sys.float_info.max)
-    avg_l1 = 0
-    max_l1 = 0
-    avg_pnsr = 0
-    avg_lpips = 0
-    avg_loss = 0
-
-    cur_size = 10000
-    cur_mask = np.full(cur_size, True)
-    cur_l1 = None
-    cur_comb = None
-    cur_lpips = None
-
-    repeat_count = dataset.repeat_count if dataset.repeat_count > 0 else 1
-    preview_maxmin_steps = args.preview_maxmin_steps if args.preview_maxmin_steps < len(dataset)*repeat_count else len(dataset)*repeat_count
-    max_values = MaxNValues(n=args.preview_max if args.preview_max else 10)
-    min_values = MinNValues(n=args.preview_min if args.preview_min else 10)
-
-    data_time = 0
-    data_time1 = 0
-    data_time2 = 0
-    train_time = 0
 
     while True:
         # tracemalloc.start()
