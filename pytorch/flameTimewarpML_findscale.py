@@ -1797,6 +1797,7 @@ def main():
     try:
         checkpoint = torch.load(trained_model_path, map_location=device)
         missing_keys, unexpected_keys = flownet.load_state_dict(checkpoint['flownet_state_dict'], strict=False)
+        print (f'loaded saved model state dict: {e}')
     except Exception as e:
         print (f'unable to load saved model: {e}')
 
