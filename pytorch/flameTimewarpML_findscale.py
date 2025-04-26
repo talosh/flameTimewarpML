@@ -1860,45 +1860,45 @@ def main():
             torch.cuda.empty_cache()            
         elif torch.backends.mps.is_available():
             torch.mps.empty_cache()
-
-        with torch.no_grad():
-            description = read_eval_image_queue.get()
-
-    return
-
-
-            evalnet.eval()
+        try:
             with torch.no_grad():
-                # for ev_item_index, description in enumerate(descriptions):
                 description = read_eval_image_queue.get()
                 while description is not None:
                     ev_item_index = description['ev_item_index']
                     
                     if eval_loss:
-                        eval_loss_min = min(eval_loss)
-                        eval_loss_max = max(eval_loss)
                         eval_loss_avg = float(np.array(eval_loss).mean())
                     else:
-                        eval_loss_min = -1
-                        eval_loss_max = -1
                         eval_loss_avg = -1
-                    if eval_psnr:
-                        eval_psnr_mean = float(np.array(eval_psnr).mean())
-                    else:
-                        eval_psnr_mean = -1
-                    if eval_lpips:
-                        eval_lpips_mean = float(np.array(eval_lpips).mean())
-                    else:
-                        eval_lpips_mean = -1
-
-                    epoch_time = time.time() - start_timestamp
-                    days = int(epoch_time // (24 * 3600))
-                    hours = int((epoch_time % (24 * 3600)) // 3600)
-                    minutes = int((epoch_time % 3600) // 60)
 
                     clear_lines(1)
-                    # print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{train_time_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
-                    print (f'\rEvaluating {ev_item_index} of {len(descriptions)}: Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f} LPIPS: {eval_lpips_mean:.4f} PSNR: {eval_psnr_mean:4f}')
+                    print (f'\rScale: {scale}, Evaluating {ev_item_index} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}')
+
+                    eval_img0 = description['eval_img0']
+                    eval_img1 = description['eval_img1']
+                    eval_img2 = description['eval_img2']
+                    eval_ratio = description['ratio']
+
+                    eval_img0 = torch.from_numpy(eval_img0)
+                    eval_img1 = torch.from_numpy(eval_img1)
+                    eval_img2 = torch.from_numpy(eval_img2)
+                    eval_img0 = eval_img0.to(device = device, dtype = torch.float32, non_blocking = True)
+                    eval_img1 = eval_img1.to(device = device, dtype = torch.float32, non_blocking = True)
+                    eval_img2 = eval_img2.to(device = device, dtype = torch.float32, non_blocking = True)
+                    
+                    eval_img0 = eval_img0.permute(2, 0, 1).unsqueeze(0)
+                    eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
+                    eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
+
+                    eval_img0_orig = eval_img0.clone()
+                    eval_img2_orig = eval_img2.clone()
+
+
+        except:
+            pass
+
+
+    return
 
                     try:
                         eval_img0 = description['eval_img0']
