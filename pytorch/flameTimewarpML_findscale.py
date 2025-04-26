@@ -1801,7 +1801,8 @@ def main():
     except Exception as e:
         print (f'unable to load saved model: {e}')
 
-    print('\n\n')
+    scales_list = generate_scales()
+    print(f"Generated {len(scales_list)} scale sequences.")
 
     if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.scale.csv'):
         create_csv_file(
@@ -1812,8 +1813,7 @@ def main():
             ]
         )
 
-    scales_list = generate_scales()
-    print(f"Generated {len(scales_list)} scale sequences.")
+    print('\n\n')
     return
 
     while True:
