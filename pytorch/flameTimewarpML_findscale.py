@@ -1749,6 +1749,7 @@ def main():
     parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
     parser.add_argument('--eval_half', action='store_true', dest='eval_half', default=False, help='Evaluate in half-precision')
+    parser.add_argument('--eval_trained', action='store_true', dest='eval_trained', default=False, help='Evaluate in half-precision')
     parser.add_argument('--ap0', action='store_true', dest='ap0', default=False, help='input exrs are in ap0')
 
     args = parser.parse_args()
@@ -1789,7 +1790,10 @@ def main():
     if not model_info.get('ratio_support'):
         max_dataset_window = 3
 
-    flownet = Flownet().get_model()().to(device)
+    if args.eval_trained:
+        flownet = Flownet().get_trained_model()().to(device)
+    else:
+        flownet = Flownet().get_model()().to(device)
 
     print (f'Scanning data for evaluation:')
     eval_dataset = get_dataset(
@@ -1832,7 +1836,11 @@ def main():
     except Exception as e:
         print (f'unable to load saved model: {e}')
 
-    scales_list = generate_scales()
+    if args.eval_trained:
+        scales_list = generate_scales4()
+    else:
+        scales_list = generate_scales()
+        
     print(f"Generated {len(scales_list)} scale sequences.")
 
     if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.scale.csv'):
