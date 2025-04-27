@@ -1829,6 +1829,24 @@ def main():
         sys.__excepthook__(exctype, value, tb)
     sys.excepthook = exeption_handler
 
+    # LPIPS Init
+
+    import warnings
+    warnings.filterwarnings('ignore', category=UserWarning)
+    warnings.filterwarnings('ignore', category=FutureWarning)
+
+    import lpips
+    os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
+    loss_fn_alex = lpips.LPIPS(net='alex')
+    loss_fn_alex.to(device)
+    # loss_fn_lpips = lpips.LPIPS(net='vgg', lpips=False, spatial=True)
+    # loss_fn_lpips.to(device)
+
+    # loss_fn_ssim = SSIM()
+    # loss_fn_vgg = VGGPerceptualLoss().to(device)
+
+    warnings.resetwarnings()
+
     trained_model_path = args.state_file
     try:
         checkpoint = torch.load(trained_model_path, map_location=device)
@@ -1849,6 +1867,7 @@ def main():
             f'{os.path.splitext(trained_model_path)[0]}.scale.csv',
             [
                 'Loss',
+                'LPIPS',
                 'Scale',
             ]
         )
@@ -1892,6 +1911,7 @@ def main():
         read_eval_thread.daemon = True
         read_eval_thread.start()
         eval_loss = []
+        eval_lpips = []
 
         try:
             with torch.no_grad():
@@ -1902,6 +1922,10 @@ def main():
                         eval_loss_avg = float(np.array(eval_loss).mean())
                     else:
                         eval_loss_avg = -1
+                    if eval_lpips:
+                        eval_lpips_mean = float(np.array(eval_lpips).mean())
+                    else:
+                        eval_lpips_mean = -1
 
                     clear_lines(1)
                     print (f'\rScale: {scale}, {idx+1} of {len(scales_list)}, Evaluating {ev_item_index+1} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}')
@@ -1946,6 +1970,8 @@ def main():
                     eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :, :]) * eval_mask_list[-1][:, :, :, :] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :, :]) * (1 - eval_mask_list[-1][:, :, :, :])
                     eval_loss_l1 = criterion_l1(eval_result, eval_img1)
                     eval_loss.append(float(eval_loss_l1.item()))
+                    eval_loss_LPIPS = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
+                    eval_lpips.append(float(torch.mean(eval_loss_LPIPS).item()))
 
                     if torch.cuda.is_available():
                         torch.cuda.synchronize()
@@ -1961,9 +1987,11 @@ def main():
                     description = read_eval_image_queue.get()
 
             eval_loss_avg = float(np.array(eval_loss).mean())
+            eval_lpips_mean = float(np.array(eval_lpips).mean())
             eval_rows_to_append = [
                 {
                     'Loss': eval_loss_avg,
+                    'LPIPS': eval_lpips_mean,
                     'Scale': scale, 
                 }
             ]
