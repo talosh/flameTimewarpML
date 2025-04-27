@@ -1791,7 +1791,7 @@ def main():
         max_dataset_window = 3
 
     if args.eval_trained:
-        flownet = Flownet().get_trained_model()().to(device)
+        flownet = Flownet().get_training_model()().to(device)
     else:
         flownet = Flownet().get_model()().to(device)
 
@@ -1840,7 +1840,7 @@ def main():
         scales_list = generate_scales4()
     else:
         scales_list = generate_scales()
-        
+
     print(f"Generated {len(scales_list)} scale sequences.")
 
     if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.scale.csv'):
