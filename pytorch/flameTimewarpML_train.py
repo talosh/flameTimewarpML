@@ -2480,14 +2480,14 @@ def main():
         ]
         '''
 
-        if random.uniform(0, 1) > 0.5:
-            training_scale = [1] * 4
-            if random.uniform(0, 1) < 0.8:
-                training_scale[0] = random.uniform(10, 1)
-                training_scale[1] = random.uniform(training_scale[0], 1)
-                training_scale[2] = random.uniform(training_scale[1], 1)
-        else:
-            training_scale = [5, 4, 3, 1]
+        # if random.uniform(0, 1) > 0.5:
+        training_scale = [1] * 4
+        if random.uniform(0, 1) < 0.8:
+            training_scale[0] = random.uniform(10, 1)
+            training_scale[1] = random.uniform(training_scale[0], 1)
+            training_scale[2] = random.uniform(training_scale[1], 1)
+        # else:
+        #    training_scale = [5, 4, 3, 1]
 
         # training_scale[0] = 1
 
