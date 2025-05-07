@@ -1866,7 +1866,7 @@ def main():
 
     scales_list.reverse()
 
-    dataset_dirname = os.path.basename(args.dataset_path)
+    dataset_dirname = os.path.basename(os.path.abspath(args.dataset_path))
     print (dataset_dirname)
     sys.exit()
 
