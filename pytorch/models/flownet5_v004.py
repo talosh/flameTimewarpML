@@ -486,8 +486,8 @@ class Model:
                 
                 featF = self.revmix3f(featF, feat)
 
-                feat, _ = self.convblock_last(feat)
-                featF, _ = self.convblock_last_shallow(featF)
+                feat = self.convblock_last(feat)
+                featF = self.convblock_last_shallow(featF)
 
                 feat = self.mix4(featF, feat)
 
