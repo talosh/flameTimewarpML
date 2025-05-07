@@ -1,4 +1,6 @@
 import os
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 import sys
 import random
 import shutil
@@ -1862,9 +1864,14 @@ def main():
 
     print(f"Generated {len(scales_list)} scale sequences.")
 
-    if not os.path.isfile(f'{os.path.splitext(trained_model_path)[0]}.scale.csv'):
+    scales_list.reverse()
+
+    dataset_dirname = os.path.basename(args.dataset_path)
+    csv_filename = f'{os.path.splitext(trained_model_path)[0]}.scale.{dataset_dirname}.csv'
+
+    if not os.path.isfile(csv_filename):
         create_csv_file(
-            f'{os.path.splitext(trained_model_path)[0]}.scale.csv',
+            csv_filename,
             [
                 'Loss',
                 'LPIPS',
@@ -2012,7 +2019,7 @@ def main():
             ]
 
             for eval_row in eval_rows_to_append:
-                append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.scale.csv', eval_row)
+                append_row_to_csv(csv_filename, eval_row)
 
             clear_lines(2)
             print(f'\r[Scale {scale} Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}')
