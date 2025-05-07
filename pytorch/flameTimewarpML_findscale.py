@@ -1867,6 +1867,9 @@ def main():
     scales_list.reverse()
 
     dataset_dirname = os.path.basename(args.dataset_path)
+    print (dataset_dirname)
+    sys.exit()
+
     csv_filename = f'{os.path.splitext(trained_model_path)[0]}.scale.{dataset_dirname}.csv'
 
     if not os.path.isfile(csv_filename):
