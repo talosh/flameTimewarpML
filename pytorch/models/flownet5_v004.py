@@ -632,7 +632,7 @@ class Model:
                     conf, 
                     flow,
                     scale=scale[1],
-                    distance = 1 - (scale[1]/scale[0])
+                    distance = timestep # 1 - (scale[1]/scale[0])
                     )
 
                 flow, mask, conf = self.block1(
@@ -645,7 +645,7 @@ class Model:
                     conf, 
                     flow,
                     scale=scale[2],
-                    distance = 1 - (scale[2]/scale[1])
+                    distance = timestep # 1 - (scale[2]/scale[1])
                     )
 
                 flow, mask, conf = self.block1(
@@ -658,7 +658,7 @@ class Model:
                     conf, 
                     flow,
                     scale=scale[3],
-                    distance = 1 - (scale[3]/scale[2])
+                    distance = timestep # 1 - (scale[3]/scale[2])
                     )
 
                 flow, mask, conf = self.block2(
@@ -671,7 +671,7 @@ class Model:
                     conf, 
                     flow,
                     scale=scale[4],
-                    distance = 1 - (scale[4]/scale[3])
+                    distance = timestep # 1 - (scale[4]/scale[3])
                     )
 
                 flow_d, mask_d, conf_d = self.block3(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[5])
