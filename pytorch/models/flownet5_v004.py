@@ -558,7 +558,7 @@ class Model:
                     conf, 
                     flow,
                     scale=scale[1],
-                    distance = 1 - (scale[1]/scale[0])
+                    distance = timestep # 1 - (scale[1]/scale[0])
                     )
 
                 flow_list[1] = flow.clone()
@@ -576,7 +576,7 @@ class Model:
                     conf, 
                     flow,
                     scale=scale[2],
-                    distance = 1 - (scale[2]/scale[1])
+                    distance = timestep # 1 - (scale[2]/scale[1])
                     )
                 
                 flow_list[2] = flow.clone()
