@@ -1905,32 +1905,13 @@ def main():
     evalnet.eval()
 
     if args.eval_trained:
-        scale_values = torch.linspace(args.max, args.min, steps=3, dtype=torch.float32)
-        #  scale_values = [16, 4, 2]
-        #  scale_values = [args.max] * 3
+        initial_guess = np.linspace(args.min, args.max, 3)
+        bounds = [(args.min, args.max)] * 3
     else:
-        scale_values = torch.linspace(args.max, args.min, steps=5, dtype=torch.float32)
-        # scale_values = [16, 7, 6, 5, 4]
-        # scale_values = [args.max] * 5
-
-    scale_tensor = torch.nn.Parameter(scale_values, requires_grad=True)
-    # scale_tensor = torch.nn.Parameter(torch.tensor(scale_values, dtype=torch.float32), requires_grad=True)
-    # gradient_scaling = torch.tensor([5, 2, 1, 0.5, 0.1], device=scale_tensor.device)
-
-    lr = args.lr
-    # optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr, betas=(0.4, 0.999))
-    optimizer_net = torch.optim.SGD([scale_tensor], lr=lr, momentum=0.9)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_net, 'min', factor=0.1, patience=args.patience)
-    epoch = 0
-    optimizer_net.zero_grad()
-
-    best_loss = sys.float_info.max
-    best_scale_tensor = scale_tensor.detach().clone()
+        initial_guess = np.linspace(args.min, args.max, 5)
+        bounds = [(args.min, args.max)] * 5
 
     while True:
-        time_stamp = time.time()
-        current_lr_str = str(f'{optimizer_net.param_groups[0]["lr"]:.2e}')
-
         descriptions = list(eval_dataset.initial_train_descriptions)
 
         def read_eval_images(read_eval_image_queue, descriptions):
