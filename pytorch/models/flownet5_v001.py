@@ -604,7 +604,7 @@ class Model:
                     flow,
                     scale=float(scale[4]))
 
-                flow_d, mask_d, conf_d = self.block3(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[5])
+                flow_d, mask_d, conf_d = self.block3(img0, img1, f0, f1, timestep, mask, conf, flow, scale=float(scale[5]))
                 flow = flow + flow_d
                 mask = mask + mask_d
                 conf = conf + conf_d
