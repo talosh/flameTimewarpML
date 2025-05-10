@@ -1971,6 +1971,7 @@ def main():
         clamped_scale = enforce_nonincreasing(clamped_scale)
         scale = [s.item() for s in clamped_scale]
 
+        print (scale_tensor)
         print (scale)
         sys.exit()
 
