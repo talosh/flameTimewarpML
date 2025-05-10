@@ -1949,7 +1949,10 @@ def main():
         # Enforce non-increasing values
         clamped_scale, _ = torch.cummin(clamped_scale.flip(dims=[0]), dim=0)
         clamped_scale = clamped_scale.flip(dims=[0])
-        
+
+        with torch.no_grad():
+            scale_tensor.copy_(clamped_scale)
+
         scale_list = [s for s in clamped_scale] + [torch.tensor(1.0, device=device)]
         scale = [s.item() for s in scale_list]
 
