@@ -2092,9 +2092,11 @@ def main():
         loss.backward()
 
         print ('\n\n')
-
         for name, param in linear_model.named_parameters():
-            print(f"{name} grad norm: {param.grad.norm() if param.grad is not None else 'None'}")
+            if param.grad is None:
+                print(f"{name} grad is None")
+            else:
+                print(f"{name} grad norm: {param.grad.norm():.6f}")
 
         print ('\n\n')
 
