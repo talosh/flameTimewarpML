@@ -1960,10 +1960,10 @@ def main():
 
         clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
         clamped_scale = enforce_nonincreasing(clamped_scale)
-        scale_list = [s.item() for s in clamped_scale] + [1.0]
+        scale = [s.item() for s in clamped_scale] + [1.0]
 
         # scale_list = [s for s in clamped_scale] + [torch.tensor(1.0, device=device)]
-        scale = [s.item() for s in scale_list]
+        # scale = [s.item() for s in scale_list]
 
         try:
             with torch.no_grad():
