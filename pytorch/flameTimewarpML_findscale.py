@@ -1940,6 +1940,8 @@ def main():
         scale = scale_tensor.detach().cpu().tolist()
         scale = scale.append(1)
 
+        print (scale)
+
         try:
             with torch.no_grad():
                 description = read_eval_image_queue.get()
