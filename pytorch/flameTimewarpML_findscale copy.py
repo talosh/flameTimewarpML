@@ -21,8 +21,6 @@ import tracemalloc
 
 from pprint import pprint
 
-from scipy.optimize import minimize
-
 try:
     import torch
     import torchvision
