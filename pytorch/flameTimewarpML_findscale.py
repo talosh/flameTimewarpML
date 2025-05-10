@@ -1898,8 +1898,10 @@ def main():
     else:
         scale_values = [8, 7, 6, 5, 4]
     scale_tensor = torch.nn.Parameter(torch.tensor(scale_values, dtype=torch.float32), requires_grad=True)
+    scale = scale_tensor.detach().cpu().tolist()
 
     print (scale_tensor)
+    print (scale)
     sys.exit()
 
     lr = args.lr
