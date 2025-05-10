@@ -2036,7 +2036,7 @@ def main():
                 eval_loss_LPIPS = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
                 eval_lpips.append(float(torch.mean(eval_loss_LPIPS).item()))
 
-                loss = eval_loss_l1 + 2e-1 * eval_loss_LPIPS + 1e-10 * scale_tensor.sum()
+                loss = eval_loss_l1 + 2e-1 * eval_loss_LPIPS + 1e-2 * scale_tensor.sum()
                 loss.backward()
 
                 if torch.cuda.is_available():
