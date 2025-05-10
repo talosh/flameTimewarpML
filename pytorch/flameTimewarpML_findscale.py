@@ -1899,6 +1899,9 @@ def main():
         scale_values = [8, 7, 6, 5, 4]
     scale_tensor = torch.nn.Parameter(torch.tensor(scale_values, dtype=torch.float32), requires_grad=True)
 
+    print (scale_tensor)
+    sys.exit()
+
     lr = args.lr
     optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_net, 'min', factor=0.1, patience=10)
