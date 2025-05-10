@@ -1952,13 +1952,7 @@ def main():
         eval_loss = []
         eval_lpips = []
 
-        clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
-        clamped_scale = enforce_nonincreasing(clamped_scale)
-
-        with torch.no_grad():
-            scale_tensor.copy_(clamped_scale)
-
-        scale_list = [s for s in clamped_scale] + [torch.tensor(1.0, device=device)]
+        scale_list = [s for s in scale_tensor] + [torch.tensor(1.0, device=device)]
         scale = [s.item() for s in scale_list]
 
         try:
@@ -2072,6 +2066,12 @@ def main():
         loss.backward()
         scale_tensor.grad *= gradient_scaling
         optimizer_net.step()
+
+        clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
+        clamped_scale = enforce_nonincreasing(clamped_scale)
+        with torch.no_grad():
+            scale_tensor.copy_(clamped_scale)
+
         optimizer_net.zero_grad()
 
         prev_lr = optimizer_net.param_groups[0]['lr']
