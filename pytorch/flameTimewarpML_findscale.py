@@ -1756,6 +1756,7 @@ def main():
     parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
     parser.add_argument('--lr', type=float, default=1, help='Learning rate (default: 1)')
+    parser.add_argument('--min', type=int, default=8, help='Minimum scale before 1 (default: 8)')
     parser.add_argument('--max', type=int, default=32, help='Maximum scale (default: 32)')
     parser.add_argument('--eval_half', action='store_true', dest='eval_half', default=False, help='Evaluate in half-precision')
     parser.add_argument('--eval_trained', action='store_true', dest='eval_trained', default=False, help='Evaluate in half-precision')
@@ -1901,11 +1902,11 @@ def main():
     evalnet.eval()
 
     if args.eval_trained:
-        scale_values = torch.linspace(args.max, 8, steps=3, dtype=torch.float32)
+        scale_values = torch.linspace(args.max, args.min, steps=3, dtype=torch.float32)
         #  scale_values = [16, 4, 2]
         #  scale_values = [args.max] * 3
     else:
-        scale_values = torch.linspace(args.max, 8, steps=5, dtype=torch.float32)
+        scale_values = torch.linspace(args.max, args.min, steps=5, dtype=torch.float32)
         # scale_values = [16, 7, 6, 5, 4]
         # scale_values = [args.max] * 5
 
