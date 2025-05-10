@@ -2074,6 +2074,7 @@ def main():
 
         loss.backward()
         print("Gradients:", scale_tensor.grad)
+        print ('/n/n')
 
         #  scale_tensor.grad *= gradient_scaling
         optimizer_net.step()
