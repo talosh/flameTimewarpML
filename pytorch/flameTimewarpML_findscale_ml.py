@@ -2084,9 +2084,13 @@ def main():
             best_loss = float(total_loss.item())
             best_scale_tensor = scale_tensor.detach().clone()
         '''
-
         loss = torch.as_tensor(eval_loss_l1, dtype=torch.float32, device=device)
-        loss = loss + 0 * scale_out.sum()          
+        loss = loss + 0 * scale_out.sum()
+
+
+        fake_eval_loss = torch.mean(scale_out**2)  # pretend this came from evalnet
+        loss = fake_eval_loss
+         
         loss.backward()
 
         print ('\n\n')
