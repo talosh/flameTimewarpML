@@ -1740,6 +1740,14 @@ def enforce_nonincreasing(t: torch.Tensor):
         out[i] = torch.minimum(out[i - 1], out[i])
     return out
 
+class SimpleLinearModel(torch.nn.Module):
+    def __init__(self, c):
+        super(SimpleLinearModel, self).__init__()
+        self.linear = torch.nn.Linear(c, c)
+
+    def forward(self, x):
+        return self.linear(x)
+
 def main():
     global current_state_dict
     parser = argparse.ArgumentParser(description='Training script.')
@@ -1911,19 +1919,17 @@ def main():
         # scale_values = [16, 7, 6, 5, 4]
         # scale_values = [args.max] * 5
 
-    scale_tensor = torch.nn.Parameter(scale_values, requires_grad=True)
-    # scale_tensor = torch.nn.Parameter(torch.tensor(scale_values, dtype=torch.float32), requires_grad=True)
-    # gradient_scaling = torch.tensor([5, 2, 1, 0.5, 0.1], device=scale_tensor.device)
+    linear_model = SimpleLinearModel()
 
     lr = args.lr
     # optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr, betas=(0.4, 0.999))
-    optimizer_net = torch.optim.SGD([scale_tensor], lr=lr, momentum=0.9)
+    optimizer_net = torch.optim.SGD(linear_model.parameters(), lr=lr, momentum=0.9)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_net, 'min', factor=0.1, patience=args.patience)
     epoch = 0
     optimizer_net.zero_grad()
 
     best_loss = sys.float_info.max
-    best_scale_tensor = scale_tensor.detach().clone()
+    best_parameters = deepcopy(linear_model.state_dict())
 
     while True:
         time_stamp = time.time()
@@ -1958,7 +1964,10 @@ def main():
         eval_loss = []
         eval_lpips = []
 
-        scale = torch.cat([scale_tensor, torch.tensor([1.0], dtype=torch.float32)])
+        scale_tensor = torch.cat([linear_model(scale_values), torch.tensor([1.0], dtype=torch.float32)])
+
+        print (scale_tensor)
+        sys.exit()
 
         # clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
         # clamped_scale = enforce_nonincreasing(clamped_scale)
@@ -1966,8 +1975,6 @@ def main():
 
         # scale_list = [s for s in clamped_scale] + [torch.tensor(1.0, device=device)]
         # scale = [s.item() for s in scale_list]
-
-        total_loss = torch.zeros(1, device=device, requires_grad=True)
 
         # try:
         description = read_eval_image_queue.get()
