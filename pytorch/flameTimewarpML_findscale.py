@@ -2074,6 +2074,7 @@ def main():
             best_loss = float(total_loss.item())
             best_scale_tensor = scale_tensor.detach().clone()
 
+        total_loss = total_loss + 0.0 * scale_tensor.sum()
         total_loss.backward()
         # scale_tensor.grad += -torch.sign(scale_tensor) * loss_value * scale_adjustment_factor
 
