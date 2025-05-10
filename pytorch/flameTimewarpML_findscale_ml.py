@@ -1925,6 +1925,10 @@ def main():
         # scale_values = [16, 7, 6, 5, 4]
         # scale_values = [args.max] * 5
 
+    scale_out = linear_model(scale_values)  # [5]
+    print(scale_out.requires_grad)  # should be True
+
+    sys.exit()
 
     lr = args.lr
     # optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr, betas=(0.4, 0.999))
