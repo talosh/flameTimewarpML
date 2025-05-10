@@ -1937,6 +1937,7 @@ def main():
         eval_loss = []
         eval_lpips = []
 
+        clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
         scale_list = [s for s in scale_tensor] + [torch.tensor(1.0, device=device)]
         scale = [s.item() for s in scale_list]
 
