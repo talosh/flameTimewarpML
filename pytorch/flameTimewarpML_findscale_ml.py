@@ -1925,8 +1925,6 @@ def main():
         # scale_values = [16, 7, 6, 5, 4]
         # scale_values = [args.max] * 5
 
-    sys.exit()
-
     lr = args.lr
     # optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr, betas=(0.4, 0.999))
     optimizer_net = torch.optim.SGD(linear_model.parameters(), lr=lr, momentum=0.9)
