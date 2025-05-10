@@ -2071,10 +2071,10 @@ def main():
         # scale_tensor.grad *= gradient_scaling
         optimizer_net.step()
 
-        clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
-        clamped_scale = enforce_nonincreasing(clamped_scale)
-        with torch.no_grad():
-            scale_tensor.copy_(clamped_scale)
+        # clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
+        # clamped_scale = enforce_nonincreasing(clamped_scale)
+        # with torch.no_grad():
+        #    scale_tensor.copy_(clamped_scale)
 
         optimizer_net.zero_grad()
 
