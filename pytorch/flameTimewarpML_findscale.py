@@ -2075,7 +2075,18 @@ def main():
         for i in range(4)
     ]
 
-    result = minimize(black_box_loss, initial_guess, method='SLSQP', bounds=bounds, constraints=constraints) # options={'eps': 1.0}
+    result = minimize(
+        black_box_loss,
+        initial_guess, method='SLSQP',
+        bounds=bounds,
+        constraints=constraints
+        options={
+            'maxiter': 1000,        # More iterations allowed
+            'ftol': 1e-6,           # Allow larger change in function value before stopping
+            'disp': True,           # Verbose output
+            'eps': 0.5              # Step size for numerical gradient (default ~1e-8)
+        }
+        ) # options={'eps': 1.0}
     final_params = np.append(result.x, 1.0)
     print("Best parameters:", final_params)
     print("Minimum loss:", result.fun)
