@@ -558,7 +558,7 @@ class Model:
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 
-                flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=float(scale[0]))
+                flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
 
                 flow, mask, conf = self.block1(
                     img0, 
@@ -569,7 +569,7 @@ class Model:
                     mask, 
                     conf, 
                     flow,
-                    scale=float(scale[1]))
+                    scale=scale[1])
 
                 flow, mask, conf = self.block1(
                     img0, 
@@ -580,7 +580,7 @@ class Model:
                     mask, 
                     conf, 
                     flow,
-                    scale=float(scale[2]))
+                    scale=scale[2])
 
                 flow, mask, conf = self.block2(
                     img0, 
@@ -591,7 +591,7 @@ class Model:
                     mask, 
                     conf, 
                     flow,
-                    scale=float(scale[3]))
+                    scale=scale[3])
 
                 flow, mask, conf = self.block2(
                     img0, 
@@ -602,9 +602,9 @@ class Model:
                     mask, 
                     conf, 
                     flow,
-                    scale=float(scale[4]))
+                    scale=scale[4])
 
-                flow_d, mask_d, conf_d = self.block3(img0, img1, f0, f1, timestep, mask, conf, flow, scale=float(scale[5]))
+                flow_d, mask_d, conf_d = self.block3(img0, img1, f0, f1, timestep, mask, conf, flow, scale=scale[5])
                 flow = flow + flow_d
                 mask = mask + mask_d
                 conf = conf + conf_d
