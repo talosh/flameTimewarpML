@@ -1960,8 +1960,9 @@ def main():
 
         clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
         clamped_scale = enforce_nonincreasing(clamped_scale)
+        scale_list = [s.item() for s in clamped_scale] + [1.0]
 
-        scale_list = [s for s in clamped_scale] + [torch.tensor(1.0, device=device)]
+        # scale_list = [s for s in clamped_scale] + [torch.tensor(1.0, device=device)]
         scale = [s.item() for s in scale_list]
 
         try:
@@ -2065,14 +2066,16 @@ def main():
             read_eval_thread.join()
 
         read_eval_thread.join()
+        loss_value = eval_loss_avg + 2e-1 * eval_lpips_mean
 
-        loss = (eval_loss_avg + 2e-1 * eval_lpips_mean + 0.0 * scale_tensor.sum())
+        loss = (loss_value + 0.0 * scale_tensor.sum())
 
         if float(loss.item()) < best_loss:
             best_loss = float(loss.item())
             best_scale_tensor = scale_tensor.detach().clone()
 
         loss.backward()
+        # scale_tensor.grad += -torch.sign(scale_tensor) * loss_value * scale_adjustment_factor
         print ()
         print ()
         print("Gradients:", scale_tensor.grad)
