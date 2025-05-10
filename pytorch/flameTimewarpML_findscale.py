@@ -1734,6 +1734,12 @@ def generate_scales4(scale=24):
 
     return results
 
+def enforce_nonincreasing(t: torch.Tensor):
+    out = t.clone()
+    for i in range(1, len(t)):
+        out[i] = torch.minimum(out[i - 1], out[i])
+    return out
+
 def main():
     global current_state_dict
     parser = argparse.ArgumentParser(description='Training script.')
@@ -1947,12 +1953,7 @@ def main():
         eval_lpips = []
 
         clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
-
-        def enforce_nonincreasing(t: torch.Tensor):
-            out = t.clone()
-            for i in range(1, len(t)):
-                out[i] = torch.minimum(out[i - 1], out[i])
-            return out
+        clamped_scale = enforce_nonincreasing(clamped_scale)
 
         with torch.no_grad():
             scale_tensor.copy_(clamped_scale)
