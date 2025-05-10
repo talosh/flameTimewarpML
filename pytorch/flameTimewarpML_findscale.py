@@ -1958,7 +1958,7 @@ def main():
 
                     formatted_scale = ', '.join(f'{x:.2f}' for x in scale)
                     clear_lines(1)
-                    print (f'\rEpoch: {(epoch+1):05d}, Scale: [{formatted_scale}], Evaluating {ev_item_index+1} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, lr: {lr}')
+                    print (f'\rEpoch: {(epoch+1):05d}, Scale: [{formatted_scale}], Evaluating {ev_item_index+1} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, lr: {current_lr_str}')
 
                     eval_img0 = description['eval_img0']
                     eval_img1 = description['eval_img1']
@@ -2062,7 +2062,7 @@ def main():
             append_row_to_csv(csv_filename, eval_row)
 
         clear_lines(2)
-        print(f'\r[Epoch: {(epoch+1):05}, Scale [{formatted_scale}] Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, Combined: {loss.item():.6f}, lr: {lr}')
+        print(f'\r[Epoch: {(epoch+1):05}, Scale [{formatted_scale}] Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, Combined: {loss.item():.6f}, lr: {current_lr_str}')
         print ('\n')
 
         epoch += 1
