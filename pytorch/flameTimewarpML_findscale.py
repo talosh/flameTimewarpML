@@ -1946,10 +1946,16 @@ def main():
         eval_lpips = []
 
         clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
+
+        def enforce_nonincreasing(t: torch.Tensor):
+            out = t.clone()
+            for i in range(1, len(t)):
+                out[i] = torch.minimum(out[i - 1], out[i])
+            return out
+
+
         print (clamped_scale)
-        # Enforce non-increasing values
-        clamped_scale, _ = torch.cummin(clamped_scale.flip(dims=[0]), dim=0)
-        clamped_scale = clamped_scale.flip(dims=[0])
+        clamped_scale = enforce_nonincreasing(clamped_scale)
         print (clamped_scale)
 
         print ('/n/n')
