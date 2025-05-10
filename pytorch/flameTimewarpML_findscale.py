@@ -2048,7 +2048,7 @@ def main():
 
         read_eval_thread.join()
 
-        combined_loss = eval_loss_avg + 0.1 * eval_lpips_mean
+        combined_loss = eval_loss_avg + 2e-1 * eval_lpips_mean
 
         eval_rows_to_append = [
             {
