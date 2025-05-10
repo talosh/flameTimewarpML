@@ -2073,6 +2073,7 @@ def main():
             best_scale_tensor = scale_tensor.detach().clone()
 
         loss.backward()
+        print ('/n/n')
         print("Gradients:", scale_tensor.grad)
         print ('/n/n')
 
