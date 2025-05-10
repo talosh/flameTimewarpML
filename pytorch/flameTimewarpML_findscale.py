@@ -2073,6 +2073,8 @@ def main():
             best_scale_tensor = scale_tensor.detach().clone()
 
         loss.backward()
+        print("Gradients:", scale_tensor.grad)
+
         #  scale_tensor.grad *= gradient_scaling
         optimizer_net.step()
 
