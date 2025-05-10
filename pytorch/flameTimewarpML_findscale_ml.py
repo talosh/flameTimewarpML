@@ -2086,7 +2086,7 @@ def main():
         '''
 
         loss = criterion_l1(linear_model(scale_values), max_values)
-        loss = 1e-4 * loss + 100 * total_eval_loss # + 1e-2 * eval_loss_LPIPS
+        loss = 1e-4 * loss + torch.tensor(eval_loss_l1, device=device) # + 1e-2 * eval_loss_LPIPS
         loss.backward()
         # scale_tensor.grad += -torch.sign(scale_tensor) * loss_value * scale_adjustment_factor
 
