@@ -1962,8 +1962,8 @@ def main():
         clamped_scale = enforce_nonincreasing(clamped_scale)
         # scale = [s.item() for s in clamped_scale] + [1.0]
 
-        scale = [s for s in clamped_scale] + [torch.tensor(1.0, device=device)]
-        # scale = [s.item() for s in scale_list]
+        scale_list = [s for s in clamped_scale] + [torch.tensor(1.0, device=device)]
+        scale = [s.item() for s in scale_list]
 
         total_loss = torch.zeros(1, device=device, requires_grad=True)
 
