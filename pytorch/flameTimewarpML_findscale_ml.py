@@ -2083,8 +2083,8 @@ def main():
             best_scale_tensor = scale_tensor.detach().clone()
         '''
 
-        loss = criterion_l1(linear_model(scale_values), linear_model(scale_values))
-        loss = loss + eval_loss_l1 + 1e-2 * eval_loss_LPIPS
+        loss = criterion_l1(linear_model(scale_values), max_values)
+        loss = 1e-4 * loss + eval_loss_l1 + 1e-2 * eval_loss_LPIPS
         loss.backward()
         # scale_tensor.grad += -torch.sign(scale_tensor) * loss_value * scale_adjustment_factor
 
