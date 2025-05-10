@@ -1758,6 +1758,7 @@ def main():
     parser.add_argument('--lr', type=float, default=1e+0, help='Learning rate (default: 1e+0)')
     parser.add_argument('--min', type=int, default=8, help='Minimum scale before 1 (default: 8)')
     parser.add_argument('--max', type=int, default=32, help='Maximum scale (default: 32)')
+    parser.add_argument('--patience', type=int, default=32, help='Patience before lowering LR (default: 32)')
     parser.add_argument('--eval_half', action='store_true', dest='eval_half', default=False, help='Evaluate in half-precision')
     parser.add_argument('--eval_trained', action='store_true', dest='eval_trained', default=False, help='Evaluate in half-precision')
     parser.add_argument('--ap0', action='store_true', dest='ap0', default=False, help='input exrs are in ap0')
@@ -1916,7 +1917,7 @@ def main():
 
     lr = args.lr
     optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr, betas=(0.4, 0.999))
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_net, 'min', factor=0.1, patience=20)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_net, 'min', factor=0.1, patience=args.patience)
     epoch = 0
     optimizer_net.zero_grad()
 
