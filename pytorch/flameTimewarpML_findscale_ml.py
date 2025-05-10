@@ -1744,6 +1744,8 @@ class SimpleLinearModel(torch.nn.Module):
     def __init__(self, c):
         super(SimpleLinearModel, self).__init__()
         self.linear = torch.nn.Linear(c, c)
+        torch.nn.init.eye_(self.linear.weight)
+        self.linear.bias.data.zero_()
 
     def forward(self, x):
         return self.linear(x)
