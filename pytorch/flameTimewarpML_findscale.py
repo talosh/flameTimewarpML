@@ -2068,7 +2068,7 @@ def main():
             best_scale_tensor = scale_tensor.detach().clone()
 
         loss.backward()
-        # scale_tensor.grad *= gradient_scaling
+        scale_tensor.grad *= gradient_scaling
         optimizer_net.step()
 
         clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
