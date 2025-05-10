@@ -2043,7 +2043,7 @@ def main():
 
         read_eval_thread.join()
 
-        loss = (eval_loss_avg + 1e-1 * eval_lpips_mean + 0.0 * scale_tensor.sum())
+        loss = (eval_loss_avg + 0.2 * eval_lpips_mean + 0.0 * scale_tensor.sum())
         loss.backward()
         optimizer_net.step()
         optimizer_net.zero_grad()
@@ -2061,7 +2061,7 @@ def main():
             append_row_to_csv(csv_filename, eval_row)
 
         clear_lines(2)
-        print(f'\r[Epoch: {(epoch+1):05d}, Scale [{formatted_scale}] Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, lr: {lr}')
+        print(f'\r[Epoch: {(epoch+1):05}, Scale [{formatted_scale}] Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, lr: {lr}')
         print ('\n')
 
         epoch += 1
