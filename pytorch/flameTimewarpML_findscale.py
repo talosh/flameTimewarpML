@@ -1205,6 +1205,7 @@ class MaxNValues:
         - int: The number of values in the heap.
         """
         return len(self.heap)
+
 class MinNValues:
     def __init__(self, n):
         """
@@ -1749,8 +1750,7 @@ def main():
     # Optional arguments
     parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
-    parser.add_argument('--lr', type=float, default=1e-1, help='Learning rate (default: 1e-1)')
-    parser.add_argument('--max', type=int, default=64, help='Maximum scale (default: 64)')
+    parser.add_argument('--max', type=int, default=32, help='Starting scale (default: 32)')
     parser.add_argument('--eval_half', action='store_true', dest='eval_half', default=False, help='Evaluate in half-precision')
     parser.add_argument('--eval_trained', action='store_true', dest='eval_trained', default=False, help='Evaluate in half-precision')
     parser.add_argument('--ap0', action='store_true', dest='ap0', default=False, help='input exrs are in ap0')
@@ -1857,7 +1857,6 @@ def main():
     except Exception as e:
         print (f'unable to load saved model: {e}')
 
-    '''
     if args.eval_trained:
         scales_list = generate_scales4(scale=args.max)
     else:
@@ -1866,7 +1865,6 @@ def main():
     print(f"Generated {len(scales_list)} scale sequences.")
 
     scales_list.reverse()
-    '''
 
     dataset_dirname = os.path.basename(os.path.abspath(args.dataset_path))
 
@@ -1893,21 +1891,7 @@ def main():
         evalnet.half()
     evalnet.eval()
 
-    if args.eval_trained:
-        scale_values = [8, 4, 2]
-    else:
-        scale_values = [8, 7, 6, 5, 4]
-    scale_tensor = torch.nn.Parameter(torch.tensor(scale_values, dtype=torch.float32), requires_grad=True)
-
-    lr = args.lr
-    optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_net, 'min', factor=0.1, patience=10)
-    epoch = 0
-    optimizer_net.zeero_grad()
-
-    while True:
-        time_stamp = time.time()
-
+    for idx, scale in enumerate(scales_list):
         descriptions = list(eval_dataset.initial_train_descriptions)
 
         def read_eval_images(read_eval_image_queue, descriptions):
@@ -1937,9 +1921,6 @@ def main():
         eval_loss = []
         eval_lpips = []
 
-        scale = scale_tensor.detach().cpu().tolist()
-        scale = scale.append(1)
-
         try:
             with torch.no_grad():
                 description = read_eval_image_queue.get()
@@ -1955,7 +1936,7 @@ def main():
                         eval_lpips_mean = -1
 
                     clear_lines(1)
-                    print (f'\rEpoch: {epoch+1}, Scale: {scale}, Evaluating {ev_item_index+1} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}')
+                    print (f'\rScale: {scale}, {idx+1} of {len(scales_list)}, Evaluating {ev_item_index+1} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}')
 
                     eval_img0 = description['eval_img0']
                     eval_img1 = description['eval_img1']
@@ -2030,6 +2011,20 @@ def main():
 
             eval_loss_avg = float(np.array(eval_loss).mean())
             eval_lpips_mean = float(np.array(eval_lpips).mean())
+            eval_rows_to_append = [
+                {
+                    'Loss': eval_loss_avg,
+                    'LPIPS': eval_lpips_mean,
+                    'Scale': scale, 
+                }
+            ]
+
+            for eval_row in eval_rows_to_append:
+                append_row_to_csv(csv_filename, eval_row)
+
+            clear_lines(2)
+            print(f'\r[Scale {scale} Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}')
+            print ('\n')
 
         except Exception as e:
             clear_lines(2)
@@ -2040,27 +2035,6 @@ def main():
             read_eval_thread.join()
 
         read_eval_thread.join()
-
-        loss = torch.zeros(1, device=device, requires_grad=True) + eval_loss_avg + 1e-1 * eval_lpips_mean
-        loss.backward()
-        optimizer_net.step()
-        optimizer_net.zero_grad()
-
-        eval_rows_to_append = [
-            {
-                'Loss': eval_loss_avg,
-                'LPIPS': eval_lpips_mean,
-                'Scale': scale, 
-            }
-        ]
-
-        for eval_row in eval_rows_to_append:
-            append_row_to_csv(csv_filename, eval_row)
-
-        clear_lines(2)
-        print(f'\r[Scale {scale} Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}')
-        print ('\n')
-
 
 if __name__ == "__main__":
     main()
