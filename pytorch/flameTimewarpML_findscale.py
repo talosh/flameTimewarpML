@@ -2037,7 +2037,7 @@ def main():
                 eval_lpips.append(float(torch.mean(eval_loss_LPIPS).item()))
 
                 loss = eval_loss_l1 + 2e-1 * eval_loss_LPIPS + 0.0 * scale_tensor.sum()
-                loss.backbard()
+                loss.backward()
 
                 if torch.cuda.is_available():
                     torch.cuda.synchronize()
