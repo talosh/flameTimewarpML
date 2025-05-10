@@ -2088,7 +2088,7 @@ def main():
             {
                 'Loss': eval_loss_avg,
                 'LPIPS': eval_lpips_mean,
-                'Comb': float(loss.item())
+                'Comb': float(loss.item()),
                 'Scale': formatted_scale, 
             }
         ]
