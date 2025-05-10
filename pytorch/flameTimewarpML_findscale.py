@@ -2043,7 +2043,7 @@ def main():
 
         read_eval_thread.join()
 
-        loss = (eval_loss_avg + 0.2 * eval_lpips_mean + 0.0 * scale_tensor.sum())
+        loss = (eval_loss_avg + 2e-1 * eval_lpips_mean + 0.0 * scale_tensor.sum())
         loss.backward()
         optimizer_net.step()
         optimizer_net.zero_grad()
