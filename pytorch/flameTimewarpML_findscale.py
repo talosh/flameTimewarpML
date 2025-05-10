@@ -1915,7 +1915,7 @@ def main():
 
     lr = args.lr
     optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_net, 'min', factor=0.1, patience=20)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_net, 'min', factor=0.1, patience=10)
     epoch = 0
     optimizer_net.zero_grad()
 
