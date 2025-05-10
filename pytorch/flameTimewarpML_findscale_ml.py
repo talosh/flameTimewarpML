@@ -1912,14 +1912,16 @@ def main():
 
     if args.eval_trained:
         scale_values = torch.linspace(args.max, args.min, steps=3, dtype=torch.float32)
+        linear_model = SimpleLinearModel(3)
         #  scale_values = [16, 4, 2]
         #  scale_values = [args.max] * 3
     else:
         scale_values = torch.linspace(args.max, args.min, steps=5, dtype=torch.float32)
+        linear_model = SimpleLinearModel(5)
+
         # scale_values = [16, 7, 6, 5, 4]
         # scale_values = [args.max] * 5
 
-    linear_model = SimpleLinearModel()
 
     lr = args.lr
     # optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr, betas=(0.4, 0.999))
