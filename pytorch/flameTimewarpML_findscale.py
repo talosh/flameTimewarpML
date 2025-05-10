@@ -1894,10 +1894,10 @@ def main():
     evalnet.eval()
 
     if args.eval_trained:
-        scale_values = [args.max, 4, 2]
+        scale_values = [16, 4, 2]
         #  scale_values = [args.max] * 3
     else:
-        scale_values = [args.max, 7, 6, 5, 4]
+        scale_values = [16, 7, 6, 5, 4]
         # scale_values = [args.max] * 5
 
     scale_tensor = torch.nn.Parameter(torch.tensor(scale_values, dtype=torch.float32), requires_grad=True)
@@ -1952,13 +1952,6 @@ def main():
             for i in range(1, len(t)):
                 out[i] = torch.minimum(out[i - 1], out[i])
             return out
-
-
-        print (clamped_scale)
-        clamped_scale = enforce_nonincreasing(clamped_scale)
-        print (clamped_scale)
-
-        print ('/n/n')
 
         with torch.no_grad():
             scale_tensor.copy_(clamped_scale)
