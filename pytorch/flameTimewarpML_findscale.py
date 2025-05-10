@@ -1911,7 +1911,10 @@ def main():
         initial_guess = np.linspace(args.min, args.max, 5)
         bounds = [(args.min, args.max)] * 5
 
+    epoch = 0
+
     def black_box_loss(x):
+        global epoch
         descriptions = list(eval_dataset.initial_train_descriptions)
 
         def read_eval_images(read_eval_image_queue, descriptions):
