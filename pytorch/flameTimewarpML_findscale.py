@@ -1750,7 +1750,7 @@ def main():
     parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
     parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
     parser.add_argument('--lr', type=float, default=1, help='Learning rate (default: 1)')
-    parser.add_argument('--max', type=int, default=64, help='Maximum scale (default: 64)')
+    parser.add_argument('--max', type=int, default=32, help='Maximum scale (default: 32)')
     parser.add_argument('--eval_half', action='store_true', dest='eval_half', default=False, help='Evaluate in half-precision')
     parser.add_argument('--eval_trained', action='store_true', dest='eval_trained', default=False, help='Evaluate in half-precision')
     parser.add_argument('--ap0', action='store_true', dest='ap0', default=False, help='input exrs are in ap0')
