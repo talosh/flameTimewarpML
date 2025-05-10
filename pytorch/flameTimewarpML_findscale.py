@@ -2070,7 +2070,12 @@ def main():
 
         return combined_loss
 
-    result = minimize(black_box_loss, initial_guess, method='Powell', bounds=bounds) # options={'eps': 1.0}
+    constraints = [
+        {'type': 'ineq', 'fun': lambda x, i=i: x[i] - x[i+1]}
+        for i in range(4)
+    ]
+
+    result = minimize(black_box_loss, initial_guess, method='SLSQP', bounds=bounds, constraints=constraints) # options={'eps': 1.0}
     final_params = np.append(result.x, 1.0)
     print("Best parameters:", final_params)
     print("Minimum loss:", result.fun)
