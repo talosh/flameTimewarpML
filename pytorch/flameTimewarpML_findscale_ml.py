@@ -1925,9 +1925,6 @@ def main():
         # scale_values = [16, 7, 6, 5, 4]
         # scale_values = [args.max] * 5
 
-    scale_out = linear_model(scale_values)  # [5]
-    print(scale_out.requires_grad)  # should be True
-
     sys.exit()
 
     lr = args.lr
@@ -1973,7 +1970,8 @@ def main():
         eval_loss = []
         eval_lpips = []
 
-        scale_tensor = torch.cat([linear_model(scale_values), torch.tensor([1.0], dtype=torch.float32)])
+        scale_out = linear_model(scale_values)
+        scale_tensor = torch.cat([scale_out, torch.tensor([1.0], dtype=torch.float32)])
         clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
         clamped_scale = enforce_nonincreasing(clamped_scale)
         scale = [s.item() for s in clamped_scale]
@@ -2089,9 +2087,8 @@ def main():
             best_scale_tensor = scale_tensor.detach().clone()
         '''
 
-        fake_anchor = linear_model(scale_values).sum() * 0
-        eval_loss_tensor = torch.as_tensor(eval_loss_l1, dtype=torch.float32, device=device)
-        loss = eval_loss_tensor + fake_anchor
+        loss = torch.as_tensor(eval_loss_l1, dtype=torch.float32, device=device)
+        loss = loss + 0 * scale_out.sum()          
         loss.backward()
 
         print ('\n\n')
