@@ -2050,7 +2050,7 @@ def main():
         loss = (eval_loss_avg + 2e-1 * eval_lpips_mean + 0.0 * scale_tensor.sum())
 
         if float(loss.item()) < best_loss:
-            best_scale_tensor = scale_tensor.detach.clone()
+            best_scale_tensor = scale_tensor.detach().clone()
 
         loss.backward()
         optimizer_net.step()
