@@ -1898,7 +1898,6 @@ def main():
     else:
         scale_values = [8, 7, 6, 5, 4]
     scale_tensor = torch.nn.Parameter(torch.tensor(scale_values, dtype=torch.float32), requires_grad=True)
-    scale = scale_tensor.detach().cpu().tolist()
 
     lr = args.lr
     optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr)
@@ -1938,8 +1937,8 @@ def main():
         eval_loss = []
         eval_lpips = []
 
-        scale = scale_tensor.detach().cpu().tolist()
-        scale.append(1.0)
+        scale_list = [s for s in scale_tensor] + [torch.tensor(1.0, device=device)]
+        scale = [s.item() for s in scale_list]
 
         try:
             with torch.no_grad():
@@ -2042,7 +2041,7 @@ def main():
 
         read_eval_thread.join()
 
-        loss = torch.zeros(1, device=device, requires_grad=True) + eval_loss_avg + 1e-1 * eval_lpips_mean
+        loss = (eval_loss_avg + 1e-1 * eval_lpips_mean + 0.0 * scale_tensor.sum())
         loss.backward()
         optimizer_net.step()
         optimizer_net.zero_grad()
