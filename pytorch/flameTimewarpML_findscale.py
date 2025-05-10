@@ -2068,9 +2068,9 @@ def main():
 
         read_eval_thread.join()
 
-        if float(loss.item()) < best_loss:
-            best_loss = float(loss.item())
-            best_scale_tensor = scale_tensor.detach().clone()
+        # if float(loss.item()) < best_loss:
+        #    best_loss = float(loss.item())
+        #    best_scale_tensor = scale_tensor.detach().clone()
 
         #  scale_tensor.grad *= gradient_scaling
         optimizer_net.step()
@@ -2084,6 +2084,7 @@ def main():
 
         optimizer_net.zero_grad()
 
+        '''
         prev_lr = optimizer_net.param_groups[0]['lr']
         scheduler.step(loss)
         current_lr = optimizer_net.param_groups[0]['lr']
@@ -2093,6 +2094,7 @@ def main():
             with torch.no_grad():
                 scale_tensor.copy_(best_scale_tensor)
                 # optimizer_net = torch.optim.AdamW([scale_tensor], lr=current_lr)
+        '''
 
         eval_rows_to_append = [
             {
