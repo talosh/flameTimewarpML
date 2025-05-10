@@ -1939,7 +1939,7 @@ def main():
         eval_lpips = []
 
         scale = scale_tensor.detach().cpu().tolist()
-        # scale = scale.append(1.0)
+        scale.append(1.0)
 
         print (scale_tensor)
         print (scale)
