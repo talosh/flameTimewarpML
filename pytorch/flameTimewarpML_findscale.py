@@ -1915,7 +1915,7 @@ def main():
     gradient_scaling = torch.tensor([5.0, 2.0, 1.0, 0.5, 0.1], device=scale_tensor.device)
 
     lr = args.lr
-    optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr)
+    optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr, betas=(0.4, 0.999))
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_net, 'min', factor=0.1, patience=100)
     epoch = 0
     optimizer_net.zero_grad()
@@ -2071,10 +2071,10 @@ def main():
         # scale_tensor.grad *= gradient_scaling
         optimizer_net.step()
 
-        # clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
-        # clamped_scale = enforce_nonincreasing(clamped_scale)
-        # with torch.no_grad():
-        #    scale_tensor.copy_(clamped_scale)
+        clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
+        clamped_scale = enforce_nonincreasing(clamped_scale)
+        with torch.no_grad():
+            scale_tensor.copy_(clamped_scale)
 
         optimizer_net.zero_grad()
 
