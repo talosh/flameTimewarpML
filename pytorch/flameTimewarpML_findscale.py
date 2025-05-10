@@ -1905,6 +1905,9 @@ def main():
     epoch = 0
     optimizer_net.zero_grad()
 
+    best_loss = sys.float_info.max
+    best_scale_tensor = scale_tensor.detach.clone()
+
     while True:
         time_stamp = time.time()
         current_lr_str = str(f'{optimizer_net.param_groups[0]["lr"]:.2e}')
@@ -2045,6 +2048,10 @@ def main():
         read_eval_thread.join()
 
         loss = (eval_loss_avg + 2e-1 * eval_lpips_mean + 0.0 * scale_tensor.sum())
+
+        if float(loss.item()) < best_loss:
+            best_scale_tensor = scale_tensor.detach.clone()
+
         loss.backward()
         optimizer_net.step()
         optimizer_net.zero_grad()
