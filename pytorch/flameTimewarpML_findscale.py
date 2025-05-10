@@ -1916,9 +1916,9 @@ def main():
     # gradient_scaling = torch.tensor([5, 2, 1, 0.5, 0.1], device=scale_tensor.device)
 
     lr = args.lr
-    # optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr, betas=(0.4, 0.999))
+    optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr, betas=(0.4, 0.999))
     # optimizer_net = torch.optim.SGD([scale_tensor], lr=lr)
-    optimizer_net = torch.optim.Adam([scale_tensor], lr=lr)
+    # optimizer_net = torch.optim.Adam([scale_tensor], lr=lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_net, 'min', factor=0.1, patience=args.patience)
     epoch = 0
     optimizer_net.zero_grad()
