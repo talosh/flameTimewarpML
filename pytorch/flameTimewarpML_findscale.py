@@ -1907,7 +1907,7 @@ def main():
 
     while True:
         time_stamp = time.time()
-        current_lr_str = str(f'{optimizer_net.param_groups[0]['lr']:.2e}')
+        current_lr_str = str(f'{optimizer_net.param_groups[0]["lr"]:.2e}')
 
         descriptions = list(eval_dataset.initial_train_descriptions)
 
