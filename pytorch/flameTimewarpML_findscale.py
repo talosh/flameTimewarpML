@@ -2083,6 +2083,9 @@ def main():
         print(f'\r[Epoch: {(epoch+1):05}, Scale [{formatted_scale}] Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, Combined: {loss.item():.6f}, lr: {current_lr_str}')
         print ('\n')
 
+        if current_lr < 1e-11:
+            print ('finished')
+            sys.exit()
         epoch += 1
 
 
