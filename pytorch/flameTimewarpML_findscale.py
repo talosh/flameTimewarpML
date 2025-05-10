@@ -1900,10 +1900,6 @@ def main():
     scale_tensor = torch.nn.Parameter(torch.tensor(scale_values, dtype=torch.float32), requires_grad=True)
     scale = scale_tensor.detach().cpu().tolist()
 
-    print (scale_tensor)
-    print (scale)
-    sys.exit()
-
     lr = args.lr
     optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_net, 'min', factor=0.1, patience=10)
@@ -1943,9 +1939,11 @@ def main():
         eval_lpips = []
 
         scale = scale_tensor.detach().cpu().tolist()
-        scale = scale.append(1)
+        scale = scale.append(1.0)
 
+        print (scale_tensor)
         print (scale)
+        sys.exit()
 
         try:
             with torch.no_grad():
