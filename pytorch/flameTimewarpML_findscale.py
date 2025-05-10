@@ -2079,7 +2079,7 @@ def main():
         black_box_loss,
         initial_guess, method='SLSQP',
         bounds=bounds,
-        constraints=constraints
+        constraints=constraints,
         options={
             'maxiter': 1000,        # More iterations allowed
             'ftol': 1e-6,           # Allow larger change in function value before stopping
