@@ -1975,6 +1975,7 @@ def main():
         scale = [s.item() for s in clamped_scale]
 
         # try:
+        total_eval_loss = 0.0
         description = read_eval_image_queue.get()
         while description is not None:
             ev_item_index = description['ev_item_index']
