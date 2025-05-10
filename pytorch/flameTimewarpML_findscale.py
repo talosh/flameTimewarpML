@@ -1955,7 +1955,7 @@ def main():
                         eval_lpips_mean = -1
 
                     clear_lines(1)
-                    print (f'\rEpoch: {epoch+1}, Scale: {scale}, Evaluating {ev_item_index+1} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, lr: {lr}')
+                    print (f'\rEpoch: {epoch+1}, Scale: {scale:.2f}, Evaluating {ev_item_index+1} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, lr: {lr}')
 
                     eval_img0 = description['eval_img0']
                     eval_img1 = description['eval_img1']
