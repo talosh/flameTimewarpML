@@ -1946,9 +1946,11 @@ def main():
         eval_lpips = []
 
         clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
+        print (clamped_scale)
         # Enforce non-increasing values
         clamped_scale, _ = torch.cummin(clamped_scale.flip(dims=[0]), dim=0)
         clamped_scale = clamped_scale.flip(dims=[0])
+        print (clamped_scale)
 
         with torch.no_grad():
             scale_tensor.copy_(clamped_scale)
