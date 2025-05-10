@@ -2070,7 +2070,7 @@ def main():
 
         return combined_loss
 
-    result = minimize(black_box_loss, initial_guess, method='Powell', bounds=bounds, options={'eps': 1.0})
+    result = minimize(black_box_loss, initial_guess, method='L-BFGS-B', bounds=bounds, options={'eps': 1.0})
     final_params = np.append(result.x, 1.0)
     print("Best parameters:", final_params)
     print("Minimum loss:", result.fun)
