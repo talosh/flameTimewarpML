@@ -1903,7 +1903,7 @@ def main():
     optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_net, 'min', factor=0.1, patience=10)
     epoch = 0
-    optimizer_net.zeero_grad()
+    optimizer_net.zero_grad()
 
     while True:
         time_stamp = time.time()
@@ -1955,7 +1955,7 @@ def main():
                         eval_lpips_mean = -1
 
                     clear_lines(1)
-                    print (f'\rEpoch: {epoch+1}, Scale: {scale}, Evaluating {ev_item_index+1} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}')
+                    print (f'\rEpoch: {epoch+1}, Scale: {scale}, Evaluating {ev_item_index+1} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, lr: {lr}')
 
                     eval_img0 = description['eval_img0']
                     eval_img1 = description['eval_img1']
@@ -2045,6 +2045,7 @@ def main():
         loss.backward()
         optimizer_net.step()
         optimizer_net.zero_grad()
+        scheduler.step(loss)
 
         eval_rows_to_append = [
             {
@@ -2058,8 +2059,10 @@ def main():
             append_row_to_csv(csv_filename, eval_row)
 
         clear_lines(2)
-        print(f'\r[Scale {scale} Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}')
+        print(f'\r[Epoch: {epoch+1}, Scale {scale} Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, lr: {lr}')
         print ('\n')
+
+        epoch += 1
 
 
 if __name__ == "__main__":
