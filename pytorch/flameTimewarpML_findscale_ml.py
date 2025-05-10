@@ -2085,10 +2085,10 @@ def main():
             best_scale_tensor = scale_tensor.detach().clone()
         '''
 
-        fake_grad = 0 * linear_model(scale_values).sum()
-        loss = fake_grad + torch.tensor(eval_loss_l1, device=device) # + 1e-2 * eval_loss_LPIPS
+        fake_anchor = linear_model(scale_values).sum() * 0
+        eval_loss_tensor = torch.as_tensor(eval_loss_l1, dtype=torch.float32, device=device)
+        loss = eval_loss_tensor + fake_anchor
         loss.backward()
-        # scale_tensor.grad += -torch.sign(scale_tensor) * loss_value * scale_adjustment_factor
 
         print ('\n\n')
 
