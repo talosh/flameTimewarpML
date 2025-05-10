@@ -1894,11 +1894,11 @@ def main():
     evalnet.eval()
 
     if args.eval_trained:
-        # scale_values = [8, 4, 2]
-        scale_values = [args.max] * 3
+        scale_values = [8, 4, 2]
+        # scale_values = [args.max] * 3
     else:
-        # scale_values = [8, 7, 6, 5, 4]
-        scale_values = [args.max] * 5
+        scale_values = [8, 7, 6, 5, 4]
+        #  scale_values = [args.max] * 5
 
     scale_tensor = torch.nn.Parameter(torch.tensor(scale_values, dtype=torch.float32), requires_grad=True)
 
