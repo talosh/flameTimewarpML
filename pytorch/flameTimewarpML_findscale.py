@@ -2055,7 +2055,15 @@ def main():
         loss.backward()
         optimizer_net.step()
         optimizer_net.zero_grad()
+
+        prev_lr = optimizer_net.param_groups[0]['lr']
         scheduler.step(loss)
+        current_lr = optimizer_net.param_groups[0]['lr']
+        if current_lr < prev_lr:
+            # print(f'LR reduced from {prev_lr:.2e} to {current_lr:.2e}, restoring best scale tensor')
+            with torch.no_grad():
+                scale_tensor.copy_(best_scale_tensor)
+                optimizer_net.state = {}
 
         eval_rows_to_append = [
             {
