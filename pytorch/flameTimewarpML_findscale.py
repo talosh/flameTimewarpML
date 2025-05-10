@@ -1952,6 +1952,8 @@ def main():
         clamped_scale = clamped_scale.flip(dims=[0])
         print (clamped_scale)
 
+        print ('/n/n')
+
         with torch.no_grad():
             scale_tensor.copy_(clamped_scale)
 
