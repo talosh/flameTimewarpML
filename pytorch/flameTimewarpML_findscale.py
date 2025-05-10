@@ -1906,7 +1906,7 @@ def main():
     optimizer_net.zero_grad()
 
     best_loss = sys.float_info.max
-    best_scale_tensor = scale_tensor.detach.clone()
+    best_scale_tensor = scale_tensor.detach().clone()
 
     while True:
         time_stamp = time.time()
