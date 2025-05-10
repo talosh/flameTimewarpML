@@ -1905,16 +1905,16 @@ def main():
     evalnet.eval()
 
     if args.eval_trained:
-        initial_guess = np.linspace(args.min, args.max, 3)
+        initial_guess = np.linspace(args.max, args.min, 3)
         bounds = [(args.min, args.max)] * 3
     else:
-        initial_guess = np.linspace(args.min, args.max, 5)
+        initial_guess = np.linspace(args.max, args.min, 5)
         bounds = [(args.min, args.max)] * 5
 
-    epoch = 0
-
     def black_box_loss(x):
-        global epoch
+
+        epoch = 0
+
         descriptions = list(eval_dataset.initial_train_descriptions)
 
         def read_eval_images(read_eval_image_queue, descriptions):
