@@ -1906,10 +1906,10 @@ def main():
 
     if args.eval_trained:
         initial_guess = np.linspace(args.max, args.min, 3)
-        bounds = [(args.min, args.max)] * 3
+        bounds = [(32, 1)] * 3
     else:
         initial_guess = np.linspace(args.max, args.min, 5)
-        bounds = [(args.min, args.max)] * 5
+        bounds = [(32, 1)] * 5
 
     def black_box_loss(x):
 
