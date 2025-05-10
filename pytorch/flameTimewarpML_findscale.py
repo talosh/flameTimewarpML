@@ -1958,12 +1958,14 @@ def main():
         eval_loss = []
         eval_lpips = []
 
-        clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
-        clamped_scale = enforce_nonincreasing(clamped_scale)
+        scale = torch.cat([scale_tensor, torch.tensor([1.0], dtype=torch.float32)])
+
+        # clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
+        # clamped_scale = enforce_nonincreasing(clamped_scale)
         # scale = [s.item() for s in clamped_scale] + [1.0]
 
-        scale_list = [s for s in clamped_scale] + [torch.tensor(1.0, device=device)]
-        scale = [s.item() for s in scale_list]
+        # scale_list = [s for s in clamped_scale] + [torch.tensor(1.0, device=device)]
+        # scale = [s.item() for s in scale_list]
 
         total_loss = torch.zeros(1, device=device, requires_grad=True)
 
@@ -2074,7 +2076,6 @@ def main():
             best_loss = float(total_loss.item())
             best_scale_tensor = scale_tensor.detach().clone()
 
-        total_loss = total_loss + 0.0 * scale_tensor.sum()
         total_loss.backward()
         # scale_tensor.grad += -torch.sign(scale_tensor) * loss_value * scale_adjustment_factor
 
