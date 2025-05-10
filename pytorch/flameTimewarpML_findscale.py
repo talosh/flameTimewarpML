@@ -1960,99 +1960,102 @@ def main():
 
         clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
         clamped_scale = enforce_nonincreasing(clamped_scale)
-        scale = [s.item() for s in clamped_scale] + [1.0]
+        # scale = [s.item() for s in clamped_scale] + [1.0]
 
-        # scale_list = [s for s in clamped_scale] + [torch.tensor(1.0, device=device)]
+        scale = [s for s in clamped_scale] + [torch.tensor(1.0, device=device)]
         # scale = [s.item() for s in scale_list]
 
+        total_loss = torch.zeros(1, device=device, requires_grad=True)
+
         try:
-            with torch.no_grad():
+            description = read_eval_image_queue.get()
+            while description is not None:
+                ev_item_index = description['ev_item_index']
+                if eval_loss:
+                    eval_loss_avg = float(np.array(eval_loss).mean())
+                else:
+                    eval_loss_avg = -1
+                if eval_lpips:
+                    eval_lpips_mean = float(np.array(eval_lpips).mean())
+                else:
+                    eval_lpips_mean = -1
+
+                formatted_scale = ', '.join(f'{x:.2f}' for x in scale)
+                clear_lines(1)
+                print (f'\rEpoch: {(epoch+1):05d}, Scale: [{formatted_scale}], Evaluating {ev_item_index+1} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, lr: {current_lr_str}')
+
+                eval_img0 = description['eval_img0']
+                eval_img1 = description['eval_img1']
+                eval_img2 = description['eval_img2']
+                eval_ratio = description['ratio']
+                eval_img0 = torch.from_numpy(eval_img0)
+                eval_img1 = torch.from_numpy(eval_img1)
+                eval_img2 = torch.from_numpy(eval_img2)
+                eval_img0 = eval_img0.to(device = device, dtype = torch.float32, non_blocking = True)
+                eval_img1 = eval_img1.to(device = device, dtype = torch.float32, non_blocking = True)
+                eval_img2 = eval_img2.to(device = device, dtype = torch.float32, non_blocking = True)
+                eval_img0 = eval_img0.permute(2, 0, 1).unsqueeze(0)
+                eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
+                eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
+                eval_img0_orig = eval_img0.clone()
+                eval_img2_orig = eval_img2.clone()
+
+                if args.eval_half:
+                    eval_img0 = eval_img0.half()
+                    eval_img2 = eval_img2.half()
+
+                result = evalnet(
+                    eval_img0, 
+                    eval_img2,
+                    eval_ratio,
+                    scale = scale,
+                    iterations = 1
+                    )
+
+                if torch.cuda.is_available():
+                    torch.cuda.synchronize()
+                elif torch.backends.mps.is_available():
+                    torch.mps.synchronize()
+
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()            
+                elif torch.backends.mps.is_available():
+                    torch.mps.empty_cache()
+
+
+                eval_flow_list = result['flow_list']
+                eval_mask_list = result['mask_list']
+                eval_conf_list = result['conf_list']
+                eval_merged = result['merged']
+
+                if args.eval_half:
+                    eval_flow_list[-1] = eval_flow_list[-1].float()
+                    eval_mask_list[-1] = eval_mask_list[-1].float()
+
+                eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :, :]) * eval_mask_list[-1][:, :, :, :] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :, :]) * (1 - eval_mask_list[-1][:, :, :, :])
+                eval_loss_l1 = criterion_l1(eval_result, eval_img1)
+                total_loss = total_loss + eval_loss_l1
+                eval_loss.append(float(eval_loss_l1.item()))
+                eval_loss_LPIPS = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
+                total_loss = total_loss + 0.1 * eval_loss_LPIPS
+                eval_lpips.append(float(torch.mean(eval_loss_LPIPS).item()))
+
+                if torch.cuda.is_available():
+                    torch.cuda.synchronize()
+                elif torch.backends.mps.is_available():
+                    torch.mps.synchronize()
+
+                del eval_img0, eval_img1, eval_img2, eval_img0_orig, eval_img2_orig
+                del eval_flow_list, eval_mask_list, eval_conf_list, eval_merged
+                del result, eval_result,
+                del description['eval_img0'], description['eval_img1'], description['eval_img2']
+
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()            
+                elif torch.backends.mps.is_available():
+                    torch.mps.empty_cache()
+
                 description = read_eval_image_queue.get()
-                while description is not None:
-                    ev_item_index = description['ev_item_index']
-                    if eval_loss:
-                        eval_loss_avg = float(np.array(eval_loss).mean())
-                    else:
-                        eval_loss_avg = -1
-                    if eval_lpips:
-                        eval_lpips_mean = float(np.array(eval_lpips).mean())
-                    else:
-                        eval_lpips_mean = -1
-
-                    formatted_scale = ', '.join(f'{x:.2f}' for x in scale)
-                    clear_lines(1)
-                    print (f'\rEpoch: {(epoch+1):05d}, Scale: [{formatted_scale}], Evaluating {ev_item_index+1} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, lr: {current_lr_str}')
-
-                    eval_img0 = description['eval_img0']
-                    eval_img1 = description['eval_img1']
-                    eval_img2 = description['eval_img2']
-                    eval_ratio = description['ratio']
-                    eval_img0 = torch.from_numpy(eval_img0)
-                    eval_img1 = torch.from_numpy(eval_img1)
-                    eval_img2 = torch.from_numpy(eval_img2)
-                    eval_img0 = eval_img0.to(device = device, dtype = torch.float32, non_blocking = True)
-                    eval_img1 = eval_img1.to(device = device, dtype = torch.float32, non_blocking = True)
-                    eval_img2 = eval_img2.to(device = device, dtype = torch.float32, non_blocking = True)
-                    eval_img0 = eval_img0.permute(2, 0, 1).unsqueeze(0)
-                    eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
-                    eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
-                    eval_img0_orig = eval_img0.clone()
-                    eval_img2_orig = eval_img2.clone()
-
-                    if args.eval_half:
-                        eval_img0 = eval_img0.half()
-                        eval_img2 = eval_img2.half()
-
-                    result = evalnet(
-                        eval_img0, 
-                        eval_img2,
-                        eval_ratio,
-                        scale = scale,
-                        iterations = 1
-                        )
-
-                    if torch.cuda.is_available():
-                        torch.cuda.synchronize()
-                    elif torch.backends.mps.is_available():
-                        torch.mps.synchronize()
-
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()            
-                    elif torch.backends.mps.is_available():
-                        torch.mps.empty_cache()
-
-
-                    eval_flow_list = result['flow_list']
-                    eval_mask_list = result['mask_list']
-                    eval_conf_list = result['conf_list']
-                    eval_merged = result['merged']
-
-                    if args.eval_half:
-                        eval_flow_list[-1] = eval_flow_list[-1].float()
-                        eval_mask_list[-1] = eval_mask_list[-1].float()
-
-                    eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :, :]) * eval_mask_list[-1][:, :, :, :] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :, :]) * (1 - eval_mask_list[-1][:, :, :, :])
-                    eval_loss_l1 = criterion_l1(eval_result, eval_img1)
-                    eval_loss.append(float(eval_loss_l1.item()))
-                    eval_loss_LPIPS = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
-                    eval_lpips.append(float(torch.mean(eval_loss_LPIPS).item()))
-
-                    if torch.cuda.is_available():
-                        torch.cuda.synchronize()
-                    elif torch.backends.mps.is_available():
-                        torch.mps.synchronize()
-
-                    del eval_img0, eval_img1, eval_img2, eval_img0_orig, eval_img2_orig
-                    del eval_flow_list, eval_mask_list, eval_conf_list, eval_merged
-                    del result, eval_result,
-                    del description['eval_img0'], description['eval_img1'], description['eval_img2']
-
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()            
-                    elif torch.backends.mps.is_available():
-                        torch.mps.empty_cache()
-
-                    description = read_eval_image_queue.get()
 
             eval_loss_avg = float(np.array(eval_loss).mean())
             eval_lpips_mean = float(np.array(eval_lpips).mean())
@@ -2066,21 +2069,13 @@ def main():
             read_eval_thread.join()
 
         read_eval_thread.join()
-        loss_value = eval_loss_avg + 2e-1 * eval_lpips_mean
 
-        loss = (loss_value + 0.0 * scale_tensor.sum())
-
-        if float(loss.item()) < best_loss:
-            best_loss = float(loss.item())
+        if float(total_loss.item()) < best_loss:
+            best_loss = float(total_loss.item())
             best_scale_tensor = scale_tensor.detach().clone()
 
-        loss.backward()
+        total_loss.backward()
         # scale_tensor.grad += -torch.sign(scale_tensor) * loss_value * scale_adjustment_factor
-        print ()
-        print ()
-        print("Gradients:", scale_tensor.grad)
-        print ()
-        print ()
 
         #  scale_tensor.grad *= gradient_scaling
         optimizer_net.step()
@@ -2095,7 +2090,7 @@ def main():
         optimizer_net.zero_grad()
 
         prev_lr = optimizer_net.param_groups[0]['lr']
-        scheduler.step(loss)
+        scheduler.step(total_loss)
         current_lr = optimizer_net.param_groups[0]['lr']
 
         if current_lr < prev_lr:
@@ -2108,7 +2103,7 @@ def main():
             {
                 'Loss': eval_loss_avg,
                 'LPIPS': eval_lpips_mean,
-                'Comb': float(loss.item()),
+                'Comb': float(total_loss.item()),
                 'Scale': formatted_scale, 
             }
         ]
@@ -2117,7 +2112,7 @@ def main():
             append_row_to_csv(csv_filename, eval_row)
 
         clear_lines(2)
-        print(f'\r[Epoch: {(epoch+1):05}, Scale [{formatted_scale}] Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, Combined: {loss.item():.6f}, lr: {current_lr_str}')
+        print(f'\r[Epoch: {(epoch+1):05}, Scale [{formatted_scale}] Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, Combined: {total_loss.item():.6f}, lr: {current_lr_str}')
         print ('\n')
 
         if current_lr < 1e-11:
