@@ -1946,6 +1946,10 @@ def main():
         eval_lpips = []
 
         clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
+        # Enforce non-increasing values
+        clamped_scale, _ = torch.cummin(clamped_scale.flip(dims=[0]), dim=0)
+        clamped_scale = clamped_scale.flip(dims=[0])
+        
         scale_list = [s for s in clamped_scale] + [torch.tensor(1.0, device=device)]
         scale = [s.item() for s in scale_list]
 
