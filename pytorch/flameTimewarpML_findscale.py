@@ -1912,7 +1912,7 @@ def main():
 
     scale_tensor = torch.nn.Parameter(scale_values, requires_grad=True)
     # scale_tensor = torch.nn.Parameter(torch.tensor(scale_values, dtype=torch.float32), requires_grad=True)
-    gradient_scaling = torch.tensor([5.0, 2.0, 1.0, 0.5, 0.1], device=scale_tensor.device)
+    gradient_scaling = torch.tensor([5.0, 2.0, 1.0, 0, 0], device=scale_tensor.device)
 
     lr = args.lr
     optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr, betas=(0.4, 0.999))
