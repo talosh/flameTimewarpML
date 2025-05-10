@@ -1912,7 +1912,7 @@ def main():
 
     scale_tensor = torch.nn.Parameter(scale_values, requires_grad=True)
     # scale_tensor = torch.nn.Parameter(torch.tensor(scale_values, dtype=torch.float32), requires_grad=True)
-    gradient_scaling = torch.tensor([5, 2, 1, 0.5, 0.1], device=scale_tensor.device)
+    # gradient_scaling = torch.tensor([5, 2, 1, 0.5, 0.1], device=scale_tensor.device)
 
     lr = args.lr
     optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr, betas=(0.4, 0.999))
@@ -1956,10 +1956,7 @@ def main():
         eval_loss = []
         eval_lpips = []
 
-        clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
-        clamped_scale = enforce_nonincreasing(clamped_scale)
-
-        scale_list = [s for s in clamped_scale] + [torch.tensor(1.0, device=device)]
+        scale_list = [s for s in scale_tensor] + [torch.tensor(1.0, device=device)]
         scale = [s.item() for s in scale_list]
 
         try:
@@ -2074,10 +2071,10 @@ def main():
         scale_tensor.grad *= gradient_scaling
         optimizer_net.step()
 
-        # clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
-        # clamped_scale = enforce_nonincreasing(clamped_scale)
-        # with torch.no_grad():
-        #    scale_tensor.copy_(clamped_scale)
+        clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
+        clamped_scale = enforce_nonincreasing(clamped_scale)
+        with torch.no_grad():
+            scale_tensor.copy_(clamped_scale)
 
         optimizer_net.zero_grad()
 
