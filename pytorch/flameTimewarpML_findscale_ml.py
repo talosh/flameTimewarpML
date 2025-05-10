@@ -2090,6 +2090,13 @@ def main():
         loss.backward()
         # scale_tensor.grad += -torch.sign(scale_tensor) * loss_value * scale_adjustment_factor
 
+        print ('\n\n')
+
+        for name, param in linear_model.named_parameters():
+            print(f"{name} grad norm: {param.grad.norm() if param.grad is not None else 'None'}")
+
+        print ('\n\n')
+
         #  scale_tensor.grad *= gradient_scaling
         optimizer_net.step()
 
