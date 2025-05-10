@@ -1973,10 +1973,6 @@ def main():
         clamped_scale = enforce_nonincreasing(clamped_scale)
         scale = [s.item() for s in clamped_scale]
 
-        print (scale_tensor)
-        print (scale)
-        sys.exit()
-
         # try:
         description = read_eval_image_queue.get()
         while description is not None:
@@ -2044,10 +2040,8 @@ def main():
 
             eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :, :]) * eval_mask_list[-1][:, :, :, :] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :, :]) * (1 - eval_mask_list[-1][:, :, :, :])
             eval_loss_l1 = criterion_l1(eval_result, eval_img1)
-            total_loss = total_loss + eval_loss_l1
             eval_loss.append(float(eval_loss_l1.item()))
             eval_loss_LPIPS = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
-            total_loss = total_loss + 0.1 * eval_loss_LPIPS
             eval_lpips.append(float(torch.mean(eval_loss_LPIPS).item()))
 
             if torch.cuda.is_available():
@@ -2082,11 +2076,14 @@ def main():
 
         read_eval_thread.join()
 
+        '''
         if float(total_loss.item()) < best_loss:
             best_loss = float(total_loss.item())
             best_scale_tensor = scale_tensor.detach().clone()
+        '''
 
-        total_loss.backward()
+        loss = criterion_l1(scale_tensor, scale_tensor)
+        loss.backward()
         # scale_tensor.grad += -torch.sign(scale_tensor) * loss_value * scale_adjustment_factor
 
         #  scale_tensor.grad *= gradient_scaling
@@ -2102,14 +2099,16 @@ def main():
         optimizer_net.zero_grad()
 
         prev_lr = optimizer_net.param_groups[0]['lr']
-        scheduler.step(total_loss)
+        scheduler.step(loss)
         current_lr = optimizer_net.param_groups[0]['lr']
 
+        '''
         if current_lr < prev_lr:
             # print(f'LR reduced from {prev_lr:.2e} to {current_lr:.2e}, restoring best scale tensor')
             with torch.no_grad():
                 scale_tensor.copy_(best_scale_tensor)
                 # optimizer_net = torch.optim.AdamW([scale_tensor], lr=current_lr)
+        '''
 
         eval_rows_to_append = [
             {
