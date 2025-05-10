@@ -1919,6 +1919,7 @@ def main():
         #  scale_values = [args.max] * 3
     else:
         scale_values = torch.linspace(args.max, args.min, steps=5, dtype=torch.float32)
+        max_values = torch.linspace(args.max, args.max, steps=5, dtype=torch.float32)
         linear_model = SimpleLinearModel(5)
 
         # scale_values = [16, 7, 6, 5, 4]
@@ -2082,7 +2083,7 @@ def main():
             best_scale_tensor = scale_tensor.detach().clone()
         '''
 
-        loss = criterion_l1(scale_tensor, scale_tensor)
+        loss = criterion_l1(linear_model(scale_values), max_values)
         loss.backward()
         # scale_tensor.grad += -torch.sign(scale_tensor) * loss_value * scale_adjustment_factor
 
