@@ -1740,6 +1740,16 @@ def enforce_nonincreasing(t: torch.Tensor):
         out[i] = torch.minimum(out[i - 1], out[i])
     return out
 
+class SimpleLinearModel(torch.nn.Module):
+    def __init__(self, c):
+        super(SimpleLinearModel, self).__init__()
+        self.linear = torch.nn.Linear(c, c)
+        torch.nn.init.eye_(self.linear.weight)
+        self.linear.bias.data.zero_()
+
+    def forward(self, x):
+        return self.linear(x)
+
 def main():
     global current_state_dict
     parser = argparse.ArgumentParser(description='Training script.')
@@ -1904,27 +1914,26 @@ def main():
 
     if args.eval_trained:
         scale_values = torch.linspace(args.max, args.min, steps=3, dtype=torch.float32)
+        linear_model = SimpleLinearModel(3)
         #  scale_values = [16, 4, 2]
         #  scale_values = [args.max] * 3
     else:
         scale_values = torch.linspace(args.max, args.min, steps=5, dtype=torch.float32)
+        max_values = torch.linspace(args.max, args.max, steps=5, dtype=torch.float32)
+        linear_model = SimpleLinearModel(5)
+
         # scale_values = [16, 7, 6, 5, 4]
         # scale_values = [args.max] * 5
 
-    fake_values = torch.linspace(1, 1, steps=5, dtype=torch.float32)
-    scale_tensor = torch.nn.Parameter(scale_values, requires_grad=True)
-    # scale_tensor = torch.nn.Parameter(torch.tensor(scale_values, dtype=torch.float32), requires_grad=True)
-    # gradient_scaling = torch.tensor([5, 2, 1, 0.5, 0.1], device=scale_tensor.device)
-
     lr = args.lr
     # optimizer_net = torch.optim.AdamW([scale_tensor], lr=lr, betas=(0.4, 0.999))
-    optimizer_net = torch.optim.SGD([scale_tensor], lr=lr, momentum=0.9)
+    optimizer_net = torch.optim.SGD(linear_model.parameters(), lr=lr, momentum=0.9)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_net, 'min', factor=0.1, patience=args.patience)
     epoch = 0
     optimizer_net.zero_grad()
 
     best_loss = sys.float_info.max
-    best_scale_tensor = scale_tensor.detach().clone()
+    best_parameters = deepcopy(linear_model.state_dict())
 
     while True:
         time_stamp = time.time()
@@ -1959,18 +1968,14 @@ def main():
         eval_loss = []
         eval_lpips = []
 
-        scale = torch.cat([scale_tensor, torch.tensor([1.0], dtype=torch.float32)])
-
-        # clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
-        # clamped_scale = enforce_nonincreasing(clamped_scale)
-        # scale = [s.item() for s in clamped_scale] + [1.0]
-
-        # scale_list = [s for s in clamped_scale] + [torch.tensor(1.0, device=device)]
-        # scale = [s.item() for s in scale_list]
-
-        total_loss = torch.zeros(1, device=device, requires_grad=True)
+        scale_out = linear_model(scale_values)
+        scale_tensor = torch.cat([scale_out, torch.tensor([1.0], dtype=torch.float32)])
+        clamped_scale = torch.clamp(scale_tensor, min=1.0, max=args.max)
+        clamped_scale = enforce_nonincreasing(clamped_scale)
+        scale = [s.item() for s in clamped_scale]
 
         # try:
+        total_eval_loss = torch.tensor(0.0, device=device)
         description = read_eval_image_queue.get()
         while description is not None:
             ev_item_index = description['ev_item_index']
@@ -2037,10 +2042,9 @@ def main():
 
             eval_result = warp(eval_img0_orig, eval_flow_list[-1][:, :2, :, :]) * eval_mask_list[-1][:, :, :, :] + warp(eval_img2_orig, eval_flow_list[-1][:, 2:4, :, :]) * (1 - eval_mask_list[-1][:, :, :, :])
             eval_loss_l1 = criterion_l1(eval_result, eval_img1)
-            total_loss = total_loss + eval_loss_l1
+            total_eval_loss += eval_loss_l1
             eval_loss.append(float(eval_loss_l1.item()))
             eval_loss_LPIPS = loss_fn_alex(eval_result * 2 - 1, eval_img1 * 2 - 1)
-            total_loss = total_loss + 0.1 * eval_loss_LPIPS
             eval_lpips.append(float(torch.mean(eval_loss_LPIPS).item()))
 
             if torch.cuda.is_available():
@@ -2075,12 +2079,28 @@ def main():
 
         read_eval_thread.join()
 
+        '''
         if float(total_loss.item()) < best_loss:
             best_loss = float(total_loss.item())
             best_scale_tensor = scale_tensor.detach().clone()
+        '''
+        loss = torch.as_tensor(eval_loss_l1, dtype=torch.float32, device=device)
+        loss = loss + 0 * scale_out.sum()
 
-        total_loss.backward()
-        # scale_tensor.grad += -torch.sign(scale_tensor) * loss_value * scale_adjustment_factor
+
+        fake_eval_loss = torch.mean(scale_out**2)  # pretend this came from evalnet
+        loss = fake_eval_loss
+         
+        loss.backward()
+
+        print ('\n\n')
+        for name, param in linear_model.named_parameters():
+            if param.grad is None:
+                print(f"{name} grad is None")
+            else:
+                print(f"{name} grad norm: {param.grad.norm():.6f}")
+
+        print ('\n\n')
 
         #  scale_tensor.grad *= gradient_scaling
         optimizer_net.step()
@@ -2095,20 +2115,22 @@ def main():
         optimizer_net.zero_grad()
 
         prev_lr = optimizer_net.param_groups[0]['lr']
-        scheduler.step(total_loss)
+        scheduler.step(loss)
         current_lr = optimizer_net.param_groups[0]['lr']
 
+        '''
         if current_lr < prev_lr:
             # print(f'LR reduced from {prev_lr:.2e} to {current_lr:.2e}, restoring best scale tensor')
             with torch.no_grad():
                 scale_tensor.copy_(best_scale_tensor)
                 # optimizer_net = torch.optim.AdamW([scale_tensor], lr=current_lr)
+        '''
 
         eval_rows_to_append = [
             {
                 'Loss': eval_loss_avg,
                 'LPIPS': eval_lpips_mean,
-                'Comb': float(total_loss.item()),
+                'Comb': float(loss.item()),
                 'Scale': formatted_scale, 
             }
         ]
@@ -2117,7 +2139,7 @@ def main():
             append_row_to_csv(csv_filename, eval_row)
 
         clear_lines(2)
-        print(f'\r[Epoch: {(epoch+1):05}, Scale [{formatted_scale}] Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, Combined: {total_loss.item():.6f}, lr: {current_lr_str}')
+        print(f'\r[Epoch: {(epoch+1):05}, Scale [{formatted_scale}] Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}, Combined: {loss.item():.6f}, lr: {current_lr_str}')
         print ('\n')
 
         if current_lr < 1e-11:

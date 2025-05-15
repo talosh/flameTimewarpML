@@ -1876,6 +1876,7 @@ def main():
             [
                 'Loss',
                 'LPIPS',
+                'Combined',
                 'Scale',
             ]
         )
@@ -2015,6 +2016,7 @@ def main():
                 {
                     'Loss': eval_loss_avg,
                     'LPIPS': eval_lpips_mean,
+                    'Combined': (eval_loss_avg + 2e-1 * eval_lpips_mean),
                     'Scale': scale, 
                 }
             ]
