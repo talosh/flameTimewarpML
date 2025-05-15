@@ -486,9 +486,9 @@ class Model:
                 flow1, mask1, conf1 = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
                 flow2, mask2, conf2 = self.block0(img1, img0, f1, f0, 1-timestep, None, None, None, scale=scale[0])
 
-                flow = 0.5 * flow1 + 0.5 * flow2
-                mask = 0.5 * mask1 + 0.5 * mask2
-                conf = 0.5 * conf1 + 0.5 * conf2
+                flow = (flow1 + torch.cat((flow2[:, 2:4], flow2[:, :2]), 1)) / 2
+                mask = (mask1 + (-mask2)) / 2
+                conf = (conf1 + conf2) / 2
 
                 mask = torch.sigmoid(mask) #
                 conf = torch.sigmoid(conf) #
