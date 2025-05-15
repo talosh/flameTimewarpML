@@ -566,7 +566,7 @@ class Model:
                 self.block3 = Flownet(31, c=64)
                 self.encode = Head()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 8, 6, 4, 1], iterations=4, gt=None):
+            def forward(self, img0, img1, timestep=0.5, scale=[12, 8, 8, 6, 4, 1], iterations=4, gt=None):
 
                 img0 = ACEScg2cct(compress(img0))
                 img1 = ACEScg2cct(compress(img1))
