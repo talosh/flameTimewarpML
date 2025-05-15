@@ -560,6 +560,19 @@ class Model:
 
                 flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
 
+                mask = torch.sigmoid(mask) #
+                conf = torch.sigmoid(conf) #
+                merged = warp(img0, flow[:, :2]) * mask + warp(img1, flow[:, 2:4]) * (1 - mask)
+
+                result = {
+                    'flow_list': [flow],
+                    'mask_list': [mask],
+                    'conf_list': [conf],
+                    'merged': [merged]
+                }
+
+                return result
+
                 flow, mask, conf = self.block1(
                     img0, 
                     img1, 
