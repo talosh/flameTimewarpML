@@ -1823,12 +1823,6 @@ def main():
     if not os.path.isdir(os.path.join(args.dataset_path, 'preview')):
         os.makedirs(os.path.join(args.dataset_path, 'preview'))
 
-    '''
-    frame_size = closest_divisible(abs(int(args.frame_size)), model_info.get('padding', 64))
-    if frame_size != args.frame_size:
-        print (f'Frame size should be divisible by 64 for training. Using {frame_size}')
-    '''
-
     frame_size = args.frame_size
 
     dataset = get_dataset(
@@ -2415,6 +2409,8 @@ def main():
     avg_lpips = 0
     avg_loss = 0
 
+    best_eval_loss = sys.float_info.max
+
     cur_size = 10000
     cur_mask = np.full(cur_size, True)
     cur_l1 = None
@@ -2799,19 +2795,10 @@ def main():
         if ( idx + 1 ) == len(dataset):
             write_model_state_queue.put(deepcopy(current_state_dict))
 
-            '''
-            psnr = float(np.array(psnr_list).mean())
-            lpips_val = float(np.array(lpips_list).mean())
-            '''
-
             epoch_time = time.time() - start_timestamp
             days = int(epoch_time // (24 * 3600))
             hours = int((epoch_time % (24 * 3600)) // 3600)
             minutes = int((epoch_time % 3600) // 60)
-
-            # clear_lines(2)
-            # print(f'\rEpoch [{epoch + 1} (Step {step:11} - {days:02}d {hours:02}:{minutes:02}], Min: {min(epoch_loss):.6f} Avg: {smoothed_loss:.6f}, Max: {max(epoch_loss):.6f}, [PSNR] {psnr:.4f}, [LPIPS] {lpips_val:.4f}')
-            # print ('\n')
 
             rows_to_append = [
                 {
@@ -2827,7 +2814,6 @@ def main():
             for row in rows_to_append:
                 append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.csv', row)
 
-            psnr = 0
             if args.eval == 0:
                 if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
                     scheduler_flownet.step(avg_loss)
@@ -2962,7 +2948,6 @@ def main():
                     minutes = int((epoch_time % 3600) // 60)
 
                     clear_lines(1)
-                    # print (f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{train_time_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
                     print (f'\rEvaluating {ev_item_index} of {len(descriptions)}: Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f} LPIPS: {eval_lpips_mean:.4f} PSNR: {eval_psnr_mean:4f}')
 
                     try:
@@ -2982,28 +2967,8 @@ def main():
                         eval_img1 = eval_img1.permute(2, 0, 1).unsqueeze(0)
                         eval_img2 = eval_img2.permute(2, 0, 1).unsqueeze(0)
 
-                        '''
-                        if args.all_gpus:
-                            eval_img0 = torch.cat([eval_img0, eval_img0], dim=0)
-                            eval_img1 = torch.cat([eval_img1, eval_img1], dim=0)
-                            eval_img2 = torch.cat([eval_img2, eval_img2], dim=0)
-                        '''
-
                         eval_img0_orig = eval_img0.clone()
                         eval_img2_orig = eval_img2.clone()
-                        # eval_img0 = normalize(eval_img0)
-                        # eval_img2 = normalize(eval_img2)
-
-                        '''
-                        pvalue = model_info.get('padding', 64)
-                        n, c, eh, ew = eval_img0.shape
-                        ph = ((eh - 1) // pvalue + 1) * pvalue
-                        pw = ((ew - 1) // pvalue + 1) * pvalue
-                        padding = (0, pw - ew, 0, ph - eh)
-                        
-                        eval_img0 = torch.nn.functional.pad(eval_img0, padding)
-                        eval_img2 = torch.nn.functional.pad(eval_img2, padding)
-                        '''
 
                         if args.eval_half:
                             eval_img0 = eval_img0.half()
@@ -3121,6 +3086,15 @@ def main():
             print(f'\r[Epoch {(epoch + 1):04} Step {step:08} - {days:02}d {hours:02}:{minutes:02}], Eval Min: {eval_loss_min:.6f} Avg: {eval_loss_avg:.6f}, Max: {eval_loss_max:.6f}, [PSNR] {eval_psnr_mean:.4f}, [LPIPS] {eval_lpips_mean:.4f}')
             print ('\n')
 
+            eval_loss_combined =  float(eval_loss_avg + 2e-1 * eval_lpips_mean)
+
+            if eval_loss_combined < best_eval_loss:
+                best_eval_loss = eval_loss_combined
+                best_state_dict = deepcopy(current_state_dict)
+                broot, bext = os.path.splitext(trained_model_path)
+                best_state_dict['trained_model_path'] = f"{broot}.best{bext}"
+                write_model_state_queue.put(best_state_dict)
+
             if not args.eval_keep_all:
             # print (f'prev folder: {prev_eval_folder}\n\n')
                 if prev_eval_folder:
@@ -3143,7 +3117,19 @@ def main():
             del read_eval_image_queue
 
             if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                scheduler_flownet.step(eval_loss_avg)
+                prev_lr = optimizer_flownet.param_groups[0]['lr']
+                scheduler_flownet.step(eval_loss_combined)
+                new_lr = optimizer_flownet.param_groups[0]['lr']
+                if new_lr < prev_lr:
+                    broot, bext = os.path.splitext(trained_model_path)
+                    best_trained_model_path = f"{broot}.best{bext}"
+                    if os.path.isfile(best_trained_model_path):
+                        try:
+                            best_checkpoint = torch.load(best_trained_model_path, map_location=device)
+                            flownet.load_state_dict(best_checkpoint['flownet_state_dict'])
+                            print (f'\nSwitching LR to {new_lr}, loading model with {best_eval_loss} combined loss\n\n')
+                        except Exception as e:
+                            print (f'\n\nerror while reading: {best_trained_model_path}\n{e}\n{traceback.format_exc()}\n\n')
 
         # End of evaluation block
 

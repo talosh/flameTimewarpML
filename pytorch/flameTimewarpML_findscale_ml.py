@@ -1911,6 +1911,7 @@ def main():
         # scale_values = [16, 7, 6, 5, 4]
         # scale_values = [args.max] * 5
 
+    fake_values = torch.linspace(1, 1, steps=5, dtype=torch.float32)
     scale_tensor = torch.nn.Parameter(scale_values, requires_grad=True)
     # scale_tensor = torch.nn.Parameter(torch.tensor(scale_values, dtype=torch.float32), requires_grad=True)
     # gradient_scaling = torch.tensor([5, 2, 1, 0.5, 0.1], device=scale_tensor.device)
