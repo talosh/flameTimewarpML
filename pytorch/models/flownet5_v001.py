@@ -468,7 +468,7 @@ class Model:
                 self.block3 = Flownet(31, c=64)
                 self.encode = Head()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[24, 8, 4, 1], iterations=4, gt=None):
+            def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=4, gt=None):
 
                 img0 = ACEScg2cct(compress(img0))
                 img1 = ACEScg2cct(compress(img1))
@@ -480,8 +480,6 @@ class Model:
                 mask_list = [None] * 4
                 conf_list = [None] * 4
                 merged = [None] * 4
-
-                scale = [5 if num == 8 else 3 if num == 4 else num for num in scale]
 
                 flow1, mask1, conf1 = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
                 flow2, mask2, conf2 = self.block0(img1, img0, f1, f0, 1-timestep, None, None, None, scale=scale[0])
@@ -576,7 +574,12 @@ class Model:
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 
-                flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
+                flow1, mask1, conf1 = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
+                flow2, mask2, conf2 = self.block0(img1, img0, f1, f0, 1-timestep, None, None, None, scale=scale[0])
+
+                flow = (flow1 + torch.cat((flow2[:, 2:4], flow2[:, :2]), 1)) / 2
+                mask = (mask1 + (-mask2)) / 2
+                conf = (conf1 + conf2) / 2
 
                 flow, mask, conf = self.block1(
                     img0, 
