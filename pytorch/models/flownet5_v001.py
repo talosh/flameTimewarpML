@@ -3,8 +3,6 @@
 # Warps moved to flownet forward
 # Different Tail from flownet 2lh (ConvTr 6x6, conv 1x1, ConvTr 4x4, conv 1x1)
 
-
-
 class Model:
 
     info = {
