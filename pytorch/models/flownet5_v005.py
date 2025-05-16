@@ -657,9 +657,9 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeep(24+2, c=224)
-                self.block1 = FlownetDeep(24+5+4+2, c=192)
-                self.block2 = FlownetDeep(24+5+4+2, c=144)
-                self.block3 = Flownet(31, c=64)
+                # self.block1 = FlownetDeep(24+5+4+2, c=192)
+                # self.block2 = FlownetDeep(24+5+4+2, c=144)
+                # self.block3 = Flownet(31, c=64)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[1, 8, 4, 1], iterations=4, gt=None):
