@@ -656,13 +656,13 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeep(24+2, c=192)
-                self.block1 = FlownetDeep(24+5+4+2, c=144)
-                self.block2 = FlownetDeep(24+5+4+2, c=96)
+                self.block0 = FlownetDeep(24+2, c=224)
+                self.block1 = FlownetDeep(24+5+4+2, c=192)
+                self.block2 = FlownetDeep(24+5+4+2, c=144)
                 self.block3 = Flownet(31, c=64)
                 self.encode = Head()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[24, 8, 4, 1], iterations=4, gt=None):
+            def forward(self, img0, img1, timestep=0.5, scale=[1, 8, 4, 1], iterations=4, gt=None):
 
                 img0 = ACEScg2cct(compress(img0))
                 img1 = ACEScg2cct(compress(img1))
@@ -675,7 +675,25 @@ class Model:
                 conf_list = [None] * 4
                 merged = [None] * 4
 
-                flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
+                flow1, mask1, conf1 = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
+                flow2, mask2, conf2 = self.block0(img1, img0, f1, f0, 1-timestep, None, None, None, scale=scale[0])
+
+                flow = (flow1 + torch.cat((flow2[:, 2:4], flow2[:, :2]), 1)) / 2
+                mask = (mask1 + (-mask2)) / 2
+                conf = (conf1 + conf2) / 2
+
+                mask = torch.sigmoid(mask) #
+                conf = torch.sigmoid(conf) #
+                merged = warp(img0, flow[:, :2]) * mask + warp(img1, flow[:, 2:4]) * (1 - mask)
+
+                result = {
+                    'flow_list': [flow],
+                    'mask_list': [mask],
+                    'conf_list': [conf],
+                    'merged': [merged]
+                }
+
+                return result
 
                 flow_list[0] = flow.clone()
                 conf_list[0] = torch.sigmoid(conf.clone())
@@ -824,7 +842,7 @@ class Model:
 
                 return result
 
-        self.model = FlownetCasEval
+        self.model = FlownetCas
         self.training_model = FlownetCas
 
     @staticmethod
