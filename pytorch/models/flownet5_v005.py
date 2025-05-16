@@ -588,7 +588,8 @@ class Model:
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                     x = torch.nn.functional.pad(x, padding)
 
-                    print (f'\n\nx shape: {x.shape}\n\n')
+                    print (f"\n\nx shape: {x.shape}\n\n")
+                    print ("Hellooo\n\n")
 
                 else:
                     merged = warp(img0, flow[:, :2]) * torch.sigmoid(mask) + warp(img1, flow[:, 2:4]) * (1 - torch.sigmoid(mask))
