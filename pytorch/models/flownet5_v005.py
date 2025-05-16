@@ -605,15 +605,11 @@ class Model:
                 # x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * timestep, x, tenGrid), 1)
                 timestep = torch.full((n,), timestep).to(img0.device)
 
-                timestepenc0 = self.enc0(timestep)
-                timestepenc1 = self.enc1(timestep)
-                timestepenc2 = self.enc2(timestep)
-
-                feat = self.conv0(x) + timestepenc0
+                feat = self.conv0(x) + self.enc0(timestep)
                 featF, _ = self.convblock1f((feat, timestep))
 
-                feat = self.conv1(feat) + timestepenc1
-                feat_deep = self.conv2(feat) + timestepenc2
+                feat = self.conv1(feat) + self.enc1(timestep)
+                feat_deep = self.conv2(feat) + self.enc2(timestep)
 
                 feat, _ = self.convblock1((feat, timestep))
                 feat_deep, _ = self.convblock_deep1((feat_deep, timestep))
