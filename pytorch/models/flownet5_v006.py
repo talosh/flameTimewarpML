@@ -614,7 +614,7 @@ class Model:
                 # x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * timestep, x, tenGrid), 1)
 
                 max_res = max(x.shape[-2:])
-                max_res = torch.full((x.shape[0], 1), float(max_res)).to(img0.device)
+                max_res = torch.full((x.shape[0], 1), 1e-3 * float(max_res)).to(img0.device)
                 timestep_tensor = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
                 x_scalar = torch.cat([max_res, timestep_tensor], dim=1)
 
