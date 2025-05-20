@@ -214,11 +214,11 @@ class Model:
                 self.mlp = FeatureModulator(2, c)
 
             def forward(self, x):
-                scalars = x[1]
+                x_scalar = x[1]
                 x = x[0]
                 x = self.relu(self.conv(x) * self.beta + x)
-                x = self.mlp(scalars, x)
-                return x, scalars
+                x = self.mlp(x_scalar, x)
+                return x, x_scalar
             
         class UpMix(Module):
             def __init__(self, c, cd):
@@ -610,20 +610,22 @@ class Model:
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
-                # x = torch.cat((x, tenGrid), 1)
-                x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * timestep, x, tenGrid), 1)
+                x = torch.cat((x, tenGrid), 1)
+                # x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * timestep, x, tenGrid), 1)
 
                 max_res = max(x.shape[-2:])
-                max_res = torch.full((n,), float(max_res)).to(img0.device)
+                max_res = torch.full((x.shape[0], 1), float(max_res)).to(img0.device)
+                timestep_tensor = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
+                x_scalar = torch.cat([max_res, timestep_tensor], dim=1)
 
                 feat = self.conv0(x)
-                featF, _ = self.convblock1f((feat, max_res))
+                featF, _ = self.convblock1f((feat, x_scalar))
 
                 feat = self.conv1(feat)
                 feat_deep = self.conv2(feat)
 
-                feat, _ = self.convblock1((feat, max_res))
-                feat_deep, _ = self.convblock_deep1((feat_deep, max_res))
+                feat, _ = self.convblock1((feat, x_scalar))
+                feat_deep, _ = self.convblock_deep1((feat_deep, x_scalar))
                 
                 feat = self.mix1f(featF, feat)
                 feat_tmp = self.mix1(feat, feat_deep)
@@ -631,25 +633,25 @@ class Model:
 
                 featF = self.revmix1f(featF, feat_tmp)
 
-                featF, _ = self.convblock2f((featF, max_res))
-                feat, _ = self.convblock2((feat_tmp, max_res))
-                feat_deep, _ = self.convblock_deep2((feat_deep, max_res))
+                featF, _ = self.convblock2f((featF, x_scalar))
+                feat, _ = self.convblock2((feat_tmp, x_scalar))
+                feat_deep, _ = self.convblock_deep2((feat_deep, x_scalar))
 
                 feat = self.mix2f(featF, feat)
                 feat_tmp = self.mix2(feat, feat_deep)
                 feat_deep = self.revmix2(feat, feat_deep)
                 featF = self.revmix2f(featF, feat_tmp)
 
-                featF, _ = self.convblock3f((featF, max_res))
-                feat, _ = self.convblock3((feat_tmp, max_res))
-                feat_deep, _ = self.convblock_deep3((feat_deep, max_res))
+                featF, _ = self.convblock3f((featF, x_scalar))
+                feat, _ = self.convblock3((feat_tmp, x_scalar))
+                feat_deep, _ = self.convblock_deep3((feat_deep, x_scalar))
                 feat = self.mix3f(featF, feat)
                 feat = self.mix3(feat, feat_deep)
                 
                 featF = self.revmix3f(featF, feat)
 
-                feat, _ = self.convblock_last((feat, max_res))
-                featF, _ = self.convblock_last_shallow((featF, max_res))
+                feat, _ = self.convblock_last((feat, x_scalar))
+                featF, _ = self.convblock_last_shallow((featF, x_scalar))
 
                 feat = self.mix4(featF, feat)
 
