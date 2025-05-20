@@ -2446,7 +2446,7 @@ def main():
             img2 = ap0_to_ap1(img2)
 
         if args.resize > 1:
-            if random.uniform(0, 1) > 0.2:
+            if random.uniform(0, 1) > 0.1:
                 scale_augm = random.uniform(1, args.resize)        
                 nn, nc, nh, nw = img0.shape
                 sh, sw = round(nh * (1 / scale_augm)), round(nw * (1 / scale_augm))
