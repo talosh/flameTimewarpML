@@ -614,7 +614,7 @@ class Model:
                 x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * timestep, x, tenGrid), 1)
 
                 max_res = max(x.shape[-2:])
-                max_res = torch.full((n,), max_res).to(img0.device)
+                max_res = torch.full((n,), float(max_res)).to(img0.device)
 
                 feat = self.conv0(x)
                 featF, _ = self.convblock1f((feat, max_res))
