@@ -284,6 +284,7 @@ class Model:
                 print (x_scalar.shape)
                 print (features.shape)
 
+                import sys
                 sys.exit()
 
                 scale = self.scale_net(x_scalar).view(-1, self.c, 1, 1)
