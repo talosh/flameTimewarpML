@@ -211,15 +211,14 @@ class Model:
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.PReLU(c, 0.2)
-                self.embedding_dims = c
-                self.embedding = GammaEncoding(self.embedding_dims)
+                self.mlp = FeatureModulator(self.embedding_dims)
 
             def forward(self, x):
-                time = x[1]
+                max_res = x[1]
                 x = x[0]
-                time_embedding = self.embedding(time)
-                x = self.relu(self.conv(x) * self.beta + x) + time_embedding
-                return x, time
+                x = self.relu(self.conv(x) * self.beta + x)
+                x = self.mlp(max_res, x)
+                return x, max_res
             
         class UpMix(Module):
             def __init__(self, c, cd):
