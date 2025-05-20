@@ -1,7 +1,6 @@
-# Log base in Gamma enc changed to 10, input resolution is given instead of timestep for encoding.
 # Timestep is given as a layer as in flownet5_v001
 # removed normalization in head
-
+# FiLM modulation on resolution in EMB resblocks
 class Model:
 
     info = {
@@ -270,6 +269,20 @@ class Model:
                 encoding = noise_level.unsqueeze(1) * torch.exp(self.log_constant * step.unsqueeze(0))
                 encoding = torch.cat([torch.sin(encoding), torch.cos(encoding)], dim=-1)
                 return self.act(self.linear(encoding)).view(-1, self.dim, 1, 1)
+
+        class FeatureModulator(nn.Module):
+            def __init__(self, scalar_dim, feature_channels):
+                super().__init__()
+                self.scale_net = nn.Sequential(
+                    nn.Linear(scalar_dim, feature_channels),
+                    nn.Sigmoid()  # or no activation
+                )
+                self.shift_net = nn.Linear(scalar_dim, feature_channels)
+
+            def forward(self, x_scalar, features):
+                scale = self.scale_net(x_scalar).view(-1, C, 1, 1)
+                shift = self.shift_net(x_scalar).view(-1, C, 1, 1)
+                return features * scale + shift
 
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
@@ -567,9 +580,6 @@ class Model:
                     torch.nn.ConvTranspose2d(c//2, 6, 4, 2, 1),
                 )
 
-                self.enc0 = GammaEncoding(c//2)
-                self.enc1 = GammaEncoding(c)
-                self.enc2 = GammaEncoding(cd)
                 self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
@@ -606,11 +616,11 @@ class Model:
                 max_res = max(x.shape[-2:])
                 max_res = torch.full((n,), max_res).to(img0.device)
 
-                feat = self.conv0(x) + self.enc0(max_res)
+                feat = self.conv0(x)
                 featF, _ = self.convblock1f((feat, max_res))
 
-                feat = self.conv1(feat) + self.enc1(max_res)
-                feat_deep = self.conv2(feat) + self.enc2(max_res)
+                feat = self.conv1(feat)
+                feat_deep = self.conv2(feat)
 
                 feat, _ = self.convblock1((feat, max_res))
                 feat_deep, _ = self.convblock_deep1((feat_deep, max_res))
