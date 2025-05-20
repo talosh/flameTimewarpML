@@ -280,16 +280,7 @@ class Model:
                 self.c = feature_channels
 
             def forward(self, x_scalar, features):
-                
-                print (x_scalar.shape)
-                print (x_scalar)
-                print (features.shape)
-
-                scale = self.scale_net(x_scalar) # .view(-1, self.c, 1, 1)
-
-                import sys
-                sys.exit()
-
+                scale = self.scale_net(x_scalar).view(-1, self.c, 1, 1)
                 shift = self.shift_net(x_scalar).view(-1, self.c, 1, 1)
                 return features * scale + shift
 
