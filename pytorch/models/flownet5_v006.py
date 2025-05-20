@@ -211,7 +211,7 @@ class Model:
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.PReLU(c, 0.2)
-                self.mlp = FeatureModulator(c)
+                self.mlp = FeatureModulator(1, c)
 
             def forward(self, x):
                 max_res = x[1]
