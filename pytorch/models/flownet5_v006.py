@@ -269,18 +269,19 @@ class Model:
                 encoding = torch.cat([torch.sin(encoding), torch.cos(encoding)], dim=-1)
                 return self.act(self.linear(encoding)).view(-1, self.dim, 1, 1)
 
-        class FeatureModulator(nn.Module):
+        class FeatureModulator(torch.nn.Module):
             def __init__(self, scalar_dim, feature_channels):
                 super().__init__()
-                self.scale_net = nn.Sequential(
-                    nn.Linear(scalar_dim, feature_channels),
-                    nn.Sigmoid()  # or no activation
+                self.scale_net = torch.nn.Sequential(
+                    torch.nn.Linear(scalar_dim, feature_channels),
+                    torch.nn.Sigmoid()  # or no activation
                 )
-                self.shift_net = nn.Linear(scalar_dim, feature_channels)
+                self.shift_net = torch.nn.Linear(scalar_dim, feature_channels)
+                self.c = feature_channels
 
             def forward(self, x_scalar, features):
-                scale = self.scale_net(x_scalar).view(-1, C, 1, 1)
-                shift = self.shift_net(x_scalar).view(-1, C, 1, 1)
+                scale = self.scale_net(x_scalar).view(-1, self.c, 1, 1)
+                shift = self.shift_net(x_scalar).view(-1, self.c, 1, 1)
                 return features * scale + shift
 
         class Flownet(Module):
