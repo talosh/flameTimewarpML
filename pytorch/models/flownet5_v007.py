@@ -211,7 +211,7 @@ class Model:
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.PReLU(c, 0.2)
-                self.mlp = FeatureModulator(2, c)
+                self.mlp = FeatureModulator(1, c)
 
             def forward(self, x):
                 x_scalar = x[1]
@@ -273,7 +273,7 @@ class Model:
                 super().__init__()
                 self.scale_net = torch.nn.Sequential(
                     torch.nn.Linear(scalar_dim, feature_channels),
-                    torch.nn.Sigmoid(),
+                    # torch.nn.Sigmoid(),
                     # torch.nn.Linear(feature_channels, feature_channels),
                 )
                 self.shift_net = torch.nn.Linear(scalar_dim, feature_channels)
@@ -613,11 +613,11 @@ class Model:
                 x = torch.cat((x, tenGrid), 1)
                 # x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * timestep, x, tenGrid), 1)
 
-                max_res = max(x.shape[-2:])
-                max_res = torch.full((x.shape[0], 1), 1e-3 * float(max_res)).to(img0.device)
+                # max_res = max(x.shape[-2:])
+                # max_res = torch.full((x.shape[0], 1), 1e-3 * float(max_res)).to(img0.device)
                 timestep_tensor = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
-                # x_scalar = timestep_tensor
-                x_scalar = torch.cat([max_res, timestep_tensor], dim=1)
+                x_scalar = timestep_tensor
+                # x_scalar = torch.cat([max_res, timestep_tensor], dim=1)
 
                 feat = self.conv0(x)
                 featF, _ = self.convblock1f((feat, x_scalar))
