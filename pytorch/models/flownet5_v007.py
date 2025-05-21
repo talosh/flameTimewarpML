@@ -1,6 +1,8 @@
 # Timestep is given as a layer as in flownet5_v001
 # removed normalization in head
 # FiLM modulation on resolution in EMB resblocks
+# Embedding before conv
+
 class Model:
 
     info = {
