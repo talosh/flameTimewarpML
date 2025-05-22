@@ -1751,6 +1751,7 @@ def main():
 
     parser.add_argument('--frame_size', type=int, default=448, help='Frame size in pixels (default: 448)')
     parser.add_argument('--resize', type=float, default=1, help='Random resize down ratio (default: 1)')
+    parser.add_argument('--resize_rate', type=check_range_percent, default=85, help='Percent of resized samples (0 - 100) (default: 85)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
     parser.add_argument('--freeze', action='store_true', dest='freeze', default=False, help='Freeze custom hardcoded parameters')
     # parser.add_argument('--acescc', type=check_range_percent, default=49, help='Percentage of ACEScc encoded frames (default: 49))')
@@ -2448,7 +2449,7 @@ def main():
             img2 = ap0_to_ap1(img2)
 
         if args.resize > 1:
-            if random.uniform(0, 1) > 0.1:
+            if random.uniform(0, 1) > (1 - (args.resize_rate/100)):
                 scale_augm = random.uniform(1, args.resize)        
                 nn, nc, nh, nw = img0.shape
                 sh, sw = round(nh * (1 / scale_augm)), round(nw * (1 / scale_augm))
