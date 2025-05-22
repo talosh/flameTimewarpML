@@ -154,7 +154,7 @@ class Model:
 
 
         class Head(Module):
-            def __init__(self, c=32):
+            def __init__(self, c=48):
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, c, 5, 2, 2),
@@ -163,15 +163,11 @@ class Model:
                     torch.nn.Mish(),
                     ResConvMish(c),
                     ResConvMish(c),
-                    ResConvMish(c),
-                    ResConvMish(c),
                     torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
                 self.encode_freq = torch.nn.Sequential(
                     torch.nn.Conv2d(2, c, 3, 2, 1),
                     torch.nn.Mish(),
-                    ResConvMish(c),
-                    ResConvMish(c),
                     ResConvMish(c),
                     ResConvMish(c),
                     torch.nn.ConvTranspose2d(c, 18, 4, 2, 1)
