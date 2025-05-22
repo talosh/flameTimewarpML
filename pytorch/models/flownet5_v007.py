@@ -158,9 +158,9 @@ class Model:
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, c, 5, 2, 2),
-                    torch.nn.Mish(c),
+                    torch.nn.Mish(),
                     torch.nn.Conv2d(c, c, 3, 2, 1),
-                    torch.nn.Mish(c),
+                    torch.nn.Mish(),
                     ResConvMish(c),
                     ResConvMish(c),
                     ResConvMish(c),
@@ -169,9 +169,9 @@ class Model:
                 )
                 self.encode_freq = torch.nn.Sequential(
                     torch.nn.Conv2d(2, c, 3, 2, 1),
-                    torch.nn.Mish(c),
+                    torch.nn.Mish(),
                     torch.nn.Conv2d(c, c, 3, 2, 1),
-                    torch.nn.Mish(c),
+                    torch.nn.Mish(),
                     ResConvMish(c),
                     ResConvMish(c),
                     ResConvMish(c),
