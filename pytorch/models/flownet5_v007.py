@@ -216,7 +216,7 @@ class Model:
             def forward(self, x):
                 x_scalar = x[1]
                 x = x[0]
-                x = self.relu(self.mlp(x_scalar, self.conv(x) * self.beta) + x)
+                x = self.relu(self.mlp(x_scalar, self.conv(x) * self.beta + x))
                 # x = self.mlp(x_scalar, x)
                 return x, x_scalar
             
