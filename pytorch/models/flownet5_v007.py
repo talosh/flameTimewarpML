@@ -158,25 +158,27 @@ class Model:
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, c, 5, 2, 2),
-                    PR_ELU(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    torch.nn.Mish(),
+                    torch.nn.Conv2d(c, c, 3, 1, 1),
+                    torch.nn.Mish,
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
                     torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
                 self.encode_freq = torch.nn.Sequential(
                     torch.nn.Conv2d(2, c, 3, 2, 1),
-                    PR_ELU(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    torch.nn.Mish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
                     torch.nn.ConvTranspose2d(c, 18, 4, 2, 1)
                 )
                 self.encode_all = torch.nn.Sequential(
-                    ResConv(18),
-                    ResConv(18),
+                    ResConvMish(18),
+                    ResConvMish(18),
                 )
                 self.lastconv = torch.nn.Conv2d(18, 9, 3, 1, 1)
                 self.maxdepth = 2
