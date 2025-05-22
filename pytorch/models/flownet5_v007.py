@@ -158,20 +158,24 @@ class Model:
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, c, 5, 2, 2),
-                    PR_ELU(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    torch.nn.Mish(c),
+                    torch.nn.Conv2d(c, c, 3, 2, 1),
+                    torch.nn.Mish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
                     torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
                 self.encode_freq = torch.nn.Sequential(
                     torch.nn.Conv2d(2, c, 3, 2, 1),
-                    PR_ELU(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    torch.nn.Mish(c),
+                    torch.nn.Conv2d(c, c, 3, 2, 1),
+                    torch.nn.Mish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
+                    ResConvMish(c),
                     torch.nn.ConvTranspose2d(c, 18, 4, 2, 1)
                 )
                 self.lastconv = torch.nn.Conv2d(18, 9, 3, 1, 1)
@@ -201,6 +205,16 @@ class Model:
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.PReLU(c, 0.2)
+
+            def forward(self, x):
+                return self.relu(self.conv(x) * self.beta + x)
+
+        class ResConvMish(Module):
+            def __init__(self, c, dilation=1):
+                super().__init__()
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
+                self.relu = torch.nn.Mish()
 
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
@@ -277,7 +291,12 @@ class Model:
                     torch.nn.Mish(),  # or no activation
                     torch.nn.Linear(feature_channels, feature_channels),
                 )
-                self.shift_net = torch.nn.Linear(scalar_dim, feature_channels)
+                self.shift_net = torch.nn.Sequential(
+                    torch.nn.Linear(scalar_dim, feature_channels),
+                    torch.nn.Mish(),  # or no activation
+                    torch.nn.Linear(feature_channels, feature_channels),
+                )
+                # self.shift_net = torch.nn.Linear(scalar_dim, feature_channels)
                 self.c = feature_channels
 
             def forward(self, x_scalar, features):
