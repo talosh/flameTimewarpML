@@ -287,12 +287,7 @@ class Model:
                     torch.nn.Mish(),  # or no activation
                     torch.nn.Linear(feature_channels, feature_channels),
                 )
-                self.shift_net = torch.nn.Sequential(
-                    torch.nn.Linear(scalar_dim, feature_channels),
-                    torch.nn.Mish(),  # or no activation
-                    torch.nn.Linear(feature_channels, feature_channels),
-                )
-                # self.shift_net = torch.nn.Linear(scalar_dim, feature_channels)
+                self.shift_net = torch.nn.Linear(scalar_dim, feature_channels)
                 self.c = feature_channels
 
             def forward(self, x_scalar, features):
@@ -629,11 +624,11 @@ class Model:
                 x = torch.cat((x, tenGrid), 1)
                 # x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * timestep, x, tenGrid), 1)
 
-                # max_res = max(x.shape[-2:])
-                # max_res = torch.full((x.shape[0], 1), 1e-3 * float(max_res)).to(img0.device)
+                max_res = max(x.shape[-2:])
+                max_res = torch.full((x.shape[0], 1), 1e-4 * float(max_res)).to(img0.device)
                 timestep_tensor = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
-                x_scalar = timestep_tensor
-                # x_scalar = torch.cat([max_res, timestep_tensor], dim=1)
+                # x_scalar = timestep_tensor
+                x_scalar = torch.cat([max_res, timestep_tensor], dim=1)
 
                 feat = self.conv0(x)
                 featF, _ = self.convblock1f((feat, x_scalar))
