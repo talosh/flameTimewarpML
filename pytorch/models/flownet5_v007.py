@@ -174,6 +174,10 @@ class Model:
                     ResConv(c),
                     torch.nn.ConvTranspose2d(c, 18, 4, 2, 1)
                 )
+                self.encode_all = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                )
                 self.lastconv = torch.nn.Conv2d(18, 9, 3, 1, 1)
                 self.maxdepth = 2
 
@@ -192,6 +196,7 @@ class Model:
                 hp = self.encode_freq(hp)
                 hp = to_spat(hp)
                 x = torch.cat((x, hp), 1)
+                x = self.encode_all(x)
                 x = self.lastconv(x)[:, :, :h, :w]
                 return x
 
@@ -221,7 +226,7 @@ class Model:
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.PReLU(c, 0.2)
-                self.mlp = FeatureModulator(2, c)
+                self.mlp = FeatureModulator(1, c)
 
             def forward(self, x):
                 x_scalar = x[1]
@@ -624,11 +629,11 @@ class Model:
                 x = torch.cat((x, tenGrid), 1)
                 # x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * timestep, x, tenGrid), 1)
 
-                max_res = max(x.shape[-2:])
-                max_res = torch.full((x.shape[0], 1), 1e-4 * float(max_res)).to(img0.device)
+                # max_res = max(x.shape[-2:])
+                # max_res = torch.full((x.shape[0], 1), 1e-4 * float(max_res)).to(img0.device)
                 timestep_tensor = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
-                # x_scalar = timestep_tensor
-                x_scalar = torch.cat([max_res, timestep_tensor], dim=1)
+                x_scalar = timestep_tensor
+                # x_scalar = torch.cat([max_res, timestep_tensor], dim=1)
 
                 feat = self.conv0(x)
                 featF, _ = self.convblock1f((feat, x_scalar))
