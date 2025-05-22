@@ -216,7 +216,7 @@ class Model:
             def forward(self, x):
                 x_scalar = x[1]
                 x = x[0]
-                x = self.relu(self.mlp(x_scalar, self.conv(x) * self.beta + x))
+                x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
                 # x = self.mlp(x_scalar, x)
                 return x, x_scalar
             
@@ -274,8 +274,8 @@ class Model:
                 super().__init__()
                 self.scale_net = torch.nn.Sequential(
                     torch.nn.Linear(scalar_dim, feature_channels),
-                    # torch.nn.Mish(),  # or no activation
-                    # torch.nn.Linear(feature_channels, feature_channels),
+                    torch.nn.Mish(),  # or no activation
+                    torch.nn.Linear(feature_channels, feature_channels),
                 )
                 self.shift_net = torch.nn.Linear(scalar_dim, feature_channels)
                 self.c = feature_channels
