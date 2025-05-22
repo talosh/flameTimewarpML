@@ -175,8 +175,8 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 18, 4, 2, 1)
                 )
                 self.encode_all = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                    ResConv(18),
+                    ResConv(18),
                 )
                 self.lastconv = torch.nn.Conv2d(18, 9, 3, 1, 1)
                 self.maxdepth = 2
