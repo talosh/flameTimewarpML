@@ -315,8 +315,9 @@ class Model:
                 self.mlp = FeatureModulator(1, c)
 
             def forward(self, x):
-                x, x_scalar = input
+                x, x_scalar = x
                 x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
+                # x = self.mlp(x_scalar, x)
                 return x, x_scalar
             
         class UpMix(Module):
