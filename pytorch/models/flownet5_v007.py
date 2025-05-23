@@ -256,7 +256,10 @@ class Model:
                 self.relu = myPReLU(c)
 
             def forward(self, x, x_deep):
-                return self.relu(self.conv(x_deep) * self.beta + x)
+                x_up = self.conv(x_deep)
+                x_up.mul_(self.beta)
+                x_up.add_(x)
+                return self.relu(x_up) # self.relu(self.conv(x_deep) * self.beta + x)
 
         class Mix(Module):
             def __init__(self, c, cd):
@@ -268,7 +271,12 @@ class Model:
                 self.relu = myPReLU(c)
 
             def forward(self, x, x_deep):
-                return self.relu(self.conv0(x_deep) * self.beta + self.conv1(x) * self.gamma)
+                out0 = self.conv0(x_deep)
+                out0.mul_(self.beta)
+                out1 = self.conv1(x)
+                out1.mul_(self.gamma)
+                out0.add_(out1)
+                return self.relu(out0) # self.relu(self.conv0(x_deep) * self.beta + self.conv1(x) * self.gamma)
 
         class DownMix(Module):
             def __init__(self, c, cd):
@@ -278,7 +286,10 @@ class Model:
                 self.relu = myPReLU(cd)
 
             def forward(self, x, x_deep):
-                return self.relu(self.conv(x) * self.beta + x_deep)
+                out = self.conv(x)
+                out.mul_(self.beta)
+                out.add_(x_deep)
+                return self.relu(out) # self.relu(self.conv(x) * self.beta + x_deep)
 
         class GammaEncoding(Module):
             def __init__(self, dim):
