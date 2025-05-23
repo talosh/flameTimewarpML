@@ -38,7 +38,7 @@ class Model:
                     padding_mode = 'zeros',
                     bias=True
                 ),
-                PR_ELU(out_planes)
+                myPeELU(out_planes)
             )
 
         def warp(tenInput, tenFlow):
@@ -201,7 +201,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-                self.relu = torch.nn.PReLU(c, 0.2)
+                self.relu = myPeELU(c)
 
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
@@ -221,7 +221,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-                self.relu = torch.nn.PReLU(c, 0.2)
+                self.relu = myPeELU(c)
                 self.mlp = FeatureModulator(1, c)
 
             def forward(self, x):
@@ -236,7 +236,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.PReLU(c, 0.2)
+                self.relu = myPeELU(c)
 
             def forward(self, x, x_deep):
                 return self.relu(self.conv(x_deep) * self.beta + x)
@@ -248,7 +248,7 @@ class Model:
                 self.conv1 = torch.nn.Conv2d(c, c, 3, 1, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.PReLU(c, 0.2)
+                self.relu = myPeELU(c)
 
             def forward(self, x, x_deep):
                 return self.relu(self.conv0(x_deep) * self.beta + self.conv1(x) * self.gamma)
@@ -258,7 +258,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.PReLU(cd, 0.2)
+                self.relu = myPeELU(cd)
 
             def forward(self, x, x_deep):
                 return self.relu(self.conv(x) * self.beta + x_deep)
@@ -269,7 +269,7 @@ class Model:
                 super().__init__()
                 self.dim = dim
                 self.linear = torch.nn.Linear(dim, dim)
-                self.act = torch.nn.PReLU(dim)
+                self.act = myPeELU(dim)
                 self.log_constant = log(10) # log(1e4)
                 # self.register_buffer("log_constant", torch.log(torch.tensor(1e4)))
 
