@@ -616,9 +616,7 @@ class Model:
                 self.revmix2f = UpMix(c//2, c)
                 self.revmix3f = UpMix(c//2, c)
                 self.mix4 = Mix(c//2, c)
-                self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c//2, 6, 4, 2, 1),
-                )
+                self.lastconv = torch.nn.ConvTranspose2d(c//2, 6, 4, 2, 1)
 
                 self.maxdepth = 8
 
