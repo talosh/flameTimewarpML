@@ -25,20 +25,20 @@ class Model:
 
             def forward(self, x):
                 alpha = 0.4 * self.alpha.clamp(min=1e-8)
+                x = x / alpha
+                '''
                 x_scaled = x / alpha
                 tanh_x = self.tanh(x_scaled)
                 prelu_x = self.prelu(x_scaled)
                 neg_branch = tanh_x + torch.abs(tanh_x * prelu_x)
                 out = torch.where(x > 0, x, neg_branch)
                 return out * alpha
-
                 '''
                 return alpha * torch.where(
                     x > 0, 
                     x, 
                     self.tanh(x) + abs(self.tanh(x) * self.prelu(x))
                 )
-                '''
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
