@@ -218,7 +218,10 @@ class Model:
                 self.relu = myPReLU(c)
 
             def forward(self, x):
-                return self.relu(self.conv(x) * self.beta + x)
+                x_conv = self.conv(x)
+                x_conv.mul_(self.beta)
+                x_conv.add_(x)
+                return self.relu(x_conv) # self.relu(self.conv(x) * self.beta + x)
 
         class ResConvMish(Module):
             def __init__(self, c, dilation=1):
