@@ -24,7 +24,7 @@ class Model:
                 # self.elu = torch.nn.ELU()
 
             def forward(self, x):
-                alpha = 2 * self.alpha.clamp(min=1e-8)
+                alpha = 0.2 * self.alpha.clamp(min=1e-8)
                 x = ( 1 / alpha ) * x
                 return alpha * torch.where(
                     x > 0, 
