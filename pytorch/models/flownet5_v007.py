@@ -24,8 +24,8 @@ class Model:
                 # self.elu = torch.nn.ELU()
 
             def forward(self, x):
+                '''
                 alpha = 0.4 * self.alpha.clamp(min=1e-8)
-                # x = x / alpha
                 x = x / alpha
                 tanh_x = self.tanh(x)
                 prelu_x = self.prelu(x)
@@ -33,12 +33,15 @@ class Model:
                 out = torch.where(x > 0, x, neg_branch)
                 return out * alpha
                 '''
+                # '''
+                alpha = 0.4 * self.alpha.clamp(min=1e-8)
+                x = ( 1 / alpha ) * x
                 return alpha * torch.where(
                     x > 0, 
-                    x, 
+                    x,
                     self.tanh(x) + abs(self.tanh(x) * self.prelu(x))
                 )
-                '''
+                # '''
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
@@ -783,7 +786,7 @@ class Model:
                 merged = [None] * 4
 
                 flow1, mask1, conf1 = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
-                
+
                 with torch.no_grad():
                     flow2, mask2, conf2 = self.block0(img1, img0, f1, f0, 1-timestep, None, None, None, scale=scale[0])
 
