@@ -210,6 +210,7 @@ class Model:
                 x = self.lastconv(x)[:, :, :h, :w]
                 return x
 
+        '''
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
@@ -293,7 +294,64 @@ class Model:
                 out.mul_(self.beta)
                 out.add_(x_deep)
                 return self.relu(out) # self.relu(self.conv(x) * self.beta + x_deep)
+        '''
 
+        class ResConv(Module):
+            def __init__(self, c, dilation=1):
+                super().__init__()
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
+                self.relu = myPReLU(c)
+
+            def forward(self, x):
+                return self.relu(self.conv(x) * self.beta + x)
+
+        class ResConvEmb(Module):
+            def __init__(self, c, dilation=1):
+                super().__init__()
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
+                self.relu = myPReLU(c)
+                self.mlp = FeatureModulator(1, c)
+
+            def forward(self, x):
+                x_scalar = x[1]
+                x = x[0]
+                x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
+                # x = self.mlp(x_scalar, x)
+                return x, x_scalar
+            
+        class UpMix(Module):
+            def __init__(self, c, cd):
+                super().__init__()
+                self.conv = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.relu = myPReLU(c)
+
+            def forward(self, x, x_deep):
+                return self.relu(self.conv(x_deep) * self.beta + x)
+
+        class Mix(Module):
+            def __init__(self, c, cd):
+                super().__init__()
+                self.conv0 = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
+                self.conv1 = torch.nn.Conv2d(c, c, 3, 1, 1)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.relu = myPReLU(c)
+
+            def forward(self, x, x_deep):
+                return self.relu(self.conv0(x_deep) * self.beta + self.conv1(x) * self.gamma)
+
+        class DownMix(Module):
+            def __init__(self, c, cd):
+                super().__init__()
+                self.conv = torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'reflect', bias=True)
+                self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
+                self.relu = myPReLU(cd)
+
+            def forward(self, x, x_deep):
+                return self.relu(self.conv(x) * self.beta + x_deep)
         class GammaEncoding(Module):
             def __init__(self, dim):
                 from math import log
