@@ -152,29 +152,26 @@ class Model:
 
             return ACEScg
 
-
         class Head(Module):
-            def __init__(self, c=48):
+            def __init__(self, c=32):
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, c, 5, 2, 2),
-                    torch.nn.Mish(),
-                    torch.nn.Conv2d(c, c, 3, 1, 1),
-                    torch.nn.Mish(),
-                    ResConvMish(c),
-                    ResConvMish(c),
+                    PR_ELU(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                     torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
                 self.encode_freq = torch.nn.Sequential(
                     torch.nn.Conv2d(2, c, 3, 2, 1),
-                    torch.nn.Mish(),
-                    ResConvMish(c),
-                    ResConvMish(c),
+                    PR_ELU(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                     torch.nn.ConvTranspose2d(c, 18, 4, 2, 1)
-                )
-                self.encode_all = torch.nn.Sequential(
-                    ResConvMish(18),
-                    ResConvMish(18),
                 )
                 self.lastconv = torch.nn.Conv2d(18, 9, 3, 1, 1)
                 self.maxdepth = 2
@@ -194,7 +191,6 @@ class Model:
                 hp = self.encode_freq(hp)
                 hp = to_spat(hp)
                 x = torch.cat((x, hp), 1)
-                x = self.encode_all(x)
                 x = self.lastconv(x)[:, :, :h, :w]
                 return x
 
