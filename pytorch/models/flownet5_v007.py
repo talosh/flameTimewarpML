@@ -24,24 +24,13 @@ class Model:
                 # self.elu = torch.nn.ELU()
 
             def forward(self, x):
-                '''
-                alpha = 0.4 * self.alpha.clamp(min=1e-8)
-                x = x / alpha
-                tanh_x = self.tanh(x)
-                prelu_x = self.prelu(x)
-                neg_branch = tanh_x + torch.abs(tanh_x * prelu_x)
-                out = torch.where(x > 0, x, neg_branch)
-                return out * alpha
-                '''
-                # '''
                 alpha = 0.4 * self.alpha.clamp(min=1e-8)
                 x = ( 1 / alpha ) * x
                 return alpha * torch.where(
                     x > 0, 
-                    x,
+                    x, 
                     self.tanh(x) + abs(self.tanh(x) * self.prelu(x))
                 )
-                # '''
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
@@ -213,7 +202,6 @@ class Model:
                 x = self.lastconv(x)[:, :, :h, :w]
                 return x
 
-        '''
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
@@ -222,10 +210,7 @@ class Model:
                 self.relu = myPReLU(c)
 
             def forward(self, x):
-                x_conv = self.conv(x)
-                x_conv.mul_(self.beta)
-                x_conv.add_(x)
-                return self.relu(x_conv) # self.relu(self.conv(x) * self.beta + x)
+                return self.relu(self.conv(x) * self.beta + x)
 
         class ResConvMish(Module):
             def __init__(self, c, dilation=1):
@@ -245,81 +230,11 @@ class Model:
                 self.relu = myPReLU(c)
                 self.mlp = FeatureModulator(1, c)
 
-            def forward(self, input):
-                x, x_scalar = input
-                x_conv = self.conv(x)
-                x_mod = self.mlp(x_scalar, x_conv)
-                x_mod.mul_(self.beta)
-                x_mod.add_(x)
-                x_out = self.relu(x_mod)
-                # x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
-                return x_out, x_scalar
-            
-        class UpMix(Module):
-            def __init__(self, c, cd):
-                super().__init__()
-                self.conv = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu = myPReLU(c)
-
-            def forward(self, x, x_deep):
-                x_up = self.conv(x_deep)
-                x_up.mul_(self.beta)
-                x_up.add_(x)
-                return self.relu(x_up) # self.relu(self.conv(x_deep) * self.beta + x)
-
-        class Mix(Module):
-            def __init__(self, c, cd):
-                super().__init__()
-                self.conv0 = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
-                self.conv1 = torch.nn.Conv2d(c, c, 3, 1, 1)
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu = myPReLU(c)
-
-            def forward(self, x, x_deep):
-                out0 = self.conv0(x_deep)
-                out0.mul_(self.beta)
-                out1 = self.conv1(x)
-                out1.mul_(self.gamma)
-                out0.add_(out1)
-                return self.relu(out0) # self.relu(self.conv0(x_deep) * self.beta + self.conv1(x) * self.gamma)
-
-        class DownMix(Module):
-            def __init__(self, c, cd):
-                super().__init__()
-                self.conv = torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'reflect', bias=True)
-                self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
-                self.relu = myPReLU(cd)
-
-            def forward(self, x, x_deep):
-                out = self.conv(x)
-                out.mul_(self.beta)
-                out.add_(x_deep)
-                return self.relu(out) # self.relu(self.conv(x) * self.beta + x_deep)
-        '''
-
-        class ResConv(Module):
-            def __init__(self, c, dilation=1):
-                super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-                self.relu = myPReLU(c)
-
             def forward(self, x):
-                return self.relu(self.conv(x) * self.beta + x)
-
-        class ResConvEmb(Module):
-            def __init__(self, c, dilation=1):
-                super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-                self.relu = myPReLU(c)
-                self.mlp = FeatureModulator(1, c)
-
-            def forward(self, x):
-                x, x_scalar = x
+                x_scalar = x[1]
+                x = x[0]
                 x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
+                # x = self.mlp(x_scalar, x)
                 return x, x_scalar
             
         class UpMix(Module):
@@ -353,6 +268,7 @@ class Model:
 
             def forward(self, x, x_deep):
                 return self.relu(self.conv(x) * self.beta + x_deep)
+
         class GammaEncoding(Module):
             def __init__(self, dim):
                 from math import log
@@ -678,7 +594,9 @@ class Model:
                 self.revmix2f = UpMix(c//2, c)
                 self.revmix3f = UpMix(c//2, c)
                 self.mix4 = Mix(c//2, c)
-                self.lastconv = torch.nn.ConvTranspose2d(c//2, 6, 4, 2, 1)
+                self.lastconv = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c//2, 6, 4, 2, 1),
+                )
 
                 self.maxdepth = 8
 
@@ -786,9 +704,7 @@ class Model:
                 merged = [None] * 4
 
                 flow1, mask1, conf1 = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
-
-                with torch.no_grad():
-                    flow2, mask2, conf2 = self.block0(img1, img0, f1, f0, 1-timestep, None, None, None, scale=scale[0])
+                flow2, mask2, conf2 = self.block0(img1, img0, f1, f0, 1-timestep, None, None, None, scale=scale[0])
 
                 flow = (flow1 + torch.cat((flow2[:, 2:4], flow2[:, :2]), 1)) / 2
                 mask = (mask1 + (-mask2)) / 2
