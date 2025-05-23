@@ -2434,8 +2434,7 @@ def main():
 
     while True:
 
-        torch.autograd.set_detect_anomaly(True)
-
+        #  torch.autograd.set_detect_anomaly(True)
         # tracemalloc.start()
         # data_time = time.time() - time_stamp
         time_stamp = time.time()
@@ -2451,7 +2450,6 @@ def main():
             img1 = ap0_to_ap1(img1)
             img2 = ap0_to_ap1(img2)
 
-        '''
         if args.resize > 1:
             if random.uniform(0, 1) > (1 - (args.resize_rate/100)):
                 scale_augm = random.uniform(1, args.resize)        
@@ -2462,7 +2460,6 @@ def main():
                 img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                 img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                 img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-        '''
 
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
