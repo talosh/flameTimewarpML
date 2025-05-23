@@ -19,7 +19,7 @@ class Model:
             def __init__(self, c):
                 super().__init__()
                 self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.beta = torch.nn.Linear(c, c)
+                self.beta = torch.nn.PReLU(c, 0.1)
                 self.elu = torch.nn.ELU()
 
             def forward(self, x):
