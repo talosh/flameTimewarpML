@@ -2433,6 +2433,9 @@ def main():
     train_time = 0
 
     while True:
+
+        torch.autograd.set_detect_anomaly(True)
+
         # tracemalloc.start()
         # data_time = time.time() - time_stamp
         time_stamp = time.time()
