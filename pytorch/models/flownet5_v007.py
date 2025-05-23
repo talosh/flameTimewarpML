@@ -159,7 +159,7 @@ class Model:
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, c, 5, 2, 2),
-                    PR_ELU(c),
+                    myPeELU(c),
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
@@ -168,7 +168,7 @@ class Model:
                 )
                 self.encode_freq = torch.nn.Sequential(
                     torch.nn.Conv2d(2, c, 3, 2, 1),
-                    PR_ELU(c),
+                    myPeELU(c),
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
