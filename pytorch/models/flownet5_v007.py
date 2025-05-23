@@ -18,13 +18,14 @@ class Model:
         class myPeELU(Module):
             def __init__(self, c):
                 super().__init__()
-                # self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.prelu = torch.nn.PReLU(c, 0.1)
                 self.tanh = torch.nn.Tanh()
                 # self.elu = torch.nn.ELU()
 
             def forward(self, x):
-                return torch.where(x > 0, x, self.tanh(x) + abs(self.tanh(x) * self.prelu(x)))
+                x = ( 1 / self.alpha ) * x
+                return self.alpha * torch.where(x > 0, x, self.tanh(x) + abs(self.tanh(x) * self.prelu(x)))
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
