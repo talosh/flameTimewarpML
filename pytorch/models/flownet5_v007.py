@@ -294,7 +294,12 @@ class Model:
                     torch.nn.Mish(),  # or no activation
                     torch.nn.Linear(feature_channels, feature_channels),
                 )
-                self.shift_net = torch.nn.Linear(scalar_dim, feature_channels)
+                self.shift_net = torch.nn.Sequential(
+                    torch.nn.Linear(scalar_dim, feature_channels),
+                    torch.nn.Mish(),  # or no activation
+                    torch.nn.Linear(feature_channels, feature_channels),
+                )
+                # self.shift_net = torch.nn.Linear(scalar_dim, feature_channels)
                 self.c = feature_channels
 
             def forward(self, x_scalar, features):
