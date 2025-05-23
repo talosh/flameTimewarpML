@@ -2445,21 +2445,22 @@ def main():
         img1 = img1.to(device, non_blocking = True)
         img2 = img2.to(device, non_blocking = True)
 
-        if args.ap0:
-            img0 = ap0_to_ap1(img0)
-            img1 = ap0_to_ap1(img1)
-            img2 = ap0_to_ap1(img2)
+        with torch.no_grad():
+            if args.ap0:
+                img0 = ap0_to_ap1(img0)
+                img1 = ap0_to_ap1(img1)
+                img2 = ap0_to_ap1(img2)
 
-        if args.resize > 1:
-            if random.uniform(0, 1) > (1 - (args.resize_rate/100)):
-                scale_augm = random.uniform(1, args.resize)        
-                nn, nc, nh, nw = img0.shape
-                sh, sw = round(nh * (1 / scale_augm)), round(nw * (1 / scale_augm))
-                sh += 4 - (sh % 4)
-                sw += 4 - (sw % 4)
-                img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-                img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-                img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
+            if args.resize > 1:
+                if random.uniform(0, 1) > (1 - (args.resize_rate/100)):
+                    scale_augm = random.uniform(1, args.resize)        
+                    nn, nc, nh, nw = img0.shape
+                    sh, sw = round(nh * (1 / scale_augm)), round(nw * (1 / scale_augm))
+                    sh += 4 - (sh % 4)
+                    sw += 4 - (sw % 4)
+                    img0 = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
+                    img1 = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
+                    img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
 
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
