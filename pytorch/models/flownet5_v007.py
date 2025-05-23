@@ -24,8 +24,9 @@ class Model:
                 # self.elu = torch.nn.ELU()
 
             def forward(self, x):
-                x = ( 1 / self.alpha ) * x
-                return self.alpha * torch.where(x > 0, x, self.tanh(x) + abs(self.tanh(x) * self.prelu(x)))
+                alpha = self.alpha.clamp(min=1e-8)
+                x = ( 1 / alpha ) * x
+                return alpha * torch.where(x > 0, x, self.tanh(x) + abs(self.tanh(x) * self.prelu(x)))
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
