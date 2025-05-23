@@ -19,10 +19,11 @@ class Model:
             def __init__(self, c):
                 super().__init__()
                 self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.beta = torch.nn.Linear(c, c)
                 self.elu = torch.nn.ELU()
 
             def forward(self, x):
-                return torch.where(x > 0, x, self.alpha * self.elu(x))
+                return torch.where(x > 0, x, self.alpha * self.elu(x) + self.beta(x))
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
