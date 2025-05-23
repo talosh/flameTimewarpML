@@ -15,7 +15,7 @@ class Model:
         Module = torch.nn.Module
         backwarp_tenGrid = {}
 
-        class PR_ELU(Module):
+        class myPeELU(Module):
             def __init__(self, c):
                 super().__init__()
                 self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
