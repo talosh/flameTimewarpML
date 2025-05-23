@@ -238,12 +238,15 @@ class Model:
                 self.relu = myPReLU(c)
                 self.mlp = FeatureModulator(1, c)
 
-            def forward(self, x):
-                x_scalar = x[1]
-                x = x[0]
-                x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
-                # x = self.mlp(x_scalar, x)
-                return x, x_scalar
+            def forward(self, input):
+                x, x_scalar = input
+                x_conv = self.conv(x)
+                x_mod = self.mlp(x_scalar, x_conv)
+                x_mod.mul_(self.beta)
+                x_mod.add_(x)
+                x_out = self.relu(x_mod)
+                # x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
+                return x_out, x_scalar
             
         class UpMix(Module):
             def __init__(self, c, cd):
