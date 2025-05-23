@@ -296,7 +296,7 @@ class Model:
                 )
                 self.shift_net = torch.nn.Sequential(
                     torch.nn.Linear(scalar_dim, feature_channels),
-                    torch.nn.Mish(),  # or no activation
+                    torch.nn.Sigmoid(),  # or no activation
                     torch.nn.Linear(feature_channels, feature_channels),
                 )
                 # self.shift_net = torch.nn.Linear(scalar_dim, feature_channels)
