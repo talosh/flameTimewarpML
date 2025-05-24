@@ -704,8 +704,8 @@ class Model:
                 merged = [None] * 4
 
                 flow1, mask1, conf1 = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
-                with torch.no_grad():
-                    flow2, mask2, conf2 = self.block0(img1, img0, f1, f0, 1-timestep, None, None, None, scale=scale[0])
+                # with torch.no_grad():
+                flow2, mask2, conf2 = self.block0(img1, img0, f1, f0, 1-timestep, None, None, None, scale=scale[0])
 
                 flow = (flow1 + torch.cat((flow2[:, 2:4], flow2[:, :2]), 1)) / 2
                 mask = (mask1 + (-mask2)) / 2
