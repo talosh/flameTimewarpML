@@ -484,14 +484,7 @@ class Model:
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 x = torch.cat((timestep, x, tenGrid), 1)
 
-                print (f'x.shape: {x.shape}')
-
-                import sys
-                sys.exit()
-
                 feat = self.conv0(x)
-
-                print (f'feat.shape: {feat.shape}')
 
                 featF = self.convblock1f(feat)
 
@@ -658,7 +651,15 @@ class Model:
                 x_scalar = timestep_tensor
                 # x_scalar = torch.cat([max_res, timestep_tensor], dim=1)
 
+                print (f'x.shape: {x.shape}')
+
                 feat = self.conv0(x)
+
+                print (f'feat.shape: {feat.shape}')
+
+                import sys
+                sys.exit()
+
                 featF, _ = self.convblock1f((feat, x_scalar))
 
                 feat = self.conv1(feat)
