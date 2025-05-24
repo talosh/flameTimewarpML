@@ -612,7 +612,7 @@ class Model:
                     torch.nn.ConvTranspose2d(c//2, 6, 4, 2, 1),
                 )
 
-                self.maxdepth = 8
+                self.maxdepth = 32
 
             def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
                 n, c, h, w = img0.shape
