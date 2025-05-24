@@ -202,7 +202,7 @@ class Model:
                 x = torch.cat((x, hp), 1)
                 x = self.lastconv(x)[:, :, :h, :w]
                 '''
-                return x
+                return x[:, :, :h, :w]
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
