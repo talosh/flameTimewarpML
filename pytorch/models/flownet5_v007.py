@@ -168,9 +168,6 @@ class Model:
                     torch.nn.Conv2d(4, c, 5, 2, 2),
                     myPReLU(c),
                     ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
                     torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
                 '''
@@ -198,11 +195,13 @@ class Model:
                 # x = normalize(x, 0, 1) * 2 - 1
                 x = torch.cat((x, hp), 1)
                 x = self.encode(x)
+                '''
                 hp = to_freq(hp)
                 hp = self.encode_freq(hp)
                 hp = to_spat(hp)
                 x = torch.cat((x, hp), 1)
                 x = self.lastconv(x)[:, :, :h, :w]
+                '''
                 return x
 
         class ResConv(Module):
