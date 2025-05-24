@@ -484,8 +484,16 @@ class Model:
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 x = torch.cat((timestep, x, tenGrid), 1)
 
+                print (f'x.shape: {x.shape}')
+
                 feat = self.conv0(x)
+
+                print (f'feat.shape: {feat.shape}')
+
                 featF = self.convblock1f(feat)
+
+                import sys
+                sys.exit()
 
                 feat = self.conv1(feat)
                 feat_deep = self.conv2(feat)
