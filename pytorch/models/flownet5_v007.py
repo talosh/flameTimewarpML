@@ -30,7 +30,7 @@ class Model:
                 return alpha * torch.where(
                     x > 0, 
                     x, 
-                    tanh_x + torch.abs(tanh_x) * self.prelu(x)
+                    tanh_x + abs(tanh_x) * self.prelu(x)
                 )
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
