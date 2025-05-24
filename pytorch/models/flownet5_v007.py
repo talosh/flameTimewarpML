@@ -651,21 +651,12 @@ class Model:
                 x_scalar = timestep_tensor
                 # x_scalar = torch.cat([max_res, timestep_tensor], dim=1)
 
-                print (f'x.shape: {x.shape}')
-
                 feat = self.conv0(x)
 
                 featF, _ = self.convblock1f((feat, x_scalar))
 
                 feat = self.conv1(feat)
                 feat_deep = self.conv2(feat)
-
-                print (f'featF.shape: {featF.shape}')
-                print (f'feat.shape: {feat.shape}')
-                print (f'feat_deep.shape: {feat_deep.shape}')
-
-                import sys
-                sys.exit()
 
                 feat, _ = self.convblock1((feat, x_scalar))
                 feat_deep, _ = self.convblock_deep1((feat_deep, x_scalar))
