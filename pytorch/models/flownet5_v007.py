@@ -486,14 +486,15 @@ class Model:
 
                 print (f'x.shape: {x.shape}')
 
+                import sys
+                sys.exit()
+
                 feat = self.conv0(x)
 
                 print (f'feat.shape: {feat.shape}')
 
                 featF = self.convblock1f(feat)
 
-                import sys
-                sys.exit()
 
                 feat = self.conv1(feat)
                 feat_deep = self.conv2(feat)
