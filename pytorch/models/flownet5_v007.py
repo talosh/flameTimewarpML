@@ -242,7 +242,6 @@ class Model:
                 x_scalar = x[1]
                 x = x[0]
                 x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
-                # x = self.mlp(x_scalar, x)
                 return x, x_scalar
             
         class UpMix(Module):
@@ -250,9 +249,11 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.up = torch.nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True)
                 self.relu = myPReLU(c)
 
             def forward(self, x, x_deep):
+                x_deep = self.up(x_deep)
                 return self.relu(self.conv(x_deep) * self.beta + x)
 
         class Mix(Module):
@@ -262,15 +263,18 @@ class Model:
                 self.conv1 = torch.nn.Conv2d(c, c, 3, 1, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.up = torch.nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True)
                 self.relu = myPReLU(c)
 
+
             def forward(self, x, x_deep):
+                x_deep = self.up(x_deep)
                 return self.relu(self.conv0(x_deep) * self.beta + self.conv1(x) * self.gamma)
 
         class DownMix(Module):
             def __init__(self, c, cd):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'reflect', bias=True)
+                self.conv = torch.nn.Conv2d(c, cd, 5, 4, 2, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
                 self.relu = myPReLU(cd)
 
@@ -371,8 +375,8 @@ class Model:
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
                 self.conv0 = conv(in_planes, c//2, 3, 2, 1)
-                self.conv1 = conv(c//2, c, 3, 2, 1)
-                self.conv2 = conv(c, cd, 3, 2, 1)
+                self.conv1 = conv(c//2, c, 5, 4, 2)
+                self.conv2 = conv(c, cd, 5, 4, 2)
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
