@@ -253,7 +253,7 @@ class Model:
                 self.relu = myPReLU(c)
 
             def forward(self, x, x_deep):
-                x_deep = self.up(x_deep)
+                # x_deep = self.up(x_deep)
                 return self.relu(self.conv(x_deep) * self.beta + x)
 
         class Mix(Module):
