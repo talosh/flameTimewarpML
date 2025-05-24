@@ -171,6 +171,9 @@ class Model:
                     torch.nn.Conv2d(4, c, 5, 2, 2),
                     myPReLU(c),
                     ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                     torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
                 '''
