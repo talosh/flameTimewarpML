@@ -293,8 +293,6 @@ class Model:
                 self.mlp = FeatureModulator(1, c)
 
             def forward(self, x):
-                x_scalar = x[1]
-                x = x[0]
                 B, C, H, W = x.shape
 
                 # --- Fourier global branch ---
