@@ -543,6 +543,12 @@ class Model:
                 x = torch.cat((x, fourier_features), 1)
                 # x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * timestep, x, tenGrid), 1)
 
+                tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
+                tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
+                tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
+                tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
+                x = torch.cat((x, tenGrid), 1)
+
                 # max_res = max(x.shape[-2:])
                 # max_res = torch.full((x.shape[0], 1), 1e-4 * float(max_res)).to(img0.device)
                 timestep_tensor = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
