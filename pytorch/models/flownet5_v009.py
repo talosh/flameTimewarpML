@@ -211,7 +211,7 @@ class Model:
                 '''
                 return x[:, :, :h, :w]
 
-        class ResConv(Module):
+        class ResConvOld(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
@@ -257,7 +257,7 @@ class Model:
 
                 self.beta_conv = torch.nn.Parameter(torch.ones((1, c, 1, 1)))
                 self.beta_fourier = torch.nn.Parameter(torch.ones((1, c, 1, 1)))
-                self.relu = myPReLU(c)  # Replace with nn.ReLU() if needed
+                self.relu = myPReLU(c)
                 self.mlp = FeatureModulator(1, c)
 
             def forward(self, x):
@@ -277,6 +277,37 @@ class Model:
                 out = self.relu(x + x_local)
                 return out, x_scalar
 
+        class ResConv(Module):
+            def __init__(self, c, dilation=1):
+                super().__init__()
+                self.c = c
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode='reflect', bias=True)
+                self.channel_mixer = torch.nn.Conv2d(c, c, kernel_size=1, bias=True)
+
+                self.weight_real = torch.nn.Parameter(torch.randn(1, c, 1, 1))
+                self.weight_imag = torch.nn.Parameter(torch.randn(1, c, 1, 1))
+
+                self.beta_conv = torch.nn.Parameter(torch.ones((1, c, 1, 1)))
+                self.beta_fourier = torch.nn.Parameter(torch.ones((1, c, 1, 1)))
+                self.relu = myPReLU(c)
+                self.mlp = FeatureModulator(1, c)
+
+            def forward(self, x):
+                x_scalar = x[1]
+                x = x[0]
+                B, C, H, W = x.shape
+
+                # --- Fourier global branch ---
+                x_fft = torch.fft.rfft2(x, norm='ortho')  # [B, C, H, W//2 + 1]
+                weight_complex = torch.complex(self.weight_real, self.weight_imag)
+                x_fft_mod = x_fft * weight_complex  # element-wise channel-wise
+                x_global = torch.fft.irfft2(x_fft_mod, s=(H, W), norm='ortho') * self.beta_fourier
+
+                x_local = self.conv(x + x_global) * self.beta_conv
+
+                # --- Residual connection and fusion ---
+                out = self.relu(x + x_local)
+                return out, x_scalar
 
         class UpMix(Module):
             def __init__(self, c, cd):
