@@ -245,7 +245,7 @@ class Model:
                 x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
                 return x, x_scalar
             
-        class ResConvEmb(nn.Module):
+        class ResConvEmb(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
                 self.c = c
