@@ -265,18 +265,16 @@ class Model:
                 x = x[0]
                 B, C, H, W = x.shape
 
-                # --- Local conv branch ---
-                x_local = self.mlp(x_scalar, self.conv(x)) * self.beta_conv
-
                 # --- Fourier global branch ---
                 x_fft = torch.fft.rfft2(x, norm='ortho')  # [B, C, H, W//2 + 1]
                 weight_complex = torch.complex(self.weight_real, self.weight_imag)
                 x_fft_mod = x_fft * weight_complex  # element-wise channel-wise
                 x_global = torch.fft.irfft2(x_fft_mod, s=(H, W), norm='ortho') * self.beta_fourier
-                x_mixed = self.channel_mixer(x_global)
+
+                x_local = self.mlp(x_scalar, self.conv(x + x_global)) * self.beta_conv
 
                 # --- Residual connection and fusion ---
-                out = self.relu(x + x_local + x_mixed)
+                out = self.relu(x + x_local)
                 return out, x_scalar
 
 
@@ -301,7 +299,6 @@ class Model:
                 self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.up = torch.nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True)
                 self.relu = myPReLU(c)
-
 
             def forward(self, x, x_deep):
                 x_deep = self.up(x_deep)
@@ -521,27 +518,6 @@ class Model:
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True) * 1. / scale
                     x = torch.cat((x, flow), 1)
                     x = torch.nn.functional.pad(x, padding)
-
-                tenHorizontal = torch.linspace(-1.0, 1.0, sw, device=img0.device, dtype=img0.dtype)
-                tenVertical = torch.linspace(-1.0, 1.0, sh, device=img0.device, dtype=img0.dtype)
-                tenHorizontal = tenHorizontal.view(1, sw).expand(sh, sw)
-                tenVertical = tenVertical.view(sh, 1).expand(sh, sw)
-                tenGrid = torch.stack((tenHorizontal, tenVertical), dim=-1)  # [sh, sw, 2]
-
-                tenGrid = tenGrid.permute(2, 0, 1).unsqueeze(0)  # [1, 2, sh, sw]
-                tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
-                tenGrid = tenGrid.squeeze(0).permute(1, 2, 0)  # # [sh_padded, sw_padded, 2]
-                sh_padded, sw_padded = tenGrid.shape[:2]
-
-                grid_flat = tenGrid.reshape(-1, 2) # Flatten to [h*w, 2]
-                B_scaled = self.scale * self.B_base.to(device=img0.device, dtype=img0.dtype) # [12, 2]
-                x_proj = 2 * self.pi * grid_flat @ B_scaled.T  # [h*w, 12]
-                fourier_features = torch.cat([torch.sin(x_proj), torch.cos(x_proj)], dim=-1)
-                fourier_features = fourier_features.view(sh_padded, sw_padded, 2 * self.num_frequencies).permute(2, 0, 1)
-                fourier_features = fourier_features.unsqueeze(0).expand(n, -1, -1, -1)
-
-                x = torch.cat((x, fourier_features), 1)
-                # x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * timestep, x, tenGrid), 1)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
