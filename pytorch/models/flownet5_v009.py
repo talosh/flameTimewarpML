@@ -305,7 +305,7 @@ class Model:
 
                 # --- Residual connection and fusion ---
                 out = self.relu(x + x_local)
-                return out, x_scalar
+                return out
 
         class UpMix(Module):
             def __init__(self, c, cd):
