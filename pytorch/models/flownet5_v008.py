@@ -454,6 +454,7 @@ class Model:
                     torch.nn.ConvTranspose2d(c//2, 6, 4, 2, 1),
                 )
 
+                self.num_frequencies = num_frequencies
                 B_base = torch.randn(num_frequencies, 2)
                 self.register_buffer('B_base', B_base)
                 self.scale = torch.nn.Parameter(torch.tensor(scale_init))
