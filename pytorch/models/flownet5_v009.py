@@ -5,8 +5,8 @@
 class Model:
 
     info = {
-        'name': 'Flownet5_v008',
-        'file': 'flownet5_v008.py',
+        'name': 'Flownet5_v009',
+        'file': 'flownet5_v009.py',
         'ratio_support': True
     }
 
@@ -231,7 +231,7 @@ class Model:
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
 
-        class ResConvEmb(Module):
+        class ResConvEmbOld(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
@@ -245,6 +245,41 @@ class Model:
                 x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
                 return x, x_scalar
             
+        class ResConvEmb(nn.Module):
+            def __init__(self, c, dilation=1):
+                super().__init__()
+                self.c = c
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode='reflect', bias=True)
+                self.channel_mixer = torch.nn.Conv2d(c, c, kernel_size=1, bias=True)
+
+                self.weight_real = torch.nn.Parameter(torch.randn(1, c, 1, 1))
+                self.weight_imag = torch.nn.Parameter(torch.randn(1, c, 1, 1))
+
+                self.beta_conv = torch.nn.Parameter(torch.ones((1, c, 1, 1)))
+                self.beta_fourier = torch.nn.Parameter(torch.ones((1, c, 1, 1)))
+                self.relu = myPReLU(c)  # Replace with nn.ReLU() if needed
+                self.mlp = FeatureModulator(1, c)
+
+            def forward(self, x):
+                x_scalar = x[1]
+                x = x[0]
+                B, C, H, W = x.shape
+
+                # --- Local conv branch ---
+                x_local = self.mlp(x_scalar, self.conv(x)) * self.beta_conv
+
+                # --- Fourier global branch ---
+                x_fft = torch.fft.rfft2(x, norm='ortho')  # [B, C, H, W//2 + 1]
+                weight_complex = torch.complex(self.weight_real, self.weight_imag)
+                x_fft_mod = x_fft * weight_complex  # element-wise channel-wise
+                x_global = torch.fft.irfft2(x_fft_mod, s=(H, W), norm='ortho') * self.beta_fourier
+                x_mixed = self.channel_mixer(x_global)
+
+                # --- Residual connection and fusion ---
+                out = self.relu(x + x_local + x_mixed)
+                return out, x_scalar
+
+
         class UpMix(Module):
             def __init__(self, c, cd):
                 super().__init__()
@@ -266,6 +301,7 @@ class Model:
                 self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.up = torch.nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True)
                 self.relu = myPReLU(c)
+
 
             def forward(self, x, x_deep):
                 x_deep = self.up(x_deep)
@@ -505,13 +541,6 @@ class Model:
                 fourier_features = fourier_features.unsqueeze(0).expand(n, -1, -1, -1)
 
                 x = torch.cat((x, fourier_features), 1)
-
-                tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
-                tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
-                tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
-                tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
-                x = torch.cat((x, tenGrid), 1)
-
                 # x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * timestep, x, tenGrid), 1)
 
                 # max_res = max(x.shape[-2:])
@@ -568,7 +597,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepEmb(24+24+2, c=224)
+                self.block0 = FlownetDeepEmb(24+24, c=224)
                 # self.block1 = FlownetDeep(24+5+4+2, c=192)
                 # self.block2 = FlownetDeep(24+5+4+2, c=144)
                 # self.block3 = Flownet(31, c=64)
