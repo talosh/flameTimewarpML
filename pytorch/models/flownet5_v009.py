@@ -272,10 +272,8 @@ class Model:
                 x_global = torch.fft.irfft2(x_fft_mod, s=(H, W), norm='ortho') * self.beta_fourier
 
                 x_local = self.mlp(x_scalar, self.conv(x + x_global)) * self.beta_conv
-
-                # --- Residual connection and fusion ---
-                out = self.relu(x + x_local)
-                return out, x_scalar
+                x = self.relu(x_local + x)
+                return x, x_scalar
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
@@ -302,10 +300,8 @@ class Model:
                 x_global = torch.fft.irfft2(x_fft_mod, s=(H, W), norm='ortho') * self.beta_fourier
 
                 x_local = self.conv(x + x_global) * self.beta_conv
-
-                # --- Residual connection and fusion ---
-                out = self.relu(x + x_local)
-                return out
+                x = self.relu(x_local + x)
+                return x
 
         class UpMix(Module):
             def __init__(self, c, cd):
