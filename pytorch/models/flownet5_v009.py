@@ -309,7 +309,7 @@ class Model:
                 self.conv = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.up = torch.nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True)
-                self.relu = torch.nn.PReLU(c, 0.2)
+                self.relu = myPReLU(c)
 
             def forward(self, x, x_deep):
                 x_deep = self.up(x_deep)
@@ -323,7 +323,7 @@ class Model:
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.up = torch.nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True)
-                self.relu = torch.nn.PReLU(c, 0.2)
+                self.relu = myPReLU(c)
 
             def forward(self, x, x_deep):
                 x_deep = self.up(x_deep)
@@ -334,7 +334,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, cd, 5, 4, 2, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.PReLU(cd, 0.2)
+                self.relu = myPReLU(cd)
 
             def forward(self, x, x_deep):
                 return self.relu(self.conv(x) * self.beta + x_deep)
