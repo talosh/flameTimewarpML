@@ -2421,6 +2421,7 @@ def main():
     cur_l1 = None
     cur_comb = None
     cur_lpips = None
+    sequential_idx = 0
 
     repeat_count = dataset.repeat_count if dataset.repeat_count > 0 else 1
     preview_maxmin_steps = args.preview_maxmin_steps if args.preview_maxmin_steps < len(dataset)*repeat_count else len(dataset)*repeat_count
@@ -2563,7 +2564,9 @@ def main():
         if cur_lpips is None:
             cur_lpips = np.full(cur_size, float(torch.mean(loss_LPIPS).item()))
 
-        cur_idx = np.random.choice(cur_size)
+        # cur_idx = np.random.choice(cur_size)
+        cur_idx = sequential_idx % cur_size
+        sequential_idx += 1
         cur_mask[cur_idx] = False
         cur_comb[cur_idx] = float(loss.item())
         cur_l1[cur_idx] = float(loss_l1.item())
