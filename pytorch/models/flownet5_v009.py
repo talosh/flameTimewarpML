@@ -257,7 +257,7 @@ class Model:
 
                 self.beta_conv = torch.nn.Parameter(torch.ones((1, c, 1, 1)))
                 self.beta_fourier = torch.nn.Parameter(torch.ones((1, c, 1, 1)))
-                self.relu = torch.nn.PReLU(c, 0.2)
+                self.relu = myPReLU(c) # torch.nn.PReLU(c, 0.2)
                 self.mlp = FeatureModulator(1, c)
 
             def forward(self, x):
