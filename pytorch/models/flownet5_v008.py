@@ -171,10 +171,10 @@ class Model:
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, c, 5, 2, 2),
                     myPReLU(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConvOld(c),
+                    ResConvOld(c),
+                    ResConvOld(c),
+                    ResConvOld(c),
                     torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
                 '''
@@ -210,8 +210,16 @@ class Model:
                 x = self.lastconv(x)[:, :, :h, :w]
                 '''
                 return x[:, :, :h, :w]
-
         class ResConv(Module):
+            def __init__(self, c, dilation=1):
+                super().__init__()
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
+                self.relu = torch.nn.PReLU(c, 0.2)
+
+            def forward(self, x):
+                return self.relu(self.conv(x) * self.beta + x)
+        class ResConvOld(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
@@ -236,7 +244,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-                self.relu = myPReLU(c)
+                self.relu = torch.nn.PReLU(c, 0.2)
                 self.mlp = FeatureModulator(1, c)
 
             def forward(self, x):
@@ -244,7 +252,6 @@ class Model:
                 x = x[0]
                 x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
                 return x, x_scalar
-            
         class UpMix(Module):
             def __init__(self, c, cd):
                 super().__init__()
@@ -486,33 +493,11 @@ class Model:
                     x = torch.cat((x, flow), 1)
                     x = torch.nn.functional.pad(x, padding)
 
-                tenHorizontal = torch.linspace(-1.0, 1.0, sw, device=img0.device, dtype=img0.dtype)
-                tenVertical = torch.linspace(-1.0, 1.0, sh, device=img0.device, dtype=img0.dtype)
-                tenHorizontal = tenHorizontal.view(1, sw).expand(sh, sw)
-                tenVertical = tenVertical.view(sh, 1).expand(sh, sw)
-                tenGrid = torch.stack((tenHorizontal, tenVertical), dim=-1)  # [sh, sw, 2]
-
-                tenGrid = tenGrid.permute(2, 0, 1).unsqueeze(0)  # [1, 2, sh, sw]
-                tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
-                tenGrid = tenGrid.squeeze(0).permute(1, 2, 0)  # # [sh_padded, sw_padded, 2]
-                sh_padded, sw_padded = tenGrid.shape[:2]
-
-                grid_flat = tenGrid.reshape(-1, 2) # Flatten to [h*w, 2]
-                B_scaled = self.scale * self.B_base.to(device=img0.device, dtype=img0.dtype) # [12, 2]
-                x_proj = 2 * self.pi * grid_flat @ B_scaled.T  # [h*w, 12]
-                fourier_features = torch.cat([torch.sin(x_proj), torch.cos(x_proj)], dim=-1)
-                fourier_features = fourier_features.view(sh_padded, sw_padded, 2 * self.num_frequencies).permute(2, 0, 1)
-                fourier_features = fourier_features.unsqueeze(0).expand(n, -1, -1, -1)
-
-                x = torch.cat((x, fourier_features), 1)
-
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
                 x = torch.cat((x, tenGrid), 1)
-
-                # x = torch.cat(((tenGrid[:, :1].clone() * 0 + 1) * timestep, x, tenGrid), 1)
 
                 # max_res = max(x.shape[-2:])
                 # max_res = torch.full((x.shape[0], 1), 1e-4 * float(max_res)).to(img0.device)
@@ -568,7 +553,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeepEmb(24+24+2, c=224)
+                self.block0 = FlownetDeepEmb(24+2, c=224)
                 # self.block1 = FlownetDeep(24+5+4+2, c=192)
                 # self.block2 = FlownetDeep(24+5+4+2, c=144)
                 # self.block3 = Flownet(31, c=64)
