@@ -87,8 +87,8 @@ def main():
 
     idx = 0
     for exr_file_path in exr_files:
-        # clear_lines(1)
-        print (f'\rFile [{idx+1} / {len(exr_files)}], {os.path.basename(exr_file_path)}', end='')
+        clear_lines(1)
+        print (f'\n\rFile [{idx+1} / {len(exr_files)}], {os.path.basename(exr_file_path)}', end='')
         try:
             result = read_image_file(exr_file_path)
             image_data = result['image_data']
@@ -116,7 +116,7 @@ def main():
                 raise RuntimeError(f"Failed to write image to {exr_file_path}")
 
             out.close()
-            
+
         except Exception as e:
             print (f'\nError reading {exr_file_path}: {e}')
         idx += 1
