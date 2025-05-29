@@ -171,10 +171,10 @@ class Model:
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, c, 5, 2, 2),
                     myPReLU(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConvOld(c),
+                    ResConvOld(c),
+                    ResConvOld(c),
+                    ResConvOld(c),
                     torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
                 '''
