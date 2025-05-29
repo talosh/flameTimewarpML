@@ -26,7 +26,7 @@ class Model:
                 # self.elu = torch.nn.ELU()
 
             def forward(self, x):
-                alpha = 0.4 * self.alpha.clamp(min=1e-8)
+                alpha = 0.2 * self.alpha.clamp(min=1e-8)
                 beta = 0.69 + self.beta
                 x = x / alpha - beta
                 tanh_x = self.tanh(x)
