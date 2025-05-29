@@ -19,15 +19,15 @@ class Model:
         class myPReLU(Module):
             def __init__(self, c):
                 super().__init__()
-                # self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                # self.beta = torch.nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
+                self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.beta = torch.nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
                 self.prelu = torch.nn.PReLU(c, 0.1)
                 self.tanh = torch.nn.Tanh()
                 # self.elu = torch.nn.ELU()
 
             def forward(self, x):
-                alpha = 0.2 # * self.alpha.clamp(min=1e-8)
-                beta = 0.69 # + self.beta
+                alpha = 0.2 * self.alpha.clamp(min=1e-8)
+                beta = 0.69 + self.beta
                 x = x / alpha - beta
                 tanh_x = self.tanh(x)
                 x = torch.where(
