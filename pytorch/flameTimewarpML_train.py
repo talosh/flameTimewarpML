@@ -3116,11 +3116,6 @@ def main():
             prev_eval_folder = eval_folder
 
             del evalnet
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()            
-            elif torch.backends.mps.is_available():
-                torch.mps.empty_cache()
-
             flownet.to(device)
             flownet.train()
 
@@ -3142,7 +3137,18 @@ def main():
                         except Exception as e:
                             print (f'\n\nerror while reading: {best_trained_model_path}\n{e}\n{traceback.format_exc()}\n\n')
 
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+            elif torch.backends.mps.is_available():
+                torch.mps.synchronize()
+
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()            
+            elif torch.backends.mps.is_available():
+                torch.mps.empty_cache()
+
         # End of evaluation block
+
 
         batch_idx = batch_idx + 1
         step = step + 1
