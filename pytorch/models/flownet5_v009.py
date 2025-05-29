@@ -19,8 +19,8 @@ class Model:
         class myPReLU(Module):
             def __init__(self, c):
                 super().__init__()
-                # self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                # self.beta = torch.nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
+                self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.beta = torch.nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
                 self.prelu = torch.nn.PReLU(c, 0.2)
                 self.tanh = torch.nn.Tanh()
                 # self.elu = torch.nn.ELU()
