@@ -15,18 +15,17 @@ class Model:
             import torch
         Module = torch.nn.Module
         backwarp_tenGrid = {}
-
         class myPReLU(Module):
             def __init__(self, c):
                 super().__init__()
                 self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.beta = torch.nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
-                self.prelu = torch.nn.PReLU(c, 0.1)
+                self.prelu = torch.nn.PReLU(c, 0.2)
                 self.tanh = torch.nn.Tanh()
                 # self.elu = torch.nn.ELU()
 
             def forward(self, x):
-                alpha = 0.4 * self.alpha.clamp(min=1e-8)
+                alpha = 0.2 * self.alpha.clamp(min=1e-8)
                 beta = 0.69 + self.beta
                 x = x / alpha - beta
                 tanh_x = self.tanh(x)
@@ -171,10 +170,10 @@ class Model:
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, c, 5, 2, 2),
                     myPReLU(c),
-                    ResConvOld(c),
-                    ResConvOld(c),
-                    ResConvOld(c),
-                    ResConvOld(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                     torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
                 '''
@@ -215,7 +214,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-                self.relu = torch.nn.PReLU(c, 0.2)
+                self.relu = myPReLU(c)
 
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
@@ -224,7 +223,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
-                self.relu = myPReLU(c)
+                self.relu = torch.nn.PReLU(c, 0.2)
 
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
@@ -379,7 +378,7 @@ class Model:
 
 
         class FlownetDeepEmb(Module):
-            def __init__(self, in_planes, c=64, num_frequencies=12, scale_init=10.0):
+            def __init__(self, in_planes, c=64):
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)                
                 self.conv0 = conv(in_planes, c//2, 3, 2, 1)
@@ -459,13 +458,6 @@ class Model:
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c//2, 6, 4, 2, 1),
                 )
-
-                self.num_frequencies = num_frequencies
-                B_base = torch.randn(num_frequencies, 2)
-                self.register_buffer('B_base', B_base)
-                self.scale = torch.nn.Parameter(torch.tensor(scale_init))
-                import math
-                self.pi = math.pi
 
                 self.maxdepth = 32
 
