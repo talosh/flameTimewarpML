@@ -3116,11 +3116,31 @@ def main():
             prev_eval_folder = eval_folder
 
             del evalnet
+            read_eval_thread.join()
+            del read_eval_image_queue
+
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+            elif torch.backends.mps.is_available():
+                torch.mps.synchronize()
+
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()            
+            elif torch.backends.mps.is_available():
+                torch.mps.empty_cache()
+
             flownet.to(device)
             flownet.train()
 
-            read_eval_thread.join()
-            del read_eval_image_queue
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+            elif torch.backends.mps.is_available():
+                torch.mps.synchronize()
+
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()            
+            elif torch.backends.mps.is_available():
+                torch.mps.empty_cache()
 
             if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 prev_lr = optimizer_flownet.param_groups[0]['lr']
@@ -3137,15 +3157,6 @@ def main():
                         except Exception as e:
                             print (f'\n\nerror while reading: {best_trained_model_path}\n{e}\n{traceback.format_exc()}\n\n')
 
-            if torch.cuda.is_available():
-                torch.cuda.synchronize()
-            elif torch.backends.mps.is_available():
-                torch.mps.synchronize()
-
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()            
-            elif torch.backends.mps.is_available():
-                torch.mps.empty_cache()
 
         # End of evaluation block
 
