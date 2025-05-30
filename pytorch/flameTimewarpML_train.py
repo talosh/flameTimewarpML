@@ -2589,16 +2589,6 @@ def main():
         optimizer_flownet.step()
         optimizer_flownet.zero_grad()
 
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
-        elif torch.backends.mps.is_available():
-            torch.mps.synchronize()
-
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()            
-        elif torch.backends.mps.is_available():
-            torch.mps.empty_cache()
-
         if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
             pass
         else:
@@ -2638,6 +2628,11 @@ def main():
             torch.mps.synchronize()
         else:
             torch.cuda.synchronize(device=device)
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()            
+        elif torch.backends.mps.is_available():
+            torch.mps.empty_cache()
 
         train_time = time.time() - time_stamp
         time_stamp = time.time()
