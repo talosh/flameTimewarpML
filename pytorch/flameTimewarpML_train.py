@@ -2524,10 +2524,27 @@ def main():
                 gt = img1
                 )
         except:
+            flownet.cpu()
+
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()            
             elif torch.backends.mps.is_available():
                 torch.mps.empty_cache()
+
+            flownet.to(device)
+            flownet.train()
+
+
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+            elif torch.backends.mps.is_available():
+                torch.mps.synchronize()
+
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()            
+            elif torch.backends.mps.is_available():
+                torch.mps.empty_cache()
+
             result = flownet(
                 img0,
                 img2,
