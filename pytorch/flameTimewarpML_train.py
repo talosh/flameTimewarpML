@@ -2514,14 +2514,28 @@ def main():
                 img2 += torch.rand_like(img1) * delta
         '''
 
-        result = flownet(
-            img0,
-            img2,
-            ratio,
-            scale=training_scale,
-            iterations = args.iterations,
-            gt = img1
-            )
+        try:
+            result = flownet(
+                img0,
+                img2,
+                ratio,
+                scale=training_scale,
+                iterations = args.iterations,
+                gt = img1
+                )
+        except:
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()            
+            elif torch.backends.mps.is_available():
+                torch.mps.empty_cache()
+            result = flownet(
+                img0,
+                img2,
+                ratio,
+                scale=training_scale,
+                iterations = args.iterations,
+                gt = img1
+                )
 
         flow_list = result['flow_list']
         mask_list = result['mask_list']
@@ -2587,11 +2601,20 @@ def main():
         cur_l1[cur_mask] = avg_l1
         cur_lpips[cur_mask] = avg_lpips
 
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
-
-        optimizer_flownet.step()
-        optimizer_flownet.zero_grad()
+        try:
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
+            optimizer_flownet.step()
+            optimizer_flownet.zero_grad()
+        except:
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()            
+            elif torch.backends.mps.is_available():
+                torch.mps.empty_cache()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
+            optimizer_flownet.step()
+            optimizer_flownet.zero_grad()
 
         if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
             pass
@@ -2632,11 +2655,6 @@ def main():
             torch.mps.synchronize()
         else:
             torch.cuda.synchronize(device=device)
-
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()            
-        elif torch.backends.mps.is_available():
-            torch.mps.empty_cache()
 
         train_time = time.time() - time_stamp
         time_stamp = time.time()
