@@ -1771,6 +1771,10 @@ def main():
     args = parser.parse_args()
 
     device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda:{args.device}')
+    
+    if torch.cuda.is_available():
+        torch.cuda.set_device(device)
+
     if args.all_gpus:
         device = 'cuda'
 
