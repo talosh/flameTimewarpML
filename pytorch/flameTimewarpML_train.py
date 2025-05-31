@@ -2535,7 +2535,6 @@ def main():
                 flownet.to(device)
                 flownet.train()
 
-
                 if torch.cuda.is_available():
                     torch.cuda.synchronize()
                 elif torch.backends.mps.is_available():
@@ -2631,9 +2630,6 @@ def main():
                 torch.cuda.empty_cache()            
             elif torch.backends.mps.is_available():
                 torch.mps.empty_cache()
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
-            optimizer_flownet.step()
             optimizer_flownet.zero_grad()
 
         if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
