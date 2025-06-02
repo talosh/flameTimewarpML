@@ -634,7 +634,7 @@ class Model:
                 feat = self.mix3f(self.down(featF), feat)
                 feat = self.mix3(feat, self.up(feat_deep))
                 
-                featF = self.revmix3f(self.down(featF), feat)
+                featF = self.revmix3f(featF, self.up(feat))
 
                 feat = self.convblock_last(self.up(feat))
                 featF = self.convblock_last_shallow(featF)
