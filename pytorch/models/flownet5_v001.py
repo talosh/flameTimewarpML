@@ -146,11 +146,11 @@ class Model:
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, c, 3, 2, 1),
-                    torch.nn.PReLU(c, 0.2),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    myPReLU(c),
+                    ResConvSoft(c),
+                    ResConvSoft(c),
+                    ResConvSoft(c),
+                    ResConvSoft(c),
                     torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
                 self.maxdepth = 2
