@@ -2524,37 +2524,34 @@ def main():
                 gt = img1
                 )
         except:
-            try:
-                flownet.cpu()
+            flownet.cpu()
 
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()            
-                elif torch.backends.mps.is_available():
-                    torch.mps.empty_cache()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()            
+            elif torch.backends.mps.is_available():
+                torch.mps.empty_cache()
 
-                flownet.to(device)
-                flownet.train()
+            flownet.to(device)
+            flownet.train()
 
-                if torch.cuda.is_available():
-                    torch.cuda.synchronize()
-                elif torch.backends.mps.is_available():
-                    torch.mps.synchronize()
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+            elif torch.backends.mps.is_available():
+                torch.mps.synchronize()
 
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()            
-                elif torch.backends.mps.is_available():
-                    torch.mps.empty_cache()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()            
+            elif torch.backends.mps.is_available():
+                torch.mps.empty_cache()
 
-                result = flownet(
-                    img0,
-                    img2,
-                    ratio,
-                    scale=training_scale,
-                    iterations = args.iterations,
-                    gt = img1
-                    )
-            except:
-                continue
+            result = flownet(
+                img0,
+                img2,
+                ratio,
+                scale=training_scale,
+                iterations = args.iterations,
+                gt = img1
+                )
 
         flow_list = result['flow_list']
         mask_list = result['mask_list']
@@ -2620,17 +2617,10 @@ def main():
         cur_l1[cur_mask] = avg_l1
         cur_lpips[cur_mask] = avg_lpips
 
-        try:
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
-            optimizer_flownet.step()
-            optimizer_flownet.zero_grad()
-        except:
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()            
-            elif torch.backends.mps.is_available():
-                torch.mps.empty_cache()
-            optimizer_flownet.zero_grad()
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
+        optimizer_flownet.step()
+        optimizer_flownet.zero_grad()
 
         if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
             pass
