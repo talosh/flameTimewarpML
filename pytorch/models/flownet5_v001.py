@@ -550,8 +550,8 @@ class Model:
                     ResConv(cd),
                 )
                 
-                self.up = torch.nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True)
                 self.down = torch.nn.Upsample(scale_factor=1/2, mode='bicubic', align_corners=True)
+                self.up = torch.nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True)
 
                 self.mix1 = UpMix(c, cd)
                 self.mix1f = DownMix(c//2, c)
@@ -611,7 +611,7 @@ class Model:
                 feat = self.convblock1(feat)
                 feat_deep = self.convblock_deep1(feat_deep)
                 
-                feat = self.mix1f(featF, self.up(feat))
+                feat = self.mix1f(self.down(featF), feat)
                 feat_tmp = self.mix1(feat, self.up(feat_deep))
                 feat_deep = self.revmix1(self.down(feat), feat_deep)
 
@@ -621,7 +621,7 @@ class Model:
                 feat = self.convblock2(feat_tmp)
                 feat_deep = self.convblock_deep2(feat_deep)
 
-                feat = self.mix2f(featF, self.up(feat))
+                feat = self.mix2f(self.down(featF), feat)
                 feat_tmp = self.mix2(feat, self.up(feat_deep))
                 feat_deep = self.revmix2(self.down(feat), feat_deep)
                 featF = self.revmix2f(featF, self.up(feat_tmp))
@@ -632,7 +632,7 @@ class Model:
                 feat = self.mix3f(featF, self.up(feat))
                 feat = self.mix3(feat, self.up(feat_deep))
                 
-                featF = self.revmix3f(featF, self.up(feat))
+                featF = self.revmix3f(self.down(featF), feat)
 
                 feat = self.convblock_last(self.up(feat))
                 featF = self.convblock_last_shallow(featF)
