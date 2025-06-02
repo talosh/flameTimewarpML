@@ -121,7 +121,26 @@ class Model:
 
             return ACEScg
 
+        class myPReLU(Module):
+            def __init__(self, c):
+                super().__init__()
+                self.alpha = 0.2 # torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.beta = 0.69 # torch.nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
+                self.prelu = torch.nn.PReLU(c, 0.2)
+                self.tanh = torch.nn.Tanh()
+                # self.elu = torch.nn.ELU()
 
+            def forward(self, x):
+                alpha = self.alpha # 0.2 * self.alpha.clamp(min=1e-8)
+                beta = self.beta # 0.69 + self.beta
+                x = x / alpha - beta
+                tanh_x = self.tanh(x)
+                x = torch.where(
+                    x > 0, 
+                    x, 
+                    tanh_x + abs(tanh_x) * self.prelu(x)
+                )
+                return alpha * (x + beta)
         class Head(Module):
             def __init__(self, c=32):
                 super(Head, self).__init__()
@@ -148,6 +167,15 @@ class Model:
                 x = self.encode(x)[:, :, :h, :w]
                 return x
 
+        class ResConvSoft(Module):
+            def __init__(self, c, dilation=1):
+                super().__init__()
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
+                self.relu = myPReLU(c)
+
+            def forward(self, x):
+                return self.relu(self.conv(x) * self.beta + x)
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
