@@ -485,7 +485,7 @@ class Model:
                 conf = feat[:, 5:6]
                 return flow, mask, conf
 
-        class FlownetDeep32x(Module):
+        class FlownetDeep16x(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
@@ -569,7 +569,7 @@ class Model:
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c//2, 6, 4, 2, 1),
                 )
-                self.maxdepth = 32
+                self.maxdepth = 16
 
             def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
                 n, c, h, w = img0.shape
@@ -608,13 +608,12 @@ class Model:
                 feat = self.conv1(feat)
                 feat = self.down(feat)
                 feat_deep = self.conv2(feat)
-                feat_deep = self.down(feat_deep)
 
                 feat = self.convblock1(feat)
                 feat_deep = self.convblock_deep1(feat_deep)
                 
                 feat = self.mix1f(self.down(featF), feat)
-                feat_tmp = self.mix1(feat, self.up(feat_deep))
+                feat_tmp = self.mix1(feat, feat_deep)
                 feat_deep = self.revmix1(self.down(feat), feat_deep)
 
                 featF = self.revmix1f(featF, self.up(feat_tmp))
@@ -624,7 +623,7 @@ class Model:
                 feat_deep = self.convblock_deep2(feat_deep)
 
                 feat = self.mix2f(self.down(featF), feat)
-                feat_tmp = self.mix2(feat, self.up(feat_deep))
+                feat_tmp = self.mix2(feat, feat_deep)
                 feat_deep = self.revmix2(self.down(feat), feat_deep)
                 featF = self.revmix2f(featF, self.up(feat_tmp))
 
@@ -632,7 +631,7 @@ class Model:
                 feat = self.convblock3(feat_tmp)
                 feat_deep = self.convblock_deep3(feat_deep)
                 feat = self.mix3f(self.down(featF), feat)
-                feat = self.mix3(feat, self.up(feat_deep))
+                feat = self.mix3(feat, feat_deep)
                 
                 featF = self.revmix3f(featF, self.up(feat))
 
