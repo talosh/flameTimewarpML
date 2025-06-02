@@ -146,11 +146,11 @@ class Model:
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, c, 3, 2, 1),
-                    myPReLU(c),
-                    ResConvSoft(c),
-                    ResConvSoft(c),
-                    ResConvSoft(c),
-                    ResConvSoft(c),
+                    torch.nn.PReLU(c, 0.2),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                     torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
                 self.maxdepth = 2
@@ -606,36 +606,36 @@ class Model:
                 featF = self.convblock1f(feat)
 
                 feat = self.conv1(feat)
-                feat = self.down(feat)
                 feat_deep = self.conv2(feat)
+                feat_deep = self.down(feat_deep)
 
                 feat = self.convblock1(feat)
                 feat_deep = self.convblock_deep1(feat_deep)
                 
-                feat = self.mix1f(self.down(featF), feat)
-                feat_tmp = self.mix1(feat, feat_deep)
-                feat_deep = self.revmix1(feat, feat_deep)
+                feat = self.mix1f(featF, feat)
+                feat_tmp = self.mix1(feat, self.up(feat_deep))
+                feat_deep = self.revmix1(self.down(feat), feat_deep)
 
-                featF = self.revmix1f(featF, self.up(feat_tmp))
+                featF = self.revmix1f(featF, feat_tmp)
 
                 featF = self.convblock2f(featF)
                 feat = self.convblock2(feat_tmp)
                 feat_deep = self.convblock_deep2(feat_deep)
 
-                feat = self.mix2f(self.down(featF), feat)
-                feat_tmp = self.mix2(feat, feat_deep)
-                feat_deep = self.revmix2(feat, feat_deep)
-                featF = self.revmix2f(featF, self.up(feat_tmp))
+                feat = self.mix2f(featF, feat)
+                feat_tmp = self.mix2(feat, self.up(feat_deep))
+                feat_deep = self.revmix2(self.down(feat), feat_deep)
+                featF = self.revmix2f(featF, feat_tmp)
 
                 featF = self.convblock3f(featF)
                 feat = self.convblock3(feat_tmp)
                 feat_deep = self.convblock_deep3(feat_deep)
-                feat = self.mix3f(self.down(featF), feat)
-                feat = self.mix3(feat, feat_deep)
+                feat = self.mix3f(featF, feat)
+                feat = self.mix3(feat, self.up(feat_deep))
                 
-                featF = self.revmix3f(featF, self.up(feat))
+                featF = self.revmix3f(featF, feat)
 
-                feat = self.convblock_last(self.up(feat))
+                feat = self.convblock_last(feat)
                 featF = self.convblock_last_shallow(featF)
 
                 feat = self.mix4(featF, feat)
