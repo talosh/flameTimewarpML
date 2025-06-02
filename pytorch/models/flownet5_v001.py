@@ -605,8 +605,10 @@ class Model:
                 feat = self.conv0(x)
                 featF = self.convblock1f(feat)
 
-                feat = self.conv1(self.down(feat))
-                feat_deep = self.conv2(self.down(feat))
+                feat = self.conv1(feat)
+                feat = self.down(feat)
+                feat_deep = self.conv2(feat)
+                feat_deep = self.down(feat_deep)
 
                 feat = self.convblock1(feat)
                 feat_deep = self.convblock_deep1(feat_deep)
