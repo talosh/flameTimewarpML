@@ -2105,10 +2105,8 @@ def main():
             param.requires_grad = False
         '''
 
-        # for param in flownet.module.encode.parameters():
-        #    param.requires_grad = False
-        # for param in flownet.module.encode_xf.parameters():
-        #     param.requires_grad = False
+        for param in flownet.module.encode.parameters():
+            param.requires_grad = False
         # for param in flownet.module.block0.parameters():
         #    param.requires_grad = False
         for param in flownet.module.block1.parameters():
@@ -2117,8 +2115,6 @@ def main():
             param.requires_grad = False
         for param in flownet.module.block3.parameters():
             param.requires_grad = False
-        # for param in flownet.encode.parameters():
-        #     param.requires_grad = False
 
         '''
         for param in flownet.module.blockf.parameters():
