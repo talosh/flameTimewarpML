@@ -1930,6 +1930,7 @@ def main():
 
     # for idx, scale in enumerate(scales_list):
     def example_loss(scales_list):
+        scales_list = [round(v, 1) for v in scales_list]
         descriptions = list(eval_dataset.initial_train_descriptions)
 
         def read_eval_images(read_eval_image_queue, descriptions):
@@ -1958,8 +1959,6 @@ def main():
         read_eval_thread.start()
         eval_loss = []
         eval_lpips = []
-
-        scales_list = [round(v, 1) for v in scales_list]
 
         try:
             with torch.no_grad():
@@ -2079,7 +2078,7 @@ def main():
         read_eval_thread.join()
         return (eval_loss_avg + 2e-1 * eval_lpips_mean)
 
-    optimized = optimize_scales(example_loss, n=6, max_initial=args.max, search_steps=args.max)
+    optimized = optimize_scales(example_loss, n=6, max_initial=args.max, search_steps=2*args.max)
     print("Optimized scales:", optimized)
 
 if __name__ == "__main__":
