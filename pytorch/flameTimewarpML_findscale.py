@@ -2074,6 +2074,7 @@ def main():
             while description is not None:
                 description = read_eval_image_queue.get()
             read_eval_thread.join()
+            return float('inf')
 
         read_eval_thread.join()
         return (eval_loss_avg + 2e-1 * eval_lpips_mean)
