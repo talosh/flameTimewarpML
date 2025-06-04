@@ -2079,7 +2079,7 @@ def main():
         read_eval_thread.join()
         return (eval_loss_avg + 2e-1 * eval_lpips_mean)
 
-    optimized = optimize_scales(example_loss, n=6, max_initial=args.max, search_steps=2*args.max)
+    optimized = optimize_scales(example_loss, n=6, max_initial=args.max, search_steps=10*args.max)
     print("Optimized scales:", optimized)
 
 if __name__ == "__main__":
