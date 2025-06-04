@@ -1959,6 +1959,8 @@ def main():
         eval_loss = []
         eval_lpips = []
 
+        scales_list = [round(v, 1) for v in scales_list]
+
         try:
             with torch.no_grad():
                 description = read_eval_image_queue.get()
@@ -2049,6 +2051,7 @@ def main():
 
             eval_loss_avg = float(np.array(eval_loss).mean())
             eval_lpips_mean = float(np.array(eval_lpips).mean())
+
             eval_rows_to_append = [
                 {
                     'Loss': eval_loss_avg,
