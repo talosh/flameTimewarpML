@@ -840,6 +840,7 @@ class Model:
                 mask = (mask1 + (-mask2)) / 2
                 conf = (conf1 + conf2) / 2
 
+                '''
                 mask = torch.sigmoid(mask) #
                 conf = torch.sigmoid(conf) #
                 merged = warp(img0, flow[:, :2]) * mask + warp(img1, flow[:, 2:4]) * (1 - mask)
@@ -852,6 +853,7 @@ class Model:
                 }
 
                 return result
+                '''
 
                 flow_list[0] = flow.clone()
                 conf_list[0] = torch.sigmoid(conf.clone())
