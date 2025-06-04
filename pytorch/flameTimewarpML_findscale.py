@@ -2055,7 +2055,7 @@ def main():
                     'Loss': eval_loss_avg,
                     'LPIPS': eval_lpips_mean,
                     'Combined': (eval_loss_avg + 2e-1 * eval_lpips_mean),
-                    'Scale': scale, 
+                    'Scale': scales_list, 
                 }
             ]
 
@@ -2075,7 +2075,7 @@ def main():
             read_eval_thread.join()
 
         read_eval_thread.join()
-        return eval_merged
+        return (eval_loss_avg + 2e-1 * eval_lpips_mean)
 
     optimized = optimize_scales(example_loss, n=6, search_range=(1.0, args.max), search_steps=6)
     print("Optimized scales:", optimized)
