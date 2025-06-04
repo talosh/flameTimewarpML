@@ -1737,31 +1737,27 @@ def generate_scales4(scale=24):
     return results
 '''
 
-def linear_values(x, n):
-    return list(np.linspace(x, 1, n))
+def linear_values(start, count):
+    return list(np.linspace(start, 1.0, count))
 
-import numpy as np
+def optimize_scales(loss_fn, n, search_range=(1.0, 24.0), search_steps=50):
+    current_scales = [1.0] * n  # Initialize with 1.0 everywhere
 
-def linear_values(x, n):
-    return list(np.linspace(x, 1.0, n))
-
-def optimize_scales(loss_fn, n, search_range, search_steps):
-    current_scales = [1.0] * n  # Start with flat scales
-    for i in range(n - 1):  # Leave the last one fixed at 1.0
+    for i in range(n - 1):  # Don't touch the last value (always 1.0)
         candidates = np.linspace(search_range[0], search_range[1], search_steps)
-        best_val = None
         best_loss = float('inf')
-        
+        best_candidate = None
+
         for val in candidates:
-            candidate_scales = current_scales[:i] + linear_values(val, n - i)
-            loss = loss_fn(candidate_scales)
+            candidate = current_scales[:i] + linear_values(val, n - i)
+            loss = loss_fn(candidate)
             if loss < best_loss:
                 best_loss = loss
-                best_val = val
-        
-        # Update current scales
-        current_scales = current_scales[:i] + linear_values(best_val, n - i)
-    
+                best_candidate = val
+
+        # Fix the best value found at position i and recompute the tail
+        current_scales = current_scales[:i] + linear_values(best_candidate, n - i)
+
     return current_scales
 
 '''
