@@ -1711,6 +1711,7 @@ def ap0_to_ap1(image):
 
 current_state_dict = {}
 
+'''
 def generate_scales(scale=24):
     results = []
 
@@ -1734,6 +1735,40 @@ def generate_scales4(scale=24):
                 results.append((a, b, c, d))
 
     return results
+'''
+
+def linear_values(x, n):
+    return list(np.linspace(x, 1, n))
+
+import numpy as np
+
+def linear_values(x, n):
+    return list(np.linspace(x, 1.0, n))
+
+def optimize_scales(loss_fn, n, search_range, search_steps):
+    current_scales = [1.0] * n  # Start with flat scales
+    for i in range(n - 1):  # Leave the last one fixed at 1.0
+        candidates = np.linspace(search_range[0], search_range[1], search_steps)
+        best_val = None
+        best_loss = float('inf')
+        
+        for val in candidates:
+            candidate_scales = current_scales[:i] + linear_values(val, n - i)
+            loss = loss_fn(candidate_scales)
+            if loss < best_loss:
+                best_loss = loss
+                best_val = val
+        
+        # Update current scales
+        current_scales = current_scales[:i] + linear_values(best_val, n - i)
+    
+    return current_scales
+
+'''
+def generate_scales(n, scale=24):
+    starts = np.linspace(1, scale, n)
+    return [linear_values(start, n) for start in starts]
+'''
 
 def main():
     global current_state_dict
@@ -1857,14 +1892,16 @@ def main():
     except Exception as e:
         print (f'unable to load saved model: {e}')
 
+    '''
     if args.eval_trained:
-        scales_list = generate_scales4(scale=args.max)
+        scales_list = generate_scales(4, scale=args.max)
     else:
-        scales_list = generate_scales(scale=args.max)
+        scales_list = generate_scales(6, scale=args.max)
 
     print(f"Generated {len(scales_list)} scale sequences.")
 
     scales_list.reverse()
+    '''
 
     dataset_dirname = os.path.basename(os.path.abspath(args.dataset_path))
 
@@ -1892,7 +1929,8 @@ def main():
         evalnet.half()
     evalnet.eval()
 
-    for idx, scale in enumerate(scales_list):
+    # for idx, scale in enumerate(scales_list):
+    def example_loss(scales_list):
         descriptions = list(eval_dataset.initial_train_descriptions)
 
         def read_eval_images(read_eval_image_queue, descriptions):
@@ -1937,7 +1975,7 @@ def main():
                         eval_lpips_mean = -1
 
                     clear_lines(1)
-                    print (f'\rScale: {scale}, {idx+1} of {len(scales_list)}, Evaluating {ev_item_index+1} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}')
+                    print (f'\rScale: {scales_list}, Evaluating {ev_item_index+1} of {len(descriptions)}: Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}')
 
                     eval_img0 = description['eval_img0']
                     eval_img1 = description['eval_img1']
@@ -1963,7 +2001,7 @@ def main():
                         eval_img0, 
                         eval_img2,
                         eval_ratio,
-                        scale = scale,
+                        scale = scales_list,
                         iterations = 1
                         )
 
@@ -2025,18 +2063,22 @@ def main():
                 append_row_to_csv(csv_filename, eval_row)
 
             clear_lines(2)
-            print(f'\r[Scale {scale} Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}')
+            print(f'\r[Scale {scales_list} Avg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}')
             print ('\n')
 
         except Exception as e:
             clear_lines(2)
-            print(f'\r[Scale {scale} Error: {e}')
+            print(f'\r[Scale {scales_list} Error: {e}')
             print ('\n')
             while description is not None:
                 description = read_eval_image_queue.get()
             read_eval_thread.join()
 
         read_eval_thread.join()
+        return eval_merged
+
+    optimized = optimize_scales(example_loss, n=6, search_range=(1.0, args.max), search_steps=6)
+    print("Optimized scales:", optimized)
 
 if __name__ == "__main__":
     main()
