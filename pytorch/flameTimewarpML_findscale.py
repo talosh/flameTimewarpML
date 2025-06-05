@@ -1745,7 +1745,7 @@ def optimize_scales(loss_fn, n, max_initial=32.0, search_steps=32):
     max_range = max_initial
 
     for i in range(n - 1):  # Do not optimize last (fixed at 1.0)
-        candidates = np.linspace(2.0, max_range, search_steps)
+        candidates = np.linspace(1.0, max_range, search_steps)
         best_val = None
         best_loss = float('inf')
 
