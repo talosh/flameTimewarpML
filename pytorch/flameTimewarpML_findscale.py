@@ -2080,6 +2080,7 @@ def main():
         return (eval_loss_avg + 2e-1 * eval_lpips_mean)
 
     optimized = optimize_scales(example_loss, n=6, max_initial=args.max, search_steps=args.max)
+    optimized = [round(v, 1) for v in optimized]
     print("Optimized scales:", optimized)
 
 if __name__ == "__main__":
