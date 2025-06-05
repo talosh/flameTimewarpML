@@ -911,6 +911,51 @@ class Model:
 
                 return result
 
+        def find_scale(x_query):
+            """
+            Interpolates or extrapolates y for a single float x_query.
+
+            Parameters:
+            - x_known: list or tuple of known x-values (must be sorted)
+            - y_known: list or tuple of corresponding y-values
+            - x_query: float x value to estimate y for
+
+            Returns:
+            - y_query: interpolated or extrapolated y value
+            """
+            x_known = [576, 1024, 2048, 4096]
+            y_known = [3, 5, 13, 24]
+
+            if len(x_known) != len(y_known):
+                raise ValueError("x_known and y_known must have the same length")
+
+            n = len(x_known)
+
+            # Left extrapolation
+            if x_query <= x_known[0]:
+                x0, x1 = x_known[0], x_known[1]
+                y0, y1 = y_known[0], y_known[1]
+
+            # Right extrapolation
+            elif x_query >= x_known[-1]:
+                x0, x1 = x_known[-2], x_known[-1]
+                y0, y1 = y_known[-2], y_known[-1]
+
+            # Interpolation
+            else:
+                for i in range(1, n):
+                    if x_query < x_known[i]:
+                        x0, x1 = x_known[i-1], x_known[i]
+                        y0, y1 = y_known[i-1], y_known[i]
+                        break
+
+            # Linear interpolation/extrapolation
+            t = (x_query - x0) / (x1 - x0)
+            start = y0 + t * (y1 - y0)
+
+            return list(np.linspace(start, 1.0, 6))
+
+
         class FlownetCasEval(Module):
             def __init__(self):
                 super().__init__()
@@ -921,6 +966,9 @@ class Model:
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[12, 9.8, 7.6, 5.4, 3.2, 1], iterations=4, gt=None):
+
+                size = max(img0.shape[2], img0.shape[3])
+                scale = find_scale(size)
 
                 img0 = ACEScg2cct(compress(img0))
                 img1 = ACEScg2cct(compress(img1))
