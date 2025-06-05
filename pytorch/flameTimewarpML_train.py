@@ -2527,15 +2527,16 @@ def main():
                 img2 += torch.rand_like(img1) * delta
         '''
 
-        try:
-            result = flownet(
-                img0,
-                img2,
-                ratio,
-                scale=training_scale,
-                iterations = args.iterations,
-                gt = img1
-                )
+        result = flownet(
+            img0,
+            img2,
+            ratio,
+            scale=training_scale,
+            iterations = args.iterations,
+            gt = img1
+            )
+        
+        '''
         except:
             flownet.cpu()
 
@@ -2565,6 +2566,7 @@ def main():
                 iterations = args.iterations,
                 gt = img1
                 )
+        '''
 
         flow_list = result['flow_list']
         mask_list = result['mask_list']
