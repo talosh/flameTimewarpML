@@ -1692,6 +1692,23 @@ def to_freq(x):
     x = x.to(dtype = src_dtype)
     return x
 
+def fourier_loss_half_res(img1, img2):
+    # Downscale to half resolution using bicubic interpolation
+    img1_down = torch.nn.functional.interpolate(img1, scale_factor=0.5, mode='bicubic', align_corners=False, antialias=True)
+    img2_down = torch.nn.functional.interpolate(img2, scale_factor=0.5, mode='bicubic', align_corners=False, antialias=True)
+
+    # Apply real 2D FFT
+    fft1 = torch.fft.rfft2(img1_down, norm='ortho')
+    fft2 = torch.fft.rfft2(img2_down, norm='ortho')
+
+    # Compute magnitude difference
+    mag1 = torch.abs(fft1)
+    mag2 = torch.abs(fft2)
+
+    # Use L1 or L2 loss in Fourier domain
+    return torch.nn.functional.l1_loss(mag1, mag2)
+
+
 def ap0_to_ap1(image):
     """
     Convert from AP0 (ACES2065-1) to AP1 (ACEScg) for input in [N, 3, H, W] format.
@@ -2580,6 +2597,10 @@ def main():
                     output_clean * 2 - 1, 
                     img1_orig * 2 - 1
                     )
+                loss_fourier = fourier_loss_half_res(
+                    output_clean,
+                    img1_orig
+                )
                 loss = loss + loss_l1 + loss_lap + 1e-2*loss_mask + 1e-2*loss_conf + 1.4e-2 * (1 / (i + 1)) * float(torch.mean(loss_LPIPS).item())
 
         diff_matte = diffmatte(output_clean, img1_orig)
@@ -2828,7 +2849,7 @@ def main():
         clear_lines(2)
         print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{model_time_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
         if len(dataset) > 10000:
-            print(f'\r[10K Average] L1: {np.mean(cur_l1):.6f} LPIPS: {np.mean(cur_lpips):.4f} Combined: {np.mean(cur_comb):.8f}')
+            print(f'\r[10K Average] L1: {np.mean(cur_l1):.6f} LPIPS: {np.mean(cur_lpips):.4f} Combined: {np.mean(cur_comb):.8f} F: {loss_fourier}')
         else:
             print(f'\r[Epoch] Min L1: {min_l1:.6f} Avg L1: {avg_l1:.6f} Max L1: {max_l1:.6f} Avg LPIPS: {avg_lpips:.4f} Combined: {avg_loss:.8f}')
 
