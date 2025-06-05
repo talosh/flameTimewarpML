@@ -2601,12 +2601,12 @@ def main():
                     output_clean,
                     img1_orig
                 )
-                loss = loss + loss_l1 + loss_lap + 1e-2*loss_mask + 1e-2*loss_conf + 1.4e-2 * (1 / (i + 1)) * float(torch.mean(loss_LPIPS).item())
+                loss = loss + loss_l1 + loss_lap + loss_fourier + 1e-2*loss_mask + 1e-2*loss_conf + 1.4e-2 * (1 / (i + 1)) * float(torch.mean(loss_LPIPS).item())
 
         diff_matte = diffmatte(output_clean, img1_orig)
         # loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
         # loss_l1 = criterion_l1(output_clean, img1_orig)
-        loss = loss + loss_l1 + loss_lap + 1e-2 * float(torch.mean(loss_LPIPS).item())
+        loss = loss + loss_l1 + loss_lap + loss_fourier + 1e-2 * float(torch.mean(loss_LPIPS).item())
 
         if cur_comb is None:
             cur_comb = np.full(cur_size, float(loss.item()))
@@ -2849,7 +2849,7 @@ def main():
         clear_lines(2)
         print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{model_time_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
         if len(dataset) > 10000:
-            print(f'\r[10K Average] L1: {np.mean(cur_l1):.6f} LPIPS: {np.mean(cur_lpips):.4f} Combined: {np.mean(cur_comb):.8f} F: {loss_fourier}')
+            print(f'\r[10K Average] L1: {np.mean(cur_l1):.6f} LPIPS: {np.mean(cur_lpips):.4f} Combined: {np.mean(cur_comb):.8f}')
         else:
             print(f'\r[Epoch] Min L1: {min_l1:.6f} Avg L1: {avg_l1:.6f} Max L1: {max_l1:.6f} Avg LPIPS: {avg_lpips:.4f} Combined: {avg_loss:.8f}')
 
