@@ -965,7 +965,7 @@ class Model:
                 self.block3 = Flownet(31, c=64)
                 self.encode = Head()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[12, 9.8, 7.6, 5.4, 3.2, 1], iterations=4, gt=None):
+            def forward(self, img0, img1, timestep=0.5, scale=[32, 32, 32, 32, 32, 32], iterations=4, gt=None):
 
                 size = max(img0.shape[2], img0.shape[3])
                 scale = find_scale(size)
