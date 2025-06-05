@@ -1741,11 +1741,11 @@ def linear_values(start, count):
     return list(np.linspace(start, 1.0, count))
 
 def optimize_scales(loss_fn, n, max_initial=32.0, search_steps=32):
-    current_scales = [2.0] * n
+    current_scales = [1.0] * n
     max_range = max_initial
 
     for i in range(n - 1):  # Do not optimize last (fixed at 1.0)
-        candidates = np.linspace(1.0, max_range, search_steps)
+        candidates = np.linspace(2.0, max_range, search_steps)
         best_val = None
         best_loss = float('inf')
 
