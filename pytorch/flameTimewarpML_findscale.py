@@ -2064,7 +2064,7 @@ def main():
                 append_row_to_csv(csv_filename, eval_row)
 
             clear_lines(2)
-            print(f'\rScale {scales_list}\tAvg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}')
+            print(f'\rScale {scales_list}\t\tAvg L1: {eval_loss_avg:.6f}, LPIPS: {eval_lpips_mean:.4f}')
             print ('\n')
 
         except Exception as e:
