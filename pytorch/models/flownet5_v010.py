@@ -425,16 +425,20 @@ class Model:
                 
                 print (f'featF: {featF.shape}')
                 print (f'feat: {feat.shape}')
+                print (f'feat_deep: {feat_deep.shape}')
 
                 feat = self.mix1f(featF, feat)
 
                 print (f'feat after  mix: {feat.shape}')
 
-                import sys
-                sys.exit()
-
                 feat_tmp = self.mix1(feat, feat_deep)
                 feat_deep = self.revmix1(feat, feat_deep)
+
+                print (f'feat_tmp: {feat_tmp.shape}')
+                print (f'feat_deep after revmiox: {feat_deep.shape}')
+
+                import sys
+                sys.exit()
 
                 featF = self.revmix1f(featF, feat_tmp)
 
