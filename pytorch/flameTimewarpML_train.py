@@ -2636,10 +2636,10 @@ def main():
         cur_l1[cur_mask] = avg_l1
         cur_lpips[cur_mask] = avg_lpips
 
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
+        (loss / args.acc).backward()
 
         if batch_idx % args.acc == 0:
+            torch.nn.utils.clip_grad_norm_(flownet.parameters(), 1)
             optimizer_flownet.step()
             optimizer_flownet.zero_grad()
 
