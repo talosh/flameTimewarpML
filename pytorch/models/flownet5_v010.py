@@ -371,7 +371,7 @@ class Model:
                 self.revmix3f = UpMix(c//4, c)
                 self.mix4 = Mix(c//4, c)
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.Conv2d(c//4, 6, 3, 1, 1),
+                    torch.nn.Conv2d(c//4, 6, 5, 1, 2),
                 )
 
                 self.maxdepth = 16
