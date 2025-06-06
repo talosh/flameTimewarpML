@@ -418,7 +418,7 @@ class Model:
                 feat = self.conv1(x)
                 feat = self.conv2(feat)
                 feat_deep = self.conv3(feat)
-                feat_deep = self.conv3(feat_deep)
+                feat_deep = self.conv4(feat_deep)
 
                 print (f'featF: {featF.shape}')
                 print (f'feat: {feat.shape}')
