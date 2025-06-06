@@ -361,7 +361,7 @@ class Model:
                 self.mix2 = UpMix(c, cd)
                 self.mix2f = DownMix(c//4, c)
                 self.mix3 = Mix(c, cd)
-                self.mix3f = DownMix(c/4, c)
+                self.mix3f = DownMix(c//4, c)
                 self.mix4f = DownMix(c//4, c)
                 self.revmix1 = DownMix(c, cd)
                 self.revmix1f = UpMix(c//4, c)
