@@ -414,7 +414,7 @@ class Model:
                 featF = self.conv0(hpass(imgs))
                 featF, _ = self.convblock1f((featF, x_scalar))
 
-                feat = self.conv1(feat)
+                feat = self.conv1(x)
                 feat = self.conv2(feat)
                 feat_deep = self.conv3(feat)
 
