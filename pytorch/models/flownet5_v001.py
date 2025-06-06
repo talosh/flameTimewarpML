@@ -912,6 +912,7 @@ class Model:
                 return result
 
         def find_scale(x_query):
+            import numpy as np
             """
             Interpolates or extrapolates y for a single float x_query.
 
