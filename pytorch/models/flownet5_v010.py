@@ -297,7 +297,8 @@ class Model:
                 self.conv0 = conv(6, c//4, 3, 1, 1)              
                 self.conv1 = conv(in_planes, c//2, 5, 2, 2)
                 self.conv2 = conv(c//2, c, 5, 2, 2)
-                self.conv3 = conv(c, cd, 7, 4, 3)
+                self.conv3 = conv(c, cd, 5, 2, 2)
+                self.conv4 = conv(cd, cd, 5, 2, 2)
                 self.convblock1 = torch.nn.Sequential(
                     ResConvEmb(c),
                     ResConvEmb(c),
