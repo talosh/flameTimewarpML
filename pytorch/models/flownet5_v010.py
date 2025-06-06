@@ -75,7 +75,7 @@ class Model:
         def hpass(img):
             # src_dtype = img.dtype
             # img = img.float()
-            def gauss_kernel(size=5, channels=3):
+            def gauss_kernel(size=5, channels=6):
                 kernel = torch.tensor([[1., 4., 6., 4., 1],
                                     [4., 16., 24., 16., 4.],
                                     [6., 24., 36., 24., 6.],
