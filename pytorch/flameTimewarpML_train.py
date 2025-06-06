@@ -1755,7 +1755,7 @@ def main():
     parser.add_argument('--first_epoch', type=int, default=-1, help='Epoch (int) (default: Saved)')
     parser.add_argument('--epochs', type=int, default=-1, help='Number of epoch to run (int) (default: Unlimited)')
     parser.add_argument('--reset_stats', action='store_true', dest='reset_stats', default=False, help='Reset saved step, epoch and loss stats')
-    parser.add_argument('--acc', type=int, default=4, help='Gradient accumulation steps (int) (default: 4)')
+    parser.add_argument('--acc', type=int, default=1, help='Gradient accumulation steps (int) (default: 4)')
 
     parser.add_argument('--eval', type=int, dest='eval', default=-1, help='Evaluate after N steps')
     parser.add_argument('--eval_first', action='store_true', dest='eval_first', default=False, help='Reset saved step, epoch and loss stats')
