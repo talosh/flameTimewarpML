@@ -186,7 +186,7 @@ class Model:
         class UpMix(Module):
             def __init__(self, c, cd):
                 super().__init__()
-                self.conv = torch.nn.ConvTranspose2d(cd, c, 8, 2, 2)
+                self.conv = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.up = torch.nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True)
                 self.relu = myPReLU(c)
@@ -198,7 +198,7 @@ class Model:
         class Mix(Module):
             def __init__(self, c, cd):
                 super().__init__()
-                self.conv0 = torch.nn.ConvTranspose2d(cd, c, 8, 2, 2)
+                self.conv0 = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
                 self.conv1 = torch.nn.Conv2d(c, c, 3, 1, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
