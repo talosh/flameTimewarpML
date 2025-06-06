@@ -481,6 +481,8 @@ class Model:
                 conf_list = [None] * 4
                 merged = [None] * 4
 
+                scale[0] = 1
+
                 flow1, mask1, conf1 = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
                 # with torch.no_grad():
                 flow2, mask2, conf2 = self.block0(img1, img0, f1, f0, 1-timestep, None, None, None, scale=scale[0])

@@ -2510,8 +2510,7 @@ def main():
             training_scale[2] = random.uniform(training_scale[1], 1)
         # else:
         #    training_scale = [5, 4, 3, 1]
-
-        training_scale[0] = 1
+        # training_scale[0] = 1
 
         data_time = time.time() - time_stamp
         time_stamp = time.time()
