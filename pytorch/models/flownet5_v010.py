@@ -424,8 +424,8 @@ class Model:
                 print (f'feat: {feat.shape}')
                 print (f'feat_deep: {feat_deep.shape}')
 
-                import sys
-                sys.exit()
+                # import sys
+                # sys.exit()
 
                 feat, _ = self.convblock1((feat, x_scalar))
                 feat_deep, _ = self.convblock_deep1((feat_deep, x_scalar))
