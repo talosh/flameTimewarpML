@@ -411,7 +411,7 @@ class Model:
                 x_scalar = timestep_tensor
                 # x_scalar = torch.cat([max_res, timestep_tensor], dim=1)
 
-                featF = self.conv0(hpass(imgs))
+                featF = self.conv0(hpass(x[:, :6, :, :]))
                 featF, _ = self.convblock1f((featF, x_scalar))
 
                 feat = self.conv1(x)
