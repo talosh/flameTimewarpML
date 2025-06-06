@@ -423,7 +423,16 @@ class Model:
                 feat, _ = self.convblock1((feat, x_scalar))
                 feat_deep, _ = self.convblock_deep1((feat_deep, x_scalar))
                 
+                print (f'featF: {featF.shape}')
+                print (f'feat: {feat.shape}')
+
                 feat = self.mix1f(featF, feat)
+
+                print (f'feat after  mix: {feat.shape}')
+
+                import sys
+                sys.exit()
+
                 feat_tmp = self.mix1(feat, feat_deep)
                 feat_deep = self.revmix1(feat, feat_deep)
 
