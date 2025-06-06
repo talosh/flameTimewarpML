@@ -420,6 +420,13 @@ class Model:
                 feat_deep = self.conv3(feat)
                 feat_deep = self.conv3(feat_deep)
 
+                print (f'featF: {featF.shape}')
+                print (f'feat: {feat.shape}')
+                print (f'feat_deep: {feat_deep.shape}')
+
+                import sys
+                sys.exit()
+
                 feat, _ = self.convblock1((feat, x_scalar))
                 feat_deep, _ = self.convblock_deep1((feat_deep, x_scalar))
                 
