@@ -418,6 +418,7 @@ class Model:
                 feat = self.conv1(x)
                 feat = self.conv2(feat)
                 feat_deep = self.conv3(feat)
+                feat_deep = self.conv3(feat_deep)
 
                 feat, _ = self.convblock1((feat, x_scalar))
                 feat_deep, _ = self.convblock_deep1((feat_deep, x_scalar))
