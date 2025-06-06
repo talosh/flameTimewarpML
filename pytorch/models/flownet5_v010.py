@@ -212,7 +212,7 @@ class Model:
         class DownMix(Module):
             def __init__(self, c, cd):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, cd, 5, 4, 2, padding_mode = 'reflect', bias=True)
+                self.conv = torch.nn.Conv2d(c, cd, 7, 4, 3, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
                 self.relu = myPReLU(cd)
 
