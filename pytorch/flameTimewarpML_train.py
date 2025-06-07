@@ -188,7 +188,6 @@ def get_dataset(
                 device = None, 
                 frame_size=448, 
                 max_window=9,
-                acescc_rate = 40,
                 generalize = 80,
                 repeat = 1,
                 sequential = False
@@ -197,7 +196,6 @@ def get_dataset(
             self.data_root = data_root
             self.batch_size = batch_size
             self.max_window = max_window
-            self.acescc_rate = acescc_rate
             self.generalize = generalize
             self.sequential = sequential
 
@@ -258,8 +256,6 @@ def get_dataset(
                 self.device = torch.device("mps") if platform.system() == 'Darwin' else torch.device(f'cuda')
             else:
                 self.device = device
-
-            print (f'ACEScc rate: {self.acescc_rate}%')
 
         def reshuffle(self):
             random.shuffle(self.train_descriptions)
@@ -681,12 +677,6 @@ def get_dataset(
                             img0 = gamma_up(img0, gamma=gamma)
                             img1 = gamma_up(img1, gamma=gamma)
                             img2 = gamma_up(img2, gamma=gamma)
-
-                # Convert to ACEScc
-                # if random.uniform(0, 1) < (self.acescc_rate / 100):
-                #    img0 = self.apply_acescct(img0)
-                #    img1 = self.apply_acescct(img1)
-                #    img2 = self.apply_acescct(img2)
                 
                 batch_img0.append(img0)
                 batch_img1.append(img1)
@@ -1879,7 +1869,6 @@ def main():
         device=device, 
         frame_size=frame_size,
         max_window=max_dataset_window,
-        acescc_rate = args.acescc,
         generalize=args.generalize,
         repeat=args.repeat,
         sequential = args.sequential
@@ -1893,7 +1882,6 @@ def main():
         device=device, 
         frame_size=frame_size,
         max_window=max_dataset_window,
-        acescc_rate = args.acescc,
         generalize=args.generalize,
         repeat=args.repeat,
         sequential = True
