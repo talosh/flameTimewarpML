@@ -175,7 +175,6 @@ def get_dataset(
         device = None, 
         frame_size=448, 
         max_window=9,
-        acescc_rate = 0,
         generalize = 80,
         repeat = 1,
         sequential = False
@@ -692,7 +691,6 @@ def get_dataset(
         device=device, 
         frame_size=frame_size, 
         max_window=max_window,
-        acescc_rate=acescc_rate,
         generalize=generalize,
         repeat=repeat,
         sequential = sequential
