@@ -2596,8 +2596,8 @@ def main():
                 conf = conf_list[i]
                 output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
 
-                output_compr = ACEScg2cct(compress(output_clean))
-                img1_compr = ACEScg2cct(compress(img1_orig))
+                output_compr = torch.clamp(compress(output_clean), 0, 1)
+                img1_compr = torch.clamp(compress(img1_orig), 0, 1)
 
                 loss_mask = variance_loss(mask, 0.1)
                 loss_conf = criterion_l1(conf, diffmatte(output_compr, img1_compr))
