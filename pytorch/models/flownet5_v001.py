@@ -136,6 +136,7 @@ class Model:
                     tanh_x + abs(tanh_x) * self.prelu(x)
                 )
                 return alpha * (x + beta)
+            
         class Head(Module):
             def __init__(self, c=32):
                 super(Head, self).__init__()
