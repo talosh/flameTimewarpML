@@ -683,10 +683,10 @@ def get_dataset(
                             img2 = gamma_up(img2, gamma=gamma)
 
                 # Convert to ACEScc
-                if random.uniform(0, 1) < (self.acescc_rate / 100):
-                    img0 = self.apply_acescct(img0)
-                    img1 = self.apply_acescct(img1)
-                    img2 = self.apply_acescct(img2)
+                # if random.uniform(0, 1) < (self.acescc_rate / 100):
+                #    img0 = self.apply_acescct(img0)
+                #    img1 = self.apply_acescct(img1)
+                #    img2 = self.apply_acescct(img2)
                 
                 batch_img0.append(img0)
                 batch_img1.append(img1)
@@ -2508,6 +2508,11 @@ def main():
         img1_orig = img1.detach().clone()
         img2_orig = img2.detach().clone()
 
+        if random.uniform(0, 1) < (args.acescc / 100):
+            img0 = ACEScg2cct(img0)
+            img1 = ACEScg2cct(img1)
+            img2 = ACEScg2cct(img2)
+
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
 
         '''
@@ -3066,6 +3071,10 @@ def main():
                         if args.eval_half:
                             eval_img0 = eval_img0.half()
                             eval_img2 = eval_img2.half()
+
+                        if args.acescc ==  100:
+                            eval_img0 = ACEScg2cct(eval_img0)
+                            eval_img2 = ACEScg2cct(eval_img2)
 
                         result = evalnet(
                             eval_img0, 
