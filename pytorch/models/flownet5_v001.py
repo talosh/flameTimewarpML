@@ -91,11 +91,10 @@ class Model:
             x = torch.where(
                 (x >= -1) & (x <= 1), scale * x,
                 torch.tanh(x)
-            )
-            x = (x + 1) / 2
+            ) + 0.01 * x
+            x = (0.99 * x / scale + 1) / 2
             x = x.to(dtype = src_dtype)
             return x
-
 
         def ACEScg2cct(image):
             condition = image <= 0.0078125
@@ -971,8 +970,8 @@ class Model:
                 size = max(img0.shape[2], img0.shape[3])
                 scale = find_scale(size)
 
-                img0 = ACEScg2cct(compress(img0))
-                img1 = ACEScg2cct(compress(img1))
+                img0 = compress(img0)
+                img1 = compress(img1)
 
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
