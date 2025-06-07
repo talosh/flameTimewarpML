@@ -25,7 +25,7 @@ class Model:
                     stride=stride,
                     padding=padding, 
                     dilation=dilation,
-                    padding_mode = 'zeros',
+                    padding_mode = 'reflect',
                     bias=True
                 ),
                 torch.nn.PReLU(out_planes, 0.2)
