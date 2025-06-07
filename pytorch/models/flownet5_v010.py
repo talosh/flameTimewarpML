@@ -121,7 +121,7 @@ class Model:
             value_if_true = (torch.log2(image) + 9.72) / 17.52
             ACEScct = torch.where(condition, value_if_true, ACEScct)
 
-            return ACEScct
+            return torch.clamp(ACEScct, 0, 1)
 
         def ACEScct2cg(image):
             condition = image < 0.155251141552511
@@ -470,8 +470,8 @@ class Model:
 
             def forward(self, img0, img1, timestep=0.5, scale=[1, 8, 4, 1], iterations=4, gt=None):
 
-                img0 = ACEScg2cct(compress(img0))
-                img1 = ACEScg2cct(compress(img1))
+                img0 = ACEScg2cct(img0)
+                img1 = ACEScg2cct(img1)
 
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
