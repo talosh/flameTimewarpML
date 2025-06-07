@@ -14,7 +14,6 @@ class Model:
         if torch is None:
             import torch
         Module = torch.nn.Module
-        backwarp_tenGrid = {}
         class myPReLU(Module):
             def __init__(self, c):
                 super().__init__()
@@ -49,14 +48,11 @@ class Model:
             )
 
         def warp(tenInput, tenFlow):
-            k = (str(tenFlow.device), str(tenFlow.size()))
-            if k not in backwarp_tenGrid:
-                tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
-                tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
-                backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
+            tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+            tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+            tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
             tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
-
-            g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+            g = (tenGrid + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bicubic', padding_mode='border', align_corners=True)
 
         def normalize(tensor, min_val, max_val):
@@ -493,7 +489,6 @@ class Model:
 
                 mask = torch.sigmoid(mask) #
                 conf = torch.sigmoid(conf) #
-                merged = warp(img0, flow[:, :2]) * mask + warp(img1, flow[:, 2:4]) * (1 - mask)
 
                 result = {
                     'flow_list': [flow],
