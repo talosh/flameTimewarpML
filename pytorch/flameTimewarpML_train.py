@@ -547,7 +547,18 @@ def get_dataset(
 
             return srgb_image
 
-        def apply_acescc(self, linear_image):
+        def apply_acescct(self, image):
+            condition = image <= 0.0078125
+            value_if_true = image * 10.5402377416545 + 0.0729055341958155 
+            ACEScct = torch.where(condition, value_if_true, image)
+
+            condition = image > 0.0078125
+            value_if_true = (torch.log2(image) + 9.72) / 17.52
+            ACEScct = torch.where(condition, value_if_true, ACEScct)
+
+            return torch.clamp(ACEScct, 0, 1)
+
+            '''
             const_neg16 = torch.tensor(2**-16, dtype=linear_image.dtype, device=linear_image.device)
             const_neg15 = torch.tensor(2**-15, dtype=linear_image.dtype, device=linear_image.device)
             const_972 = torch.tensor(9.72, dtype=linear_image.dtype, device=linear_image.device)
@@ -566,6 +577,7 @@ def get_dataset(
             del value_if_false
 
             return ACEScc
+            '''
 
         def __getitem__(self, index):
             train_data = self.getimg(index)
@@ -671,10 +683,10 @@ def get_dataset(
                             img2 = gamma_up(img2, gamma=gamma)
 
                 # Convert to ACEScc
-                # if random.uniform(0, 1) < (self.acescc_rate / 100):
-                #    img0 = self.apply_acescc(torch.clamp(img0, min=0.01))
-                #    img1 = self.apply_acescc(torch.clamp(img1, min=0.01))
-                #    img2 = self.apply_acescc(torch.clamp(img2, min=0.01))
+                if random.uniform(0, 1) < (self.acescc_rate / 100):
+                    img0 = self.apply_acescct(img0)
+                    img1 = self.apply_acescct(img1)
+                    img2 = self.apply_acescct(img2)
                 
                 batch_img0.append(img0)
                 batch_img1.append(img1)
@@ -1673,12 +1685,13 @@ def blur(img):
 def compress(x):
     src_dtype = x.dtype
     x = x.float()
+    x = x * 2 - 1
     scale = torch.tanh(torch.tensor(1.0))
     x = torch.where(
         (x >= -1) & (x <= 1), scale * x,
         torch.tanh(x)
     ) + 0.01 * x
-    x = (x + 1) / 2
+    x = (0.99 * x / scale + 1) / 2
     x = x.to(dtype = src_dtype)
     return x
 
@@ -1782,7 +1795,7 @@ def main():
     parser.add_argument('--resize_rate', type=check_range_percent, default=85, help='Percent of resized samples (0 - 100) (default: 85)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use nn.DataParallel')
     parser.add_argument('--freeze', action='store_true', dest='freeze', default=False, help='Freeze custom hardcoded parameters')
-    # parser.add_argument('--acescc', type=check_range_percent, default=49, help='Percentage of ACEScc encoded frames (default: 49))')
+    parser.add_argument('--acescc', type=check_range_percent, default=100, help='Percentage of ACEScc encoded frames (default: 100))')
     parser.add_argument('--generalize', type=check_range_percent, default=85, help='Generalization level (0 - 100) (default: 85)')
     parser.add_argument('--weight_decay', type=float, default=-1, help='AdamW weight decay (default: calculated from --generalize value)')
     parser.add_argument('--preview', type=int, default=100, help='Save preview each N steps (default: 100)')
@@ -1866,7 +1879,7 @@ def main():
         device=device, 
         frame_size=frame_size,
         max_window=max_dataset_window,
-        acescc_rate = 0, # args.acescc,
+        acescc_rate = args.acescc,
         generalize=args.generalize,
         repeat=args.repeat,
         sequential = args.sequential
@@ -1880,7 +1893,7 @@ def main():
         device=device, 
         frame_size=frame_size,
         max_window=max_dataset_window,
-        acescc_rate = 0, # args.acescc,
+        acescc_rate = args.acescc,
         generalize=args.generalize,
         repeat=args.repeat,
         sequential = True

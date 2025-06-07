@@ -108,7 +108,7 @@ class Model:
                 (x >= -1) & (x <= 1), scale * x,
                 torch.tanh(x)
             ) + 0.01 * x
-            x = (x + 1) / 2
+            x = (0.99 * x / scale + 1) / 2
             x = x.to(dtype = src_dtype)
             return x
 
@@ -470,8 +470,8 @@ class Model:
 
             def forward(self, img0, img1, timestep=0.5, scale=[1, 8, 4, 1], iterations=4, gt=None):
 
-                img0 = ACEScg2cct(img0)
-                img1 = ACEScg2cct(img1)
+                img0 = compress(img0)
+                img1 = compress(img1)
 
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
