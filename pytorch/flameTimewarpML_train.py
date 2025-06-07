@@ -1691,8 +1691,7 @@ def ACEScg2cct(image):
     value_if_true = (torch.log2(image) + 9.72) / 17.52
     ACEScct = torch.where(condition, value_if_true, ACEScct)
 
-    return ACEScct
-
+    return torch.clamp(ACEScct, 0, 1)
 
 def to_freq(x):
     n, c, h, w = x.shape
@@ -2596,7 +2595,7 @@ def main():
                 mask = mask_list[i]
                 conf = conf_list[i]
                 output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
-                
+
                 output_compr = ACEScg2cct(compress(output_clean))
                 img1_compr = ACEScg2cct(compress(img1_orig))
 
