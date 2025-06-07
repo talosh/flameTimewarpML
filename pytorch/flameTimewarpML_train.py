@@ -1682,6 +1682,18 @@ def compress(x):
     x = x.to(dtype = src_dtype)
     return x
 
+def ACEScg2cct(image):
+    condition = image <= 0.0078125
+    value_if_true = image * 10.5402377416545 + 0.0729055341958155 
+    ACEScct = torch.where(condition, value_if_true, image)
+
+    condition = image > 0.0078125
+    value_if_true = (torch.log2(image) + 9.72) / 17.52
+    ACEScct = torch.where(condition, value_if_true, ACEScct)
+
+    return ACEScct
+
+
 def to_freq(x):
     n, c, h, w = x.shape
     src_dtype = x.dtype
@@ -1707,7 +1719,6 @@ def fourier_loss_half_res(img1, img2):
 
     # Use L1 or L2 loss in Fourier domain
     return torch.nn.functional.l1_loss(mag1, mag2)
-
 
 def ap0_to_ap1(image):
     """
@@ -2585,29 +2596,33 @@ def main():
                 mask = mask_list[i]
                 conf = conf_list[i]
                 output_clean = warp(img0_orig, flow0) * mask + warp(img2_orig, flow1) * (1 - mask)
+                
+                output_compr = ACEScg2cct(compress(output_clean))
+                img1_compr = ACEScg2cct(compress(img1_orig))
+
                 loss_mask = variance_loss(mask, 0.1)
-                loss_conf = criterion_l1(conf, diffmatte(output_clean, img1_orig))
+                loss_conf = criterion_l1(conf, diffmatte(output_compr, img1_compr))
                 loss_l1 = criterion_l1(
-                    torch.nn.functional.interpolate(output_clean, scale_factor= 1. / scale, mode="bicubic", align_corners=True, antialias=True),
-                    torch.nn.functional.interpolate(img1_orig, scale_factor= 1. / scale, mode="bicubic", align_corners=True, antialias=True)
+                    torch.nn.functional.interpolate(output_compr, scale_factor= 1. / scale, mode="bicubic", align_corners=True, antialias=True),
+                    torch.nn.functional.interpolate(img1_compr, scale_factor= 1. / scale, mode="bicubic", align_corners=True, antialias=True)
                     ) # * scale
                 loss_lap = criterion_lap(
-                    output_clean,
-                    img1_orig
+                    output_compr,
+                    img1_compr
                     )
                 loss_LPIPS = loss_fn_alex(
-                    output_clean * 2 - 1, 
-                    img1_orig * 2 - 1
+                    output_compr * 2 - 1, 
+                    img1_compr * 2 - 1
                     )
                 loss_fourier = fourier_loss_half_res(
-                    output_clean,
-                    img1_orig
+                    output_compr,
+                    img1_compr
                 )
                 loss = loss + loss_l1 + loss_lap + loss_fourier + 1e-2*loss_mask + 1e-2*loss_conf + 1.4e-2 * (1 / (i + 1)) * float(torch.mean(loss_LPIPS).item())
 
-        diff_matte = diffmatte(output_clean, img1_orig)
-        loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
-        loss_l1 = criterion_l1(output_clean, img1_orig)
+        diff_matte = diffmatte(output_compr, img1_compr)
+        # loss_LPIPS = loss_fn_alex(output_clean * 2 - 1, img1_orig * 2 - 1)
+        # loss_l1 = criterion_l1(output_clean, img1_orig)
         loss = loss + loss_l1 + loss_lap + loss_fourier + 1e-2 * float(torch.mean(loss_LPIPS).item())
 
         if cur_comb is None:
