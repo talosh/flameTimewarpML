@@ -1677,7 +1677,7 @@ def compress(x):
     x = torch.where(
         (x >= -1) & (x <= 1), scale * x,
         torch.tanh(x)
-    )
+    ) + 0.01 * x
     x = (x + 1) / 2
     x = x.to(dtype = src_dtype)
     return x
