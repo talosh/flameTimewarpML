@@ -172,6 +172,7 @@ class Model:
 
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
+
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
