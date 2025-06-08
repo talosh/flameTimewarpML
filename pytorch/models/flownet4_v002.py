@@ -159,10 +159,8 @@ class Model:
                     warped_f1 = warp(f1, flow[:, 2:4])
                     x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-                    flow = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True) * 1. / scale
+                    flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True) * 1. / scale
                     x = torch.cat((x, flow), 1)
-
-                print (f'x shape: {x.shape}')
 
                 ph = self.maxdepth - (sh % self.maxdepth)
                 pw = self.maxdepth - (sw % self.maxdepth)
