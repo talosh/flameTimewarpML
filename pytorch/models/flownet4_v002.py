@@ -170,7 +170,7 @@ class Model:
                 timestep = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
 
                 feat = self.conv0(x)
-                feat = self.convblock((feat, timestep))
+                feat, _ = self.convblock((feat, timestep))
                 tmp = self.lastconv(feat)
 
                 tmp = torch.nn.functional.interpolate(tmp[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=True, antialias=True)
