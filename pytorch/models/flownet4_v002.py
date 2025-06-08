@@ -112,14 +112,15 @@ class Model:
             def __init__(self, c, dilation=1):
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = myPReLU(c)
                 self.mlp = FeatureModulator(1, c)
 
             def forward(self, x):
                 x_scalar = x[1]
                 x = x[0]
-                x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
+                x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + self.gamma * x)
                 return x, x_scalar
 
         class Flownet(Module):
