@@ -48,6 +48,7 @@ class Model:
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
+                self.maxdepth = 2
 
             def forward(self, x, feat=False):
                 n, c, h, w = x.shape
@@ -96,6 +97,7 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
+                self.maxdepth = 4
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
                 n, c, h, w = img0.shape
