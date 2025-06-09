@@ -19,20 +19,23 @@ class Model:
         class myPReLU(Module):
             def __init__(self, c):
                 super().__init__()
-                self.alpha = 0.2
-                self.beta = 0.69
+                self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.beta = torch.nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
                 self.prelu = torch.nn.PReLU(c, 0.2)
                 self.tanh = torch.nn.Tanh()
+                # self.elu = torch.nn.ELU()
 
             def forward(self, x):
-                x = x / self.alpha - self.beta
+                alpha = 0.2 * self.alpha.clamp(min=1e-8)
+                beta = 0.69 + self.beta
+                x = x / alpha - beta
                 tanh_x = self.tanh(x)
                 x = torch.where(
                     x > 0, 
                     x, 
                     tanh_x + abs(tanh_x) * self.prelu(x)
                 )
-                return self.alpha * (x + self.beta)
+                return alpha * (x + beta)
 
         class FeatureModulator(torch.nn.Module):
             def __init__(self, scalar_dim, feature_channels):
@@ -113,7 +116,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu = myPReLU(c)
+                self.relu = torch.nn.PReLU(c, 0.2)
                 self.mlp = FeatureModulator(1, c)
 
             def forward(self, x):
