@@ -217,7 +217,6 @@ class Model:
                     timestep,
                     mask,
                     conf,
-                    conf,
                     flow, 
                     scale=scale[1]
                 )
