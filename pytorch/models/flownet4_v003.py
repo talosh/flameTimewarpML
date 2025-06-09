@@ -202,8 +202,8 @@ class Model:
                 timestep = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
 
                 featF = self.conv0(x)
-                feat = self.conv1(x)
-                featD = self.conv2(x)
+                feat = self.conv1(featF)
+                featD = self.conv2(feat)
                 
                 featF, _ = self.convblock1((featF, timestep))
                 feat, _ = self.convblock2((feat, timestep))
