@@ -113,7 +113,7 @@ class Model:
         class Mix(Module):
             def __init__(self, cf, c, cd):
                 super().__init__()
-                self.convf = torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'reflect', bias=True)
+                self.convf = torch.nn.Conv2d(cf, c, 3, 2, 1, padding_mode = 'reflect', bias=True)
                 self.convd = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
                 self.alpha = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
