@@ -6,8 +6,8 @@
 class Model:
 
     info = {
-        'name': 'Flownet4_v001a',
-        'file': 'flownet4_v001a.py',
+        'name': 'Flownet4_v001',
+        'file': 'flownet4_v001.py',
         'ratio_support': True
     }
 
@@ -15,7 +15,6 @@ class Model:
         if torch is None:
             import torch
         Module = torch.nn.Module
-        backwarp_tenGrid = {}
 
         def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
             return torch.nn.Sequential(
