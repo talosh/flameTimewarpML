@@ -138,11 +138,11 @@ class Model:
                     myPReLU(c//2),
                     )
                 self.conv1 = torch.nn.Sequential(
-                    torch.nn.Conv2d(c//2, c, 3, 2, 1, padding_mode = 'reflect'),
+                    torch.nn.Conv2d(c//2, c//2, 3, 2, 1, padding_mode = 'reflect'),
                     torch.nn.PReLU(c, 0.2)
                 )
                 self.conv2 = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c, 3, 2, 1, padding_mode = 'reflect'),
+                    torch.nn.Conv2d(c//2, c, 3, 2, 1, padding_mode = 'reflect'),
                     torch.nn.PReLU(c, 0.2)
                 )
 
@@ -150,8 +150,8 @@ class Model:
                     ResConv(c//2),
                 )
                 self.convblock2 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                    ResConv(c//2),
+                    ResConv(c//2),
                 )
                 self.convblock3 = torch.nn.Sequential(
                     ResConv(c),
@@ -159,15 +159,15 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock4 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                    ResConv(c//2),
+                    ResConv(c//2),
                 )
 
-                self.down = DownMix(c//2, c)
-                self.up = UpMix(c, c)
+                self.down = DownMix(c//2, c//2)
+                self.up = UpMix(c//2, c)
 
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c//2, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
