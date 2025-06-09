@@ -74,7 +74,7 @@ class Model:
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bicubic', padding_mode='border', align_corners=True)
 
         class Head(Module):
-            def __init__(self, c=24):
+            def __init__(self, c=32):
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(3, c, 5, 2, 2),
