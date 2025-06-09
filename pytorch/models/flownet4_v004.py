@@ -159,17 +159,16 @@ class Model:
                     ResConv(c//2),
                 )
                 self.convblock2 = torch.nn.Sequential(
-                    ResConv(c//2),
-                    ResConv(c//2),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 self.convblock3 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
                 )
                 self.convblock4 = torch.nn.Sequential(
-                    ResConv(c//2),
-                    ResConv(c//2),
-                    ResConv(c//2),
+                    ResConv(c),
+                    ResConv(c),
                 )
 
                 self.down = DownMix(c//2, c//2)
