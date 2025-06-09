@@ -132,6 +132,7 @@ class Model:
                     torch.nn.Conv2d(in_planes, c//2, 5, 2, 2, padding_mode = 'zeros'),
                     myPReLU(c//2),
                     torch.nn.Conv2d(c//2, c, 3, 2, 1, padding_mode = 'reflect'),
+                    torch.nn.PReLU(c, 0.2)
                     )
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
@@ -197,7 +198,7 @@ class Model:
                 self.block3 = Flownet(8+16+6, c=64)
                 self.encode = Head()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1, gt=None):
+            def forward(self, img0, img1, timestep=0.5, scale=[12, 8, 4, 1], iterations=1, gt=None):
                 img0 = compress(img0)
                 img1 = compress(img1)
                 f0 = self.encode(img0)
