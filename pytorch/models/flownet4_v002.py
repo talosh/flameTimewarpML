@@ -130,7 +130,8 @@ class Model:
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
                     conv(in_planes, c//2, 5, 2, 2),
-                    torch.nn.Conv2d(c//2, c, 3, 2, 1),
+                    torch.nn.Conv2d(c//2, c, 5, 2, 2, padding_mode = 'reflect'),
+                    torch.nn.PReLU(c, 0.2)
                     )
                 self.convblock = torch.nn.Sequential(
                     ResConv(c),
