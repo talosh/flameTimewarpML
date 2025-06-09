@@ -139,7 +139,7 @@ class Model:
                     )
                 self.conv1 = torch.nn.Sequential(
                     torch.nn.Conv2d(c//2, c//2, 3, 2, 1, padding_mode = 'reflect'),
-                    torch.nn.PReLU(c, 0.2)
+                    torch.nn.PReLU(c//2, 0.2)
                 )
                 self.conv2 = torch.nn.Sequential(
                     torch.nn.Conv2d(c//2, c, 3, 2, 1, padding_mode = 'reflect'),
