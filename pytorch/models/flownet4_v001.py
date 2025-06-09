@@ -50,6 +50,12 @@ class Model:
                 self.relu = torch.nn.LeakyReLU(0.2, True)
 
             def forward(self, x, feat=False):
+                n, c, h, w = x.shape
+                ph = self.maxdepth - (h % self.maxdepth)
+                pw = self.maxdepth - (w % self.maxdepth)
+                padding = (0, pw, 0, ph)
+                x = torch.nn.functional.pad(x, padding)
+
                 x0 = self.cnn0(x)
                 x = self.relu(x0)
                 x1 = self.cnn1(x)
@@ -59,8 +65,7 @@ class Model:
                 x3 = self.cnn3(x)
                 if feat:
                     return [x0, x1, x2, x3]
-                return x3
-
+                return x3[:, :, :h, :w]
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
@@ -93,25 +98,33 @@ class Model:
                 )
 
             def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
+                n, c, h, w = img0.shape
+                sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
+
                 timestep = (img0[:, :1].clone() * 0 + 1) * timestep
                 
                 if flow is None:
                     x = torch.cat((img0, img1, f0, f1, timestep), 1)
-                    x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
                 else:
                     warped_img0 = warp(img0, flow[:, :2])
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
                     x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
-                    x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                    flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
+                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bilinear", align_corners=False)
+                    flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
+
+                ph = self.maxdepth - (sh % self.maxdepth)
+                pw = self.maxdepth - (sw % self.maxdepth)
+                padding = (0, pw, 0, ph)
+                x = torch.nn.functional.pad(x, padding, mode='constant')
 
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
-                tmp = torch.nn.functional.interpolate(tmp, scale_factor=scale, mode="bilinear", align_corners=False)
+                tmp = torch.nn.functional.interpolate(tmp[:, :, :sh, :sw], size=(h, w), mode="bilinear", align_corners=False)
                 flow = tmp[:, :4] * scale
                 mask = tmp[:, 4:5]
                 conf = tmp[:, 5:6]
