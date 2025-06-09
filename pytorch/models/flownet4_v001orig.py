@@ -1,16 +1,4 @@
-# Orig v001 changed to v002 main flow and signatures
-# Back from SiLU to LeakyReLU to test data flow
-# Warps moved to flownet forward
-# Different Tail from flownet 2lh (ConvTr 6x6, conv 1x1, ConvTr 4x4, conv 1x1)
-
 class Model:
-
-    info = {
-        'name': 'Flownet4_v001',
-        'file': 'flownet4_v001.py',
-        'ratio_support': True
-    }
-
     def __init__(self, status = dict(), torch = None):
         if torch is None:
             import torch
@@ -25,22 +13,18 @@ class Model:
                     stride=stride,
                     padding=padding, 
                     dilation=dilation,
-                    padding_mode = 'zeros',
+                    padding_mode = 'reflect',
                     bias=True
                 ),
                 torch.nn.LeakyReLU(0.2, True)
-                # torch.nn.SELU(inplace = True)
             )
 
         def warp(tenInput, tenFlow):
-            k = (str(tenFlow.device), str(tenFlow.size()))
-            if k not in backwarp_tenGrid:
-                tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
-                tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
-                backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
+            tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+            tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+            tenGrid = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
             tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
-
-            g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+            g = (tenGrid + tenFlow).permute(0, 2, 3, 1)
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
         class Head(Module):
@@ -51,6 +35,23 @@ class Model:
                 self.cnn2 = torch.nn.Conv2d(32, 32, 3, 1, 1)
                 self.cnn3 = torch.nn.ConvTranspose2d(32, 8, 4, 2, 1)
                 self.relu = torch.nn.LeakyReLU(0.2, True)
+
+                torch.nn.init.kaiming_normal_(self.cnn0.weight, mode='fan_in', nonlinearity='relu')
+                self.cnn0.weight.data *= 1e-2
+                if self.cnn0.bias is not None:
+                    torch.nn.init.constant_(self.cnn0.bias, 0)
+                torch.nn.init.kaiming_normal_(self.cnn1.weight, mode='fan_in', nonlinearity='relu')
+                self.cnn1.weight.data *= 1e-2
+                if self.cnn1.bias is not None:
+                    torch.nn.init.constant_(self.cnn1.bias, 0)
+                torch.nn.init.kaiming_normal_(self.cnn2.weight, mode='fan_in', nonlinearity='relu')
+                self.cnn2.weight.data *= 1e-2
+                if self.cnn2.bias is not None:
+                    torch.nn.init.constant_(self.cnn2.bias, 0)
+                torch.nn.init.kaiming_normal_(self.cnn3.weight, mode='fan_in', nonlinearity='relu')
+                self.cnn3.weight.data *= 1e-2
+                if self.cnn3.bias is not None:
+                    torch.nn.init.constant_(self.cnn3.bias, 0)
 
             def forward(self, x, feat=False):
                 x0 = self.cnn0(x)
@@ -67,9 +68,15 @@ class Model:
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'zeros', bias=True)
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)        
                 self.relu = torch.nn.LeakyReLU(0.2, True) # torch.nn.SELU(inplace = True)
+
+                torch.nn.init.kaiming_normal_(self.conv.weight, mode='fan_in', nonlinearity='relu')
+                self.conv.weight.data *= 1e-2
+                if self.conv.bias is not None:
+                    torch.nn.init.constant_(self.conv.bias, 0)
+
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
 
@@ -95,22 +102,11 @@ class Model:
                     torch.nn.PixelShuffle(2)
                 )
 
-            def forward(self, img0, img1, f0, f1, timestep, mask, flow, scale=1):
-                timestep = (img0[:, :1].clone() * 0 + 1) * timestep
-                
-                if flow is None:
-                    x = torch.cat((img0, img1, f0, f1, timestep), 1)
-                    x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
-                else:
-                    warped_img0 = warp(img0, flow[:, :2])
-                    warped_img1 = warp(img1, flow[:, 2:4])
-                    warped_f0 = warp(f0, flow[:, :2])
-                    warped_f1 = warp(f1, flow[:, 2:4])
-                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1)
-                    x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+            def forward(self, x, flow, scale=1):
+                x = torch.nn.functional.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
+                if flow is not None:
                     flow = torch.nn.functional.interpolate(flow, scale_factor= 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
                     x = torch.cat((x, flow), 1)
-
                 feat = self.conv0(x)
                 feat = self.convblock(feat)
                 tmp = self.lastconv(feat)
@@ -129,90 +125,85 @@ class Model:
                 self.block3 = Flownet(8+4+16, c=64)
                 self.encode = Head()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1):
+            def forward(self, img0, img1, timestep=0.5, scale=[8, 4, 2, 1], iterations=1):
+                gt = None
+                # return self.encode(img0)
                 img0 = img0
                 img1 = img1
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 
-                flow_list = [None] * 4
-                mask_list = [None] * 4
-                conf_list = [None] * 4
-                merged = [None] * 4
+                if not torch.is_tensor(timestep):
+                    timestep = (img0[:, :1].clone() * 0 + 1) * timestep
+                else:
+                    timestep = timestep.repeat(1, 1, img0.shape[2], img0.shape[3])
+                flow_list = []
+                merged = []
+                mask_list = []
+                conf_list = []
+                teacher_list = []
+                flow_list_teacher = []
+                warped_img0 = img0
+                warped_img1 = img1
+                flow = None
+                loss_cons = 0
+                stu = [self.block0, self.block1, self.block2, self.block3]
+                flow = None
+                for i in range(4):
+                    if flow is not None:
+                        flow_d, mask, conf = stu[i](torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask), 1), flow, scale=scale[i])
+                        flow = flow + flow_d
+                    else:
+                        flow, mask, conf = stu[i](torch.cat((img0, img1, f0, f1, timestep), 1), None, scale=scale[i])
 
-                flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, scale=scale[0])
+                    mask_list.append(mask)
+                    flow_list.append(flow)
+                    conf_list.append(conf)
+                    warped_img0 = warp(img0, flow[:, :2])
+                    warped_img1 = warp(img1, flow[:, 2:4])
+                    warped_f0 = warp(f0, flow[:, :2])
+                    warped_f1 = warp(f1, flow[:, 2:4])
+                    merged_student = (warped_img0, warped_img1)
+                    merged.append(merged_student)
+                conf = torch.sigmoid(torch.cat(conf_list, 1))
+                conf = conf / (conf.sum(1, True) + 1e-3)
+                if gt is not None:
+                    flow_teacher = 0
+                    mask_teacher = 0
+                    for i in range(4):
+                        flow_teacher += conf[:, i:i+1] * flow_list[i]
+                        mask_teacher += conf[:, i:i+1] * mask_list[i]
+                    warped_img0_teacher = warp(img0, flow_teacher[:, :2])
+                    warped_img1_teacher = warp(img1, flow_teacher[:, 2:4])
+                    mask_teacher = torch.sigmoid(mask_teacher)
+                    merged_teacher = warped_img0_teacher * mask_teacher + warped_img1_teacher * (1 - mask_teacher)
+                    teacher_list.append(merged_teacher)
+                    flow_list_teacher.append(flow_teacher)
 
-                flow_list[0] = flow.clone()
-                conf_list[0] = torch.sigmoid(conf.clone())
-                mask_list[0] = torch.sigmoid(mask.clone())
-                merged[0] = warp(img0, flow[:, :2]) * mask_list[0] + warp(img1, flow[:, 2:4]) * (1 - mask_list[0])
+                for i in range(4):
+                    mask_list[i] = torch.sigmoid(mask_list[i])
+                    merged[i] = merged[i][0] * mask_list[i] + merged[i][1] * (1 - mask_list[i])
+                    if gt is not None:
+                        loss_mask = ((merged[i] - gt).abs().mean(1, True) > (merged_teacher - gt).abs().mean(1, True) + 1e-2).float().detach()
+                        loss_cons += (((flow_teacher.detach() - flow_list[i]) ** 2).sum(1, True) ** 0.5 * loss_mask).mean() * 0.001
 
-                for iteration in range(iterations):
-                    flow_d, mask, conf = self.block1(
-                        img0, 
-                        img1,
-                        f0,
-                        f1,
-                        timestep,
-                        mask,
-                        flow, 
-                        scale=scale[1]
-                    )
-                    flow = flow + flow_d
-
-                flow_list[1] = flow.clone()
-                conf_list[1] = torch.sigmoid(conf.clone())
-                mask_list[1] = torch.sigmoid(mask.clone())
-                merged[1] = warp(img0, flow[:, :2]) * mask_list[1] + warp(img1, flow[:, 2:4]) * (1 - mask_list[1])
-
-                for iteration in range(iterations):
-                    flow_d, mask, conf = self.block2(
-                        img0, 
-                        img1,
-                        f0,
-                        f1,
-                        timestep,
-                        mask,
-                        flow, 
-                        scale=scale[2]
-                    )
-                    flow = flow + flow_d
-
-                flow_list[2] = flow.clone()
-                conf_list[2] = torch.sigmoid(conf.clone())
-                mask_list[2] = torch.sigmoid(mask.clone())
-                merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
-
-                for iteration in range(iterations):
-                    flow_d, mask, conf = self.block3(
-                        img0, 
-                        img1,
-                        f0,
-                        f1,
-                        timestep,
-                        mask,
-                        flow, 
-                        scale=scale[3]
-                    )
-                    flow = flow + flow_d
-
-                flow_list[3] = flow
-                conf_list[3] = torch.sigmoid(conf)
-                mask_list[3] = torch.sigmoid(mask)
-                merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
-
-                return flow_list, mask_list, conf_list, merged
+                return flow_list, mask_list, merged
 
         self.model = FlownetCas
         self.training_model = FlownetCas
 
     @staticmethod
     def get_info():
-        return Model.info
+        info = {
+            'name': 'Flownet4_v001',
+            'file': 'flownet4_v001.py',
+            'ratio_support': True
+        }
+        return info
 
     @staticmethod
     def get_name():
-        return Model.info.get('name')
+        return 'TWML_Flownet_v001'
 
     @staticmethod
     def input_channels(model_state_dict):
