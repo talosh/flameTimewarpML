@@ -177,12 +177,12 @@ class Model:
                 )
                 self.maxdepth = 4
 
-            def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
+            def forward(self, img0, img1, f0, f1, hp0, hp1, timestep, mask, conf, flow, scale=1):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
-                        
+
                 if flow is None:
-                    x = torch.cat((img0, img1, f0, f1), 1)
+                    x = torch.cat((img0, img1, f0, f1, hp0, hp1), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                     tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                     tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
@@ -193,15 +193,13 @@ class Model:
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    hp_img0 = hpass(img0)
-                    hp_img1 = hpass(img1)
                     x = torch.cat((
                         warped_img0, 
                         warped_img1, 
                         warped_f0, 
                         warped_f1, 
-                        hp_img0, 
-                        hp_img1, 
+                        hp0, 
+                        hp1, 
                         mask, 
                         conf
                         ), 1)
@@ -240,6 +238,8 @@ class Model:
                 img1 = compress(img1)
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
+                hp0 = hpass(img0)
+                hp1 = hpass(img1)
 
                 flow_list = [None] * 4
                 mask_list = [None] * 4
@@ -251,6 +251,8 @@ class Model:
                     img1,
                     f0,
                     f1,
+                    hp0,
+                    hp1,
                     timestep,
                     None,
                     None, 
@@ -267,6 +269,8 @@ class Model:
                     img1,
                     f0,
                     f1,
+                    hp0,
+                    hp1,
                     timestep,
                     mask,
                     conf,
@@ -289,6 +293,8 @@ class Model:
                     img1,
                     f0,
                     f1,
+                    hp0,
+                    hp1,
                     timestep,
                     mask,
                     conf,
@@ -309,6 +315,8 @@ class Model:
                     img1,
                     f0,
                     f1,
+                    hp0,
+                    hp1,
                     timestep,
                     mask,
                     conf,
