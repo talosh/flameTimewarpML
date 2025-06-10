@@ -64,7 +64,20 @@ class Model:
             x = (0.99 * x / scale + 1) / 2
             x = x.to(dtype = src_dtype)
             return x
-    
+
+        def normalize(tensor, min_val, max_val):
+            src_dtype = tensor.dtype
+            tensor = tensor.float()
+            t_min = tensor.min()
+            t_max = tensor.max()
+
+            if t_min == t_max:
+                return torch.full_like(tensor, (min_val + max_val) / 2.0)
+            
+            tensor = ((tensor - t_min) / (t_max - t_min)) * (max_val - min_val) + min_val
+            tensor = tensor.to(dtype = src_dtype)
+            return tensor
+
         def warp(tenInput, tenFlow):
             tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
             tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
@@ -96,10 +109,76 @@ class Model:
                 x = self.encode(x)[:, :, :h, :w]
                 return x
 
+        class HighPassFilter(Module):
+            def __init__(self):
+                super(HighPassFilter, self).__init__()
+                self.register_buffer('gkernel', self.gauss_kernel())
+
+            def gauss_kernel(self, channels=1):
+                kernel = torch.tensor([
+                    [1., 4., 6., 4., 1],
+                    [4., 16., 24., 16., 4.],
+                    [6., 24., 36., 24., 6.],
+                    [4., 16., 24., 16., 4.],
+                    [1., 4., 6., 4., 1.]
+                ])
+                kernel /= 256.
+                kernel = kernel.repeat(channels, 1, 1, 1)
+                return kernel
+
+            def conv_gauss(self, img, kernel):
+                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+                out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+                return out
+
+            def rgb_to_luminance(self, rgb):
+                weights = torch.tensor([0.299, 0.587, 0.114], device=rgb.device).view(1, 3, 1, 1)
+                return (rgb * weights).sum(dim=1, keepdim=True)
+
+            def normalize(self, tensor, min_val, max_val):
+                tensor_min = tensor.min()
+                tensor_max = tensor.max()
+                tensor = (tensor - tensor_min) / (tensor_max - tensor_min + 1e-8)
+                tensor = tensor * (max_val - min_val) + min_val
+                return tensor
+
+            def forward(self, img):
+                # self.gkernel = self.gkernel.to(device=img.device, dtype=img.dtype)
+                img = self.rgb_to_luminance(img)
+                hp = img - self.conv_gauss(img, self.gkernel) + 0.5
+                hp = torch.clamp(hp, 0.48, 0.52)
+                hp = self.normalize(hp, 0, 1)
+                return hp
+
+        class BlurFilter(Module):
+            def __init__(self):
+                super(BlurFilter, self).__init__()
+                self.register_buffer('gkernel', self.gauss_kernel())
+
+            def gauss_kernel(self, channels=2):
+                kernel = torch.tensor([
+                    [1., 4., 6., 4., 1],
+                    [4., 16., 24., 16., 4.],
+                    [6., 24., 36., 24., 6.],
+                    [4., 16., 24., 16., 4.],
+                    [1., 4., 6., 4., 1.]
+                ])
+                kernel /= 256.
+                kernel = kernel.repeat(channels, 1, 1, 1)
+                return kernel
+
+            def conv_gauss(self, img, kernel):
+                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+                out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+                return out
+
+            def forward(self, img):
+                return self.conv_gauss(img, self.gkernel)
+
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
                 self.mlp = FeatureModulator(1, c)
@@ -109,6 +188,7 @@ class Model:
                 x = x[0]
                 x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
                 return x, x_scalar
+
         class ResUp(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
@@ -121,6 +201,19 @@ class Model:
                 x = self.relu(self.conv(x))
                 return x, x_scalar
 
+        class ResConv5(Module):
+            def __init__(self, c, dilation=1):
+                super().__init__()
+                self.conv = torch.nn.Conv2d(c, c, 5, 1, 2, padding_mode = 'reflect', bias=True)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.relu = torch.nn.PReLU(c, 0.2)
+                self.mlp = FeatureModulator(1, c)
+
+            def forward(self, x):
+                x_scalar = x[1]
+                x = x[0]
+                x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
+                return x, x_scalar
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
@@ -145,14 +238,15 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
+                self.blur = BlurFilter()
                 self.maxdepth = 4
 
-            def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
+            def forward(self, img0, img1, f0, f1, hp0, hp1, timestep, mask, conf, flow, scale=1):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
-                        
+
                 if flow is None:
-                    x = torch.cat((img0, img1, f0, f1), 1)
+                    x = torch.cat((img0, img1, f0, f1, hp0, hp1), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                     tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                     tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
@@ -163,7 +257,18 @@ class Model:
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask, conf), 1)
+                    warped_h0 = warp(hp0, self.blur(flow[:, :2]) / 2)
+                    warped_h1 = warp(hp1, self.blur(flow[:, 2:4]) / 2)
+                    x = torch.cat((
+                        warped_img0, 
+                        warped_img1, 
+                        warped_f0, 
+                        warped_f1, 
+                        warped_h0,
+                        warped_h1,
+                        mask, 
+                        conf
+                        ), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True) * 1. / scale
                     x = torch.cat((x, flow), 1)
@@ -188,15 +293,19 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = Flownet(6+16+2, c=192)
-                self.block1 = Flownet(6+16+2+4, c=128)
-                self.block2 = Flownet(6+16+2+4, c=96)
-                self.block3 = Flownet(6+16+2+4, c=64)
+                self.block0 = Flownet(6+16+2+2, c=192)
+                self.block1 = Flownet(6+16+2+4+2, c=128)
+                self.block2 = Flownet(6+16+2+4+2, c=96)
+                self.block3 = Flownet(6+16+2+4+2, c=64)
                 self.encode = Head()
+                self.hpass = HighPassFilter()
 
             def forward(self, img0, img1, timestep=0.5, scale=[12, 8, 4, 1], iterations=1, gt=None):
                 img0 = compress(img0)
                 img1 = compress(img1)
+                hp0 = self.hpass(img0)
+                hp1 = self.hpass(img1)
+
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 
@@ -210,6 +319,8 @@ class Model:
                     img1,
                     f0,
                     f1,
+                    hp0,
+                    hp1,
                     timestep,
                     None,
                     None, 
@@ -226,6 +337,8 @@ class Model:
                     img1,
                     f0,
                     f1,
+                    hp0,
+                    hp1,
                     timestep,
                     mask,
                     conf,
@@ -248,6 +361,8 @@ class Model:
                     img1,
                     f0,
                     f1,
+                    hp0,
+                    hp1,
                     timestep,
                     mask,
                     conf,
@@ -268,6 +383,8 @@ class Model:
                     img1,
                     f0,
                     f1,
+                    hp0,
+                    hp1,
                     timestep,
                     mask,
                     conf,
