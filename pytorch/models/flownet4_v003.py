@@ -139,10 +139,8 @@ class Model:
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
-                    ResConv(c),
                 )
                 self.convblock2 = torch.nn.Sequential(
-                    ResConv(c),
                     ResConv(c),
                     ResConv(c),
                 )
