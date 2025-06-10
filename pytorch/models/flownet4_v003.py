@@ -195,10 +195,10 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = Flownet(6+16+2, c=48)
-                self.block1 = Flownet(6+16+2+4, c=48)
-                self.block2 = Flownet(6+16+2+4, c=48)
-                self.block3 = Flownet(6+16+2+4, c=48)
+                self.block0 = Flownet(6+16+2, c=96)
+                self.block1 = Flownet(6+16+2+4, c=96)
+                self.block2 = Flownet(6+16+2+4, c=96)
+                self.block3 = Flownet(6+16+2+4, c=96)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[12, 8, 4, 1], iterations=1, gt=None):
