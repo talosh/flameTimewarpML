@@ -114,7 +114,7 @@ class Model:
                 super().__init__()
                 self.conv = torch.nn.ConvTranspose2d(c, c, 4, 2, 1)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.up = torch.nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True)
+                self.up = torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
                 self.mlp = FeatureModulator(1, c)
 
