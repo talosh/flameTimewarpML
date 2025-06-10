@@ -112,9 +112,8 @@ class Model:
         class HighPassFilter(Module):
             def __init__(self):
                 super(HighPassFilter, self).__init__()
-                self.gkernel = self.gauss_kernel()
-                self.gkernel = self.gkernel.to(device=self.device, dtype=self.dtype)
-
+                self.register_buffer('gkernel', self.gauss_kernel())
+                
             def gauss_kernel(self, channels=1):
                 kernel = torch.tensor([
                     [1., 4., 6., 4., 1],
@@ -153,7 +152,7 @@ class Model:
 
         class BlurFilter(Module):
             def __init__(self):
-                super(HighPassFilter, self).__init__()
+                super(BlurFilter, self).__init__()
                 self.gkernel = self.gauss_kernel()
                 self.gkernel = self.gkernel.to(device=self.device, dtype=self.dtype)
 
