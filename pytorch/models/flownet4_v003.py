@@ -94,12 +94,17 @@ class Model:
                 out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
                 return out
 
+            def rgb_to_luminance(rgb):
+                weights = torch.tensor([0.299, 0.587, 0.114], device=rgb.device).view(1, 3, 1, 1)
+                return (rgb * weights).sum(dim=1).unsqueeze(1)
+
             gkernel = gauss_kernel()
             gkernel = gkernel.to(device=img.device, dtype=img.dtype)
+            img = rgb_to_luminance(img)
             hp = img - conv_gauss(img, gkernel) + 0.5
             hp = torch.clamp(hp, 0.48, 0.52)
             hp = normalize(hp, 0, 1)
-            hp = torch.max(hp, dim=1, keepdim=True).values
+            # hp = torch.max(hp, dim=1, keepdim=True).values
             return hp
 
         def warp(tenInput, tenFlow):
