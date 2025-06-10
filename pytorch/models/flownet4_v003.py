@@ -131,9 +131,11 @@ class Model:
                     torch.nn.Conv2d(c//2, c, 3, 2, 1, padding_mode = 'reflect'),
                     torch.nn.PReLU(c, 0.2),
                     )
-                self.convblock1 = torch.nn.Sequential(
+                self.conv1 = torch.nn.Sequential(
                     torch.nn.Conv2d(c//2, c, 3, 2, 1, padding_mode = 'reflect'),
                     torch.nn.PReLU(c, 0.2),
+                )
+                self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
@@ -179,6 +181,7 @@ class Model:
                 timestep = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
 
                 x = self.conv0(x)
+                feat = self.conv1(x)
                 feat, _ = self.convblock1((x, timestep))
                 x = self.mix(x, feat)
                 x, _ = self.convblock2((x, timestep))
