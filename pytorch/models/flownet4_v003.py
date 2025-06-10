@@ -119,8 +119,8 @@ class Model:
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
 
-            def forward(self, x, y):
-                x = self.relu(self.conv(y) * self.beta + self.alpha * self.conv1(x))
+            def forward(self, x, feat):
+                x = self.relu(self.conv0(feat) * self.beta + self.alpha * self.conv1(x))
                 return x
             
         class Flownet(Module):
