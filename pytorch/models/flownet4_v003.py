@@ -182,7 +182,7 @@ class Model:
 
                 x = self.conv0(x)
                 feat = self.conv1(x)
-                feat, _ = self.convblock1((x, timestep))
+                feat, _ = self.convblock1((feat, timestep))
                 x = self.mix(x, feat)
                 x, _ = self.convblock2((x, timestep))
                 x = self.lastconv(x)
