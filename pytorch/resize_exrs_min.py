@@ -28,16 +28,13 @@ except:
 def read_image_file(file_path, header_only = False):
     result = {'spec': None, 'image_data': None}
     inp = oiio.ImageInput.open(file_path)
-    if inp:
+    if inp :
         spec = inp.spec()
         result['spec'] = spec
         if not header_only:
             channels = spec.nchannels
-            result['image_data'] = inp.read_image(0, 0, 0, channels)
-            # img_data = inp.read_image(0, 0, 0, channels) #.transpose(1, 0, 2)
-            # result['image_data'] = np.ascontiguousarray(img_data)
+            result['image_data'] = inp.read_image(0, 0, 0, channels).transpose(1, 0, 2)
         inp.close()
-        # del inp
     return result
 
 def write_image_file(file_path, image_data, image_spec):
@@ -96,7 +93,7 @@ def resize_image(tensor, new_h, new_w):
     tensor = tensor.permute(2, 0, 1).unsqueeze(0)
 
     # Resize
-    resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bicubic', align_corners=False)
+    resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bicubic', align_corners=True, antialias=True)
 
     # Adjust tensor shape back to [h, w, c]
     resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
@@ -105,19 +102,37 @@ def resize_image(tensor, new_h, new_w):
 
 def halve(exr_file_path, new_h):
     device = torch.device('cuda')
-    exr_data = read_openexr_file(exr_file_path)
-    h = exr_data['shape'][0]
-    w = exr_data['shape'][1]
 
+    result = read_image_file(exr_file_path)
+    img0 = result['image_data']
+    spec = result['spec']
+    h, w = img0.shape[0], img0.shape[1]
     aspect_ratio = w / h
     new_w = int(new_h * aspect_ratio)
 
-    img0 = exr_data['image_data']
     img0 = torch.from_numpy(img0)
     img0 = img0.to(device = device, dtype = torch.float32)
     img0 = resize_image(img0, new_h, new_w)
-    img0 = img0.to(dtype=torch.half)
-    write_exr(img0.cpu().detach().numpy(), exr_file_path, half_float = True)
+    image_data_for_write = img0.permute(2, 0, 1).contiguous().cpu().numpy()
+
+    new_spec = oiio.ImageSpec(spec)  # copy metadata
+    new_spec.width = new_w
+    new_spec.height = new_h
+    new_spec.nchannels = img0.shape[2]
+    new_spec.set_format(oiio.TypeDesc.TypeHalf)
+    new_spec.attribute("compression", "piz")
+
+    out = oiio.ImageOutput.create(exr_file_path)
+    if not out:
+        raise RuntimeError(f"Could not create output for {exr_file_path}")
+
+    if not out.open(exr_file_path, new_spec):
+        raise RuntimeError(f"Failed to open output file {exr_file_path}")
+    
+    if not out.write_image(image_data_for_write):
+        raise RuntimeError(f"Failed to write image to {exr_file_path}")
+
+    out.close()
     del img0
 
 def main():
