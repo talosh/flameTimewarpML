@@ -109,39 +109,41 @@ class Model:
                 x = x[0]
                 x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
                 return x, x_scalar
-        class ResUp(Module):
+
+        class Mix(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
                 self.conv = torch.nn.ConvTranspose2d(c, c, 4, 2, 1)
+                self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.up = torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
-                self.mlp = FeatureModulator(1, c)
 
-            def forward(self, x):
-                x_scalar = x[1]
-                x = x[0]
-                x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + self.up(x))
-                return x, x_scalar
+            def forward(self, x, y):
+                x = self.relu(self.conv(y) * self.beta + self.alpha * x)
+                return x
+            
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
                     torch.nn.Conv2d(in_planes, c//2, 5, 2, 2, padding_mode = 'zeros'),
                     myPReLU(c//2),
-                    torch.nn.Conv2d(c//2, c, 5, 4, 2, padding_mode = 'reflect'),
+                    torch.nn.Conv2d(c//2, c, 3, 2, 1, padding_mode = 'reflect'),
                     torch.nn.PReLU(c, 0.2),
                     )
-                self.convblock = torch.nn.Sequential(
+                self.convblock1 = torch.nn.Sequential(
+                    torch.nn.Conv2d(c//2, c, 3, 2, 1, padding_mode = 'reflect'),
+                    torch.nn.PReLU(c, 0.2),
                     ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResUp(c),
                     ResConv(c),
                     ResConv(c),
                 )
+                self.convblock2 = torch.nn.Sequential(
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                )
+                self.mix = Mix(c)
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
@@ -176,14 +178,16 @@ class Model:
 
                 timestep = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
 
-                feat = self.conv0(x)
-                feat, _ = self.convblock((feat, timestep))
-                tmp = self.lastconv(feat)
+                x = self.conv0(x)
+                feat, _ = self.convblock1((x, timestep))
+                x = self.mix(x, feat)
+                x, _ = self.convblock2((x, timestep))
+                x = self.lastconv(x)
 
-                tmp = torch.nn.functional.interpolate(tmp[:, :, :sh, :sw], size=(h, w), mode="bicubic", align_corners=True, antialias=True)
-                flow = tmp[:, :4] * scale
-                mask = tmp[:, 4:5]
-                conf = tmp[:, 5:6]
+                x = torch.nn.functional.interpolate(x[:, :, :sh, :sw], size=(h, w), mode="bicubic", align_corners=True, antialias=True)
+                flow = x[:, :4] * scale
+                mask = x[:, 4:5]
+                conf = x[:, 5:6]
                 return flow, mask, conf
 
         class FlownetCas(Module):
