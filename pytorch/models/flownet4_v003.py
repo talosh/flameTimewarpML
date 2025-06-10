@@ -113,6 +113,7 @@ class Model:
             def __init__(self):
                 super(HighPassFilter, self).__init__()
                 self.gkernel = self.gauss_kernel()
+                self.gkernel = self.gkernel.to(device=self.device, dtype=self.dtype)
 
             def gauss_kernel(self, channels=1):
                 kernel = torch.tensor([
@@ -143,12 +144,38 @@ class Model:
                 return tensor
 
             def forward(self, img):
-                self.gkernel = self.gkernel.to(device=img.device, dtype=img.dtype)
+                # self.gkernel = self.gkernel.to(device=img.device, dtype=img.dtype)
                 img = self.rgb_to_luminance(img)
                 hp = img - self.conv_gauss(img, self.gkernel) + 0.5
                 hp = torch.clamp(hp, 0.48, 0.52)
                 hp = self.normalize(hp, 0, 1)
                 return hp
+
+        class BlurFilter(Module):
+            def __init__(self):
+                super(HighPassFilter, self).__init__()
+                self.gkernel = self.gauss_kernel()
+                self.gkernel = self.gkernel.to(device=self.device, dtype=self.dtype)
+
+            def gauss_kernel(self, channels=1):
+                kernel = torch.tensor([
+                    [1., 4., 6., 4., 1],
+                    [4., 16., 24., 16., 4.],
+                    [6., 24., 36., 24., 6.],
+                    [4., 16., 24., 16., 4.],
+                    [1., 4., 6., 4., 1.]
+                ])
+                kernel /= 256.
+                kernel = kernel.repeat(channels, 1, 1, 1)
+                return kernel
+
+            def conv_gauss(self, img, kernel):
+                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+                out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+                return out
+
+            def forward(self, img):
+                return self.conv_gauss(img, self.gkernel)
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
@@ -200,8 +227,6 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
-                self.down = torch.nn.Upsample(scale_factor=1/4, mode='bilinear', align_corners=True)
-                self.up = torch.nn.Upsample(scale_factor=4, mode='bilinear', align_corners=True)
                 self.maxdepth = 4
 
             def forward(self, img0, img1, f0, f1, hp0, hp1, timestep, mask, conf, flow, scale=1):
