@@ -113,13 +113,14 @@ class Model:
         class Mix(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
-                self.conv = torch.nn.ConvTranspose2d(c, c, 4, 2, 1)
+                self.conv0 = torch.nn.ConvTranspose2d(c, c, 4, 2, 1)
+                self.conv1 = torch.nn.Conv2d(c, c, 1, 1, 1)
                 self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
 
             def forward(self, x, y):
-                x = self.relu(self.conv(y) * self.beta + self.alpha * x)
+                x = self.relu(self.conv(y) * self.beta + self.alpha * self.conv1(x))
                 return x
             
         class Flownet(Module):
@@ -150,7 +151,7 @@ class Model:
                     torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
-                self.maxdepth = 4
+                self.maxdepth = 8
 
             def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
                 n, c, h, w = img0.shape
