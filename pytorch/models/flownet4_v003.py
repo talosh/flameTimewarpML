@@ -236,12 +236,14 @@ class Model:
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[12, 8, 4, 1], iterations=1, gt=None):
-                img0 = compress(img0)
-                img1 = compress(img1)
+                with torch.no_grad():
+                    img0 = compress(img0)
+                    img1 = compress(img1)
+                    hp0 = hpass(img0)
+                    hp1 = hpass(img1)
+
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
-                hp0 = hpass(img0)
-                hp1 = hpass(img1)
 
                 flow_list = [None] * 4
                 mask_list = [None] * 4
