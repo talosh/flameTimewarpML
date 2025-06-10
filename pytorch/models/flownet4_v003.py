@@ -245,8 +245,8 @@ class Model:
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    warped_h0 = warp(hp0, self.up(self.down(flow[:, :2])) / 2)
-                    warped_h1 = warp(hp1, self.up(self.down(flow[:, 2:4])) / 2)
+                    warped_h0 = warp(hp0, flow[:, :2] / 2)
+                    warped_h1 = warp(hp1, flow[:, 2:4] / 2)
                     x = torch.cat((
                         warped_img0, 
                         warped_img1, 
