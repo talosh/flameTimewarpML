@@ -6,8 +6,8 @@
 class Model:
 
     info = {
-        'name': 'Flownet4_v004',
-        'file': 'flownet4_v004.py',
+        'name': 'Flownet4_v003',
+        'file': 'flownet4_v003.py',
         'ratio_support': True
     }
 
@@ -74,14 +74,14 @@ class Model:
             return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bicubic', padding_mode='border', align_corners=True)
 
         class Head(Module):
-            def __init__(self, c=24):
+            def __init__(self, c=32):
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(3, c, 5, 2, 2),
                     myPReLU(c),
-                    torch.nn.Conv2d(c, c, 5, 1, 2, padding_mode = 'reflect'),
+                    torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect'),
                     torch.nn.PReLU(c, 0.2),
-                    torch.nn.Conv2d(c, c, 5, 1, 2, padding_mode = 'reflect'),
+                    torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode = 'reflect'),
                     torch.nn.PReLU(c, 0.2),
                     torch.nn.ConvTranspose2d(c, 8, 4, 2, 1)
                 )
@@ -97,10 +97,9 @@ class Model:
                 return x
 
         class ResConv(Module):
-            def __init__(self, c):
+            def __init__(self, c, dilation=1):
                 super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 5, 1, 2, padding_mode = 'reflect')
-                self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
                 self.mlp = FeatureModulator(1, c)
@@ -108,50 +107,33 @@ class Model:
             def forward(self, x):
                 x_scalar = x[1]
                 x = x[0]
-                x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + self.alpha * x)
+                x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
                 return x, x_scalar
 
-        class UpMix(Module):
-            def __init__(self, c, cd):
+        class Mix(Module):
+            def __init__(self, cf, c, cd):
                 super().__init__()
-                self.conv = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
-                self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.convf = torch.nn.Conv2d(cf, c, 3, 2, 1, padding_mode = 'reflect', bias=True)
+                self.convd = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
+                self.alpha = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
 
-            def forward(self, x, x_deep):
-                return self.relu(self.conv(x_deep) * self.beta + self.alpha * x)
-
-        class DownMix(Module):
-            def __init__(self, c, cd):
-                super().__init__()
-                self.conv = torch.nn.Conv2d(c, cd, 5, 2, 2, padding_mode = 'reflect', bias=True)
-                self.alpha = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.beta = torch.nn.Parameter(torch.ones((1, cd, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.PReLU(cd, 0.2)
-
-            def forward(self, x, x_deep):
-                return self.relu(self.conv(x) * self.beta + self.alpha * x_deep)
-
+            def forward(self, xf, x, xd):
+                return self.relu(self.convf(xf) * self.alpha + self.convd(xd) * self.beta + x)
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
                     torch.nn.Conv2d(in_planes, c//2, 5, 2, 2, padding_mode = 'zeros'),
                     myPReLU(c//2),
-                    torch.nn.Conv2d(c//2, c//2, 5, 1, 2, padding_mode = 'reflect'),
-                    torch.nn.PReLU(c//2, 0.2)
                     )
                 self.conv1 = torch.nn.Sequential(
-                    torch.nn.Conv2d(c//2, c//2, 5, 2, 2, padding_mode = 'reflect'),
-                    torch.nn.PReLU(c//2, 0.2),
-                    torch.nn.Conv2d(c//2, c//2, 5, 1, 2, padding_mode = 'reflect'),
-                    torch.nn.PReLU(c//2, 0.2)
+                    torch.nn.Conv2d(c//2, c, 3, 2, 1, padding_mode = 'reflect'),
+                    torch.nn.PReLU(c, 0.2)
                 )
                 self.conv2 = torch.nn.Sequential(
-                    torch.nn.Conv2d(c//2, c, 5, 2, 2, padding_mode = 'reflect'),
-                    torch.nn.PReLU(c, 0.2),
-                    torch.nn.Conv2d(c, c, 5, 1, 2, padding_mode = 'reflect'),
+                    torch.nn.Conv2d(c, c, 3, 2, 1, padding_mode = 'reflect'),
                     torch.nn.PReLU(c, 0.2)
                 )
 
@@ -165,17 +147,18 @@ class Model:
                 self.convblock3 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 self.convblock4 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
                 )
 
-                self.down = DownMix(c//2, c//2)
-                self.up = UpMix(c//2, c)
+                self.mix = Mix(c//2, c, c)
 
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c//2, 4*6, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
                     torch.nn.PixelShuffle(2)
                 )
                 self.maxdepth = 8
@@ -217,8 +200,7 @@ class Model:
                 feat, _ = self.convblock2((feat, timestep))
                 featD, _ = self.convblock3((featD, timestep))
 
-                feat = self.up(feat, featD)
-                feat = self.down(featF, feat)
+                feat = self.mix(featF, feat, featD)
 
                 feat, _ = self.convblock4((feat, timestep))
                 tmp = self.lastconv(feat)
