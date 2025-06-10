@@ -155,7 +155,7 @@ class Model:
                 super(BlurFilter, self).__init__()
                 self.register_buffer('gkernel', self.gauss_kernel())
 
-            def gauss_kernel(self, channels=1):
+            def gauss_kernel(self, channels=2):
                 kernel = torch.tensor([
                     [1., 4., 6., 4., 1],
                     [4., 16., 24., 16., 4.],
