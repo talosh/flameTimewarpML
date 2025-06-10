@@ -96,7 +96,7 @@ class Model:
 
             def rgb_to_luminance(rgb):
                 weights = torch.tensor([0.299, 0.587, 0.114], device=rgb.device).view(1, 3, 1, 1)
-                return (rgb * weights).sum(dim=1).unsqueeze(1)
+                return (rgb * weights).sum(dim=1, keepdim=True)
 
             gkernel = gauss_kernel()
             gkernel = gkernel.to(device=img.device, dtype=img.dtype)
