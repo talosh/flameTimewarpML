@@ -2697,10 +2697,12 @@ def main():
                                 scale_mode='cycle'              # Apply scaling once per cycle
                             )
 
+        '''
         if platform.system() == 'Darwin':
             torch.mps.synchronize()
         else:
             torch.cuda.synchronize(device=device)
+        '''
 
         train_time = time.time() - time_stamp
         time_stamp = time.time()
@@ -2981,7 +2983,7 @@ def main():
             original_state_dict = deepcopy(flownet.state_dict())
             if args.all_gpus:
                 original_state_dict = convert_from_data_parallel(original_state_dict)
-
+            
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
             elif torch.backends.mps.is_available():
