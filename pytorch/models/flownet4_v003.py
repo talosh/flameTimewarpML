@@ -78,35 +78,6 @@ class Model:
             tensor = tensor.to(dtype = src_dtype)
             return tensor
 
-        def hpass(img):
-            def gauss_kernel(size=5, channels=1):
-                kernel = torch.tensor([[1., 4., 6., 4., 1],
-                                    [4., 16., 24., 16., 4.],
-                                    [6., 24., 36., 24., 6.],
-                                    [4., 16., 24., 16., 4.],
-                                    [1., 4., 6., 4., 1.]])
-                kernel /= 256.
-                kernel = kernel.repeat(channels, 1, 1, 1)
-                return kernel
-            
-            def conv_gauss(img, kernel):
-                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
-                out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
-                return out
-
-            def rgb_to_luminance(rgb):
-                weights = torch.tensor([0.299, 0.587, 0.114], device=rgb.device).view(1, 3, 1, 1)
-                return (rgb * weights).sum(dim=1, keepdim=True)
-
-            gkernel = gauss_kernel()
-            gkernel = gkernel.to(device=img.device, dtype=img.dtype)
-            img = rgb_to_luminance(img)
-            hp = img - conv_gauss(img, gkernel) + 0.5
-            hp = torch.clamp(hp, 0.48, 0.52)
-            hp = normalize(hp, 0, 1)
-            # hp = torch.max(hp, dim=1, keepdim=True).values
-            return hp
-
         def warp(tenInput, tenFlow):
             tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
             tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
@@ -137,6 +108,47 @@ class Model:
                 x = torch.nn.functional.pad(x, padding)
                 x = self.encode(x)[:, :, :h, :w]
                 return x
+
+        class HighPassFilter(Module):
+            def __init__(self):
+                super(HighPassFilter, self).__init__()
+                self.gkernel = self.gauss_kernel()
+
+            def gauss_kernel(self, channels=1):
+                kernel = torch.tensor([
+                    [1., 4., 6., 4., 1],
+                    [4., 16., 24., 16., 4.],
+                    [6., 24., 36., 24., 6.],
+                    [4., 16., 24., 16., 4.],
+                    [1., 4., 6., 4., 1.]
+                ])
+                kernel /= 256.
+                kernel = kernel.repeat(channels, 1, 1, 1)
+                return kernel
+
+            def conv_gauss(self, img, kernel):
+                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+                out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+                return out
+
+            def rgb_to_luminance(self, rgb):
+                weights = torch.tensor([0.299, 0.587, 0.114], device=rgb.device).view(1, 3, 1, 1)
+                return (rgb * weights).sum(dim=1, keepdim=True)
+
+            def normalize(self, tensor, min_val, max_val):
+                tensor_min = tensor.min()
+                tensor_max = tensor.max()
+                tensor = (tensor - tensor_min) / (tensor_max - tensor_min + 1e-8)
+                tensor = tensor * (max_val - min_val) + min_val
+                return tensor
+
+            def forward(self, img):
+                self.gkernel = self.gkernel.to(device=img.device, dtype=img.dtype)
+                img = self.rgb_to_luminance(img)
+                hp = img - self.conv_gauss(img, self.gkernel) + 0.5
+                hp = torch.clamp(hp, 0.48, 0.52)
+                hp = self.normalize(hp, 0, 1)
+                return hp
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
@@ -247,12 +259,13 @@ class Model:
                 self.block2 = Flownet(6+16+2+4+2, c=96)
                 self.block3 = Flownet(6+16+2+4+2, c=64)
                 self.encode = Head()
+                self.hpass = HighPassFilter()
 
             def forward(self, img0, img1, timestep=0.5, scale=[12, 8, 4, 1], iterations=1, gt=None):
                 img0 = compress(img0)
                 img1 = compress(img1)
-                hp0 = hpass(img0)
-                hp1 = hpass(img1)
+                hp0 = self.hpass(img0)
+                hp1 = self.hpass(img1)
 
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
