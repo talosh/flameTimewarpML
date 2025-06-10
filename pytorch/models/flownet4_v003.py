@@ -113,14 +113,15 @@ class Model:
             def __init__(self, c, dilation=1):
                 super().__init__()
                 self.conv = torch.nn.ConvTranspose2d(c, c, 4, 2, 1)
+                self.up = torch.nn.Upsample(scale_factor=2, mode='bicubic', align_corners=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
+                self.mlp = FeatureModulator(1, c)
 
             def forward(self, x):
                 x_scalar = x[1]
                 x = x[0]
-                x = self.relu(self.conv(x))
+                x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + self.up(x))
                 return x, x_scalar
-
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
