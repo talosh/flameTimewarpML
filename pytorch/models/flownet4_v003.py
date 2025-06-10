@@ -189,6 +189,18 @@ class Model:
                 x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
                 return x, x_scalar
 
+        class ResUp(Module):
+            def __init__(self, c, dilation=1):
+                super().__init__()
+                self.conv = torch.nn.ConvTranspose2d(c, c, 4, 2, 1)
+                self.relu = torch.nn.PReLU(c, 0.2)
+
+            def forward(self, x):
+                x_scalar = x[1]
+                x = x[0]
+                x = self.relu(self.conv(x))
+                return x, x_scalar
+
         class ResConv5(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
@@ -218,7 +230,7 @@ class Model:
                     ResConv(c),
                     ResConv(c),
                     ResConv(c),
-                    torch.nn.ConvTranspose2d(c, c, 4, 2, 1),
+                    ResUp(c),
                     ResConv(c),
                     ResConv(c),
                 )
