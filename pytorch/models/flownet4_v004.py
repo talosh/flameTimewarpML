@@ -117,14 +117,15 @@ class Model:
                     torch.nn.PReLU(latent_dim, 0.2)
                 )
                 self.fc1 = torch.nn.Sequential(
-                    torch.nn.Linear(latent_dim, 121 * 2 * c),
+                    torch.nn.Linear(latent_dim, 121 * c),
                     torch.nn.Sigmoid(),
                 )
-                
+                '''
                 self.fc1up = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(2*c, c, 4, 2, 1),
                     torch.nn.Softplus(),
                 )
+                '''
                 
                 self.fc2 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, c),
@@ -155,8 +156,8 @@ class Model:
                 # grid_y = torch.linspace(0, 1, sh, device=x.device).view(1, 1, sh, 1).expand(B, 1, sh, sw)
                 # latent = self.encoder(torch.cat([torch.log1p(mag), grid_x, grid_y], dim=1))
                 latent = self.encoder(mag)
-                spat_at = self.fc1(latent).view(-1, 2*self.c, 11, 11)
-                spat_at = self.fc1up(spat_at)
+                spat_at = self.fc1(latent).view(-1, self.c, 11, 11)
+                # spat_at = self.fc1up(spat_at)
                 spat_at = torch.nn.functional.interpolate(
                     spat_at, 
                     size=(sh, sw), 
