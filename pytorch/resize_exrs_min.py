@@ -33,7 +33,7 @@ def read_image_file(file_path, header_only = False):
         result['spec'] = spec
         if not header_only:
             channels = spec.nchannels
-            result['image_data'] = inp.read_image(0, 0, 0, channels).transpose(1, 0, 2)
+            result['image_data'] = inp.read_image(0, 0, 0, channels)
         inp.close()
     return result
 
@@ -93,6 +93,10 @@ def halve(exr_file_path, new_h):
 
     result = read_image_file(exr_file_path)
     img0 = result['image_data']
+
+    print (img0.shape)
+    sys.exit()
+
     spec = result['spec']
     h, w = img0.shape[0], img0.shape[1]
     aspect_ratio = w / h
@@ -102,6 +106,7 @@ def halve(exr_file_path, new_h):
     img0 = img0.to(device = device, dtype = torch.float32)
     img0 = resize_image(img0, new_h, new_w)
     image_data_for_write = img0.permute(2, 0, 1).contiguous().cpu().numpy()
+
 
     new_spec = oiio.ImageSpec(spec)  # copy metadata
     new_spec.width = new_w
@@ -144,6 +149,11 @@ def main():
     for exr_file_path in exr_files:
         clear_lines(1)
         print (f'\rFile [{idx+1} / {len(exr_files)}], {os.path.basename(exr_file_path)}')
+
+        halve(exr_file_path, args.h)
+
+        sys.exit()
+
         try:
             halve(exr_file_path, args.h)
         except Exception as e:
