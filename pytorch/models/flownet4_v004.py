@@ -159,7 +159,7 @@ class Model:
                 # latent = self.encoder(torch.cat([torch.log1p(mag), grid_x, grid_y], dim=1))
                 latent = self.encoder(mag)
                 spat_at = self.fc1(latent).view(-1, 2*self.c, 11, 11)
-                spat_at = self.fc1up(spat_at)
+                # spat_at = self.fc1up(spat_at)
                 spat_at = torch.nn.functional.interpolate(
                     spat_at, 
                     size=(sh, sw), 
