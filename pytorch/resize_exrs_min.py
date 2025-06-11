@@ -85,7 +85,7 @@ def resize_image(tensor, new_h, new_w):
     resized_tensor = torch.nn.functional.interpolate(
         tensor, size=(new_h, new_w), mode='bicubic', align_corners=False
     )
-    resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)  # [h, w, c]
+    resized_tensor = resized_tensor.squeeze(0).permute(2, 1, 0)  # [h, w, c]
     return resized_tensor
 
 def halve(exr_file_path, new_h):
