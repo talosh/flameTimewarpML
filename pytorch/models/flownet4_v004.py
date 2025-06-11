@@ -118,16 +118,13 @@ class Model:
                 )
                 self.fc1 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, 121 * 2 * c),
-                    torch.nn.Softplus(),
-                    # torch.nn.Sigmoid(),
+                    torch.nn.Sigmoid(),
                 )
-
-                '''
+                
                 self.fc1up = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(2*c, c, 4, 2, 1),
                     torch.nn.Softplus(),
                 )
-                '''
                 
                 self.fc2 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, c),
@@ -159,7 +156,7 @@ class Model:
                 # latent = self.encoder(torch.cat([torch.log1p(mag), grid_x, grid_y], dim=1))
                 latent = self.encoder(mag)
                 spat_at = self.fc1(latent).view(-1, 2*self.c, 11, 11)
-                # spat_at = self.fc1up(spat_at)
+                spat_at = self.fc1up(spat_at)
                 spat_at = torch.nn.functional.interpolate(
                     spat_at, 
                     size=(sh, sw), 
