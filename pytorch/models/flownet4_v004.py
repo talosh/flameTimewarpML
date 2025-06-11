@@ -139,15 +139,8 @@ class Model:
 
                 chan_at = self.fc2(latent).view(-1, 2 * self.c, 1, 1)
                 x = x * chan_at[:, :self.c] + chan_at[:, self.c:]
-                
+
                 return x
-                x_feat = torch.cat([x_fft.real, x_fft.imag], dim=1)
-                latent = self.encoder(x_feat)
-                w_real, w_imag = latent.chunk(2, dim=1)
-                w_real = w_real.view(-1, self.c, 1, 1)
-                w_imag = w_imag.view(-1, self.c, 1, 1)
-                weight_complex = torch.complex(w_real, w_imag)
-                return x_fft * weight_complex
             
         '''
         class ResConv(Module):
