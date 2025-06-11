@@ -114,8 +114,8 @@ class Model:
                 )
                 self.c = c
 
-            def forward(self, x_fft):
-                return x_fft
+            def forward(self, x):
+                return x
                 x_feat = torch.cat([x_fft.real, x_fft.imag], dim=1)
                 latent = self.encoder(x_feat)
                 w_real, w_imag = latent.chunk(2, dim=1)
@@ -163,12 +163,12 @@ class Model:
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
                 self.mlp = FeatureModulator(1, c)
-                # self.attn = FourierChannelAttention(c, c//4)
+                self.atn = FourierChannelAttention(c, c//4)
 
             def forward(self, x):
                 x_scalar = x[1]
                 x = x[0]
-                x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
+                x = self.relu(self.mlp(x_scalar, self.conv(self.atn(x))) * self.beta + x)
                 return x, x_scalar
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
