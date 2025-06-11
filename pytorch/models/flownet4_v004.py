@@ -112,7 +112,7 @@ class Model:
         '''
 
         class ResConv(Module):
-            def __init__(self, c, dilation=1):
+            def __init__(self, c):
                 super().__init__()
                 self.c = c
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode='reflect', bias=True)
