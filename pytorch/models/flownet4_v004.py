@@ -95,7 +95,6 @@ class Model:
                 x = torch.nn.functional.pad(x, padding)
                 x = self.encode(x)[:, :, :h, :w]
                 return x
-        '''
         class FourierChannelAttention(Module):
             def __init__(self, c, latent_dim):
                 super().__init__()
@@ -116,6 +115,8 @@ class Model:
                 self.c = c
 
             def forward(self, x_fft):
+                return x_fft
+                '''
                 x_feat = torch.cat([x_fft.real, x_fft.imag], dim=1)
                 latent = self.encoder(x_feat)
                 w_real, w_imag = latent.chunk(2, dim=1)
@@ -123,6 +124,9 @@ class Model:
                 w_imag = w_imag.view(-1, self.c, 1, 1)
                 weight_complex = torch.complex(w_real, w_imag)
                 return x_fft * weight_complex
+                '''
+            
+        '''
 
         class ResConv(Module):
             def __init__(self, c):
@@ -162,6 +166,7 @@ class Model:
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
                 self.mlp = FeatureModulator(1, c)
+                self.attn = FourierChannelAttention(c, c//4)
 
             def forward(self, x):
                 x_scalar = x[1]
