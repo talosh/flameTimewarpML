@@ -134,8 +134,8 @@ class Model:
                     torch.nn.Conv2d(2*c, c, 3, 1, 1),
                 )
 
-                self.weight_real = torch.nn.Parameter(torch.randn(1, c, 1, 1))
-                self.weight_imag = torch.nn.Parameter(torch.randn(1, c, 1, 1))
+                # self.weight_real = torch.nn.Parameter(torch.randn(1, c, 1, 1))
+                # self.weight_imag = torch.nn.Parameter(torch.randn(1, c, 1, 1))
 
                 self.beta_conv = torch.nn.Parameter(torch.ones((1, c, 1, 1)))
                 self.beta_fourier = torch.nn.Parameter(torch.ones((1, c, 1, 1)))
@@ -155,8 +155,11 @@ class Model:
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(B, -1, -1, sw).to(device=x.device, dtype=x.dtype)
                 tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(x)
 
-                weight_real = self.weight_real.expand(B, -1, sh, sw) + self.conv_real(tenGrid)
-                weight_imag = self.weight_imag.expand(B, -1, sh, sw) + self.conv_imag(tenGrid)
+                # weight_real = self.weight_real.expand(B, -1, sh, sw) + self.conv_real(tenGrid)
+                # weight_imag = self.weight_imag.expand(B, -1, sh, sw) + self.conv_imag(tenGrid)
+                
+                weight_real = self.conv_real(tenGrid)
+                weight_imag = self.conv_imag(tenGrid)
 
                 weight_complex = torch.complex(weight_real, weight_imag)
                 x_fft_mod = x_fft * weight_complex  # element-wise channel-wise
