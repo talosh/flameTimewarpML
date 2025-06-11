@@ -161,7 +161,8 @@ class Model:
                 # weight_complex = torch.complex(weight_real, weight_imag)
                 # x_fft_mod = x_fft * weight_complex  # element-wise channel-wise
 
-                x_fft_mod = self.fatn(x_fft)
+                # x_fft_mod = self.fatn(x_fft)
+                x_fft_mod = x_fft
                 x_global = torch.fft.irfft2(x_fft_mod, s=(H, W), norm='ortho') * self.beta_fourier
 
                 x_local = self.mlp(x_scalar, self.conv(x_global)) * self.beta_conv
