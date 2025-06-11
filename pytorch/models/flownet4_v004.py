@@ -111,6 +111,27 @@ class Model:
                 return x, x_scalar
         '''
 
+        class FourierChannelAttention(Module):
+            def __init__(self, c, latent_dim):
+                super().__init__()
+                self.encoder = torch.nn.Sequential(
+                    torch.nn.AdaptiveAvgPool2d((48, 48)),
+                    torch.nn.Flatten(),
+                    torch.nn.Linear(4096 * 2 * c, latent_dim),
+                    torch.nn.ReLU(),
+                    torch.nn.Linear(latent_dim, 2 * c),
+                )
+                self.c = c
+
+            def forward(self, x_fft):
+                x_feat = torch.cat([x_fft.real, x_fft.imag], dim=1)
+                latent = self.encoder(x_feat)
+                w_real, w_imag = latent.chunk(2, dim=1)
+                w_real = w_real.view(-1, self.c, 1, 1)
+                w_imag = w_imag.view(-1, self.c, 1, 1)
+                weight_complex = torch.complex(w_real, w_imag)
+                return x_fft * weight_complex
+
         class ResConv(Module):
             def __init__(self, c):
                 super().__init__()
@@ -118,21 +139,7 @@ class Model:
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode='reflect', bias=True)
                 self.channel_mixer = torch.nn.Conv2d(c, c, kernel_size=1, bias=True)
 
-                self.conv_real = torch.nn.Sequential(
-                    torch.nn.Conv2d(2, 2*c, 1, 1, 0),
-                    torch.nn.PReLU(2*c, 0.2),
-                    torch.nn.Conv2d(2*c, 2*c, 1, 1, 0),
-                    torch.nn.PReLU(2*c, 0.2),
-                    torch.nn.Conv2d(2*c, c, 3, 1, 1),
-                )
-
-                self.conv_imag = torch.nn.Sequential(
-                    torch.nn.Conv2d(2, 2*c, 1, 1, 0),
-                    torch.nn.PReLU(2*c, 0.2),
-                    torch.nn.Conv2d(2*c, 2*c, 1, 1, 0),
-                    torch.nn.PReLU(2*c, 0.2),
-                    torch.nn.Conv2d(2*c, c, 3, 1, 1),
-                )
+                self.fatn = FourierChannelAttention(c, 1024)
 
                 # self.weight_real = torch.nn.Parameter(torch.randn(1, c, 1, 1))
                 # self.weight_imag = torch.nn.Parameter(torch.randn(1, c, 1, 1))
@@ -150,23 +157,14 @@ class Model:
                 # --- Fourier global branch ---
                 x_fft = torch.fft.rfft2(x, norm='ortho')  # [B, C, H, W//2 + 1]
                 _, _, sh, sw = x_fft.shape
-
-                tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(B, -1, sh, -1).to(device=x.device, dtype=x.dtype)
-                tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(B, -1, -1, sw).to(device=x.device, dtype=x.dtype)
-                tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(x)
-
-                # weight_real = self.weight_real.expand(B, -1, sh, sw) + self.conv_real(tenGrid)
-                # weight_imag = self.weight_imag.expand(B, -1, sh, sw) + self.conv_imag(tenGrid)
                 
-                weight_real = self.conv_real(tenGrid)
-                weight_imag = self.conv_imag(tenGrid)
+                # weight_complex = torch.complex(weight_real, weight_imag)
+                # x_fft_mod = x_fft * weight_complex  # element-wise channel-wise
 
-                weight_complex = torch.complex(weight_real, weight_imag)
-                x_fft_mod = x_fft * weight_complex  # element-wise channel-wise
-
+                x_fft_mod = self.fatn(x_fft)
                 x_global = torch.fft.irfft2(x_fft_mod, s=(H, W), norm='ortho') * self.beta_fourier
 
-                x_local = self.mlp(x_scalar, self.conv(x + x_global)) * self.beta_conv
+                x_local = self.mlp(x_scalar, self.conv(x_global)) * self.beta_conv
                 x = self.relu(x_local + x)
                 return x, x_scalar
 
