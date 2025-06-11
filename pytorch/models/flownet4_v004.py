@@ -96,21 +96,6 @@ class Model:
                 x = self.encode(x)[:, :, :h, :w]
                 return x
         '''
-        class ResConv(Module):
-            def __init__(self, c, dilation=1):
-                super().__init__()
-                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
-                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
-                self.relu = torch.nn.PReLU(c, 0.2)
-                self.mlp = FeatureModulator(1, c)
-
-            def forward(self, x):
-                x_scalar = x[1]
-                x = x[0]
-                x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
-                return x, x_scalar
-        '''
-
         class FourierChannelAttention(Module):
             def __init__(self, c, latent_dim):
                 super().__init__()
@@ -156,7 +141,6 @@ class Model:
                 x = x[0]
                 B, C, H, W = x.shape
 
-                '''
                 # --- Fourier global branch ---
                 x_fft = torch.fft.rfft2(x, norm='ortho')  # [B, C, H, W//2 + 1]
                 _, _, sh, sw = x_fft.shape
@@ -166,12 +150,24 @@ class Model:
                 x_fft_mod = torch.polar(mag, phase)
                 
                 x_global = torch.fft.irfft2(x_fft_mod, s=(H, W), norm='ortho')
-                '''
 
                 x_local = self.mlp(x_scalar, self.conv(x)) * self.beta_conv
                 x = self.relu(x_local + x)
                 return x, x_scalar
+        '''
+        class ResConv(Module):
+            def __init__(self, c, dilation=1):
+                super().__init__()
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.relu = torch.nn.PReLU(c, 0.2)
+                self.mlp = FeatureModulator(1, c)
 
+            def forward(self, x):
+                x_scalar = x[1]
+                x = x[0]
+                x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
+                return x, x_scalar
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
