@@ -141,39 +141,7 @@ class Model:
                 x = x * chan_at[:, :self.c] + chan_at[:, self.c:]
 
                 return x
-            
-        '''
-        class ResConv(Module):
-            def __init__(self, c):
-                super().__init__()
-                self.c = c
-                self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode='reflect', bias=True)
-                self.channel_mixer = torch.nn.Conv2d(c, c, kernel_size=1, bias=True)
 
-                self.fatn = FourierChannelAttention(c, c//2)
-                self.beta_conv = torch.nn.Parameter(torch.ones((1, c, 1, 1)))
-                self.relu = torch.nn.PReLU(c, 0.2)
-                self.mlp = FeatureModulator(1, c)
-
-            def forward(self, x):
-                x_scalar = x[1]
-                x = x[0]
-                B, C, H, W = x.shape
-
-                # --- Fourier global branch ---
-                x_fft = torch.fft.rfft2(x, norm='ortho')  # [B, C, H, W//2 + 1]
-                _, _, sh, sw = x_fft.shape
-
-                mag = x_fft.abs()         # magnitude
-                phase = x_fft.angle()     # angle in radians
-                x_fft_mod = torch.polar(mag, phase)
-                
-                x_global = torch.fft.irfft2(x_fft_mod, s=(H, W), norm='ortho')
-
-                x_local = self.mlp(x_scalar, self.conv(x)) * self.beta_conv
-                x = self.relu(x_local + x)
-                return x, x_scalar
-        '''
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
