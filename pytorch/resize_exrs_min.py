@@ -98,15 +98,10 @@ def halve(exr_file_path, new_h):
     aspect_ratio = w / h
     new_w = int(new_h * aspect_ratio)
 
-    print (img0.shape)
-
     img0 = torch.from_numpy(img0)
     img0 = img0.to(device = device, dtype = torch.float32)
     img0 = resize_image(img0, new_h, new_w)
     image_data_for_write = img0.contiguous().cpu().numpy()
-
-    print (image_data_for_write.shape)
-    sys.exit()
 
     new_spec = oiio.ImageSpec(spec)  # copy metadata
     new_spec.width = new_w
