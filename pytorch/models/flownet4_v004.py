@@ -112,8 +112,11 @@ class Model:
                     torch.nn.Softplus()
                 )
                 self.fc2 = torch.nn.Sequential(
-                    torch.nn.Linear(latent_dim, 2 * c),
+                    torch.nn.Linear(latent_dim, c),
                     torch.nn.Softplus()
+                )
+                self.fc3 = torch.nn.Sequential(
+                    torch.nn.Linear(latent_dim, c),
                 )
                 self.c = c
 
@@ -138,8 +141,9 @@ class Model:
                 x_fft = torch.polar(mag, phase)
                 x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
 
-                chan_at = self.fc2(latent).view(-1, 2 * self.c, 1, 1)
-                x = x * chan_at[:, :self.c] + chan_at[:, self.c:]
+                chan_scale = self.fc2(latent).view(-1, self.c, 1, 1)
+                chan_bias = self.fc3(latent).view(-1, self.c, 1, 1)
+                x = x * chan_scale + chan_bias
 
                 return x
 
