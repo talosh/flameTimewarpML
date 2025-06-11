@@ -82,6 +82,9 @@ def resize_image(tensor, new_h, new_w):
     Resize the tensor of shape [h, w, c] to the specified size (new_h, new_w).
     """
     tensor = tensor.permute(2, 0, 1).unsqueeze(0)  # [1, c, h, w]
+
+    print (tensor.shape)
+
     resized_tensor = torch.nn.functional.interpolate(
         tensor, size=(new_h, new_w), mode='bicubic', align_corners=False
     )
