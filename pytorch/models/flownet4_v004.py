@@ -115,9 +115,9 @@ class Model:
             def __init__(self, c, latent_dim):
                 super().__init__()
                 self.encoder = torch.nn.Sequential(
-                    torch.nn.AdaptiveAvgPool2d((48, 48)),
+                    torch.nn.AdaptiveAvgPool2d((4, 4)),
                     torch.nn.Flatten(),
-                    torch.nn.Linear(4096 * 2 * c, latent_dim),
+                    torch.nn.Linear(16 * 2 * c, latent_dim),
                     torch.nn.ReLU(),
                     torch.nn.Linear(latent_dim, 2 * c),
                 )
