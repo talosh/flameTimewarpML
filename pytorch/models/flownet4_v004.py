@@ -95,7 +95,6 @@ class Model:
                 x = torch.nn.functional.pad(x, padding)
                 x = self.encode(x)[:, :, :h, :w]
                 return x
-        '''
         class FourierChannelAttention(Module):
             def __init__(self, c, latent_dim):
                 super().__init__()
@@ -125,7 +124,7 @@ class Model:
                 weight_complex = torch.complex(w_real, w_imag)
                 return x_fft * weight_complex
             
-
+        '''
         class ResConv(Module):
             def __init__(self, c):
                 super().__init__()
