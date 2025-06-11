@@ -99,11 +99,12 @@ class Model:
             def __init__(self, c, latent_dim):
                 super().__init__()
                 self.encoder = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c//4, 3, 2, 1),
-                    torch.nn.PReLU(c//4, 0.2),
+                    # torch.nn.Conv2d(c, c//4, 3, 2, 1),
+                    # torch.nn.PReLU(c//4, 0.2),
                     torch.nn.AdaptiveAvgPool2d((11, 11)),
+                    torch.nn.Conv2d(c, c//8, 1, 1, 0)
                     torch.nn.Flatten(),
-                    torch.nn.Linear(121 * c//4, latent_dim),
+                    torch.nn.Linear(121 * c//8, latent_dim),
                     torch.nn.PReLU(latent_dim, 0.2)
                 )
                 self.fc1 = torch.nn.Sequential(
