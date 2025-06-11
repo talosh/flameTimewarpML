@@ -117,11 +117,14 @@ class Model:
                     torch.nn.PReLU(latent_dim, 0.2)
                 )
                 self.fc1 = torch.nn.Sequential(
-                    torch.nn.Linear(latent_dim, 121 * 2 * c).view(-1, self.c, 11, 11),
-                    torch.nn.Softplus(),
+                    torch.nn.Linear(latent_dim, 121 * 2 * c),
+                    torch.nn.Sigmoid(),
                 )
 
-                self.fc1up = torch.nn.ConvTranspose2d(2*c, c, 4, 2, 1)
+                self.fc1up = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(2*c, c, 4, 2, 1),
+                    torch.nn.Softplus(),
+                )
                 
                 self.fc2 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, c),
