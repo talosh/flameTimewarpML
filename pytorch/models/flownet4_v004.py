@@ -116,7 +116,7 @@ class Model:
                 super().__init__()
                 self.encoder = torch.nn.Sequential(
                     torch.nn.Conv2d(c, c//4, 3, 1, 1),
-                    torch.nn.ReLU(c//4, 0.2),
+                    torch.nn.PReLU(c//4, 0.2),
                     torch.nn.AdaptiveAvgPool2d((11, 11)),
                     torch.nn.Flatten(),
                     torch.nn.Linear(121 * c//4, latent_dim),
