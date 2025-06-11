@@ -96,7 +96,7 @@ def halve(exr_file_path, new_h):
     img0 = result['image_data']
     h, w = img0.shape[0], img0.shape[1]
     aspect_ratio = w / h
-    new_w = int(new_h * aspect_ratio)
+    new_w = round(new_h * aspect_ratio)
 
     img0 = torch.from_numpy(img0)
     img0 = img0.to(device = device, dtype = torch.float32)
