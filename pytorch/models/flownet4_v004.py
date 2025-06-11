@@ -95,7 +95,7 @@ class Model:
                 x = torch.nn.functional.pad(x, padding)
                 x = self.encode(x)[:, :, :h, :w]
                 return x
-
+        '''
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
@@ -109,8 +109,9 @@ class Model:
                 x = x[0]
                 x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
                 return x, x_scalar
+        '''
 
-        class ResConvEmb(Module):
+        class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
                 self.c = c
