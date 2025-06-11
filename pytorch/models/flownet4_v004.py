@@ -156,6 +156,7 @@ class Model:
                 x = x[0]
                 B, C, H, W = x.shape
 
+                '''
                 # --- Fourier global branch ---
                 x_fft = torch.fft.rfft2(x, norm='ortho')  # [B, C, H, W//2 + 1]
                 _, _, sh, sw = x_fft.shape
@@ -165,8 +166,9 @@ class Model:
                 x_fft_mod = torch.polar(mag, phase)
                 
                 x_global = torch.fft.irfft2(x_fft_mod, s=(H, W), norm='ortho')
+                '''
 
-                x_local = self.mlp(x_scalar, self.conv(x_global)) * self.beta_conv
+                x_local = self.mlp(x_scalar, self.conv(x)) * self.beta_conv
                 x = self.relu(x_local + x)
                 return x, x_scalar
 
