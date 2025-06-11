@@ -95,10 +95,10 @@ class Model:
                 x = torch.nn.functional.pad(x, padding)
                 x = self.encode(x)[:, :, :h, :w]
                 return x
+        '''
         class FourierChannelAttention(Module):
             def __init__(self, c, latent_dim):
                 super().__init__()
-                '''
                 self.encoder = torch.nn.Sequential(
                     torch.nn.Conv2d(c, c//4, 3, 1, 1),
                     torch.nn.PReLU(c//4, 0.2),
@@ -113,12 +113,10 @@ class Model:
                 self.fc2 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, 2 * c),
                 )
-                '''
                 self.c = c
 
             def forward(self, x_fft):
                 return x_fft
-                '''
                 x_feat = torch.cat([x_fft.real, x_fft.imag], dim=1)
                 latent = self.encoder(x_feat)
                 w_real, w_imag = latent.chunk(2, dim=1)
@@ -126,9 +124,7 @@ class Model:
                 w_imag = w_imag.view(-1, self.c, 1, 1)
                 weight_complex = torch.complex(w_real, w_imag)
                 return x_fft * weight_complex
-                '''
             
-        '''
 
         class ResConv(Module):
             def __init__(self, c):
