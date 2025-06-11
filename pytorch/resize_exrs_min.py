@@ -144,11 +144,6 @@ def main():
     for exr_file_path in exr_files:
         clear_lines(1)
         print (f'\rFile [{idx+1} / {len(exr_files)}], {os.path.basename(exr_file_path)}')
-
-        halve(exr_file_path, args.h)
-
-        sys.exit()
-
         try:
             halve(exr_file_path, args.h)
         except Exception as e:
