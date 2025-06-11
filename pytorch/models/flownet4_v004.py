@@ -112,6 +112,7 @@ class Model:
                 )
                 self.fc2 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, 2 * c),
+                    torch.nn.Softplus()
                 )
                 self.c = c
 
