@@ -119,7 +119,7 @@ class Model:
                 self.channel_mixer = torch.nn.Conv2d(c, c, kernel_size=1, bias=True)
 
                 self.conv_real = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c, 1, 1, 0),
+                    torch.nn.Conv2d(2, c, 1, 1, 0),
                     torch.nn.PReLU(c, 0.2),
                     torch.nn.Conv2d(c, c, 1, 1, 0),
                     torch.nn.PReLU(c, 0.2),
@@ -127,7 +127,7 @@ class Model:
                 )
 
                 self.conv_imag = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c, 1, 1, 0),
+                    torch.nn.Conv2d(2, c, 1, 1, 0),
                     torch.nn.PReLU(c, 0.2),
                     torch.nn.Conv2d(c, c, 1, 1, 0),
                     torch.nn.PReLU(c, 0.2),
