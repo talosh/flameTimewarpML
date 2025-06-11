@@ -134,13 +134,12 @@ class Model:
                     )
                 mag = mag * spat_at
 
-                chan_at = self.fc2(latent).view(-1, 2 * self.c, 1, 1)
-
-
-
                 x_fft = torch.polar(mag, phase)
                 x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
 
+                chan_at = self.fc2(latent).view(-1, 2 * self.c, 1, 1)
+                x = x * chan_at[:, :self.c] + chan_at[:, self.c:]
+                
                 return x
                 x_feat = torch.cat([x_fft.real, x_fft.imag], dim=1)
                 latent = self.encoder(x_feat)
