@@ -103,14 +103,10 @@ def halve(exr_file_path, new_h):
     img0 = resize_image(img0, new_h, new_w)
     image_data_for_write = img0.contiguous().cpu().numpy()
 
-    new_spec = oiio.ImageSpec(spec)  # copy metadata
-    new_spec.width = new_w
-    new_spec.height = new_h
-    new_spec.nchannels = img0.shape[2]
-    new_spec.set_format(oiio.TypeDesc.TypeHalf)
+    new_spec = oiio.ImageSpec(new_w, new_h, img0.shape[2], oiio.TypeDesc.TypeHalf)
     new_spec.attribute("compression", "piz")
-
     out = oiio.ImageOutput.create(exr_file_path)
+
     if not out:
         raise RuntimeError(f"Could not create output for {exr_file_path}")
 
