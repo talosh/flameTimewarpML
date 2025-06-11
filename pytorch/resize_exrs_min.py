@@ -82,9 +82,6 @@ def resize_image(tensor, new_h, new_w):
     Resize the tensor of shape [h, w, c] to the specified size (new_h, new_w).
     """
     tensor = tensor.permute(2, 0, 1).unsqueeze(0)  # [1, c, h, w]
-
-    print (tensor.shape)
-
     resized_tensor = torch.nn.functional.interpolate(
         tensor, size=(new_h, new_w), mode='bicubic', align_corners=False
     )
@@ -100,6 +97,8 @@ def halve(exr_file_path, new_h):
     h, w = img0.shape[0], img0.shape[1]
     aspect_ratio = w / h
     new_w = int(new_h * aspect_ratio)
+
+    print (img0.shape)
 
     img0 = torch.from_numpy(img0)
     img0 = img0.to(device = device, dtype = torch.float32)
