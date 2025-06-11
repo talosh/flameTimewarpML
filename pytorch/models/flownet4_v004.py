@@ -107,7 +107,7 @@ class Model:
                 self.encoder = torch.nn.Sequential(
                     # torch.nn.Conv2d(c+2, out_channels, 3, 2, 1),
                     # torch.nn.PReLU(out_channels, 0.2),
-                    torch.nn.AdaptiveAvgPool2d((44, 44)),
+                    torch.nn.AdaptiveAvgPool2d((11, 11)),
                     torch.nn.Conv2d(c, out_channels, 1, 1, 0),
                     torch.nn.PReLU(out_channels, 0.2),
                     # torch.nn.Conv2d(c, c, 3, 2, 1),
