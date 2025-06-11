@@ -99,21 +99,20 @@ class Model:
             def __init__(self, c, latent_dim):
                 super().__init__()
                 self.encoder = torch.nn.Sequential(
-                    # torch.nn.Conv2d(c, c//4, 3, 2, 1),
-                    # torch.nn.PReLU(c//4, 0.2),
+                    torch.nn.Conv2d(c, c//8, 3, 2, 1),
+                    torch.nn.PReLU(c//4, 0.2),
                     torch.nn.AdaptiveAvgPool2d((11, 11)),
-                    torch.nn.Conv2d(c, c//8, 1, 1, 0),
                     torch.nn.Flatten(),
                     torch.nn.Linear(121 * c//8, latent_dim),
                     torch.nn.PReLU(latent_dim, 0.2)
                 )
                 self.fc1 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, 121 * c),
-                    torch.nn.Softplus()
+                    torch.nn.Sigmoid()
                 )
                 self.fc2 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, c),
-                    torch.nn.Softplus()
+                    torch.nn.Sigmoid()
                 )
                 self.fc3 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, c),
@@ -127,7 +126,7 @@ class Model:
                 mag = x_fft.abs()
                 phase = x_fft.angle()
 
-                latent = self.encoder(mag)
+                latent = self.encoder(torch.log1p(mag))
                 spat_at = self.fc1(latent).view(-1, self.c, 11, 11)
                 spat_at = torch.nn.functional.interpolate(
                     spat_at, 
