@@ -94,10 +94,6 @@ def halve(exr_file_path, new_h):
     result = read_image_file(exr_file_path)
     spec = result['spec']
     img0 = result['image_data']
-
-    print (img0.shape)
-    sys.exit()
-
     h, w = img0.shape[0], img0.shape[1]
     aspect_ratio = w / h
     new_w = int(new_h * aspect_ratio)
@@ -107,6 +103,8 @@ def halve(exr_file_path, new_h):
     img0 = resize_image(img0, new_h, new_w)
     image_data_for_write = img0.permute(2, 0, 1).contiguous().cpu().numpy()
 
+    print (image_data_for_write.shape)
+    sys.exit()
 
     new_spec = oiio.ImageSpec(spec)  # copy metadata
     new_spec.width = new_w
