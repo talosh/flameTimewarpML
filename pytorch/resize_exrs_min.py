@@ -106,7 +106,10 @@ def halve(exr_file_path, new_h):
     new_spec = oiio.ImageSpec(new_w, new_h, img0.shape[2], oiio.TypeDesc.TypeHalf)
     new_spec.attribute("compression", "piz")
     for param in spec.extra_attribs:
-        new_spec.attribute(param.name, param.type, param.value)
+        try:
+            new_spec.attribute(param.name, param.type, param.value)
+        except:
+            pass
     out = oiio.ImageOutput.create(exr_file_path)
 
     if not out:
@@ -142,10 +145,6 @@ def main():
     for exr_file_path in exr_files:
         clear_lines(1)
         print (f'\rFile [{idx+1} / {len(exr_files)}], {os.path.basename(exr_file_path)}')
-
-        halve(exr_file_path, args.h)
-        sys.exit()
-
         try:
             halve(exr_file_path, args.h)
         except Exception as e:
