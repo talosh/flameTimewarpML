@@ -118,7 +118,7 @@ class Model:
                 )
                 self.fc1 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, 121 * c),
-                    torch.nn.Sigmoid(),
+                    torch.nn.Softplus(), # torch.nn.Sigmoid(),
                 )
                 '''
                 self.fc1up = torch.nn.Sequential(
