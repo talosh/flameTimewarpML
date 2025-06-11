@@ -98,7 +98,6 @@ class Model:
         class FourierChannelAttention(Module):
             def __init__(self, c, latent_dim):
                 super().__init__()
-                '''
                 self.encoder = torch.nn.Sequential(
                     torch.nn.Conv2d(c, c//4, 3, 1, 1),
                     torch.nn.PReLU(c//4, 0.2),
@@ -113,7 +112,6 @@ class Model:
                 self.fc2 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, 2 * c),
                 )
-                '''
                 self.c = c
 
             def forward(self, x):
@@ -123,7 +121,7 @@ class Model:
                 mag = x_fft.abs()
                 phase = x_fft.angle()
 
-
+                latent = self.encoder(mag)
 
                 x_fft = torch.polar(mag, phase)
                 x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
