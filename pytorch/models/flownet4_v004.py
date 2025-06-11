@@ -104,7 +104,7 @@ class Model:
                 # self.weight_real = torch.nn.Parameter(torch.ones(1, c, 1, 1))
                 # self.weight_imag = torch.nn.Parameter(torch.ones(1, c, 1, 1))
 
-                self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 0.2), requires_grad=True)
+                self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 0.1), requires_grad=True)
 
                 self.encoder = torch.nn.Sequential(
                     # torch.nn.Conv2d(c+2, out_channels, 3, 2, 1),
