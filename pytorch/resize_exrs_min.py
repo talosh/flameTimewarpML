@@ -92,12 +92,12 @@ def halve(exr_file_path, new_h):
     device = torch.device('cuda')
 
     result = read_image_file(exr_file_path)
+    spec = result['spec']
     img0 = result['image_data']
 
     print (img0.shape)
     sys.exit()
 
-    spec = result['spec']
     h, w = img0.shape[0], img0.shape[1]
     aspect_ratio = w / h
     new_w = int(new_h * aspect_ratio)
