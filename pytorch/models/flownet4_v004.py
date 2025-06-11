@@ -139,7 +139,7 @@ class Model:
                 self.conv = torch.nn.Conv2d(c, c, 3, 1, 1, padding_mode='reflect', bias=True)
                 self.channel_mixer = torch.nn.Conv2d(c, c, kernel_size=1, bias=True)
 
-                self.fatn = FourierChannelAttention(c, 256)
+                self.fatn = FourierChannelAttention(c, 128)
 
                 # self.weight_real = torch.nn.Parameter(torch.randn(1, c, 1, 1))
                 # self.weight_imag = torch.nn.Parameter(torch.randn(1, c, 1, 1))
