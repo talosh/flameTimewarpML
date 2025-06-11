@@ -83,7 +83,7 @@ def resize_image(tensor, new_h, new_w):
     """
     tensor = tensor.permute(2, 0, 1).unsqueeze(0)  # [1, c, h, w]
     resized_tensor = torch.nn.functional.interpolate(
-        tensor, size=(new_h, new_w), mode='bicubic', align_corners=False
+        tensor, size=(new_h, new_w), mode='bicubic', align_corners=True, antialias=True
     )
     resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)  # [h, w, c]
     return resized_tensor
