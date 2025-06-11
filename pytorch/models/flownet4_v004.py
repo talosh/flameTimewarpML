@@ -118,13 +118,16 @@ class Model:
                 )
                 self.fc1 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, 121 * 2 * c),
-                    torch.nn.Sigmoid(),
+                    torch.nn.Softplus(),
+                    # torch.nn.Sigmoid(),
                 )
 
+                '''
                 self.fc1up = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(2*c, c, 4, 2, 1),
                     torch.nn.Softplus(),
                 )
+                '''
                 
                 self.fc2 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, c),
