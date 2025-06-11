@@ -153,10 +153,10 @@ class Model:
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(B, -1, sh, -1).to(device=x.device, dtype=x.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(B, -1, -1, sw).to(device=x.device, dtype=x.dtype)
-                tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=x.device, dtype=x.dtype)
+                tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(x)
 
-                weight_real = torch.ones(B, C, sh, sw) * self.weight_real + self.conv_real(tenGrid)
-                weight_imag = torch.ones(B, C, sh, sw) * self.weight_imag + self.conv_imag(tenGrid)
+                weight_real = self.weight_real.expand(B, -1, sh, sw) + self.conv_real(tenGrid)
+                weight_imag = self.weight_imag.expand(B, -1, sh, sw) + self.conv_imag(tenGrid)
 
                 weight_complex = torch.complex(weight_real, weight_imag)
                 x_fft_mod = x_fft * weight_complex  # element-wise channel-wise
