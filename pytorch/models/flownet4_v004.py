@@ -115,10 +115,17 @@ class Model:
             def __init__(self, c, latent_dim):
                 super().__init__()
                 self.encoder = torch.nn.Sequential(
-                    torch.nn.AdaptiveAvgPool2d((16, 16)),
+                    torch.nn.Conv2d(c, c//4, 3, 1, 1),
+                    torch.nn.ReLU(c//4, 0.2),
+                    torch.nn.AdaptiveAvgPool2d((11, 11)),
                     torch.nn.Flatten(),
-                    torch.nn.Linear(256 * 2 * c, latent_dim),
-                    torch.nn.ReLU(),
+                    torch.nn.Linear(121 * c//4, latent_dim),
+                    torch.nn.PReLU(latent_dim, 0.2)
+                )
+                self.fc1 = torch.nn.Sequential(
+                    torch.nn.Linear(latent_dim, 121 * c),
+                )
+                self.fc2 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, 2 * c),
                 )
                 self.c = c
@@ -140,12 +147,7 @@ class Model:
                 self.channel_mixer = torch.nn.Conv2d(c, c, kernel_size=1, bias=True)
 
                 self.fatn = FourierChannelAttention(c, c//2)
-
-                # self.weight_real = torch.nn.Parameter(torch.randn(1, c, 1, 1))
-                # self.weight_imag = torch.nn.Parameter(torch.randn(1, c, 1, 1))
-
                 self.beta_conv = torch.nn.Parameter(torch.ones((1, c, 1, 1)))
-                self.beta_fourier = torch.nn.Parameter(torch.ones((1, c, 1, 1)))
                 self.relu = torch.nn.PReLU(c, 0.2)
                 self.mlp = FeatureModulator(1, c)
 
@@ -157,12 +159,12 @@ class Model:
                 # --- Fourier global branch ---
                 x_fft = torch.fft.rfft2(x, norm='ortho')  # [B, C, H, W//2 + 1]
                 _, _, sh, sw = x_fft.shape
-                
-                # weight_complex = torch.complex(weight_real, weight_imag)
-                # x_fft_mod = x_fft * weight_complex  # element-wise channel-wise
 
-                x_fft_mod = self.fatn(x_fft)
-                x_global = torch.fft.irfft2(x_fft_mod, s=(H, W), norm='ortho') * self.beta_fourier
+                mag = x_fft.abs()         # magnitude
+                phase = x_fft.angle()     # angle in radians
+                x_fft_mod = torch.polar(mag, phase)
+                
+                x_global = torch.fft.irfft2(x_fft_mod, s=(H, W), norm='ortho')
 
                 x_local = self.mlp(x_scalar, self.conv(x_global)) * self.beta_conv
                 x = self.relu(x_local + x)
