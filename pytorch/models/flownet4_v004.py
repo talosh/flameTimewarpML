@@ -108,6 +108,7 @@ class Model:
                 )
                 self.fc1 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, 121 * c),
+                    torch.nn.Softplus()
                 )
                 self.fc2 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, 2 * c),
@@ -122,6 +123,19 @@ class Model:
                 phase = x_fft.angle()
 
                 latent = self.encoder(mag)
+                spat_at = self.fc1(latent)
+                spat_at = torch.nn.functional.interpolate(
+                    spat_at, 
+                    size=(sh, sw), 
+                    mode="bilinear",
+                    align_corners=True, 
+                    antialias=True
+                    )
+                mag = mag * spat_at
+
+                chan_at = self.fc2(latent).view(-1, 2 * self.c, 1, 1)
+
+
 
                 x_fft = torch.polar(mag, phase)
                 x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
