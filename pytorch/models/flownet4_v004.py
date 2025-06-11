@@ -157,7 +157,7 @@ class Model:
                 # grid_x = torch.linspace(0, 1, sw, device=x.device).view(1, 1, 1, sw).expand(B, 1, sh, sw)
                 # grid_y = torch.linspace(0, 1, sh, device=x.device).view(1, 1, sh, 1).expand(B, 1, sh, sw)
                 # latent = self.encoder(torch.cat([torch.log1p(mag), grid_x, grid_y], dim=1))
-                latent = self.encoder(mag)
+                latent = self.encoder(torch.log1p(mag) + 0.1 * mag)
                 spat_at = self.fc1(latent).view(-1, self.c, 11, 11)
                 # spat_at = self.fc1up(spat_at)
                 spat_at = torch.nn.functional.interpolate(
