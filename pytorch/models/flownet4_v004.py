@@ -123,6 +123,11 @@ class Model:
                 mag = x_fft.abs()
                 phase = x_fft.angle()
 
+
+
+                x_fft = torch.polar(mag, phase)
+                x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
+
                 return x
                 x_feat = torch.cat([x_fft.real, x_fft.imag], dim=1)
                 latent = self.encoder(x_feat)
