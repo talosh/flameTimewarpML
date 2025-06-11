@@ -116,6 +116,7 @@ class Model:
                 )
                 self.fc3 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, c),
+                    torch.nn.Tanh()
                 )
                 self.c = c
 
