@@ -79,25 +79,13 @@ def clear_lines(n=2):
 
 def resize_image(tensor, new_h, new_w):
     """
-    Resize the tensor of shape [h, w, c] so that the smallest dimension becomes x,
-    while retaining aspect ratio.
-
-    Parameters:
-    tensor (torch.Tensor): The input tensor with shape [h, w, c].
-    x (int): The target size for the smallest dimension.
-
-    Returns:
-    torch.Tensor: The resized tensor.
+    Resize the tensor of shape [h, w, c] to the specified size (new_h, new_w).
     """
-    # Adjust tensor shape to [n, c, h, w]
-    tensor = tensor.permute(2, 0, 1).unsqueeze(0)
-
-    # Resize
-    resized_tensor = torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bicubic', align_corners=True, antialias=True)
-
-    # Adjust tensor shape back to [h, w, c]
-    resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)
-
+    tensor = tensor.permute(2, 0, 1).unsqueeze(0)  # [1, c, h, w]
+    resized_tensor = torch.nn.functional.interpolate(
+        tensor, size=(new_h, new_w), mode='bicubic', align_corners=False
+    )
+    resized_tensor = resized_tensor.squeeze(0).permute(1, 2, 0)  # [h, w, c]
     return resized_tensor
 
 def halve(exr_file_path, new_h):
