@@ -107,7 +107,9 @@ class Model:
                 self.encoder = torch.nn.Sequential(
                     # torch.nn.Conv2d(c+2, out_channels, 3, 2, 1),
                     # torch.nn.PReLU(out_channels, 0.2),
-                    torch.nn.AdaptiveAvgPool2d((22, 22)),
+                    torch.nn.AdaptiveAvgPool2d((44, 44)),
+                    torch.nn.Conv2d(c, c, 3, 2, 1),
+                    torch.nn.PReLU(c, 0.2),
                     torch.nn.Conv2d(c, out_channels, 3, 2, 1),
                     torch.nn.Flatten(),
                     torch.nn.Linear(121 * out_channels, latent_dim),
