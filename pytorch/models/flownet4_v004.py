@@ -111,7 +111,7 @@ class Model:
                     torch.nn.Conv2d(c, c, 3, 2, 1),
                     torch.nn.PReLU(c, 0.2),
                     torch.nn.Conv2d(c, out_channels, 3, 2, 1),
-                    torch.nn.PReLU(c, 0.2),
+                    torch.nn.PReLU(out_channels, 0.2),
                     torch.nn.Flatten(),
                     torch.nn.Linear(121 * out_channels, latent_dim),
                     torch.nn.PReLU(latent_dim, 0.2)
