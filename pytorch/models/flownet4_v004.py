@@ -115,9 +115,9 @@ class Model:
             def __init__(self, c, latent_dim):
                 super().__init__()
                 self.encoder = torch.nn.Sequential(
-                    torch.nn.AdaptiveAvgPool2d((4, 4)),
+                    torch.nn.AdaptiveAvgPool2d((16, 16)),
                     torch.nn.Flatten(),
-                    torch.nn.Linear(16 * 2 * c, latent_dim),
+                    torch.nn.Linear(256 * 2 * c, latent_dim),
                     torch.nn.ReLU(),
                     torch.nn.Linear(latent_dim, 2 * c),
                 )
@@ -161,8 +161,7 @@ class Model:
                 # weight_complex = torch.complex(weight_real, weight_imag)
                 # x_fft_mod = x_fft * weight_complex  # element-wise channel-wise
 
-                # x_fft_mod = self.fatn(x_fft)
-                x_fft_mod = x_fft
+                x_fft_mod = self.fatn(x_fft)
                 x_global = torch.fft.irfft2(x_fft_mod, s=(H, W), norm='ortho') * self.beta_fourier
 
                 x_local = self.mlp(x_scalar, self.conv(x_global)) * self.beta_conv
