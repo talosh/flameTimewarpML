@@ -153,7 +153,7 @@ class Model:
                     torch.nn.Conv2d(c, c//2, 3, 2, 1),
                     torch.nn.PReLU(c//2, 0.2),
                     torch.nn.Conv2d(c//2, c//4, 3, 1, 1),
-                    torch.nn.PReLU(c, 0.2),
+                    torch.nn.PReLU(c//4, 0.2),
                 )
                 self.encoder = torch.nn.Sequential(
                     torch.nn.AdaptiveAvgPool2d((spat, spat)),
