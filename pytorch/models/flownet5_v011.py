@@ -437,7 +437,7 @@ class Model:
                     ResConv(cd),
                 )
 
-                # self.attn_deep = ChannelAttention(cd, 48)
+                self.attn_deep = ChannelAttention(cd, 48)
 
                 self.mix1 = UpMix(c, cd)
                 self.mix1f = DownMix(c//2, c)
@@ -845,11 +845,14 @@ class Model:
             param.requires_grad = False
         for param in net.block0.conv00.parameters():
             param.requires_grad = True
-
-        '''
+        for param in net.block0.conv10.parameters():
+            param.requires_grad = True
+        for param in net.block0.conv20.parameters():
+            param.requires_grad = True
         for param in net.block0.attn_deep.parameters():
             param.requires_grad = True
 
+        '''
         for param in net.block0.conv0.parameters():
             param.requires_grad = True
         for param in net.block0.conv1.parameters():
