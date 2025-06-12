@@ -618,3 +618,8 @@ class Model:
                 flownet.load_state_dict(convert(torch.load(path)), False)
             else:
                 flownet.load_state_dict(convert(torch.load(path, map_location ='cpu')), False)
+
+    def freeze(self):
+        for param in self.block0.parameters():
+            param.requires_grad = False
+  
