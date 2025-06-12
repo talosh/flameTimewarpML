@@ -145,9 +145,8 @@ class Model:
                 return features * scale + shift
 
         class FourierChannelAttention(Module):
-            def __init__(self, c, latent_dim):
+            def __init__(self, c, latent_dim, out_channels):
                 super().__init__()
-                out_channels = max(1, c // 2)
                 self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 1.0), requires_grad=True)
                 self.encoder = torch.nn.Sequential(
                     torch.nn.AdaptiveAvgPool2d((11, 11)),
@@ -204,7 +203,7 @@ class Model:
                     torch.nn.Conv2d(c, c, 3, 1, 1),
                     torch.nn.PReLU(c, 0.2),
                 )
-                self.attn = FourierChannelAttention(c, c)
+                self.attn = FourierChannelAttention(c, c, 11)
                 self.lastconv = torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 self.hpass = HighPassFilter()
                 self.maxdepth = 2
