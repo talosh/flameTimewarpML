@@ -262,7 +262,7 @@ class Model:
                 x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
 
                 chan_scale = self.fc2(latent).view(-1, self.c, 1, 1)
-                x = x * chan_scale
+                x = x * chan_scale.clamp(min=1e-6)
                 return x
 
         class Head(Module):
