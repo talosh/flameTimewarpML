@@ -435,8 +435,6 @@ def get_dataset(
                         resized_arrays = [np.array(channel) for channel in resized_channels]
                         img2 = np.stack(resized_arrays, axis=-1)
 
-                        # resize_transform = torchvision.transforms.Resize((new_w, new_h), interpolation=torchvision.transforms.InterpolationMode.LANCZOS)
-
                         '''
                         img0 = torchvision.transforms.functional.resize(img0, (new_h, new_w))
                         img1 = torchvision.transforms.functional.resize(img1, (new_h, new_w))

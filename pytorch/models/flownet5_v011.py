@@ -144,6 +144,30 @@ class Model:
                 shift = self.shift_net(x_scalar).view(-1, self.c, 1, 1)
                 return features * scale + shift
 
+        class ChannelAttention(Module):
+            def __init__(self, c, latent_dim, reduction=8, spat=3):
+                super().__init__()
+                out_channels = max(1, c // reduction)
+                self.encoder = torch.nn.Sequential(
+                    torch.nn.AdaptiveAvgPool2d((spat, spat)),
+                    torch.nn.Conv2d(c, out_channels, 1, 1, 0),
+                    torch.nn.PReLU(out_channels, 0.2),
+                    torch.nn.Flatten(),
+                    torch.nn.Linear(spat * spat * out_channels, latent_dim),
+                    torch.nn.PReLU(latent_dim, 0.2)
+                )                
+                self.fc = torch.nn.Sequential(
+                    torch.nn.Linear(latent_dim, c),
+                    torch.nn.Sigmoid()
+                )
+                self.c = c
+            
+            def forward(self, x):
+                latent = self.encoder(x)
+                chan_scale = self.fc(latent).view(-1, self.c, 1, 1)
+                x = x * chan_scale
+                return x
+
         class FourierChannelAttention(Module):
             def __init__(self, c, latent_dim, out_channels):
                 super().__init__()
@@ -223,6 +247,7 @@ class Model:
                 chan_scale = self.fc2(latent).view(-1, self.c, 1, 1)
                 x = x * chan_scale
                 return x
+
         class Head(Module):
             def __init__(self, c=48):
                 super(Head, self).__init__()
@@ -251,7 +276,6 @@ class Model:
                 x = self.attn(x)
                 x = self.lastconv(x)[:, :, :h, :w]
                 return x
-                
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
@@ -317,11 +341,12 @@ class Model:
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
 
-                '''
-                self.conv0 = torch.nn.Sequential(
-                    torch.nn.Conv2d(in_planes, c//2, 5, 2, 2, padding_mode = 'zeros'),
+                self.conv00 = torch.nn.Sequential(
+                    torch.nn.Conv2d(in_planes + 1, c//2, 5, 2, 2, padding_mode = 'zeros'),
                     myPReLU(c//2),
                     )
+
+                '''
                 self.conv1 = torch.nn.Sequential(
                     torch.nn.Conv2d(c//2, c, 5, 2, 2, padding_mode = 'reflect'),
                     torch.nn.PReLU(c, 0.2),
@@ -389,7 +414,9 @@ class Model:
                     ResConv(cd),
                     ResConv(cd),
                 )
-                
+
+                self.attn_deep = ChannelAttention(cd, 48, )
+
                 self.mix1 = UpMix(c, cd)
                 self.mix1f = DownMix(c//2, c)
                 self.mix2 = UpMix(c, cd)
@@ -406,7 +433,21 @@ class Model:
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c//2, 6, 4, 2, 1),
                 )
+
+
                 self.maxdepth = 8
+
+            def resize_min_side(self, tensor, size):
+                B, C, H, W = tensor.shape
+
+                if H <= W:
+                    new_h = size
+                    new_w = int(round(W * (56 / H)))
+                else:
+                    new_w = size
+                    new_h = int(round(H * (56 / W)))
+
+                return torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bilinear', align_corners=True)
 
             def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
                 n, c, h, w = img0.shape
@@ -418,9 +459,12 @@ class Model:
 
                 imgs = torch.cat((img0, img1), 1)
                 x = torch.cat((imgs, f0, f1), 1)
-                # x = torch.cat((imgs, f0, f1, diffmatte(img0, img1)), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                 x = torch.nn.functional.pad(x, padding)
+
+                x00 = torch.cat((imgs, f0, f1, diffmatte(img0, img1)), 1)
+                x00 = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
+                x00 = torch.nn.functional.pad(x, padding)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
@@ -431,11 +475,17 @@ class Model:
                 x = torch.cat((timestep, x, tenGrid), 1)
 
                 feat = self.conv0(x)
+                feat = ( feat + self.conv00(x00) ) / 2
+
                 featF = self.convblock1f(feat)
                 # featF, _ = self.convblock1f((feat, timestep_emb))
 
                 feat = self.conv1(feat)
                 feat_deep = self.conv2(feat)
+
+                _, _, dh, dw = feat_deep.shape
+                feat_deep = self.resize_min_side(feat_deep, 48)
+                feat_deep = self.attn_deep(feat_deep)
 
                 feat= self.convblock1(feat)
                 feat_deep= self.convblock_deep1(feat_deep)
@@ -443,8 +493,14 @@ class Model:
                 # feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
                 
                 feat = self.mix1f(featF, feat)
-                feat_tmp = self.mix1(feat, feat_deep)
-                feat_deep = self.revmix1(feat, feat_deep)
+                feat_tmp = self.mix1(
+                    feat, 
+                    torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
+                    )
+                feat_deep = self.revmix1(
+                    feat, 
+                    torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
+                    )
 
                 featF = self.revmix1f(featF, feat_tmp)
 
@@ -453,15 +509,24 @@ class Model:
                 feat_deep = self.convblock_deep2(feat_deep)
 
                 feat = self.mix2f(featF, feat)
-                feat_tmp = self.mix2(feat, feat_deep)
-                feat_deep = self.revmix2(feat, feat_deep)
+                feat_tmp = self.mix2(
+                    feat, 
+                    torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
+                    )
+                feat_deep = self.revmix2(
+                    feat, 
+                    torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
+                    )
                 featF = self.revmix2f(featF, feat_tmp)
 
                 featF = self.convblock3f(featF)
                 feat = self.convblock3(feat_tmp)
                 feat_deep = self.convblock_deep3(feat_deep)
                 feat = self.mix3f(featF, feat)
-                feat = self.mix3(feat, feat_deep)
+                feat = self.mix3(
+                    feat, 
+                    torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
+                    )
                 
                 featF = self.revmix3f(featF, feat)
 
@@ -751,6 +816,11 @@ class Model:
     def freeze(net = None):
         for param in net.block0.parameters():
             param.requires_grad = False
+        for param in net.block0.conv00.parameters():
+            param.requires_grad = True
+        for param in net.block0.attn_deep.parameters():
+            param.requires_grad = True
+
         '''
         for param in net.block0.conv0.parameters():
             param.requires_grad = True
