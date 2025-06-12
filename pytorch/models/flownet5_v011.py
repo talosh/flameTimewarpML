@@ -179,15 +179,14 @@ class Model:
                 super().__init__()
                 self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 1.0), requires_grad=True)
 
-                grid = torch.linspace(0, 1, 64)
-                self.register_buffer("grid", grid)
-
+                '''
                 self.precomp = torch.nn.Sequential(
                     torch.nn.Conv2d(c + 2, 2 * c, 3, 2, 1),
                     torch.nn.PReLU(2 * c, 0.2),
                     torch.nn.Conv2d(2 * c, c, 3, 2, 1),
                     torch.nn.PReLU(c, 0.2),
                 )
+                '''
 
                 self.encoder = torch.nn.Sequential(
                     torch.nn.AdaptiveAvgPool2d((11, 11)),
