@@ -204,8 +204,7 @@ class Model:
             def forward(self, x):
                 B, C, H, W = x.shape
                 x_fft = torch.fft.rfft2(x, norm='ortho')  # [B, C, H, W//2 + 1]
-                _, _, sh, sw = x_fft.shape
-
+                
                 mag = x_fft.abs()
                 phase = x_fft.angle()
 
