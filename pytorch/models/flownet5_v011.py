@@ -496,6 +496,7 @@ class Model:
                 timestep_emb = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 x = torch.cat((timestep, x, tenGrid), 1)
+                
                 x00 = torch.cat((timestep, x00, tenGrid), 1)
 
                 feat = self.conv0(x)
