@@ -425,7 +425,7 @@ class Model:
                     ResConvDummy(c),
                     ResConvDummy(c),
                     ResConvDummy(c),
-                    ResConvDummy(c),
+                    ResConvEmb(c),
                 )
                 self.convblock_last_shallow = torch.nn.Sequential(
                     ResConvDummy(c//2),
