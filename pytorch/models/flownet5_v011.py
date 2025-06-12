@@ -626,7 +626,7 @@ class Model:
                 flownet.load_state_dict(convert(torch.load(path, map_location ='cpu')), False)
     
     @staticmethod
-    def freeze(self, net = None):
+    def freeze(net = None):
         print ('hello')
         '''
         for param in flownet.block0.parameters():
