@@ -195,8 +195,14 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
-                self.conv0 = conv(in_planes, c//2, 3, 2, 1)
-                self.conv1 = conv(c//2, c, 3, 2, 1)
+                self.conv0 = torch.nn.Sequential(
+                    torch.nn.Conv2d(in_planes, c//2, 5, 2, 2, padding_mode = 'zeros'),
+                    myPReLU(c//2),
+                    )
+                self.conv1 = torch.nn.Sequential(
+                    torch.nn.Conv2d(c//2, c, 5, 2, 2, padding_mode = 'reflect'),
+                    torch.nn.PReLU(c, 0.2),
+                    )
                 self.conv2 = conv(c, cd, 3, 2, 1)
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
@@ -564,7 +570,7 @@ class Model:
 
                 return result
 
-        self.model = FlownetCasEval
+        self.model = FlownetCas
         self.training_model = FlownetCas
 
     @staticmethod
@@ -622,4 +628,7 @@ class Model:
     def freeze(self):
         for param in self.block0.parameters():
             param.requires_grad = False
-  
+        for param in self.block0.conv0.parameters():
+            param.requires_grad = True
+        for param in self.block0.conv1.parameters():
+            param.requires_grad = True

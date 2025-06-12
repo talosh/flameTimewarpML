@@ -2146,16 +2146,18 @@ def main():
         print ('\nFreezing parameters')
         flownet.freeze()
         
+        '''
         for param in flownet.module.encode.parameters():
             param.requires_grad = False
-        # for param in flownet.module.block0.parameters():
-        #    param.requires_grad = False
+        for param in flownet.module.block0.parameters():
+            param.requires_grad = False
         for param in flownet.module.block1.parameters():
             param.requires_grad = False
         for param in flownet.module.block2.parameters():
             param.requires_grad = False
         for param in flownet.module.block3.parameters():
             param.requires_grad = False
+        '''
         
         for name, param in flownet.named_parameters():
             if not param.requires_grad:
