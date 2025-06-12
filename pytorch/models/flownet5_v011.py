@@ -857,8 +857,8 @@ class Model:
     def freeze(net = None):
         for param in net.block0.parameters():
             param.requires_grad = False
-        for param in net.encode.parameters():
-            param.requires_grad = False
+        # for param in net.encode.parameters():
+        #    param.requires_grad = False
 
         #for param in net.block0.convblock_last[0].mlp.parameters():
         #    param.requires_grad = True
