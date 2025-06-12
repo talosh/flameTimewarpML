@@ -154,7 +154,7 @@ class Model:
                     torch.nn.PReLU(out_channels, 0.2),
                     torch.nn.Flatten(),
                     torch.nn.Linear(spat * spat * out_channels, latent_dim),
-                    torch.nn.Sigmoid()
+                    torch.nn.myPReLU(latent_dim)
                 )
                 self.fc = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, c),
