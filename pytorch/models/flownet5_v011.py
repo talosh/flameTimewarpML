@@ -145,7 +145,7 @@ class Model:
                 return features * scale + shift
 
         class ChannelAttention(Module):
-            def __init__(self, c, latent_dim, reduction=8, spat=3):
+            def __init__(self, c, latent_dim=48, reduction=8, spat=3):
                 super().__init__()
                 out_channels = max(1, c // reduction)
 
@@ -441,7 +441,7 @@ class Model:
                     ResConv(cd),
                 )
 
-                self.attn_deep = ChannelAttention(cd, 48)
+                self.attn_deep = ChannelAttention(cd)
 
                 self.mix1 = UpMix(c, cd)
                 self.mix1f = DownMix(c//2, c)
