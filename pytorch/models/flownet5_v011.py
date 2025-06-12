@@ -842,10 +842,10 @@ class Model:
     def freeze(net = None):
         for param in net.block0.parameters():
             param.requires_grad = False
-        for param in net.block0.lastconv.parameters():
-            param.requires_grad = True
-        for param in net.block0.mix4.parameters():
-            param.requires_grad = True
+        # for param in net.block0.lastconv.parameters():
+        #    param.requires_grad = True
+        # for param in net.block0.mix4.parameters():
+        #    param.requires_grad = True
         for param in net.block0.convblock_last_shallow[0].mlp.parameters():
             param.requires_grad = True
         for param in net.block0.convblock_last_shallow[1].mlp.parameters():
