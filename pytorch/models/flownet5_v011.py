@@ -143,6 +143,60 @@ class Model:
                 scale = self.scale_net(x_scalar).view(-1, self.c, 1, 1)
                 shift = self.shift_net(x_scalar).view(-1, self.c, 1, 1)
                 return features * scale + shift
+
+        class FourierChannelAttention(Module):
+            def __init__(self, c, latent_dim):
+                super().__init__()
+
+                out_channels = max(1, c // 2)
+
+                self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 1), requires_grad=True)
+
+                self.encoder = torch.nn.Sequential(
+                    torch.nn.AdaptiveAvgPool2d((11, 11)),
+                    torch.nn.Conv2d(c, out_channels, 1, 1, 0),
+                    torch.nn.PReLU(out_channels, 0.2),
+                    torch.nn.Flatten(),
+                    torch.nn.Linear(121 * out_channels, latent_dim),
+                    torch.nn.PReLU(latent_dim, 0.2)
+                )
+                self.fc1 = torch.nn.Sequential(
+                    torch.nn.Linear(latent_dim, 121 * c),
+                    torch.nn.Sigmoid(),
+                )
+                
+                self.fc2 = torch.nn.Sequential(
+                    torch.nn.Linear(latent_dim, c),
+                    torch.nn.Sigmoid()
+                )
+
+                self.c = c
+
+            def forward(self, x):
+                B, C, H, W = x.shape
+                x_fft = torch.fft.rfft2(x, norm='ortho')  # [B, C, H, W//2 + 1]
+                _, _, sh, sw = x_fft.shape
+
+                mag = x_fft.abs()
+                phase = x_fft.angle()
+
+                latent = self.encoder(torch.log1p(mag) + self.alpha * mag)
+                spat_at = self.fc1(latent).view(-1, self.c, 11, 11)
+                spat_at = torch.nn.functional.interpolate(
+                    spat_at, 
+                    size=(sh, sw), 
+                    mode="bilinear",
+                    align_corners=True, 
+                    antialias=True
+                    )
+                mag = mag * spat_at
+
+                x_fft = torch.polar(mag, phase)
+                x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
+
+                chan_scale = self.fc2(latent).view(-1, self.c, 1, 1)
+                x = x * chan_scale
+                return x
         class Head(Module):
             def __init__(self, c=48):
                 super(Head, self).__init__()
@@ -155,6 +209,8 @@ class Model:
                     torch.nn.PReLU(c, 0.2),
                     torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
+                self.attn = FourierChannelAttention(c, 2*c)
+
                 self.hpass = HighPassFilter()
                 self.maxdepth = 2
 
