@@ -168,6 +168,39 @@ class Model:
                 )
                 self.c = c
 
+            def normalize_fft_magnitude(self, mag, H, W, target_size=(64, 64)):
+                """
+                Resample magnitude to resolution-independent frequency grid.
+
+                mag: [B, C, H, W//2 + 1] magnitude from rfft2
+                H, W: original spatial dimensions of input
+                target_size: desired frequency grid (e.g. 64x64)
+
+                Returns:
+                norm_mag: [B, C, Fy, Fx] normalized to target frequency grid
+                """
+                Fy, Fx = target_size
+                # Prepare for interpolation: convert mag to [B*C, 1, H, Wf]
+                mag = mag.view(-1, 1, H, W // 2 + 1)
+                # Use bilinear interpolation to resample to (Fy, Fx)
+                norm_mag = torch.nn.functional.interpolate(mag, size=(Fy, Fx), mode='bilinear', align_corners=False)
+                return norm_mag.view(-1, mag.shape[0] // mag.size(0), Fy, Fx)
+
+            def denormalize_fft_magnitude(self, norm_mag, H, W):
+                """
+                Resample normalized magnitude back to original FFT grid size.
+
+                norm_mag: [B, C, Fy, Fx]
+                H, W: target output resolution
+
+                Returns:
+                mag: [B, C, H, W//2 + 1]
+                """
+                Fy, Fx = norm_mag.shape[-2:]
+                norm_mag = norm_mag.view(-1, 1, Fy, Fx)
+                mag = torch.nn.functional.interpolate(norm_mag, size=(H, W // 2 + 1), mode='bilinear', align_corners=False)
+                return mag.view(-1, norm_mag.shape[0] // norm_mag.size(0), H, W // 2 + 1)
+
             def forward(self, x):
                 B, C, H, W = x.shape
                 x_fft = torch.fft.rfft2(x, norm='ortho')  # [B, C, H, W//2 + 1]
@@ -176,16 +209,16 @@ class Model:
                 mag = x_fft.abs()
                 phase = x_fft.angle()
 
-                mag_p = self.maxpool(mag)
-                latent = self.encoder(torch.log1p(mag_p) + self.alpha * mag_p)
+                mag_n = self.normalize_fft_magnitude(mag, H, W, target_size=(64, 64))
+                latent = self.encoder(torch.log1p(mag_n) + self.alpha * mag_n)
                 spat_at = self.fc1(latent).view(-1, self.c, 11, 11)
                 spat_at = torch.nn.functional.interpolate(
                     spat_at, 
-                    size=(sh, sw), 
+                    size=(64, 64), 
                     mode="bilinear",
-                    align_corners=True, 
-                    antialias=True
+                    align_corners=False, 
                     )
+                spat_at = self.denormalize_fft_magnitude(spat_at, H, W)
                 mag = mag * spat_at
 
                 x_fft = torch.polar(mag, phase)
