@@ -245,7 +245,7 @@ class Model:
                 grid_y = self.grid.view(1, 1, 64, 1).expand(B, 1, 64, 64)
                 mag_n = self.precomp(torch.cat([mag_n, grid_x, grid_y], dim=1))
 
-                mag_n = self.precomp(mag_n)
+                # mag_n = self.precomp(mag_n)
 
                 latent = self.encoder(torch.log1p(mag_n) + self.alpha * mag_n)
                 spat_at = self.fc1(latent).view(-1, self.c, 11, 11)
