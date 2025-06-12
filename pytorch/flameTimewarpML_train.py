@@ -1737,6 +1737,41 @@ def ap0_to_ap1(image):
     # Reshape back to [N, 3, H, W]
     return image.permute(0, 3, 1, 2)
 
+def aces_to_rec709(tensor):
+    """
+    Approximate ACES to Rec.709 transform, handling HDR values >1.
+
+    Parameters:
+    tensor (torch.Tensor): (n, 3, h, w) ACES RGB linear float image
+
+    Returns:
+    torch.Tensor: Rec.709 gamma-encoded SDR image in [0, 1]
+    """
+    assert tensor.dim() == 4 and tensor.size(1) == 3, "Expected shape (n, 3, h, w)"
+    
+    # --- 1. RRT + ODT approximation: apply a tone mapping operator ---
+    # Narkowicz (2015) Filmic tone mapper (good ACES-style approximation)
+    a = 2.51
+    b = 0.03
+    c = 2.43
+    d = 0.59
+    e = 0.14
+
+    x = tensor.clamp(min=0)
+    tone_mapped = (x * (a * x + b)) / (x * (c * x + d) + e)
+
+    # --- 2. Rec. 709 OETF ---
+    threshold = 0.018
+    below = tone_mapped < threshold
+    above = ~below
+
+    encoded = torch.zeros_like(tone_mapped)
+    encoded[below] = 4.5 * tone_mapped[below]
+    encoded[above] = 1.099 * torch.pow(tone_mapped[above], 0.45) - 0.099
+
+    # --- 3. Clamp final values to [0, 1] ---
+    return encoded.clamp(0.0, 1.0)
+
 current_state_dict = {}
 
 def main():
@@ -2498,6 +2533,10 @@ def main():
             img0 = ACEScg2cct(img0)
             img1 = ACEScg2cct(img1)
             img2 = ACEScg2cct(img2)
+        elif random.uniform(0, 1) < 0.5:
+            img0 = aces_to_rec709(img0)
+            img1 = aces_to_rec709(img1)
+            img2 = aces_to_rec709(img2)
 
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
 
