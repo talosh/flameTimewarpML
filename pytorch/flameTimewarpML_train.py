@@ -1842,11 +1842,11 @@ def main():
     if args.all_gpus:
         device = 'cuda'
 
-    Flownet = None
+    Model = None
 
     if args.model:
         model_name = args.model
-        Flownet = find_and_import_model(base_name='flownet', model_name=model_name)            
+        Model = find_and_import_model(base_name='flownet', model_name=model_name)            
     else:
         # Find and initialize model
         if args.state_file and os.path.isfile(args.state_file):
@@ -1860,7 +1860,7 @@ def main():
 
             model_info = checkpoint.get('model_info')
             model_file = model_info.get('file')
-            Flownet = find_and_import_model(model_file=model_file)
+            Model = find_and_import_model(model_file=model_file)
         else:
             if not args.state_file:
                 print ('Please specify either model name or model state file')
@@ -1869,11 +1869,11 @@ def main():
                 print (f'Model state file {args.state_file} does not exist and "--model" flag is not set to start from scratch')
                 return
 
-    if Flownet is None:
+    if Model is None:
         print (f'Unable to load model {args.model}')
         return
     
-    model_info = Flownet.get_info()
+    model_info = Model.get_info()
     print ('Model info:')
     pprint (model_info)
     max_dataset_window = 11
@@ -1881,10 +1881,10 @@ def main():
         max_dataset_window = 3
     
     if args.compile:
-        flownet_uncompiled = Flownet().get_training_model()().to(torch.float32).cuda()
+        flownet_uncompiled = Model().get_training_model()().to(torch.float32).cuda()
         flownet = torch.compile(flownet_uncompiled, mode='reduce-overhead')
     else:
-        flownet = Flownet().get_training_model()().to(device)
+        flownet = Model().get_training_model()().to(device)
     
     if args.all_gpus:
         print ('Using nn.DataParallel')
@@ -2144,7 +2144,7 @@ def main():
 
     if args.freeze:
         print ('\nFreezing parameters')
-        flownet.freeze()
+        Model.freeze(flownet)
         
         '''
         for param in flownet.module.encode.parameters():
@@ -2859,7 +2859,7 @@ def main():
             elif torch.backends.mps.is_available():
                 torch.mps.empty_cache()
 
-            evalnet = Flownet().get_model()().to(device)
+            evalnet = Model().get_model()().to(device)
             evalnet.load_state_dict(original_state_dict)
             for param in evalnet.parameters():
                 param.requires_grad = False
