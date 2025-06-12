@@ -366,12 +366,12 @@ class Model:
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
 
-                '''
                 self.conv00 = torch.nn.Sequential(
                     torch.nn.Conv2d(in_planes + 1, c//2, 5, 2, 2, padding_mode = 'zeros'),
                     myPReLU(c//2),
                     )
-
+                
+                '''
                 self.conv1 = torch.nn.Sequential(
                     torch.nn.Conv2d(c//2, c, 5, 2, 2, padding_mode = 'reflect'),
                     torch.nn.PReLU(c, 0.2),
@@ -498,7 +498,7 @@ class Model:
                 x = torch.cat((timestep, x, tenGrid), 1)
 
                 feat = self.conv0(x)
-                # feat = ( feat + self.conv00(x00) ) / 2
+                feat = ( feat + self.conv00(x00) ) / 2
 
                 featF = self.convblock1f(feat)
                 # featF, _ = self.convblock1f((feat, timestep_emb))
@@ -844,10 +844,10 @@ class Model:
     def freeze(net = None):
         for param in net.block0.parameters():
             param.requires_grad = False
-
-        '''
         for param in net.block0.conv00.parameters():
             param.requires_grad = True
+
+        '''
         for param in net.block0.attn_deep.parameters():
             param.requires_grad = True
 
