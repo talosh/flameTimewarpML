@@ -859,11 +859,15 @@ class Model:
             param.requires_grad = False
         for param in net.encode.parameters():
             param.requires_grad = False
+
+        for param in net.block0.convblock_last[3].mlp.parameters():
+            param.requires_grad = True
+        for param in net.block0.convblock_last_shallow[3].mlp.parameters():
+            param.requires_grad = True
+
         # for param in net.block0.lastconv.parameters():
         #    param.requires_grad = True
         # for param in net.block0.mix4.parameters():
-        #    param.requires_grad = True
-        # for param in net.block0.convblock_last_shallow[3].parameters():
         #    param.requires_grad = True
 
         '''
