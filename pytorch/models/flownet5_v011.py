@@ -155,7 +155,7 @@ class Model:
                     torch.nn.Conv2d(c//2, c//4, 3, 1, 1),
                     torch.nn.PReLU(c//4, 0.2),
                     torch.nn.AdaptiveAvgPool2d((3, 3)),
-                    torch.nn.Conv2d(c, out_channels, 1, 1, 0),
+                    torch.nn.Conv2d(c//4, out_channels, 1, 1, 0),
                     torch.nn.PReLU(out_channels, 0.2),
                     torch.nn.Flatten(start_dim=1),
                     torch.nn.Linear(3 * 3 * out_channels, latent_dim),
