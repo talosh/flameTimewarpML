@@ -659,3 +659,11 @@ class Model:
             param.requires_grad = True
         for param in net.block0.conv1.parameters():
             param.requires_grad = True
+        for param in net.block0.conv2.parameters():
+            param.requires_grad = True
+        for param in net.block0.convblock1.parameters():
+            param.requires_grad = True
+        for param in net.block0.convblock1f.parameters():
+            param.requires_grad = True
+        for param in net.block0.convblock_deep1.parameters():
+            param.requires_grad = True
