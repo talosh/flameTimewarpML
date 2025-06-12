@@ -219,7 +219,7 @@ class Model:
                     align_corners=False, 
                     )
                 spat_at = self.denormalize_fft_magnitude(spat_at, H, W)
-                mag = mag * spat_at
+                mag = mag * spat_at.clamp(min=1e-6)
 
                 x_fft = torch.polar(mag, phase)
                 x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
