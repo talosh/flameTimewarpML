@@ -170,37 +170,33 @@ class Model:
 
             def normalize_fft_magnitude(self, mag, sh, sw, target_size=(64, 64)):
                 """
-                Resample magnitude to resolution-independent frequency grid.
-
-                mag: [B, C, H, W//2 + 1] magnitude from rfft2
-                H, W: original spatial dimensions of input
-                target_size: desired frequency grid (e.g. 64x64)
-
-                Returns:
-                norm_mag: [B, C, Fy, Fx] normalized to target frequency grid
+                mag: [B, C, sh, sw]
+                Returns: [B, C, Fy, Fx]
                 """
+                B, C, _, _ = mag.shape
                 Fy, Fx = target_size
-                # Prepare for interpolation: convert mag to [B*C, 1, H, Wf]
-                mag = mag.view(-1, 1, sh, sw)
-                # Use bilinear interpolation to resample to (Fy, Fx)
-                norm_mag = torch.nn.functional.interpolate(mag, size=(Fy, Fx), mode='bilinear', align_corners=False)
-                return norm_mag.view(-1, mag.shape[0] // mag.size(0), Fy, Fx)
+
+                mag_reshaped = mag.view(B * C, 1, sh, sw)
+                norm_mag = torch.nn.functional.interpolate(
+                    mag_reshaped, size=(Fy, Fx), mode='bilinear', align_corners=False
+                )
+                norm_mag = norm_mag.view(B, C, Fy, Fx)
+                return norm_mag
 
             def denormalize_fft_magnitude(self, norm_mag, sh, sw):
                 """
-                Resample normalized magnitude back to original FFT grid size.
-
                 norm_mag: [B, C, Fy, Fx]
-                H, W: target output resolution
-
-                Returns:
-                mag: [B, C, H, W//2 + 1]
+                Returns: [B, C, sh, sw]
                 """
-                Fy, Fx = norm_mag.shape[-2:]
-                norm_mag = norm_mag.view(-1, 1, Fy, Fx)
-                mag = torch.nn.functional.interpolate(norm_mag, size=(sh, sw), mode='bilinear', align_corners=False)
-                return mag.view(-1, norm_mag.shape[0] // norm_mag.size(0), sh, sw)
+                B, C, Fy, Fx = norm_mag.shape
 
+                norm_mag = norm_mag.view(B * C, 1, Fy, Fx)
+                mag = torch.nn.functional.interpolate(
+                    norm_mag, size=(sh, sw), mode='bilinear', align_corners=False
+                )
+                mag = mag.view(B, C, sh, sw)
+                return mag
+            
             def forward(self, x):
                 B, C, H, W = x.shape
                 x_fft = torch.fft.rfft2(x, norm='ortho')  # [B, C, H, W//2 + 1]
