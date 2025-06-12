@@ -435,7 +435,7 @@ class Model:
                     ResConv(cd),
                 )
 
-                self.attn_deep = ChannelAttention(cd)
+                # self.attn_deep = ChannelAttention(cd)
 
                 self.mix1 = UpMix(c, cd)
                 self.mix1f = DownMix(c//2, c)
@@ -495,17 +495,17 @@ class Model:
                 x00 = torch.cat((timestep, x00, tenGrid), 1)
 
                 feat = self.conv0(x)
-                feat = ( feat + self.conv00(x00) ) / 2
+                feat = 0.9 * feat + 0.1 * self.conv00(x00)
 
                 featF = self.convblock1f(feat)
                 # featF, _ = self.convblock1f((feat, timestep_emb))
 
-                feat = ( self.conv1(feat) + self.conv10(feat) ) / 2
-                feat_deep = ( self.conv2(feat) + self.conv20(feat) ) / 2
+                feat = 0.9 * self.conv1(feat) + 0.1 * self.conv10(feat)
+                feat_deep = 0.9 * self.conv2(feat) + 0.1 * self.conv20(feat)
 
                 _, _, dh, dw = feat_deep.shape
                 # feat_deep = self.resize_min_side(feat_deep, 48)
-                feat_deep = self.attn_deep(feat_deep)
+                # feat_deep = self.attn_deep(feat_deep)
 
                 feat= self.convblock1(feat)
                 feat_deep= self.convblock_deep1(feat_deep)
@@ -847,10 +847,11 @@ class Model:
             param.requires_grad = True
         for param in net.block0.conv20.parameters():
             param.requires_grad = True
-        for param in net.block0.attn_deep.parameters():
-            param.requires_grad = True
 
         '''
+        for param in net.block0.attn_deep.parameters():
+            param.requires_grad = True        
+
         for param in net.block0.conv0.parameters():
             param.requires_grad = True
         for param in net.block0.conv1.parameters():
