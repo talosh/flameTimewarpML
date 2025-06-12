@@ -625,10 +625,13 @@ class Model:
             else:
                 flownet.load_state_dict(convert(torch.load(path, map_location ='cpu')), False)
 
-    def freeze(self, flownet):
+    def freeze(self, net = None):
+        print ('hello')
+        '''
         for param in flownet.block0.parameters():
             param.requires_grad = False
         for param in flownet.block0.conv0.parameters():
             param.requires_grad = True
         for param in flownet.block0.conv1.parameters():
             param.requires_grad = True
+        '''

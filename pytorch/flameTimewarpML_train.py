@@ -2144,7 +2144,7 @@ def main():
 
     if args.freeze:
         print ('\nFreezing parameters')
-        Model.freeze(flownet)
+        Model.freeze(net = flownet)
         
         '''
         for param in flownet.module.encode.parameters():
