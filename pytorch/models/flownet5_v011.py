@@ -177,9 +177,9 @@ class Model:
                 self.register_buffer("grid", grid)
 
                 self.precomp = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c, 3, 1, 1),
+                    torch.nn.Conv2d(c + 2, 2 * c, 3, 1, 1),
                     torch.nn.PReLU(c, 0.2),
-                    torch.nn.Conv2d(c, c, 3, 1, 1),
+                    torch.nn.Conv2d(2 * c, c, 3, 1, 1),
                     torch.nn.PReLU(c, 0.2),
                 )
 
