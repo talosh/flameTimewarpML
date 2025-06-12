@@ -209,7 +209,10 @@ class Model:
                     torch.nn.Conv2d(c//2, c, 5, 2, 2, padding_mode = 'reflect'),
                     torch.nn.PReLU(c, 0.2),
                     )
-                self.conv2 = conv(c, cd, 3, 2, 1)
+                self.conv2 = torch.nn.Sequential(
+                    torch.nn.Conv2d(c, cd, 5, 2, 2, padding_mode = 'reflect'),
+                    torch.nn.PReLU(c, 0.2),     
+                )
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
                     ResConv(c),
