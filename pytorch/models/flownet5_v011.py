@@ -238,7 +238,7 @@ class Model:
                     )
                 self.conv2 = torch.nn.Sequential(
                     torch.nn.Conv2d(c, cd, 5, 2, 2, padding_mode = 'reflect'),
-                    torch.nn.PReLU(c, 0.2),     
+                    torch.nn.PReLU(cd, 0.2),     
                 )
                 self.convblock1 = torch.nn.Sequential(
                     ResConvEmb(c),
