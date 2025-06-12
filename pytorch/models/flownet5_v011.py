@@ -428,7 +428,7 @@ class Model:
                 self.convblock_last_shallow = torch.nn.Sequential(
                     ResConvDummy(c//2),
                     ResConvDummy(c//2),
-                    ResConvDummy(c//2),
+                    ResConvEmb(c//2),
                     ResConvEmb(c//2),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
@@ -870,8 +870,8 @@ class Model:
         #    param.requires_grad = True
         #for param in net.block0.convblock_last_shallow[1].mlp.parameters():
         #    param.requires_grad = True
-        # for param in net.block0.convblock_last_shallow[2].mlp.parameters():
-        #    param.requires_grad = True
+        for param in net.block0.convblock_last_shallow[2].mlp.parameters():
+            param.requires_grad = True
         for param in net.block0.convblock_last_shallow[3].parameters():
             param.requires_grad = True
 
