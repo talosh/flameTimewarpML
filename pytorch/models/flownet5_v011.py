@@ -407,16 +407,16 @@ class Model:
                     ResConv(c//2),
                 )
                 self.convblock_last = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
                 )
                 self.convblock_last_shallow = torch.nn.Sequential(
-                    ResConv(c//2),
-                    ResConv(c//2),
-                    ResConv(c//2),
-                    ResConv(c//2),
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
                     ResConv(cd),
@@ -556,8 +556,8 @@ class Model:
                 
                 featF = self.revmix3f(featF, feat)
 
-                feat = self.convblock_last(feat)
-                featF = self.convblock_last_shallow(featF)
+                feat, _ = self.convblock_last((feat, timestep_emb))
+                featF, _ = self.convblock_last_shallow((featF, timestep_emb))
 
                 feat = self.mix4(featF, feat)
 
@@ -843,6 +843,8 @@ class Model:
         for param in net.block0.parameters():
             param.requires_grad = False
         for param in net.block0.lastconv.parameters():
+            param.requires_grad = True
+        for param in net.block0.mix4.parameters():
             param.requires_grad = True
         for param in net.block0.convblock_last_shallow.parameters():
             param.requires_grad = True
