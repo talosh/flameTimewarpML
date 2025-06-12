@@ -168,8 +168,15 @@ class Model:
                 self.c = c
             
             def forward(self, x):
+                print(f"x: {x.shape}")
                 latent = self.encoder(x)
+                print(f"latent: {latent.shape}")
+                chan_scale = self.fc(latent)
+                print(f"chan_scale before view: {chan_scale.shape}")
                 chan_scale = self.fc(latent).view(-1, self.c, 1, 1)
+                print(f"chan_scale after view: {chan_scale.shape}")
+                import sys
+                sys.exit()
                 x = x * chan_scale.clamp(min=1e-6)
                 return x
 
