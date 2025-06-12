@@ -149,13 +149,11 @@ class Model:
                 super().__init__()
                 out_channels = max(1, c // reduction)
 
-                self.precomp = torch.nn.Sequential(
+                self.encoder = torch.nn.Sequential(
                     torch.nn.Conv2d(c, c//2, 3, 2, 1),
                     torch.nn.PReLU(c//2, 0.2),
                     torch.nn.Conv2d(c//2, c//4, 3, 1, 1),
                     torch.nn.PReLU(c//4, 0.2),
-                )
-                self.encoder = torch.nn.Sequential(
                     torch.nn.AdaptiveAvgPool2d((spat, spat)),
                     torch.nn.Conv2d(c//4, out_channels, 1, 1, 0),
                     torch.nn.PReLU(out_channels, 0.2),
@@ -170,7 +168,7 @@ class Model:
                 self.c = c
             
             def forward(self, x):
-                latent = self.encoder(self.precomp(x))
+                latent = self.encoder(x)
                 chan_scale = self.fc(latent).view(-1, self.c, 1, 1)
                 x = x * chan_scale.clamp(min=1e-6)
                 return x
