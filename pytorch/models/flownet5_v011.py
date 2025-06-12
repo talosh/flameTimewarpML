@@ -83,31 +83,6 @@ class Model:
             x = (0.99 * x / scale + 1) / 2
             x = x.to(dtype = src_dtype)
             return x
-
-        def ACEScg2cct(image):
-            condition = image <= 0.0078125
-            value_if_true = image * 10.5402377416545 + 0.0729055341958155 
-            ACEScct = torch.where(condition, value_if_true, image)
-
-            condition = image > 0.0078125
-            value_if_true = (torch.log2(image) + 9.72) / 17.52
-            ACEScct = torch.where(condition, value_if_true, ACEScct)
-
-            return ACEScct
-
-        def ACEScct2cg(image):
-            condition = image < 0.155251141552511
-            value_if_true = (image - 0.0729055341958155) / 10.5402377416545
-            ACEScg = torch.where(condition, value_if_true, image)
-
-            condition = (image >= 0.155251141552511) & (image < (torch.log2(torch.tensor(65504.0)) + 9.72) / 17.52)
-            value_if_true = torch.exp2(image * 17.52 - 9.72)
-            ACEScg = torch.where(condition, value_if_true, ACEScg)
-
-            ACEScg = torch.clamp(ACEScg, max=65504.0)
-
-            return ACEScg
-
         class HighPassFilter(Module):
             def __init__(self):
                 super(HighPassFilter, self).__init__()
@@ -149,7 +124,7 @@ class Model:
                 return hp
 
         class Head(Module):
-            def __init__(self, c=32):
+            def __init__(self, c=48):
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, c, 5, 2, 2),
@@ -164,7 +139,7 @@ class Model:
                 self.maxdepth = 2
 
             def forward(self, x):
-                hp = self.hpass(ACEScct2cg(x))
+                hp = self.hpass(x)
                 x = torch.cat((x, hp), 1)
                 n, c, h, w = x.shape
                 ph = self.maxdepth - (h % self.maxdepth)
@@ -215,62 +190,6 @@ class Model:
 
             def forward(self, x, x_deep):
                 return self.relu(self.conv(x) * self.beta + x_deep)
-
-        class Flownet(Module):
-            def __init__(self, in_planes, c=64):
-                super().__init__()
-                self.conv0 = torch.nn.Sequential(
-                    conv(in_planes, c//2, 5, 2, 2),
-                    conv(c//2, c, 3, 2, 1),
-                    )
-                self.convblock = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                )
-                self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c, 4*6, 4, 2, 1),
-                    torch.nn.PixelShuffle(2)
-                )
-                self.maxdepth = 4
-
-            def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
-                n, c, h, w = img0.shape
-                sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
-
-                timestep = (img0[:, :1].clone() * 0 + 1) * timestep
-                
-                if flow is None:
-                    x = torch.cat((img0, img1, f0, f1, timestep), 1)
-                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-                else:
-                    warped_img0 = warp(img0, flow[:, :2])
-                    warped_img1 = warp(img1, flow[:, 2:4])
-                    warped_f0 = warp(f0, flow[:, :2])
-                    warped_f1 = warp(f1, flow[:, 2:4])
-                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, timestep, mask, conf), 1)
-                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-                    flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True) * 1. / scale
-                    x = torch.cat((x, flow), 1)
-
-                ph = self.maxdepth - (sh % self.maxdepth)
-                pw = self.maxdepth - (sw % self.maxdepth)
-                padding = (0, pw, 0, ph)
-                x = torch.nn.functional.pad(x, padding, mode='constant')
-
-                feat = self.conv0(x)
-                feat = self.convblock(feat)
-                tmp = self.lastconv(feat)
-                tmp = torch.nn.functional.interpolate(tmp[:, :, :sh, :sw], size=(h, w), mode="bicubic", align_corners=True, antialias=True)
-                flow = tmp[:, :4] * scale
-                mask = tmp[:, 4:5]
-                conf = tmp[:, 5:6]
-                return flow, mask, conf
 
         class FlownetDeep(Module):
             def __init__(self, in_planes, c=64):
