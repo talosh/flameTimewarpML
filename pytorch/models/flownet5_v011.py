@@ -290,7 +290,6 @@ class Model:
 
                 if flow is None:
                     imgs = torch.cat((img0, img1), 1)
-                    imgs = normalize(imgs, 0, 1) * 2 - 1
                     x = torch.cat((imgs, f0, f1), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                     x = torch.nn.functional.pad(x, padding)
