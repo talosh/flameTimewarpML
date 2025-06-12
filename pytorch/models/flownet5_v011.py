@@ -203,9 +203,9 @@ class Model:
                     torch.nn.PReLU(c, 0.2),
                     torch.nn.Conv2d(c, c, 3, 1, 1),
                     torch.nn.PReLU(c, 0.2),
-                    FourierChannelAttention(c, c),
-                    torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
+                self.attn = FourierChannelAttention(c, c)
+                self.lastconv = torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 self.hpass = HighPassFilter()
                 self.maxdepth = 2
 
@@ -217,8 +217,11 @@ class Model:
                 pw = self.maxdepth - (w % self.maxdepth)
                 padding = (0, pw, 0, ph)
                 x = torch.nn.functional.pad(x, padding)
-                x = self.encode(x)[:, :, :h, :w]
+                x = self.encode(x)
+                x = self.attn(x)
+                x = self.lastconv(x)[:, :, :h, :w]
                 return x
+                
 
         class ResConv(Module):
             def __init__(self, c, dilation=1):
