@@ -422,15 +422,15 @@ class Model:
                     ResConv(c//2),
                 )
                 self.convblock_last = torch.nn.Sequential(
-                    ResConvEmb(c),
-                    ResConvEmb(c),
-                    ResConvEmb(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
                     ResConvEmb(c),
                 )
                 self.convblock_last_shallow = torch.nn.Sequential(
-                    ResConvEmb(c//2),
-                    ResConvEmb(c//2),
-                    ResConvEmb(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
                     ResConvEmb(c//2),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
@@ -860,20 +860,20 @@ class Model:
         for param in net.encode.parameters():
             param.requires_grad = False
 
-        for param in net.block0.convblock_last[0].mlp.parameters():
-            param.requires_grad = True
-        for param in net.block0.convblock_last[1].mlp.parameters():
-            param.requires_grad = True
-        for param in net.block0.convblock_last[2].mlp.parameters():
-            param.requires_grad = True
+        #for param in net.block0.convblock_last[0].mlp.parameters():
+        #    param.requires_grad = True
+        #for param in net.block0.convblock_last[1].mlp.parameters():
+        #    param.requires_grad = True
+        #for param in net.block0.convblock_last[2].mlp.parameters():
+        #    param.requires_grad = True
         for param in net.block0.convblock_last[3].mlp.parameters():
             param.requires_grad = True
-        for param in net.block0.convblock_last_shallow[0].mlp.parameters():
-            param.requires_grad = True
-        for param in net.block0.convblock_last_shallow[1].mlp.parameters():
-            param.requires_grad = True
-        for param in net.block0.convblock_last_shallow[2].mlp.parameters():
-            param.requires_grad = True
+        #for param in net.block0.convblock_last_shallow[0].mlp.parameters():
+        #    param.requires_grad = True
+        #for param in net.block0.convblock_last_shallow[1].mlp.parameters():
+        #    param.requires_grad = True
+        # for param in net.block0.convblock_last_shallow[2].mlp.parameters():
+        #    param.requires_grad = True
         for param in net.block0.convblock_last_shallow[3].mlp.parameters():
             param.requires_grad = True
 
