@@ -149,7 +149,7 @@ class Model:
                 super().__init__()
                 self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 1.0), requires_grad=True)
                 self.encoder = torch.nn.Sequential(
-                    torch.nn.AdaptiveMaxPool2d((11, 11)),
+                    torch.nn.AdaptiveAvgPool2d((11, 11)),
                     torch.nn.Conv2d(c, out_channels, 1, 1, 0),
                     torch.nn.PReLU(out_channels, 0.2),
                     torch.nn.Flatten(),
