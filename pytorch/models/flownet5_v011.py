@@ -83,6 +83,12 @@ class Model:
             x = (0.99 * x / scale + 1) / 2
             x = x.to(dtype = src_dtype)
             return x
+
+        def diffmatte(tensor1, tensor2):
+            difference = torch.norm(tensor1 - tensor2, p=2, dim=1, keepdim=True)
+            max_val = difference.view(difference.size(0), -1).max(dim=1)[0].view(-1, 1, 1, 1)
+            difference_normalized = difference / (max_val + 1e-8)
+            return difference_normalized
         class HighPassFilter(Module):
             def __init__(self):
                 super(HighPassFilter, self).__init__()
@@ -288,20 +294,10 @@ class Model:
                 pw = self.maxdepth - (sw % self.maxdepth)
                 padding = (0, pw, 0, ph)
 
-                if flow is None:
-                    imgs = torch.cat((img0, img1), 1)
-                    x = torch.cat((imgs, f0, f1), 1)
-                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-                    x = torch.nn.functional.pad(x, padding)
-                else:
-                    merged = warp(img0, flow[:, :2]) * torch.sigmoid(mask) + warp(img1, flow[:, 2:4]) * (1 - torch.sigmoid(mask))
-                    imgs = torch.cat((img0, img1, merged), 1)
-                    imgs = normalize(imgs, 0, 1) * 2 - 1
-                    x = torch.cat((imgs, f0, f1, mask, conf), 1)
-                    x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-                    flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True) * 1. / scale
-                    x = torch.cat((x, flow), 1)
-                    x = torch.nn.functional.pad(x, padding)
+                imgs = torch.cat((img0, img1), 1)
+                x = torch.cat((imgs, f0, f1, diffmatte(img0, img1)), 1)
+                x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
+                x = torch.nn.functional.pad(x, padding)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
@@ -379,7 +375,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeep(24+2+1, c=192)
+                self.block0 = FlownetDeep(24+2+1+1, c=192)
                 self.block1 = None # FlownetDeep(24+5+4+2+1, c=128)
                 self.block2 = None # FlownetDeep(24+5+4+2+1, c=96)
                 self.block3 = None # Flownet(31, c=64)

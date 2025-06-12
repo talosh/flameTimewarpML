@@ -2145,20 +2145,7 @@ def main():
     if args.freeze:
         print ('\nFreezing parameters')
         Model.freeze(net = flownet)
-        
-        '''
-        for param in flownet.module.encode.parameters():
-            param.requires_grad = False
-        for param in flownet.module.block0.parameters():
-            param.requires_grad = False
-        for param in flownet.module.block1.parameters():
-            param.requires_grad = False
-        for param in flownet.module.block2.parameters():
-            param.requires_grad = False
-        for param in flownet.module.block3.parameters():
-            param.requires_grad = False
-        '''
-        
+                
         for name, param in flownet.named_parameters():
             if not param.requires_grad:
                 print(name, param.requires_grad)
@@ -2171,61 +2158,6 @@ def main():
     try:
         print ()
         print (f'flownet.module.encoder.attn.channel_scale {flownet.module.encode.attn.channel_scale.data}')
-        print (f'flownet.module.encoder.attn.channel_offset {flownet.module.encode.attn.channel_offset.data}')
-        print (f'flownet.module.encoder.attn.spatial_scale {flownet.module.encode.attn.spatial_scale.data}')
-        print (f'flownet.module.encoder.attn.spatial_offset {flownet.module.encode.attn.spatial_offset.data}')
-
-        print ()
-        print (f'flownet.module.block0.attn.channel_scale {flownet.module.block0.attn.channel_scale.data}')
-        print (f'flownet.module.block0.attn.channel_offset {flownet.module.block0.attn.channel_offset.data}')
-        print (f'flownet.module.block0.attn.spatial_scale {flownet.module.block0.attn.spatial_scale.data}')
-        print (f'flownet.module.block0.attn.spatial_offset {flownet.module.block0.attn.spatial_offset.data}')
-
-        print ()
-        print (f'flownet.module.block0.attn_mask.channel_scale {flownet.module.block0.attn_mask.channel_scale.data}')
-        print (f'flownet.module.block0.attn_mask.channel_offset {flownet.module.block0.attn_mask.channel_offset.data}')
-        print (f'flownet.module.block0.attn_mask.spatial_scale {flownet.module.block0.attn_mask.spatial_scale.data}')
-        print (f'flownet.module.block0.attn_mask.spatial_offset {flownet.module.block0.attn_mask.spatial_offset.data}')
-
-
-        '''
-        print ()
-        print (f'flownet.module.block0.convblock_deep1[0].channel_scale {flownet.module.block0.convblock_deep1[0].channel_scale.data}')
-        print (f'flownet.module.block0.convblock_deep1[0].channel_offset {flownet.module.block0.convblock_deep1[0].channel_offset.data}')
-        print (f'flownet.module.block0.convblock_deep1[0].spatial_scale {flownet.module.block0.convblock_deep1[0].spatial_scale.data}')
-        print (f'flownet.module.block0.convblock_deep1[0].spatial_offset {flownet.module.block0.convblock_deep1[0].spatial_offset.data}')
-
-        print ()
-        print (f'flownet.module.block0.convblock_deep2[0].channel_scale {flownet.module.block0.convblock_deep2[0].channel_scale.data}')
-        print (f'flownet.module.block0.convblock_deep2[0].channel_offset {flownet.module.block0.convblock_deep2[0].channel_offset.data}')
-        print (f'flownet.module.block0.convblock_deep2[0].spatial_scale {flownet.module.block0.convblock_deep2[0].spatial_scale.data}')
-        print (f'flownet.module.block0.convblock_deep2[0].spatial_offset {flownet.module.block0.convblock_deep2[0].spatial_offset.data}')
-
-        print ()
-        print (f'flownet.module.block0.convblock_deep3[0].channel_scale {flownet.module.block0.convblock_deep3[0].channel_scale.data}')
-        print (f'flownet.module.block0.convblock_deep3[0].channel_offset {flownet.module.block0.convblock_deep3[0].channel_offset.data}')
-        print (f'flownet.module.block0.convblock_deep3[0].spatial_scale {flownet.module.block0.convblock_deep3[0].spatial_scale.data}')
-        print (f'flownet.module.block0.convblock_deep3[0].spatial_offset {flownet.module.block0.convblock_deep3[0].spatial_offset.data}')
-
-        print ()
-        print (f'flownet.module.block0.convblock_deep4[0].channel_scale {flownet.module.block0.convblock_deep4[0].channel_scale.data}')
-        print (f'flownet.module.block0.convblock_deep4[0].channel_offset {flownet.module.block0.convblock_deep4[0].channel_offset.data}')
-        print (f'flownet.module.block0.convblock_deep4[0].spatial_scale {flownet.module.block0.convblock_deep4[0].spatial_scale.data}')
-        print (f'flownet.module.block0.convblock_deep4[0].spatial_offset {flownet.module.block0.convblock_deep4[0].spatial_offset.data}')
-
-        print ()
-        print (f'flownet.module.block0.convblock4[0].channel_scale {flownet.module.block0.convblock4[0].channel_scale.data}')
-        print (f'flownet.module.block0.convblock4[0].channel_offset {flownet.module.block0.convblock4[0].channel_offset.data}')
-        print (f'flownet.module.block0.convblock4[0].spatial_scale {flownet.module.block0.convblock4[0].spatial_scale.data}')
-        print (f'flownet.module.block0.convblock4[0].spatial_offset {flownet.module.block0.convblock4[0].spatial_offset.data}')
-
-        print ()
-        print (f'flownet.module.block1.attn.channel_scale {flownet.module.block1.attn.channel_scale.data}')
-        print (f'flownet.module.block1.attn.channel_offset {flownet.module.block1.attn.channel_offset.data}')
-        print (f'flownet.module.block1.attn.spatial_scale {flownet.module.block1.attn.spatial_scale.data}')
-        print (f'flownet.module.block1.attn.spatial_offset {flownet.module.block1.attn.spatial_offset.data}')
-        print (f'flownet.module.block1.noise_level {flownet.module.block1.noise_level.data}')
-        '''
     except:
         pass
 
