@@ -2855,9 +2855,9 @@ def main():
                             eval_img0 = eval_img0.half()
                             eval_img2 = eval_img2.half()
 
-                        if args.acescc ==  100:
-                            eval_img0 = ACEScg2cct(eval_img0)
-                            eval_img2 = ACEScg2cct(eval_img2)
+                        # if args.acescc ==  100:
+                        eval_img0 = ACEScg2cct(eval_img0)
+                        eval_img2 = ACEScg2cct(eval_img2)
 
                         result = evalnet(
                             eval_img0, 
