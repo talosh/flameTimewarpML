@@ -147,11 +147,8 @@ class Model:
         class FourierChannelAttention(Module):
             def __init__(self, c, latent_dim):
                 super().__init__()
-
                 out_channels = max(1, c // 2)
-
                 self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 1), requires_grad=True)
-
                 self.encoder = torch.nn.Sequential(
                     torch.nn.AdaptiveAvgPool2d((11, 11)),
                     torch.nn.Conv2d(c, out_channels, 1, 1, 0),
@@ -169,7 +166,6 @@ class Model:
                     torch.nn.Linear(latent_dim, c),
                     torch.nn.Sigmoid()
                 )
-
                 self.c = c
 
             def forward(self, x):
