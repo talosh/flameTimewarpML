@@ -512,13 +512,13 @@ class Model:
                 feat = self.mix1f(featF, feat)
                 feat_tmp = self.mix1(
                     feat,
-                    feat_deep
-                    # torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
+                    # feat_deep
+                    torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
                     )
                 feat_deep = self.revmix1(
                     feat,
-                    feat_deep
-                    # torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
+                    # feat_deep
+                    torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
                     )
 
                 featF = self.revmix1f(featF, feat_tmp)
@@ -530,13 +530,13 @@ class Model:
                 feat = self.mix2f(featF, feat)
                 feat_tmp = self.mix2(
                     feat,
-                    feat_deep 
-                    # torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
+                    # feat_deep 
+                    torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
                     )
                 feat_deep = self.revmix2(
                     feat,
-                    feat_deep 
-                    # torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
+                    # feat_deep 
+                    torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
                     )
                 featF = self.revmix2f(featF, feat_tmp)
 
@@ -546,8 +546,8 @@ class Model:
                 feat = self.mix3f(featF, feat)
                 feat = self.mix3(
                     feat,
-                    feat_deep
-                    # torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
+                    # feat_deep
+                    torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
                     )
                 
                 featF = self.revmix3f(featF, feat)
