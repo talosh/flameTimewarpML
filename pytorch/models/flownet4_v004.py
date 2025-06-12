@@ -194,7 +194,8 @@ class Model:
             def forward(self, x):
                 x_scalar = x[1]
                 x = x[0]
-                x = self.relu(self.mlp(x_scalar, self.atn(self.conv(x))) * self.beta + x)
+                x = self.atn(x)
+                x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
                 return x, x_scalar
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
