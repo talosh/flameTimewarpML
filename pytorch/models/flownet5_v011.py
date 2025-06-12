@@ -172,6 +172,17 @@ class Model:
             def __init__(self, c, latent_dim, out_channels):
                 super().__init__()
                 self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 1.0), requires_grad=True)
+
+                grid = torch.linspace(0, 1, 64)
+                self.register_buffer("grid", grid)
+
+                self.preprocess = torch.nn.Sequential(
+                    torch.nn.Conv2d(c, c, 3, 1, 1),
+                    torch.nn.PReLU(c, 0.2),
+                    torch.nn.Conv2d(c, c, 3, 1, 1),
+                    torch.nn.PReLU(c, 0.2),
+                )
+
                 self.encoder = torch.nn.Sequential(
                     torch.nn.AdaptiveAvgPool2d((11, 11)),
                     torch.nn.Conv2d(c, out_channels, 1, 1, 0),
@@ -229,6 +240,11 @@ class Model:
                 phase = x_fft.angle()
 
                 mag_n = self.normalize_fft_magnitude(mag, sh, sw, target_size=(64, 64))
+
+                grid_x = self.grid.view(1, 1, 1, 64).expand(B, 1, 64, 64)
+                grid_y = self.grid.view(1, 1, 64, 1).expand(B, 1, 64, 64)
+                mag_n = self.preprocess(torch.cat([mag_n, grid_x, grid_y], dim=1))
+
                 latent = self.encoder(torch.log1p(mag_n) + self.alpha * mag_n)
                 spat_at = self.fc1(latent).view(-1, self.c, 11, 11)
                 spat_at = torch.nn.functional.interpolate(
