@@ -129,6 +129,20 @@ class Model:
                 hp = self.normalize(hp, 0, 1)
                 return hp
 
+        class FeatureModulator(torch.nn.Module):
+            def __init__(self, scalar_dim, feature_channels):
+                super().__init__()
+                self.scale_net = torch.nn.Sequential(
+                    torch.nn.Linear(scalar_dim, feature_channels),
+                    # torch.nn.PReLU(feature_channels, 1),  # or no activation
+                )
+                self.shift_net = torch.nn.Linear(scalar_dim, feature_channels)
+                self.c = feature_channels
+
+            def forward(self, x_scalar, features):
+                scale = self.scale_net(x_scalar).view(-1, self.c, 1, 1)
+                shift = self.shift_net(x_scalar).view(-1, self.c, 1, 1)
+                return features * scale + shift
         class Head(Module):
             def __init__(self, c=48):
                 super(Head, self).__init__()
@@ -165,6 +179,19 @@ class Model:
             def forward(self, x):
                 return self.relu(self.conv(x) * self.beta + x)
 
+        class ResConvEmb(Module):
+            def __init__(self, c, dilation=1):
+                super().__init__()
+                self.conv = torch.nn.Conv2d(c, c, 3, 1, dilation, dilation = dilation, groups = 1, padding_mode = 'reflect', bias=True)
+                self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
+                self.relu = torch.nn.PReLU(c, 0.2)
+                self.mlp = FeatureModulator(1, c)
+
+            def forward(self, x):
+                x_scalar = x[1]
+                x = x[0]
+                x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
+                return x, x_scalar
         class UpMix(Module):
             def __init__(self, c, cd):
                 super().__init__()
@@ -214,10 +241,10 @@ class Model:
                     torch.nn.PReLU(c, 0.2),     
                 )
                 self.convblock1 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
                 )
                 self.convblock2 = torch.nn.Sequential(
                     ResConv(c),
@@ -229,10 +256,10 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock1f = torch.nn.Sequential(
-                    ResConv(c//2),
-                    ResConv(c//2),
-                    ResConv(c//2),
-                    ResConv(c//2),
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
                 )
                 self.convblock2f = torch.nn.Sequential(
                     ResConv(c//2),
@@ -256,10 +283,10 @@ class Model:
                     ResConv(c//2),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
-                    ResConv(cd),
-                    ResConv(cd),
-                    ResConv(cd),
-                    ResConv(cd),
+                    ResConvEmb(cd),
+                    ResConvEmb(cd),
+                    ResConvEmb(cd),
+                    ResConvEmb(cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
                     ResConv(cd),
@@ -306,17 +333,18 @@ class Model:
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
+                timestep_emb = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 x = torch.cat((timestep, x, tenGrid), 1)
 
                 feat = self.conv0(x)
-                featF = self.convblock1f(feat)
+                featF, _ = self.convblock1f((feat, timestep_emb))
 
                 feat = self.conv1(feat)
                 feat_deep = self.conv2(feat)
 
-                feat = self.convblock1(feat)
-                feat_deep = self.convblock_deep1(feat_deep)
+                feat, _ = self.convblock1((feat, timestep_emb))
+                feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
                 
                 feat = self.mix1f(featF, feat)
                 feat_tmp = self.mix1(feat, feat_deep)
