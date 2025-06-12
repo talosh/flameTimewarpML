@@ -150,15 +150,15 @@ class Model:
                 out_channels = max(1, c // reduction)
 
                 self.encoder = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c//2, 3, 2, 1),
-                    torch.nn.PReLU(c//2, 0.2),
-                    torch.nn.Conv2d(c//2, c//4, 3, 1, 1),
-                    torch.nn.PReLU(c//4, 0.2),
-                    torch.nn.AdaptiveAvgPool2d((spat, spat)),
-                    torch.nn.Conv2d(c//4, out_channels, 1, 1, 0),
+                    # torch.nn.Conv2d(c, c//2, 3, 2, 1),
+                    # torch.nn.PReLU(c//2, 0.2),
+                    # torch.nn.Conv2d(c//2, c//4, 3, 1, 1),
+                    # torch.nn.PReLU(c//4, 0.2),
+                    torch.nn.AdaptiveAvgPool2d((3, 3)),
+                    torch.nn.Conv2d(c, out_channels, 1, 1, 0),
                     torch.nn.PReLU(out_channels, 0.2),
                     torch.nn.Flatten(start_dim=1),
-                    torch.nn.Linear(spat * spat * out_channels, latent_dim),
+                    torch.nn.Linear(3 * 3 * out_channels, latent_dim),
                     myPReLU(latent_dim)
                 )
                 self.fc = torch.nn.Sequential(
