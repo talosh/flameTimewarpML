@@ -177,9 +177,9 @@ class Model:
                 self.register_buffer("grid", grid)
 
                 self.precomp = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, 2 * c, 3, 1, 1),
+                    torch.nn.Conv2d(c, 2 * c, 3, 2, 1),
                     torch.nn.PReLU(2 * c, 0.2),
-                    torch.nn.Conv2d(2 * c, c, 3, 1, 1),
+                    torch.nn.Conv2d(2 * c, c, 3, 2, 1),
                     torch.nn.PReLU(c, 0.2),
                 )
 
@@ -241,9 +241,9 @@ class Model:
 
                 mag_n = self.normalize_fft_magnitude(mag, sh, sw, target_size=(64, 64))
 
-                # grid_x = self.grid.view(1, 1, 1, 64).expand(B, 1, 64, 64)
-                # grid_y = self.grid.view(1, 1, 64, 1).expand(B, 1, 64, 64)
-                # mag_n = self.precomp(torch.cat([mag_n, grid_x, grid_y], dim=1))
+                grid_x = self.grid.view(1, 1, 1, 64).expand(B, 1, 64, 64)
+                grid_y = self.grid.view(1, 1, 64, 1).expand(B, 1, 64, 64)
+                mag_n = self.precomp(torch.cat([mag_n, grid_x, grid_y], dim=1))
 
                 mag_n = self.precomp(mag_n)
 
