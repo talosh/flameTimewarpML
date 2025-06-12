@@ -500,7 +500,7 @@ class Model:
 
                 _, _, dh, dw = feat_deep.shape
                 feat_deep = self.resize_min_side(feat_deep, 48)
-                feat_deep = self.attn_deep(feat_deep)
+                # feat_deep = self.attn_deep(feat_deep)
 
                 feat= self.convblock1(feat)
                 feat_deep= self.convblock_deep1(feat_deep)
