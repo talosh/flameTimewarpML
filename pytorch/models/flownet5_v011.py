@@ -369,18 +369,15 @@ class Model:
                 self.conv00 = torch.nn.Sequential(
                     torch.nn.Conv2d(in_planes + 1, c//2, 5, 2, 2, padding_mode = 'zeros'),
                     myPReLU(c//2),
-                    )
-                
-                '''
-                self.conv1 = torch.nn.Sequential(
+                    )                
+                self.conv10 = torch.nn.Sequential(
                     torch.nn.Conv2d(c//2, c, 5, 2, 2, padding_mode = 'reflect'),
                     torch.nn.PReLU(c, 0.2),
                     )
-                self.conv2 = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, cd, 5, 2, 2, padding_mode = 'reflect'),
+                self.conv20 = torch.nn.Sequential(
+                    torch.nn.Conv2d(c, cd, 3, 2, 2, padding_mode = 'reflect'),
                     torch.nn.PReLU(cd, 0.2),     
                 )
-                '''
 
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
@@ -496,7 +493,7 @@ class Model:
                 timestep_emb = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 x = torch.cat((timestep, x, tenGrid), 1)
-                
+
                 x00 = torch.cat((timestep, x00, tenGrid), 1)
 
                 feat = self.conv0(x)
