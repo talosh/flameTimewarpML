@@ -99,7 +99,7 @@ class Model:
             def __init__(self, c, latent_dim):
                 super().__init__()
 
-                out_channels = max(1, c // 8)
+                out_channels = max(1, c // 4)
 
                 # self.weight_real = torch.nn.Parameter(torch.ones(1, c, 1, 1))
                 # self.weight_imag = torch.nn.Parameter(torch.ones(1, c, 1, 1))
