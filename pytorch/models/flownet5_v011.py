@@ -170,8 +170,7 @@ class Model:
                 self.c = c
             
             def forward(self, x):
-                x = self.precomp(x)
-                latent = self.encoder(x)
+                latent = self.encoder(self.precomp(x))
                 chan_scale = self.fc(latent).view(-1, self.c, 1, 1)
                 x = x * chan_scale.clamp(min=1e-6)
                 return x
