@@ -207,10 +207,9 @@ class Model:
                     torch.nn.PReLU(c, 0.2),
                     torch.nn.Conv2d(c, c, 3, 1, 1),
                     torch.nn.PReLU(c, 0.2),
+                    FourierChannelAttention(c, 2*c),
                     torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
                 )
-                self.attn = FourierChannelAttention(c, 2*c)
-
                 self.hpass = HighPassFilter()
                 self.maxdepth = 2
 
