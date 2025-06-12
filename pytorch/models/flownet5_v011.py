@@ -148,6 +148,14 @@ class Model:
             def __init__(self, c, latent_dim, reduction=8, spat=3):
                 super().__init__()
                 out_channels = max(1, c // reduction)
+
+                self.precomp = torch.nn.Sequential(
+                    torch.nn.Conv2d(c, c//2, 3, 2, 1),
+                    torch.nn.PReLU(c//2, 0.2),
+                    torch.nn.Conv2d(c//2, c//2, 3, 1, 1),
+                    torch.nn.PReLU(c, 0.2),
+                )
+
                 self.encoder = torch.nn.Sequential(
                     torch.nn.AdaptiveAvgPool2d((spat, spat)),
                     torch.nn.Conv2d(c, out_channels, 1, 1, 0),
@@ -450,9 +458,7 @@ class Model:
                 self.lastconv = torch.nn.Sequential(
                     torch.nn.ConvTranspose2d(c//2, 6, 4, 2, 1),
                 )
-
-
-                self.maxdepth = 8
+                self.maxdepth = 16
 
             def resize_min_side(self, tensor, size):
                 B, C, H, W = tensor.shape
