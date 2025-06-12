@@ -159,7 +159,7 @@ class Model:
                     torch.nn.PReLU(out_channels, 0.2),
                     torch.nn.Flatten(start_dim=1),
                     torch.nn.Linear(3 * 3 * out_channels, latent_dim),
-                    myPReLU(latent_dim)
+                    torch.nn.PReLU(latent_dim, 0.2)
                 )
                 self.fc = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, c),
