@@ -104,7 +104,7 @@ class Model:
                 # self.weight_real = torch.nn.Parameter(torch.ones(1, c, 1, 1))
                 # self.weight_imag = torch.nn.Parameter(torch.ones(1, c, 1, 1))
 
-                self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 0.1), requires_grad=True)
+                self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 1), requires_grad=True)
 
                 self.encoder = torch.nn.Sequential(
                     # torch.nn.Conv2d(c+2, out_channels, 3, 2, 1),
@@ -122,7 +122,7 @@ class Model:
                 )
                 self.fc1 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, 121 * c),
-                    torch.nn.Softplus(), # torch.nn.Sigmoid(),
+                    torch.nn.Sigmoid(),
                 )
                 '''
                 self.fc1up = torch.nn.Sequential(
@@ -133,11 +133,13 @@ class Model:
                 
                 self.fc2 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, c),
-                    torch.nn.Softplus()
+                    torch.nn.Sigmoid()
                 )
+                '''
                 self.fc3 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, c),
                 )
+                '''
 
                 # self.weight_spat = torch.nn.Parameter(torch.ones(1, c, 1, 1))
                 # self.weight_chan = torch.nn.Parameter(torch.ones(1, c, 1, 1))
@@ -175,8 +177,8 @@ class Model:
                 x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
 
                 chan_scale = self.fc2(latent).view(-1, self.c, 1, 1)
-                chan_bias = self.fc3(latent).view(-1, self.c, 1, 1)
-                x = x * chan_scale + chan_bias
+                # chan_bias = self.fc3(latent).view(-1, self.c, 1, 1)
+                x = x * chan_scale # + chan_bias
 
                 return x
 
