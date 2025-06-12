@@ -364,6 +364,7 @@ class Model:
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
 
+                '''
                 self.conv00 = torch.nn.Sequential(
                     torch.nn.Conv2d(in_planes + 1, c//2, 5, 2, 2, padding_mode = 'zeros'),
                     myPReLU(c//2),
@@ -376,6 +377,7 @@ class Model:
                     torch.nn.Conv2d(c, cd, 5, 2, 2, padding_mode = 'reflect'),
                     torch.nn.PReLU(cd, 0.2),     
                 )
+                '''
 
                 self.convblock1 = torch.nn.Sequential(
                     ResConv(c),
@@ -495,13 +497,15 @@ class Model:
                 x00 = torch.cat((timestep, x00, tenGrid), 1)
 
                 feat = self.conv0(x)
-                feat = 0.9 * feat + 0.1 * self.conv00(x00)
+                # feat = 0.9 * feat + 0.1 * self.conv00(x00)
 
                 featF = self.convblock1f(feat)
                 # featF, _ = self.convblock1f((feat, timestep_emb))
 
-                feat = 0.9 * self.conv1(feat) + 0.1 * self.conv10(feat)
-                feat_deep = 0.9 * self.conv2(feat) + 0.1 * self.conv20(feat)
+                feat = self.conv1(feat)
+                # feat = 0.9 * feat + 0.1 * self.conv10(feat)
+                feat_deep = self.conv2(feat)
+                # feat_deep = 0.9 * feat_deep + 0.1 * self.conv20(feat)
 
                 _, _, dh, dw = feat_deep.shape
                 # feat_deep = self.resize_min_side(feat_deep, 48)
@@ -841,14 +845,15 @@ class Model:
     def freeze(net = None):
         for param in net.block0.parameters():
             param.requires_grad = False
+
+        '''
         for param in net.block0.conv00.parameters():
             param.requires_grad = True
         for param in net.block0.conv10.parameters():
             param.requires_grad = True
         for param in net.block0.conv20.parameters():
             param.requires_grad = True
-
-        '''
+        
         for param in net.block0.attn_deep.parameters():
             param.requires_grad = True        
 
