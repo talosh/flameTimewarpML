@@ -89,6 +89,7 @@ class Model:
             max_val = difference.view(difference.size(0), -1).max(dim=1)[0].view(-1, 1, 1, 1)
             difference_normalized = difference / (max_val + 1e-8)
             return difference_normalized
+
         class HighPassFilter(Module):
             def __init__(self):
                 super(HighPassFilter, self).__init__()
