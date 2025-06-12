@@ -228,6 +228,12 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
+
+                self.conv0 = conv(in_planes, c//2, 3, 2, 1)
+                self.conv1 = conv(c//2, c, 3, 2, 1)
+                self.conv2 = conv(c, cd, 3, 2, 1)
+
+                '''
                 self.conv0 = torch.nn.Sequential(
                     torch.nn.Conv2d(in_planes, c//2, 5, 2, 2, padding_mode = 'zeros'),
                     myPReLU(c//2),
@@ -240,11 +246,13 @@ class Model:
                     torch.nn.Conv2d(c, cd, 5, 2, 2, padding_mode = 'reflect'),
                     torch.nn.PReLU(cd, 0.2),     
                 )
+                '''
+
                 self.convblock1 = torch.nn.Sequential(
-                    ResConvEmb(c),
-                    ResConvEmb(c),
-                    ResConvEmb(c),
-                    ResConvEmb(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
                 )
                 self.convblock2 = torch.nn.Sequential(
                     ResConv(c),
@@ -256,10 +264,10 @@ class Model:
                     ResConv(c),
                 )
                 self.convblock1f = torch.nn.Sequential(
-                    ResConvEmb(c//2),
-                    ResConvEmb(c//2),
-                    ResConvEmb(c//2),
-                    ResConvEmb(c//2),
+                    ResConv(c//2),
+                    ResConv(c//2),
+                    ResConv(c//2),
+                    ResConv(c//2),
                 )
                 self.convblock2f = torch.nn.Sequential(
                     ResConv(c//2),
@@ -283,10 +291,10 @@ class Model:
                     ResConv(c//2),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
-                    ResConvEmb(cd),
-                    ResConvEmb(cd),
-                    ResConvEmb(cd),
-                    ResConvEmb(cd),
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
+                    ResConv(cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
                     ResConv(cd),
@@ -325,7 +333,8 @@ class Model:
                 padding = (0, pw, 0, ph)
 
                 imgs = torch.cat((img0, img1), 1)
-                x = torch.cat((imgs, f0, f1, diffmatte(img0, img1)), 1)
+                x = torch.cat((imgs, f0, f1), 1)
+                # x = torch.cat((imgs, f0, f1, diffmatte(img0, img1)), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                 x = torch.nn.functional.pad(x, padding)
 
@@ -338,13 +347,16 @@ class Model:
                 x = torch.cat((timestep, x, tenGrid), 1)
 
                 feat = self.conv0(x)
-                featF, _ = self.convblock1f((feat, timestep_emb))
+                featF = self.convblock1f(feat)
+                # featF, _ = self.convblock1f((feat, timestep_emb))
 
                 feat = self.conv1(feat)
                 feat_deep = self.conv2(feat)
 
-                feat, _ = self.convblock1((feat, timestep_emb))
-                feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
+                feat= self.convblock1(feat)
+                feat_deep= self.convblock_deep1(feat_deep)
+                # feat, _ = self.convblock1((feat, timestep_emb))
+                # feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
                 
                 feat = self.mix1f(featF, feat)
                 feat_tmp = self.mix1(feat, feat_deep)
@@ -655,6 +667,7 @@ class Model:
     def freeze(net = None):
         for param in net.block0.parameters():
             param.requires_grad = False
+        '''
         for param in net.block0.conv0.parameters():
             param.requires_grad = True
         for param in net.block0.conv1.parameters():
@@ -667,3 +680,4 @@ class Model:
             param.requires_grad = True
         for param in net.block0.convblock_deep1.parameters():
             param.requires_grad = True
+        '''
