@@ -193,7 +193,7 @@ class Model:
                 )
 
                 self.encoder = torch.nn.Sequential(
-                    torch.nn.AdaptiveAvgPool2d((bands, bands)),
+                    torch.nn.AdaptiveMaxPool2d((bands, bands)),
                     torch.nn.Conv2d(c, out_channels, 1, 1, 0),
                     torch.nn.PReLU(out_channels, 0.2),
                     torch.nn.Flatten(start_dim=1),
