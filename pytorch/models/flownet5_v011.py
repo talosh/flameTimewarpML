@@ -572,9 +572,9 @@ class Model:
                 feat_deep_emb = self.revmix10(feat_emb, feat_deep_emb)
                 featF_emb = self.revmix10f(featF_emb, feat_tmp_emb)
 
-                featF = 0.5 * featF + 0.5 * featF_emb
-                feat = 0.5 * feat + 0.5 * feat_emb
-                feat_deep = 0.5 * feat_deep + 0.5 * feat_deep_emb
+                featF = 0.9 * featF + 0.1 * featF_emb
+                feat = 0.9 * feat + 0.1 * feat_emb
+                feat_deep = 0.9 * feat_deep + 0.1 * feat_deep_emb
 
                 featF, _ = self.convblock2f((featF, timestep_emb))
                 feat, _ = self.convblock2((feat_tmp, timestep_emb))
