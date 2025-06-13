@@ -2664,10 +2664,15 @@ def main():
         hours = int((epoch_time % (24 * 3600)) // 3600)
         minutes = int((epoch_time % 3600) // 60)
 
+        try:
+            mx = flownet.block0.mix_ratio
+        except:
+            mx = -1.
+
         clear_lines(2)
         print (f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{model_time_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
         if len(dataset) > 10000:
-            print(f'\r[10K Average] L1: {np.mean(cur_l1):.6f} LPIPS: {np.mean(cur_lpips):.4f} Combined: {np.mean(cur_comb):.8f}, mix {flownet.block0.mix_ratio:.6f}')
+            print(f'\r[10K Average] L1: {np.mean(cur_l1):.6f} LPIPS: {np.mean(cur_lpips):.4f} Combined: {np.mean(cur_comb):.8f}, mix {mx:.6f}')
         else:
             print(f'\r[Epoch] Min L1: {min_l1:.6f} Avg L1: {avg_l1:.6f} Max L1: {max_l1:.6f} Avg LPIPS: {avg_lpips:.4f} Combined: {avg_loss:.8f}')
 
