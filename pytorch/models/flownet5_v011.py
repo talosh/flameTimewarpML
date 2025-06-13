@@ -902,6 +902,7 @@ class Model:
     def freeze(net = None):
         for param in net.block0.parameters():
             param.requires_grad = False
+
         for param in net.block0.conv00.parameters():
             param.requires_grad = True
         for param in net.block0.conv10.parameters():
