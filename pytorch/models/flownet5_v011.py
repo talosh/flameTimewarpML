@@ -176,8 +176,11 @@ class Model:
                 return x
 
         class FourierChannelAttention(Module):
-            def __init__(self, c, latent_dim, out_channels, bands = 16):
+            def __init__(self, c, latent_dim, out_channels, bands = 24):
                 super().__init__()
+
+                self.bands = bands
+
                 self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 1.0), requires_grad=True)
 
                 self.precomp = torch.nn.Sequential(
@@ -265,7 +268,7 @@ class Model:
                 mag_n = self.precomp(torch.cat([mag_n, grid_x, grid_y], dim=1))
 
                 latent = self.encoder(mag_n)
-                spat_at = self.fc1(latent).view(-1, self.c, 11, 11)
+                spat_at = self.fc1(latent).view(-1, self.c, self.bands, self.bands)
                 spat_at = self.fc1_scaler(spat_at)
                 spat_at = torch.nn.functional.interpolate(
                     spat_at, 
