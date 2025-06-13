@@ -176,7 +176,7 @@ class Model:
                 return x
 
         class FourierChannelAttention(Module):
-            def __init__(self, c, latent_dim, out_channels, bands = 24):
+            def __init__(self, c, latent_dim, out_channels, bands = 16):
                 super().__init__()
                 self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 1.0), requires_grad=True)
 
