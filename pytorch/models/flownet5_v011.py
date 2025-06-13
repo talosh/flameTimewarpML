@@ -204,6 +204,7 @@ class Model:
                     torch.nn.Linear(latent_dim, c),
                     torch.nn.Sigmoid(),
                 )
+                self.conv = torch.nn.Conv2d(c, c, 1, 1, 0)
                 self.c = c
 
             def normalize_fft_magnitude(self, mag, sh, sw, target_size=(64, 64)):
@@ -272,7 +273,7 @@ class Model:
                 x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
 
                 chan_scale = self.fc2(latent).view(-1, self.c, 1, 1)
-                x = x * chan_scale.clamp(min=1e-6)
+                x = x * self.conv(chan_scale).clamp(min=1e-6)
                 return x
 
         class Head(Module):
