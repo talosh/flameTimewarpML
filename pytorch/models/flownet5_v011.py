@@ -434,10 +434,10 @@ class Model:
                     ResConvEmb(cd),
                 )
 
-                self.mix10_emb = UpMix(c, cd)
-                self.mix10f_emb = DownMix(c//2, c)
-                self.revmix10_emb = DownMix(c, cd)
-                self.revmix10f_emb = UpMix(c//2, c)
+                self.mix10 = UpMix(c, cd)
+                self.mix10f = DownMix(c//2, c)
+                self.revmix10 = DownMix(c, cd)
+                self.revmix10f = UpMix(c//2, c)
 
                 self.convblock2 = torch.nn.Sequential(
                     ResConvDummy(c),
