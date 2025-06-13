@@ -176,7 +176,7 @@ class Model:
                 return x
 
         class FourierChannelAttention(Module):
-            def __init__(self, c, latent_dim, out_channels):
+            def __init__(self, c, latent_dim, out_channels, bands = 24):
                 super().__init__()
                 self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 1.0), requires_grad=True)
 
@@ -188,23 +188,29 @@ class Model:
                 )
 
                 self.encoder = torch.nn.Sequential(
-                    torch.nn.AdaptiveAvgPool2d((11, 11)),
+                    torch.nn.AdaptiveAvgPool2d((bands, bands)),
                     torch.nn.Conv2d(c, out_channels, 1, 1, 0),
                     torch.nn.PReLU(out_channels, 0.2),
                     torch.nn.Flatten(start_dim=1),
-                    torch.nn.Linear(121 * out_channels, latent_dim),
+                    torch.nn.Linear(bands * bands * out_channels, latent_dim),
                     torch.nn.PReLU(latent_dim, 0.2)
                 )
                 self.fc1 = torch.nn.Sequential(
-                    torch.nn.Linear(latent_dim, 121 * c),
-                    torch.nn.Softplus() # torch.nn.Sigmoid(),
+                    torch.nn.Linear(latent_dim, bands * bands * c),
+                    torch.nn.Sigmoid(),
                 )
-                
+                self.fc1_scaler = torch.nn.Sequential(
+                    torch.nn.Conv2d(c, c, 1, 1, 0),
+                    torch.nn.ReLU()
+                )
                 self.fc2 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, c),
                     torch.nn.Sigmoid(),
                 )
-                self.conv = torch.nn.Conv2d(c, c, 1, 1, 0)
+                self.fc2_scaler = torch.nn.Sequential(
+                    torch.nn.Conv2d(c, c, 1, 1, 0),
+                    torch.nn.ReLU()
+                )
                 self.c = c
 
             def normalize_fft_magnitude(self, mag, sh, sw, target_size=(64, 64)):
