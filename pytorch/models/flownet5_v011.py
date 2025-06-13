@@ -203,7 +203,6 @@ class Model:
                 self.fc2 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, c),
                     torch.nn.Sigmoid(),
-                    torch.nn.Conv2d(c, c, 1, 1, 0),
                 )
                 self.c = c
 
