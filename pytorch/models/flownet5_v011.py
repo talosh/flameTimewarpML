@@ -390,61 +390,61 @@ class Model:
                 '''
 
                 self.convblock1 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
                 )
                 self.convblock2 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
                 )
                 self.convblock3 = torch.nn.Sequential(
-                    ResConv(c),
-                    ResConv(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
                 )
                 self.convblock1f = torch.nn.Sequential(
-                    ResConv(c//2),
-                    ResConv(c//2),
-                    ResConv(c//2),
-                    ResConv(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
                 )
                 self.convblock2f = torch.nn.Sequential(
-                    ResConv(c//2),
-                    ResConv(c//2),
-                    ResConv(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
                 )
                 self.convblock3f = torch.nn.Sequential(
-                    ResConv(c//2),
-                    ResConv(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
                 )
                 self.convblock_last = torch.nn.Sequential(
                     ResConvDummy(c),
                     ResConvDummy(c),
                     ResConvDummy(c),
-                    ResConvEmb(c),
+                    ResConvDummy(c),
                 )
                 self.convblock_last_shallow = torch.nn.Sequential(
                     ResConvDummy(c//2),
-                    ResConvEmb(c//2),
-                    ResConvEmb(c//2),
-                    ResConvEmb(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
                 )
                 self.convblock_deep1 = torch.nn.Sequential(
-                    ResConv(cd),
-                    ResConv(cd),
-                    ResConv(cd),
-                    ResConv(cd),
+                    ResConvDummy(cd),
+                    ResConvDummy(cd),
+                    ResConvDummy(cd),
+                    ResConvDummy(cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
-                    ResConv(cd),
-                    ResConv(cd),
-                    ResConv(cd),
+                    ResConvDummy(cd),
+                    ResConvDummy(cd),
+                    ResConvDummy(cd),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
-                    ResConv(cd),
-                    ResConv(cd),
+                    ResConvDummy(cd),
+                    ResConvDummy(cd),
                 )
 
                 # self.attn_deep = ChannelAttention(cd)
@@ -509,8 +509,7 @@ class Model:
                 feat = self.conv0(x)
                 # feat = 0.9 * feat + 0.1 * self.conv00(x00)
 
-                featF = self.convblock1f(feat)
-                # featF, _ = self.convblock1f((feat, timestep_emb))
+                featF, _ = self.convblock1f((feat, timestep_emb))
 
                 feat = self.conv1(feat)
                 # feat = 0.9 * feat + 0.1 * self.conv10(feat)
@@ -521,10 +520,8 @@ class Model:
                 # feat_deep = self.resize_min_side(feat_deep, 48)
                 # feat_deep = self.attn_deep(feat_deep)
 
-                feat= self.convblock1(feat)
-                feat_deep= self.convblock_deep1(feat_deep)
-                # feat, _ = self.convblock1((feat, timestep_emb))
-                # feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
+                feat, _ = self.convblock1((feat, timestep_emb))
+                feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
                 
                 feat = self.mix1f(featF, feat)
                 feat_tmp = self.mix1(
@@ -540,9 +537,9 @@ class Model:
 
                 featF = self.revmix1f(featF, feat_tmp)
 
-                featF = self.convblock2f(featF)
-                feat = self.convblock2(feat_tmp)
-                feat_deep = self.convblock_deep2(feat_deep)
+                featF, _ = self.convblock2f((featF, timestep_emb))
+                feat, _ = self.convblock2((feat_tmp, timestep_emb))
+                feat_deep, _ = self.convblock_deep2((feat_deep, timestep_emb))
 
                 feat = self.mix2f(featF, feat)
                 feat_tmp = self.mix2(
@@ -557,9 +554,10 @@ class Model:
                     )
                 featF = self.revmix2f(featF, feat_tmp)
 
-                featF = self.convblock3f(featF)
-                feat = self.convblock3(feat_tmp)
-                feat_deep = self.convblock_deep3(feat_deep)
+                featF, _ = self.convblock3f((featF, timestep_emb))
+                feat, _ = self.convblock3((feat_tmp, timestep_emb))
+                feat_deep, _ = self.convblock_deep3((feat_deep, timestep_emb))
+                
                 feat = self.mix3f(featF, feat)
                 feat = self.mix3(
                     feat,
