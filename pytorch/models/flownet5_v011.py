@@ -395,10 +395,6 @@ class Model:
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
 
-                self.conv0 = conv(in_planes, c//2, 3, 2, 1)
-                self.conv1 = conv(c//2, c, 3, 2, 1)
-                self.conv2 = conv(c, cd, 3, 2, 1)
-
                 self.conv00 = torch.nn.Sequential(
                     torch.nn.Conv2d(in_planes + 1, c//2, 5, 2, 2, padding_mode = 'zeros'),
                     myPReLU(c//2),
@@ -419,19 +415,19 @@ class Model:
                     ResConvDummy(c),
                 )
 
-                self.convblock1_emb = torch.nn.Sequential(
+                self.convblock10 = torch.nn.Sequential(
                     ResConvEmb(c),
                     ResConvEmb(c),
                     ResConvEmb(c),
                     ResConvEmb(c),
                 )
-                self.convblock1f_emb = torch.nn.Sequential(
+                self.convblock10f = torch.nn.Sequential(
                     ResConvEmb(c//2),
                     ResConvEmb(c//2),
                     ResConvEmb(c//2),
                     ResConvEmb(c//2),
                 )
-                self.convblock1d_emb = torch.nn.Sequential(
+                self.convblock_deep10 = torch.nn.Sequential(
                     ResConvEmb(cd),
                     ResConvEmb(cd),
                     ResConvEmb(cd),
@@ -551,12 +547,9 @@ class Model:
                 feat = self.conv00(x)
 
                 featF, _ = self.convblock1f((feat, timestep_emb))
-                featF_emb, _ = self.convblock1f_emb((feat, timestep_emb))
+                featF_emb, _ = self.convblock10f((feat, timestep_emb))
 
-
-                # feat = self.conv1(feat)
                 feat = self.conv10(feat)
-                # feat_deep = self.conv2(feat)
                 feat_deep = self.conv20(feat)
 
                 _, _, dh, dw = feat_deep.shape
@@ -566,8 +559,8 @@ class Model:
                 feat, _ = self.convblock1((feat, timestep_emb))
                 feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
                 
-                feat_emb, _ = self.convblock1_emb((feat, timestep_emb))
-                feat_deep_emb, _ = self.convblock1d_emb((feat_deep, timestep_emb))
+                feat_emb, _ = self.convblock10((feat, timestep_emb))
+                feat_deep_emb, _ = self.convblock_deep10((feat_deep, timestep_emb))
 
 
                 feat = self.mix1f(featF, feat)
@@ -918,11 +911,11 @@ class Model:
         for param in net.block0.attn_deep.parameters():
             param.requires_grad = True
 
-        for param in net.block0.convblock1_emb.parameters():
+        for param in net.block0.convblock10f.parameters():
             param.requires_grad = True
-        for param in net.block0.convblock1f_emb.parameters():
+        for param in net.block0.convblock10.parameters():
             param.requires_grad = True
-        for param in net.block0.convblock1d_emb.parameters():
+        for param in net.block0.convblock_deep10.parameters():
             param.requires_grad = True
 
         for param in net.block0.mix1_emb.parameters():
