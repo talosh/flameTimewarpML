@@ -513,6 +513,8 @@ class Model:
                 )
                 self.maxdepth = 16
 
+                self.mix_ratio = 0
+
             def resize_min_side(self, tensor, size):
                 B, C, H, W = tensor.shape
 
@@ -553,7 +555,7 @@ class Model:
                 midpoint = 20000.0
                 steepness = 0.00011
                 counter_f = self.forward_counter.float()
-                mix_ratio = torch.sigmoid(steepness * (counter_f - midpoint))
+                self.mix_ratio = torch.sigmoid(steepness * (counter_f - midpoint))
 
                 feat = self.conv00(x)
 
@@ -583,9 +585,9 @@ class Model:
                 feat_deep_emb = self.revmix10(feat_emb, feat_deep_emb)
                 featF_emb = self.revmix10f(featF_emb, feat_tmp_emb)
 
-                featF = (1 - mix_ratio) * featF + mix_ratio * featF_emb
-                feat = (1 - mix_ratio) * feat + mix_ratio * feat_emb
-                feat_deep = (1 - mix_ratio) * feat_deep + mix_ratio * feat_deep_emb
+                featF = (1 - self.mix_ratio) * featF + self.mix_ratio * featF_emb
+                feat = (1 - self.mix_ratio) * feat + self.mix_ratio * feat_emb
+                feat_deep = (1 - self.mix_ratio) * feat_deep + self.mix_ratio * feat_deep_emb
 
                 featF, _ = self.convblock2f((featF, timestep_emb))
                 feat, _ = self.convblock2((feat_tmp, timestep_emb))
