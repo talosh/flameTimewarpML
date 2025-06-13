@@ -434,10 +434,10 @@ class Model:
                     ResConvEmb(cd),
                 )
 
-                self.mix1_emb = UpMix(c, cd)
-                self.mix1f_emb = DownMix(c//2, c)
-                self.revmix1_emb = DownMix(c, cd)
-                self.revmix1f_emb = UpMix(c//2, c)
+                self.mix10_emb = UpMix(c, cd)
+                self.mix10f_emb = DownMix(c//2, c)
+                self.revmix10_emb = DownMix(c, cd)
+                self.revmix10f_emb = UpMix(c//2, c)
 
                 self.convblock2 = torch.nn.Sequential(
                     ResConvDummy(c),
@@ -557,30 +557,20 @@ class Model:
                 feat_deep = self.attn_deep(feat_deep)
 
                 feat, _ = self.convblock1((feat, timestep_emb))
-                feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
-                
                 feat_emb, _ = self.convblock10((feat, timestep_emb))
+
+                feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
                 feat_deep_emb, _ = self.convblock_deep10((feat_deep, timestep_emb))
 
-
                 feat = self.mix1f(featF, feat)
-                feat_tmp = self.mix1(
-                    feat,
-                    feat_deep
-                    # torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
-                    )
-                feat_deep = self.revmix1(
-                    feat,
-                    feat_deep
-                    # torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
-                    )
+                feat_tmp = self.mix1(feat, feat_deep)
+                feat_deep = self.revmix1(feat, feat_deep)
                 featF = self.revmix1f(featF, feat_tmp)
 
-
-                feat_emb = self.mix1f_emb(featF_emb, feat_emb)
-                feat_tmp_emb = self.mix1_emb(feat_emb,feat_deep_emb)
-                feat_deep_emb = self.revmix1_emb(feat_emb, feat_deep_emb)
-                featF_emb = self.revmix1f_emb(featF_emb, feat_tmp_emb)
+                feat_emb = self.mix10f_emb(featF_emb, feat_emb)
+                feat_tmp_emb = self.mix10_emb(feat_emb, feat_deep_emb)
+                feat_deep_emb = self.revmix10_emb(feat_emb, feat_deep_emb)
+                featF_emb = self.revmix10f_emb(featF_emb, feat_tmp_emb)
 
                 featF = 0.5 * featF_emb + 0.5 * feat_emb
                 feat = 0.5 * feat + 0.5 * feat_emb
@@ -919,13 +909,13 @@ class Model:
         for param in net.block0.convblock_deep10.parameters():
             param.requires_grad = True
 
-        for param in net.block0.mix1_emb.parameters():
+        for param in net.block0.mix10.parameters():
             param.requires_grad = True
-        for param in net.block0.mix1f_emb.parameters():
+        for param in net.block0.mix10f.parameters():
             param.requires_grad = True
-        for param in net.block0.revmix1_emb.parameters():
+        for param in net.block0.revmix10.parameters():
             param.requires_grad = True
-        for param in net.block0.revmix1f_emb.parameters():
+        for param in net.block0.revmix10f.parameters():
             param.requires_grad = True
 
         # for param in net.encode.parameters():
