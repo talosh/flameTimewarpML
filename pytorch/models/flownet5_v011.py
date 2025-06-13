@@ -555,8 +555,6 @@ class Model:
                 counter_f = self.forward_counter.float()
                 mix_ratio = torch.sigmoid(steepness * (counter_f - midpoint))
 
-                print (f'\nmix ratio: {mix_ratio}\n')
-
                 feat = self.conv00(x)
 
                 featF, _ = self.convblock1f((feat, timestep_emb))
@@ -585,9 +583,9 @@ class Model:
                 feat_deep_emb = self.revmix10(feat_emb, feat_deep_emb)
                 featF_emb = self.revmix10f(featF_emb, feat_tmp_emb)
 
-                featF = 1 - mix_ratio * featF + mix_ratio * featF_emb
-                feat = 1 - mix_ratio * feat + mix_ratio * feat_emb
-                feat_deep = 1 - mix_ratio * feat_deep + mix_ratio * feat_deep_emb
+                featF = (1 - mix_ratio) * featF + mix_ratio * featF_emb
+                feat = (1 - mix_ratio) * feat + mix_ratio * feat_emb
+                feat_deep = (1 - mix_ratio) * feat_deep + mix_ratio * feat_deep_emb
 
                 featF, _ = self.convblock2f((featF, timestep_emb))
                 feat, _ = self.convblock2((feat_tmp, timestep_emb))
