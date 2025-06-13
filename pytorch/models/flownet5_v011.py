@@ -427,7 +427,7 @@ class Model:
                 )
                 self.convblock_last_shallow = torch.nn.Sequential(
                     ResConvDummy(c//2),
-                    ResConvDummy(c//2),
+                    ResConvEmb(c//2),
                     ResConvEmb(c//2),
                     ResConvEmb(c//2),
                 )
@@ -855,8 +855,8 @@ class Model:
     def freeze(net = None):
         for param in net.block0.parameters():
             param.requires_grad = False
-        # for param in net.encode.parameters():
-        #    param.requires_grad = False
+        for param in net.encode.parameters():
+            param.requires_grad = False
 
         #for param in net.block0.convblock_last[0].mlp.parameters():
         #    param.requires_grad = True
@@ -864,12 +864,14 @@ class Model:
         #    param.requires_grad = True
         #for param in net.block0.convblock_last[2].mlp.parameters():
         #    param.requires_grad = True
-        for param in net.block0.convblock_last[3].parameters():
-            param.requires_grad = True
+        # for param in net.block0.convblock_last[3].parameters():
+        #    param.requires_grad = True
         #for param in net.block0.convblock_last_shallow[0].mlp.parameters():
         #    param.requires_grad = True
-        #for param in net.block0.convblock_last_shallow[1].mlp.parameters():
-        #    param.requires_grad = True
+        for param in net.block0.convblock_last_shallow[1].mlp.parameters():
+            param.requires_grad = True
+        
+        '''
         for param in net.block0.convblock_last_shallow[2].parameters():
             param.requires_grad = True
         for param in net.block0.convblock_last_shallow[3].parameters():
@@ -879,6 +881,7 @@ class Model:
             param.requires_grad = True
         for param in net.block0.mix4.parameters():
             param.requires_grad = True
+        '''
 
         '''
         for param in net.block0.conv00.parameters():
