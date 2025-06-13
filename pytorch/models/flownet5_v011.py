@@ -395,6 +395,8 @@ class Model:
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
 
+                self.register_buffer("forward_counter", torch.tensor(0, dtype=torch.long))
+
                 self.conv00 = torch.nn.Sequential(
                     torch.nn.Conv2d(in_planes + 1, c//2, 5, 2, 2, padding_mode = 'zeros'),
                     myPReLU(c//2),
@@ -544,6 +546,15 @@ class Model:
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 x = torch.cat((timestep, x, tenGrid), 1)
 
+
+                self.forward_counter += 1
+
+                # Sigmoid-based schedule
+                midpoint = 20000.0
+                steepness = 0.00011
+                counter_f = self.forward_counter.float()
+                mix_ratio = torch.sigmoid(steepness * (counter_f - midpoint))
+
                 feat = self.conv00(x)
 
                 featF, _ = self.convblock1f((feat, timestep_emb))
@@ -572,9 +583,9 @@ class Model:
                 feat_deep_emb = self.revmix10(feat_emb, feat_deep_emb)
                 featF_emb = self.revmix10f(featF_emb, feat_tmp_emb)
 
-                featF = 0.9 * featF + 0.1 * featF_emb
-                feat = 0.9 * feat + 0.1 * feat_emb
-                feat_deep = 0.9 * feat_deep + 0.1 * feat_deep_emb
+                featF = 1 - mix_ratio * featF + mix_ratio * featF_emb
+                feat = 1 - mix_ratio * feat + mix_ratio * feat_emb
+                feat_deep = 1 - mix_ratio * feat_deep + mix_ratio * feat_deep_emb
 
                 featF, _ = self.convblock2f((featF, timestep_emb))
                 feat, _ = self.convblock2((feat_tmp, timestep_emb))
