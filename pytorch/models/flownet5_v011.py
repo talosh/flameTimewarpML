@@ -418,6 +418,31 @@ class Model:
                     ResConvDummy(c),
                     ResConvDummy(c),
                 )
+
+                self.convblock1_emb = torch.nn.Sequential(
+                    ResConvEmb(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
+                )
+                self.convblock1f_emb = torch.nn.Sequential(
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
+                )
+                self.convblock1d_emb = torch.nn.Sequential(
+                    ResConvEmb(cd),
+                    ResConvEmb(cd),
+                    ResConvEmb(cd),
+                    ResConvEmb(cd),
+                )
+
+                self.mix1_emb = UpMix(c, cd)
+                self.mix1f_emb = DownMix(c//2, c)
+                self.revmix1_emb = DownMix(c, cd)
+                self.revmix1f_emb = UpMix(c//2, c)
+
                 self.convblock2 = torch.nn.Sequential(
                     ResConvDummy(c),
                     ResConvDummy(c),
@@ -511,13 +536,9 @@ class Model:
                 padding = (0, pw, 0, ph)
 
                 imgs = torch.cat((img0, img1), 1)
-                x = torch.cat((imgs, f0, f1), 1)
+                x = torch.cat((imgs, f0, f1, diffmatte(img0, img1)), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                 x = torch.nn.functional.pad(x, padding)
-
-                x00 = torch.cat((imgs, f0, f1, diffmatte(img0, img1)), 1)
-                x00 = torch.nn.functional.interpolate(x00, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-                x00 = torch.nn.functional.pad(x00, padding)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
@@ -527,17 +548,16 @@ class Model:
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 x = torch.cat((timestep, x, tenGrid), 1)
 
-                x00 = torch.cat((timestep, x00, tenGrid), 1)
-
-                feat = self.conv0(x)
-                feat = 0.5 * feat + 0.5 * self.conv00(x00)
+                feat = self.conv00(x)
 
                 featF, _ = self.convblock1f((feat, timestep_emb))
+                featF_emb, _ = self.convblock1f_emb((feat, timestep_emb))
+
 
                 # feat = self.conv1(feat)
-                feat = 0.5 * self.conv1(feat) + 0.5 * self.conv10(feat)
+                feat = self.conv10(feat)
                 # feat_deep = self.conv2(feat)
-                feat_deep = 0.5 * self.conv2(feat) + 0.5 * self.conv20(feat)
+                feat_deep = self.conv20(feat)
 
                 _, _, dh, dw = feat_deep.shape
                 # feat_deep = self.resize_min_side(feat_deep, 48)
@@ -546,6 +566,10 @@ class Model:
                 feat, _ = self.convblock1((feat, timestep_emb))
                 feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
                 
+                feat_emb, _ = self.convblock1_emb((feat, timestep_emb))
+                feat_deep_emb, _ = self.convblock1d_emb((feat_deep, timestep_emb))
+
+
                 feat = self.mix1f(featF, feat)
                 feat_tmp = self.mix1(
                     feat,
@@ -557,8 +581,17 @@ class Model:
                     feat_deep
                     # torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
                     )
-
                 featF = self.revmix1f(featF, feat_tmp)
+
+
+                feat_emb = self.mix1f_emb(featF_emb, feat_emb)
+                feat_tmp_emb = self.mix1_emb(feat_emb,feat_deep_emb)
+                feat_deep_emb = self.revmix1_emb(feat_emb, feat_deep_emb)
+                featF_emb = self.revmix1f_emb(featF_emb, feat_tmp_emb)
+
+                featF = 0.5 * featF_emb + 0.5 * feat_emb
+                feat = 0.5 * feat + 0.5 * feat_emb
+                feat_deep = 0.5 * feat_deep + 0.5 * feat_deep_emb
 
                 featF, _ = self.convblock2f((featF, timestep_emb))
                 feat, _ = self.convblock2((feat_tmp, timestep_emb))
@@ -885,6 +918,21 @@ class Model:
         for param in net.block0.attn_deep.parameters():
             param.requires_grad = True
 
+        for param in net.block0.convblock1_emb.parameters():
+            param.requires_grad = True
+        for param in net.block0.convblock1f_emb.parameters():
+            param.requires_grad = True
+        for param in net.block0.convblock1d_emb.parameters():
+            param.requires_grad = True
+
+        for param in net.block0.mix1_emb.parameters():
+            param.requires_grad = True
+        for param in net.block0.mix1f_emb.parameters():
+            param.requires_grad = True
+        for param in net.block0.revmix1_emb.parameters():
+            param.requires_grad = True
+        for param in net.block0.revmix1f_emb.parameters():
+            param.requires_grad = True
 
         # for param in net.encode.parameters():
         #    param.requires_grad = False
