@@ -529,10 +529,10 @@ class Model:
 
                 featF, _ = self.convblock1f((feat, timestep_emb))
 
-                feat = self.conv1(feat)
-                feat = 0.5 * feat + 0.5 * self.conv10(feat)
-                feat_deep = self.conv2(feat)
-                feat_deep = 0.5 * feat_deep + 0.5 * self.conv20(feat)
+                # feat = self.conv1(feat)
+                feat = 0.5 * self.conv1(feat) + 0.5 * self.conv10(feat)
+                # feat_deep = self.conv2(feat)
+                feat_deep = 0.5 * self.conv2(feat) + 0.5 * self.conv20(feat)
 
                 _, _, dh, dw = feat_deep.shape
                 # feat_deep = self.resize_min_side(feat_deep, 48)
