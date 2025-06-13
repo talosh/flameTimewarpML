@@ -572,7 +572,7 @@ class Model:
                 feat_deep_emb = self.revmix10(feat_emb, feat_deep_emb)
                 featF_emb = self.revmix10f(featF_emb, feat_tmp_emb)
 
-                featF = 0.5 * featF_emb + 0.5 * feat_emb
+                featF = 0.5 * featF + 0.5 * featF_emb
                 feat = 0.5 * feat + 0.5 * feat_emb
                 feat_deep = 0.5 * feat_deep + 0.5 * feat_deep_emb
 
