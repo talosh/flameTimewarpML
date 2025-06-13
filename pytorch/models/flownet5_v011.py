@@ -176,10 +176,12 @@ class Model:
                 return x
 
         class FourierChannelAttention(Module):
-            def __init__(self, c, latent_dim, out_channels, bands = 24):
+            def __init__(self, c, latent_dim, out_channels, bands = 11, norm = False):
                 super().__init__()
 
                 self.bands = bands
+                self.norm = norm
+                self.c = c
 
                 self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 1.0), requires_grad=True)
 
@@ -214,7 +216,6 @@ class Model:
                     torch.nn.Conv2d(c, c, 1, 1, 0),
                     torch.nn.ReLU()
                 )
-                self.c = c
 
             def normalize_fft_magnitude(self, mag, sh, sw, target_size=(64, 64)):
                 """
@@ -253,14 +254,15 @@ class Model:
                 mag = x_fft.abs()
                 phase = x_fft.angle()
 
-                # mag_n = self.normalize_fft_magnitude(mag, sh, sw, target_size=(64, 64))
-
-                mag_n = torch.nn.functional.interpolate(
-                    mag, 
-                    size=(64, 64), 
-                    mode="bilinear",
-                    align_corners=False, 
-                    )
+                if self.norm:
+                    mag_n = self.normalize_fft_magnitude(mag, sh, sw, target_size=(64, 64))
+                else:
+                    mag_n = torch.nn.functional.interpolate(
+                        mag, 
+                        size=(64, 64), 
+                        mode="bilinear",
+                        align_corners=False, 
+                        )
 
                 mag_n = torch.log1p(mag_n) + self.alpha * mag_n
                 grid_x = torch.linspace(0, 1, 64, device=x.device).view(1, 1, 1, 64).expand(B, 1, 64, 64)
@@ -270,13 +272,16 @@ class Model:
                 latent = self.encoder(mag_n)
                 spat_at = self.fc1(latent).view(-1, self.c, self.bands, self.bands)
                 spat_at = self.fc1_scaler(spat_at)
-                spat_at = torch.nn.functional.interpolate(
-                    spat_at, 
-                    size=(sh, sw), 
-                    mode="bilinear",
-                    align_corners=False, 
-                    )
-                # spat_at = self.denormalize_fft_magnitude(spat_at, sh, sw)
+                if self.norm:
+                    spat_at = self.denormalize_fft_magnitude(spat_at, sh, sw)
+                else:
+                    spat_at = torch.nn.functional.interpolate(
+                        spat_at, 
+                        size=(sh, sw), 
+                        mode="bilinear",
+                        align_corners=False, 
+                        )
+
                 mag = mag * spat_at.clamp(min=1e-6)
 
                 x_fft = torch.polar(mag, phase)
@@ -403,7 +408,7 @@ class Model:
                     torch.nn.PReLU(c, 0.2),
                     )
                 self.conv20 = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, cd, 5, 2, 2, padding_mode = 'reflect'),
+                    torch.nn.Conv2d(c, cd, 2, 2, 1, padding_mode = 'reflect'),
                     torch.nn.PReLU(cd, 0.2),     
                 )
 
