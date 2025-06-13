@@ -555,6 +555,8 @@ class Model:
                 counter_f = self.forward_counter.float()
                 mix_ratio = torch.sigmoid(steepness * (counter_f - midpoint))
 
+                print (f'\nmix ratio: {mix_ratio}\n')
+
                 feat = self.conv00(x)
 
                 featF, _ = self.convblock1f((feat, timestep_emb))
