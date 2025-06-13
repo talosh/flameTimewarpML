@@ -408,7 +408,7 @@ class Model:
                     torch.nn.PReLU(c, 0.2),
                     )
                 self.conv20 = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, cd, 2, 2, 1, padding_mode = 'reflect'),
+                    torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'reflect'),
                     torch.nn.PReLU(cd, 0.2),     
                 )
 
