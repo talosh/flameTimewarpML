@@ -470,7 +470,7 @@ class Model:
                     ResConvDummy(cd),
                 )
 
-                # self.attn_deep = ChannelAttention(cd)
+                self.attn_deep = ChannelAttention(cd)
 
                 self.mix1 = UpMix(c, cd)
                 self.mix1f = DownMix(c//2, c)
@@ -541,7 +541,7 @@ class Model:
 
                 _, _, dh, dw = feat_deep.shape
                 # feat_deep = self.resize_min_side(feat_deep, 48)
-                # feat_deep = self.attn_deep(feat_deep)
+                feat_deep = self.attn_deep(feat_deep)
 
                 feat, _ = self.convblock1((feat, timestep_emb))
                 feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
