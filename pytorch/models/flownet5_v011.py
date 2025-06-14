@@ -555,7 +555,7 @@ class Model:
                 midpoint = 20000.0
                 steepness = 0.00011
                 counter_f = self.forward_counter.float()
-                self.mix_ratio = torch.sigmoid(steepness * (counter_f/4 - midpoint))
+                self.mix_ratio = torch.sigmoid(steepness * (counter_f/11 - midpoint))
 
                 feat = self.conv00(x)
 
