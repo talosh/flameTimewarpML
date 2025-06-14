@@ -562,18 +562,18 @@ class Model:
                 featF, _ = self.convblock1f((feat, timestep_emb))
                 featF_emb, _ = self.convblock10f((feat, timestep_emb))
 
-                feat = self.conv10(feat)
-                feat_deep = self.conv20(feat)
+                feat_ = self.conv10(feat)
+                feat_deep_ = self.conv20(feat_)
 
                 _, _, dh, dw = feat_deep.shape
                 # feat_deep = self.resize_min_side(feat_deep, 48)
                 feat_deep = self.attn_deep(feat_deep)
 
-                feat, _ = self.convblock1((feat, timestep_emb))
-                feat_emb, _ = self.convblock10((feat, timestep_emb))
+                feat, _ = self.convblock1((feat_, timestep_emb))
+                feat_emb, _ = self.convblock10((feat_, timestep_emb))
 
-                feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
-                feat_deep_emb, _ = self.convblock_deep10((feat_deep, timestep_emb))
+                feat_deep, _ = self.convblock_deep1((feat_deep_, timestep_emb))
+                feat_deep_emb, _ = self.convblock_deep10((feat_deep_, timestep_emb))
 
                 feat = self.mix1f(featF, feat)
                 feat_tmp = self.mix1(feat, feat_deep)
