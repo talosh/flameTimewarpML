@@ -397,6 +397,10 @@ class Model:
 
                 self.register_buffer("forward_counter", torch.tensor(0, dtype=torch.long))
 
+                self.conv0 = conv(in_planes, c//2, 3, 2, 1)
+                self.conv1 = conv(c//2, c, 3, 2, 1)
+                self.conv2 = conv(c, cd, 3, 2, 1)
+
                 self.conv00 = torch.nn.Sequential(
                     torch.nn.Conv2d(in_planes + 1, c//2, 5, 2, 2, padding_mode = 'zeros'),
                     myPReLU(c//2),
@@ -536,9 +540,14 @@ class Model:
                 padding = (0, pw, 0, ph)
 
                 imgs = torch.cat((img0, img1), 1)
-                x = torch.cat((imgs, f0, f1, diffmatte(img0, img1)), 1)
+                x = torch.cat((imgs, f0, f1), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                 x = torch.nn.functional.pad(x, padding)
+
+                imgs = torch.cat((img0, img1), 1)
+                x00 = torch.cat((imgs, f0, f1, diffmatte(img0, img1)), 1)
+                x00 = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
+                x00 = torch.nn.functional.pad(x, padding)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
@@ -557,37 +566,41 @@ class Model:
                 counter_f = self.forward_counter.float()
                 self.mix_ratio = torch.sigmoid(steepness * (counter_f/10 - midpoint))
 
-                feat = self.conv00(x)
+                feat = self.conv0(x)
+                feat00 = self.conv00(x00)
 
                 featF, _ = self.convblock1f((feat, timestep_emb))
-                featF_emb, _ = self.convblock10f((feat, timestep_emb))
+                featF00, _ = self.convblock10f((feat00, timestep_emb))
 
-                feat_ = self.conv10(feat)
-                feat_deep_ = self.conv20(feat_)
+                feat = self.conv1(feat)
+                feat_deep = self.conv2(feat)
+
+                feat00 = self.conv10(feat00)
+                feat_deep00 = self.conv20(feat00)
 
                 # _, _, dh, dw = feat_deep.shape
                 # feat_deep = self.resize_min_side(feat_deep, 48)
-                feat_deep_ = self.attn_deep(feat_deep_)
+                feat_deep00 = self.attn_deep(feat_deep00)
 
-                feat, _ = self.convblock1((feat_, timestep_emb))
-                feat_emb, _ = self.convblock10((feat_, timestep_emb))
+                feat, _ = self.convblock1((feat, timestep_emb))
+                feat00, _ = self.convblock10((feat00, timestep_emb))
 
-                feat_deep, _ = self.convblock_deep1((feat_deep_, timestep_emb))
-                feat_deep_emb, _ = self.convblock_deep10((feat_deep_, timestep_emb))
+                feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
+                feat_deep00, _ = self.convblock_deep10((feat_deep00, timestep_emb))
 
                 feat = self.mix1f(featF, feat)
                 feat_tmp = self.mix1(feat, feat_deep)
                 feat_deep = self.revmix1(feat, feat_deep)
                 featF = self.revmix1f(featF, feat_tmp)
 
-                feat_emb = self.mix10f(featF_emb, feat_emb)
-                feat_tmp_emb = self.mix10(feat_emb, feat_deep_emb)
-                feat_deep_emb = self.revmix10(feat_emb, feat_deep_emb)
-                featF_emb = self.revmix10f(featF_emb, feat_tmp_emb)
+                feat00 = self.mix10f(featF00, feat00)
+                feat_tmp00 = self.mix10(feat00, feat_deep00)
+                feat_deep00 = self.revmix10(feat00, feat_deep00)
+                featF00 = self.revmix10f(featF00, feat_tmp00)
 
-                featF = (1 - self.mix_ratio) * featF + self.mix_ratio * featF_emb
-                feat = (1 - self.mix_ratio) * feat + self.mix_ratio * feat_emb
-                feat_deep = (1 - self.mix_ratio) * feat_deep + self.mix_ratio * feat_deep_emb
+                featF = (1 - self.mix_ratio) * featF + self.mix_ratio * featF00
+                feat = (1 - self.mix_ratio) * feat + self.mix_ratio * feat00
+                feat_deep = (1 - self.mix_ratio) * feat_deep + self.mix_ratio * feat_deep00
 
                 featF, _ = self.convblock2f((featF, timestep_emb))
                 feat, _ = self.convblock2((feat_tmp, timestep_emb))
