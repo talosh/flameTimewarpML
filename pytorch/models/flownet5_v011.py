@@ -98,6 +98,19 @@ class Model:
             hp = hp.to(dtype = src_dtype)
             return hp
 
+        def ACEScct2cg(image):
+            condition = image < 0.155251141552511
+            value_if_true = (image - 0.0729055341958155) / 10.5402377416545
+            ACEScg = torch.where(condition, value_if_true, image)
+
+            condition = (image >= 0.155251141552511) & (image < (torch.log2(torch.tensor(65504.0)) + 9.72) / 17.52)
+            value_if_true = torch.exp2(image * 17.52 - 9.72)
+            ACEScg = torch.where(condition, value_if_true, ACEScg)
+
+            ACEScg = torch.clamp(ACEScg, max=65504.0)
+
+            return ACEScg
+
         def compress(x):
             src_dtype = x.dtype
             x = x.float()
@@ -116,6 +129,7 @@ class Model:
             max_val = difference.view(difference.size(0), -1).max(dim=1)[0].view(-1, 1, 1, 1)
             difference_normalized = difference / (max_val + 1e-8)
             return difference_normalized
+
 
         class HighPassFilter(Module):
             def __init__(self):
@@ -319,9 +333,9 @@ class Model:
                 x = x * chan_scale.clamp(min=1e-6)
                 return x
 
-        class Head00(Module):
+        class HeadAtt(Module):
             def __init__(self, c=48):
-                super(Head, self).__init__()
+                super(HeadAtt, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, c, 5, 2, 2),
                     myPReLU(c),
@@ -727,7 +741,7 @@ class Model:
                 self.block2 = None # FlownetDeep(24+5+4+2+1, c=96)
                 self.block3 = None # Flownet(31, c=64)
                 self.encode = Head()
-                self.encode00 = Head00()
+                self.encode_att = HeadAtt()
 
             def forward(self, img0, img1, timestep=0.5, scale=[12, 8, 4, 1], iterations=4, gt=None):
 
@@ -737,8 +751,8 @@ class Model:
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 
-                f00 = self.encode00(img0)
-                f10 = self.encode00(img1)
+                f00 = self.encode_att(img0)
+                f10 = self.encode_att(img1)
 
                 flow_list = [None] * 4
                 mask_list = [None] * 4
