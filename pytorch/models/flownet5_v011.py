@@ -915,6 +915,7 @@ class Model:
         for param in net.block0.attn_deep.parameters():
             param.requires_grad = True
 
+        '''
         for param in net.block0.convblock10f.parameters():
             param.requires_grad = True
         for param in net.block0.convblock10.parameters():
@@ -930,6 +931,7 @@ class Model:
             param.requires_grad = True
         for param in net.block0.revmix10f.parameters():
             param.requires_grad = True
+        '''
 
         # for param in net.encode.parameters():
         #    param.requires_grad = False
