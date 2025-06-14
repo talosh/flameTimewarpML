@@ -605,9 +605,6 @@ class Model:
                 counter_f = self.forward_counter.float()
                 self.mix_ratio = torch.sigmoid(steepness * (counter_f/10 - midpoint))
 
-                f0 = (1 - self.mix_ratio) * f0 +  self.mix_ratio * f00
-                f1 = (1 - self.mix_ratio) * f1 +  self.mix_ratio * f10
-
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
@@ -621,7 +618,7 @@ class Model:
                 x = torch.nn.functional.pad(x, padding)
 
                 imgs = torch.cat((img0, img1), 1)
-                x00 = torch.cat((imgs, f0, f1, diffmatte(img0, img1)), 1)
+                x00 = torch.cat((imgs, f00, f10, diffmatte(img0, img1)), 1)
                 x00 = torch.nn.functional.interpolate(x00, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                 x00 = torch.nn.functional.pad(x00, padding)
 
