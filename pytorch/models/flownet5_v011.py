@@ -410,6 +410,13 @@ class Model:
                     torch.nn.PReLU(cd, 0.2),     
                 )
 
+                self.convblock1 = torch.nn.Sequential(
+                    ResConvDummy(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
+                )
+
                 self.convblock10 = torch.nn.Sequential(
                     ResConvEmb(c),
                     ResConvEmb(c),
@@ -443,6 +450,12 @@ class Model:
                     ResConvDummy(c),
                     ResConvDummy(c),
                 )
+                self.convblock1f = torch.nn.Sequential(
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
+                )
                 self.convblock2f = torch.nn.Sequential(
                     ResConvDummy(c//2),
                     ResConvDummy(c//2),
@@ -463,6 +476,12 @@ class Model:
                     ResConvDummy(c//2),
                     ResConvDummy(c//2),
                     ResConvDummy(c//2),
+                )
+                self.convblock_deep1 = torch.nn.Sequential(
+                    ResConvDummy(cd),
+                    ResConvDummy(cd),
+                    ResConvDummy(cd),
+                    ResConvDummy(cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
                     ResConvDummy(cd),
@@ -540,7 +559,8 @@ class Model:
 
                 feat = self.conv00(x)
 
-                featF, _ = self.convblock10f((feat, timestep_emb))
+                featF, _ = self.convblock1f((feat, timestep_emb))
+                featF_emb, _ = self.convblock10f((feat, timestep_emb))
 
                 feat = self.conv10(feat)
                 feat_deep = self.conv20(feat)
@@ -549,26 +569,33 @@ class Model:
                 # feat_deep = self.resize_min_side(feat_deep, 48)
                 feat_deep = self.attn_deep(feat_deep)
 
-                feat, _ = self.convblock10((feat, timestep_emb))
-                feat_deep, _ = self.convblock_deep10((feat_deep, timestep_emb))
+                feat, _ = self.convblock1((feat, timestep_emb))
+                feat_emb, _ = self.convblock10((feat, timestep_emb))
 
-                feat = self.mix10f(featF, feat)
-                feat_tmp = self.mix10(feat, feat_deep)
-                feat_deep = self.revmix10(feat, feat_deep)
-                featF = self.revmix10f(featF, feat_tmp)
+                feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
+                feat_deep_emb, _ = self.convblock_deep10((feat_deep, timestep_emb))
 
-                '''
+                feat = self.mix1f(featF, feat)
+                feat_tmp = self.mix1(feat, feat_deep)
+                feat_deep = self.revmix1(feat, feat_deep)
+                featF = self.revmix1f(featF, feat_tmp)
+
+                feat_emb = self.mix10f(featF_emb, feat_emb)
+                feat_tmp_emb = self.mix10(feat_emb, feat_deep_emb)
+                feat_deep_emb = self.revmix10(feat_emb, feat_deep_emb)
+                featF_emb = self.revmix10f(featF_emb, feat_tmp_emb)
+
                 featF = (1 - self.mix_ratio) * featF + self.mix_ratio * featF_emb
                 feat = (1 - self.mix_ratio) * feat + self.mix_ratio * feat_emb
                 feat_deep = (1 - self.mix_ratio) * feat_deep + self.mix_ratio * feat_deep_emb
-                '''
 
                 featF, _ = self.convblock2f((featF, timestep_emb))
                 feat, _ = self.convblock2((feat_tmp, timestep_emb))
                 feat_deep, _ = self.convblock_deep2((feat_deep, timestep_emb))
 
                 feat = self.mix2f(featF, feat)
-                feat_tmp = self.mix2( feat,
+                feat_tmp = self.mix2(
+                    feat,
                     feat_deep 
                     # torch.nn.functional.interpolate(feat_deep, size=(dh, dw), mode='bilinear', align_corners=True)
                     )
