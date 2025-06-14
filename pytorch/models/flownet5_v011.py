@@ -567,7 +567,7 @@ class Model:
 
                 # _, _, dh, dw = feat_deep.shape
                 # feat_deep = self.resize_min_side(feat_deep, 48)
-                feat_deep = self.attn_deep(feat_deep)
+                feat_deep_ = self.attn_deep(feat_deep_)
 
                 feat, _ = self.convblock1((feat_, timestep_emb))
                 feat_emb, _ = self.convblock10((feat_, timestep_emb))
