@@ -417,29 +417,29 @@ class Model:
                     ResConvDummy(c),
                 )
 
-                self.convblock10 = torch.nn.Sequential(
+                self.convblock10a = torch.nn.Sequential(
                     ResConvEmb(c),
                     ResConvEmb(c),
                     ResConvEmb(c),
                     ResConvEmb(c),
                 )
-                self.convblock10f = torch.nn.Sequential(
+                self.convblock10fa = torch.nn.Sequential(
                     ResConvEmb(c//2),
                     ResConvEmb(c//2),
                     ResConvEmb(c//2),
                     ResConvEmb(c//2),
                 )
-                self.convblock_deep10 = torch.nn.Sequential(
+                self.convblock_deep10a = torch.nn.Sequential(
                     ResConvEmb(cd),
                     ResConvEmb(cd),
                     ResConvEmb(cd),
                     ResConvEmb(cd),
                 )
 
-                self.mix10 = UpMix(c, cd)
-                self.mix10f = DownMix(c//2, c)
-                self.revmix10 = DownMix(c, cd)
-                self.revmix10f = UpMix(c//2, c)
+                self.mix10a = UpMix(c, cd)
+                self.mix10fa = DownMix(c//2, c)
+                self.revmix10a = DownMix(c, cd)
+                self.revmix10fa = UpMix(c//2, c)
 
                 self.convblock2 = torch.nn.Sequential(
                     ResConvDummy(c),
@@ -560,7 +560,7 @@ class Model:
                 feat = self.conv00(x)
 
                 featF, _ = self.convblock1f((feat, timestep_emb))
-                featF_emb, _ = self.convblock10f((feat, timestep_emb))
+                featF_emb, _ = self.convblock10fa((feat, timestep_emb))
 
                 feat_ = self.conv10(feat)
                 feat_deep_ = self.conv20(feat_)
@@ -570,20 +570,20 @@ class Model:
                 feat_deep_ = self.attn_deep(feat_deep_)
 
                 feat, _ = self.convblock1((feat_, timestep_emb))
-                feat_emb, _ = self.convblock10((feat_, timestep_emb))
+                feat_emb, _ = self.convblock10a((feat_, timestep_emb))
 
                 feat_deep, _ = self.convblock_deep1((feat_deep_, timestep_emb))
-                feat_deep_emb, _ = self.convblock_deep10((feat_deep_, timestep_emb))
+                feat_deep_emb, _ = self.convblock_deep10a((feat_deep_, timestep_emb))
 
                 feat = self.mix1f(featF, feat)
                 feat_tmp = self.mix1(feat, feat_deep)
                 feat_deep = self.revmix1(feat, feat_deep)
                 featF = self.revmix1f(featF, feat_tmp)
 
-                feat_emb = self.mix10f(featF_emb, feat_emb)
-                feat_tmp_emb = self.mix10(feat_emb, feat_deep_emb)
-                feat_deep_emb = self.revmix10(feat_emb, feat_deep_emb)
-                featF_emb = self.revmix10f(featF_emb, feat_tmp_emb)
+                feat_emb = self.mix10fa(featF_emb, feat_emb)
+                feat_tmp_emb = self.mix10a(feat_emb, feat_deep_emb)
+                feat_deep_emb = self.revmix10a(feat_emb, feat_deep_emb)
+                featF_emb = self.revmix10fa(featF_emb, feat_tmp_emb)
 
                 featF = (1 - self.mix_ratio) * featF + self.mix_ratio * featF_emb
                 feat = (1 - self.mix_ratio) * feat + self.mix_ratio * feat_emb
