@@ -71,6 +71,33 @@ class Model:
             tensor = tensor.to(dtype = src_dtype)
             return tensor
 
+        def hpass(img):
+            src_dtype = img.dtype
+            img = img.float()
+            def gauss_kernel(size=5, channels=3):
+                kernel = torch.tensor([[1., 4., 6., 4., 1],
+                                    [4., 16., 24., 16., 4.],
+                                    [6., 24., 36., 24., 6.],
+                                    [4., 16., 24., 16., 4.],
+                                    [1., 4., 6., 4., 1.]])
+                kernel /= 256.
+                kernel = kernel.repeat(channels, 1, 1, 1)
+                return kernel
+            
+            def conv_gauss(img, kernel):
+                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+                out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+                return out
+
+            gkernel = gauss_kernel()
+            gkernel = gkernel.to(device=img.device, dtype=img.dtype)
+            hp = img - conv_gauss(img, gkernel) + 0.5
+            hp = torch.clamp(hp, 0.48, 0.52)
+            hp = normalize(hp, 0, 1)
+            hp = torch.max(hp, dim=1, keepdim=True).values
+            hp = hp.to(dtype = src_dtype)
+            return hp
+
         def compress(x):
             src_dtype = x.dtype
             x = x.float()
@@ -292,7 +319,7 @@ class Model:
                 x = x * chan_scale.clamp(min=1e-6)
                 return x
 
-        class Head(Module):
+        class Head00(Module):
             def __init__(self, c=48):
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
@@ -321,6 +348,31 @@ class Model:
                 x = self.lastconv(x)[:, :, :h, :w]
                 return x
 
+        class Head(Module):
+            def __init__(self, c=32):
+                super(Head, self).__init__()
+                self.encode = torch.nn.Sequential(
+                    torch.nn.Conv2d(4, c, 3, 2, 1),
+                    torch.nn.PReLU(c, 0.2),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    ResConv(c),
+                    torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
+                )
+                self.maxdepth = 2
+
+            def forward(self, x):
+                hp = hpass(ACEScct2cg(x))
+                x = normalize(x, 0, 1) * 2 - 1
+                x = torch.cat((x, hp), 1)
+                n, c, h, w = x.shape
+                ph = self.maxdepth - (h % self.maxdepth)
+                pw = self.maxdepth - (w % self.maxdepth)
+                padding = (0, pw, 0, ph)
+                x = torch.nn.functional.pad(x, padding)
+                x = self.encode(x)[:, :, :h, :w]
+                return x
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
@@ -531,7 +583,17 @@ class Model:
 
                 return torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bilinear', align_corners=True)
 
-            def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
+            def forward(self, img0, img1, f0, f1, f00, f10, timestep, mask, conf, flow, scale=1):
+                # Sigmoid-based schedule
+                self.forward_counter += 1
+                midpoint = 20000.0
+                steepness = 0.00011
+                counter_f = self.forward_counter.float()
+                self.mix_ratio = torch.sigmoid(steepness * (counter_f/10 - midpoint))
+
+                f0 = (1 - self.mix_ratio) * f0 +  self.mix_ratio * f00
+                f1 = (1 - self.mix_ratio) * f1 +  self.mix_ratio * f10
+
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
 
@@ -556,15 +618,6 @@ class Model:
                 timestep_emb = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
                 timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
                 x = torch.cat((timestep, x, tenGrid), 1)
-
-
-                self.forward_counter += 1
-
-                # Sigmoid-based schedule
-                midpoint = 20000.0
-                steepness = 0.00011
-                counter_f = self.forward_counter.float()
-                self.mix_ratio = torch.sigmoid(steepness * (counter_f/10 - midpoint))
 
                 feat = self.conv0(x)
                 feat00 = self.conv00(x00)
@@ -674,6 +727,7 @@ class Model:
                 self.block2 = None # FlownetDeep(24+5+4+2+1, c=96)
                 self.block3 = None # Flownet(31, c=64)
                 self.encode = Head()
+                self.encode00 = Head00()
 
             def forward(self, img0, img1, timestep=0.5, scale=[12, 8, 4, 1], iterations=4, gt=None):
 
@@ -682,6 +736,9 @@ class Model:
 
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
+
+                f00 = self.encode00(img0)
+                f10 = self.encode00(img1)
 
                 flow_list = [None] * 4
                 mask_list = [None] * 4
@@ -699,7 +756,7 @@ class Model:
 
                 scale[0] = 1
 
-                flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
+                flow, mask, conf = self.block0(img0, img1, f0, f1, f00, f10, timestep, None, None, None, scale=scale[0])
 
                 mask = torch.sigmoid(mask) #
                 conf = torch.sigmoid(conf) #
@@ -917,6 +974,8 @@ class Model:
     @staticmethod
     def freeze(net = None):
         for param in net.block0.parameters():
+            param.requires_grad = False
+        for param in net.encode.parameters():
             param.requires_grad = False
 
         for param in net.block0.conv00.parameters():
