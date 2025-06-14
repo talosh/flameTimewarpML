@@ -622,8 +622,8 @@ class Model:
 
                 imgs = torch.cat((img0, img1), 1)
                 x00 = torch.cat((imgs, f0, f1, diffmatte(img0, img1)), 1)
-                x00 = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
-                x00 = torch.nn.functional.pad(x, padding)
+                x00 = torch.nn.functional.interpolate(x00, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
+                x00 = torch.nn.functional.pad(x00, padding)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
