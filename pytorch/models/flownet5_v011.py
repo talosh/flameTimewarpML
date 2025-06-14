@@ -552,7 +552,7 @@ class Model:
                 self.forward_counter += 1
 
                 # Sigmoid-based schedule
-                midpoint = 20000.0
+                midpoint = 30000.0
                 steepness = 0.00011
                 counter_f = self.forward_counter.float()
                 self.mix_ratio = torch.sigmoid(steepness * (counter_f - midpoint))
