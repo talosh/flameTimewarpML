@@ -468,7 +468,7 @@ class Model:
                 self.conv2 = conv(c, cd, 3, 2, 1)
 
                 self.conv00 = torch.nn.Sequential(
-                    torch.nn.Conv2d(in_planes + 1, c//2, 5, 2, 2, padding_mode = 'zeros'),
+                    torch.nn.Conv2d(in_planes, c//2, 5, 2, 2, padding_mode = 'zeros'),
                     myPReLU(c//2),
                     )                
                 self.conv10 = torch.nn.Sequential(
