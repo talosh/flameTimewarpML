@@ -1,5 +1,4 @@
 # Fourier attention in Head
-# diffmastte on initial flow estimator input
 # Soft-roll PReLU in heads
 # 5x5 convs in heads
 # Feauture modulator in resblocks
@@ -225,12 +224,6 @@ class Model:
             x = x.to(dtype = src_dtype)
             return x
     
-        def diffmatte(tensor1, tensor2):
-            difference = torch.norm(tensor1 - tensor2, p=2, dim=1, keepdim=True)
-            max_val = difference.view(difference.size(0), -1).max(dim=1)[0].view(-1, 1, 1, 1)
-            difference_normalized = difference / (max_val + 1e-8)
-            return difference_normalized
-
         def warp(tenInput, tenFlow):
             tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
             tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
@@ -317,7 +310,6 @@ class Model:
                         img1,
                         f0,
                         f1,
-                        diffmatte(img0, img1)
                         ), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                     tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
@@ -361,7 +353,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = Flownet(6+18+2+1, c=192)
+                self.block0 = Flownet(6+18+2, c=192)
                 self.block1 = Flownet(6+18+2+4, c=128)
                 self.block2 = Flownet(6+18+2+4, c=96)
                 self.block3 = Flownet(6+18+2+4, c=64)
