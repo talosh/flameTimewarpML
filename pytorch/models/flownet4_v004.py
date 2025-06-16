@@ -95,11 +95,12 @@ class Model:
                 return hp
 
         class FourierChannelAttention(Module):
-            def __init__(self, c, latent_dim, out_channels, bands = 11, norm = False):
+            def __init__(self, c, latent_dim, out_channels, bands = 11, norm = False, scale = False):
                 super().__init__()
 
                 self.bands = bands
                 self.norm = norm
+                self.scale = scale
                 self.c = c
 
                 self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 1.0), requires_grad=True)
@@ -124,7 +125,7 @@ class Model:
                     torch.nn.Sigmoid(),
                 )
                 self.fc1_scaler = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c, 1, 1, 0, groups=c),
+                    torch.nn.Conv2d(c, c, 1, 1, 0),
                     torch.nn.ReLU()
                 )
                 self.fc2 = torch.nn.Sequential(
@@ -132,7 +133,7 @@ class Model:
                     torch.nn.Sigmoid(),
                 )
                 self.fc2_scaler = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c, 1, 1, 0, groups=c),
+                    torch.nn.Conv2d(c, c, 1, 1, 0),
                     torch.nn.ReLU()
                 )
 
@@ -190,7 +191,8 @@ class Model:
 
                 latent = self.encoder(mag_n)
                 spat_at = self.fc1(latent).view(-1, self.c, self.bands, self.bands)
-                # spat_at = self.fc1_scaler(spat_at)
+                if self.scale:
+                    spat_at = self.fc1_scaler(spat_at)
                 if self.norm:
                     spat_at = self.denormalize_fft_magnitude(spat_at, sh, sw)
                 else:
@@ -207,7 +209,8 @@ class Model:
                 x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
 
                 chan_scale = self.fc2(latent).view(-1, self.c, 1, 1)
-                chan_scale = self.fc2_scaler(chan_scale)
+                if self.scale:
+                    chan_scale = self.fc2_scaler(chan_scale)
                 x = x * chan_scale.clamp(min=1e-6)
                 return x
 
