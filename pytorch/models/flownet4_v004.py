@@ -100,7 +100,6 @@ class Model:
 
                 self.bands = bands
                 self.norm = norm
-                self.scale = scale
                 self.c = c
 
                 self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 1.0), requires_grad=True)
