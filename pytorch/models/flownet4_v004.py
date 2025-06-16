@@ -95,7 +95,7 @@ class Model:
                 return hp
 
         class FourierChannelAttention(Module):
-            def __init__(self, c, latent_dim, out_channels, bands = 11, norm = False, scale = False):
+            def __init__(self, c, latent_dim, out_channels, bands = 11, norm = False):
                 super().__init__()
 
                 self.bands = bands
@@ -124,17 +124,9 @@ class Model:
                     torch.nn.Linear(latent_dim, bands * bands * c),
                     torch.nn.Sigmoid(),
                 )
-                self.fc1_scaler = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c, 1, 1, 0),
-                    torch.nn.ReLU()
-                )
                 self.fc2 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, c),
                     torch.nn.Sigmoid(),
-                )
-                self.fc2_scaler = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c, 1, 1, 0),
-                    torch.nn.ReLU()
                 )
 
             def normalize_fft_magnitude(self, mag, sh, sw, target_size=(64, 64)):
@@ -191,8 +183,6 @@ class Model:
 
                 latent = self.encoder(mag_n)
                 spat_at = self.fc1(latent).view(-1, self.c, self.bands, self.bands)
-                if self.scale:
-                    spat_at = self.fc1_scaler(spat_at)
                 if self.norm:
                     spat_at = self.denormalize_fft_magnitude(spat_at, sh, sw)
                 else:
@@ -209,8 +199,6 @@ class Model:
                 x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
 
                 chan_scale = self.fc2(latent).view(-1, self.c, 1, 1)
-                if self.scale:
-                    chan_scale = self.fc2_scaler(chan_scale)
                 x = x * chan_scale.clamp(min=1e-6)
                 return x
 
