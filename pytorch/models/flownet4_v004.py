@@ -132,7 +132,7 @@ class Model:
                     torch.nn.Sigmoid(),
                 )
                 self.fc2_scaler = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c, 1, 1, 0),
+                    torch.nn.Conv2d(c, c, 1, 1, 0, groups=c),
                     torch.nn.ReLU()
                 )
 
