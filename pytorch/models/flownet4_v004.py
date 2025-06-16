@@ -190,7 +190,7 @@ class Model:
 
                 latent = self.encoder(mag_n)
                 spat_at = self.fc1(latent).view(-1, self.c, self.bands, self.bands)
-                # spat_at = self.fc1_scaler(spat_at)
+                spat_at = self.fc1_scaler(spat_at)
                 if self.norm:
                     spat_at = self.denormalize_fft_magnitude(spat_at, sh, sw)
                 else:
