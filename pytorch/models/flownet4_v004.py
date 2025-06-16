@@ -263,7 +263,7 @@ class Model:
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
                 self.mlp = FeatureModulator(1, c)
-                self.attn = FourierChannelAttention(c, c, 11)
+                self.attn = FourierChannelAttention(c, c, 11, spat=False)
 
             def forward(self, x):
                 x_scalar = x[1]
