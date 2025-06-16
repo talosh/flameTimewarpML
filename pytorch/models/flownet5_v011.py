@@ -245,17 +245,9 @@ class Model:
                     torch.nn.Linear(latent_dim, bands * bands * c),
                     torch.nn.Sigmoid(),
                 )
-                self.fc1_scaler = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c, 1, 1, 0),
-                    torch.nn.ReLU()
-                )
                 self.fc2 = torch.nn.Sequential(
                     torch.nn.Linear(latent_dim, c),
                     torch.nn.Sigmoid(),
-                )
-                self.fc2_scaler = torch.nn.Sequential(
-                    torch.nn.Conv2d(c, c, 1, 1, 0),
-                    torch.nn.ReLU()
                 )
 
             def normalize_fft_magnitude(self, mag, sh, sw, target_size=(64, 64)):
@@ -311,8 +303,9 @@ class Model:
                 mag_n = self.precomp(torch.cat([mag_n, grid_x, grid_y], dim=1))
 
                 latent = self.encoder(mag_n)
+
                 spat_at = self.fc1(latent).view(-1, self.c, self.bands, self.bands)
-                spat_at = self.fc1_scaler(spat_at)
+                spat_at = spat_at / 0.4 + 0.5
                 if self.norm:
                     spat_at = self.denormalize_fft_magnitude(spat_at, sh, sw)
                 else:
@@ -323,13 +316,11 @@ class Model:
                         align_corners=False, 
                         )
 
-                mag = mag * spat_at.clamp(min=1e-6)
+                    mag = mag * spat_at.clamp(min=1e-6)
+                    x_fft = torch.polar(mag, phase)
+                    x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
 
-                x_fft = torch.polar(mag, phase)
-                x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
-
-                chan_scale = self.fc2(latent).view(-1, self.c, 1, 1)
-                chan_scale = self.fc2_scaler(chan_scale)
+                chan_scale = self.fc2(latent).view(-1, self.c, 1, 1) + 0.1
                 x = x * chan_scale.clamp(min=1e-6)
                 return x
 
@@ -404,10 +395,11 @@ class Model:
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
                 self.mlp = FeatureModulator(1, c)
+                self.attn = FourierChannelAttention(c, c, 11)
 
             def forward(self, x):
                 x_scalar = x[1]
-                x = x[0]
+                x = self.attn(x[0])
                 x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
                 return x, x_scalar
 
@@ -563,7 +555,7 @@ class Model:
                     ResConvDummy(cd),
                 )
 
-                self.attn_deep = ChannelAttention(cd)
+                # self.attn_deep = ChannelAttention(cd)
 
                 self.mix1 = UpMix(c, cd)
                 self.mix1f = DownMix(c//2, c)
@@ -645,7 +637,7 @@ class Model:
 
                 # _, _, dh, dw = feat_deep.shape
                 # feat_deep = self.resize_min_side(feat_deep, 48)
-                feat_deep00 = self.attn_deep(feat_deep00)
+                # feat_deep00 = self.attn_deep(feat_deep00)
 
                 feat, _ = self.convblock1((feat, timestep_emb))
                 feat00, _ = self.convblock10((feat00, timestep_emb))
