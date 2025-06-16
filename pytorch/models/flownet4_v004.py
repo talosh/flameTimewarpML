@@ -185,8 +185,7 @@ class Model:
                 latent = self.encoder(mag_n)
 
                 if self.spat:
-                    spat_at = self.fc1(latent).view(-1, self.c, self.bands, self.bands)
-                    spat_at = spat_at / 0.4 + 0.5
+                    spat_at = self.fc1(latent).view(-1, self.c, self.bands, self.bands) + 0.1
                     if self.norm:
                         spat_at = self.denormalize_fft_magnitude(spat_at, sh, sw)
                     else:
@@ -197,15 +196,14 @@ class Model:
                             align_corners=False, 
                             )
 
-                    mag = mag * spat_at.clamp(min=1e-6)
+                    mag = mag * spat_at # .clamp(min=1e-6)
                     x_fft = torch.polar(mag, phase)
                     x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
 
                 if self.chan:
-                    chan_scale = self.fc2(latent).view(-1, self.c, 1, 1)
-                    x = x * chan_scale.clamp(min=1e-6)
+                    chan_scale = self.fc2(latent).view(-1, self.c, 1, 1) + 0.1
+                    x = x * chan_scale #.clamp(min=1e-6)
                 return x
-
 
         def compress(x):
             src_dtype = x.dtype
