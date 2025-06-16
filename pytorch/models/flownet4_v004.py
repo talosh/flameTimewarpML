@@ -1,3 +1,5 @@
+# Fourier attention in Head
+# Fourier attention in ResBlocks
 # Soft-roll PReLU in heads
 # 5x5 convs in heads
 # Feauture modulator in resblocks
@@ -52,6 +54,164 @@ class Model:
                 shift = self.shift_net(x_scalar).view(-1, self.c, 1, 1)
                 return features * scale + shift
 
+        class HighPassFilter(Module):
+            def __init__(self):
+                super(HighPassFilter, self).__init__()
+                self.register_buffer('gkernel', self.gauss_kernel())
+
+            def gauss_kernel(self, channels=1):
+                kernel = torch.tensor([
+                    [1., 4., 6., 4., 1],
+                    [4., 16., 24., 16., 4.],
+                    [6., 24., 36., 24., 6.],
+                    [4., 16., 24., 16., 4.],
+                    [1., 4., 6., 4., 1.]
+                ])
+                kernel /= 256.
+                kernel = kernel.repeat(channels, 1, 1, 1)
+                return kernel
+
+            def conv_gauss(self, img, kernel):
+                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+                out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+                return out
+
+            def rgb_to_luminance(self, rgb):
+                weights = torch.tensor([0.299, 0.587, 0.114], device=rgb.device).view(1, 3, 1, 1)
+                return (rgb * weights).sum(dim=1, keepdim=True)
+
+            def normalize(self, tensor, min_val, max_val):
+                tensor_min = tensor.min()
+                tensor_max = tensor.max()
+                tensor = (tensor - tensor_min) / (tensor_max - tensor_min + 1e-8)
+                tensor = tensor * (max_val - min_val) + min_val
+                return tensor
+
+            def forward(self, img):
+                img = self.rgb_to_luminance(img)
+                hp = img - self.conv_gauss(img, self.gkernel) + 0.5
+                hp = torch.clamp(hp, 0.48, 0.52)
+                hp = self.normalize(hp, 0, 1)
+                return hp
+
+        class FourierChannelAttention(Module):
+            def __init__(self, c, latent_dim, out_channels, bands = 11, norm = False):
+                super().__init__()
+
+                self.bands = bands
+                self.norm = norm
+                self.c = c
+
+                self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 1.0), requires_grad=True)
+
+                self.precomp = torch.nn.Sequential(
+                    torch.nn.Conv2d(c + 2, c, 3, 1, 1),
+                    torch.nn.PReLU(c, 0.2),
+                    torch.nn.Conv2d(c, c, 3, 1, 1),
+                    torch.nn.PReLU(c, 0.2),
+                )
+
+                self.encoder = torch.nn.Sequential(
+                    torch.nn.AdaptiveMaxPool2d((bands, bands)),
+                    torch.nn.Conv2d(c, out_channels, 1, 1, 0),
+                    torch.nn.PReLU(out_channels, 0.2),
+                    torch.nn.Flatten(start_dim=1),
+                    torch.nn.Linear(bands * bands * out_channels, latent_dim),
+                    torch.nn.PReLU(latent_dim, 0.2)
+                )
+                self.fc1 = torch.nn.Sequential(
+                    torch.nn.Linear(latent_dim, bands * bands * c),
+                    torch.nn.Sigmoid(),
+                )
+                self.fc1_scaler = torch.nn.Sequential(
+                    torch.nn.Conv2d(c, c, 1, 1, 0),
+                    torch.nn.ReLU()
+                )
+                self.fc2 = torch.nn.Sequential(
+                    torch.nn.Linear(latent_dim, c),
+                    torch.nn.Sigmoid(),
+                )
+                self.fc2_scaler = torch.nn.Sequential(
+                    torch.nn.Conv2d(c, c, 1, 1, 0),
+                    torch.nn.ReLU()
+                )
+
+            def normalize_fft_magnitude(self, mag, sh, sw, target_size=(64, 64)):
+                """
+                mag: [B, C, sh, sw]
+                Returns: [B, C, Fy, Fx]
+                """
+                B, C, _, _ = mag.shape
+                Fy, Fx = target_size
+
+                mag_reshaped = mag.view(B * C, 1, sh, sw)
+                norm_mag = torch.nn.functional.interpolate(
+                    mag_reshaped, size=(Fy, Fx), mode='bilinear', align_corners=False
+                )
+                norm_mag = norm_mag.view(B, C, Fy, Fx)
+                return norm_mag
+
+            def denormalize_fft_magnitude(self, norm_mag, sh, sw):
+                """
+                norm_mag: [B, C, Fy, Fx]
+                Returns: [B, C, sh, sw]
+                """
+                B, C, Fy, Fx = norm_mag.shape
+
+                norm_mag = norm_mag.view(B * C, 1, Fy, Fx)
+                mag = torch.nn.functional.interpolate(
+                    norm_mag, size=(sh, sw), mode='bilinear', align_corners=False
+                )
+                mag = mag.view(B, C, sh, sw)
+                return mag
+            
+            def forward(self, x):
+                B, C, H, W = x.shape
+                x_fft = torch.fft.rfft2(x, norm='ortho')  # [B, C, H, W//2 + 1]
+                _, _, sh, sw = x_fft.shape
+
+                mag = x_fft.abs()
+                phase = x_fft.angle()
+
+                if self.norm:
+                    mag_n = self.normalize_fft_magnitude(mag, sh, sw, target_size=(64, 64))
+                else:
+                    mag_n = torch.nn.functional.interpolate(
+                        mag, 
+                        size=(64, 64), 
+                        mode="bilinear",
+                        align_corners=False, 
+                        )
+
+                mag_n = torch.log1p(mag_n) + self.alpha * mag_n
+                grid_x = torch.linspace(0, 1, 64, device=x.device).view(1, 1, 1, 64).expand(B, 1, 64, 64)
+                grid_y = torch.linspace(0, 1, 64, device=x.device).view(1, 1, 64, 1).expand(B, 1, 64, 64)
+                mag_n = self.precomp(torch.cat([mag_n, grid_x, grid_y], dim=1))
+
+                latent = self.encoder(mag_n)
+                spat_at = self.fc1(latent).view(-1, self.c, self.bands, self.bands)
+                spat_at = self.fc1_scaler(spat_at)
+                if self.norm:
+                    spat_at = self.denormalize_fft_magnitude(spat_at, sh, sw)
+                else:
+                    spat_at = torch.nn.functional.interpolate(
+                        spat_at, 
+                        size=(sh, sw), 
+                        mode="bilinear",
+                        align_corners=False, 
+                        )
+
+                mag = mag * spat_at.clamp(min=1e-6)
+
+                x_fft = torch.polar(mag, phase)
+                x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
+
+                chan_scale = self.fc2(latent).view(-1, self.c, 1, 1)
+                chan_scale = self.fc2_scaler(chan_scale)
+                x = x * chan_scale.clamp(min=1e-6)
+                return x
+
+
         def compress(x):
             src_dtype = x.dtype
             x = x.float()
@@ -77,109 +237,29 @@ class Model:
             def __init__(self, c=48):
                 super(Head, self).__init__()
                 self.encode = torch.nn.Sequential(
-                    torch.nn.Conv2d(3, c, 5, 2, 2),
+                    torch.nn.Conv2d(4, c, 5, 2, 2),
                     myPReLU(c),
                     torch.nn.Conv2d(c, c, 3, 1, 1),
                     torch.nn.PReLU(c, 0.2),
                     torch.nn.Conv2d(c, c, 3, 1, 1),
                     torch.nn.PReLU(c, 0.2),
-                    torch.nn.ConvTranspose2d(c, 8, 4, 2, 1)
                 )
+                self.attn = FourierChannelAttention(c, c, 11)
+                self.lastconv = torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
+                self.hpass = HighPassFilter()
                 self.maxdepth = 2
 
             def forward(self, x):
+                hp = self.hpass(x)
+                x = torch.cat((x, hp), 1)
                 n, c, h, w = x.shape
                 ph = self.maxdepth - (h % self.maxdepth)
                 pw = self.maxdepth - (w % self.maxdepth)
                 padding = (0, pw, 0, ph)
                 x = torch.nn.functional.pad(x, padding)
-                x = self.encode(x)[:, :, :h, :w]
-                return x
-        class FourierChannelAttention(Module):
-            def __init__(self, c, latent_dim):
-                super().__init__()
-
-                out_channels = max(1, c // 4)
-
-                # self.weight_real = torch.nn.Parameter(torch.ones(1, c, 1, 1))
-                # self.weight_imag = torch.nn.Parameter(torch.ones(1, c, 1, 1))
-
-                self.alpha = torch.nn.Parameter(torch.full((1, c, 1, 1), 1), requires_grad=True)
-
-                self.encoder = torch.nn.Sequential(
-                    # torch.nn.Conv2d(c+2, out_channels, 3, 2, 1),
-                    # torch.nn.PReLU(out_channels, 0.2),
-                    torch.nn.AdaptiveAvgPool2d((11, 11)),
-                    torch.nn.Conv2d(c, out_channels, 1, 1, 0),
-                    torch.nn.PReLU(out_channels, 0.2),
-                    # torch.nn.Conv2d(c, c, 3, 2, 1),
-                    # torch.nn.PReLU(c, 0.2),
-                    # torch.nn.Conv2d(c, out_channels, 3, 2, 1),
-                    # torch.nn.PReLU(out_channels, 0.2),
-                    torch.nn.Flatten(),
-                    torch.nn.Linear(121 * out_channels, latent_dim),
-                    torch.nn.PReLU(latent_dim, 0.2)
-                )
-                self.fc1 = torch.nn.Sequential(
-                    torch.nn.Linear(latent_dim, 121 * c),
-                    torch.nn.Sigmoid(),
-                )
-                '''
-                self.fc1up = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(2*c, c, 4, 2, 1),
-                    torch.nn.Softplus(),
-                )
-                '''
-                
-                self.fc2 = torch.nn.Sequential(
-                    torch.nn.Linear(latent_dim, c),
-                    torch.nn.Sigmoid()
-                )
-                '''
-                self.fc3 = torch.nn.Sequential(
-                    torch.nn.Linear(latent_dim, c),
-                )
-                '''
-
-                # self.weight_spat = torch.nn.Parameter(torch.ones(1, c, 1, 1))
-                # self.weight_chan = torch.nn.Parameter(torch.ones(1, c, 1, 1))
-                # self.weight_bias = torch.nn.Parameter(torch.zeros(1, c, 1, 1))
-
-                self.c = c
-
-            def forward(self, x):
-                B, C, H, W = x.shape
-                x_fft = torch.fft.rfft2(x, norm='ortho')  # [B, C, H, W//2 + 1]
-                _, _, sh, sw = x_fft.shape
-
-                # weight_complex = torch.complex(self.weight_real, self.weight_imag)
-                # x_fft = x_fft * weight_complex
-
-                mag = x_fft.abs()
-                phase = x_fft.angle()
-
-                # grid_x = torch.linspace(0, 1, sw, device=x.device).view(1, 1, 1, sw).expand(B, 1, sh, sw)
-                # grid_y = torch.linspace(0, 1, sh, device=x.device).view(1, 1, sh, 1).expand(B, 1, sh, sw)
-                # latent = self.encoder(torch.cat([torch.log1p(mag), grid_x, grid_y], dim=1))
-                latent = self.encoder(torch.log1p(mag) + self.alpha * mag)
-                spat_at = self.fc1(latent).view(-1, self.c, 11, 11)
-                # spat_at = self.fc1up(spat_at)
-                spat_at = torch.nn.functional.interpolate(
-                    spat_at, 
-                    size=(sh, sw), 
-                    mode="bilinear",
-                    align_corners=True, 
-                    antialias=True
-                    )
-                mag = mag * spat_at # * self.weight_spat
-
-                x_fft = torch.polar(mag, phase)
-                x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
-
-                chan_scale = self.fc2(latent).view(-1, self.c, 1, 1)
-                # chan_bias = self.fc3(latent).view(-1, self.c, 1, 1)
-                x = x * chan_scale # + chan_bias
-
+                x = self.encode(x)
+                x = self.attn(x)
+                x = self.lastconv(x)[:, :, :h, :w]
                 return x
 
         class ResConv(Module):
@@ -189,14 +269,15 @@ class Model:
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
                 self.mlp = FeatureModulator(1, c)
-                self.atn = FourierChannelAttention(c, c//4)
+                self.attn = FourierChannelAttention(c, c, 11)
 
             def forward(self, x):
                 x_scalar = x[1]
                 x = x[0]
-                x = self.atn(x)
+                x = self.attn(x)
                 x = self.relu(self.mlp(x_scalar, self.conv(x)) * self.beta + x)
                 return x, x_scalar
+
         class Flownet(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
@@ -227,7 +308,12 @@ class Model:
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
                         
                 if flow is None:
-                    x = torch.cat((img0, img1, f0, f1), 1)
+                    x = torch.cat((
+                        img0,
+                        img1,
+                        f0,
+                        f1,
+                        ), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                     tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                     tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
@@ -238,7 +324,14 @@ class Model:
                     warped_img1 = warp(img1, flow[:, 2:4])
                     warped_f0 = warp(f0, flow[:, :2])
                     warped_f1 = warp(f1, flow[:, 2:4])
-                    x = torch.cat((warped_img0, warped_img1, warped_f0, warped_f1, mask, conf), 1)
+                    x = torch.cat((
+                        warped_img0,
+                        warped_img1,
+                        warped_f0,
+                        warped_f1,
+                        mask,
+                        conf
+                        ), 1)
                     x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                     flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True) * 1. / scale
                     x = torch.cat((x, flow), 1)
@@ -263,10 +356,10 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = Flownet(6+16+2, c=192)
-                self.block1 = Flownet(6+16+2+4, c=128)
-                self.block2 = Flownet(6+16+2+4, c=96)
-                self.block3 = Flownet(6+16+2+4, c=64)
+                self.block0 = Flownet(6+18+2, c=192)
+                self.block1 = Flownet(6+18+2+4, c=128)
+                self.block2 = Flownet(6+18+2+4, c=96)
+                self.block3 = Flownet(6+18+2+4, c=64)
                 self.encode = Head()
 
             def forward(self, img0, img1, timestep=0.5, scale=[12, 8, 4, 1], iterations=1, gt=None):
