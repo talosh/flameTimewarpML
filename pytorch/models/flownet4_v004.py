@@ -183,14 +183,14 @@ class Model:
                         align_corners=False, 
                         )
 
-                # mag_n = torch.log1p(mag_n) + self.alpha * mag_n
+                mag_n = torch.log1p(mag_n) + self.alpha * mag_n
                 grid_x = torch.linspace(0, 1, 64, device=x.device).view(1, 1, 1, 64).expand(B, 1, 64, 64)
                 grid_y = torch.linspace(0, 1, 64, device=x.device).view(1, 1, 64, 1).expand(B, 1, 64, 64)
                 mag_n = self.precomp(torch.cat([mag_n, grid_x, grid_y], dim=1))
 
                 latent = self.encoder(mag_n)
                 spat_at = self.fc1(latent).view(-1, self.c, self.bands, self.bands)
-                spat_at = self.fc1_scaler(spat_at)
+                # spat_at = self.fc1_scaler(spat_at)
                 if self.norm:
                     spat_at = self.denormalize_fft_magnitude(spat_at, sh, sw)
                 else:
@@ -207,7 +207,7 @@ class Model:
                 x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
 
                 chan_scale = self.fc2(latent).view(-1, self.c, 1, 1)
-                chan_scale = self.fc2_scaler(chan_scale)
+                # chan_scale = self.fc2_scaler(chan_scale)
                 x = x * chan_scale.clamp(min=1e-6)
                 return x
 
