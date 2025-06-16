@@ -190,7 +190,7 @@ class Model:
 
                 latent = self.encoder(mag_n)
                 spat_at = self.fc1(latent).view(-1, self.c, self.bands, self.bands)
-                spat_at = self.fc1_scaler(spat_at)
+                # spat_at = self.fc1_scaler(spat_at)
                 if self.norm:
                     spat_at = self.denormalize_fft_magnitude(spat_at, sh, sw)
                 else:
@@ -207,7 +207,7 @@ class Model:
                 x = torch.fft.irfft2(x_fft, s=(H, W), norm='ortho')
 
                 chan_scale = self.fc2(latent).view(-1, self.c, 1, 1)
-                # chan_scale = self.fc2_scaler(chan_scale)
+                chan_scale = self.fc2_scaler(chan_scale)
                 x = x * chan_scale.clamp(min=1e-6)
                 return x
 
