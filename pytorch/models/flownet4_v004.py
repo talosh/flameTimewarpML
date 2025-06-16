@@ -186,6 +186,7 @@ class Model:
 
                 if self.spat:
                     spat_at = self.fc1(latent).view(-1, self.c, self.bands, self.bands)
+                    spat_at = spat_at / 0.4 + 0.5
                     if self.norm:
                         spat_at = self.denormalize_fft_magnitude(spat_at, sh, sw)
                     else:
@@ -263,7 +264,7 @@ class Model:
                 self.beta = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
                 self.mlp = FeatureModulator(1, c)
-                self.attn = FourierChannelAttention(c, c, 11, spat=False)
+                self.attn = FourierChannelAttention(c, c, 11)
 
             def forward(self, x):
                 x_scalar = x[1]
