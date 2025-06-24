@@ -612,7 +612,7 @@ class Model:
                 feat_deep = feat_deep00
 
                 featF, _ = self.convblock2f((featF, timestep_emb))
-                feat, _ = self.convblock2((feat_tmp, timestep_emb))
+                feat, _ = self.convblock2((feat_tmp00, timestep_emb))
                 feat_deep, _ = self.convblock_deep2((feat_deep, timestep_emb))
 
                 feat = self.mix2f(featF, feat)
