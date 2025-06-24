@@ -493,43 +493,43 @@ class Model:
                 self.revmix10f = UpMix(c//2, c)
 
                 self.convblock2 = torch.nn.Sequential(
-                    ResConvDummy(c),
-                    ResConvDummy(c),
-                    ResConvDummy(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
                 )
                 self.convblock3 = torch.nn.Sequential(
-                    ResConvDummy(c),
-                    ResConvDummy(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
                 )
                 self.convblock2f = torch.nn.Sequential(
-                    ResConvDummy(c//2),
-                    ResConvDummy(c//2),
-                    ResConvDummy(c//2),
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
                 )
                 self.convblock3f = torch.nn.Sequential(
-                    ResConvDummy(c//2),
-                    ResConvDummy(c//2),
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
                 )
                 self.convblock_last = torch.nn.Sequential(
-                    ResConvDummy(c),
-                    ResConvDummy(c),
-                    ResConvDummy(c),
-                    ResConvDummy(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
                 )
                 self.convblock_last_shallow = torch.nn.Sequential(
-                    ResConvDummy(c//2),
-                    ResConvDummy(c//2),
-                    ResConvDummy(c//2),
-                    ResConvDummy(c//2),
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
-                    ResConvDummy(cd),
-                    ResConvDummy(cd),
-                    ResConvDummy(cd),
+                    ResConvEmb(cd),
+                    ResConvEmb(cd),
+                    ResConvEmb(cd),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
-                    ResConvDummy(cd),
-                    ResConvDummy(cd),
+                    ResConvEmb(cd),
+                    ResConvEmb(cd),
                 )
 
                 # self.attn_deep = ChannelAttention(cd)
