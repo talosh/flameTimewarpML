@@ -602,17 +602,13 @@ class Model:
                 feat00, _ = self.convblock10((feat00, timestep_emb))
                 feat_deep00, _ = self.convblock_deep10((feat_deep00, timestep_emb))
 
-                feat00 = self.mix10f(featF00, feat00)
-                feat_tmp00 = self.mix10(feat00, feat_deep00)
-                feat_deep00 = self.revmix10(feat00, feat_deep00)
-                featF00 = self.revmix10f(featF00, feat_tmp00)
-
-                featF = featF00
-                feat = feat00
-                feat_deep = feat_deep00
+                feat = self.mix10f(featF00, feat00)
+                feat_tmp = self.mix10(feat00, feat_deep00)
+                feat_deep = self.revmix10(feat00, feat_deep00)
+                featF = self.revmix10f(featF00, feat_tmp)
 
                 featF, _ = self.convblock2f((featF, timestep_emb))
-                feat, _ = self.convblock2((feat_tmp00, timestep_emb))
+                feat, _ = self.convblock2((feat_tmp, timestep_emb))
                 feat_deep, _ = self.convblock_deep2((feat_deep, timestep_emb))
 
                 feat = self.mix2f(featF, feat)
