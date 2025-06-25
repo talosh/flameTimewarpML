@@ -657,13 +657,13 @@ class Model:
                 feat_deep00 = self.revmix10(feat00, feat_deep00)
                 featF00 = self.revmix10f(featF00, feat_tmp00)
 
-                # featF = (1 - self.mix_ratio) * featF + self.mix_ratio * featF00
-                # feat = (1 - self.mix_ratio) * feat + self.mix_ratio * feat00
-                # feat_deep = (1 - self.mix_ratio) * feat_deep + self.mix_ratio * feat_deep00
+                featF = (1 - self.mix_ratio) * featF + self.mix_ratio * featF00
+                feat = (1 - self.mix_ratio) * feat + self.mix_ratio * feat00
+                feat_deep = (1 - self.mix_ratio) * feat_deep + self.mix_ratio * feat_deep00
 
-                featF = featF00
-                feat = feat00
-                feat_deep = feat_deep00
+                # featF = featF00
+                # feat = feat00
+                # feat_deep = feat_deep00
                 # feat_tmp = (1 - self.mix_ratio) * feat_tmp + self.mix_ratio * feat_tmp00
 
                 featF, _ = self.convblock2f((featF, timestep_emb))
