@@ -815,7 +815,7 @@ class Model:
                 self.encode = HeadAtt()
 
             def forward(self, img0, img1, timestep=0.5, scale=[12, 8, 4, 1], iterations=4, gt=None):
-                scale = torch.linspace(scale[0], 1.0, steps=4).tolist()
+                scale = torch.linspace(scale[0], 1.0, steps=5).tolist()
                 scale = [round(v) for v in scale]
 
                 img0 = compress(img0)
@@ -824,10 +824,10 @@ class Model:
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 
-                flow_list = [None] * 4
-                mask_list = [None] * 4
-                conf_list = [None] * 4
-                merged = [None] * 4
+                flow_list = [None] * 5
+                mask_list = [None] * 5
+                conf_list = [None] * 5
+                merged = [None] * 5
 
                 '''
                 flow1, mask1, conf1 = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
