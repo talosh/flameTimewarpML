@@ -668,7 +668,7 @@ class Model:
                 mask = feat[:, 4:5]
                 conf = feat[:, 5:6]
                 state = feat[:, 6:9]
-                return flow, mask, conf
+                return flow, mask, conf, state
 
         def find_scale(x_query):
             x_known = [576, 1024, 2048, 4096]
