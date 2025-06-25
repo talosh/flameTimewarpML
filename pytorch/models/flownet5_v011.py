@@ -505,6 +505,8 @@ class Model:
                 feat, _ = self.convblock((feat, timestep))
                 tmp = self.lastconv(feat)
 
+                print (tmp.shape)
+
                 tmp = torch.nn.functional.interpolate(tmp[:, :, :sh, :sw], size=(h, w), mode="bicubic", align_corners=True, antialias=True)
                 flow = tmp[:, :4] * scale
                 mask = tmp[:, 4:5]
