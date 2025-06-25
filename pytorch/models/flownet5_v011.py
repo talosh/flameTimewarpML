@@ -648,10 +648,10 @@ class Model:
                 feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
                 feat_deep00, _ = self.convblock_deep10((feat_deep00, timestep_emb))
 
-                # feat = self.mix1f(featF, feat)
+                feat = self.mix1f(featF, feat)
                 feat_tmp = self.mix1(feat, feat_deep)
-                # feat_deep = self.revmix1(feat, feat_deep)
-                # featF = self.revmix1f(featF, feat_tmp)
+                feat_deep = self.revmix1(feat, feat_deep)
+                featF = self.revmix1f(featF, feat_tmp)
 
                 feat00 = self.mix10f(featF00, feat00)
                 feat_tmp00 = self.mix10(feat00, feat_deep00)
