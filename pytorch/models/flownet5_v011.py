@@ -948,7 +948,8 @@ class Model:
                     'flow_list': flow_list,
                     'mask_list': mask_list,
                     'conf_list': conf_list,
-                    'merged': merged
+                    'merged': merged,
+                    'scale': scale
                 }
 
                 return result

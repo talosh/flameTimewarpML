@@ -2386,7 +2386,10 @@ def main():
 
         for i in range(len(flow_list)):
             if flow_list[i] is not None:
-                scale = training_scale[i]
+                if scale in result:
+                    scale = result['scale'][i]
+                else:
+                    scale = training_scale[i]
                 flow0 = flow_list[i][:, :2]
                 flow1 = flow_list[i][:, 2:4]
                 mask = mask_list[i]
