@@ -343,6 +343,28 @@ class Model:
                 conf = tmp[:, 5:6]
                 return flow, mask, conf
 
+        def find_scale(x_query):
+            x_known = [448, 1024, 2048, 4096]
+            y_known = [5, 5, 6, 10]
+            n = len(x_known)
+            if x_query <= x_known[0]:
+                x0, x1 = x_known[0], x_known[1]
+                y0, y1 = y_known[0], y_known[1]
+            elif x_query >= x_known[-1]:
+                x0, x1 = x_known[-2], x_known[-1]
+                y0, y1 = y_known[-2], y_known[-1]
+            else:
+                for i in range(1, n):
+                    if x_query < x_known[i]:
+                        x0, x1 = x_known[i-1], x_known[i]
+                        y0, y1 = y_known[i-1], y_known[i]
+                        break
+            t = (x_query - x0) / (x1 - x0)
+            start = y0 + t * (y1 - y0)
+            scale_list = torch.linspace(start, 1.0, steps=4).tolist()
+            scale_list = [round(v) for v in scale_list]
+            return scale_list
+
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
@@ -352,7 +374,11 @@ class Model:
                 self.block3 = Flownet(6+18+2+4, c=64)
                 self.encode = Head()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[12, 8, 4, 1], iterations=1, gt=None):
+            def forward(self, img0, img1, timestep=0.5, scale=None, iterations=1, gt=None):
+
+                if scale is None:
+                    scale = find_scale(max(img0.shape[2], img0.shape[3]))
+
                 img0 = compress(img0)
                 img1 = compress(img1)
                 f0 = self.encode(img0)
