@@ -862,7 +862,7 @@ class Model:
                 self.block0 = FlownetDeep(22+2+1, c=144)
                 self.block1 = Flownet4(32, c=96)
                 self.block2 = Flownet4(32, c=96)
-                self.block3 = Flownet4(32, c=96)
+                self.block3 = Flownet2(32, c=64)
                 self.block4 = Flownet2(32, c=64)
                 self.block5 = Flownet2(32, c=64)
                 self.block6 = Flownet2(32, c=64)
@@ -965,22 +965,26 @@ class Model:
                 mask_list[2] = torch.sigmoid(mask.clone())
                 # merged[2] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
 
-                flow, mask, conf, state = self.block3(
-                    img0, 
-                    img1, 
-                    f0, 
-                    f1, 
-                    timestep, 
-                    mask, 
-                    conf, 
+                flow_d, mask_d, conf_d, state = self.block3(
+                    img0,
+                    img1,
+                    f0,
+                    f1,
+                    timestep,
+                    mask,
+                    conf,
                     flow,
                     state,
-                    scale=scale[2])
+                    scale=scale[3])
                 
-                flow_list[3] = flow.clone()
-                conf_list[3] = torch.sigmoid(conf.clone())
-                mask_list[3] = torch.sigmoid(mask.clone())
-                # merged[3] = warp(img0, flow[:, :2]) * mask_list[2] + warp(img1, flow[:, 2:4]) * (1 - mask_list[2])
+                flow = flow + flow_d
+                mask = mask + mask_d
+                conf = conf + conf_d
+
+                flow_list[3] = flow
+                conf_list[3] = torch.sigmoid(conf) #
+                mask_list[3] = torch.sigmoid(mask) #
+                # merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
                 flow_d, mask_d, conf_d, state = self.block4(
                     img0,
