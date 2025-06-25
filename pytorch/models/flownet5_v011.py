@@ -430,7 +430,7 @@ class Model:
                 x = self.relu(self.conv(x) * self.beta + x)
                 return x, x_scalar
 
-        class UpMix(Module):
+        class UpMixAtt(Module):
             def __init__(self, c, cd):
                 super().__init__()
                 self.conv = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
@@ -445,7 +445,7 @@ class Model:
                 x_deep = self.attn2(x_deep)
                 return self.relu(self.mlp(timestep, self.conv(x_deep)) * self.beta + x)
             
-        class Mix(Module):
+        class MixAtt(Module):
             def __init__(self, c, cd):
                 super().__init__()
                 self.conv0 = torch.nn.ConvTranspose2d(cd, c, 4, 2, 1)
@@ -465,7 +465,7 @@ class Model:
                 x_deep = self.mlp2(timestep, self.conv0(x_deep))
                 return self.relu(x_deep * self.beta + x * self.gamma)
 
-        class DownMix(Module):
+        class DownMixAtt(Module):
             def __init__(self, c, cd):
                 super().__init__()
                 self.conv = torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'reflect', bias=True)
