@@ -592,7 +592,7 @@ class Model:
             def forward(self, img0, img1, f0, f1, f00, f10, timestep, mask, conf, flow, scale=1):
                 # Sigmoid-based schedule
 
-                print (f'{self.forward_counter} - {self.mix_ratio}\n')
+                print (f'{self.forward_counter} - {self.mix_ratio}\n\n')
 
                 self.forward_counter += 1
                 midpoint = 20000.0
