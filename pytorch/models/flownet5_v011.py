@@ -453,8 +453,6 @@ class Model:
                 super().__init__()
                 cd = 1 * round(1.618 * c) + 2 - (1 * round(1.618 * c) % 2)
 
-                self.register_buffer("forward_counter", torch.tensor(0, dtype=torch.long))
-
                 self.conv0 = conv(in_planes, c//2, 3, 2, 1)
                 self.conv1 = conv(c//2, c, 3, 2, 1)
                 self.conv2 = conv(c, cd, 3, 2, 1)
@@ -575,7 +573,9 @@ class Model:
                 )
                 self.maxdepth = 16
 
+                self.register_buffer("forward_counter1", torch.tensor(0, dtype=torch.long))
                 self.mix_ratio = 0
+
 
             def resize_min_side(self, tensor, size):
                 B, C, H, W = tensor.shape
@@ -591,10 +591,10 @@ class Model:
 
             def forward(self, img0, img1, f0, f1, f00, f10, timestep, mask, conf, flow, scale=1):
                 # Sigmoid-based schedule
-                self.forward_counter += 1
+                self.forward_counter1 += 1
                 midpoint = 20000.0
                 steepness = 0.00011
-                counter_f = self.forward_counter.float()
+                counter_f = self.forward_counter1.float()
                 self.mix_ratio = torch.sigmoid(steepness * (counter_f/10 - midpoint))
 
                 n, c, h, w = img0.shape
@@ -662,6 +662,8 @@ class Model:
                 featF = featF00
                 feat = feat00
                 feat_deep = feat_deep00
+
+                feat_tmp = (1 - self.mix_ratio) * feat_tmp + self.mix_ratio * feat_tmp00
 
                 featF, _ = self.convblock2f((featF, timestep_emb))
                 feat, _ = self.convblock2((feat_tmp, timestep_emb))
