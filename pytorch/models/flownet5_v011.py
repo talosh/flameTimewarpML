@@ -509,7 +509,7 @@ class Model:
                 flow = tmp[:, :4] * scale
                 mask = tmp[:, 4:5]
                 conf = tmp[:, 5:6]
-                state = feat[:, 6:9]
+                state = feat[:, 6:10]
                 return flow, mask, conf, state
 
         class FlownetDeep(Module):
