@@ -454,7 +454,7 @@ class Model:
                 self.gamma = torch.nn.Parameter(torch.ones((1, c, 1, 1)), requires_grad=True)
                 self.relu = torch.nn.PReLU(c, 0.2)
                 self.mlp1 = FeatureModulator(1, c)
-                self.mlp2 = FeatureModulator(1, cd)
+                self.mlp2 = FeatureModulator(1, c)
                 self.attn1 = FourierChannelAttention(c, c, 11)
                 self.attn2 = FourierChannelAttention(cd, cd, 11)
 
