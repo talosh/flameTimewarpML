@@ -462,8 +462,8 @@ class Model:
             def __init__(self, in_planes, c=64):
                 super().__init__()
                 self.conv0 = torch.nn.Sequential(
-                    torch.nn.Conv2d(in_planes, c//2, 5, 2, 2, padding_mode = 'zeros'),
-                    myPReLU(c//2),
+                    torch.nn.Conv2d(in_planes, c, 5, 2, 2, padding_mode = 'zeros'),
+                    myPReLU(c),
                     )
                 self.convblock = torch.nn.Sequential(
                     ResConvAtt(c),
