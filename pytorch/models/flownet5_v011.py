@@ -827,10 +827,6 @@ class Model:
                     state,
                     scale=scale[1])
 
-                print (state.shape)
-                import sys
-                sys.exit()
-
                 flow_list[1] = flow.clone()
                 conf_list[1] = torch.sigmoid(conf.clone())
                 mask_list[1] = torch.sigmoid(mask.clone())
