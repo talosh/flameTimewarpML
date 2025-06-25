@@ -751,7 +751,7 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeep(22+2+1, c=144)
-                self.block1 = Flownet4(32, c=128)
+                self.block1 = Flownet4(32, c=96)
                 self.block2 = None # FlownetDeep(24+5+4+2+1, c=96)
                 self.block3 = None # Flownet(31, c=64)
                 self.encode = HeadAtt()
