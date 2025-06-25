@@ -455,6 +455,10 @@ class Model:
 
                 self.register_buffer("forward_counter", torch.tensor(0, dtype=torch.long))
 
+                self.conv0 = conv(in_planes, c//2, 3, 2, 1)
+                self.conv1 = conv(c//2, c, 3, 2, 1)
+                self.conv2 = conv(c, cd, 3, 2, 1)
+
                 self.conv00 = torch.nn.Sequential(
                     torch.nn.Conv2d(in_planes, c//2, 5, 2, 2, padding_mode = 'zeros'),
                     myPReLU(c//2),
@@ -466,6 +470,13 @@ class Model:
                 self.conv20 = torch.nn.Sequential(
                     torch.nn.Conv2d(c, cd, 3, 2, 1, padding_mode = 'reflect'),
                     torch.nn.PReLU(cd, 0.2),     
+                )
+
+                self.convblock1 = torch.nn.Sequential(
+                    ResConvDummy(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
                 )
 
                 self.convblock10 = torch.nn.Sequential(
@@ -493,52 +504,68 @@ class Model:
                 self.revmix10f = UpMix(c//2, c)
 
                 self.convblock2 = torch.nn.Sequential(
-                    ResConvEmb(c),
-                    ResConvEmb(c),
-                    ResConvEmb(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
                 )
                 self.convblock3 = torch.nn.Sequential(
-                    ResConvEmb(c),
-                    ResConvEmb(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
+                )
+                self.convblock1f = torch.nn.Sequential(
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
                 )
                 self.convblock2f = torch.nn.Sequential(
-                    ResConvEmb(c//2),
-                    ResConvEmb(c//2),
-                    ResConvEmb(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
                 )
                 self.convblock3f = torch.nn.Sequential(
-                    ResConvEmb(c//2),
-                    ResConvEmb(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
                 )
                 self.convblock_last = torch.nn.Sequential(
-                    ResConvEmb(c),
-                    ResConvEmb(c),
-                    ResConvEmb(c),
-                    ResConvEmb(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
+                    ResConvDummy(c),
                 )
                 self.convblock_last_shallow = torch.nn.Sequential(
-                    ResConvEmb(c//2),
-                    ResConvEmb(c//2),
-                    ResConvEmb(c//2),
-                    ResConvEmb(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
+                    ResConvDummy(c//2),
+                )
+                self.convblock_deep1 = torch.nn.Sequential(
+                    ResConvDummy(cd),
+                    ResConvDummy(cd),
+                    ResConvDummy(cd),
+                    ResConvDummy(cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
-                    ResConvEmb(cd),
-                    ResConvEmb(cd),
-                    ResConvEmb(cd),
+                    ResConvDummy(cd),
+                    ResConvDummy(cd),
+                    ResConvDummy(cd),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
-                    ResConvEmb(cd),
-                    ResConvEmb(cd),
+                    ResConvDummy(cd),
+                    ResConvDummy(cd),
                 )
 
                 # self.attn_deep = ChannelAttention(cd)
 
+                self.mix1 = UpMix(c, cd)
+                self.mix1f = DownMix(c//2, c)
                 self.mix2 = UpMix(c, cd)
                 self.mix2f = DownMix(c//2, c)
                 self.mix3 = Mix(c, cd)
                 self.mix3f = DownMix(c//2, c)
                 self.mix4f = DownMix(c//2, c)
+                self.revmix1 = DownMix(c, cd)
+                self.revmix1f = UpMix(c//2, c)
                 self.revmix2 = DownMix(c, cd)
                 self.revmix2f = UpMix(c//2, c)
                 self.revmix3f = UpMix(c//2, c)
@@ -562,7 +589,7 @@ class Model:
 
                 return torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bilinear', align_corners=True)
 
-            def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
+            def forward(self, img0, img1, f0, f1, f00, f10, timestep, mask, conf, flow, scale=1):
                 # Sigmoid-based schedule
                 self.forward_counter += 1
                 midpoint = 20000.0
@@ -578,19 +605,32 @@ class Model:
                 padding = (0, pw, 0, ph)
 
                 imgs = torch.cat((img0, img1), 1)
-                x = torch.cat((imgs, f0, f1, diffmatte(img0, img1)), 1)
+                x = torch.cat((imgs, f0, f1), 1)
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                 x = torch.nn.functional.pad(x, padding)
+
+                imgs = torch.cat((img0, img1), 1)
+                x00 = torch.cat((imgs, f00, f10, diffmatte(img0, img1)), 1)
+                x00 = torch.nn.functional.interpolate(x00, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
+                x00 = torch.nn.functional.pad(x00, padding)
 
                 tenHorizontal = torch.linspace(-1.0, 1.0, sw).view(1, 1, 1, sw).expand(n, -1, sh, -1).to(device=img0.device, dtype=img0.dtype)
                 tenVertical = torch.linspace(-1.0, 1.0, sh).view(1, 1, sh, 1).expand(n, -1, -1, sw).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.cat((tenHorizontal, tenVertical), 1).to(device=img0.device, dtype=img0.dtype)
                 tenGrid = torch.nn.functional.pad(tenGrid, padding, mode='replicate')
                 timestep_emb = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
-                x = torch.cat((x, tenGrid), 1)
+                timestep = (tenGrid[:, :1].clone() * 0 + 1) * timestep
+                x = torch.cat((timestep, x, tenGrid), 1)
+                x00 = torch.cat((x00, tenGrid), 1)
 
-                feat00 = self.conv00(x)
+                feat = self.conv0(x)
+                feat00 = self.conv00(x00)
+
+                featF, _ = self.convblock1f((feat, timestep_emb))
                 featF00, _ = self.convblock10f((feat00, timestep_emb))
+
+                feat = self.conv1(feat)
+                feat_deep = self.conv2(feat)
 
                 feat00 = self.conv10(feat00)
                 feat_deep00 = self.conv20(feat00)
@@ -599,13 +639,25 @@ class Model:
                 # feat_deep = self.resize_min_side(feat_deep, 48)
                 # feat_deep00 = self.attn_deep(feat_deep00)
 
+                feat, _ = self.convblock1((feat, timestep_emb))
                 feat00, _ = self.convblock10((feat00, timestep_emb))
+
+                feat_deep, _ = self.convblock_deep1((feat_deep, timestep_emb))
                 feat_deep00, _ = self.convblock_deep10((feat_deep00, timestep_emb))
 
-                feat = self.mix10f(featF00, feat00)
-                feat_tmp = self.mix10(feat00, feat_deep00)
-                feat_deep = self.revmix10(feat00, feat_deep00)
-                featF = self.revmix10f(featF00, feat_tmp)
+                feat = self.mix1f(featF, feat)
+                feat_tmp = self.mix1(feat, feat_deep)
+                feat_deep = self.revmix1(feat, feat_deep)
+                featF = self.revmix1f(featF, feat_tmp)
+
+                feat00 = self.mix10f(featF00, feat00)
+                feat_tmp00 = self.mix10(feat00, feat_deep00)
+                feat_deep00 = self.revmix10(feat00, feat_deep00)
+                featF00 = self.revmix10f(featF00, feat_tmp00)
+
+                featF = (1 - self.mix_ratio) * featF + self.mix_ratio * featF00
+                feat = (1 - self.mix_ratio) * feat + self.mix_ratio * feat00
+                feat_deep = (1 - self.mix_ratio) * feat_deep + self.mix_ratio * feat_deep00
 
                 featF, _ = self.convblock2f((featF, timestep_emb))
                 feat, _ = self.convblock2((feat_tmp, timestep_emb))
@@ -686,8 +738,11 @@ class Model:
                 img0 = compress(img0)
                 img1 = compress(img1)
 
-                f0 = self.encode_att(img0)
-                f1 = self.encode_att(img1)
+                f0 = self.encode(img0)
+                f1 = self.encode(img1)
+
+                f00 = self.encode_att(img0)
+                f10 = self.encode_att(img1)
 
                 flow_list = [None] * 4
                 mask_list = [None] * 4
@@ -705,7 +760,7 @@ class Model:
 
                 scale[0] = 1
 
-                flow, mask, conf = self.block0(img0, img1, f0, f1, timestep, None, None, None, scale=scale[0])
+                flow, mask, conf = self.block0(img0, img1, f0, f1, f00, f10, timestep, None, None, None, scale=scale[0])
 
                 mask = torch.sigmoid(mask) #
                 conf = torch.sigmoid(conf) #
