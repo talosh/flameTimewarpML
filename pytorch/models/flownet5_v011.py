@@ -509,7 +509,7 @@ class Model:
                 flow = feat[:, :4] * scale
                 mask = feat[:, 4:5]
                 conf = feat[:, 5:6]
-                return flow, mask, conf, state
+                return flow, mask, conf
         class Flownet2(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
