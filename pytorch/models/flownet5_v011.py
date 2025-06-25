@@ -793,6 +793,10 @@ class Model:
                     None,
                     scale=scale[0]
                     )
+                
+                print (state.shape)
+                import sys
+                sys.exit()
 
                 '''
                 mask = torch.sigmoid(mask) #
