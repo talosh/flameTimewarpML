@@ -591,7 +591,7 @@ class Model:
 
                 return torch.nn.functional.interpolate(tensor, size=(new_h, new_w), mode='bilinear', align_corners=True)
 
-            def forward(self, img0, img1, f0, f1, f00, f10, timestep, mask, conf, flow, scale=1):
+            def forward(self, img0, img1, f0, f1, timestep, mask, conf, flow, scale=1):
                 # Sigmoid-based schedule
                 # print (f'{self.forward_counter} - {self.mix_ratio}\n\n')
                 '''
@@ -744,7 +744,17 @@ class Model:
 
                 scale[0] = 1
 
-                flow, mask, conf = self.block0(img0, img1, f0, f1, f00, f10, timestep, None, None, None, scale=scale[0])
+                flow, mask, conf = self.block0(
+                    img0,
+                    img1,
+                    f0,
+                    f1,
+                    timestep,
+                    None,
+                    None,
+                    None,
+                    scale=scale[0]
+                    )
 
                 mask = torch.sigmoid(mask) #
                 conf = torch.sigmoid(conf) #
