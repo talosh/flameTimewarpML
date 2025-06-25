@@ -573,7 +573,7 @@ class Model:
                 )
                 self.maxdepth = 16
 
-                self.register_buffer("forward_counter1", torch.tensor(0, dtype=torch.long))
+                self.register_buffer("forward_counter", torch.tensor(0, dtype=torch.long))
                 self.mix_ratio = 0.
 
 
@@ -591,13 +591,12 @@ class Model:
 
             def forward(self, img0, img1, f0, f1, f00, f10, timestep, mask, conf, flow, scale=1):
                 # Sigmoid-based schedule
+                # print (f'{self.forward_counter} - {self.mix_ratio}\n\n')
 
-                print (f'{self.forward_counter1} - {self.mix_ratio}\n\n')
-
-                self.forward_counter1 += 1
+                self.forward_counter += 1
                 midpoint = 20000.0
                 steepness = 0.00011
-                counter_f = self.forward_counter1.float()
+                counter_f = self.forward_counter.float()
                 self.mix_ratio = torch.sigmoid(steepness * (counter_f/10 - midpoint))
 
                 n, c, h, w = img0.shape
