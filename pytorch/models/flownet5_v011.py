@@ -71,33 +71,6 @@ class Model:
             tensor = tensor.to(dtype = src_dtype)
             return tensor
 
-        def hpass(img):
-            src_dtype = img.dtype
-            img = img.float()
-            def gauss_kernel(size=5, channels=3):
-                kernel = torch.tensor([[1., 4., 6., 4., 1],
-                                    [4., 16., 24., 16., 4.],
-                                    [6., 24., 36., 24., 6.],
-                                    [4., 16., 24., 16., 4.],
-                                    [1., 4., 6., 4., 1.]])
-                kernel /= 256.
-                kernel = kernel.repeat(channels, 1, 1, 1)
-                return kernel
-            
-            def conv_gauss(img, kernel):
-                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
-                out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
-                return out
-
-            gkernel = gauss_kernel()
-            gkernel = gkernel.to(device=img.device, dtype=img.dtype)
-            hp = img - conv_gauss(img, gkernel) + 0.5
-            hp = torch.clamp(hp, 0.48, 0.52)
-            hp = normalize(hp, 0, 1)
-            hp = torch.max(hp, dim=1, keepdim=True).values
-            hp = hp.to(dtype = src_dtype)
-            return hp
-
         def ACEScct2cg(image):
             condition = image < 0.155251141552511
             value_if_true = (image - 0.0729055341958155) / 10.5402377416545
@@ -325,7 +298,7 @@ class Model:
                 return x
 
         class HeadAtt(Module):
-            def __init__(self, c=48):
+            def __init__(self, c=24):
                 super(HeadAtt, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, c, 5, 2, 2),
@@ -336,7 +309,7 @@ class Model:
                     torch.nn.PReLU(c, 0.2),
                 )
                 self.attn = FourierChannelAttention(c, c, 11)
-                self.lastconv = torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
+                self.lastconv = torch.nn.ConvTranspose2d(c, 8, 4, 2, 1)
                 self.hpass = HighPassFilter()
                 self.maxdepth = 2
 
@@ -351,32 +324,6 @@ class Model:
                 x = self.encode(x)
                 x = self.attn(x)
                 x = self.lastconv(x)[:, :, :h, :w]
-                return x
-
-        class Head(Module):
-            def __init__(self, c=32):
-                super(Head, self).__init__()
-                self.encode = torch.nn.Sequential(
-                    torch.nn.Conv2d(4, c, 3, 2, 1),
-                    torch.nn.PReLU(c, 0.2),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    ResConv(c),
-                    torch.nn.ConvTranspose2d(c, 9, 4, 2, 1)
-                )
-                self.maxdepth = 2
-
-            def forward(self, x):
-                hp = hpass(ACEScct2cg(x))
-                x = normalize(x, 0, 1) * 2 - 1
-                x = torch.cat((x, hp), 1)
-                n, c, h, w = x.shape
-                ph = self.maxdepth - (h % self.maxdepth)
-                pw = self.maxdepth - (w % self.maxdepth)
-                padding = (0, pw, 0, ph)
-                x = torch.nn.functional.pad(x, padding)
-                x = self.encode(x)[:, :, :h, :w]
                 return x
         class ResConv(Module):
             def __init__(self, c, dilation=1):
@@ -603,7 +550,7 @@ class Model:
                 self.revmix3f = UpMix(c//2, c)
                 self.mix4 = Mix(c//2, c)
                 self.lastconv = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c//2, 6, 4, 2, 1),
+                    torch.nn.ConvTranspose2d(c//2, 10, 4, 2, 1),
                 )
                 self.maxdepth = 16
 
@@ -720,6 +667,7 @@ class Model:
                 flow = feat[:, :4] * scale
                 mask = feat[:, 4:5]
                 conf = feat[:, 5:6]
+                state = feat[:, 6:9]
                 return flow, mask, conf
 
         def find_scale(x_query):
@@ -747,7 +695,7 @@ class Model:
         class FlownetCas(Module):
             def __init__(self):
                 super().__init__()
-                self.block0 = FlownetDeep(24+2+1, c=192)
+                self.block0 = FlownetDeep(22+2+1, c=144)
                 self.block1 = None # FlownetDeep(24+5+4+2+1, c=128)
                 self.block2 = None # FlownetDeep(24+5+4+2+1, c=96)
                 self.block3 = None # Flownet(31, c=64)
@@ -779,7 +727,7 @@ class Model:
 
                 scale[0] = 1
 
-                flow, mask, conf = self.block0(
+                flow, mask, conf, state = self.block0(
                     img0,
                     img1,
                     f0,
