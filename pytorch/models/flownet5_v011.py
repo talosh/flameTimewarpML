@@ -573,7 +573,7 @@ class Model:
                 )
                 self.maxdepth = 16
 
-                self.register_buffer("forward_counter", torch.tensor(0, dtype=torch.long))
+                self.register_buffer("forward_counter1", torch.tensor(0, dtype=torch.long))
                 self.mix_ratio = 0.
 
 
@@ -593,11 +593,11 @@ class Model:
                 # Sigmoid-based schedule
                 # print (f'{self.forward_counter} - {self.mix_ratio}\n\n')
 
-                self.forward_counter += 1
+                self.forward_counter1 += 1
                 midpoint = 20000.0
                 steepness = 0.00011
-                counter_f = self.forward_counter.float()
-                self.mix_ratio = torch.sigmoid(steepness * (counter_f/10 - midpoint))
+                counter_f = self.forward_counter1.float()
+                self.mix_ratio = torch.sigmoid(steepness * (counter_f/1 - midpoint))
 
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
@@ -657,14 +657,14 @@ class Model:
                 feat_deep00 = self.revmix10(feat00, feat_deep00)
                 featF00 = self.revmix10f(featF00, feat_tmp00)
 
-                featF = (1 - self.mix_ratio) * featF + self.mix_ratio * featF00
-                feat = (1 - self.mix_ratio) * feat + self.mix_ratio * feat00
-                feat_deep = (1 - self.mix_ratio) * feat_deep + self.mix_ratio * feat_deep00
+                # featF = (1 - self.mix_ratio) * featF + self.mix_ratio * featF00
+                # feat = (1 - self.mix_ratio) * feat + self.mix_ratio * feat00
+                # feat_deep = (1 - self.mix_ratio) * feat_deep + self.mix_ratio * feat_deep00
 
-                # featF = featF00
-                # feat = feat00
-                # feat_deep = feat_deep00
-                # feat_tmp = (1 - self.mix_ratio) * feat_tmp + self.mix_ratio * feat_tmp00
+                featF = featF00
+                feat = feat00
+                feat_deep = feat_deep00
+                feat_tmp = (1 - self.mix_ratio) * feat_tmp + self.mix_ratio * feat_tmp00
 
                 featF, _ = self.convblock2f((featF, timestep_emb))
                 feat, _ = self.convblock2((feat_tmp, timestep_emb))
