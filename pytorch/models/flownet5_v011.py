@@ -591,6 +591,9 @@ class Model:
 
             def forward(self, img0, img1, f0, f1, f00, f10, timestep, mask, conf, flow, scale=1):
                 # Sigmoid-based schedule
+
+                print (f'{self.forward_counter}\n')
+
                 self.forward_counter += 1
                 midpoint = 20000.0
                 steepness = 0.00011
@@ -663,7 +666,7 @@ class Model:
                 feat = feat00
                 feat_deep = feat_deep00
 
-                feat_tmp = (1 - self.mix_ratio) * feat_tmp + self.mix_ratio * feat_tmp00
+                # feat_tmp = (1 - self.mix_ratio) * feat_tmp + self.mix_ratio * feat_tmp00
 
                 featF, _ = self.convblock2f((featF, timestep_emb))
                 feat, _ = self.convblock2((feat_tmp, timestep_emb))
