@@ -646,7 +646,7 @@ class Model:
                 feat_deep00, _ = self.convblock_deep10((feat_deep00, timestep_emb))
 
                 # feat = self.mix1f(featF, feat)
-                # feat_tmp = self.mix1(feat, feat_deep)
+                feat_tmp = self.mix1(feat, feat_deep)
                 # feat_deep = self.revmix1(feat, feat_deep)
                 # featF = self.revmix1f(featF, feat_tmp)
 
