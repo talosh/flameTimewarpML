@@ -503,14 +503,13 @@ class Model:
 
                 feat = self.conv0(x)
                 feat, _ = self.convblock((feat, timestep))
-                tmp = self.lastconv(feat)
+                feat = self.lastconv(feat)
 
-                print (tmp.shape)
 
-                tmp = torch.nn.functional.interpolate(tmp[:, :, :sh, :sw], size=(h, w), mode="bicubic", align_corners=True, antialias=True)
-                flow = tmp[:, :4] * scale
-                mask = tmp[:, 4:5]
-                conf = tmp[:, 5:6]
+                feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bicubic", align_corners=True, antialias=True)
+                flow = feat[:, :4] * scale
+                mask = feat[:, 4:5]
+                conf = feat[:, 5:6]
                 state = feat[:, 6:10]
                 return flow, mask, conf, state
 
