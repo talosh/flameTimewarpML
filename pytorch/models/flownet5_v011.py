@@ -836,7 +836,7 @@ class Model:
 
         def find_scale(x_query):
             x_known = [576, 1024, 2048, 4096]
-            y_known = [3, 5, 9, 12]
+            y_known = [3, 5, 6, 10]
             n = len(x_known)
             if x_query <= x_known[0]:
                 x0, x1 = x_known[0], x_known[1]
@@ -852,7 +852,7 @@ class Model:
                         break
             t = (x_query - x0) / (x1 - x0)
             start = y0 + t * (y1 - y0)
-            scale_list = torch.linspace(start, 1.0, steps=4).tolist()
+            scale_list = torch.linspace(start, 1.0, steps=9).tolist()
             scale_list = [round(v) for v in scale_list]
             return scale_list
 
@@ -870,9 +870,12 @@ class Model:
                 self.block8 = Flownet2LT(32, c=64)
                 self.encode = HeadAtt()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[12, 8, 4, 1], iterations=4, gt=None):
-                scale = torch.linspace(scale[0], 1.0, steps=9).tolist()
-                scale = [round(v) for v in scale]
+            def forward(self, img0, img1, timestep=0.5, scale=None, iterations=4, gt=None):
+                if scale is None:
+                    scale = find_scale(max(img0.shape[2], img0.shape[3]))
+                else:
+                    scale = torch.linspace(scale[0], 1.0, steps=9).tolist()
+                    scale = [round(v) for v in scale]
 
                 img0 = compress(img0)
                 img1 = compress(img1)
