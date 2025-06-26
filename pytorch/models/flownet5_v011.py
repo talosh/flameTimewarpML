@@ -298,7 +298,7 @@ class Model:
                 return x
 
         class HeadAtt(Module):
-            def __init__(self, c=24):
+            def __init__(self, c=48):
                 super(HeadAtt, self).__init__()
                 self.encode = torch.nn.Sequential(
                     torch.nn.Conv2d(4, c, 5, 2, 2),
@@ -510,6 +510,7 @@ class Model:
                 mask = feat[:, 4:5]
                 conf = feat[:, 5:6]
                 return flow, mask, conf
+
         class Flownet2(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
@@ -564,6 +565,7 @@ class Model:
                 conf = feat[:, 5:6]
                 state = feat[:, 6:10]
                 return flow, mask, conf, state
+
         class Flownet4(Module):
             def __init__(self, in_planes, c=96):
                 super().__init__()
@@ -860,14 +862,14 @@ class Model:
             def __init__(self):
                 super().__init__()
                 self.block0 = FlownetDeep(22+2+1, c=144)
-                self.block1 = Flownet4(32, c=96)
-                self.block2 = Flownet4(32, c=96)
-                self.block3 = Flownet2(32, c=64)
-                self.block4 = Flownet2(32, c=64)
-                self.block5 = Flownet2(32, c=64)
+                self.block1 = Flownet4(32, c=128)
+                self.block2 = Flownet4(32, c=112)
+                self.block3 = Flownet2(32, c=96)
+                self.block4 = Flownet2(32, c=80)
+                self.block5 = Flownet2(32, c=72)
                 self.block6 = Flownet2(32, c=64)
-                self.block7 = Flownet2(32, c=64)
-                self.block8 = Flownet2LT(32, c=64)
+                self.block7 = Flownet2(32, c=56)
+                self.block8 = Flownet2LT(32, c=48)
                 self.encode = HeadAtt()
 
             def forward(self, img0, img1, timestep=0.5, scale=None, iterations=4, gt=None):
