@@ -325,6 +325,8 @@ class Model:
                 x = self.attn(x)
                 x = self.lastconv(x)[:, :, :h, :w]
                 return x
+            
+
         class ResConv(Module):
             def __init__(self, c, dilation=1):
                 super().__init__()
@@ -669,6 +671,17 @@ class Model:
                     ResConvEmb(c//2),
                 )
                 self.convblock3f = torch.nn.Sequential(
+                    ResConvEmb(c//2),
+                )
+                self.convblock_last = torch.nn.Sequential(
+                    ResConvEmb(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
+                )
+                self.convblock_last_shallow = torch.nn.Sequential(
+                    ResConvEmb(c//2),
+                    ResConvEmb(c//2),
                     ResConvEmb(c//2),
                     ResConvEmb(c//2),
                 )
