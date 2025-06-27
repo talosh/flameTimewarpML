@@ -675,13 +675,13 @@ class Model:
                     ResConvEmb(c//2),
                 )
                 self.convblock_last = torch.nn.Sequential(
-                    ResConvAtt(c),
+                    ResConvEmb(c),
                     ResConvEmb(c),
                     ResConvEmb(c),
                     ResConvEmb(c),
                 )
                 self.convblock_last_shallow = torch.nn.Sequential(
-                    ResConvAtt(c//2),
+                    ResConvEmb(c//2),
                     ResConvEmb(c//2),
                     ResConvEmb(c//2),
                     ResConvEmb(c//2),
@@ -693,12 +693,12 @@ class Model:
                     ResConvEmb(cd),
                 )
                 self.convblock_deep2 = torch.nn.Sequential(
-                    ResConvEmb(cd),
+                    ResConvAtt(cd),
                     ResConvEmb(cd),
                     ResConvEmb(cd),
                 )
                 self.convblock_deep3 = torch.nn.Sequential(
-                    ResConvEmb(cd),
+                    ResConvAtt(cd),
                     ResConvEmb(cd),
                 )
 
