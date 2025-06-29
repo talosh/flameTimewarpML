@@ -1183,6 +1183,7 @@ class Model:
                 mask_teacher = torch.sigmoid(mask + mask_d)
                 merged_teacher = warp(img0, flow_teacher[:, :2]) * mask_teacher + warp(img1, flow_teacher[:, 2:4]) * (1 - mask_teacher)
 
+                loss_distill = 0
                 for i in range(len(flow_list)):
                     merged = warp(img0, flow_list[i][:, :2]) * mask_list[i] + warp(img1, flow_list[i][:, 2:4]) * (1 - mask_list[i])
                     loss_mask = ((merged - gt).abs().mean(1, True) > (merged_teacher - gt).abs().mean(1, True) + 0.01).float().detach()
