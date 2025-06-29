@@ -1729,7 +1729,7 @@ class Ternary(torch.nn.Module):
         self.register_buffer("w", torch.tensor(w).float())
 
     def transform(self, img):
-        patches = F.conv2d(img, self.w, padding=3, bias=None)
+        patches = torch.nn.functional.conv2d(img, self.w, padding=3, bias=None)
         transf = patches - img
         transf_norm = transf / torch.sqrt(0.81 + transf**2)
         return transf_norm
@@ -1747,7 +1747,7 @@ class Ternary(torch.nn.Module):
     def valid_mask(self, t, padding):
         n, _, h, w = t.size()
         inner = torch.ones(n, 1, h - 2 * padding, w - 2 * padding).type_as(t)
-        mask = F.pad(inner, [padding] * 4)
+        mask = torch.nn.functional.pad(inner, [padding] * 4)
         return mask
 
     def forward(self, img0, img1):
