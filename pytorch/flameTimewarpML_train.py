@@ -1788,7 +1788,7 @@ class Sobel(torch.nn.Module):
         L1Y = torch.abs(pred_Y - gt_Y)
 
         loss = L1X + L1Y  # shape: (N*C, 1, H, W)
-        return loss
+        return loss.mean()
 
 def ap0_to_ap1(image):
     """
