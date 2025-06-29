@@ -771,7 +771,7 @@ class Model:
                     ResConvEmb(c),
                     ResConvEmb(c),
                     ResConvEmb(c),
-z                )
+                )
 
                 # self.attn_deep = ChannelAttention(cd)
 
