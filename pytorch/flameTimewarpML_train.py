@@ -1726,7 +1726,7 @@ class Ternary(torch.nn.Module):
         w = np.eye(out_channels).reshape(
             (patch_size, patch_size, 1, out_channels))
         w = np.transpose(w, (3, 2, 0, 1))
-        self.register_buffer("w", torch.tensor(self.w).float())
+        self.register_buffer("w", torch.tensor(w).float())
 
     def transform(self, img):
         patches = F.conv2d(img, self.w, padding=3, bias=None)
