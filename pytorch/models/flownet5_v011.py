@@ -1200,15 +1200,15 @@ class Model:
                         'mask_teacher': mask_teacher,
                         'loss_distill': loss_distill
                     }
+                    return result
                 
-                else:
-                    result = {
-                        'flow_list': flow_list,
-                        'mask_list': mask_list,
-                        'conf_list': conf_list,
-                        'merged': merged,
-                        'scale': scale,
-                    }
+                result = {
+                    'flow_list': flow_list,
+                    'mask_list': mask_list,
+                    'conf_list': conf_list,
+                    'merged': merged,
+                    'scale': scale,
+                }
 
                 return result
 
