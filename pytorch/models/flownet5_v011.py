@@ -1184,6 +1184,7 @@ class Model:
                 merged_teacher = warp(img0, flow_teacher[:, :2]) * mask_teacher + warp(img1, flow_teacher[:, 2:4]) * (1 - mask_teacher)
 
                 for i in range(len(flow_list)):
+                    print (i)
                     merged = warp(img0, flow[i][:, :2]) * mask_list[i] + warp(img1, flow[i][:, 2:4]) * (1 - mask_list[i])
                     loss_mask = ((merged - gt).abs().mean(1, True) > (merged_teacher - gt).abs().mean(1, True) + 0.01).float().detach()
                     loss_distill += (((flow_teacher.detach() - flow_list[i]) ** 2).mean(1, True) ** 0.5 * loss_mask).mean()
