@@ -2496,10 +2496,10 @@ def main():
                 loss = loss + loss_l1 + loss_lap + loss_fourier + 1e-2*loss_mask + 1e-2*loss_conf + 1.4e-2 * (1 / (i + 1)) * float(torch.mean(loss_LPIPS).item())
 
 
-        loss_ternary, loss_ternary_map = ternary_loss(output_compr, img1_compr)
+        # loss_ternary, loss_ternary_map = ternary_loss(output_compr, img1_compr)
         loss_sobel = sobel_loss(output_compr, img1_compr)
 
-        loss = loss + loss_l1 + loss_lap + loss_fourier + loss_ternary + loss_ternary_map + loss_sobel + 1e-2 * float(torch.mean(loss_LPIPS).item())
+        loss = loss + loss_l1 + loss_lap + loss_fourier + loss_sobel + 1e-2 * float(torch.mean(loss_LPIPS).item())
 
         diff_matte = diffmatte(output_compr, img1_compr)
 
