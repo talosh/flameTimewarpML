@@ -1761,7 +1761,7 @@ class Ternary(torch.nn.Module):
 
 class Sobel(torch.nn.Module):
     def __init__(self):
-        super(SOBEL, self).__init__()
+        super(Sobel, self).__init__()
 
         kernel = torch.tensor([
             [1, 0, -1],
