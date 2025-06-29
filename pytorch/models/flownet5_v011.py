@@ -646,7 +646,7 @@ class Model:
                 )
                 self.maxdepth = 4
 
-            def forward(self, img0, img1, gt, f0, f1, fgt, timestep, mask, conf, flow, state, scale=1):
+            def forward(self, img0, img1, gt, f0, f1, timestep, mask, conf, flow, state, scale=1):
                 n, c, h, w = img0.shape
                 sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
                         
@@ -656,11 +656,11 @@ class Model:
                     gt,
                     f0,
                     f1,
-                    fgt,
                     mask,
                     conf,
                     state
                     ), 1)
+                
                 x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
                 flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True) * 1. / scale
                 x = torch.cat((x, flow), 1)
@@ -675,7 +675,6 @@ class Model:
                 feat = self.conv0(x)
                 feat, _ = self.convblock((feat, timestep))
                 feat = self.lastconv(feat)
-
 
                 feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bicubic", align_corners=True, antialias=True)
                 flow = feat[:, :4] * scale
@@ -943,6 +942,7 @@ class Model:
                 self.block6 = Flownet2(32, c=64)
                 self.block7 = Flownet2(32, c=56)
                 self.block8 = Flownet2LT(32, c=48)
+                self.teacher = FlownetTea(35, c=96)
                 self.encode = HeadAtt()
 
             def forward(self, img0, img1, timestep=0.5, scale=None, iterations=4, gt=None):
@@ -1166,12 +1166,37 @@ class Model:
                 mask_list[8] = torch.sigmoid(mask) #
                 # merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
+                flow_d, mask_d = self.teacher(
+                    img0,
+                    img1,
+                    gt,
+                    f0,
+                    f1,
+                    timestep,
+                    mask,
+                    conf,
+                    flow,
+                    state,
+                    scale=1)
+                
+                flow_teacher = flow + flow_d
+                mask_teacher = torch.sigmoid(mask + mask_d)
+                merged_teacher = warp(img0, flow_teacher[:, :2]) * mask_teacher + warp(img1, flow_teacher[:, 2:4]) * (1 - mask_teacher)
+
+                for i in range(len(flow_list)):
+                    merged = warp(img0, flow[i][:, :2]) * mask_list[i] + warp(img1, flow[i][:, 2:4]) * (1 - mask_list[i])
+                    loss_mask = ((merged - gt).abs().mean(1, True) > (merged_teacher - gt).abs().mean(1, True) + 0.01).float().detach()
+                    loss_distill += (((flow_teacher.detach() - flow_list[i]) ** 2).mean(1, True) ** 0.5 * loss_mask).mean()
+
                 result = {
                     'flow_list': flow_list,
                     'mask_list': mask_list,
                     'conf_list': conf_list,
                     'merged': merged,
-                    'scale': scale
+                    'scale': scale,
+                    'flow_teacher': flow_teacher,
+                    'mask_teacher': mask_teacher,
+                    'loss_distill': loss_distill
                 }
 
                 return result

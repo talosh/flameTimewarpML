@@ -2501,6 +2501,36 @@ def main():
 
         loss = loss + loss_l1 + loss_lap + loss_fourier + 0.1 * loss_ternary + 0.1 * loss_sobel + 1e-2 * float(torch.mean(loss_LPIPS).item())
 
+        if 'flow_teacher' in result:
+            flow_tea = result['flow_teacher']
+            flow0_tea = flow_list[i][:, :2]
+            flow1_tea = flow_list[i][:, 2:4]
+            mask_tea = result['mask_teacher']
+            output_tea = warp(img0_orig, flow0_tea) * mask_tea + warp(img2_orig, flow1_tea) * (1 - mask_tea)
+            output_compr_tea = torch.clamp(compress(output_tea), 0, 1)
+
+            loss_l1_tea = criterion_l1(
+                output_compr_tea,
+                img1_compr
+                ) # * scale
+            loss_lap_tea = criterion_lap(
+                output_compr_tea,
+                img1_compr
+                )
+            loss_LPIPS_tea = loss_fn_alex(
+                output_compr_tea * 2 - 1, 
+                img1_compr * 2 - 1
+                )
+            loss_fourier_tea = fourier_loss_half_res(
+                output_compr_tea,
+                img1_compr
+            )
+
+            loss_ternary_tea, _ = ternary_loss(output_compr_tea, img1_compr)
+            loss_sobel_tea = sobel_loss(output_compr_tea, img1_compr)
+            loss = loss + loss_l1_tea + loss_lap_tea + loss_fourier_tea + 0.1 * loss_ternary_tea + 0.1 * loss_sobel_tea + 1e-2 * float(torch.mean(loss_LPIPS_tea).item())
+            loss = loss + 1e-2 * result['loss_distill']
+
         diff_matte = diffmatte(output_compr, img1_compr)
 
         # re-compute on non-compressed values
