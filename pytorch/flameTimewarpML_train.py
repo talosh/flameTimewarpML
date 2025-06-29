@@ -1723,9 +1723,9 @@ class Ternary(torch.nn.Module):
         super(Ternary, self).__init__()
         patch_size = 7
         out_channels = patch_size * patch_size
-        self.w = np.eye(out_channels).reshape(
+        w = np.eye(out_channels).reshape(
             (patch_size, patch_size, 1, out_channels))
-        self.w = np.transpose(self.w, (3, 2, 0, 1))
+        w = np.transpose(w, (3, 2, 0, 1))
         self.register_buffer("w", torch.tensor(self.w).float())
 
     def transform(self, img):
@@ -1759,7 +1759,7 @@ class Ternary(torch.nn.Module):
         scalar_loss = masked_loss.sum() / mask.sum()
         return scalar_loss, masked_loss  # (scalar, (N,1,H,W))
 
-class SOBEL(torch.nn.Module):
+class Sobel(torch.nn.Module):
     def __init__(self):
         super(SOBEL, self).__init__()
 
@@ -2207,7 +2207,7 @@ def main():
     warnings.resetwarnings()
 
     ternary_loss = Ternary().to(device)
-    sobel_loss = SOBEL().to(device)
+    sobel_loss = Sobel().to(device)
 
     start_timestamp = time.time()
     time_stamp = time.time()
@@ -2498,7 +2498,7 @@ def main():
 
         loss_ternary, loss_ternary_map = ternary_loss(output_compr, img1_compr)
         loss_sobel = sobel_loss(output_compr, img1_compr)
-        
+
         loss = loss + loss_l1 + loss_lap + loss_fourier + loss_ternary + loss_ternary_map + loss_sobel + 1e-2 * float(torch.mean(loss_LPIPS).item())
 
         diff_matte = diffmatte(output_compr, img1_compr)
