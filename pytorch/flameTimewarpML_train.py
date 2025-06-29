@@ -2499,7 +2499,7 @@ def main():
         loss_ternary, _ = ternary_loss(output_compr, img1_compr)
         loss_sobel = sobel_loss(output_compr, img1_compr)
 
-        loss = loss + loss_l1 + loss_lap + loss_fourier + loss_ternary + loss_sobel + 1e-2 * float(torch.mean(loss_LPIPS).item())
+        loss = loss + loss_l1 + loss_lap + loss_fourier + 0.1 * loss_ternary + loss_sobel + 1e-2 * float(torch.mean(loss_LPIPS).item())
 
         diff_matte = diffmatte(output_compr, img1_compr)
 
