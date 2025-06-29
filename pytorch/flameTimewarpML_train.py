@@ -1778,8 +1778,8 @@ class Sobel(torch.nn.Module):
         img_stack = torch.cat(
             [pred.reshape(N * C, 1, H, W), gt.reshape(N * C, 1, H, W)], dim=0)
 
-        sobel_stack_x = F.conv2d(img_stack, self.kernelX, padding=1)
-        sobel_stack_y = F.conv2d(img_stack, self.kernelY, padding=1)
+        sobel_stack_x = torch.nn.functional.conv2d(img_stack, self.kernelX, padding=1)
+        sobel_stack_y = torch.nn.functional.conv2d(img_stack, self.kernelY, padding=1)
 
         pred_X, gt_X = sobel_stack_x[:N * C], sobel_stack_x[N * C:]
         pred_Y, gt_Y = sobel_stack_y[:N * C], sobel_stack_y[N * C:]
