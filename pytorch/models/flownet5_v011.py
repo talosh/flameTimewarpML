@@ -625,6 +625,63 @@ class Model:
                 state = feat[:, 6:10]
                 return flow, mask, conf, state
 
+        class FlownetTea(Module):
+            def __init__(self, in_planes, c=96):
+                super().__init__()
+                self.conv0 = torch.nn.Sequential(
+                    torch.nn.Conv2d(in_planes, max(2*in_planes, c//2), 5, 2, 2, padding_mode = 'zeros'),
+                    torch.nn.PReLU(max(2*in_planes, c//2), 0.2),
+                    torch.nn.Conv2d(max(2*in_planes, c//2), c, 5, 2, 2, padding_mode = 'reflect'),
+                    torch.nn.PReLU(c, 0.2),
+                    )
+                self.convblock = torch.nn.Sequential(
+                    ResConvAtt(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
+                    ResConvEmb(c),
+                )
+                self.lastconv = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(c, 4*5, 4, 2, 1),
+                    torch.nn.PixelShuffle(2)
+                )
+                self.maxdepth = 4
+
+            def forward(self, img0, img1, gt, f0, f1, fgt, timestep, mask, conf, flow, state, scale=1):
+                n, c, h, w = img0.shape
+                sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
+                        
+                x = torch.cat((
+                    img0,
+                    img1,
+                    gt,
+                    f0,
+                    f1,
+                    fgt,
+                    mask,
+                    conf,
+                    state
+                    ), 1)
+                x = torch.nn.functional.interpolate(x, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True)
+                flow = torch.nn.functional.interpolate(flow, size=(sh, sw), mode="bicubic", align_corners=True, antialias=True) * 1. / scale
+                x = torch.cat((x, flow), 1)
+
+                ph = self.maxdepth - (sh % self.maxdepth)
+                pw = self.maxdepth - (sw % self.maxdepth)
+                padding = (0, pw, 0, ph)
+                x = torch.nn.functional.pad(x, padding, mode='constant')
+
+                timestep = torch.full((x.shape[0], 1), float(timestep)).to(img0.device)
+
+                feat = self.conv0(x)
+                feat, _ = self.convblock((feat, timestep))
+                feat = self.lastconv(feat)
+
+
+                feat = torch.nn.functional.interpolate(feat[:, :, :sh, :sw], size=(h, w), mode="bicubic", align_corners=True, antialias=True)
+                flow = feat[:, :4] * scale
+                mask = feat[:, 4:5]
+                return flow, mask
+
         class FlownetDeep(Module):
             def __init__(self, in_planes, c=64):
                 super().__init__()
@@ -714,7 +771,7 @@ class Model:
                     ResConvEmb(c),
                     ResConvEmb(c),
                     ResConvEmb(c),
-                )
+z                )
 
                 # self.attn_deep = ChannelAttention(cd)
 

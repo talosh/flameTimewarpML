@@ -1718,6 +1718,78 @@ def fourier_loss_half_res(img1, img2):
     # Use L1 or L2 loss in Fourier domain
     return torch.nn.functional.l1_loss(mag1, mag2)
 
+class Ternary(torch.nn.Module):
+    def __init__(self):
+        super(Ternary, self).__init__()
+        patch_size = 7
+        out_channels = patch_size * patch_size
+        self.w = np.eye(out_channels).reshape(
+            (patch_size, patch_size, 1, out_channels))
+        self.w = np.transpose(self.w, (3, 2, 0, 1))
+        self.register_buffer("w", torch.tensor(self.w).float())
+
+    def transform(self, img):
+        patches = F.conv2d(img, self.w, padding=3, bias=None)
+        transf = patches - img
+        transf_norm = transf / torch.sqrt(0.81 + transf**2)
+        return transf_norm
+
+    def rgb2gray(self, rgb):
+        r, g, b = rgb[:, 0:1, :, :], rgb[:, 1:2, :, :], rgb[:, 2:3, :, :]
+        gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
+        return gray
+
+    def hamming(self, t1, t2):
+        dist = (t1 - t2) ** 2
+        dist_norm = torch.mean(dist / (0.1 + dist), dim=1, keepdim=True)
+        return dist_norm  # shape (N, 1, H, W)
+
+    def valid_mask(self, t, padding):
+        n, _, h, w = t.size()
+        inner = torch.ones(n, 1, h - 2 * padding, w - 2 * padding).type_as(t)
+        mask = F.pad(inner, [padding] * 4)
+        return mask
+
+    def forward(self, img0, img1):
+        img0 = self.transform(self.rgb2gray(img0))
+        img1 = self.transform(self.rgb2gray(img1))
+        loss_map = self.hamming(img0, img1)
+        mask = self.valid_mask(img0, 1)
+        masked_loss = loss_map * mask
+        scalar_loss = masked_loss.sum() / mask.sum()
+        return scalar_loss, masked_loss  # (scalar, (N,1,H,W))
+
+class SOBEL(torch.nn.Module):
+    def __init__(self):
+        super(SOBEL, self).__init__()
+
+        kernel = torch.tensor([
+            [1, 0, -1],
+            [2, 0, -2],
+            [1, 0, -1],
+        ]).float()
+
+        # Register Sobel X and Y as buffers
+        self.register_buffer('kernelX', kernel.unsqueeze(0).unsqueeze(0))           # shape [1, 1, 3, 3]
+        self.register_buffer('kernelY', kernel.T.contiguous().unsqueeze(0).unsqueeze(0))  # shape [1, 1, 3, 3]
+
+    def forward(self, pred, gt):
+        N, C, H, W = pred.shape
+        img_stack = torch.cat(
+            [pred.reshape(N * C, 1, H, W), gt.reshape(N * C, 1, H, W)], dim=0)
+
+        sobel_stack_x = F.conv2d(img_stack, self.kernelX, padding=1)
+        sobel_stack_y = F.conv2d(img_stack, self.kernelY, padding=1)
+
+        pred_X, gt_X = sobel_stack_x[:N * C], sobel_stack_x[N * C:]
+        pred_Y, gt_Y = sobel_stack_y[:N * C], sobel_stack_y[N * C:]
+
+        L1X = torch.abs(pred_X - gt_X)
+        L1Y = torch.abs(pred_Y - gt_Y)
+
+        loss = L1X + L1Y  # shape: (N*C, 1, H, W)
+        return loss
+
 def ap0_to_ap1(image):
     """
     Convert from AP0 (ACES2065-1) to AP1 (ACEScg) for input in [N, 3, H, W] format.
@@ -2134,6 +2206,9 @@ def main():
 
     warnings.resetwarnings()
 
+    ternary_loss = Ternary().to(device)
+    sobel_loss = SOBEL().to(device)
+
     start_timestamp = time.time()
     time_stamp = time.time()
     epoch = current_epoch if args.first_epoch == -1 else args.first_epoch
@@ -2417,7 +2492,10 @@ def main():
                     output_compr,
                     img1_compr
                 )
-                loss = loss + loss_l1 + loss_lap + loss_fourier + 1e-2*loss_mask + 1e-2*loss_conf + 1.4e-2 * (1 / (i + 1)) * float(torch.mean(loss_LPIPS).item())
+                loss_ternary, loss_ternary_map = ternary_loss(output_compr, img1_compr)
+                loss_sobel = sobel_loss(output_compr, img1_compr)
+
+                loss = loss + loss_l1 + loss_lap + loss_fourier + loss_ternary + loss_ternary_map + loss_sobel + 1e-2*loss_mask + 1e-2*loss_conf + 1.4e-2 * (1 / (i + 1)) * float(torch.mean(loss_LPIPS).item())
 
         diff_matte = diffmatte(output_compr, img1_compr)
         loss = loss + loss_l1 + loss_lap + loss_fourier + 1e-2 * float(torch.mean(loss_LPIPS).item())
