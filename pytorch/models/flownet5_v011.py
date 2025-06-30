@@ -942,7 +942,7 @@ class Model:
                 self.block6 = Flownet2(32, c=64)
                 self.block7 = Flownet2(32, c=56)
                 self.block8 = Flownet2LT(32, c=48)
-                self.teacher = FlownetTea(35, c=96)
+                # self.teacher = FlownetTea(35, c=96)
                 self.encode = HeadAtt()
 
             def forward(self, img0, img1, timestep=0.5, scale=None, iterations=4, gt=None):
@@ -1166,6 +1166,8 @@ class Model:
                 mask_list[8] = torch.sigmoid(mask) #
                 # merged[3] = warp(img0, flow[:, :2]) * mask_list[3] + warp(img1, flow[:, 2:4]) * (1 - mask_list[3])
 
+                '''
+
                 if gt is not None:
                     flow_d, mask_d = self.teacher(
                         img0,
@@ -1201,6 +1203,8 @@ class Model:
                         'loss_distill': loss_distill
                     }
                     return result
+
+                '''
                 
                 result = {
                     'flow_list': flow_list,
