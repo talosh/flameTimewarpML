@@ -1,0 +1,259 @@
+<Setup>
+    <Base>
+        <Version>21.020000</Version>
+        <NAME>Timewarp</NAME>
+        <Note></Note>
+        <Expanded>False</Expanded>
+        <ScrollBar>0</ScrollBar>
+        <Frames>0</Frames>
+        <Current_Time>1</Current_Time>
+        <Input_DataType>4</Input_DataType>
+        <ClampMode>0</ClampMode>
+        <AdapDegrad>False</AdapDegrad>
+        <ReadOnly>False</ReadOnly>
+        <Range Enable="False" Before="1" After="1" Start="1" End="85" SpanEnable="False" Span="100"/>
+        <NoMediaHandling>1</NoMediaHandling>
+        <RenderingMode>0</RenderingMode>
+        <UsedAsTransition>False</UsedAsTransition>
+        <FrameBounds W="2224" H="1548" X="0" Y="0" SX="18.533333333333335" SY="12.900000000000000"/>
+    </Base>
+    <State>
+        <TW_FlowQuality>2</TW_FlowQuality>
+        <TW_DoBlur>False</TW_DoBlur>
+        <TW_BlurPhase>0</TW_BlurPhase>
+        <TW_DoBlurReference>False</TW_DoBlurReference>
+        <TW_BlurRefColor>
+            <R>1</R>
+            <G>0</G>
+            <B>0</B>
+            <A>1</A>
+        </TW_BlurRefColor>
+        <TW_FrameMode>2</TW_FrameMode>
+        <TW_SamplingMode>0</TW_SamplingMode>
+        <TW_Regen>True</TW_Regen>
+        <TW_RetimerMode>1</TW_RetimerMode>
+        <TW_ReferencePointX>
+            <Channel Name="X">
+                <Uncollapsed/>
+            </Channel>
+        </TW_ReferencePointX>
+        <TW_ReferencePointY>
+            <Channel Name="Y">
+                <Uncollapsed/>
+            </Channel>
+        </TW_ReferencePointY>
+        <TW_Speed>
+            <Channel Name="Speed">
+                <Extrap>constant</Extrap>
+                <Value>100</Value>
+                <Size>1</Size>
+                <KeyVersion>2</KeyVersion>
+                <KFrames>
+                    <Key Index="0">
+                        <Frame>1</Frame>
+                        <Value>100</Value>
+                        <RHandle_dX>0.250000</RHandle_dX>
+                        <RHandle_dY>0</RHandle_dY>
+                        <LHandle_dX>-0.250000</LHandle_dX>
+                        <LHandle_dY>0</LHandle_dY>
+                        <CurveMode>hermite</CurveMode>
+                        <CurveOrder>linear</CurveOrder>
+                    </Key>
+                </KFrames>
+                <Uncollapsed/>
+            </Channel>
+        </TW_Speed>
+        <TW_SpeedTiming>
+            <Channel Name="SpeedTiming">
+                <Extrap>linear</Extrap>
+                <Value>1</Value>
+                <Size>1</Size>
+                <KeyVersion>2</KeyVersion>
+                <KFrames>
+                    <Key Index="0">
+                        <Frame>1</Frame>
+                        <Value>31</Value>
+                        <RHandle_dX>0.250000</RHandle_dX>
+                        <RHandle_dY>0.250000</RHandle_dY>
+                        <LHandle_dX>-0.250000</LHandle_dX>
+                        <LHandle_dY>-0.250000</LHandle_dY>
+                        <CurveMode>hermite</CurveMode>
+                        <CurveOrder>quadratic</CurveOrder>
+                        <RAutoSlope>False</RAutoSlope>
+                        <LAutoSlope>False</LAutoSlope>
+                        <TangentMode>manual</TangentMode>
+                    </Key>
+                </KFrames>
+            </Channel>
+        </TW_SpeedTiming>
+        <TW_Timing>
+            <Channel Name="Timing">
+                <Extrap>linear</Extrap>
+                <Value>11</Value>
+                <Size>6</Size>
+                <KeyVersion>2</KeyVersion>
+                <KFrames>
+                    <Key Index="0">
+                        <Frame>1</Frame>
+                        <Value>11</Value>
+                        <RHandle_dX>0.250000</RHandle_dX>
+                        <RHandle_dY>0.250000</RHandle_dY>
+                        <LHandle_dX>-0.250000</LHandle_dX>
+                        <LHandle_dY>-0.250000</LHandle_dY>
+                        <CurveMode>hermite</CurveMode>
+                        <CurveOrder>cubic</CurveOrder>
+                        <RAutoSlope>False</RAutoSlope>
+                        <LAutoSlope>False</LAutoSlope>
+                        <TangentMode>manual</TangentMode>
+                    </Key>
+                    <Key Index="1">
+                        <Frame>21</Frame>
+                        <Value>34.7803268</Value>
+                        <RHandle_dX>3</RHandle_dX>
+                        <RHandle_dY>3.603181</RHandle_dY>
+                        <LHandle_dX>-6.666667</LHandle_dX>
+                        <LHandle_dY>-8.007070</LHandle_dY>
+                        <CurveMode>hermite</CurveMode>
+                        <CurveOrder>cubic</CurveOrder>
+                        <TangentMode>smooth</TangentMode>
+                    </Key>
+                    <Key Index="2">
+                        <Frame>30</Frame>
+                        <Value>45.8307533</Value>
+                        <RHandle_dX>2.333333</RHandle_dX>
+                        <RHandle_dY>3.677869</RHandle_dY>
+                        <LHandle_dX>-3</LHandle_dX>
+                        <LHandle_dY>-4.728689</LHandle_dY>
+                        <CurveMode>hermite</CurveMode>
+                        <CurveOrder>cubic</CurveOrder>
+                        <TangentMode>smooth</TangentMode>
+                    </Key>
+                    <Key Index="3">
+                        <Frame>37</Frame>
+                        <Value>60</Value>
+                        <RHandle_dX>10.666667</RHandle_dX>
+                        <RHandle_dY>14.571893</RHandle_dY>
+                        <LHandle_dX>-2.333333</LHandle_dX>
+                        <LHandle_dY>-3.187602</LHandle_dY>
+                        <CurveMode>hermite</CurveMode>
+                        <CurveOrder>cubic</CurveOrder>
+                        <TangentMode>smooth</TangentMode>
+                    </Key>
+                    <Key Index="4">
+                        <Frame>69</Frame>
+                        <Value>99.1092377</Value>
+                        <RHandle_dX>5.333333</RHandle_dX>
+                        <RHandle_dY>6.500000</RHandle_dY>
+                        <LHandle_dX>-10.666667</LHandle_dX>
+                        <LHandle_dY>-13</LHandle_dY>
+                        <CurveMode>hermite</CurveMode>
+                        <CurveOrder>cubic</CurveOrder>
+                        <TangentMode>smooth</TangentMode>
+                    </Key>
+                    <Key Index="5">
+                        <Frame>85</Frame>
+                        <Value>118.5</Value>
+                        <RHandle_dX>0.250000</RHandle_dX>
+                        <RHandle_dY>0.320622</RHandle_dY>
+                        <LHandle_dX>-0.250000</LHandle_dX>
+                        <LHandle_dY>-0.320622</LHandle_dY>
+                        <CurveMode>hermite</CurveMode>
+                        <CurveOrder>cubic</CurveOrder>
+                        <TangentMode>smooth</TangentMode>
+                    </Key>
+                </KFrames>
+                <Uncollapsed/>
+            </Channel>
+        </TW_Timing>
+        <TW_BlurSamplesChannel>
+            <Channel Name="Samples">
+                <Uncollapsed/>
+            </Channel>
+        </TW_BlurSamplesChannel>
+        <TW_BlurShutterChannel>
+            <Channel Name="Shutter">
+                <Uncollapsed/>
+            </Channel>
+        </TW_BlurShutterChannel>
+        <TW_Mix>
+            <Channel Name="MixAmount">
+                <Uncollapsed/>
+            </Channel>
+        </TW_Mix>
+        <TW_PreTrail>
+            <Channel Name="Pre">
+                <Uncollapsed/>
+            </Channel>
+        </TW_PreTrail>
+        <TW_PreWeight>
+            <Channel Name="Pre">
+                <Uncollapsed/>
+            </Channel>
+        </TW_PreWeight>
+        <TW_PostTrail>
+            <Channel Name="Post">
+                <Uncollapsed/>
+            </Channel>
+        </TW_PostTrail>
+        <TW_PostWeight>
+            <Channel Name="Post">
+                <Uncollapsed/>
+            </Channel>
+        </TW_PostWeight>
+        <TW_GlobalMotionResolution>
+            <Channel Name="GlobalMotionResolution">
+                <Uncollapsed/>
+            </Channel>
+        </TW_GlobalMotionResolution>
+        <TW_GlobalMotionSmoothness>
+            <Channel Name="GlobalMotionSmoothness">
+                <Uncollapsed/>
+            </Channel>
+        </TW_GlobalMotionSmoothness>
+        <TW_Anchor>1</TW_Anchor>
+        <TW_AnchorOffset>30</TW_AnchorOffset>
+        <TW_StrobeRepeat>1</TW_StrobeRepeat>
+        <TW_LockMode>0</TW_LockMode>
+        <TW_RepeatMode>1</TW_RepeatMode>
+        <TW_DisplaySpeedFPS>False</TW_DisplaySpeedFPS>
+        <TW_FieldInterpMode>0</TW_FieldInterpMode>
+        <TW_DurationTiming>
+            <Channel Name="durationTiming">
+                <Extrap>linear</Extrap>
+                <Value>86</Value>
+                <Size>2</Size>
+                <KeyVersion>2</KeyVersion>
+                <KFrames>
+                    <Key Index="0">
+                        <Frame>1</Frame>
+                        <Value>31</Value>
+                        <RHandle_dX>0.250000</RHandle_dX>
+                        <RHandle_dY>0.250000</RHandle_dY>
+                        <LHandle_dX>-0.250000</LHandle_dX>
+                        <LHandle_dY>-0.250000</LHandle_dY>
+                        <CurveMode>bezier</CurveMode>
+                        <CurveOrder>cubic</CurveOrder>
+                        <RAutoSlope>False</RAutoSlope>
+                        <LAutoSlope>False</LAutoSlope>
+                        <TangentMode>manual</TangentMode>
+                    </Key>
+                    <Key Index="1">
+                        <Frame>86</Frame>
+                        <Value>116</Value>
+                        <RHandle_dX>0.250000</RHandle_dX>
+                        <RHandle_dY>0.250000</RHandle_dY>
+                        <LHandle_dX>-0.250000</LHandle_dX>
+                        <LHandle_dY>-0.250000</LHandle_dY>
+                        <CurveMode>bezier</CurveMode>
+                        <CurveOrder>cubic</CurveOrder>
+                        <RAutoSlope>False</RAutoSlope>
+                        <LAutoSlope>False</LAutoSlope>
+                        <TangentMode>manual</TangentMode>
+                    </Key>
+                </KFrames>
+            </Channel>
+        </TW_DurationTiming>
+        <TW_StartFrameMode>0</TW_StartFrameMode>
+        <TW_CustomStartFrame>1</TW_CustomStartFrame>
+    </State>
+</Setup>
