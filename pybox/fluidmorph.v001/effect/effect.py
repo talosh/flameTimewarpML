@@ -140,6 +140,65 @@ def write_image_file(file_path, image_data, image_spec):
         out.close()
 
 
+# ── Error frame ────────────────────────────────────────────────────────────────
+
+# Approximate linear-light equivalents of the Scottish flag colours.
+SALTIRE_BLUE  = (0.0, 0.105, 0.34)
+SALTIRE_WHITE = (1.0, 1.0, 1.0)
+
+OVERLAY_ALPHA = 0.5     # how strongly the flag is mixed over the input
+SALTIRE_WIDTH = 0.12    # thickness of the cross arms, normalised
+
+
+def saltire_overlay(height, width):
+    """Build an (h, w, 3) float32 image of a Scottish saltire."""
+    ys = np.linspace(0.0, 1.0, height, dtype=np.float32).reshape(height, 1)
+    xs = np.linspace(0.0, 1.0, width,  dtype=np.float32).reshape(1, width)
+
+    # Distance to each diagonal, in normalised units.
+    d1 = np.abs(ys - xs) / np.sqrt(2.0)
+    d2 = np.abs(ys + xs - 1.0) / np.sqrt(2.0)
+    d  = np.minimum(d1, d2)
+
+    cross = (d < (SALTIRE_WIDTH / 2.0)).astype(np.float32)[..., None]
+
+    blue  = np.array(SALTIRE_BLUE,  dtype=np.float32).reshape(1, 1, 3)
+    white = np.array(SALTIRE_WHITE, dtype=np.float32).reshape(1, 1, 3)
+
+    return blue * (1.0 - cross) + white * cross
+
+
+def write_error_frame(input_file, result_file):
+    """
+    Copy the input frame to the output with a semi-transparent saltire
+    superimposed. Used instead of a modal dialog so a failure is visible
+    in the viewport without blocking the user.
+
+    Returns True if a frame was written.
+    """
+    if not input_file or not result_file:
+        return False
+    if not os.path.isfile(input_file):
+        return False
+
+    img = read_image_file(input_file)
+    if img['image_data'] is None:
+        return False
+
+    data = np.array(img['image_data'], dtype=np.float32, copy=True)
+    if data.ndim != 3 or data.shape[2] < 3:
+        return False
+
+    height, width = data.shape[0], data.shape[1]
+    overlay = saltire_overlay(height, width)
+
+    # Only touch RGB — leave alpha and any extra channels untouched.
+    data[..., :3] = data[..., :3] * (1.0 - OVERLAY_ALPHA) + overlay * OVERLAY_ALPHA
+
+    write_image_file(result_file, np.ascontiguousarray(data), img['spec'])
+    return True
+
+
 class EMA:
     def __init__(self, model, decay=0.995):
         self.model  = model
@@ -201,8 +260,21 @@ def handle_message(msg):
             except Exception as e:
                 return {'status': 'error', 'message': str(e)}
 
+        if msg.get('data') == 'error_frame':
+            try:
+                written = write_error_frame(msg.get('input0'), msg.get('result0'))
+                if written:
+                    return {'status': 'ok', 'message': 'error frame written'}
+                return {'status': 'ok', 'message': 'no usable input for error frame'}
+            except Exception as e:
+                return {'status': 'error', 'message': str(e)}
+
         if msg.get('data') == 'process':
             if model is None:
+                try:
+                    write_error_frame(msg.get('input0'), msg.get('result0'))
+                except Exception:
+                    pass
                 return {'status': 'error', 'message': 'Model not loaded. Send load_model first.'}
 
             try:
@@ -241,6 +313,10 @@ def handle_message(msg):
                 return {'status': 'ok', 'message': f'{res_fwd.shape}'}
 
             except Exception as e:
+                try:
+                    write_error_frame(msg.get('input0'), msg.get('result0'))
+                except Exception:
+                    pass
                 return {'status': 'error', 'message': str(e)}
 
     return {'status': 'error', 'message': f'Unknown message: {msg}'}

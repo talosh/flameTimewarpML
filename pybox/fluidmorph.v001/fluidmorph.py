@@ -19,14 +19,41 @@ MODEL_UI_ELEMENT = "Model"
 SCALE_UI_ELEMENT   = "Scale"
 RATIO_UI_ELEMENT   = "Ratio"
 
-SCALE_VALUES = [1, 2, 4, 8, 16, 32, 64]
+SCALE_VALUES = [64, 32, 16, 8, 4, 2, 1]
 
 SCRIPT_LOCATION = '/effect'
 SCRIPT_NAME     = 'fluidmorph.v001'
 SOCKET_PATH     = '/dev/shm/fluidmorph_effect.sock'
+STATE_PATH      = '/dev/shm/fluidmorph_effect.state.json'
 
 def printc(message=None):
     print(f'{SCRIPT_NAME}: {message}')
+
+
+def read_state():
+    """Read the persisted failure state. Never raises."""
+    try:
+        with open(STATE_PATH) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def write_state(state):
+    """Persist the failure state. Never raises."""
+    try:
+        with open(STATE_PATH, 'w') as f:
+            json.dump(state, f)
+    except Exception as e:
+        printc(f'Could not write state file: {e}')
+
+
+def clear_state():
+    try:
+        if os.path.exists(STATE_PATH):
+            os.unlink(STATE_PATH)
+    except Exception:
+        pass
 
 def scan_weights():
     weights_abs_path = os.path.abspath(
@@ -191,44 +218,111 @@ class Fluidmorph(pybox.BaseClass):
         self.set_state_id("execute")
         self.execute()
 
+    # ── Failure handling ───────────────────────────────────────────────────────
+
+    def request_error_frame(self):
+        """Ask the daemon to write input0 + saltire to the output socket."""
+        try:
+            response = send_recv({
+                'type': 'command',
+                'data': 'error_frame',
+                'input0':  self.get_in_socket_path(0),
+                'result0': self.get_out_socket_path(0),
+            })
+            printc(f'Error frame response: {response}')
+        except Exception as e:
+            printc(f'Could not write error frame: {e}')
+
+    def fail(self, signature, message):
+        """
+        Record the failure against the current settings, flag the frame in the
+        viewport, and raise the dialog exactly once.
+
+        The dialog is only ever set here — on a *newly seen* failure signature.
+        Once the signature is persisted, subsequent dispatches take the
+        already-failed branch in execute() and leave the dialog cleared, so
+        closing it cannot respawn it.
+        """
+        printc(f'ERROR: {message}')
+        write_state({'signature': signature, 'message': message})
+        self.request_error_frame()
+        self.set_error_msg(f'{EFFECT_NAME}: {message}')
+        self.set_dialog_msg(f'{EFFECT_NAME}\n\n{message}')
+
+    # ── Main ───────────────────────────────────────────────────────────────────
+
     def execute(self):
+        # The message block round-trips through the JSON payload, so a dialog
+        # set on a previous dispatch would be re-written by write_to_disk and
+        # shown again. Clear it first — only fail() below may set it again.
+        self.set_dialog_msg("")
+        self.set_error_msg("")
+
         scale_index = self.get_render_element_value(SCALE_UI_ELEMENT)
         scale_value = SCALE_VALUES[scale_index]
         ratio_value = self.get_render_element_value(RATIO_UI_ELEMENT)
         model_index = self.get_render_element_value(MODEL_UI_ELEMENT)
         model_path  = MODELS[model_index][1]
 
-        # Ask the daemon which model it currently has loaded
-        status = send_recv({'type': 'command', 'data': 'status'})
-        printc(f"Daemon status: {status}")
+        # Everything the user can change. If a run fails, we refuse to retry
+        # until one of these differs from the settings that failed.
+        signature = json.dumps({
+            'model': model_path,
+            'scale': scale_value,
+            'ratio': ratio_value,
+        }, sort_keys=True)
 
-        if status.get('loaded_model') != model_path:
-            printc(f"Loading model: {os.path.basename(model_path)}")
+        state = read_state()
+        if state.get('signature') == signature:
+            printc('Settings unchanged since last failure — not retrying.')
+            self.request_error_frame()
+            self.set_error_msg(
+                f"{EFFECT_NAME}: {state.get('message', 'previous error')} "
+                f"(change a setting to retry)"
+            )
+            return
+
+        try:
+            # Ask the daemon which model it currently has loaded
+            status = send_recv({'type': 'command', 'data': 'status'})
+            printc(f"Daemon status: {status}")
+
+            if status.get('loaded_model') != model_path:
+                printc(f"Loading model: {os.path.basename(model_path)}")
+                response = send_recv({
+                    'type': 'command',
+                    'data': 'load_model',
+                    'weight_path': model_path,
+                })
+                printc(f"Load response: {response}")
+                if response.get('status') == 'error':
+                    self.fail(signature, f"Error loading model: {response.get('message')}")
+                    return
+            else:
+                printc(f"Model already loaded: {os.path.basename(model_path)}")
+
             response = send_recv({
                 'type': 'command',
-                'data': 'load_model',
-                'weight_path': model_path,
+                'data': 'process',
+                'input0':  self.get_in_socket_path(0),
+                'input1':  self.get_in_socket_path(1),
+                'result0': self.get_out_socket_path(0),
+                'scale':   scale_value,
+                'ratio':   ratio_value,
             })
-            printc(f"Load response: {response}")
+            printc(f"Process response: {response}")
+
             if response.get('status') == 'error':
-                self.set_dialog_msg(f"Error loading model: {response.get('message')}")
+                self.fail(signature, f"Error processing: {response.get('message')}")
                 return
-        else:
-            printc(f"Model already loaded: {os.path.basename(model_path)}")
 
-        response = send_recv({
-            'type': 'command',
-            'data': 'process',
-            'input0':  self.get_in_socket_path(0),
-            'input1':  self.get_in_socket_path(1),
-            'result0': self.get_out_socket_path(0),
-            'scale':   scale_value,
-            'ratio':   ratio_value,
-        })
-        printc(f"Process response: {response}")
+        except Exception as e:
+            # Daemon unreachable, socket timeout, malformed response, etc.
+            self.fail(signature, f"Effect daemon error: {e}")
+            return
 
-        if response.get('status') == 'error':
-            self.set_dialog_msg(f"Error processing: {response.get('message')}")
+        # Success — allow future retries again.
+        clear_state()
 
     def teardown(self):
         try:
