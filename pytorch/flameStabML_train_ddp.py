@@ -375,6 +375,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
             h = first_exr_file_header['spec'].height
             w = first_exr_file_header['spec'].width
 
+            '''
             for window_size in range(3, max_window + 1):
                 for window in sliding_window(exr_files, window_size):
                     start_frame       = window[0]
@@ -403,8 +404,9 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                             'ratio': 1 - (1 / (len(window) - 1) * (gt_frame_index + 1))
                         }
                         descriptions.append(bw_item)
-
             '''
+
+            # '''
             for window_size in range(3, max_window + 1):
                 for window in sliding_window(exr_files, window_size):
                     start_frame = window[0]
@@ -434,7 +436,7 @@ class TimewarpMLDataset(torch.utils.data.Dataset):
                                 'ratio': 1 - (1 / (len(window) - 1) * (gt_frame_index + 1))
                             }
                             descriptions.append(bw_item)
-                '''
+            # '''
 
         except Exception as e:
             print (f'\nError scanning {folder_path}: {e}')
