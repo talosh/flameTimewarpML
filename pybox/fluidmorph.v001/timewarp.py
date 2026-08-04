@@ -1,10 +1,11 @@
 """
-Pybox setup for Fluidmorph
+Pybox setup for Timewarp
 """
 
 import os
 import sys
 import time
+import math
 import socket
 import subprocess
 import json
@@ -16,7 +17,7 @@ from pathlib import Path
 # block contents). Errors always print regardless of this flag.
 DEBUG = False
 
-EFFECT_NAME = 'ML Fluidmorph'
+EFFECT_NAME = 'ML Timewarp'
 IMAGE_FORMAT = "exr"
 
 MODEL_UI_ELEMENT = "Model"
@@ -225,10 +226,10 @@ class Fluidmorph(pybox.BaseClass):
 
         ratio_value = pybox.create_float_numeric(
             RATIO_UI_ELEMENT,
-            value=0.5, default=0.5, min=0.0, max=1.0, inc=0.01,
+            value=0.5, default=0.5, min=-1000000.0, max=1000000.0, inc=0.01,
             channel_name=RATIO_UI_ELEMENT,
             page=0, col=0, row=2,
-            tooltip="<b>Ratio</b>\nBlend ratio between the two inputs. For Timewarp use expression: timewarp1.Timing - floor(timewarp1.Timing). Editable."
+            tooltip="<b>Ratio</b>\nBlend ratio between the two inputs. Values outside 0-1 wrap to their fractional part, so a Timewarp Timing channel can be linked directly. Editable."
         )
         self.add_render_elements(ratio_value)
 
@@ -316,7 +317,17 @@ class Fluidmorph(pybox.BaseClass):
     def _run(self):
         scale_index = self.get_render_element_value(SCALE_UI_ELEMENT)
         scale_value = SCALE_VALUES[scale_index]
-        ratio_value = self.get_render_element_value(RATIO_UI_ELEMENT)
+
+        # The field accepts any value so a Timewarp Timing channel can be
+        # linked straight in. Only the fractional part is meaningful here, so
+        # wrap it and write the wrapped value back so the UI shows what is
+        # actually being used.
+        raw_ratio   = float(self.get_render_element_value(RATIO_UI_ELEMENT))
+        ratio_value = raw_ratio - math.floor(raw_ratio)
+        if ratio_value != raw_ratio:
+            printd(f'Ratio {raw_ratio} wrapped to {ratio_value}')
+            self.set_render_element_value(RATIO_UI_ELEMENT, ratio_value)
+
         bidirectional_value = bool(self.get_render_element_value(BIDI_UI_ELEMENT))
         iterational_value = bool(self.get_render_element_value(ITER_UI_ELEMENT))
         model_index = self.get_render_element_value(MODEL_UI_ELEMENT)
