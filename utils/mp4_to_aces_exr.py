@@ -28,8 +28,15 @@ Pipeline per file (kept deliberately simple and phase-separated):
             stay in the source's gamma-encoded RGB, quantized to --png-bits
             (8 or 16) with zlib level --png-compression (0-9).
         Only one frame is ever resident in memory.
-    7.  Once all EXRs are written, delete the _tiff/ subfolder.
+    7.  Once all outputs are written, delete the _tiff/ subfolder.
     8.  Move on to the next file.
+
+Resume (--resume): re-running with --resume skips work already on disk --
+fully-converted clips are skipped without even spawning their child process,
+and a clip that died partway is finished by reconverting only its missing
+frames. Existence is the only check, so it assumes the existing frames were
+made with the same settings (short-side, format, window); run without --resume
+to force a clean reconvert.
 
 Why this shape: ffmpeg finishing and exiting before conversion means the two
 memory-hungry stages never overlap, and reading TIFFs back one at a time keeps
@@ -243,6 +250,15 @@ def sanitized_relative_output_dir(input_dir: Path, mp4_path: Path, output_dir: P
     return output_dir.joinpath(*rel_parts, stem)
 
 
+def count_existing_frames(out_dir: Path, ext: str) -> int:
+    """Count already-written output frames (top-level {stem}.NNNNNN.ext files)
+    in out_dir. The _tiff/ subfolder holds .tiff intermediates and is not
+    matched by this non-recursive glob."""
+    if not out_dir.exists():
+        return 0
+    return sum(1 for _ in out_dir.glob(f"*.{ext}"))
+
+
 # --------------------------------------------------------------------------
 # ffprobe / ffmpeg
 # --------------------------------------------------------------------------
@@ -339,6 +355,10 @@ def write_tiff_sequence(ffmpeg_bin: str, src: Path, tiff_dir: Path,
     written (used for the middle-window mode) -- ffmpeg does this itself so we
     never write the whole sequence just to keep the middle. Returns the sorted
     list of written TIFF paths (renumbered from 1)."""
+    # Start from a clean dir so leftover TIFFs from a crashed/earlier run
+    # (possibly a different window) can't get mixed into this extraction.
+    if tiff_dir.exists():
+        shutil.rmtree(tiff_dir, ignore_errors=True)
     tiff_dir.mkdir(parents=True, exist_ok=True)
     pattern = tiff_dir / "frame_%06d.tiff"
     cmd = [
@@ -502,11 +522,28 @@ def process_one_file(mp4_path: Path, input_dir: Path, output_dir: Path, args):
     ext = "png" if is_png else "exr"
     gamut_matrix = None if is_png else build_gamut_matrix(info["primaries"], args.gamut)
 
-    # ---- Work out the frame window (middle N frames) ----
     window = args.window
+
+    # Total frame count is needed for the middle window and/or resume check;
+    # probe it at most once.
+    total = None
+    if window > 0 or args.resume:
+        total = get_frame_count(args.ffprobe, mp4_path, info)
+
+    # ---- Resume: skip this clip entirely if its output is already complete ----
+    if args.resume:
+        if window > 0:
+            expected = window if total is None else min(window, total)
+        else:
+            expected = total  # None if unknown
+        existing = count_existing_frames(out_dir, ext)
+        if expected is not None and existing >= expected:
+            print(f"[{mp4_path.name}] resume: {existing}/{expected} frame(s) already present, skipping.")
+            return
+
+    # ---- Work out the frame window (middle N frames) ----
     start, count = 0, None  # defaults: whole clip
     if window > 0:
-        total = get_frame_count(args.ffprobe, mp4_path, info)
         if total is None:
             print(f"[{mp4_path.name}] WARN: couldn't determine frame count; "
                   f"taking first {window} frames instead of the middle.")
@@ -526,8 +563,12 @@ def process_one_file(mp4_path: Path, input_dir: Path, output_dir: Path, args):
         print(f"[{mp4_path.name}] ffmpeg done, {len(tiff_frames)} TIFFs on disk. Converting to {ext.upper()}...")
 
         # ---- Phase 2: convert TIFFs -> output one at a time ----
+        skipped = 0
         for i, tiff_path in enumerate(tiff_frames, start=1):
             out_path = out_dir / f"{out_dir.name}.{i:06d}.{ext}"
+            if args.resume and out_path.exists():
+                skipped += 1
+                continue
             if is_png:
                 convert_tiff_to_png(tiff_path, out_path, args.short_side, args.png_bits, args.png_compression)
             else:
@@ -535,7 +576,8 @@ def process_one_file(mp4_path: Path, input_dir: Path, output_dir: Path, args):
             if i % 100 == 0:
                 print(f"[{mp4_path.name}] {i}/{len(tiff_frames)} {ext.upper()}s written...")
 
-        print(f"[{mp4_path.name}] done ({len(tiff_frames)} frames) -> {out_dir}")
+        tail = f" ({skipped} already present)" if skipped else ""
+        print(f"[{mp4_path.name}] done ({len(tiff_frames)} frames){tail} -> {out_dir}")
     finally:
         # ---- Phase 3: always remove the intermediate TIFFs ----
         if tiff_dir.exists():
@@ -564,7 +606,7 @@ def run_worker(mp4_files, input_dir: Path, output_dir: Path, args) -> int:
 
 def _shared_arg_list(args) -> list:
     """Rebuild the passthrough CLI flags for a child invocation."""
-    return [
+    flags = [
         "--short-side", str(args.short_side),
         "--window", str(args.window),
         "--format", args.format,
@@ -574,9 +616,34 @@ def _shared_arg_list(args) -> list:
         "--ffmpeg", args.ffmpeg,
         "--ffprobe", args.ffprobe,
     ]
+    if args.resume:
+        flags.append("--resume")
+    return flags
 
 
 def run_parent(mp4_files, input_dir: Path, output_dir: Path, args):
+    # Resume pre-filter: skip files whose output is clearly already complete,
+    # so we don't pay a child-process spawn (torch import) just to skip them.
+    # Certain case without probing: for a fixed window, having >= window frames
+    # on disk means done. Uncertain cases (window 0, or fewer-than-window that
+    # might be a genuinely short clip) are left to the child's authoritative
+    # check after it probes.
+    if args.resume and args.window > 0:
+        ext = "png" if args.format == "png" else "exr"
+        kept, skipped = [], 0
+        for p in mp4_files:
+            out_dir = sanitized_relative_output_dir(input_dir, p, output_dir)
+            if count_existing_frames(out_dir, ext) >= args.window:
+                skipped += 1
+            else:
+                kept.append(p)
+        if skipped:
+            print(f"[resume] {skipped} file(s) already complete, skipping; {len(kept)} to process.")
+        mp4_files = kept
+        if not mp4_files:
+            print("Nothing left to do.")
+            return
+
     batch_size = max(1, args.batch_size)
     batches = [mp4_files[i:i + batch_size] for i in range(0, len(mp4_files), batch_size)]
     total = len(mp4_files)
@@ -628,6 +695,12 @@ def main():
     ap.add_argument("--png-compression", type=int, default=6,
                     help="PNG zlib compression level 0-9 (only for --format png); "
                          "0 = none/fastest/largest, 9 = smallest/slowest. (default: 6)")
+    ap.add_argument("--resume", action="store_true",
+                    help="Skip work already done: fully-converted clips are skipped "
+                         "entirely, and individual frames that already exist are not "
+                         "reconverted. Assumes existing frames were made with the same "
+                         "settings (short-side, format, window); use without --resume "
+                         "to force a full reconvert.")
     ap.add_argument("--ffmpeg", default="ffmpeg", help="Path to ffmpeg binary")
     ap.add_argument("--ffprobe", default="ffprobe", help="Path to ffprobe binary")
     ap.add_argument(

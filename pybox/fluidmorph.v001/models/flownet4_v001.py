@@ -135,7 +135,7 @@ class Model:
                 self.block3 = Flownet(8+4+16, c=64)
                 self.encode = Head()
 
-            def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1, bidirectional=False):
+            def forward(self, img0, img1, timestep=0.5, scale=[16, 8, 4, 1], iterations=1, bidirectional=False, matte0=None, matte1=None):
                 def halving_steps(start, n_steps=4):
                     vals = [max(start // (2 ** i), 1) for i in range(n_steps - 1)]
                     vals.append(1)
@@ -147,13 +147,32 @@ class Model:
                     # convention is [to-img1 | to-img0]. This converts between
                     # the two.
                     return torch.cat((f[:, 2:4], f[:, :2]), 1)
+
+                def black_matte(reference):
+                    # Either input matte missing means the output matte is
+                    # black — there is nothing meaningful to warp and blend
+                    # with only one side present. Channel count follows
+                    # whichever matte was actually supplied, defaulting to 1.
+                    channels = 1
+                    if matte0 is not None:
+                        channels = matte0.shape[1]
+                    elif matte1 is not None:
+                        channels = matte1.shape[1]
+                    return torch.zeros(
+                        (reference.shape[0], channels, reference.shape[2], reference.shape[3]),
+                        dtype=reference.dtype, device=reference.device,
+                    )
+
+                have_mattes = matte0 is not None and matte1 is not None
  
                 scale = halving_steps(scale[0], 4)
  
                 if timestep == 0:
-                    return img0, torch.zeros_like(img0[:, :1])
+                    matte_out = matte0 if have_mattes else black_matte(img0)
+                    return img0, torch.ones_like(img0[:, :1]), matte_out
                 if timestep == 1:
-                    return img1, torch.zeros_like(img1[:, :1])
+                    matte_out = matte1 if have_mattes else black_matte(img1)
+                    return img1, torch.ones_like(img1[:, :1]), matte_out
  
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
@@ -214,7 +233,15 @@ class Model:
                 # squash it so it is usable as a 0-1 matte.
                 conf = torch.sigmoid(conf)
 
-                return merged, conf
+                # Matte is warped exactly like RGB — same flow, same blend
+                # weights — so it stays pixel-aligned with the merged frame.
+                if have_mattes:
+                    matte_out = (warp(matte0, flow[:, :2]) * mask
+                                 + warp(matte1, flow[:, 2:4]) * (1.0 - mask))
+                else:
+                    matte_out = black_matte(merged)
+
+                return merged, conf, matte_out
 
         self.model = FlownetCas
         self.training_model = FlownetCas

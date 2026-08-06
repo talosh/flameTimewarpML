@@ -1,5 +1,12 @@
 """
-Pybox setup for Fluidmorph
+Pybox setup for Warp.
+
+Two Front inputs, no matte inputs, two OutUv outputs. Uses a separate
+model architecture from the interpolation effects, so weights live in
+their own WEIGHTS_DIR subfolder rather than the shared weights/ folder.
+
+The daemon-side processing is a stub (see effect.py's process_warp
+handler) pending the model's actual forward() signature.
 """
 
 import os
@@ -19,16 +26,21 @@ from pathlib import Path
 # block contents). Errors always print regardless of this flag.
 DEBUG = False
 
-EFFECT_NAME = 'ML Fluidmorph'
+EFFECT_NAME = 'ML Warp'
 IMAGE_FORMAT = "exr"
 
-MODEL_UI_ELEMENT = "Model"
-SCALE_UI_ELEMENT   = "Scale"
-RATIO_UI_ELEMENT   = "Ratio"
-BIDI_UI_ELEMENT    = "Bidirectional"
-ITER_UI_ELEMENT    = "Iterational"
+MODEL_UI_ELEMENT     = "Model"
+SCALE_UI_ELEMENT     = "Scale"
+DETAIL_UI_ELEMENT    = "Detail"
+SMOOTH_UI_ELEMENT    = "Smooth"
 
-SCALE_VALUES = [64, 32, 16, 8, 4, 2, 1]
+# Stops at 4: this model's halving_steps() drops the max(...,1) guard that
+# the interpolation model has, so scale 2 gives [2,1,0,1] and scale 1 gives
+# [1,0,0,1] — a zero stage divisor, i.e. ZeroDivisionError inside forward().
+SCALE_VALUES = [64, 32, 16, 8, 4]
+# No Bidirectional or Iterational toggles — those belong to the
+# interpolation model's forward() signature, not this one. Detail and
+# Smooth take the place the interpolation effects give to Ratio.
 
 # Empty until this script has been told where it lives. The locate flow below
 # fills it in and rewrites this line on disk.
@@ -51,7 +63,12 @@ LOCATION_DEFAULT_VALUE = PRESET_ROOT if os.path.isdir(PRESET_ROOT) else '/'
 
 # This script's own filename — the locate flow searches for and rewrites only
 # this file, never any sibling.
-THIS_SCRIPT = 'fluidmorph.py'
+THIS_SCRIPT = 'warp.py'
+
+# A different model architecture from the interpolation effects, so its
+# checkpoints live in their own subfolder rather than the shared weights/
+# folder those use.
+WEIGHTS_DIR = 'weights.warp'
 
 LOCATION_UI_ELEMENT = 'Script File'
 
@@ -115,14 +132,16 @@ def is_valid_location(location):
     """
     True if `location` holds this effect's bundle and this script's own file.
 
-    The layout is location/SCRIPT_NAME/<this file>, alongside weights/ and
-    effect/ — all three live inside the SCRIPT_NAME folder, not at `location`
-    itself.
+    The layout is location/SCRIPT_NAME/<this file>, alongside WEIGHTS_DIR
+    and effect/ — all three live inside the SCRIPT_NAME folder, not at
+    `location` itself. WEIGHTS_DIR (not 'weights') because this effect's
+    checkpoints are a different, incompatible architecture from the ones
+    the other pybox scripts in this bundle use.
     """
     if not location or not os.path.isdir(location):
         return False
     return (os.path.isfile(bundle_path(location, THIS_SCRIPT))
-            and os.path.isdir(bundle_path(location, 'weights'))
+            and os.path.isdir(bundle_path(location, WEIGHTS_DIR))
             and os.path.isfile(bundle_path(location, 'effect', 'effect.py')))
 
 
@@ -190,7 +209,7 @@ RESOLVED_LOCATION = resolve_location()
 
 def scan_weights(location):
     """Available .pth weights. Never raises — returns a placeholder instead."""
-    weights_abs_path = bundle_path(location, 'weights')
+    weights_abs_path = bundle_path(location, WEIGHTS_DIR)
     if not weights_abs_path or not os.path.isdir(weights_abs_path):
         return [('None', 'None')]
     try:
@@ -297,7 +316,7 @@ def send_recv(msg_dict):
 
 # ── Pybox class ────────────────────────────────────────────────────────────────
 
-class Fluidmorph(pybox.BaseClass):
+class Warp(pybox.BaseClass):
 
     def initialize(self):
         # Sockets are declared even when the bundle is missing: Flame demands
@@ -312,14 +331,11 @@ class Fluidmorph(pybox.BaseClass):
         self.remove_in_socket(2)
 
         self.remove_out_sockets()
-        self.set_out_socket(0, "Result", str(tempdir / f"result0.{ext}"))
-        # OutMatte rather than "undefined": Flame will not let other nodes
-        # connect to an undefined-type output at all. There is no dedicated
-        # socket type for a confidence channel, so OutMatte is the closest
-        # connectable fit. No warped-matte output here — this variant has no
-        # matte input to warp, so it would always be black; see the _matte
-        # sibling for that.
-        self.set_out_socket(1, "OutMatte", str(tempdir / f"conf0.{ext}"))
+        # "OutUv" is pybox's dedicated socket type for a UV/motion-vector
+        # output. Two of them, semantics to be defined once the warp
+        # model's outputs are known.
+        self.set_out_socket(0, "OutUv", str(tempdir / f"uv0.{ext}"))
+        self.set_out_socket(1, "OutUv", str(tempdir / f"uv1.{ext}"))
 
         if RESOLVED_LOCATION is None:
             printe(f'Could not locate the {SCRIPT_NAME} bundle.')
@@ -528,34 +544,25 @@ class Fluidmorph(pybox.BaseClass):
         )
         self.add_render_elements(scale_popup)
 
-        ratio_value = pybox.create_float_numeric(
-            RATIO_UI_ELEMENT,
+        detail_value = pybox.create_float_numeric(
+            DETAIL_UI_ELEMENT,
             value=0.5, default=0.5, min=0.0, max=1.0, inc=0.01,
-            channel_name=RATIO_UI_ELEMENT,
+            channel_name=DETAIL_UI_ELEMENT,
             page=0, col=0, row=2,
-            tooltip="<b>Ratio</b>\nBlend ratio between the two inputs. For Timewarp use expression: timewarp1.Timing - floor(timewarp1.Timing). Editable."
+            tooltip="<b>Detail</b>\nLevel of detail in the estimated flow. Editable."
         )
-        self.add_render_elements(ratio_value)
+        self.add_render_elements(detail_value)
 
-        bidirectional_toggle = pybox.create_toggle_button(
-            BIDI_UI_ELEMENT,
-            value=False,
-            default=False,
+        smooth_value = pybox.create_float_numeric(
+            SMOOTH_UI_ELEMENT,
+            value=0.0, default=0.0, min=0.0, max=1.0, inc=0.01,
+            channel_name=SMOOTH_UI_ELEMENT,
             page=0, col=0, row=3,
-            tooltip="<b>Bidirectional</b>\nAverage each stage with a reverse pass. Doubles processing time."
+            tooltip="<b>Smooth</b>\nSmooths the resulting UV field. 0 is no smoothing. Editable."
         )
-        self.add_render_elements(bidirectional_toggle)
+        self.add_render_elements(smooth_value)
 
-        iterational_toggle = pybox.create_toggle_button(
-            ITER_UI_ELEMENT,
-            value=False,
-            default=False,
-            page=0, col=0, row=4,
-            tooltip="<b>Iterational</b>\nEnable iterational refinement."
-        )
-        self.add_render_elements(iterational_toggle)
-
-        page = pybox.create_page("Main", "Fluidmorph")
+        page = pybox.create_page("Main", "Warp")
         self.set_ui_pages(page)
 
         self.set_state_id("execute")
@@ -587,15 +594,15 @@ class Fluidmorph(pybox.BaseClass):
             return None
 
     def request_error_frame(self):
-        """Ask the daemon to write input0 + saltire to the output socket."""
+        """Ask the daemon to fill both UV outputs with a zero-displacement placeholder."""
         try:
             response = send_recv({
                 'type': 'command',
-                'data': 'error_frame',
-                'input0':  self.get_in_socket_path(0),
-                'input1':  self.get_in_socket_path(1),
-                'result0': self.get_out_socket_path(0),
-                'conf0':   self.get_out_socket_path(1),
+                'data': 'error_frame_warp',
+                'input0': self.get_in_socket_path(0),
+                'input1': self.get_in_socket_path(1),
+                'uv0':    self.get_out_socket_path(0),
+                'uv1':    self.get_out_socket_path(1),
                 'colour_space': self.front_colour_space(),
             })
             printd(f'Error frame response: {response}')
@@ -646,22 +653,20 @@ class Fluidmorph(pybox.BaseClass):
             printd(f'dialog is set  = {bool(self.get_dialog_msg())}')
 
     def _run(self):
-        scale_index = self.get_render_element_value(SCALE_UI_ELEMENT)
-        scale_value = SCALE_VALUES[scale_index]
-        ratio_value = self.get_render_element_value(RATIO_UI_ELEMENT)
-        bidirectional_value = bool(self.get_render_element_value(BIDI_UI_ELEMENT))
-        iterational_value = bool(self.get_render_element_value(ITER_UI_ELEMENT))
         model_index = self.get_render_element_value(MODEL_UI_ELEMENT)
         model_path  = MODELS[model_index][1]
+        scale_index = self.get_render_element_value(SCALE_UI_ELEMENT)
+        scale_value = SCALE_VALUES[scale_index]
+        detail_value = float(self.get_render_element_value(DETAIL_UI_ELEMENT))
+        smooth_value = float(self.get_render_element_value(SMOOTH_UI_ELEMENT))
 
         # Everything the user can change. If a run fails, we refuse to retry
         # until one of these differs from the settings that failed.
         signature = json.dumps({
             'model': model_path,
             'scale': scale_value,
-            'ratio': ratio_value,
-            'bidirectional': bidirectional_value,
-            'iterational': iterational_value,
+            'detail': detail_value,
+            'smooth': smooth_value,
         }, sort_keys=True)
 
         state = read_state()
@@ -700,17 +705,16 @@ class Fluidmorph(pybox.BaseClass):
 
             response = send_recv({
                 'type': 'command',
-                'data': 'process',
+                'data': 'process_warp',
                 'weight_path': model_path,
-                'input0':    self.get_in_socket_path(0),
-                'input1':    self.get_in_socket_path(1),
-                'result0':   self.get_out_socket_path(0),
-                'conf0':     self.get_out_socket_path(1),
+                'input0': self.get_in_socket_path(0),
+                'input1': self.get_in_socket_path(1),
+                'uv0':    self.get_out_socket_path(0),
+                'uv1':    self.get_out_socket_path(1),
+                'scale':     scale_value,
+                'detail':    detail_value,
+                'smooth':    smooth_value,
                 'colour_space': self.front_colour_space(),
-                'scale':   scale_value,
-                'ratio':   ratio_value,
-                'bidirectional': bidirectional_value,
-                'iterational':   iterational_value,
             })
             printd(f"Process response: {response}")
 
@@ -734,7 +738,7 @@ class Fluidmorph(pybox.BaseClass):
 
 
 def _main(argv):
-    p = Fluidmorph(argv[0])
+    p = Warp(argv[0])
     p.dispatch()
     p.write_to_disk(argv[0])
 

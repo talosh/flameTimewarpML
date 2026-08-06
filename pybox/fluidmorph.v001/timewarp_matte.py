@@ -1,10 +1,18 @@
 """
-Pybox setup for Fluidmorph
+Pybox setup for Timewarp — matte-input variant.
+
+Sibling of timewarp.py, sharing the same SCRIPT_NAME bundle, daemon
+socket, and effect.py/flownet4.py entirely unchanged. The only
+difference is this script additionally declares two Matte-type input
+sockets. Flame requires a declared Matte input socket to be connected —
+timewarp.py (no explicit Matte socket) exists so users who do not want
+that requirement are not forced into it.
 """
 
 import os
 import sys
 import time
+import math
 import socket
 import subprocess
 import json
@@ -19,7 +27,7 @@ from pathlib import Path
 # block contents). Errors always print regardless of this flag.
 DEBUG = False
 
-EFFECT_NAME = 'ML Fluidmorph'
+EFFECT_NAME = 'ML Timewarp (Matte)'
 IMAGE_FORMAT = "exr"
 
 MODEL_UI_ELEMENT = "Model"
@@ -51,7 +59,7 @@ LOCATION_DEFAULT_VALUE = PRESET_ROOT if os.path.isdir(PRESET_ROOT) else '/'
 
 # This script's own filename — the locate flow searches for and rewrites only
 # this file, never any sibling.
-THIS_SCRIPT = 'fluidmorph.py'
+THIS_SCRIPT = 'timewarp_matte.py'
 
 LOCATION_UI_ELEMENT = 'Script File'
 
@@ -307,19 +315,25 @@ class Fluidmorph(pybox.BaseClass):
 
         tempdir = Path('/dev/shm')
 
+        # Front/Matte interleaved so each frame sits next to its own matte,
+        # rather than both fronts then both mattes.
+        # Declaring a Matte-type socket makes Flame require it be connected —
+        # that is the entire reason this variant exists as a separate script
+        # rather than an optional feature of the no-matte sibling.
         self.set_in_socket(0, "Front", str(tempdir / f"input0.{ext}"))
-        self.set_in_socket(1, "Front", str(tempdir / f"input1.{ext}"))
-        self.remove_in_socket(2)
+        self.set_in_socket(1, "Matte", str(tempdir / f"input0_matte.{ext}"))
+        self.set_in_socket(2, "Front", str(tempdir / f"input1.{ext}"))
+        self.set_in_socket(3, "Matte", str(tempdir / f"input1_matte.{ext}"))
 
         self.remove_out_sockets()
         self.set_out_socket(0, "Result", str(tempdir / f"result0.{ext}"))
+        self.set_out_socket(1, "OutMatte", str(tempdir / f"matte0.{ext}"))
         # OutMatte rather than "undefined": Flame will not let other nodes
         # connect to an undefined-type output at all. There is no dedicated
         # socket type for a confidence channel, so OutMatte is the closest
-        # connectable fit. No warped-matte output here — this variant has no
-        # matte input to warp, so it would always be black; see the _matte
-        # sibling for that.
-        self.set_out_socket(1, "OutMatte", str(tempdir / f"conf0.{ext}"))
+        # connectable fit — two OutMatte sockets is fine, they are told apart
+        # by index and by the file each is pointed at.
+        self.set_out_socket(2, "OutMatte", str(tempdir / f"conf0.{ext}"))
 
         if RESOLVED_LOCATION is None:
             printe(f'Could not locate the {SCRIPT_NAME} bundle.')
@@ -530,10 +544,10 @@ class Fluidmorph(pybox.BaseClass):
 
         ratio_value = pybox.create_float_numeric(
             RATIO_UI_ELEMENT,
-            value=0.5, default=0.5, min=0.0, max=1.0, inc=0.01,
+            value=0.5, default=0.5, min=-1000000.0, max=1000000.0, inc=0.01,
             channel_name=RATIO_UI_ELEMENT,
             page=0, col=0, row=2,
-            tooltip="<b>Ratio</b>\nBlend ratio between the two inputs. For Timewarp use expression: timewarp1.Timing - floor(timewarp1.Timing). Editable."
+            tooltip="<b>Ratio</b>\nBlend ratio between the two inputs. Values outside 0-1 wrap to their fractional part, so a Timewarp Timing channel can be linked directly. Editable."
         )
         self.add_render_elements(ratio_value)
 
@@ -593,9 +607,10 @@ class Fluidmorph(pybox.BaseClass):
                 'type': 'command',
                 'data': 'error_frame',
                 'input0':  self.get_in_socket_path(0),
-                'input1':  self.get_in_socket_path(1),
+                'input1':  self.get_in_socket_path(2),
                 'result0': self.get_out_socket_path(0),
-                'conf0':   self.get_out_socket_path(1),
+                'matte0':  self.get_out_socket_path(1),
+                'conf0':   self.get_out_socket_path(2),
                 'colour_space': self.front_colour_space(),
             })
             printd(f'Error frame response: {response}')
@@ -648,7 +663,16 @@ class Fluidmorph(pybox.BaseClass):
     def _run(self):
         scale_index = self.get_render_element_value(SCALE_UI_ELEMENT)
         scale_value = SCALE_VALUES[scale_index]
-        ratio_value = self.get_render_element_value(RATIO_UI_ELEMENT)
+        # The field accepts any value so a Timewarp Timing channel can be
+        # linked straight in. Only the fractional part is meaningful here, so
+        # wrap it and write the wrapped value back so the UI shows what is
+        # actually being used.
+        raw_ratio   = float(self.get_render_element_value(RATIO_UI_ELEMENT))
+        ratio_value = raw_ratio - math.floor(raw_ratio)
+        if ratio_value != raw_ratio:
+            printd(f'Ratio {raw_ratio} wrapped to {ratio_value}')
+            self.set_render_element_value(RATIO_UI_ELEMENT, ratio_value)
+
         bidirectional_value = bool(self.get_render_element_value(BIDI_UI_ELEMENT))
         iterational_value = bool(self.get_render_element_value(ITER_UI_ELEMENT))
         model_index = self.get_render_element_value(MODEL_UI_ELEMENT)
@@ -703,9 +727,12 @@ class Fluidmorph(pybox.BaseClass):
                 'data': 'process',
                 'weight_path': model_path,
                 'input0':    self.get_in_socket_path(0),
-                'input1':    self.get_in_socket_path(1),
+                'matte_in0': self.get_in_socket_path(1),
+                'input1':    self.get_in_socket_path(2),
+                'matte_in1': self.get_in_socket_path(3),
                 'result0':   self.get_out_socket_path(0),
-                'conf0':     self.get_out_socket_path(1),
+                'matte0':    self.get_out_socket_path(1),
+                'conf0':     self.get_out_socket_path(2),
                 'colour_space': self.front_colour_space(),
                 'scale':   scale_value,
                 'ratio':   ratio_value,
