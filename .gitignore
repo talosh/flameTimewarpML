@@ -10,11 +10,22 @@ flameTimewarpML.package
 flameTimewarpMLenv.tar.bz2
 flameTimewarpML.bundle.tar
 test_*
+!data/test_*.py
 env
 appenv
 .DS_Store
 *.pth
 *.pkl
+*.csv
+cuts_report/
+weights/
+old_trained_models/
+pytorch/flameStabML_train_ddp_old.py
+
+# LPIPS backbone: committed so training runs offline (first run otherwise
+# downloads it via torch.hub into hub/checkpoints/).
+!hub/checkpoints/alexnet-owt-7be5be79.pth
+!hub/checkpoints/README.md
 
 !packages/README.md
 !packages/.miniconda/README.md

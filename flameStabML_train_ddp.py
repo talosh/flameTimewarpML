@@ -1,4 +1,12 @@
 import os
+
+# Enumerate GPUs in PCI bus order so --device / cuda:N match `nvidia-smi` indices.
+# CUDA's default is FASTEST_FIRST, which reorders by capability -- on a mixed box
+# (e.g. two P5000 + a P40) cuda:0 then is NOT nvidia-smi's GPU 0. Must be set
+# before torch initialises CUDA, hence before the torch import below.
+# setdefault: an explicit CUDA_DEVICE_ORDER in the environment still wins.
+os.environ.setdefault('CUDA_DEVICE_ORDER', 'PCI_BUS_ID')
+
 import sys
 import random
 import shutil
@@ -19,43 +27,25 @@ import tracemalloc
 
 from pprint import pprint
 
-try:
-    import torch
-    import torch.nn as nn
-    import torch.nn.functional as F
-    import torchvision
-except:
-    python_executable_path = sys.executable
-    if '.miniconda' in python_executable_path:
-        print ('Unable to import PyTorch')
-        print (f'Using "{python_executable_path}" as python interpreter')
-        sys.exit()
-    else:
-        # make Flame happy on hooks scan
-        class torch(object):
-            class nn(object):
-                class Module(object):
-                    pass
-                class Conv2d(object):
-                    pass
+import numpy as np
+import OpenImageIO as oiio
 
-try:
-    import numpy as np
-except:
-    python_executable_path = sys.executable
-    if '.miniconda' in python_executable_path:
-        print (f'Using "{python_executable_path}" as python interpreter')
-        print ('Unable to import Numpy')
-        sys.exit()
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torchvision
 
-try:
-    import OpenImageIO as oiio
-except:
-    python_executable_path = sys.executable
-    if '.miniconda' in python_executable_path:
-        print ('Unable to import OpenImageIO')
-        print (f'Using "{python_executable_path}" as python interpreter')
-        sys.exit()
+import functools
+
+from data import (
+    build_manifest,
+    split_sequences,
+    TimewarpDataset,
+    TimewarpBatchSampler,
+    build_dataloader,
+    BatchPool,
+    default_reader,
+)
 
 exit_event = threading.Event()  # For threads
 process_exit_event = torch.multiprocessing.Event()  # For processes
@@ -194,6 +184,22 @@ class AP0toACESCCT(torch.nn.Module):
 
         return ACEScct
 
+class AP1toACESCCT(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.register_buffer("const_cond1", torch.tensor(0.0078125))
+
+    def forward(self, image: torch.Tensor) -> torch.Tensor:
+        condition = image <= self.const_cond1
+        value_if_true = image * 10.5402377416545 + 0.0729055341958155 
+        ACEScct = torch.where(condition, value_if_true, image)
+        
+        condition = image > self.const_cond1
+        value_if_true = (torch.log2(image) + 9.72) / 17.52
+        ACEScct = torch.where(condition, value_if_true, ACEScct)
+
+        return ACEScct
+
 class ACESCCTtoACESCG(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -214,6 +220,26 @@ class ACESCCTtoACESCG(torch.nn.Module):
         ACEScg = torch.clamp(ACEScg, max=self.const_cond3)
 
         return ACEScg
+
+def ap1_to_rec709(x):
+    # ACEScg (AP1) linear -> linear Rec.709 (sRGB) primaries, D60->D65 adapted
+    M = torch.tensor([
+        [ 1.70505, -0.62179, -0.08326],
+        [-0.13026,  1.14080, -0.01055],
+        [-0.02400, -0.12897,  1.15297]
+    ]).to(x.device, x.dtype)
+    return torch.einsum('ij,bjhw->bihw', M, x)
+
+
+class AP1toRec709(torch.nn.Module):
+    """AP1 (ACEScg) linear -> Rec.709 primaries + Rec.709 OETF. One of the input
+    encodings sampled for augmentation, alongside AP1-linear and ACEScct."""
+    def forward(self, image: torch.Tensor) -> torch.Tensor:
+        rgb = ap1_to_rec709(image)
+        rgb = torch.clamp(rgb, min=0.0)               # clip out-of-gamut negatives
+        base = torch.clamp(rgb, min=1e-8)             # safe base for fractional power
+        return torch.where(rgb < 0.018, 4.5 * rgb, 1.099 * torch.pow(base, 0.45) - 0.099)
+
 
 class TimewarpMLDataset(torch.utils.data.Dataset):
     def __init__(   
@@ -1731,6 +1757,102 @@ class LapLoss(torch.nn.Module):
             for a, b in zip(pyr_input, pyr_target)
         )
 
+class LapLossNCC(torch.nn.Module):
+    def __init__(self, max_levels=5, channels=3, window=7,
+                 ncc_levels=None, eps=1e-3):
+        super(LapLossNCC, self).__init__()
+        self.max_levels = max_levels
+        self.window = window
+        self.eps = eps
+        # which pyramid levels get the invariant treatment.
+        # coarser levels (higher index here, since pyr[0] is finest)
+        # carry more of the low-frequency, illumination-gradient content —
+        # default to invariant loss there, plain L1 on the finest levels
+        # where sharpness/detail matters most and lighting rarely varies
+        # at pixel scale.
+        self.ncc_levels = ncc_levels if ncc_levels is not None else set(range(2, max_levels))
+        self.register_buffer('gk', self.gauss_kernel(channels=channels))
+
+    def gauss_kernel(self, size=5, channels=3):
+        kernel = torch.tensor([[1., 4., 6., 4., 1.],
+                               [4., 16., 24., 16., 4.],
+                               [6., 24., 36., 24., 6.],
+                               [4., 16., 24., 16., 4.],
+                               [1., 4., 6., 4., 1.]])
+        kernel /= 256.
+        kernel = kernel.repeat(channels, 1, 1, 1)
+        return kernel
+
+    def conv_gauss(self, img, kernel):
+        img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+        return torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
+
+    def downsample(self, x):
+        return torch.nn.functional.interpolate(
+            x, scale_factor=0.5, mode='bilinear', align_corners=False)
+
+    def upsample(self, x, size):
+        x = torch.nn.functional.interpolate(
+            x, size=size, mode='bilinear', align_corners=False)
+        return self.conv_gauss(x, self.gk)
+
+    def laplacian_pyramid(self, img, max_levels):
+        current = img
+        pyr = []
+        for _ in range(max_levels):
+            h, w = current.shape[2], current.shape[3]
+            filtered = self.conv_gauss(current, self.gk)
+            down = self.downsample(filtered)
+            up = self.upsample(down, size=(h, w))
+            pyr.append(current - up)
+            current = down
+        return pyr
+
+    def _local_stats(self, x, window, pad):
+        mean = torch.nn.functional.avg_pool2d(x, window, stride=1, padding=pad,
+                                            count_include_pad=False)
+        var = torch.nn.functional.avg_pool2d(x * x, window, stride=1, padding=pad,
+                                            count_include_pad=False) - mean * mean
+        return mean, var.clamp(min=0)
+
+    def invariant_band_loss(self, a, b):
+        pad = self.window // 2
+        _, var_a = self._local_stats(a, self.window, pad)
+        _, var_b = self._local_stats(b, self.window, pad)
+
+        # stability epsilon INSIDE sqrt -- this is the fix, not an optional extra.
+        # var.clamp(min=0) only protects the forward value; sqrt's gradient at 0
+        # is 1/(2*sqrt(x)) = inf, and Laplacian bands hit exact/near-zero variance
+        # constantly in flat image regions.
+        sqrt_eps = 1e-6
+        std_a = torch.sqrt(var_a + sqrt_eps)
+        std_b = torch.sqrt(var_b + sqrt_eps)
+
+        cov = torch.nn.functional.avg_pool2d(a * b, self.window, stride=1, padding=pad,
+                                            count_include_pad=False)
+
+        band_scale = (std_a.mean() + std_b.mean()).detach() * 0.5 + 1e-6
+        eps = self.eps * band_scale
+
+        structure = cov / (std_a * std_b + eps)
+        structure_loss = 1 - structure.mean()
+
+        magnitude_loss = ((std_a - std_b).abs() / (std_a + std_b + eps)).mean()
+
+        return structure_loss + magnitude_loss
+
+    def forward(self, input, target):
+        pyr_input = self.laplacian_pyramid(input, self.max_levels)
+        pyr_target = self.laplacian_pyramid(target, self.max_levels)
+
+        total = 0.0
+        for i, (a, b) in enumerate(zip(pyr_input, pyr_target)):
+            if i in self.ncc_levels:
+                total = total + self.invariant_band_loss(a, b)
+            else:
+                total = total + torch.nn.functional.l1_loss(a, b)
+        return total
+
 '''
 def hpass(img):
     def gauss_kernel(size=5, channels=3):
@@ -2073,16 +2195,66 @@ def log_fft_magn_loss(pred, target, eps=1e-6):
 
     return torch.mean(torch.abs(pred_radial - targ_radial))
 
+def smoothness_loss_2nd(flow):
+    """Second-order (curvature) flow smoothness.
+
+    First-order penalises the flow *gradient*, so a pure translation is free but
+    zoom/rotation are not -- exactly the global camera motions stabilisation deals
+    with. Second differences are zero for any affine field, so pans, zooms and
+    rotations cost nothing and only curvature is penalised.
+
+    No magnitude normalisation here: that existed to compensate for first-order
+    punishing legitimate affine motion. Second-order already ignores it, so the
+    normalisation only brings its small-flow instability.
+    """
+    b, _, h, w = flow.shape
+    flow_norm = torch.cat([
+        flow[:, 0:1] / ((w - 1) / 2.0),
+        flow[:, 1:2] / ((h - 1) / 2.0),
+    ], dim=1)
+    dxx = flow_norm[:, :, :, 2:] - 2 * flow_norm[:, :, :, 1:-1] + flow_norm[:, :, :, :-2]
+    dyy = flow_norm[:, :, 2:, :] - 2 * flow_norm[:, :, 1:-1, :] + flow_norm[:, :, :-2, :]
+    return dxx.abs().mean() + dyy.abs().mean()
+
+
+def flow_smoothness(flow, mode='first', first_frac=0.15, scale_2nd=1.0):
+    """Smoothness term. 'blend' keeps a little first-order to anchor the field --
+    pure second-order leaves ANY affine field free, including large shear and
+    unbounded drift."""
+    if mode == 'first':
+        return smoothness_loss(flow)
+    second = scale_2nd * smoothness_loss_2nd(flow)
+    if mode == 'second':
+        return second
+    return first_frac * smoothness_loss(flow) + (1.0 - first_frac) * second
+
+
+def downscale_flow(flow, sh, sw):
+    """Resize a pixel-unit flow field to (sh, sw), rescaling the vectors to match.
+    warp() reads flow in pixels, so the values must scale with the resolution."""
+    _, _, h, w = flow.shape
+    f = torch.nn.functional.interpolate(flow, size=(sh, sw), mode='bilinear', align_corners=False)
+    return torch.cat([f[:, 0:1] * (sw / w), f[:, 1:2] * (sh / h)], dim=1)
+
+
 def smoothness_loss(flow):
-    # spatial gradients of flow
-    dx = (flow[:, :, :, 1:] - flow[:, :, :, :-1]).abs()   # (B, 2, H, W-1)
-    dy = (flow[:, :, 1:, :] - flow[:, :, :-1, :]).abs()   # (B, 2, H-1, W)
+    b, _, h, w = flow.shape
 
-    # local magnitude for normalization — trim to match gradient spatial dims
-    mag_x = flow[:, :, :, 1:].norm(dim=1, keepdim=True) + 1e-6  # (B, 1, H, W-1)
-    mag_y = flow[:, :, 1:, :].norm(dim=1, keepdim=True) + 1e-6  # (B, 1, H-1, W)
+    # Mirror warp()'s normalization: pixel → [-1, 1] space
+    # warp uses: flow_x / ((W-1)/2),  flow_y / ((H-1)/2)
+    flow_norm = torch.cat([
+        flow[:, 0:1] / ((w - 1) / 2.0),
+        flow[:, 1:2] / ((h - 1) / 2.0),
+    ], dim=1)
 
-    # normalized: penalizes change relative to local motion magnitude
+    # Spatial gradients in normalized space — now resolution-independent
+    dx = (flow_norm[:, :, :, 1:] - flow_norm[:, :, :, :-1]).abs()  # (B, 2, H, W-1)
+    dy = (flow_norm[:, :, 1:, :] - flow_norm[:, :, :-1, :]).abs()  # (B, 2, H-1, W)
+
+    # Local magnitude normalization — also on normalized flow
+    mag_x = flow_norm[:, :, :, 1:].norm(dim=1, keepdim=True) + 1e-6
+    mag_y = flow_norm[:, :, 1:, :].norm(dim=1, keepdim=True) + 1e-6
+
     return (dx / mag_x).mean() + (dy / mag_y).mean()
 
 class ContrastStructureLoss(nn.Module):
@@ -2172,8 +2344,137 @@ def prefetch_batch(dataset, batch_idx, world_size, batch_size, device):
         scatter_img2.append(torch.cat(r_img2[:batch_size]).to(device))
     return scatter_img0, scatter_img1, scatter_img2, ratio, idx, sample_idx, current_desc
 
+def to_grey(x):
+    weights = torch.tensor([0.299, 0.587, 0.114], device=x.device).view(1, 3, 1, 1)
+    return (x * weights).sum(dim=1, keepdim=True)
+def to_grey(x):
+    weights = torch.tensor([0.299, 0.587, 0.114], device=x.device).view(1, 3, 1, 1)
+    return (x * weights).sum(dim=1, keepdim=True)
 
 current_state_dict = {}
+
+class TrainFeed:
+    """Drop-in replacement for the old training dataset object. Exposes __len__
+    (steps/epoch), .repeat_count (==1; reuse lives in the pool),
+    .reshuffle()/.set_epoch(), and .next_batch() yielding {img0,img1,img2,
+    ratio,specs}. Frames are AP1 *linear* (tonemap off) so the loop owns colour."""
+    def __init__(self, sequences, *, batch_size, frame_size, seed, rank, world_size,
+                 num_workers, cache_items, pool_size, reuse, pool_order,
+                 pad_tolerance, rotation_prob, max_long_side, hflip, vflip, cflip,
+                 pin_memory, steps_per_epoch, window_mode='full', bidirectional=True,
+                 epoch=0):
+        self.dataset = TimewarpDataset(
+            sequences, frame_size=frame_size, seed=seed,
+            hflip_prob=hflip, vflip_prob=vflip, cflip_prob=cflip, epoch=epoch,
+            reader=functools.partial(default_reader, tonemap=False))
+        self.sampler = TimewarpBatchSampler(
+            sequences, batch_size=batch_size, frame_size=frame_size,
+            pad_tolerance=pad_tolerance, rotation_prob=rotation_prob,
+            max_long_side=max_long_side, steps_per_epoch=steps_per_epoch,
+            window_mode=window_mode, bidirectional=bidirectional,
+            seed=seed, rank=rank, world_size=world_size, epoch=epoch)
+        self.loader = build_dataloader(
+            self.dataset, self.sampler, num_workers=num_workers,
+            cache_items=cache_items, pin_memory=pin_memory, return_mask=False)
+        self.pool = BatchPool(
+            self.loader, steps_per_epoch=steps_per_epoch, size=pool_size,
+            reuse=reuse, order=pool_order, seed=seed, epoch=epoch)
+        self.repeat_count = 1
+        self._steps = steps_per_epoch
+        self.epoch = epoch
+        self._it = None
+
+    def __len__(self):
+        return self._steps
+
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+        self.sampler.set_epoch(epoch)
+        self.dataset.set_epoch(epoch)
+        self.pool.set_epoch(epoch)
+        if self._it is not None:
+            self._it.close()
+            self._it = None
+
+    def reshuffle(self):
+        self.set_epoch(self.epoch + 1)
+
+    def next_batch(self):
+        if self._it is None:
+            self._it = iter(self.pool)
+        try:
+            return next(self._it)
+        except StopIteration:
+            self._it.close()
+            self._it = iter(self.pool)
+            return next(self._it)
+
+
+def build_train_feed(args, rank, world_size, is_master, max_dataset_window):
+    import math
+
+    def _manifest(root):
+        return build_manifest(root, max_window=max_dataset_window,
+                              read_headers=True, verbose=is_master)
+
+    def _sequences(root):
+        if world_size > 1:
+            m = _manifest(root) if rank == 0 else None
+            torch.distributed.barrier()
+            if rank != 0:
+                m = _manifest(root)
+        else:
+            m = _manifest(root)
+        return m
+
+    train_m = _sequences(args.dataset_path)
+    val_seqs = _sequences(args.val_folder).sequences if args.val_folder else None
+    test_seqs = _sequences(args.test_folder).sequences if args.test_folder else None
+
+    fractions = (max(0.0, 1.0 - args.val_frac - args.test_frac),
+                 args.val_frac, args.test_frac)
+    split = split_sequences(
+        train_m.sequences, val_sequences=val_seqs, test_sequences=test_seqs,
+        fractions=fractions, seed=args.seed, verbose=is_master)
+    train_seqs = split.train
+
+    window_mode = args.window_mode
+    if args.window_bidirectional == 'auto':
+        # 'fixed' pairs both directions inside the loop already (img0/img2 -> img1),
+        # so reversed windows would be exact duplicates
+        bidirectional = (window_mode == 'full')
+    else:
+        bidirectional = (args.window_bidirectional == 'yes')
+
+    if args.steps_per_epoch and args.steps_per_epoch > 0:
+        steps = args.steps_per_epoch
+    else:
+        total = sum(x.num_windows(bidirectional, window_mode) for x in train_seqs
+                    if x.height is not None and x.num_windows(bidirectional, window_mode) > 0)
+        steps = max(1, math.ceil(total / (args.batch_size * max(1, world_size))))
+
+    pool_order = "sequential" if args.sequential else args.pool_order
+    reuse = 1 if args.sequential else args.reuse
+
+    feed = TrainFeed(
+        train_seqs, batch_size=args.batch_size, frame_size=args.frame_size, seed=args.seed,
+        rank=rank, world_size=world_size, num_workers=args.num_workers,
+        cache_items=args.cache_items, pool_size=args.pool_size, reuse=reuse,
+        pool_order=pool_order, pad_tolerance=args.pad_tolerance,
+        rotation_prob=args.rotation_prob,
+        max_long_side=(args.max_long_side if args.max_long_side > 0 else None),
+        hflip=args.hflip, vflip=args.vflip, cflip=args.cflip,
+        pin_memory=args.pin_memory, steps_per_epoch=steps,
+        window_mode=window_mode, bidirectional=bidirectional)
+
+    if is_master:
+        print(f"[train feed] {len(train_seqs)} train sequences, {steps} steps/epoch x "
+              f"{args.batch_size} (world_size {world_size}), pool_size {args.pool_size} "
+              f"reuse {reuse} order {pool_order}, {args.num_workers} workers, "
+              f"pin_memory {args.pin_memory}, window_mode {window_mode}"
+              f"{'' if bidirectional else ' (uni)'}")
+    return feed
+
 
 def main(rank, world_size):
     global current_state_dict
@@ -2231,6 +2532,41 @@ def main(rank, world_size):
     parser.add_argument('--compile', action='store_true', dest='compile', default=False, help='Compile with torch.compile')
     parser.add_argument('--sequential', action='store_true', dest='sequential', default=False, help='Keep sequences, do not reshuffle')
 
+    # ---- new dataset pipeline (data/ package) ----
+    parser.add_argument('--seed', type=int, default=1234, help='(new dataset) global seed for splits/sampler/pool/augmentation')
+    parser.add_argument('--val_folder', type=str, default=None, help='(new dataset) external held-out validation root')
+    parser.add_argument('--test_folder', type=str, default=None, help='(new dataset) external held-out test root (kept out of the train pool)')
+    parser.add_argument('--val_frac', type=float, default=0.0, help='(new dataset) fractional validation split when no --val_folder')
+    parser.add_argument('--test_frac', type=float, default=0.0, help='(new dataset) fractional test split when no --test_folder')
+    parser.add_argument('--num_workers', type=int, default=8, help='(new dataset) DataLoader worker processes')
+    parser.add_argument('--cache_items', type=int, default=256, help='(new dataset) per-worker decoded-frame LRU size')
+    parser.add_argument('--pool_size', type=int, default=48, help='(new dataset) reuse-pool size in batches')
+    parser.add_argument('--reuse', type=int, default=4, help='(new dataset) reuse-pool serve factor; 1 = fresh batch every step')
+    parser.add_argument('--pool_order', type=str, default='random', choices=['random', 'sequential'], help='(new dataset) pool serve order')
+    parser.add_argument('--pad_tolerance', type=float, default=0.10, help='(new dataset) max per-batch long-side padding fraction')
+    parser.add_argument('--rotation_prob', type=float, default=0.5, help='(new dataset) probability of +/-90 rotation augmentation')
+    parser.add_argument('--max_long_side', type=int, default=0, help='(new dataset) drop sequences whose resized long side exceeds this (0 = no limit)')
+    parser.add_argument('--hflip', type=float, default=0.5, help='(new dataset) horizontal flip probability')
+    parser.add_argument('--vflip', type=float, default=0.0, help='(new dataset) vertical flip probability')
+    parser.add_argument('--cflip', type=float, default=0.0, help='(new dataset) channel flip probability')
+    parser.add_argument('--pin_memory', action='store_true', default=False, help='(new dataset) pin DataLoader memory (default False)')
+    parser.add_argument('--steps_per_epoch', type=int, default=-1, help='(new dataset) steps per epoch; -1 = auto from dataset size')
+    parser.add_argument('--input_encodings', type=str, default='ap1,rec709,acescct', help='(new dataset) model-input encodings sampled equally per step (subset of ap1,rec709,acescct)')
+    # ---- loss composition ----
+    parser.add_argument('--smooth_mode', type=str, default='first', choices=['first', 'blend', 'second'], help="flow smoothness: 'first' (original), 'second' (curvature only -- affine motion free), 'blend' (default mix) (default: first)")
+    parser.add_argument('--smooth_first_frac', type=float, default=0.15, help='fraction of first-order in --smooth_mode blend (default 0.15)')
+    parser.add_argument('--smooth_2nd_scale', type=float, default=1.0, help='multiplier on the second-order term; use --smooth_calibrate to match the old magnitude (default 1.0)')
+    parser.add_argument('--smooth_calibrate', type=int, default=0, help='every N steps print raw first/second-order smoothness magnitudes to pick --smooth_2nd_scale (0 = off)')
+    parser.add_argument('--deep_sup', type=float, default=0.0, help='deep supervision weight on coarse flow levels; one level sampled per step (0 = off)')
+    parser.add_argument('--lpips_alternate', action='store_true', default=False, help='compute LPIPS fwd on even steps and rev on odd steps (halves LPIPS cost)')
+    parser.add_argument('--window_mode', type=str, default='full', choices=['full', 'fixed'], help="(new dataset) 'full' = every window size 3..max_window at every gt (timewarp, original); 'fixed' = only max_window-sized windows with all interior gts (stab)")
+    parser.add_argument('--window_bidirectional', type=str, default='auto', choices=['auto', 'yes', 'no'], help="(new dataset) also emit reversed windows. auto = yes for --window_mode full, no for fixed (the loop already builds both pairs)")
+    # ---- LR plateau on a rolling average ----
+    parser.add_argument('--avg_window', type=int, default=100000, help='rolling window (in steps) for the running loss average (default 100000)')
+    parser.add_argument('--plateau_interval', type=int, default=1000, help='step ReduceLROnPlateau every N steps using the rolling average; 0 = old epoch/eval-based behaviour (default 1000)')
+    parser.add_argument('--plateau_patience', type=int, default=10, help='ReduceLROnPlateau patience, counted in plateau_interval units (default 10)')
+    parser.add_argument('--plateau_factor', type=float, default=0.1, help='ReduceLROnPlateau LR reduction factor (default 0.1)')
+
     args = parser.parse_args()
 
     # -------------------------------------------------------------------------
@@ -2246,9 +2582,13 @@ def main(rank, world_size):
             rank=rank
         )
 
-    device = torch.device(f'cuda:{rank}') if not platform.system() == 'Darwin' else torch.device('mps')
-    if not platform.system() == 'Darwin':
-        torch.cuda.set_device(device)
+        device = torch.device(f'cuda:{rank}') if not platform.system() == 'Darwin' else torch.device('mps')
+        if not platform.system() == 'Darwin':
+            torch.cuda.set_device(device)
+    else:
+        device = torch.device(f'cuda:{args.device}') if not platform.system() == 'Darwin' else torch.device('mps')
+        if not platform.system() == 'Darwin':
+            torch.cuda.set_device(device)
 
     is_master = (rank == 0)
 
@@ -2316,18 +2656,8 @@ def main(rank, world_size):
 
     frame_size = args.frame_size
 
-    dataset = get_dataset(
-        args.dataset_path,
-        batch_size=1,
-        device=device,
-        frame_size=frame_size,
-        max_window=max_dataset_window,
-        acescc_rate=args.acescc,
-        generalize=args.generalize,
-        repeat=args.repeat,
-        sequential=args.sequential,
-        start_reader=is_master
-    )
+    # ---- new dataset pipeline replaces the old streaming reader ----
+    dataset = build_train_feed(args, rank, world_size, is_master, max_dataset_window)
 
     if args.eval_folder:
         if is_master:
@@ -2386,13 +2716,28 @@ def main(rank, world_size):
             while True:
                 try:
                     current_state_dict = write_model_state_queue.get_nowait()
+                except queue.Empty:
+                    time.sleep(1e-2)
+                    continue
+                except Exception:
+                    time.sleep(1e-2)
+                    continue
+                try:
                     trained_model_path = current_state_dict['trained_model_path']
+                    # atomic: write to a temp file, back up the previous checkpoint,
+                    # then rename over it. A kill mid-save can no longer truncate the
+                    # live weights. Distinct tmp name from graceful_exit's so the two
+                    # writers can never collide.
+                    tmp_path = trained_model_path + '.periodic.tmp'
+                    torch.save(current_state_dict, tmp_path)
                     if os.path.isfile(trained_model_path):
                         backup_file = trained_model_path.replace('.pth', '.backup.pth')
                         shutil.copy(trained_model_path, backup_file)
-                    torch.save(current_state_dict, current_state_dict['trained_model_path'])
-                except:
-                    time.sleep(1e-2)
+                    os.replace(tmp_path, trained_model_path)
+                except Exception as e:
+                    sys.stderr.write(f'\nperiodic checkpoint save failed: '
+                                     f'{type(e).__name__}: {e}\n')
+                    sys.stderr.flush()
 
         write_image_queue = queue.Queue(maxsize=16)
         write_thread = threading.Thread(target=write_images, args=(write_image_queue,))
@@ -2423,6 +2768,7 @@ def main(rank, world_size):
     criterion_mse = torch.nn.MSELoss()
     criterion_l1 = torch.nn.L1Loss()
     criterion_lap = LapLoss().to(device)
+    criterion_lap_ncc = LapLossNCC().to(device)
     criterion_grad = GradientLoss().to(device)
     criterion_contrast_struct = ContrastStructureLoss().to(device)
     criterion_huber = torch.nn.HuberLoss(delta=0.001)
@@ -2480,7 +2826,7 @@ def main(rank, world_size):
             if is_master:
                 print(f'unable to load optimizer state: {e}')
 
-        try:
+        try:        
             loaded_step = checkpoint['step']
             current_epoch = checkpoint['epoch']
             if is_master:
@@ -2535,7 +2881,7 @@ def main(rank, world_size):
                 final_div_factor=1,
                 steps_per_epoch=len(dataset) * dataset.repeat_count,
                 epochs=args.onecycle,
-                last_epoch=-1 if loaded_step == 0 else loaded_step
+                last_epoch=-1 if loaded_sranktep == 0 else loaded_step
             )
         except:
             scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
@@ -2565,9 +2911,14 @@ def main(rank, world_size):
         )
     else:
         if is_master:
-            print(f'setting ReduceLROnPlateau scheduler with factor={0.1}, patience={10}')
-        scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_flownet, 'min', factor=0.1, patience=10)
+            src = (f'rolling avg of {args.avg_window} steps, every {args.plateau_interval} steps'
+                   if args.plateau_interval > 0 else 'epoch/eval average')
+            print(f'setting ReduceLROnPlateau scheduler with factor={args.plateau_factor}, '
+                  f'patience={args.plateau_patience} ({src})')
+        scheduler_flownet = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer_flownet, 'min', factor=args.plateau_factor, patience=args.plateau_patience)
 
+    # '''
     # -------------------------------------------------------------------------
     # LPIPS — each rank loads its own copy on its own device
     # -------------------------------------------------------------------------
@@ -2579,10 +2930,12 @@ def main(rank, world_size):
     os.environ['TORCH_HOME'] = os.path.abspath(os.path.dirname(__file__))
     loss_fn_alex = lpips.LPIPS(net='alex', spatial=False)
     loss_fn_alex.to(device)
-    for param in loss_fn_alex.parameters():
-        param.requires_grad = False
+
+    loss_fn_alex.eval()
+    loss_fn_alex.requires_grad_(False)
 
     warnings.resetwarnings()
+    # '''
 
     start_timestamp = time.time()
     time_stamp = time.time()
@@ -2598,6 +2951,49 @@ def main(rank, world_size):
             param.requires_grad = False
         for param in target_model.block0.parameters():
             param.requires_grad = False
+        for param in target_model.block1.parameters():
+            param.requires_grad = False
+        for param in target_model.block2.parameters():
+            param.requires_grad = False
+        for param in target_model.block3.parameters():
+            param.requires_grad = False
+
+        for param in target_model.block0.scaler.parameters():
+            param.requires_grad = True
+        for param in target_model.block0.film.parameters():
+            param.requires_grad = True
+        # for param in target_model.block0.lastconv.parameters():
+        #     param.requires_grad = True
+        # for param in target_model.block0.convblock[-1].parameters():
+        #     param.requires_grad = True
+
+        for param in target_model.block1.scaler.parameters():
+            param.requires_grad = True
+        for param in target_model.block1.film.parameters():
+            param.requires_grad = True
+        # for param in target_model.block1.lastconv.parameters():
+        #    param.requires_grad = True
+        # for param in target_model.block1.convblock[-1].parameters():
+        #    param.requires_grad = True
+
+        for param in target_model.block2.scaler.parameters():
+            param.requires_grad = True
+        for param in target_model.block2.film.parameters():
+            param.requires_grad = True
+        # for param in target_model.block2.lastconv.parameters():
+        #    param.requires_grad = True
+        # for param in target_model.block2.convblock[-1].parameters():
+        #    param.requires_grad = True
+
+        for param in target_model.block3.scaler.parameters():
+            param.requires_grad = True
+        for param in target_model.block3.film.parameters():
+            param.requires_grad = True
+        # for param in target_model.block3.lastconv.parameters():
+        #    param.requires_grad = True
+        # for param in target_model.block3.convblock[-1].parameters():
+        #    param.requires_grad = True
+
         if is_master:
             for name, param in flownet.named_parameters():
                 if not param.requires_grad:
@@ -2635,12 +3031,42 @@ def main(rank, world_size):
         import signal
         def create_graceful_exit(current_state_dict):
             def graceful_exit(signum, frame):
-                print(f'\nSaving current state to {current_state_dict["trained_model_path"]}...')
-                print(f'Epoch: {current_state_dict["epoch"] + 1}, Step: {current_state_dict["step"]:11}')
-                torch.save(current_state_dict, current_state_dict['trained_model_path'])
+                # Re-entrant guard: a second Ctrl+C during the save would otherwise
+                # start a second concurrent writer on the same file.
+                if getattr(graceful_exit, '_saving', False):
+                    return
+                graceful_exit._saving = True
+
+                path = current_state_dict['trained_model_path']
+                # stderr + flush: the loop's clear_lines(2) can erase stdout lines,
+                # and these must survive regardless of terminal cursor games.
+                sys.stderr.write(f'\n\nInterrupted - saving current state to {path}...\n')
+                sys.stderr.write(f'Epoch: {current_state_dict["epoch"] + 1}, '
+                                 f'Step: {current_state_dict["step"]}\n')
+                sys.stderr.flush()
+
+                ok = False
+                try:
+                    # atomic write: never leave a half-written checkpoint at `path`
+                    tmp = path + '.saving.tmp'
+                    torch.save(current_state_dict, tmp)
+                    if os.path.isfile(path):
+                        shutil.copy(path, path.replace('.pth', '.backup.pth'))
+                    os.replace(tmp, path)
+                    ok = True
+                    sys.stderr.write(f'Saved. Exiting.\n')
+                except Exception as e:
+                    sys.stderr.write(f'SAVE FAILED: {type(e).__name__}: {e}\n')
+                    traceback.print_exc()
+                sys.stderr.flush()
+
                 exit_event.set()
                 process_exit_event.set()
-                exit(0)
+                # os._exit bypasses SystemExit, which a bare `except:` in the training
+                # loop would otherwise swallow (leaving the process running after the
+                # save message was already erased). DataLoader workers are daemonic
+                # and are reaped with the parent.
+                os._exit(0 if ok else 1)
             return graceful_exit
         signal.signal(signal.SIGINT, create_graceful_exit(current_state_dict))
 
@@ -2657,8 +3083,13 @@ def main(rank, world_size):
     avg_lpips = 0
     avg_loss = 0
 
-    cur_size = 10000
+    cur_size = max(1, args.avg_window)
     cur_mask = np.full(cur_size, True)
+    # Scheduler metric buffer. Kept on EVERY rank (loss_val is already all-reduced,
+    # so each rank computes an identical mean) — the display buffers below are
+    # rank-0 only, and driving the LR from those would desync ranks.
+    sched_buf = None
+    sched_count = 0
     cur_l1 = None
     cur_rev_l1 = None
     cur_comb = None
@@ -2677,71 +3108,57 @@ def main(rank, world_size):
     log_spec_loss = MultiScaleLogMagSpectralLoss(scales=(1, 2, 4))
 
     ap02cct = AP0toACESCCT().to(device)
+    ap12cct = AP1toACESCCT().to(device)
     cct2cg = ACESCCTtoACESCG().to(device)
+    ap1torec709 = AP1toRec709().to(device)
 
-    # prefetch executor for DDP batch preparation
-    import concurrent.futures
-    _prefetch_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1) if (is_master and world_size > 1) else None
-    _next_batch_future = None
+    # model-input encodings sampled equally per step (colour-space augmentation)
+    _valid_enc = {'ap1', 'rec709', 'acescct'}
+    input_encodings = [e.strip().lower() for e in args.input_encodings.split(',') if e.strip()]
+    input_encodings = [e for e in input_encodings if e in _valid_enc] or ['acescct']
+    if is_master:
+        print(f'model-input encodings (sampled equally per step): {input_encodings}')
+
+    def encode_input(x_linear, mode):
+        # x_linear is AP1 (ACEScg) linear -> the chosen model-input encoding
+        if mode == 'ap1':
+            return x_linear
+        if mode == 'rec709':
+            return ap1torec709(x_linear)
+        return ap12cct(x_linear)          # 'acescct'  (current behaviour)
+
+    # new dataset is fed per-rank from its own pool; no rank-0 prefetch/scatter
+    dataset.set_epoch(epoch)
+
+    loss_LPIPS = torch.zeros(1, device=device, requires_grad=True)
 
     while True:
         time_stamp = time.time()
 
-        img0_list, img1_list, img2_list, ratio_list = [], [], [], []
-
-        # rank 0 collects a full batch for every rank, then scatters
-        if world_size > 1:
-            if is_master:
-                # retrieve prefetched batch from previous step, or fetch now on first step
-                if _next_batch_future is not None:
-                    scatter_img0, scatter_img1, scatter_img2, ratio, idx, sample_idx, current_desc = _next_batch_future.result()
-                else:
-                    scatter_img0, scatter_img1, scatter_img2, ratio, idx, sample_idx, current_desc = prefetch_batch(
-                        dataset, batch_idx, world_size, args.batch_size, device)
-            else:
-                scatter_img0 = scatter_img1 = scatter_img2 = None
-                ratio = None
-                idx = 0
-                sample_idx = 0
-                current_desc = {}
-
-            # receive buffer — shape must match what rank 0 prepared per rank
-            img0 = torch.zeros(args.batch_size, 3, frame_size, frame_size, device=device)
-            img1 = torch.zeros_like(img0)
-            img2 = torch.zeros_like(img0)
-
-            torch.distributed.scatter(img0, scatter_img0, src=0)
-            torch.distributed.scatter(img1, scatter_img1, src=0)
-            torch.distributed.scatter(img2, scatter_img2, src=0)
-
-            # broadcast scalar metadata from rank 0 (used only in is_master blocks anyway)
-            meta = [ratio, idx, sample_idx]
-            torch.distributed.broadcast_object_list(meta, src=0)
-            ratio, idx, sample_idx = meta
-
-        else:
-            # single GPU — original path
-            for i in range(args.batch_size):
-                sample_idx = batch_idx * args.batch_size + i
-                sample_idx = sample_idx % len(dataset)
-                s0, s1, s2, ratio, idx, current_desc = dataset[sample_idx]
-                img0_list.append(s0)
-                img1_list.append(s1)
-                img2_list.append(s2)
-                if (sample_idx + 1) >= len(dataset):
-                    break
-            img0 = torch.cat(img0_list)
-            img1 = torch.cat(img1_list)
-            img2 = torch.cat(img2_list)
+        # --- new dataset: each rank pulls its own bucketed batch from its pool ---
+        batch = dataset.next_batch()
+        img0 = batch['img0']
+        img1 = batch['img1']
+        img2 = batch['img2']
+        ratio = batch['ratio']
+        current_desc = {'seq_ids': [x.seq_id for x in batch['specs'][:4]],
+                        'rotations': [x.rotation for x in batch['specs'][:4]]}
+        idx = batch_idx
+        sample_idx = batch_idx
 
         img0 = img0.to(device, non_blocking=True)
         img1 = img1.to(device, non_blocking=True)
         img2 = img2.to(device, non_blocking=True)
 
+        # working / loss / preview space is ACEScct; EXRs are AP1 linear unless --ap0
         if args.ap0:
-            img0 = ap02cct(img0)
+            img0 = ap02cct(img0)          # AP0 linear -> ACEScct
             img1 = ap02cct(img1)
             img2 = ap02cct(img2)
+        else:
+            img0 = ap12cct(img0)          # AP1 linear -> ACEScct
+            img1 = ap12cct(img1)
+            img2 = ap12cct(img2)
 
         '''
         if random.uniform(0, 1) > 0.2:
@@ -2757,17 +3174,24 @@ def main(rank, world_size):
             img2 = torch.nn.functional.interpolate(img2, size=(sh, sw), mode="bicubic", align_corners=False)
         '''
 
+        img0 = torch.cat([img0, img2], dim=0)
+        img1 = torch.cat([img1, img1], dim=0)
+
         img0_orig = img0.detach().clone()
         img1_orig = img1.detach().clone()
         img2_orig = img2.detach().clone()
 
         current_lr_str = str(f'{optimizer_flownet.param_groups[0]["lr"]:.2e}')
-
-        if random.uniform(0, 1) < 0.69:
-            scale = torch.linspace(random.randint(1, 16), 1, steps=4).tolist()
+        
+        # '''
+        if random.uniform(0, 1) < 0.5:
+            scale = torch.linspace(random.randint(4, 16), 1, steps=4).tolist()
             training_scale = [round(v) for v in scale]
         else:
             training_scale = [8, 4, 2, 1]
+        # '''
+
+        # training_scale = [8, 4, 2, 1]
 
         data_time = time.time() - time_stamp
         time_stamp = time.time()
@@ -2775,93 +3199,278 @@ def main(rank, world_size):
         optimizer_flownet.zero_grad()
         flownet.train()
 
+        # Exposure augmentation
+        exp1 = random.uniform(1 / 4, 1.4) if random.uniform(0, 1) < 0.5 else 1
+        exp2 = random.uniform(1 / 4, 1.4) if random.uniform(0, 1) < 0.5 else 1
+
+        noise1 = min(random.uniform(0, 0.25), random.uniform(0, 0.25)) * torch.clamp(torch.randn_like(img0), 0)
+        noise2 = min(random.uniform(0, 0.25), random.uniform(0, 0.25)) * torch.clamp(torch.randn_like(img0), 0)
+
+        hpr1 = random.uniform(0, 1)
+        hpr2 = random.uniform(0, 1)
+
+        img0_ref = hpass(img0) * hpr1 + img0 * (1 - hpr1) if random.uniform(0, 1) < 0.33 else img0
+        img1_ref = hpass(img1) * hpr2 + img1 * (1 - hpr2) if random.uniform(0, 1) < 0.33 else img1
+
+        img0_ref = hpass(img0) if random.uniform(0, 1) < 0.25 else img0_ref
+        img1_ref = hpass(img1) if random.uniform(0, 1) < 0.25 else img1_ref
+
+        sharpness = random.uniform(0, 1)
+
+        # sample one input encoding for this step (AP1 / Rec.709 / ACEScct, equal by default)
+        enc = random.choice(input_encodings)
         result = flownet(
-            img0,
-            img2,
+            encode_input(cct2cg(img0_ref) * exp1 + noise1, enc),
+            encode_input(cct2cg(img1_ref) * exp2 + noise2, enc),
             scale=training_scale,
+            sharpness = sharpness
         )
 
         flow_list = result['flow_list']
+        training_scale = result['scale']
 
-        output_clean = warp(img1_orig, flow_list[-1])
+        flow_fwd, flow_bkw = torch.split(flow_list[-1], 2, dim=1)
+
+        output_fwd = warp(img1, flow_fwd)
+        # output_bkw = warp(img0, flow_bkw)
+        output_rev = warp(output_fwd.detach(), flow_bkw)
 
         model_time = time.time() - time_stamp
         time_stamp = time.time()
 
-        def to_grey(x):
-            weights = torch.tensor([0.299, 0.587, 0.114], device=x.device).view(1, 3, 1, 1)
-            return (x * weights).sum(dim=1, keepdim=True)
+
+        '''
+        out_int_fwd = warp(img1, int_flow_fwd)
+
+        # --- Fidelity role: trains flow_bkw only ---
+        # stop-grad on the forward output so this loss never touches flow_fwd,
+        # regardless of which experiment arm is active
+        out_int_rev_fidelity = warp(out_int_fwd.detach(), int_flow_bkw)
+        loss_rev_fidelity_l1  = criterion_l1(out_int_rev_fidelity, gt_int_bkw)
+        loss_rev_fidelity_lap = criterion_lap(out_int_rev_fidelity, gt_int_bkw)
+
+        # --- Cycle-consistency role: optionally lets flow_fwd feel reverse-cycle pressure ---
+        # stop-grad on flow_bkw here so this term never also retunes flow_bkw —
+        # it should purely probe "is flow_fwd's output invertible", not re-teach flow_bkw
+        if cycle_consistency_mode == "coupled":
+            out_int_rev_cycle = warp(out_int_fwd, int_flow_bkw.detach())
+            loss_cycle_l1 = criterion_l1(out_int_rev_cycle, gt_int_bkw)
+        else:  # "detached" arm
+            loss_cycle_l1 = torch.zeros((), device=out_int_fwd.device)
+
+        loss_rev = (loss_weights["l1"]  * loss_rev_fidelity_l1
+                    + loss_weights["lap"] * loss_rev_fidelity_lap
+                    + cycle_weight * loss_cycle_l1)   # cycle_weight = 0 in "detached" arm
+        '''
+
+        '''
+        g_align = torch.autograd.grad(loss_contr_fwd + loss_grad_fwd, int_flow_fwd,
+                                    retain_graph=True)[0].norm()
+        g_cycle = torch.autograd.grad(loss_cycle_l1, int_flow_fwd,
+                                    retain_graph=True)[0].norm()
+        print(g_cycle / g_align)
+        '''
+
+        loss_weights = {
+            "l1": 1.0,
+            "lap": 0.1,
+            "grad": 0.1,
+            "contr": 0.1,
+            "lpips": 1.0,
+            "smooth_fwd": 0.04,
+            "smooth_bkw": 0.01,
+        }
+        cycle_weight = 0.05  # single knob if reverse is meant to matter less overall
+
+        '''
+        with torch.no_grad():
+            _, _, h, w = img1.shape
+            gt0, gt1 = [], []
+            for s in training_scale:
+                sh = max(round((h / s) / 16) * 16, 64)
+                sw = max(round((w / s) / 16) * 16, 64)
+                gt0.append(F.interpolate(img0, (sh, sw), mode="bilinear", antialias=True))
+                gt1.append(F.interpolate(img1, (sh, sw), mode="bilinear", antialias=True))
+        '''
 
         int_loss = torch.zeros(1, device=device, requires_grad=True)
-
+        int_loss_LPIPS = torch.zeros(1, device=device, requires_grad=True)
+        
+        '''
         for flow_idx, int_flow in enumerate(flow_list):
-            _, _, h, w = img1_orig.shape
+            _, _, h, w = img1.shape
             scale = training_scale[flow_idx]
-            sh, sw = round(h * (1 / scale)), round(w * (1 / scale))
+            sh, sw = round( (h * (1 / scale)) / 16 ) * 16, round( (w * (1 / scale)) / 16 ) * 16
+            sh = max(sh, 64)
+            sw = max(sw, 64)
 
-            out_int_fv = warp(img1_orig, int_flow)
-            out_scaled = torch.nn.functional.interpolate(out_int_fv, size=(sh, sw), mode="bilinear", align_corners=True)
-            gt_scaled = torch.nn.functional.interpolate(img0_orig, size=(sh, sw), mode="bilinear", align_corners=True)
-            src_scaled = torch.nn.functional.interpolate(img1_orig, size=(sh, sw), mode="bilinear", align_corners=True)
+            int_flow_fwd, int_flow_bkw = torch.split(int_flow, 2, dim=1)
 
-            int_loss_l1_rev = criterion_l1(rev_scaled, src_scaled)
-            int_loss_l1 = criterion_l1(out_scaled, gt_scaled)
-            int_loss_l1_hp = criterion_l1(hpass(out_scaled), hpass(gt_scaled))
+            out_int_fwd = warp(img1, int_flow_fwd)
+            out_int_rev_fidelity = warp(out_int_fwd.detach(), int_flow_bkw)
+            out_int_rev_cycle = warp(out_int_fwd, int_flow_bkw.detach())
 
-            loss_spectral_same = log_fft_magn_loss(out_scaled, src_scaled)
+            out_int_fwd = torch.nn.functional.interpolate(out_int_fwd, size=(sh, sw), mode="bilinear",  antialias=True)
+            out_int_rev_fidelity = torch.nn.functional.interpolate(out_int_rev_fidelity, size=(sh, sw), mode="bilinear", antialias=True)
+            out_int_rev_cycle = torch.nn.functional.interpolate(out_int_rev_cycle, size=(sh, sw), mode="bilinear", antialias=True)
+            # gt_int_fwd = torch.nn.functional.interpolate(img0, size=(sh, sw), mode="bilinear", antialias=True)
+            # gt_int_bkw = torch.nn.functional.interpolate(img1, size=(sh, sw), mode="bilinear", antialias=True)
+            gt_int_fwd = gt0[flow_idx]
+            gt_int_bkw = gt1[flow_idx]
 
-            out_lpips = torch.nn.functional.interpolate(out_scaled, size=(h, w), mode="bilinear", align_corners=True)
-            gt_lpips = torch.nn.functional.interpolate(gt_scaled, size=(h, w), mode="bilinear", align_corners=True)
-            rev_lpips = torch.nn.functional.interpolate(rev_scaled, size=(h, w), mode="bilinear", align_corners=True)
-            src_lpips = torch.nn.functional.interpolate(src_scaled, size=(h, w), mode="bilinear", align_corners=True)
+            # --- Fidelity role: trains flow_bkw only ---
+            # stop-grad on the forward output so this loss never touches flow_fwd,
+            # regardless of which experiment arm is active
+            loss_rev_fidelity_l1  = criterion_l1(out_int_rev_fidelity, gt_int_bkw)
+            loss_rev_fidelity_lap = criterion_lap(out_int_rev_fidelity, gt_int_bkw)
 
-            int_loss_lap = criterion_lap(out_lpips, gt_lpips)
-            int_loss_lap_hp = criterion_lap(hpass(cct2cg(out_lpips)), hpass(cct2cg(gt_lpips)))
-            int_loss_lap_rev = criterion_lap(rev_lpips, src_lpips)
-            int_loss_grad = criterion_grad(out_lpips, gt_lpips)
-            int_loss_contr = criterion_contrast_struct(out_scaled, gt_scaled)
-            int_loss_grad_hp = criterion_grad(hpass(out_lpips), hpass(gt_lpips))
+            # --- Cycle-consistency role: optionally lets flow_fwd feel reverse-cycle pressure ---
+            # stop-grad on flow_bkw here so this term never also retunes flow_bkw —
+            # it should purely probe "is flow_fwd's output invertible", not re-teach flow_bkw
+            loss_cycle_l1 = criterion_l1(out_int_rev_cycle, gt_int_bkw)
 
-            sm_loss_fwd = smoothness_loss(int_flow_fv)
-            sm_loss_rev = smoothness_loss(int_flow_rev)
+            int_loss_rev = (loss_weights["l1"]  * loss_rev_fidelity_l1
+                        + loss_weights["lap"] * loss_rev_fidelity_lap
+                        + cycle_weight * loss_cycle_l1)   # cycle_weight = 0 in "detached" arm
 
-            if flow_idx == 0:
-                int_loss_LPIPS = compute_lpips(loss_fn_alex, out_lpips, gt_lpips)
-                int_loss = int_loss + int_loss_LPIPS
+            int_loss_fwd_l1 = criterion_l1(out_int_fwd, gt_int_fwd)
 
-            int_loss = (
-                int_loss +
-                0.1 * int_loss_lap +
-                int_loss_contr +
-                int_loss_grad_hp +
-                int_loss_lap_hp +
-                int_loss_l1_rev +
-                1e-2 * sm_loss_fwd +
-                4e-3 * sm_loss_rev +
-                1e-3 * loss_spectral_same
+            int_loss_fwd_lap = criterion_lap(out_int_fwd, gt_int_fwd)
+            # int_loss_bkw_lap = criterion_lap(out_int_bkw, gt_int_bkw)
+            # int_loss_rev_lap = criterion_lap(out_int_rev, gt_int_bkw)
+
+            int_loss_fwd_grad = criterion_grad(out_int_fwd, gt_int_fwd)
+            # int_loss_bkw_grad = criterion_grad(out_int_bkw, gt_int_bkw)
+
+            int_loss_fwd_contr = criterion_contrast_struct(out_int_fwd, gt_int_fwd)
+            # int_loss_bkw_contr = criterion_contrast_struct(out_int_bkw, gt_int_bkw)
+
+            # lpips_idx = step % len(flow_list)
+            # if flow_idx == lpips_idx:
+            # int_loss_LPIPS = compute_lpips(loss_fn_alex, out_int_fwd, gt_int_fwd)
+
+            int_loss_fwd_smooth = smoothness_loss(int_flow_fwd)
+            int_loss_bkw_smooth = smoothness_loss(int_flow_bkw)
+
+            int_loss_fwd = (
+                + loss_weights["grad"] * int_loss_fwd_grad
+                + loss_weights["contr"] * int_loss_fwd_contr
+                # + 0.1 * int_loss_fwd_l1
+                # + loss_weights["lpips"] * int_loss_LPIPS
             )
 
-        loss_l1 = criterion_l1(output_clean, img0_orig)
-        loss_l1_hp = criterion_l1(hpass(output_clean), hpass(img0_orig))
-        loss_lap = criterion_lap(output_clean, img0_orig)
-        loss_lap_hp = criterion_lap(hpass(output_clean), hpass(img0_orig))
-        loss_rev = criterion_l1(output_rev, img1_orig)
-        loss_rev_hp = criterion_l1(hpass(output_rev), hpass(img1_orig))
-        loss_contr = criterion_contrast_struct(output_clean, img0_orig)
-        loss_contr_rev = criterion_contrast_struct(output_rev, img1_orig)
-        loss_LPIPS = compute_lpips(loss_fn_alex, output_clean, img0_orig)
+            int_loss_smooth = (
+                loss_weights['smooth_fwd'] * int_loss_fwd_smooth
+                + loss_weights['smooth_bkw'] * int_loss_bkw_smooth
+            )
 
-        loss = (
+            int_loss = int_loss + int_loss_fwd + int_loss_rev + int_loss_smooth
+        
+        '''
+
+        '''
+        g_align = torch.autograd.grad(int_loss_fwd, int_flow_fwd,
+                                    retain_graph=True)[0].norm()
+        g_cycle = torch.autograd.grad(cycle_weight * loss_cycle_l1, int_flow_fwd,
+                                    retain_graph=True)[0].norm()
+        print(g_cycle / g_align)
+        print ('\n\n')
+        '''
+
+        # '''
+
+        loss_l1 = criterion_l1(output_fwd, img0)   # kept: feeds logging
+        # loss_l1_blur = criterion_l1(blur(output_fwd), blur(img0))   # unused - not in `loss`
+        loss_rev = criterion_l1(output_rev, img1)
+        loss_smooth = flow_smoothness(flow_fwd, args.smooth_mode,
+                                      args.smooth_first_frac, args.smooth_2nd_scale)
+        loss_smooth_rev = flow_smoothness(flow_bkw, args.smooth_mode,
+                                          args.smooth_first_frac, args.smooth_2nd_scale)
+
+        if args.smooth_calibrate and is_master and step % args.smooth_calibrate == 0:
+            with torch.no_grad():
+                _s1 = float(smoothness_loss(flow_fwd).item())
+                _s2 = float(smoothness_loss_2nd(flow_fwd).item())
+            sys.stderr.write(f'\n[smooth calib] first={_s1:.6f} second={_s2:.6f} '
+                             f'ratio first/second={_s1 / max(_s2, 1e-12):.1f} '
+                             f'(use as --smooth_2nd_scale to match old magnitude)\n')
+            sys.stderr.flush()
+        loss_contr = criterion_contrast_struct(output_fwd, img0) # + criterion_contrast_struct(output_bkw, img1)
+        # loss_grad_hp = criterion_grad(hpass(output_fwd), hpass(img0)) + criterion_grad(hpass(output_bkw), hpass(img1))
+        # loss_grad = criterion_grad(output_fwd, img0) # + criterion_grad(output_bkw, img1)
+        # loss_lap_fwd = criterion_lap(output_fwd, img0)   # unused - not in `loss` (5-level pyramid)
+        loss_lap_ncc_fwd = criterion_lap_ncc(hpass(output_fwd), hpass(img0)) # + criterion_lap(output_bkw, img1)
+
+        # loss_lap_rev = criterion_lap(output_rev, img1)
+        # loss_lap_hp = criterion_lap(hpass(output_fwd), hpass(img0)) + criterion_lap(hpass(output_bkw), hpass(img1))
+        
+        # loss_l1_hp = criterion_l1(hpass(output_fwd), hpass(img0))   # unused - not in `loss`
+
+        if args.lpips_alternate:
+            # alternate fwd/rev so only one LPIPS forward runs per step; the
+            # 100k rolling average absorbs the alternation
+            if step % 2 == 0:
+                loss_LPIPS = compute_lpips(loss_fn_alex, output_fwd, img0)
+                loss_LPIPS_rev = torch.zeros((), device=device)
+            else:
+                loss_LPIPS = torch.zeros((), device=device)
+                loss_LPIPS_rev = compute_lpips(loss_fn_alex, output_rev, img1)
+        else:
+            loss_LPIPS = compute_lpips(loss_fn_alex, output_fwd, img0)
+            loss_LPIPS_rev = compute_lpips(loss_fn_alex, output_rev, img1)
+
+        # loss_spectral = log_spec_loss(output_fwd, img0)   # unused - not in `loss` (FFTs x3 scales)
+        #   NB: detail-preservation terms on the reverse path bias the flow toward
+        #   integer-pixel offsets (motion quantisation). Softness is preferable.
+
+        # warp_weight = lambda s: 25 + max(0, min(1, (s - 100000) / 100000)) * (0.4 - 25)   # unused
+        # l1_weight = lambda s: 100 + max(0, min(1, (s - 100000) / 100000)) * (0.05 - 100)  # unused
+
+        # ---- deep supervision: one coarse level per step, importance-sampled ----
+        # Coarse levels get no direct target otherwise (only flow_list[-1] is
+        # supervised). Sampling one level keeps the estimator unbiased at the cost
+        # of a single extra cheap term; the finest level is excluded because the
+        # main loss already covers it. Warping happens at the LEVEL's resolution
+        # (~1/s^2 the work), not full-res-then-downsample.
+        loss_deep = torch.zeros((), device=device)
+        if args.deep_sup > 0 and len(flow_list) > 1:
+            n_coarse = len(flow_list) - 1
+            lvl_w = [1.0 / max(1.0, float(training_scale[i])) for i in range(n_coarse)]
+            tot_w = float(sum(lvl_w))
+            if tot_w > 0:
+                r = random.uniform(0, tot_w)
+                acc, lvl = 0.0, 0
+                for i, wgt in enumerate(lvl_w):
+                    acc += wgt
+                    if r <= acc:
+                        lvl = i
+                        break
+                _, _, _h, _w = img0.shape
+                _s = max(1.0, float(training_scale[lvl]))
+                _sh = max(64, int(round((_h / _s) / 16) * 16))
+                _sw = max(64, int(round((_w / _s) / 16) * 16))
+                d_flow_fwd = downscale_flow(torch.split(flow_list[lvl], 2, dim=1)[0], _sh, _sw)
+                d_img0 = torch.nn.functional.interpolate(img0, size=(_sh, _sw), mode='bilinear', antialias=True)
+                d_img1 = torch.nn.functional.interpolate(img1, size=(_sh, _sw), mode='bilinear', antialias=True)
+                d_out = warp(d_img1, d_flow_fwd)
+                # cheap losses only -- perceptual detail is meaningless at 1/8 res
+                d_term = criterion_l1(d_out, d_img0) + criterion_contrast_struct(d_out, d_img0)
+                # unbiased: E[tot_w * L_i] == sum_i w_i * L_i
+                loss_deep = args.deep_sup * tot_w * d_term
+
+        loss = loss_LPIPS + (sharpness) * loss_contr + 0.01 * (sharpness) * loss_lap_ncc_fwd
+        loss = loss + 0.1 * (2.2 - 2 * sharpness) * loss_smooth + 0.1 * (2.2 - 2 * sharpness) * loss_smooth_rev
+        loss = loss + loss_rev + loss_LPIPS_rev + loss_deep
+
+        '''
             int_loss +
             loss_contr +
             loss_LPIPS +
             0.05 * loss_lap +
             0.1 * loss_l1_hp +
-            0.1 * loss_lap_hp +
-            loss_rev +
-            loss_contr_rev +
-            2 * loss_rev_hp
+            0.1 * loss_lap_hp
         )
+        '''
 
         # ---------------------------------------------------------------------
         # Loss tracking — reduce across ranks so all ranks log same value
@@ -2885,6 +3494,12 @@ def main(rank, world_size):
             lpips_val = float(torch.mean(loss_LPIPS).item())
             rev_l1_val = float(loss_rev.item())
 
+        # rolling scheduler metric — all ranks, identical values
+        if sched_buf is None:
+            sched_buf = np.full(cur_size, loss_val, dtype=np.float64)
+        sched_buf[step % cur_size] = loss_val
+        sched_count += 1
+
         if is_master:
             if cur_comb is None:
                 cur_comb = np.full(cur_size, loss_val)
@@ -2907,7 +3522,7 @@ def main(rank, world_size):
             avg_loss = loss_val if batch_idx == 0 else (avg_loss * (batch_idx - 1) + loss_val) / batch_idx
             avg_l1 = l1_val if batch_idx == 0 else (avg_l1 * (batch_idx - 1) + l1_val) / batch_idx
             avg_lpips = lpips_val if batch_idx == 0 else (avg_lpips * (batch_idx - 1) + lpips_val) / batch_idx
-            avg_pnsr = float(psnr_torch(output_clean, img0_orig)) if batch_idx == 0 else (avg_pnsr * (batch_idx - 1) + float(psnr_torch(output_clean, img0_orig))) / batch_idx
+            avg_pnsr = float(psnr_torch(output_fwd, img0_orig)) if batch_idx == 0 else (avg_pnsr * (batch_idx - 1) + float(psnr_torch(output_fwd, img0_orig))) / batch_idx
 
             cur_comb[cur_mask] = avg_loss
             cur_l1[cur_mask] = avg_l1
@@ -2918,7 +3533,16 @@ def main(rank, world_size):
         optimizer_flownet.step()
 
         if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
-            pass
+            if args.plateau_interval > 0 and step % args.plateau_interval == 0:
+                window = min(sched_count, cur_size)
+                metric = float(np.mean(sched_buf[:window])) if window < cur_size else float(np.mean(sched_buf))
+                prev_lr = optimizer_flownet.param_groups[0]['lr']
+                scheduler_flownet.step(metric)
+                new_lr = optimizer_flownet.param_groups[0]['lr']
+                if is_master and new_lr != prev_lr:
+                    sys.stderr.write(f'\nReduceLROnPlateau: rolling avg {metric:.6f} '
+                                     f'-> lr {prev_lr:.2e} to {new_lr:.2e}\n')
+                    sys.stderr.flush()
         else:
             try:
                 scheduler_flownet.step()
@@ -2948,12 +3572,12 @@ def main(rank, world_size):
                     scale_mode='cycle'
                 )
         
-        '''
+        # '''
         if platform.system() == 'Darwin':
             torch.mps.synchronize()
         else:
             torch.cuda.synchronize(device=device)
-        '''
+        # '''
 
         train_time = time.time() - time_stamp
         time_stamp = time.time()
@@ -2962,6 +3586,7 @@ def main(rank, world_size):
         # Checkpoint, preview, logging — rank 0 only
         # ---------------------------------------------------------------------
         if is_master:
+
             target_model = flownet.module if world_size > 1 else flownet
             current_state_dict['step'] = int(step)
             current_state_dict['epoch'] = int(epoch)
@@ -2978,7 +3603,7 @@ def main(rank, world_size):
             if step % args.preview == 1:
                 rgb_target = cct2cg(img0_orig)
                 rgb_source = cct2cg(img1_orig)
-                rgb_output = cct2cg(output_clean)
+                rgb_output = cct2cg(output_fwd)
                 rgb_output2 = cct2cg(output_rev)
 
                 preview_index += 1
@@ -3003,7 +3628,7 @@ def main(rank, world_size):
                 'img0_orig': img0_orig.numpy(force=True).copy(),
                 'img1_orig': img1_orig.numpy(force=True).copy(),
                 'img2_orig': img2_orig.numpy(force=True).copy(),
-                'output': output_clean.numpy(force=True).copy(),
+                'output': output_fwd.numpy(force=True).copy(),
             }
 
             try:
@@ -3078,15 +3703,18 @@ def main(rank, world_size):
 
             clear_lines(2)
             print(f'\r[Epoch {(epoch + 1):04} Step {step} - {days:02}d {hours:02}:{minutes:02}], Time: {data_time_str}+{model_time_str}+{train_time_str}+{data_time2_str}, Batch [{batch_idx+1}, Sample: {idx+1} / {len(dataset)}], Lr: {current_lr_str}')
-            if len(dataset) > 10000:
-                print(f'\r[10K Average] L1: {np.mean(cur_l1):.6f} RevL1: {np.mean(cur_rev_l1):.6f} LPIPS: {np.mean(cur_lpips):.4f} Combined: {np.mean(cur_comb):.6f}')
-                if (step + 1) % 10000 == 1:
+            if len(dataset) > cur_size:
+                print(f'\r[{cur_size//1000}K Average] L1: {np.mean(cur_l1):.6f} RevL1: {np.mean(cur_rev_l1):.6f} LPIPS: {np.mean(cur_lpips):.4f} Combined: {np.mean(cur_comb):.6f}')
+                if (step + 1) % cur_size == 1:
                     csv_file_name = f'{os.path.splitext(trained_model_path)[0]}_train_loss_10K.csv'
                     if not os.path.isfile(csv_file_name):
                         create_csv_file(csv_file_name, ['Epoch', 'Step', 'L1', 'LPIPS', 'Combined'])
                     else:
                         for row in [{'Epoch': epoch, 'Step': step, 'L1': np.mean(cur_l1), 'LPIPS': np.mean(cur_lpips), 'Combined': np.mean(cur_comb)}]:
                             append_row_to_csv(csv_file_name, row)
+                    clear_lines(2)
+                    print(f'\r[Step {step + 1}] Avg L1: {np.mean(cur_l1):.6f} RevL1: {np.mean(cur_rev_l1):.6f} LPIPS: {np.mean(cur_lpips):.4f} Combined: {np.mean(cur_comb):.6f}')
+                    print('\n')
             else:
                 print(f'\r[Epoch] Min L1: {min_l1:.6f} Avg L1: {avg_l1:.6f} Max L1: {max_l1:.6f} RevL1: {np.mean(cur_rev_l1):.6f} LPIPS: {avg_lpips:.4f} Combined: {avg_loss:.6f}')
 
@@ -3116,7 +3744,7 @@ def main(rank, world_size):
                 for row in [{'Epoch': epoch, 'Step': step, 'Min': min_l1, 'Avg': avg_l1, 'Max': max_l1, 'PSNR': avg_pnsr, 'LPIPS': avg_lpips}]:
                     append_row_to_csv(f'{os.path.splitext(trained_model_path)[0]}.csv', row)
 
-                if args.eval == 0:
+                if args.eval == 0 and args.plateau_interval <= 0:
                     if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
                         scheduler_flownet.step(avg_loss)
 
@@ -3349,7 +3977,8 @@ def main(rank, world_size):
             read_eval_thread.join()
             del read_eval_image_queue
 
-            if isinstance(scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
+            if args.plateau_interval <= 0 and isinstance(
+                    scheduler_flownet, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler_flownet.step(eval_loss_avg)
 
         # End of evaluation block
@@ -3357,10 +3986,7 @@ def main(rank, world_size):
         batch_idx = batch_idx + 1
         step = step + 1
 
-        # kick off next batch prefetch overlapping with next forward pass
-        if is_master and world_size > 1:
-            _next_batch_future = _prefetch_executor.submit(
-                prefetch_batch, dataset, batch_idx, world_size, args.batch_size, device)
+        # (per-rank pool feeds the next batch; nothing to prefetch here)
 
         data_time2 = time.time() - time_stamp
 
@@ -3378,4 +4004,3 @@ if __name__ == "__main__":
             pass
     else:
         main(0, 1)
-
