@@ -37,9 +37,11 @@ One entry per session, newest last. Format:
     on first run (trainers set `TORCH_HOME` to the repo root).
   - Committed in three logical commits on `main`: layout reorg
     (`834d4bbb`), trainer + models + data + hub (`d4a23855`), and
-    README/docs/launchers. Working tree clean afterwards.
+    README/docs/launchers (`6bc9eba4`). Working tree clean afterwards.
+  - Pushed to origin (be2c37a0..6bc9eba4) under group inet (outgoing
+    net is blocked except for that group; see machine memory
+    [inet-net-access]).
 - Next:
-  - Push to origin (ask user first; origin = git@github.com:talosh/flameTimewarpML.git).
   - Optional follow-up: extract the duplicated trainer sections into a
     shared module (see docs/ARCHITECTURE.md).
   - Optional: real-GPU validation of `--deep_sup` convergence vs legacy.
