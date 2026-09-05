@@ -22,9 +22,10 @@ weights/
 old_trained_models/
 pytorch/flameStabML_train_ddp_old.py
 
-# LPIPS backbone: committed so training runs offline (first run otherwise
-# downloads it via torch.hub into hub/checkpoints/).
-!hub/checkpoints/alexnet-owt-7be5be79.pth
+# LPIPS backbone (~244MB, too big for a normal GitHub repo): kept on disk,
+# not in git. On a fresh clone the trainers' `import lpips` auto-downloads
+# it into hub/checkpoints/ on first run (TORCH_HOME = repo root); see
+# hub/checkpoints/README.md.
 !hub/checkpoints/README.md
 
 !packages/README.md

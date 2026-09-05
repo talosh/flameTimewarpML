@@ -127,15 +127,15 @@ class Sequence:
 
     # ---- windowing (closed-form index space) ----------------------------
 
-    def num_windows(self, bidirectional: bool = True) -> int:
-        return num_windows(self.count, self.max_window, bidirectional)
+    def num_windows(self, bidirectional: bool = True, mode: str = "full") -> int:
+        return num_windows(self.count, self.max_window, bidirectional, mode)
 
-    def window_at(self, k: int, bidirectional: bool = True) -> "WindowSpec":
-        return window_at(self, k, bidirectional)
+    def window_at(self, k: int, bidirectional: bool = True, mode: str = "full") -> "WindowSpec":
+        return window_at(self, k, bidirectional, mode)
 
-    def iter_windows(self, bidirectional: bool = True) -> Iterator["WindowSpec"]:
-        for k in range(self.num_windows(bidirectional)):
-            yield window_at(self, k, bidirectional)
+    def iter_windows(self, bidirectional: bool = True, mode: str = "full") -> Iterator["WindowSpec"]:
+        for k in range(self.num_windows(bidirectional, mode)):
+            yield window_at(self, k, bidirectional, mode)
 
     # ---- (de)serialisation ---------------------------------------------
 
@@ -182,31 +182,48 @@ def _effective_window(seq_len: int, max_window: int) -> int:
     return min(max_window, seq_len)
 
 
-def num_windows(seq_len: int, max_window: int, bidirectional: bool = True) -> int:
+FULL, FIXED = "full", "fixed"
+
+
+def num_windows(seq_len: int, max_window: int, bidirectional: bool = True,
+                mode: str = FULL) -> int:
+    """Number of windows over a run of length `seq_len`.
+
+    mode="full"  (timewarp): every window size 3..max_window at every position,
+                 every interior gt frame. The original enumeration.
+    mode="fixed" (stab): ONLY the max_window-sized window, slid over the run,
+                 with every interior gt frame. Fewer, longer-baseline samples.
+    """
     W = _effective_window(seq_len, max_window)
     if seq_len < 3 or W < 3:
         return 0
     dir_mult = 2 if bidirectional else 1
+    if mode == FIXED:
+        return (seq_len - W + 1) * (W - 2) * dir_mult
     total = 0
     for w in range(3, W + 1):
         total += (seq_len - w + 1) * (w - 2)
     return total * dir_mult
 
 
-def window_at(seq: "Sequence", k: int, bidirectional: bool = True) -> WindowSpec:
+def window_at(seq: "Sequence", k: int, bidirectional: bool = True,
+              mode: str = FULL) -> WindowSpec:
     L = seq.count
     W = _effective_window(L, seq.max_window)
     dir_mult = 2 if bidirectional else 1
-    total = num_windows(L, seq.max_window, bidirectional)
+    total = num_windows(L, seq.max_window, bidirectional, mode)
     if not (0 <= k < total):
         raise IndexError(f"window index {k} out of range [0, {total}) for {seq.seq_id}")
 
-    # locate the window size band containing k
-    for w in range(3, W + 1):
-        band = (L - w + 1) * (w - 2) * dir_mult
-        if k < band:
-            break
-        k -= band
+    if mode == FIXED:
+        w = W                      # single band: the max window only
+    else:
+        # locate the window size band containing k
+        for w in range(3, W + 1):
+            band = (L - w + 1) * (w - 2) * dir_mult
+            if k < band:
+                break
+            k -= band
 
     if bidirectional:
         pair_idx, direction = divmod(k, 2)
@@ -373,8 +390,8 @@ class Manifest:
     def total_frames(self) -> int:
         return sum(s.count for s in self.sequences)
 
-    def total_windows(self, bidirectional: bool = True) -> int:
-        return sum(s.num_windows(bidirectional) for s in self.sequences)
+    def total_windows(self, bidirectional: bool = True, mode: str = "full") -> int:
+        return sum(s.num_windows(bidirectional, mode) for s in self.sequences)
 
     # (de)serialisation -----------------------------------------------------
     def save(self, path: str) -> None:

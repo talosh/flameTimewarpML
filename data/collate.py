@@ -53,6 +53,16 @@ def make_worker_init_fn(cache_items: int = 256, cache_bytes=None):
     from .cache import FrameCache
 
     def _init(worker_id: int):
+        import signal
+        # Workers must NOT inherit the training process's SIGINT handler. On Ctrl+C
+        # the whole process group is signalled; if each worker ran the checkpoint
+        # saver it would torch.save the (CUDA) state dict concurrently to the same
+        # file -> corrupted weights. Ignore SIGINT in workers; the main process
+        # performs the single graceful save.
+        try:
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+        except (ValueError, OSError):
+            pass  # only settable from a process's main thread; safe to skip otherwise
         import random
         import numpy as np
         import torch

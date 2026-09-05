@@ -241,6 +241,7 @@ def build_buckets(
     multiple: int = DEFAULT_MULTIPLE,
     pad_tolerance: float = DEFAULT_PAD_TOLERANCE,
     bidirectional: bool = True,
+    window_mode: str = "full",
     max_long_side: Optional[int] = None,
     warnings: Optional[list] = None,
 ) -> dict:
@@ -261,7 +262,7 @@ def build_buckets(
         if max_long_side is not None and long > max_long_side:
             n_too_big += 1
             continue
-        wcount = seq.num_windows(bidirectional)
+        wcount = seq.num_windows(bidirectional, window_mode)
         if wcount <= 0:
             n_no_window += 1
             continue
@@ -322,6 +323,7 @@ class TimewarpBatchSampler:
         multiple: int = DEFAULT_MULTIPLE,
         pad_tolerance: float = DEFAULT_PAD_TOLERANCE,
         bidirectional: bool = True,
+        window_mode: str = "full",
         rotation_prob: float = DEFAULT_ROTATION_PROB,
         rotation_weights: Optional[dict] = None,
         max_long_side: Optional[int] = None,
@@ -339,6 +341,7 @@ class TimewarpBatchSampler:
         self.multiple = multiple
         self.pad_tolerance = pad_tolerance
         self.bidirectional = bidirectional
+        self.window_mode = window_mode
         self.rotation_weights = normalize_rotation_weights(rotation_prob, rotation_weights)
         self.max_long_side = max_long_side
         self.seed = seed
@@ -358,10 +361,10 @@ class TimewarpBatchSampler:
 
     # -- coverage estimate uses a rotation-free bucketing just for the count --
     def _estimate_steps(self) -> int:
-        total = sum(s.num_windows(self.bidirectional)
+        total = sum(s.num_windows(self.bidirectional, self.window_mode)
                     for s in self.sequences
                     if s.height is not None and s.width is not None
-                    and s.num_windows(self.bidirectional) > 0)
+                    and s.num_windows(self.bidirectional, self.window_mode) > 0)
         return max(1, math.ceil(total / self.batch_size))
 
     def set_epoch(self, epoch: int) -> None:
@@ -379,6 +382,7 @@ class TimewarpBatchSampler:
             self.sequences, rotations,
             frame_size=self.frame_size, multiple=self.multiple,
             pad_tolerance=self.pad_tolerance, bidirectional=self.bidirectional,
+            window_mode=self.window_mode,
             max_long_side=self.max_long_side, warnings=warnings,
         )
         return list(buckets.values()), warnings
@@ -406,7 +410,7 @@ class TimewarpBatchSampler:
                 seq = b.seqs[i]
                 rot = b.rots[i]
                 kwin = batch_rng.randrange(b.wcounts[i])
-                w = seq.window_at(kwin, self.bidirectional)
+                w = seq.window_at(kwin, self.bidirectional, self.window_mode)
                 batch.append(SampleSpec(seq.seq_id, w.start, w.gt, w.end, w.ratio, rot))
             yield batch
 
@@ -425,6 +429,7 @@ class TimewarpBatchSampler:
               f"{n_seq} seq in {len(bucket_list)} buckets "
               f"({', '.join(f'{k}:{v}' for k, v in fams.items())}), "
               f"{self.steps_per_epoch} steps x {self.batch_size}, "
+              f"mode={self.window_mode}{'' if self.bidirectional else ' (uni)'}, "
               f"worst in-batch pad ~{worst_pad*100:.1f}%")
         for w in warnings[:4]:
             print(f"[sampler]   note: {w}")
