@@ -8,8 +8,8 @@ Two model families are trained and shipped from this repo:
 
 | Family | Model | Task |
 |---|---|---|
-| **timewarp** | `flownet4_v001` | Retiming / temporal warp: given an *incoming* and an *outgoing* frame plus a temporal *ratio* (how far apart they are), synthesize the *target* frame at an arbitrary intermediate time. |
-| **stab** | `warpnet4_v001` | Stabilization: remove shake from a 3-frame clip while preserving the operator's intentional move. |
+| **timewarp** | `flownet4_v001` | Neural retiming. Given an incoming frame, an outgoing frame and a temporal ratio, synthesizes the image at an arbitrary position between them. |
+| **refwarp** | `warpnet4_v001` | Bidirectional reference-guided warping. Given an image and a reference, predicts forward and backward UV correspondence fields between them. The forward warp can be used for motion transfer; the bidirectional pair supports stabilize → process → destabilize workflows for beauty work, cleanup and related image-processing tasks. |
 
 Both are 4-level flow pyramids. Training is PyTorch with DDP support; the
 dataset pipeline lives in [`data/`](data/) and is shared by both trainers.
