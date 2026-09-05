@@ -1,160 +1,118 @@
-## flameTimewarpML
+# flameTimewarpML
 
-Previous versions: [Readme v0.4.4](https://github.com/talosh/flameTimewarpML/blob/main/README_v044.md)
+Machine-learning timewarp and stabilization for the **Flame** node in
+**Baselight** (Baselight is a finishing color-correction system; `flame` is
+its ML plugin family).
 
-## Table of Contents
-- [Status](#status)
-- [Installation](#installation)
-- [Training](#training)
+Two model families are trained and shipped from this repo:
 
-### Installation
+| Family | Model | Task |
+|---|---|---|
+| **timewarp** | `flownet4_v001` | Retiming / temporal warp: given an *incoming* and an *outgoing* frame plus a temporal *ratio* (how far apart they are), synthesize the *target* frame at an arbitrary intermediate time. |
+| **stab** | `warpnet4_v001` | Stabilization: remove shake from a 3-frame clip while preserving the operator's intentional move. |
 
-#### Installing from package - Linux
-* Download parts and run
-```bash
-cat flameTimewarpML_v0.4.5-dev003.Linux.tar.gz.part-* > flameTimewarpML_v0.4.5-dev003.Linux.tar.gz
-tar -xvf flameTimewarpML_v0.4.5-dev003.Linux.tar.gz
-``` 
-* Place "flameTimewarpML" folder into Flame python hooks path.
+Both are 4-level flow pyramids. Training is PyTorch with DDP support; the
+dataset pipeline lives in [`data/`](data/) and is shared by both trainers.
 
-#### Installing from package - MacOS
-* Unpack and run fix-xattr.command
-* Place "flameTimewarpML" folder into Flame python hooks path.
+## Repository layout
 
-### Installing and configuring python environment manually
-
-* pre-configured miniconda environment should be placed into hidden "packages/.miniconda" folder
-* the folder is hidden (starts with ".") in order to keep Flame from scanning it looking for python hooks
-* pre-configured python environment usually packed with release tar file
-
-* download Miniconda for Mac or Linux (I'm using python 3.11 for tests) from 
-<https://docs.anaconda.com/free/miniconda/miniconda-other-installer-links/>
-
-* install downloaded Miniconda python distribution, use "-p" to select install location. For example:
-
-```bash
-sh ~/Downloads/Miniconda3-py311_24.7.1-0-Linux-x86_64.sh -bfsm -p ~/miniconda3
+```
+flameTimewarpML/
+├── flameTimewarp_train_ddp.py     # timewarp trainer (new dataset pipeline, DDP)
+├── flameStabML_train_ddp.py       # stab trainer (new dataset pipeline, DDP)
+├── train_timewarp_ddp.sh          # convenience wrappers for the trainers
+├── train_stab.sh
+├── train.sh                       # legacy timewarp trainer wrapper
+├── data/                          # dataset pipeline (manifest, windows, sampler, pool)
+├── models/                        # model zoo (flownetN_vNNN.py, warpnetN_vNNN.py)
+│   └── archived/                  # retired model versions
+├── pytorch/                       # legacy training/validation scripts (old dataset)
+├── baselight/                     # Baselight node package (uk.co.andriy.mltimewarp.v1)
+├── bundle.py, flameTimewarpML.py  # node source + packaging
+├── pybox/                         # node effects (fluidmorph etc.)
+├── tools/                         # one-off utilities (EXR/DPX writers, tonemap, perf)
+├── docs/                          # TRAINING, DATASET, ARCHITECTURE, handoff notes
+├── weights/                       # checkpoints (gitignored, local only)
+├── hub/checkpoints/               # LPIPS backbone (auto-downloaded on first run)
+└── packages/                      # vendored conda runtime for the node bundle
 ```
 
-* Activate anc clone default environment into another named "appenv" 
+## Getting started
+
+### Environment
+
+Training runs in a conda env (`appenv`). Activate an interactive shell with:
 
 ```bash
-eval "$(~/miniconda3/bin/conda shell.bash hook)"
-conda create --name appenv
-conda activate appenv
+./activate.sh          # shell with the right env + bashrc
 ```
 
-* Install dependency libraries
+or, for non-interactive use, call the interpreter directly:
 
 ```bash
-conda install python=3.11 conda-forge::openimageio conda-forge::py-openimageio
-conda install pyqt
-conda install conda-pack
+/home/flame/miniconda3/envs/appenv/bin/python
 ```
 
-* Install pytorch. Please look up exact commands depending on OS and Cuda versions
+(If the env's bundled `libstdc++` is newer than the system one, prefix with
+`LD_LIBRARY_PATH=/home/flame/miniconda3/envs/appenv/lib`.)
 
-* Linux example
-```bash
-conda install pytorch torchvision pytorch-cuda=11.8 -c pytorch -c nvidia
-```
+Dependencies: `torch`, `OpenImageIO`, `lpips` (see `requirements.txt`). The
+LPIPS alex backbone (~244 MB) is not in git — on a fresh clone it is
+downloaded into `hub/checkpoints/` on the first run (needs internet once).
 
-* MacOS example:
+Building an env from scratch is documented in
+[docs/legacy/README_v044.md](docs/legacy/README_v044.md#installing-and-configuring-python-environment-manually).
 
-```bash
-conda install pytorch::pytorch torchvision -c pytorch
-```
-
-* Install rest of the dependencies
-```bash
-pip install -r {flameTimewarpML folder}/requirements.txt
-```
-
-* Pack append environment into a portable tar file
+### Training (timewarp)
 
 ```bash
-conda pack --ignore-missing-files -n appenv
+./train_timewarp_ddp.sh \
+    --state_file weights/Flownet4_v001.pth --model flownet4_v001 \
+    --device 2 --batch 2 --frame_size 448 --max_window 12 --lr 1e-6 \
+    /path/to/dataset_root/
 ```
 
-* Unpack environment to flameTimewarpML folder
+Dataset root is a tree of folders containing OpenEXR frame sequences
+(AP1-linear by default; `--ap0` for AP0). See [docs/DATASET.md](docs/DATASET.md).
+
+Multi-GPU: add `--all_gpus` (DDP over all visible GPUs, NCCL).
+
+### Training (stab)
 
 ```bash
-mkdir  {flameTimewarpML folder}/packages/.miniconda/appenv/
-tar xvf appenv.tar.gz -C {flameTimewarpML folder}/packages/.miniconda/appenv/
+./train_stab.sh \
+    --state_file weights/Warpnet4_v001.pth --model warpnet4_v001 \
+    --device 2 --batch 2 --frame_size 224 --max_window 24 \
+    --window_mode fixed --lr 2e-5 \
+    /path/to/dataset_root/
 ```
 
-* Remove environment tarball
+### Outputs
 
-```bash
-rm appenv.tar.gz
-```
+Per run (paths relative to `$HOME` and to the dataset root):
 
-### Training
+- `~/flameTWML_models/flameTWML_model_<stamp>.pth` — periodic checkpoint
+  (atomic writes, `.backup.pth` of the previous one)
+- `..._model_<stamp>.best.pth` — best evaluation score
+- `<dataset>/preview/<model>/<idx>_{A_incoming,B_outgoing,C_target,D_output,E_diff}.exr`
+- `<dataset>/preview/eval/<model>/Step_<n>/...` — eval results
+- `<model>.csv`, `<model>.eval.csv` — per-epoch and per-eval metrics
 
+Full flag reference, loss composition and color-space notes:
+[docs/TRAINING.md](docs/TRAINING.md).
 
+## Hardware notes
 
-#### Finetune for specific shot or set of shots
-Finetune option is avaliable as a menu item starting from 0.4.5 dev 003
+The training GPUs on this machine are Pascal (P5000/P40, sm_61):
 
-#### Finetune using command line script
+- **No bfloat16** — train in **fp32** (mixed precision buys nothing here).
+- `torch.compile` is unreliable on sm_61; not used by default.
+- GPUs 0 and 1 host the local LLM service — training scripts take an explicit
+  `--device N`; never run with `--all_gpus` unless those GPUs are free.
 
-Export as Linear ACEScg (AP1) Uncompressed OpenEXR sequence.
-Export your shots so each shot are in separate folder.
-Copy pre-trained model file (large or lite) to the file to train with.
-If motion is fast place the whole shot or its parts with fast motion to "fast" folder.
+## Documentation
 
-```bash
-cd {flameTimewarpML folder}
-./train.sh --state_file {Path to copied state file}/MyShot001.pth --generalize 1 --lr 4e-6 --acescc 0 --onecycle 1000 {Path to shot}/{fast}/
-```
-
-* Change number after "--onecycle" to set number of runs.
-* Use "--acescc 0" to train in Linear or to retain input colourspace, "--acescc 100" to convert all samples to Log.
-* Use "--frame_size" to modify training samples size
-* Preview last 9 training patches in "{Path to shot}/preview" folder
-* Use "--preview" to modify how frequently preview files are saved
-
-#### Train your own model
-```bash
-cd {flameTimewarpML folder}
-./train.sh --state_file {Path to MyModel}/MyModel001.pth --model flownet4_v004 --batch_size 4 {Path to Dataset}/
-```
-
-#### Batch size and learning rate
-The batch size and learning rate are two crucial hyperparameters that significantly affect the training process and empirical tuning is necessary here.
-When the batch size is increased, the learning rate can often be increased as well. A common heuristic is the linear scaling rule: when you multiply the batch size by a factor 
-k, you can also multiply the learning rate by k. Another approach is the square root scaling rule: when you multiply the batch size by k multiply the learning rate by sqrt(k)
-
-
-#### Dataset preparation
-Training script will scan all the folders under a given path and will compose training samples out of folders where .exr files are found.
-Only Uncompressed OpenEXR files are supported at the moment.
-
-Export your shots so each shot are in separate folder.
-There are two magic words in shot path: "fast" and "slow"
-When "fast" is in path 3-frame window will be used for those shots.
-When "slow" is in path 9-frame window will be used.
-Default window size is 5 frames.
-Put shots with fast motion in "fast" folder and shots where motion are slow and continious to "slow" folder to let the model learn more intermediae ratios.
-
-- Scene001/
-    - slow/
-        - Shot001/
-            - Shot001.001.exr
-            - Shot001.002.exr
-            - ...
-    - fast/
-        - Shot002
-            - Shot002.001.exr
-            - Shot002.002.exr
-            - ...
-    - normal/
-        - Shot003
-            - Shot003.001.exr
-            - Shot003.002.exr
-            - ...
-
-#### Window size
-Samples for training are 3 frames and ratio. The model is given the first and the last frame and tries to re-create middle frame at given ratio.
-
-[TODO] - add documentation
+- [docs/TRAINING.md](docs/TRAINING.md) — trainer flags, loss recipe, DDP design, checkpoints
+- [docs/DATASET.md](docs/DATASET.md) — the `data/` pipeline, dataset layout, tests
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — repo map, model zoo conventions
+- [docs/legacy/README_v044.md](docs/legacy/README_v044.md) — original v0.4.4 readme

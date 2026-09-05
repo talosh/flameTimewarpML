@@ -1,14 +1,11 @@
 #!/bin/bash
+# Train the timewarp model (legacy streaming-dataset script, kept for
+# comparison / fine-tuning old checkpoints). Prefer train_timewarp_ddp.sh.
+#
+# Run from an activated environment (./activate.sh) or override PYTHON_CMD.
 
-# Resolves the directory where the script is located
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
-
-# Change to the script directory
 cd "$SCRIPT_DIR"
 
-# Define the path to the Python executable and the Python script
-PYTHON_CMD="./packages/.miniconda/appenv/bin/python"
-PYTHON_SCRIPT="./pytorch/flameTimewarpML_train.py"
-
-# Run the Python script with all arguments passed to this shell script
-$PYTHON_CMD $PYTHON_SCRIPT "$@"
+PYTHON_CMD="${PYTHON_CMD:-python}"
+exec $PYTHON_CMD ./pytorch/flameTimewarpML_train.py "$@"
