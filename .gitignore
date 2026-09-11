@@ -3,6 +3,9 @@ bundle/miniconda.package/packages/*
 bundle/bin/*
 !bundle/miniconda.package/packages/README
 settings.json
+# local agent context — kept on disk, never in git
+QWEN.md
+.qwen/
 *.pyc
 *.exr
 *.png
