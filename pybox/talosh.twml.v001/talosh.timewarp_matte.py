@@ -1,17 +1,18 @@
 """
-Pybox setup for Fluidmorph — matte-input variant.
+Pybox setup for Timewarp — matte-input variant.
 
-Sibling of fluidmorph.py, sharing the same SCRIPT_NAME bundle, daemon
+Sibling of timewarp.py, sharing the same SCRIPT_NAME bundle, daemon
 socket, and effect.py/flownet4.py entirely unchanged. The only
 difference is this script additionally declares two Matte-type input
 sockets. Flame requires a declared Matte input socket to be connected —
-fluidmorph.py (no explicit Matte socket) exists so users who do not want
+timewarp.py (no explicit Matte socket) exists so users who do not want
 that requirement are not forced into it.
 """
 
 import os
 import sys
 import time
+import math
 import socket
 import subprocess
 import json
@@ -26,7 +27,7 @@ from pathlib import Path
 # block contents). Errors always print regardless of this flag.
 DEBUG = False
 
-EFFECT_NAME = 'ML Fluidmorph (Matte)'
+EFFECT_NAME = 'ML Timewarp (Matte)'
 IMAGE_FORMAT = "exr"
 
 MODEL_UI_ELEMENT = "Model"
@@ -40,7 +41,7 @@ SCALE_VALUES = [64, 32, 16, 8, 4, 2, 1]
 # Empty until this script has been told where it lives. The locate flow below
 # fills it in and rewrites this line on disk.
 SCRIPT_LOCATION = ''
-SCRIPT_NAME     = 'fluidmorph.v001'
+SCRIPT_NAME     = 'talosh.twml.v001'
 SOCKET_PATH     = '/dev/shm/fluidmorph_effect.sock'
 STATE_PATH      = '/dev/shm/fluidmorph_effect.state.json'
 
@@ -58,7 +59,7 @@ LOCATION_DEFAULT_VALUE = PRESET_ROOT if os.path.isdir(PRESET_ROOT) else '/'
 
 # This script's own filename — the locate flow searches for and rewrites only
 # this file, never any sibling.
-THIS_SCRIPT = 'fluidmorph_matte.py'
+THIS_SCRIPT = 'talosh.timewarp_matte.py'
 
 LOCATION_UI_ELEMENT = 'Script File'
 
@@ -217,7 +218,7 @@ def scan_weights(location):
 MODELS = scan_weights(RESOLVED_LOCATION)
 
 effect_python = bundle_path(
-    RESOLVED_LOCATION, 'packages', 'miniconda', 'appenv', 'bin', 'python'
+    RESOLVED_LOCATION, 'appenv', 'bin', 'python'
 )
 effect_script = bundle_path(RESOLVED_LOCATION, 'effect', 'effect.py')
 
@@ -543,10 +544,10 @@ class Fluidmorph(pybox.BaseClass):
 
         ratio_value = pybox.create_float_numeric(
             RATIO_UI_ELEMENT,
-            value=0.5, default=0.5, min=0.0, max=1.0, inc=0.01,
+            value=0.5, default=0.5, min=-1000000.0, max=1000000.0, inc=0.01,
             channel_name=RATIO_UI_ELEMENT,
             page=0, col=0, row=2,
-            tooltip="<b>Ratio</b>\nBlend ratio between the two inputs. For Timewarp use expression: timewarp1.Timing - floor(timewarp1.Timing). Editable."
+            tooltip="<b>Ratio</b>\nBlend ratio between the two inputs. Values outside 0-1 wrap to their fractional part, so a Timewarp Timing channel can be linked directly. Editable."
         )
         self.add_render_elements(ratio_value)
 
@@ -662,7 +663,16 @@ class Fluidmorph(pybox.BaseClass):
     def _run(self):
         scale_index = self.get_render_element_value(SCALE_UI_ELEMENT)
         scale_value = SCALE_VALUES[scale_index]
-        ratio_value = self.get_render_element_value(RATIO_UI_ELEMENT)
+        # The field accepts any value so a Timewarp Timing channel can be
+        # linked straight in. Only the fractional part is meaningful here, so
+        # wrap it and write the wrapped value back so the UI shows what is
+        # actually being used.
+        raw_ratio   = float(self.get_render_element_value(RATIO_UI_ELEMENT))
+        ratio_value = raw_ratio - math.floor(raw_ratio)
+        if ratio_value != raw_ratio:
+            printd(f'Ratio {raw_ratio} wrapped to {ratio_value}')
+            self.set_render_element_value(RATIO_UI_ELEMENT, ratio_value)
+
         bidirectional_value = bool(self.get_render_element_value(BIDI_UI_ELEMENT))
         iterational_value = bool(self.get_render_element_value(ITER_UI_ELEMENT))
         model_index = self.get_render_element_value(MODEL_UI_ELEMENT)
