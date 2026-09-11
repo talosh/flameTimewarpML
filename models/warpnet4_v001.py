@@ -9,8 +9,8 @@ import torch.nn.functional as F
 class Model:
 
     info = {
-        'name': 'Warpnet4_v001',
-        'file': 'Warpnet4_v001.py',
+        'name': 'warpnet4_v001',
+        'file': 'warpnet4_v001.py',
         'ratio_support': True
     }
 
@@ -20,6 +20,39 @@ class Model:
         Module = torch.nn.Module
         backwarp_tenGrid = {}
         gauss_cache = {}
+
+        AE_LIN_LO = 0.0
+        AE_LIN_HI = 1.1
+
+        AE_LIN_TOE = 0.002       # tiny lower roll-off
+        AE_LIN_SHOULDER = 0.1    # compression starts at 1.0
+
+        def soft_limit(
+            x,
+            lo=AE_LIN_LO,
+            hi=AE_LIN_HI,
+            toe=AE_LIN_TOE,
+            shoulder=AE_LIN_SHOULDER,
+        ):
+            # Upper shoulder
+            top = hi - shoulder          # 1.0
+            t = (x - top) / shoulder
+            x = torch.where(
+                x > top,
+                top + shoulder * t / (1.0 + t.clamp(min=0.0)),
+                x,
+            )
+
+            # Lower toe
+            bot = lo + toe               # 0.002
+            t = (bot - x) / toe
+            x = torch.where(
+                x < bot,
+                bot - toe * t / (1.0 + t.clamp(min=0.0)),
+                x,
+            )
+
+            return x
 
         def hpass(img):
             def gauss_kernel(channels):
@@ -289,14 +322,17 @@ class Model:
                     vals.append(1)
                     return vals
 
-                def skewed_randint(low=1, high=16, alpha=1.0, beta=2.0):
+                def skewed_randint(low=1, high=16, alpha=1.0, beta=1.2):
                     x = random.betavariate(alpha, beta)
                     return low + min(int(x * (high - low + 1)), high - low)
 
-                scale = halving_steps(skewed_randint(), 4)
+                scale = halving_steps(skewed_randint(), 4) if random.uniform(0, 1) < 0.5 else halving_steps(8, 4)
 
-                img0 = img0
-                img1 = img1
+                img0 = torch.nan_to_num(img0, nan=0.0, posinf=AE_LIN_HI, neginf=AE_LIN_LO)
+                img0 = soft_limit(img0)
+                img1 = torch.nan_to_num(img1, nan=0.0, posinf=AE_LIN_HI, neginf=AE_LIN_LO)
+                img1 = soft_limit(img1)
+
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 

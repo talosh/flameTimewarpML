@@ -48,3 +48,20 @@ goes to `PROGRESS.md`.
   --window_mode fixed --lr 2e-5 --frame_size 224 --smooth_mode blend
   --deep_sup 0.2 /mnt/StorageMedia/dataset_image/pexels_exr/`
 - Do not stop it; if GPU 2 is needed, prefer CPU checks first.
+
+## warpnet4_v002 (as of 2026-09-09)
+
+- v002 = v001 + frozen ts_test AE encoder + zero-init `film_z` per
+  ResConv (latent FiLM, Style B). `weights/Warpnet4_v002.pth` = merged
+  weights (no optimizer state); merge base snapshot
+  `weights/Warpnet4_v001_mergebase.pth`; merge/seam scripts in
+  `tools/merge_warpnet_v002.py` / `tools/check_v002_ae_seam.py`.
+- Passthrough verified bit-exact (max|Δ| == 0.0 vs v001). Trainer takes
+  the clean linear pair via `ae_in` + `encoding` (auto-detected by
+  `has_ae`); `--freeze --freeze_film` = phase 1 (only film_z + scaler
+  train, 72 params). Node wiring (passing ae_in from the Baselight node)
+  is the open follow-up; without it the model degrades to v001 (z=0).
+- Trainer now supports `--device cpu` (str arg). CPU smokes must use
+  `--frame_size 224` (64 px crashes the dilated stack at pyramid scale
+  16, pre-existing). Parser flag is `--batch_size` (the live v001
+  process predates the rename and runs with `--batch`).

@@ -2498,7 +2498,7 @@ def main(rank, world_size):
     parser.add_argument('--state_file', type=str, default=None, help='Path to the pre-trained model state dict file (optional)')
     parser.add_argument('--model', type=str, default=None, help='Model name (optional)')
     parser.add_argument('--legacy_model', type=str, default=None, help='Model name (optional)')
-    parser.add_argument('--device', type=int, default=0, help='Graphics card index (default: 0)')
+    parser.add_argument('--device', type=str, default='0', help='Graphics card index (default: 0), or "cpu"')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size (int) (default: 8)')
     parser.add_argument('--first_epoch', type=int, default=-1, help='Epoch (int) (default: Saved)')
     parser.add_argument('--epochs', type=int, default=-1, help='Number of epoch to run (int) (default: Unlimited)')
@@ -2518,6 +2518,7 @@ def main(rank, world_size):
     parser.add_argument('--max_window', type=int, default=12, help='Temporal window size in frames (default: 12)')
     parser.add_argument('--all_gpus', action='store_true', dest='all_gpus', default=False, help='Use DistributedDataParallel')
     parser.add_argument('--freeze', action='store_true', dest='freeze', default=False, help='Freeze custom hardcoded parameters')
+    parser.add_argument('--freeze_film', action='store_true', dest='freeze_film', default=False, help='With --freeze: also freeze the sharpness FiLM, training only the latent film_z path (v002 phase 1)')
     parser.add_argument('--acescc', type=check_range_percent, default=0, help='Percentage of ACEScc encoded frames (default: 49))')
     parser.add_argument('--ap0', action='store_true', dest='ap0', default=False, help='Images are in ap0')
     parser.add_argument('--generalize', type=check_range_percent, default=85, help='Generalization level (0 - 100) (default: 85)')
@@ -2563,7 +2564,7 @@ def main(rank, world_size):
     parser.add_argument('--window_bidirectional', type=str, default='auto', choices=['auto', 'yes', 'no'], help="(new dataset) also emit reversed windows. auto = yes for --window_mode full, no for fixed (the loop already builds both pairs)")
     # ---- LR plateau on a rolling average ----
     parser.add_argument('--avg_window', type=int, default=100000, help='rolling window (in steps) for the running loss average (default 100000)')
-    parser.add_argument('--plateau_interval', type=int, default=1000, help='step ReduceLROnPlateau every N steps using the rolling average; 0 = old epoch/eval-based behaviour (default 1000)')
+    parser.add_argument('--plateau_interval', type=int, default=100000, help='step ReduceLROnPlateau every N steps using the rolling average; 0 = old epoch/eval-based behaviour (default 100000)')
     parser.add_argument('--plateau_patience', type=int, default=10, help='ReduceLROnPlateau patience, counted in plateau_interval units (default 10)')
     parser.add_argument('--plateau_factor', type=float, default=0.1, help='ReduceLROnPlateau LR reduction factor (default 0.1)')
 
@@ -2586,8 +2587,12 @@ def main(rank, world_size):
         if not platform.system() == 'Darwin':
             torch.cuda.set_device(device)
     else:
-        device = torch.device(f'cuda:{args.device}') if not platform.system() == 'Darwin' else torch.device('mps')
-        if not platform.system() == 'Darwin':
+        if platform.system() == 'Darwin':
+            device = torch.device('mps')
+        elif args.device == 'cpu':
+            device = torch.device('cpu')
+        else:
+            device = torch.device(f'cuda:{args.device}')
             torch.cuda.set_device(device)
 
     is_master = (rank == 0)
@@ -2641,6 +2646,10 @@ def main(rank, world_size):
         flownet = torch.compile(flownet_uncompiled, mode='reduce-overhead')
     else:
         flownet = Flownet().get_training_model()().to(device)
+
+    # latent-conditioned models (warpnet4_v002+) carry an embedded AE encoder;
+    # the forward pass then receives the clean linear pair as `ae_in`
+    has_ae = hasattr(flownet, 'ae_encoder')
 
     # -------------------------------------------------------------------------
     # DDP wrapping — replaces DataParallel
@@ -2881,7 +2890,7 @@ def main(rank, world_size):
                 final_div_factor=1,
                 steps_per_epoch=len(dataset) * dataset.repeat_count,
                 epochs=args.onecycle,
-                last_epoch=-1 if loaded_sranktep == 0 else loaded_step
+                last_epoch=-1 if loaded_step == 0 else loaded_step
             )
         except:
             scheduler_flownet = torch.optim.lr_scheduler.OneCycleLR(
@@ -2947,59 +2956,27 @@ def main(rank, world_size):
         if is_master:
             print('\nFreezing parameters')
         target_model = flownet.module if world_size > 1 else flownet
-        for param in target_model.encode.parameters():
-            param.requires_grad = False
-        for param in target_model.block0.parameters():
-            param.requires_grad = False
-        for param in target_model.block1.parameters():
-            param.requires_grad = False
-        for param in target_model.block2.parameters():
-            param.requires_grad = False
-        for param in target_model.block3.parameters():
-            param.requires_grad = False
-
-        for param in target_model.block0.scaler.parameters():
-            param.requires_grad = True
-        for param in target_model.block0.film.parameters():
-            param.requires_grad = True
-        # for param in target_model.block0.lastconv.parameters():
-        #     param.requires_grad = True
-        # for param in target_model.block0.convblock[-1].parameters():
-        #     param.requires_grad = True
-
-        for param in target_model.block1.scaler.parameters():
-            param.requires_grad = True
-        for param in target_model.block1.film.parameters():
-            param.requires_grad = True
-        # for param in target_model.block1.lastconv.parameters():
-        #    param.requires_grad = True
-        # for param in target_model.block1.convblock[-1].parameters():
-        #    param.requires_grad = True
-
-        for param in target_model.block2.scaler.parameters():
-            param.requires_grad = True
-        for param in target_model.block2.film.parameters():
-            param.requires_grad = True
-        # for param in target_model.block2.lastconv.parameters():
-        #    param.requires_grad = True
-        # for param in target_model.block2.convblock[-1].parameters():
-        #    param.requires_grad = True
-
-        for param in target_model.block3.scaler.parameters():
-            param.requires_grad = True
-        for param in target_model.block3.film.parameters():
-            param.requires_grad = True
-        # for param in target_model.block3.lastconv.parameters():
-        #    param.requires_grad = True
-        # for param in target_model.block3.convblock[-1].parameters():
-        #    param.requires_grad = True
-
+        # name-pattern freeze: ae_encoder (baked-in, always frozen) and encode
+        # (Head) stay frozen; inside blocks only scalers + film paths train
+        # (film_z = latent path, always; film = sharpness path, unless
+        # --freeze_film, which trains the latent path alone — v002 phase 1)
+        for name, param in target_model.named_parameters():
+            if name.startswith('ae_encoder.'):
+                param.requires_grad = False
+            elif name.startswith('encode.'):
+                param.requires_grad = False
+            elif name.startswith('block'):
+                param.requires_grad = ('.scaler.' in name
+                                       or '.film_z.' in name
+                                       or ('.film.' in name and not args.freeze_film))
+            else:
+                param.requires_grad = False
         if is_master:
-            for name, param in flownet.named_parameters():
+            for name, param in target_model.named_parameters():
                 if not param.requires_grad:
                     print(name, param.requires_grad)
             print('\nUn-freezing parameters:')
-            for name, param in flownet.named_parameters():
+            for name, param in target_model.named_parameters():
                 if param.requires_grad:
                     print(name, param.requires_grad)
 
@@ -3200,8 +3177,8 @@ def main(rank, world_size):
         flownet.train()
 
         # Exposure augmentation
-        exp1 = random.uniform(1 / 4, 1.4) if random.uniform(0, 1) < 0.5 else 1
-        exp2 = random.uniform(1 / 4, 1.4) if random.uniform(0, 1) < 0.5 else 1
+        exp1 = random.uniform(1 / 4, 1.8) if random.uniform(0, 1) < 0.5 else 1
+        exp2 = random.uniform(1 / 4, 1.8) if random.uniform(0, 1) < 0.5 else 1
 
         noise1 = min(random.uniform(0, 0.25), random.uniform(0, 0.25)) * torch.clamp(torch.randn_like(img0), 0)
         noise2 = min(random.uniform(0, 0.25), random.uniform(0, 0.25)) * torch.clamp(torch.randn_like(img0), 0)
@@ -3219,11 +3196,17 @@ def main(rank, world_size):
 
         # sample one input encoding for this step (AP1 / Rec.709 / ACEScct, equal by default)
         enc = random.choice(input_encodings)
+        lin0 = cct2cg(img0_ref)
+        lin1 = cct2cg(img1_ref)
+        # latent conditioning (v002+): clean, un-augmented linear pair — the AE
+        # was trained on clean frames, so exposure/noise/hpass stay on the warp side only
+        ae_extra = {'ae_in': (lin0, lin1), 'encoding': enc} if has_ae else {}
         result = flownet(
-            encode_input(cct2cg(img0_ref) * exp1 + noise1, enc),
-            encode_input(cct2cg(img1_ref) * exp2 + noise2, enc),
+            encode_input(lin0 * exp1 + noise1, enc),
+            encode_input(lin1 * exp2 + noise2, enc),
             scale=training_scale,
-            sharpness = sharpness
+            sharpness = sharpness,
+            **ae_extra
         )
 
         flow_list = result['flow_list']
@@ -3396,7 +3379,7 @@ def main(rank, world_size):
                              f'(use as --smooth_2nd_scale to match old magnitude)\n')
             sys.stderr.flush()
         loss_contr = criterion_contrast_struct(output_fwd, img0) # + criterion_contrast_struct(output_bkw, img1)
-        # loss_grad_hp = criterion_grad(hpass(output_fwd), hpass(img0)) + criterion_grad(hpass(output_bkw), hpass(img1))
+        loss_grad_hp = criterion_grad(hpass(output_fwd), hpass(img0))
         # loss_grad = criterion_grad(output_fwd, img0) # + criterion_grad(output_bkw, img1)
         # loss_lap_fwd = criterion_lap(output_fwd, img0)   # unused - not in `loss` (5-level pyramid)
         loss_lap_ncc_fwd = criterion_lap_ncc(hpass(output_fwd), hpass(img0)) # + criterion_lap(output_bkw, img1)
@@ -3459,6 +3442,7 @@ def main(rank, world_size):
                 loss_deep = args.deep_sup * tot_w * d_term
 
         loss = loss_LPIPS + (sharpness) * loss_contr + 0.01 * (sharpness) * loss_lap_ncc_fwd
+        loss = loss + ( sharpness ) * loss_grad_hp
         loss = loss + 0.1 * (2.2 - 2 * sharpness) * loss_smooth + 0.1 * (2.2 - 2 * sharpness) * loss_smooth_rev
         loss = loss + loss_rev + loss_LPIPS_rev + loss_deep
 
@@ -3575,7 +3559,7 @@ def main(rank, world_size):
         # '''
         if platform.system() == 'Darwin':
             torch.mps.synchronize()
-        else:
+        elif device.type == 'cuda':
             torch.cuda.synchronize(device=device)
         # '''
 

@@ -5,11 +5,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class Model:
 
     info = {
-        'name': 'Stabnet4_v001',
-        'file': 'stabnet4_v001.py',
+        'name': 'Warpnet4_v001',
+        'file': 'warpnet4_v001.py',
         'ratio_support': True
     }
 
@@ -20,70 +21,89 @@ class Model:
         backwarp_tenGrid = {}
         gauss_cache = {}
 
+        AE_LIN_LO = 0.0
+        AE_LIN_HI = 1.1
 
-        def smooth_uv(uv, amount, max_sigma=48.0, resolution_relative=True, curve=2.0):
-            """
-            Smooth a UV map by `amount` in 0-1. 0 returns the input untouched, 1 is
-            max smoothing. uv is (n, c, h, w) with u,v in the first two channels.
+        AE_LIN_TOE = 0.002       # tiny lower roll-off
+        AE_LIN_SHOULDER = 0.1    # compression starts at 1.0
 
-            Smooths the RESIDUAL (uv - identity), not the UV itself. Since flow_to_uv
-            returns absolute coordinates, identity is a linear ramp — blurring that
-            with any edge padding drags it toward the neighbourhood average at the
-            frame border, bending a map that should be perfectly flat there. On the
-            residual, identity survives exactly and replicate padding acts on
-            near-zero values where it is harmless.
+        def soft_limit(
+            x,
+            lo=AE_LIN_LO,
+            hi=AE_LIN_HI,
+            toe=AE_LIN_TOE,
+            shoulder=AE_LIN_SHOULDER,
+        ):
+            # Upper shoulder
+            top = hi - shoulder          # 1.0
+            t = (x - top) / shoulder
+            x = torch.where(
+                x > top,
+                top + shoulder * t / (1.0 + t.clamp(min=0.0)),
+                x,
+            )
 
-            max_sigma           blur sigma in pixels at amount=1.0, quoted against a
-                                1080-line frame
-            resolution_relative scale sigma with frame size so a proxy render looks
-                                like full res; off means sigma is literal pixels
-            curve               response shaping, 1.0 is linear; 2.0 makes the low
-                                end of the slider usable
-            """
-            if amount is None:
-                return uv
-            amount = float(amount)
-            if amount <= 0.0:
-                return uv
-            amount = min(amount, 1.0)
+            # Lower toe
+            bot = lo + toe               # 0.002
+            t = (bot - x) / toe
+            x = torch.where(
+                x < bot,
+                bot - toe * t / (1.0 + t.clamp(min=0.0)),
+                x,
+            )
 
-            n, c, h, w = uv.shape
-            device, dtype = uv.device, uv.dtype
+            return x
 
-            sigma = max_sigma * (amount ** curve)
-            if resolution_relative:
-                sigma *= min(h, w) / 1080.0
-            if sigma < 0.25:                     # below this the blur is a no-op
-                return uv
+        def hpass(img):
+            def gauss_kernel(channels):
+                kernel = torch.tensor([[1., 4., 6., 4., 1.],
+                                    [4., 16., 24., 16., 4.],
+                                    [6., 24., 36., 24., 6.],
+                                    [4., 16., 24., 16., 4.],
+                                    [1., 4., 6., 4., 1.]])
+                kernel /= 256.
+                return kernel.repeat(channels, 1, 1, 1)
 
-            # --- identity UV -------------------------------------------------------
-            # Must match flow_to_uv's convention exactly: absolute 0-1 with Y flipped
-            # (uv_y = 1 - ...), so identity runs 1->0 down the frame, not 0->1. Get
-            # this backwards and smoothing injects a full-frame vertical gradient.
-            ix = torch.linspace(0.0, 1.0, w, device=device, dtype=dtype).view(1, 1, 1, w)
-            iy = torch.linspace(1.0, 0.0, h, device=device, dtype=dtype).view(1, 1, h, 1)
-            ident = torch.cat([ix.expand(1, 1, h, w), iy.expand(1, 1, h, w)], dim=1)
+            def conv_gauss(img, kernel):
+                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
+                return torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
 
-            residual = uv[:, :2] - ident
+            k = (img.shape[1], str(img.device), str(img.dtype))
+            if k not in gauss_cache:
+                gauss_cache[k] = gauss_kernel(img.shape[1]).to(device=img.device, dtype=img.dtype)
+            gkernel = gauss_cache[k]
 
-            # --- separable gaussian ------------------------------------------------
-            radius = max(1, int(3.0 * sigma) + 1)
-            x = torch.arange(-radius, radius + 1, device=device, dtype=dtype)
-            k = torch.exp(-0.5 * (x / sigma) ** 2)
-            k = k / k.sum()
+            hp = img - conv_gauss(img, gkernel)
 
-            kx = k.view(1, 1, 1, -1).expand(2, 1, 1, -1)
-            ky = k.view(1, 1, -1, 1).expand(2, 1, -1, 1)
+            hp = hp + 0.5
 
-            residual = F.pad(residual, (radius, radius, 0, 0), mode='replicate')
-            residual = F.conv2d(residual, kx, groups=2)
-            residual = F.pad(residual, (0, 0, radius, radius), mode='replicate')
-            residual = F.conv2d(residual, ky, groups=2)
+            return hp
 
-            out = uv.clone()
-            out[:, :2] = ident + residual
-            return out
+        def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
+            return torch.nn.Sequential(
+                torch.nn.Conv2d(
+                    in_planes,
+                    out_planes,
+                    kernel_size=kernel_size,
+                    stride=stride,
+                    padding=padding,
+                    dilation=dilation,
+                    padding_mode = 'reflect',
+                    bias=True
+                ),
+                torch.nn.PReLU(num_parameters=out_planes, init=0.2)
+            )
 
+        def warp(tenInput, tenFlow):
+            k = (str(tenFlow.device), str(tenFlow.dtype), str(tenFlow.size()))
+            if k not in backwarp_tenGrid:
+                tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
+                tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
+                backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
+            tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
+
+            g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
+            return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
         def smooth_uv_fast(uv, amount, max_sigma=48.0, resolution_relative=True,
                         curve=2.0, target_sigma=4.0):
@@ -153,58 +173,6 @@ class Model:
             out = uv.clone()
             out[:, :2] = ident + residual
             return out
-
-
-        def hpass(img):
-            def gauss_kernel(channels):
-                kernel = torch.tensor([[1., 4., 6., 4., 1.],
-                                    [4., 16., 24., 16., 4.],
-                                    [6., 24., 36., 24., 6.],
-                                    [4., 16., 24., 16., 4.],
-                                    [1., 4., 6., 4., 1.]])
-                kernel /= 256.
-                return kernel.repeat(channels, 1, 1, 1)
-
-            def conv_gauss(img, kernel):
-                img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
-                return torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
-
-            k = (img.shape[1], str(img.device), str(img.dtype))
-            if k not in gauss_cache:
-                gauss_cache[k] = gauss_kernel(img.shape[1]).to(device=img.device, dtype=img.dtype)
-            gkernel = gauss_cache[k]
-
-            hp = img - conv_gauss(img, gkernel)
-
-            hp = hp + 0.5
-
-            return hp
-
-        def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
-            return torch.nn.Sequential(
-                torch.nn.Conv2d(
-                    in_planes,
-                    out_planes,
-                    kernel_size=kernel_size,
-                    stride=stride,
-                    padding=padding,
-                    dilation=dilation,
-                    padding_mode = 'reflect',
-                    bias=True
-                ),
-                torch.nn.PReLU(num_parameters=out_planes, init=0.2)
-            )
-
-        def warp(tenInput, tenFlow):
-            k = (str(tenFlow.device), str(tenFlow.dtype), str(tenFlow.size()))
-            if k not in backwarp_tenGrid:
-                tenHorizontal = torch.linspace(-1.0, 1.0, tenFlow.shape[3]).view(1, 1, 1, tenFlow.shape[3]).expand(tenFlow.shape[0], -1, tenFlow.shape[2], -1)
-                tenVertical = torch.linspace(-1.0, 1.0, tenFlow.shape[2]).view(1, 1, tenFlow.shape[2], 1).expand(tenFlow.shape[0], -1, -1, tenFlow.shape[3])
-                backwarp_tenGrid[k] = torch.cat([ tenHorizontal, tenVertical ], 1).to(device=tenInput.device, dtype=tenInput.dtype)
-            tenFlow = torch.cat([ tenFlow[:, 0:1, :, :] / ((tenInput.shape[3] - 1.0) / 2.0), tenFlow[:, 1:2, :, :] / ((tenInput.shape[2] - 1.0) / 2.0) ], 1)
-
-            g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
-            return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
         class Head(Module):
             def __init__(self):
@@ -448,8 +416,13 @@ class Model:
                 
                 timestep=0.5
 
-                img0 = img0
-                img1 = img1
+                # Trained with this input conditioning, so inference must apply
+                # it too or the model sees a different distribution than it was
+                # fitted on.
+                img0 = torch.nan_to_num(img0, nan=0.0, posinf=AE_LIN_HI, neginf=AE_LIN_LO)
+                img0 = soft_limit(img0)
+                img1 = torch.nan_to_num(img1, nan=0.0, posinf=AE_LIN_HI, neginf=AE_LIN_LO)
+                img1 = soft_limit(img1)
                 f0 = self.encode(img0)
                 f1 = self.encode(img1)
 

@@ -1,16 +1,18 @@
 """
-Pybox setup for Fluidmorph
+Pybox setup for Timewarp
 """
 
 import os
 import sys
 import time
+import math
 import socket
 import subprocess
 import json
 import glob
 import re
 import shutil
+import webbrowser
 import pybox_v1 as pybox
 
 from pathlib import Path
@@ -19,7 +21,7 @@ from pathlib import Path
 # block contents). Errors always print regardless of this flag.
 DEBUG = False
 
-EFFECT_NAME = 'ML Fluidmorph'
+EFFECT_NAME = 'ML Timewarp'
 IMAGE_FORMAT = "exr"
 
 MODEL_UI_ELEMENT = "Model"
@@ -27,13 +29,16 @@ SCALE_UI_ELEMENT   = "Scale"
 RATIO_UI_ELEMENT   = "Ratio"
 BIDI_UI_ELEMENT    = "Bidirectional"
 ITER_UI_ELEMENT    = "Iterational"
+COFFEE_UI_ELEMENT    = "Buy me a Coffee"
+
+COFFEE_URL = "https://buymeacoffee.com/talosh"
 
 SCALE_VALUES = [64, 32, 16, 8, 4, 2, 1]
 
 # Empty until this script has been told where it lives. The locate flow below
 # fills it in and rewrites this line on disk.
 SCRIPT_LOCATION = ''
-SCRIPT_NAME     = 'fluidmorph.v001'
+SCRIPT_NAME     = 'talosh.twml.v001'
 SOCKET_PATH     = '/dev/shm/fluidmorph_effect.sock'
 STATE_PATH      = '/dev/shm/fluidmorph_effect.state.json'
 
@@ -51,7 +56,7 @@ LOCATION_DEFAULT_VALUE = PRESET_ROOT if os.path.isdir(PRESET_ROOT) else '/'
 
 # This script's own filename — the locate flow searches for and rewrites only
 # this file, never any sibling.
-THIS_SCRIPT = 'fluidmorph.py'
+THIS_SCRIPT = 'talosh.timewarp.py'
 
 LOCATION_UI_ELEMENT = 'Script File'
 
@@ -210,7 +215,7 @@ def scan_weights(location):
 MODELS = scan_weights(RESOLVED_LOCATION)
 
 effect_python = bundle_path(
-    RESOLVED_LOCATION, 'packages', 'miniconda', 'appenv', 'bin', 'python'
+    RESOLVED_LOCATION, 'appenv', 'bin', 'python'
 )
 effect_script = bundle_path(RESOLVED_LOCATION, 'effect', 'effect.py')
 
@@ -530,10 +535,10 @@ class Fluidmorph(pybox.BaseClass):
 
         ratio_value = pybox.create_float_numeric(
             RATIO_UI_ELEMENT,
-            value=0.5, default=0.5, min=0.0, max=1.0, inc=0.01,
+            value=0.5, default=0.5, min=-1000000.0, max=1000000.0, inc=0.01,
             channel_name=RATIO_UI_ELEMENT,
             page=0, col=0, row=2,
-            tooltip="<b>Ratio</b>\nBlend ratio between the two inputs. For Timewarp use expression: timewarp1.Timing - floor(timewarp1.Timing). Editable."
+            tooltip="<b>Ratio</b>\nBlend ratio between the two inputs. Values outside 0-1 wrap to their fractional part, so a Timewarp Timing channel can be linked directly. Editable."
         )
         self.add_render_elements(ratio_value)
 
@@ -554,6 +559,20 @@ class Fluidmorph(pybox.BaseClass):
             tooltip="<b>Iterational</b>\nEnable iterational refinement."
         )
         self.add_render_elements(iterational_toggle)
+
+        # A toggle, not a real button — pybox has no momentary push-button.
+        # Registered as a GLOBAL element so flipping it always triggers a
+        # python call (render elements do not, until the result is pulled).
+        # _run resets it to False after opening the browser, so it reads as a
+        # one-shot button. Placed at col 1 to sit apart from the controls.
+        coffee_button = pybox.create_toggle_button(
+            COFFEE_UI_ELEMENT,
+            value=False,
+            default=False,
+            page=0, col=1, row=0,
+            tooltip="<b>Buy me a Coffee</b>\nOpens buymeacoffee.com/talosh in your browser."
+        )
+        self.add_global_elements(coffee_button)
 
         page = pybox.create_page("Main", "Fluidmorph")
         self.set_ui_pages(page)
@@ -620,6 +639,29 @@ class Fluidmorph(pybox.BaseClass):
         self.set_dialog_msg(f'{EFFECT_NAME}\n\n{message}')
 
     # ── Main ───────────────────────────────────────────────────────────────────
+    def handle_coffee_button(self):
+        """
+        Open the Buy-me-a-Coffee page when the toggle is flipped on, then reset
+        it so it behaves like a one-shot button rather than a latching toggle.
+
+        webbrowser.open picks the right launcher per platform (xdg-open on
+        Linux, open on macOS). Wrapped so a headless/None-browser environment
+        can never take the node down.
+        """
+        try:
+            element = self.get_global_element(COFFEE_UI_ELEMENT)
+        except Exception:
+            return
+        if not element:
+            return
+        if self.get_global_element_value(COFFEE_UI_ELEMENT):
+            printd(f'Opening {COFFEE_URL}')
+            try:
+                webbrowser.open(COFFEE_URL)
+            except Exception as e:
+                printe(f'Could not open browser: {e}')
+            # Reset so the next dispatch does not re-open it.
+            self.set_global_element_value(COFFEE_UI_ELEMENT, False)
 
     def execute(self):
         # The message block round-trips through the JSON payload, so a dialog
@@ -648,7 +690,16 @@ class Fluidmorph(pybox.BaseClass):
     def _run(self):
         scale_index = self.get_render_element_value(SCALE_UI_ELEMENT)
         scale_value = SCALE_VALUES[scale_index]
-        ratio_value = self.get_render_element_value(RATIO_UI_ELEMENT)
+        # The field accepts any value so a Timewarp Timing channel can be
+        # linked straight in. Only the fractional part is meaningful here, so
+        # wrap it and write the wrapped value back so the UI shows what is
+        # actually being used.
+        raw_ratio   = float(self.get_render_element_value(RATIO_UI_ELEMENT))
+        ratio_value = raw_ratio - math.floor(raw_ratio)
+        if ratio_value != raw_ratio:
+            printd(f'Ratio {raw_ratio} wrapped to {ratio_value}')
+            self.set_render_element_value(RATIO_UI_ELEMENT, ratio_value)
+
         bidirectional_value = bool(self.get_render_element_value(BIDI_UI_ELEMENT))
         iterational_value = bool(self.get_render_element_value(ITER_UI_ELEMENT))
         model_index = self.get_render_element_value(MODEL_UI_ELEMENT)

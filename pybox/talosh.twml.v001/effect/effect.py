@@ -763,6 +763,25 @@ class EMA:
 
 # ── Message handlers ───────────────────────────────────────────────────────────
 
+def clear_outputs(*paths):
+    """
+    Delete stale output frames before a fresh inference.
+
+    Without this, a run that fails partway leaves the PREVIOUS run's frame on
+    disk, and Flame happily reads that stale result as if it were current — the
+    node appears stuck on an old frame. Removing the outputs up front means a
+    failure leaves a missing file, which routes through the error-frame path
+    instead of silently serving stale pixels.
+    """
+    for p in paths:
+        if not p:
+            continue
+        try:
+            if os.path.exists(p):
+                os.unlink(p)
+        except Exception as e:
+            print(f'[effect] Could not clear {p}: {e}', flush=True)
+
 def handle_message(msg):
     global device
 
@@ -830,6 +849,10 @@ def handle_message(msg):
             input_file0 = msg.get('input0')
             input_file1 = msg.get('input1')
 
+            # Remove last run's frames before doing anything, so a failure
+            # cannot leave Flame reading a stale result.
+            clear_outputs(uv0, uv1)
+
             def warp_fallback():
                 """Zero UV on both sockets so Flame never loops on a missing frame."""
                 height, width, spec = probe_input_geometry(input_file0, input_file1)
@@ -855,6 +878,7 @@ def handle_message(msg):
                 # smoothing amount, applied after the model returns.
                 detail = float(msg.get('detail', 0.5))
                 smooth = float(msg.get('smooth', 0.0))
+                mixback = float(msg.get('mixback', 0.0))
 
                 with torch.no_grad():
                     img      = read_image_file(input_file0)
@@ -912,6 +936,23 @@ def handle_message(msg):
                         smooth=smooth,
                     )
 
+                    # Mix Back: lerp each UV field toward an identity (unwarped)
+                    # UV. 0 = full model result, 1 = no warp. Identity must
+                    # match flow_to_uv's convention — absolute 0-1 with the Y
+                    # axis flipped (top row = 1, bottom = 0) — or mixing injects
+                    # a vertical gradient instead of pulling toward no-op.
+                    if mixback > 0.0:
+                        m = min(mixback, 1.0)
+                        _, _, uh, uw = uv_fwd.shape
+                        ix = torch.linspace(0.0, 1.0, uw, device=uv_fwd.device,
+                                            dtype=uv_fwd.dtype).view(1, 1, 1, uw)
+                        iy = torch.linspace(1.0, 0.0, uh, device=uv_fwd.device,
+                                            dtype=uv_fwd.dtype).view(1, 1, uh, 1)
+                        ident = torch.cat([ix.expand(1, 1, uh, uw),
+                                           iy.expand(1, 1, uh, uw)], dim=1)
+                        uv_fwd = uv_fwd * (1.0 - m) + ident * m
+                        uv_rev = uv_rev * (1.0 - m) + ident * m
+
                     # Belt and braces: a written array that disagrees with the
                     # source resolution is what produces truncated EXRs.
                     def fit(t):
@@ -933,7 +974,7 @@ def handle_message(msg):
                     'message': (
                         f'uv {tuple(uv_fwd.shape)} scale={used_scale}'
                         + (f' (requested {scale_arg})' if used_scale != scale_arg else '')
-                        + f' detail={detail} smooth={smooth}'
+                        + f' detail={detail} smooth={smooth} mixback={mixback}'
                     ),
                 }
 
@@ -963,6 +1004,10 @@ def handle_message(msg):
             matte_in0    = msg.get('matte_in0')
             matte_in1    = msg.get('matte_in1')
             ratio        = float(msg.get('ratio', 0.5))
+
+            # Remove last run's frames before doing anything, so a failure
+            # cannot leave Flame reading a stale result.
+            clear_outputs(result_file0, matte_file0, conf_file0)
 
             # Which checkpoint this node wants — several may be resident at
             # once, so the message has to say, not the daemon assume.
